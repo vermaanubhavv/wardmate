@@ -20,7 +20,13 @@ begin;
 
 alter table patients add column if not exists primary_diagnosis text;
 
-create or replace view current_patients with (security_invoker = true) as
+-- Dropped rather than replaced. current_patients selects p.*, so adding a column to patients
+-- shifts the view's later columns along by one, and "create or replace view" refuses to
+-- change the name of an existing column position. A view holds no data of its own, so
+-- rebuilding it costs nothing.
+drop view if exists current_patients;
+
+create view current_patients with (security_invoker = true) as
 select
   p.*,
   case
