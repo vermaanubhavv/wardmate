@@ -45,7 +45,9 @@ export default async function Home() {
         ) : (
           patients.map((p) => (
             <li key={p.id}>
-              <PatientCard patient={p} />
+              <Link href={`/patients/${p.id}`} className="block active:opacity-70">
+                <PatientCard patient={p} />
+              </Link>
             </li>
           ))
         )}
