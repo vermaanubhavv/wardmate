@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getCurrentWard, getDiagnosisSuggestions } from "@/lib/ward";
+import { listTemplateChoices } from "@/lib/templates";
 import PatientForm from "./patient-form";
 
 export default async function NewPatientPage() {
@@ -16,7 +17,10 @@ export default async function NewPatientPage() {
     );
   }
 
-  const suggestions = await getDiagnosisSuggestions(ward.id);
+  const [suggestions, templateChoices] = await Promise.all([
+    getDiagnosisSuggestions(ward.id),
+    listTemplateChoices(),
+  ]);
 
   return (
     <main className="flex-1 px-6 py-10 flex flex-col gap-6 max-w-md mx-auto w-full">
@@ -25,7 +29,11 @@ export default async function NewPatientPage() {
         <p className="text-muted mt-1 text-sm">to {ward.name}</p>
       </header>
 
-      <PatientForm wardId={ward.id} diagnosisSuggestions={suggestions} />
+      <PatientForm
+        wardId={ward.id}
+        diagnosisSuggestions={suggestions}
+        templateChoices={templateChoices}
+      />
     </main>
   );
 }

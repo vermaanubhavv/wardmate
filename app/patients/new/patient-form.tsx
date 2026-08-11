@@ -11,9 +11,11 @@ import { addPatient, type AddPatientState } from "../actions";
 export default function PatientForm({
   wardId,
   diagnosisSuggestions,
+  templateChoices,
 }: {
   wardId: string;
   diagnosisSuggestions: string[];
+  templateChoices: { family: string; variant: string | null; label: string }[];
 }) {
   const [state, formAction, pending] = useActionState<AddPatientState, FormData>(addPatient, {
     error: null,
@@ -61,6 +63,24 @@ export default function PatientForm({
             <option key={d} value={d} />
           ))}
         </datalist>
+      </Field>
+
+      <Field
+        label="Operation"
+        hint="Decides what the app expects you to mention. Leave blank if none applies."
+      >
+        <select
+          name="template"
+          defaultValue=""
+          className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
+        >
+          <option value="">No template</option>
+          {templateChoices.map((t) => (
+            <option key={`${t.family}|${t.variant ?? ""}`} value={`${t.family}|${t.variant ?? ""}`}>
+              {t.label}
+            </option>
+          ))}
+        </select>
       </Field>
 
       <Field label="Admitted on">

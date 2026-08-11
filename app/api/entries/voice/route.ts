@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
 import { extractObservations } from "@/lib/extract";
+import { getTemplateForPatient } from "@/lib/templates";
 
 /**
  * The whole voice round-trip, on the server: audio in, stored observations out.
@@ -31,7 +32,9 @@ export async function POST(request: Request) {
   // The database would refuse the insert anyway; this just fails earlier and cheaper.
   const { data: patient, error: patientError } = await supabase
     .from("current_patients")
-    .select("id, surgery_date, post_op_day, admission_day")
+    .select(
+      "id, surgery_date, post_op_day, admission_day, template_family, template_variant"
+    )
     .eq("id", patientId)
     .maybeSingle();
 
@@ -60,10 +63,15 @@ export async function POST(request: Request) {
     );
   }
 
-  // 2. Text to structured observations, with verbatim-quote enforcement inside.
+  // 2. Text to structured observations, with verbatim-quote enforcement inside. The template's
+  // expected labels go along so that anything the resident does mention is named consistently
+  // and can be matched back — it does not license inventing the ones they skipped.
+  const template = await getTemplateForPatient(patient);
+  const expectedLabels = template?.items.map((i) => i.label) ?? [];
+
   let extraction;
   try {
-    extraction = await extractObservations(transcript);
+    extraction = await extractObservations(transcript, expectedLabels);
   } catch (e) {
     // The transcript is worth keeping even when extraction fails — it is the evidence, and
     // the resident can still read it. Store the entry with the error recorded against it.

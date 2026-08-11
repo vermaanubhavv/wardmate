@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActivePatients } from "@/lib/ward";
+import { getTemplateForPatient, matchTemplate } from "@/lib/templates";
 import { dayLabel } from "@/lib/patients";
 import Recorder from "./recorder";
 import { confirmObservation } from "./actions";
@@ -35,7 +36,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const { data: patient } = await supabase
     .from("current_patients")
     .select(
-      "id, ward_id, display_name, bed, primary_diagnosis, admitted_on, surgery_date, post_op_day, admission_day, status"
+      "id, ward_id, display_name, bed, primary_diagnosis, admitted_on, surgery_date, post_op_day, admission_day, status, template_family, template_variant"
     )
     .eq("id", id)
     .maybeSingle();
@@ -68,9 +69,24 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       if (!latest.has(key)) latest.set(key, obs);
     }
   }
-  const current = [...latest.values()].filter((o) => o.kind !== "note");
   const pending = entries.flatMap((e) =>
     e.observations.filter((o) => o.needs_confirmation && !o.confirmed_at)
+  );
+
+  // The template decides both what to expect and what order to show it in, so the things that
+  // matter for this operation lead the screen instead of whatever happened to be said first.
+  const template = await getTemplateForPatient(patient);
+  const allObservations = entries.flatMap((e) => e.observations);
+  const matched = template ? matchTemplate(template, allObservations) : [];
+  const missing = matched.filter((m) => m.missing);
+
+  // Anything recorded that the template does not know about still has to appear — the
+  // template narrows what is prompted for, never what can be stored.
+  const templateLabels = new Set(
+    matched.flatMap((m) => [m.item.label.toLowerCase(), ...m.item.aliases.map((a) => a.toLowerCase())])
+  );
+  const extra = [...latest.values()].filter(
+    (o) => o.kind !== "note" && !templateLabels.has(o.label.toLowerCase())
   );
 
   return (
@@ -129,11 +145,35 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         </section>
       )}
 
-      {current.length > 0 && (
+      {(matched.length > 0 || extra.length > 0) && (
         <section className="px-6 pb-6">
-          <p className="text-sm text-muted mb-2">Where things stand</p>
+          <div className="flex items-baseline justify-between gap-3 mb-2">
+            <p className="text-sm text-muted">Where things stand</p>
+            {template && <p className="text-xs text-muted truncate">{template.name}</p>}
+          </div>
+
           <ul className="rounded-xl border border-line bg-card divide-y divide-line">
-            {current.map((o) => (
+            {matched.map((m) => (
+              <li
+                key={m.item.id}
+                className="flex items-baseline justify-between gap-3 px-4 py-2.5"
+              >
+                <span className="text-sm text-muted">{m.item.label}</span>
+                {m.value ? (
+                  <span className="text-sm text-right">{m.value}</span>
+                ) : (
+                  // Absent is shown as absent. Never a placeholder, never a guess.
+                  <span
+                    className={
+                      "text-sm text-right " + (m.missing ? "text-amber-300" : "text-muted/50")
+                    }
+                  >
+                    not recorded
+                  </span>
+                )}
+              </li>
+            ))}
+            {extra.map((o) => (
               <li key={o.id} className="flex items-baseline justify-between gap-3 px-4 py-2.5">
                 <span className="text-sm text-muted">{o.label}</span>
                 <span className="text-sm text-right">{o.value_text}</span>
@@ -199,6 +239,14 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       {/* Fixed, so the button is under your thumb no matter how long the record has grown. */}
       <div className="fixed bottom-0 inset-x-0 bg-gradient-to-t from-background via-background to-transparent pt-10 pb-8 px-6">
         <div className="mx-auto max-w-md flex flex-col gap-3">
+          {/* Visible while you hold the button, so you know what is left to cover without
+              having to remember the set for this operation. */}
+          {missing.length > 0 && (
+            <p className="text-xs text-muted leading-relaxed">
+              <span className="text-amber-300">Still to cover:</span>{" "}
+              {missing.map((m) => m.item.hint ?? m.item.label).join(" · ")}
+            </p>
+          )}
           <Recorder patientId={patient.id} />
           {next ? (
             <Link

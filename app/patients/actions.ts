@@ -24,6 +24,9 @@ export async function addPatient(
   const admittedOn = String(formData.get("admitted_on") ?? "");
   const surgeryDate = String(formData.get("surgery_date") ?? "").trim();
 
+  // "hernia|inguinal" from the picker, or "" for no template.
+  const [family, variant] = String(formData.get("template") ?? "").split("|");
+
   if (!wardId) return { error: "No ward selected." };
   if (!bed) return { error: "Bed is required." };
   if (!name) return { error: "Name is required." };
@@ -42,6 +45,8 @@ export async function addPatient(
     primary_diagnosis: diagnosis || null,
     admitted_on: admittedOn,
     surgery_date: surgeryDate || null,
+    template_family: family || null,
+    template_variant: variant || null,
     created_by: user.id,
   });
 

@@ -91,17 +91,32 @@ export type ExtractionResult = {
   raw: unknown;
 };
 
-export async function extractObservations(transcript: string): Promise<ExtractionResult> {
+/**
+ * `expectedLabels` comes from the patient's template. It constrains NAMING only — when the
+ * resident mentions something the template knows about, it gets stored under exactly that
+ * name so the two can be matched later. It grants no permission to produce a value that was
+ * not said; an expected item the resident skipped simply yields no observation, which is the
+ * whole point of showing it as missing.
+ */
+export async function extractObservations(
+  transcript: string,
+  expectedLabels: string[] = []
+): Promise<ExtractionResult> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
 
   const model = "claude-opus-5";
   const client = new Anthropic({ apiKey: key });
 
+  const expected =
+    expectedLabels.length > 0
+      ? `\n\nThis patient is being followed against a template. If — and only if — the resident actually mentions one of the things below, use that exact wording as the label so it can be matched:\n${expectedLabels.map((l) => `- ${l}`).join("\n")}\n\nThis list tells you what to CALL things. It does not tell you what is true. Anything on this list that the resident did not mention must simply be absent from your output — never emit an observation for it.`
+      : "";
+
   const response = await client.messages.create({
     model,
     max_tokens: 4000,
-    system: SYSTEM_PROMPT,
+    system: SYSTEM_PROMPT + expected,
     // Low effort: this is constrained extraction from a short transcript, and the resident
     // is standing at a bedside. Raise it if extraction quality turns out to need it.
     output_config: {
