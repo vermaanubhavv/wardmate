@@ -99,15 +99,15 @@ export default function LoginPage() {
             inputMode="numeric"
             autoComplete="one-time-code"
             pattern="[0-9]*"
-            maxLength={6}
+            maxLength={10}
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-            placeholder="123456"
-            className="rounded-xl border border-line bg-card px-4 py-4 text-center text-2xl tracking-[0.4em] outline-none focus:border-accent"
+            placeholder="the code from the email"
+            className="rounded-xl border border-line bg-card px-4 py-4 text-center text-xl tracking-[0.25em] outline-none focus:border-accent"
           />
           <button
             type="submit"
-            disabled={busy || code.length < 6}
+            disabled={busy || code.length === 0}
             className="rounded-xl bg-accent px-4 py-4 text-base font-semibold text-slate-900 disabled:opacity-50"
           >
             {busy ? "Checking…" : "Sign in"}
