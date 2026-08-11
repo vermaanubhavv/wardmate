@@ -5,6 +5,7 @@ import { getActivePatients } from "@/lib/ward";
 import { getTemplateForPatient, matchTemplate } from "@/lib/templates";
 import { dayLabel } from "@/lib/patients";
 import Recorder from "./recorder";
+import PhotoButton from "./photo-button";
 import { confirmObservation } from "./actions";
 
 type Observation = {
@@ -24,6 +25,7 @@ type Entry = {
   id: string;
   source: "voice" | "photo" | "manual";
   transcript: string | null;
+  photo_path: string | null;
   recorded_at: string;
   extraction_error: string | null;
   observations: Observation[];
@@ -53,12 +55,26 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const { data: entriesData } = await supabase
     .from("entries")
     .select(
-      "id, source, transcript, recorded_at, extraction_error, observations(id, kind, label, value_text, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, recorded_at)"
+      "id, source, transcript, photo_path, recorded_at, extraction_error, observations(id, kind, label, value_text, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, recorded_at)"
     )
     .eq("patient_id", id)
     .order("recorded_at", { ascending: false });
 
   const entries = (entriesData ?? []) as unknown as Entry[];
+
+  // Short-lived links for the stored photographs. The bucket is private, so these are the
+  // only way to see one, they expire in an hour, and they are only ever minted here — for a
+  // doctor the database has already confirmed is a member of this patient's ward.
+  const photoPaths = entries.map((e) => e.photo_path).filter((p): p is string => Boolean(p));
+  const photoUrls = new Map<string, string>();
+  if (photoPaths.length > 0) {
+    const { data: signed } = await supabase.storage
+      .from("evidence")
+      .createSignedUrls(photoPaths, 3600);
+    for (const s of signed ?? []) {
+      if (s.path && s.signedUrl) photoUrls.set(s.path, s.signedUrl);
+    }
+  }
 
   // Yesterday's state, already loaded: the most recent value for each thing, so the resident
   // arrives at the bedside knowing where the patient was left rather than reconstructing it.
@@ -219,7 +235,28 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                   </p>
                 )}
 
-                {/* The evidence, one tap away, for anything on screen. */}
+                {/* The evidence, one tap away, for anything on screen. For a photographed
+                    report this is the only check there is — nothing can re-read it server
+                    side — so the image itself sits right beside the values it produced. */}
+                {entry.photo_path && photoUrls.get(entry.photo_path) && (
+                  <a
+                    href={photoUrls.get(entry.photo_path)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 block"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photoUrls.get(entry.photo_path)}
+                      alt="Photographed lab report"
+                      className="w-full rounded-lg border border-line"
+                    />
+                    <span className="mt-1 block text-xs text-muted">
+                      Tap to open the report full size
+                    </span>
+                  </a>
+                )}
+
                 {entry.transcript && (
                   <details className="mt-2">
                     <summary className="text-xs text-muted cursor-pointer">
@@ -248,6 +285,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             </p>
           )}
           <Recorder patientId={patient.id} />
+          <PhotoButton patientId={patient.id} />
           {next ? (
             <Link
               href={`/patients/${next.id}`}
