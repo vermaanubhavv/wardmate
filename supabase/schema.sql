@@ -83,6 +83,10 @@ create table patients (
   display_name text not null,
   bed          text not null,      -- carries location, e.g. 'SW-12', 'ICU-3'
 
+  -- Typed once when the patient is added, so the ward list card is useful on day zero,
+  -- before anything has been spoken. Later spoken diagnoses are stored as observations.
+  primary_diagnosis text,
+
   admitted_on  date not null,
   -- Present only for operated patients. Post-op day is computed from this at read time so it
   -- can never go stale; see the current_patients view below.
@@ -174,15 +178,19 @@ alter table observations
 
 -- Post-op day computed fresh on every read, so it is right even if the app was not opened
 -- for two days. Spoken day numbers are stored as observations and compared against this.
+--
+-- Counted in Indian time, not the database's UTC. From midnight to 05:30 IST, UTC is still
+-- on the previous day — and that window contains the start of ward rounds, the only time
+-- these numbers are ever read. Using current_date here would show a day too few.
 create view current_patients with (security_invoker = true) as
 select
   p.*,
   case
     when p.surgery_date is not null
-      then (current_date - p.surgery_date)::int
+      then ((current_timestamp at time zone 'Asia/Kolkata')::date - p.surgery_date)::int
     else null
   end as post_op_day,
-  (current_date - p.admitted_on)::int as admission_day,
+  ((current_timestamp at time zone 'Asia/Kolkata')::date - p.admitted_on)::int as admission_day,
   (select max(e.recorded_at) from entries e where e.patient_id = p.id) as last_entry_at
 from patients p;
 
