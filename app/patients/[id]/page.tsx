@@ -4,9 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getActivePatients } from "@/lib/ward";
 import { getTemplateForPatient, matchTemplate } from "@/lib/templates";
 import { dayLabel } from "@/lib/patients";
-import Recorder from "./recorder";
-import PhotoButton from "./photo-button";
-import { confirmObservation } from "./actions";
+import BedsideBar from "./bedside-bar";
+import { confirmObservation, completeTask, reopenTask } from "./actions";
 
 type Observation = {
   id: string;
@@ -18,6 +17,7 @@ type Observation = {
   needs_confirmation: boolean;
   confirmed_at: string | null;
   conflict_note: string | null;
+  done_at: string | null;
   recorded_at: string;
 };
 
@@ -55,7 +55,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const { data: entriesData } = await supabase
     .from("entries")
     .select(
-      "id, source, transcript, photo_path, recorded_at, extraction_error, observations(id, kind, label, value_text, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, recorded_at)"
+      "id, source, transcript, photo_path, recorded_at, extraction_error, observations(id, kind, label, value_text, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, recorded_at)"
     )
     .eq("patient_id", id)
     .order("recorded_at", { ascending: false });
@@ -89,6 +89,12 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     e.observations.filter((o) => o.needs_confirmation && !o.confirmed_at)
   );
 
+  // Everything said as a plan is a job until it is ticked off. Entries already arrive newest
+  // first, so the flattened list is in the right order.
+  const allPlans = entries.flatMap((e) => e.observations.filter((o) => o.kind === "plan"));
+  const openTasks = allPlans.filter((o) => !o.done_at);
+  const doneTasks = allPlans.filter((o) => o.done_at);
+
   // The template decides both what to expect and what order to show it in, so the things that
   // matter for this operation lead the screen instead of whatever happened to be said first.
   const template = await getTemplateForPatient(patient);
@@ -112,7 +118,18 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           <Link href="/" className="text-sm text-muted underline underline-offset-4">
             ← Ward
           </Link>
-          {position && <span className="text-xs text-muted tabular-nums">{position}</span>}
+          <div className="flex items-center gap-3">
+            {position && <span className="text-xs text-muted tabular-nums">{position}</span>}
+            {/* Moved up here so the bottom of the screen stays two controls. */}
+            {next && (
+              <Link
+                href={`/patients/${next.id}`}
+                className="text-sm text-accent underline underline-offset-4"
+              >
+                Next →
+              </Link>
+            )}
+          </div>
         </div>
         <div className="mt-3 flex items-baseline justify-between gap-3">
           <h1 className="text-2xl font-semibold tracking-tight truncate">
@@ -126,6 +143,66 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           Bed {patient.bed} · {patient.primary_diagnosis || "No diagnosis recorded"}
         </p>
       </header>
+
+      {(openTasks.length > 0 || doneTasks.length > 0) && (
+        <section className="px-6 pb-6">
+          <p className="text-sm text-muted mb-2">
+            To do{openTasks.length > 0 ? ` · ${openTasks.length}` : ""}
+          </p>
+
+          {openTasks.length > 0 ? (
+            <ul className="rounded-xl border border-line bg-card divide-y divide-line">
+              {openTasks.map((o) => (
+                <li key={o.id} className="flex items-start gap-3 px-4 py-3">
+                  <form action={completeTask} className="shrink-0 pt-0.5">
+                    <input type="hidden" name="observation_id" value={o.id} />
+                    <input type="hidden" name="patient_id" value={patient.id} />
+                    <button
+                      aria-label={`Mark done: ${o.value_text ?? o.label}`}
+                      className="h-6 w-6 rounded-md border border-muted/50 active:bg-accent active:border-accent"
+                    />
+                  </form>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm">{o.value_text ?? o.label}</p>
+                    {/* The words it came from, so a job is never just the app's paraphrase. */}
+                    <p className="mt-0.5 text-xs text-muted italic truncate">
+                      “{o.source_quote}”
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="rounded-xl border border-line bg-card px-4 py-3 text-sm text-muted">
+              Nothing outstanding.
+            </p>
+          )}
+
+          {doneTasks.length > 0 && (
+            <details className="mt-2">
+              <summary className="text-xs text-muted cursor-pointer">
+                {doneTasks.length} done
+              </summary>
+              <ul className="mt-2 flex flex-col gap-1.5">
+                {doneTasks.map((o) => (
+                  <li key={o.id} className="flex items-baseline justify-between gap-3">
+                    <span className="text-sm text-muted line-through truncate">
+                      {o.value_text ?? o.label}
+                    </span>
+                    <form action={reopenTask} className="shrink-0">
+                      <input type="hidden" name="observation_id" value={o.id} />
+                      <input type="hidden" name="patient_id" value={patient.id} />
+                      <button className="text-xs text-muted underline underline-offset-4">
+                        undo
+                      </button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </section>
+      )}
 
       {pending.length > 0 && (
         <section className="px-6 pb-6">
@@ -284,26 +361,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
               {missing.map((m) => m.item.hint ?? m.item.label).join(" · ")}
             </p>
           )}
-          <Recorder patientId={patient.id} />
-          <PhotoButton patientId={patient.id} />
-          {next ? (
-            <Link
-              href={`/patients/${next.id}`}
-              className="flex items-center justify-between rounded-xl border border-line bg-card px-4 py-3 text-sm active:opacity-70"
-            >
-              <span className="text-muted">Next bed</span>
-              <span className="truncate">
-                <span className="font-mono">{next.bed}</span> · {next.display_name} →
-              </span>
-            </Link>
-          ) : (
-            <Link
-              href="/"
-              className="rounded-xl border border-line px-4 py-3 text-center text-sm text-muted active:opacity-70"
-            >
-              Last bed — back to ward
-            </Link>
-          )}
+          <BedsideBar patientId={patient.id} />
         </div>
       </div>
     </div>

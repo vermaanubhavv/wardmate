@@ -9,6 +9,7 @@ export type WardPatient = {
   admission_day: number;
   last_entry_at: string | null;
   unconfirmed_count: number;
+  open_task_count: number;
 };
 
 /**

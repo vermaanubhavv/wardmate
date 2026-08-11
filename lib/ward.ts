@@ -44,14 +44,31 @@ export async function getActivePatients(wardId: string) {
     .eq("needs_confirmation", true)
     .is("confirmed_at", null);
 
+  // Outstanding jobs, fetched for the whole ward in one query for the same reason.
+  const { data: openPlans } = await supabase
+    .from("observations")
+    .select("patient_id")
+    .in(
+      "patient_id",
+      patients.map((p) => p.id)
+    )
+    .eq("kind", "plan")
+    .is("done_at", null);
+
   const counts = new Map<string, number>();
   for (const row of pending ?? []) {
     counts.set(row.patient_id, (counts.get(row.patient_id) ?? 0) + 1);
   }
 
+  const taskCounts = new Map<string, number>();
+  for (const row of openPlans ?? []) {
+    taskCounts.set(row.patient_id, (taskCounts.get(row.patient_id) ?? 0) + 1);
+  }
+
   const withFlags: WardPatient[] = patients.map((p) => ({
     ...p,
     unconfirmed_count: counts.get(p.id) ?? 0,
+    open_task_count: taskCounts.get(p.id) ?? 0,
   }));
 
   withFlags.sort((a, b) => compareBeds(a.bed, b.bed));

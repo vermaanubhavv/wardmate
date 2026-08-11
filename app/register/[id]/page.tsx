@@ -1,0 +1,173 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { getCurrentWard, getActivePatients } from "@/lib/ward";
+import { matchRegisterRows } from "@/lib/match-register";
+import type { RegisterRow } from "@/lib/read-register";
+import { applyRegister, discardRegister } from "./actions";
+
+export default async function RegisterReviewPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const supabase = await createClient();
+
+  const { data: read } = await supabase
+    .from("register_reads")
+    .select("id, ward_id, photo_path, raw, status")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!read) notFound();
+
+  const rows = ((read.raw as { rows?: RegisterRow[] } | null)?.rows ?? []) as RegisterRow[];
+  const { ward } = await getCurrentWard();
+  const { patients } = await getActivePatients(read.ward_id);
+  const matches = matchRegisterRows(rows, patients);
+
+  const { data: signed } = await supabase.storage
+    .from("evidence")
+    .createSignedUrl(read.photo_path, 3600);
+
+  const autoTicked = matches.filter((m) => m.status === "matched").length;
+
+  return (
+    <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
+      <header className="px-6 pt-8 pb-4">
+        <Link href="/" className="text-sm text-muted underline underline-offset-4">
+          ← Ward
+        </Link>
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight">Review the register</h1>
+        <p className="text-muted text-sm mt-1">
+          {rows.length} {rows.length === 1 ? "entry" : "entries"} read from the page
+          {ward ? ` for ${ward.name}` : ""}.{" "}
+          <span className="text-foreground">Nothing is saved until you tap Save.</span>
+        </p>
+      </header>
+
+      {signed?.signedUrl && (
+        <div className="px-6 pb-6">
+          <a href={signed.signedUrl} target="_blank" rel="noreferrer">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={signed.signedUrl}
+              alt="Photographed round register"
+              className="w-full rounded-xl border border-line"
+            />
+            <span className="mt-1 block text-xs text-muted">Tap to open full size</span>
+          </a>
+        </div>
+      )}
+
+      {read.status !== "draft" ? (
+        <p className="px-6 pb-10 text-sm text-muted">
+          This register page was already {read.status}.
+        </p>
+      ) : rows.length === 0 ? (
+        <div className="px-6 pb-10">
+          <p className="text-sm text-muted">
+            Nothing could be read from that photo. Try again with the page flatter and more
+            light on it.
+          </p>
+          <form action={discardRegister} className="mt-4">
+            <input type="hidden" name="read_id" value={read.id} />
+            <button className="text-sm text-muted underline underline-offset-4">Discard</button>
+          </form>
+        </div>
+      ) : (
+        <form action={applyRegister} className="flex-1 flex flex-col">
+          <input type="hidden" name="read_id" value={read.id} />
+
+          <ul className="px-6 pb-40 flex flex-col gap-4">
+            {matches.map((m, i) => {
+              const clean = m.status === "matched";
+              return (
+                <li
+                  key={i}
+                  className={
+                    "rounded-xl border p-4 " +
+                    (clean ? "border-line bg-card" : "border-amber-500/40 bg-amber-500/5")
+                  }
+                >
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="font-medium truncate">
+                      {m.row.name || "(no name written)"}
+                    </span>
+                    {m.row.bed && (
+                      <span className="shrink-0 font-mono text-xs text-muted">
+                        bed {m.row.bed}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* The row as written, always visible — this is what you check the photo
+                      against, and it is the only verification there is for a photograph. */}
+                  <p className="mt-1 text-xs text-muted italic">“{m.row.source_quote}”</p>
+
+                  {m.row.uncertain && (
+                    <p className="mt-1.5 text-xs text-amber-200">
+                      Handwriting unclear — read this one against the photo.
+                    </p>
+                  )}
+                  {m.note && <p className="mt-1.5 text-xs text-amber-200">{m.note}</p>}
+
+                  {/* Where this row will go. Only a clean match is pre-selected; everything
+                      else starts on "Skip" so nothing lands anywhere by default. */}
+                  <label className="mt-3 block">
+                    <span className="text-xs text-muted">Save to</span>
+                    <select
+                      name={`patient_${i}`}
+                      defaultValue={clean ? (m.patientId ?? "") : ""}
+                      className="mt-1 w-full rounded-lg border border-line bg-background px-3 py-2.5 text-sm outline-none focus:border-accent"
+                    >
+                      <option value="">Skip this row</option>
+                      {(m.candidates.length > 0 ? m.candidates : patients).map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.bed} · {p.display_name}
+                        </option>
+                      ))}
+                      {m.status === "bed_mismatch" && m.patientId && (
+                        <option value={m.patientId}>
+                          Use the name match anyway ({m.row.name})
+                        </option>
+                      )}
+                    </select>
+                  </label>
+
+                  {(m.row.findings.length > 0 || m.row.plans.length > 0) && (
+                    <ul className="mt-3 flex flex-col gap-1 text-sm">
+                      {m.row.findings.map((f, j) => (
+                        <li key={`f${j}`}>
+                          <span className="text-muted">{f.label}:</span> {f.value_text}
+                        </li>
+                      ))}
+                      {m.row.plans.map((p, j) => (
+                        <li key={`p${j}`} className="text-accent">
+                          to do: {p}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+
+          <div className="fixed bottom-0 inset-x-0 bg-gradient-to-t from-background via-background to-transparent pt-10 pb-8 px-6">
+            <div className="mx-auto max-w-md flex flex-col gap-3">
+              <p className="text-xs text-muted text-center">
+                {autoTicked} of {rows.length} matched automatically. Everything saved is
+                flagged for you to confirm.
+              </p>
+              <button className="w-full rounded-xl bg-accent px-4 py-4 text-base font-semibold text-slate-900">
+                Save to the ticked patients
+              </button>
+            </div>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}

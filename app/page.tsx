@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getCurrentWard, getActivePatients } from "@/lib/ward";
 import { dayLabel, type WardPatient } from "@/lib/patients";
+import RegisterButton from "./register-button";
 import { signOut } from "./actions";
 
 export default async function Home() {
@@ -37,7 +38,7 @@ export default async function Home() {
       </header>
 
       {/* Bottom padding clears the fixed Add patient button so the last card is reachable. */}
-      <ul className="flex-1 px-6 pb-32 flex flex-col gap-3">
+      <ul className="flex-1 px-6 pb-44 flex flex-col gap-3">
         {patients.length === 0 ? (
           <li className="rounded-xl border border-line bg-card p-6 text-sm text-muted">
             No patients on this ward yet. Add the first one below.
@@ -54,12 +55,15 @@ export default async function Home() {
       </ul>
 
       <div className="fixed bottom-0 inset-x-0 bg-gradient-to-t from-background via-background to-transparent pt-8 pb-8 px-6">
-        <Link
-          href="/patients/new"
-          className="mx-auto block max-w-md rounded-xl bg-accent px-4 py-4 text-center text-base font-semibold text-slate-900"
-        >
-          Add patient
-        </Link>
+        <div className="mx-auto max-w-md flex flex-col gap-3">
+          <RegisterButton />
+          <Link
+            href="/patients/new"
+            className="block rounded-xl bg-accent px-4 py-4 text-center text-base font-semibold text-slate-900"
+          >
+            Add patient
+          </Link>
+        </div>
       </div>
     </div>
   );
@@ -82,11 +86,20 @@ function PatientCard({ patient }: { patient: WardPatient }) {
           {patient.primary_diagnosis || "No diagnosis recorded"}
         </p>
 
-        {patient.unconfirmed_count > 0 && (
-          <p className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-amber-400/15 px-2 py-1 text-xs text-amber-200">
-            <span aria-hidden>●</span>
-            {patient.unconfirmed_count} to confirm
-          </p>
+        {(patient.unconfirmed_count > 0 || patient.open_task_count > 0) && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {patient.open_task_count > 0 && (
+              <p className="inline-flex items-center gap-1.5 rounded-md bg-slate-700/60 px-2 py-1 text-xs text-foreground">
+                {patient.open_task_count} to do
+              </p>
+            )}
+            {patient.unconfirmed_count > 0 && (
+              <p className="inline-flex items-center gap-1.5 rounded-md bg-amber-400/15 px-2 py-1 text-xs text-amber-200">
+                <span aria-hidden>●</span>
+                {patient.unconfirmed_count} to confirm
+              </p>
+            )}
+          </div>
         )}
       </div>
     </div>

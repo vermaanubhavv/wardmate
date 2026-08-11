@@ -1,40 +1,76 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type Status = "idle" | "recording" | "working" | "error";
+type Status = "idle" | "starting" | "recording" | "working";
+
+/** A forgotten recording otherwise runs until the tab dies, and bills a long transcription. */
+const MAX_SECONDS = 180;
 
 /**
- * Hold to record, release to send. One button, no confirmation dialog — the resident is
- * holding a phone in one hand at a bedside and the whole interaction has 20 seconds.
+ * Tap to start, tap again to stop.
+ *
+ * This replaced hold-to-talk, which could not work: starting needs `getUserMedia`, which on
+ * iPhone opens a permission prompt and takes real time. The finger came up before the
+ * recorder object existed, so the release handler had nothing to stop — and recording then
+ * began after release and never ended. With two separate taps the slow part no longer sits
+ * inside a gesture.
  */
-export default function Recorder({ patientId }: { patientId: string }) {
+export default function Recorder({
+  patientId,
+  onBusyChange,
+}: {
+  patientId: string;
+  onBusyChange?: (busy: boolean) => void;
+}) {
   const router = useRouter();
   const [status, setStatus] = useState<Status>("idle");
+  const [seconds, setSeconds] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+  const autoStoppedRef = useRef(false);
+
+  useEffect(() => {
+    onBusyChange?.(status === "recording" || status === "starting");
+  }, [status, onBusyChange]);
+
+  // Nothing is holding a finger down any more, so the elapsed count is the signal that the
+  // app is still listening.
+  useEffect(() => {
+    if (status !== "recording") return;
+    const id = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [status]);
+
+  useEffect(() => {
+    if (status === "recording" && seconds >= MAX_SECONDS) {
+      autoStoppedRef.current = true;
+      stop();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seconds, status]);
 
   async function start() {
-    if (status === "working" || status === "recording") return;
+    // Guards the window where getUserMedia has not resolved yet — the exact race that broke
+    // the previous version. A second tap here must do nothing at all.
+    if (status !== "idle") return;
+    setStatus("starting");
     setMessage(null);
+    setSeconds(0);
+    autoStoppedRef.current = false;
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          // A ward is noisy and the phone is at arm's length.
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
       streamRef.current = stream;
 
-      // Safari on iPhone records mp4; Chrome records webm. Ask for whichever the phone has
-      // rather than assuming, because getting this wrong produces a silent empty file.
+      // Safari on iPhone records mp4; Chrome records webm. Asking for the wrong one produces
+      // a silent empty file rather than an error.
       const mimeType = [
         "audio/webm;codecs=opus",
         "audio/webm",
@@ -52,11 +88,9 @@ export default function Recorder({ patientId }: { patientId: string }) {
       recorder.start();
       recorderRef.current = recorder;
       setStatus("recording");
-
-      // A short buzz so you know it is listening without looking at the screen.
       navigator.vibrate?.(30);
     } catch {
-      setStatus("error");
+      setStatus("idle");
       setMessage("Microphone permission was refused. Allow it in your phone's settings.");
     }
   }
@@ -65,6 +99,9 @@ export default function Recorder({ patientId }: { patientId: string }) {
     if (recorderRef.current?.state === "recording") {
       recorderRef.current.stop();
       setStatus("working");
+      navigator.vibrate?.(15);
+    } else {
+      setStatus("idle");
     }
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
@@ -76,7 +113,7 @@ export default function Recorder({ patientId }: { patientId: string }) {
 
     if (blob.size < 1000) {
       setStatus("idle");
-      setMessage("That was too short. Hold the button while you speak.");
+      setMessage("That was too short to hear anything.");
       return;
     }
 
@@ -87,66 +124,68 @@ export default function Recorder({ patientId }: { patientId: string }) {
     try {
       const res = await fetch("/api/entries/voice", { method: "POST", body: form });
       const data = await res.json();
+      setStatus("idle");
 
       if (!res.ok) {
-        setStatus("error");
         setMessage(data.error ?? "Something went wrong.");
         return;
       }
 
-      setStatus("idle");
+      const saved = data.observations?.length
+        ? `Saved ${data.observations.length} ${data.observations.length === 1 ? "item" : "items"}.`
+        : "Nothing clinical was found in that.";
+
       setMessage(
         data.error ??
-          (data.observations?.length
-            ? `Saved ${data.observations.length} ${data.observations.length === 1 ? "item" : "items"}.`
-            : "Nothing clinical was found in that.")
+          (autoStoppedRef.current ? `Stopped at 3 minutes. ${saved}` : saved)
       );
       router.refresh();
     } catch {
-      setStatus("error");
+      setStatus("idle");
       setMessage("No connection. Nothing was saved — try again in better signal.");
     }
   }
 
-  const label =
-    status === "recording"
-      ? "Listening — release when done"
-      : status === "working"
-        ? "Working…"
-        : "Hold to speak";
+  const recording = status === "recording";
+  const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
+  const ss = String(seconds % 60).padStart(2, "0");
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col gap-2">
       <button
-        // Pointer events cover finger and mouse alike, and firing on down/up is what makes
-        // it hold-to-talk rather than tap-to-toggle.
-        onPointerDown={start}
-        onPointerUp={stop}
-        onPointerLeave={stop}
-        onPointerCancel={stop}
-        onContextMenu={(e) => e.preventDefault()}
-        disabled={status === "working"}
+        type="button"
+        onClick={recording ? stop : start}
+        disabled={status === "working" || status === "starting"}
         className={
           "w-full rounded-2xl px-6 py-7 text-lg font-semibold transition-colors " +
-          (status === "recording"
+          (recording
             ? "bg-rose-500 text-white"
-            : status === "working"
+            : status === "working" || status === "starting"
               ? "bg-slate-700 text-muted"
               : "bg-accent text-slate-900")
         }
       >
-        {label}
+        {recording ? (
+          <span className="flex items-center justify-center gap-3">
+            <span
+              aria-hidden
+              className="h-3 w-3 rounded-full bg-white motion-safe:animate-pulse"
+            />
+            Tap to stop
+            <span className="font-mono text-base tabular-nums opacity-90">
+              {mm}:{ss}
+            </span>
+          </span>
+        ) : status === "starting" ? (
+          "Starting…"
+        ) : status === "working" ? (
+          "Working…"
+        ) : (
+          "Tap to speak"
+        )}
       </button>
 
-      {message && (
-        <p
-          className={
-            "text-center text-sm " + (status === "error" ? "text-amber-200" : "text-muted")
-          }
-        >
-          {message}
-        </p>
-      )}
+      {message && <p className="text-center text-sm text-muted">{message}</p>}
     </div>
   );
 }
