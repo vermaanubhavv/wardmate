@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getActivePatients } from "@/lib/ward";
 import { dayLabel } from "@/lib/patients";
 import Recorder from "./recorder";
 import { confirmObservation } from "./actions";
@@ -34,12 +35,19 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const { data: patient } = await supabase
     .from("current_patients")
     .select(
-      "id, display_name, bed, primary_diagnosis, admitted_on, surgery_date, post_op_day, admission_day, status"
+      "id, ward_id, display_name, bed, primary_diagnosis, admitted_on, surgery_date, post_op_day, admission_day, status"
     )
     .eq("id", id)
     .maybeSingle();
 
   if (!patient) notFound();
+
+  // The next bed in walking order, so finishing one patient and starting the next is one tap
+  // rather than a trip back through the ward list.
+  const { patients: ward } = await getActivePatients(patient.ward_id);
+  const here = ward.findIndex((p) => p.id === patient.id);
+  const next = here >= 0 ? ward[here + 1] : undefined;
+  const position = here >= 0 ? `${here + 1} of ${ward.length}` : null;
 
   const { data: entriesData } = await supabase
     .from("entries")
@@ -68,9 +76,12 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
       <header className="px-6 pt-8 pb-4">
-        <Link href="/" className="text-sm text-muted underline underline-offset-4">
-          ← Ward
-        </Link>
+        <div className="flex items-center justify-between gap-3">
+          <Link href="/" className="text-sm text-muted underline underline-offset-4">
+            ← Ward
+          </Link>
+          {position && <span className="text-xs text-muted tabular-nums">{position}</span>}
+        </div>
         <div className="mt-3 flex items-baseline justify-between gap-3">
           <h1 className="text-2xl font-semibold tracking-tight truncate">
             {patient.display_name}
@@ -83,10 +94,6 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           Bed {patient.bed} · {patient.primary_diagnosis || "No diagnosis recorded"}
         </p>
       </header>
-
-      <div className="px-6 pb-6">
-        <Recorder patientId={patient.id} />
-      </div>
 
       {pending.length > 0 && (
         <section className="px-6 pb-6">
@@ -136,7 +143,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         </section>
       )}
 
-      <section className="px-6 pb-24">
+      {/* Bottom padding clears the fixed speak bar so the oldest entry stays reachable. */}
+      <section className="px-6 pb-56">
         <p className="text-sm text-muted mb-2">Record</p>
         {entries.length === 0 ? (
           <p className="rounded-xl border border-line bg-card p-5 text-sm text-muted">
@@ -187,6 +195,31 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           </ul>
         )}
       </section>
+
+      {/* Fixed, so the button is under your thumb no matter how long the record has grown. */}
+      <div className="fixed bottom-0 inset-x-0 bg-gradient-to-t from-background via-background to-transparent pt-10 pb-8 px-6">
+        <div className="mx-auto max-w-md flex flex-col gap-3">
+          <Recorder patientId={patient.id} />
+          {next ? (
+            <Link
+              href={`/patients/${next.id}`}
+              className="flex items-center justify-between rounded-xl border border-line bg-card px-4 py-3 text-sm active:opacity-70"
+            >
+              <span className="text-muted">Next bed</span>
+              <span className="truncate">
+                <span className="font-mono">{next.bed}</span> · {next.display_name} →
+              </span>
+            </Link>
+          ) : (
+            <Link
+              href="/"
+              className="rounded-xl border border-line px-4 py-3 text-center text-sm text-muted active:opacity-70"
+            >
+              Last bed — back to ward
+            </Link>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
