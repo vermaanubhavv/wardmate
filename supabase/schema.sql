@@ -272,6 +272,23 @@ create policy observations_confirm on observations for update using (
   exists (select 1 from patients p where p.id = observations.patient_id and is_ward_member(p.ward_id))
 );
 
+-- Policies above decide WHICH ROWS a signed-in doctor can touch. Postgres separately
+-- requires the more basic grant that a signed-in doctor (the "authenticated" role) may touch
+-- the table AT ALL. Without this, every query fails with "permission denied for table ..."
+-- before row security is even consulted.
+grant usage on schema public to authenticated;
+
+grant select, insert, update on profiles         to authenticated;
+grant select, insert, update on wards            to authenticated;
+grant select, insert, delete on ward_members     to authenticated;
+grant select, insert, update on patients         to authenticated;
+grant select, insert         on entries          to authenticated;
+grant select, insert, update on observations     to authenticated;
+grant select                 on current_patients to authenticated;
+
+grant execute on function is_ward_member(uuid) to authenticated;
+grant execute on function is_ward_owner(uuid)  to authenticated;
+
 -- ---------------------------------------------------------------------------
 -- 8. New account setup
 -- ---------------------------------------------------------------------------
