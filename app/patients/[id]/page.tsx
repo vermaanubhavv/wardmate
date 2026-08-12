@@ -2,24 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActivePatients } from "@/lib/ward";
-import { getTemplateForPatient, matchTemplate } from "@/lib/templates";
-import { dayLabel } from "@/lib/patients";
+import { getTemplateForPatient, getProcedureLabels, listTemplateChoices, procedureKey } from "@/lib/templates";
+import { derivePatientState, groupIntoSittings, type Observation } from "@/lib/patient-state";
+import { dayLabel, managementLabel, patientName } from "@/lib/patients";
 import BedsideBar from "./bedside-bar";
+import EditIdentity from "../edit-identity";
 import { confirmObservation, completeTask, reopenTask } from "./actions";
-
-type Observation = {
-  id: string;
-  kind: string;
-  label: string;
-  value_text: string | null;
-  unit: string | null;
-  source_quote: string;
-  needs_confirmation: boolean;
-  confirmed_at: string | null;
-  conflict_note: string | null;
-  done_at: string | null;
-  recorded_at: string;
-};
 
 type Entry = {
   id: string;
@@ -38,7 +26,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const { data: patient } = await supabase
     .from("current_patients")
     .select(
-      "id, ward_id, display_name, bed, primary_diagnosis, admitted_on, surgery_date, post_op_day, admission_day, status, template_family, template_variant"
+      "id, ward_id, display_name, age_years, sex, bed, primary_diagnosis, admitted_on, surgery_date, post_op_day, admission_day, status, template_family, template_variant, management"
     )
     .eq("id", id)
     .maybeSingle();
@@ -76,40 +64,28 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     }
   }
 
-  // Yesterday's state, already loaded: the most recent value for each thing, so the resident
-  // arrives at the bedside knowing where the patient was left rather than reconstructing it.
-  const latest = new Map<string, Observation>();
-  for (const entry of entries) {
-    for (const obs of entry.observations) {
-      const key = `${obs.kind}:${obs.label}`;
-      if (!latest.has(key)) latest.set(key, obs);
-    }
-  }
-  const pending = entries.flatMap((e) =>
-    e.observations.filter((o) => o.needs_confirmation && !o.confirmed_at)
-  );
-
-  // Everything said as a plan is a job until it is ticked off. Entries already arrive newest
-  // first, so the flattened list is in the right order.
-  const allPlans = entries.flatMap((e) => e.observations.filter((o) => o.kind === "plan"));
-  const openTasks = allPlans.filter((o) => !o.done_at);
-  const doneTasks = allPlans.filter((o) => o.done_at);
-
   // The template decides both what to expect and what order to show it in, so the things that
   // matter for this operation lead the screen instead of whatever happened to be said first.
+  // Entries already arrive newest first, so the flattened list is too — derivePatientState
+  // relies on that order to pick the latest value for each thing.
   const template = await getTemplateForPatient(patient);
   const allObservations = entries.flatMap((e) => e.observations);
-  const matched = template ? matchTemplate(template, allObservations) : [];
-  const missing = matched.filter((m) => m.missing);
+  const { matched, missing, extra, openTasks, doneTasks, pending } = derivePatientState(
+    allObservations,
+    template
+  );
 
-  // Anything recorded that the template does not know about still has to appear — the
-  // template narrows what is prompted for, never what can be stored.
-  const templateLabels = new Set(
-    matched.flatMap((m) => [m.item.label.toLowerCase(), ...m.item.aliases.map((a) => a.toLowerCase())])
-  );
-  const extra = [...latest.values()].filter(
-    (o) => o.kind !== "note" && !templateLabels.has(o.label.toLowerCase())
-  );
+  // One visit to the bedside reads as one block in the record, however many times you spoke
+  // or photographed something while standing there.
+  const sittings = groupIntoSittings(entries);
+
+  const [procedures, templateChoices] = await Promise.all([
+    getProcedureLabels(),
+    listTemplateChoices(),
+  ]);
+  const key = procedureKey(patient);
+  const procedure = patient.post_op_day !== null && key ? procedures.get(key) : null;
+  const management = managementLabel(patient);
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
@@ -131,17 +107,25 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             )}
           </div>
         </div>
-        <div className="mt-3 flex items-baseline justify-between gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight truncate">
-            {patient.display_name}
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <h1 className="min-w-0 flex-1 truncate text-2xl font-semibold tracking-tight">
+            {patientName(patient)}
           </h1>
+          <EditIdentity patient={patient} templateChoices={templateChoices} />
           <span className="shrink-0 text-sm text-muted tabular-nums">
             {dayLabel(patient)}
           </span>
         </div>
         <p className="text-muted text-sm mt-0.5">
-          Bed {patient.bed} · {patient.primary_diagnosis || "No diagnosis recorded"}
+          Bed {patient.bed}
+          {procedure && ` · ${procedure}`} ·{" "}
+          {patient.primary_diagnosis || "No diagnosis recorded"}
         </p>
+        {management && (
+          <p className="mt-2 inline-flex items-center rounded-md border border-line px-2 py-1 text-xs tracking-wide text-muted">
+            {management}
+          </p>
+        )}
       </header>
 
       {(openTasks.length > 0 || doneTasks.length > 0) && (
@@ -285,10 +269,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           </p>
         ) : (
           <ul className="flex flex-col gap-3">
-            {entries.map((entry) => (
-              <li key={entry.id} className="rounded-xl border border-line bg-card p-4">
+            {sittings.map((sitting) => (
+              <li
+                key={sitting.entries[0].id}
+                className="rounded-xl border border-line bg-card p-4"
+              >
                 <p className="text-xs text-muted">
-                  {new Date(entry.recorded_at).toLocaleString("en-IN", {
+                  {new Date(sitting.recorded_at).toLocaleString("en-IN", {
                     day: "numeric",
                     month: "short",
                     hour: "numeric",
@@ -296,54 +283,61 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                   })}
                 </p>
 
-                {entry.observations.length > 0 && (
-                  <ul className="mt-2 flex flex-col gap-1.5">
-                    {entry.observations.map((o) => (
-                      <li key={o.id} className="text-sm">
-                        <span className="text-muted">{o.label}:</span> {o.value_text}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <div className="mt-2 flex flex-col gap-3">
+                  {sitting.entries.map((entry) => (
+                    <div key={entry.id}>
+                      {entry.observations.length > 0 && (
+                        <ul className="flex flex-col gap-1.5">
+                          {entry.observations.map((o) => (
+                            <li key={o.id} className="text-sm">
+                              <span className="text-muted">{o.label}:</span> {o.value_text}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
 
-                {entry.extraction_error && (
-                  <p className="mt-2 text-xs text-amber-200">
-                    Could not be structured — the words below are what was heard.
-                  </p>
-                )}
+                      {entry.extraction_error && (
+                        <p className="mt-2 text-xs text-amber-200">
+                          Could not be structured — the words below are what was heard.
+                        </p>
+                      )}
 
-                {/* The evidence, one tap away, for anything on screen. For a photographed
-                    report this is the only check there is — nothing can re-read it server
-                    side — so the image itself sits right beside the values it produced. */}
-                {entry.photo_path && photoUrls.get(entry.photo_path) && (
-                  <a
-                    href={photoUrls.get(entry.photo_path)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-2 block"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={photoUrls.get(entry.photo_path)}
-                      alt="Photographed lab report"
-                      className="w-full rounded-lg border border-line"
-                    />
-                    <span className="mt-1 block text-xs text-muted">
-                      Tap to open the report full size
-                    </span>
-                  </a>
-                )}
+                      {/* The evidence, one tap away, for anything on screen. For a
+                          photographed report this is the only check there is — nothing can
+                          re-read it server side — so the image itself sits right beside the
+                          values it produced. */}
+                      {entry.photo_path && photoUrls.get(entry.photo_path) && (
+                        <a
+                          href={photoUrls.get(entry.photo_path)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-2 block"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={photoUrls.get(entry.photo_path)}
+                            alt="Photographed lab report"
+                            className="w-full rounded-lg border border-line"
+                          />
+                          <span className="mt-1 block text-xs text-muted">
+                            Tap to open the report full size
+                          </span>
+                        </a>
+                      )}
 
-                {entry.transcript && (
-                  <details className="mt-2">
-                    <summary className="text-xs text-muted cursor-pointer">
-                      What you said
-                    </summary>
-                    <p className="mt-1.5 text-xs text-muted italic leading-relaxed">
-                      {entry.transcript}
-                    </p>
-                  </details>
-                )}
+                      {entry.transcript && (
+                        <details className="mt-2">
+                          <summary className="text-xs text-muted cursor-pointer">
+                            What you said
+                          </summary>
+                          <p className="mt-1.5 text-xs text-muted italic leading-relaxed">
+                            {entry.transcript}
+                          </p>
+                        </details>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </li>
             ))}
           </ul>

@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { getCurrentWard, getActivePatients } from "@/lib/ward";
-import { dayLabel, type WardPatient } from "@/lib/patients";
+import { dayLabel, managementLabel, patientName, type WardPatient } from "@/lib/patients";
+import { getProcedureLabels, listTemplateChoices, procedureKey } from "@/lib/templates";
 import RegisterButton from "./register-button";
+import EditIdentity from "./patients/edit-identity";
 import { signOut } from "./actions";
 
 export default async function Home() {
@@ -22,6 +24,11 @@ export default async function Home() {
   }
 
   const { patients } = await getActivePatients(ward.id);
+  // One lookup for the whole list, so naming the operation on each card costs no extra query.
+  const [procedures, templateChoices] = await Promise.all([
+    getProcedureLabels(),
+    listTemplateChoices(),
+  ]);
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
@@ -32,9 +39,14 @@ export default async function Home() {
             {patients.length} {patients.length === 1 ? "patient" : "patients"}
           </p>
         </div>
-        <form action={signOut}>
-          <button className="text-xs text-muted underline underline-offset-4">Sign out</button>
-        </form>
+        <div className="flex items-baseline gap-4">
+          <Link href="/handover" className="text-xs text-accent underline underline-offset-4">
+            Ward round
+          </Link>
+          <form action={signOut}>
+            <button className="text-xs text-muted underline underline-offset-4">Sign out</button>
+          </form>
+        </div>
       </header>
 
       {/* Bottom padding clears the fixed Add patient button so the last card is reachable. */}
@@ -46,9 +58,11 @@ export default async function Home() {
         ) : (
           patients.map((p) => (
             <li key={p.id}>
-              <Link href={`/patients/${p.id}`} className="block active:opacity-70">
-                <PatientCard patient={p} />
-              </Link>
+              <PatientCard
+                patient={p}
+                procedures={procedures}
+                templateChoices={templateChoices}
+              />
             </li>
           ))
         )}
@@ -69,38 +83,76 @@ export default async function Home() {
   );
 }
 
-function PatientCard({ patient }: { patient: WardPatient }) {
+function PatientCard({
+  patient,
+  procedures,
+  templateChoices,
+}: {
+  patient: WardPatient;
+  procedures: Map<string, string>;
+  templateChoices: { family: string; variant: string | null; label: string }[];
+}) {
+  const management = managementLabel(patient);
+  // Named only for patients who have actually been operated on, and only from the operation
+  // recorded against them. A patient still awaiting surgery counts from admission and has no
+  // procedure to show — never one guessed from the diagnosis.
+  const key = procedureKey(patient);
+  const procedure = patient.post_op_day !== null && key ? procedures.get(key) : null;
+
   return (
-    <div className="rounded-xl border border-line bg-card p-4 flex gap-4 items-start">
-      {/* Bed leads the card: on rounds you are looking for a bed, not a name. */}
-      <span className="shrink-0 rounded-lg bg-slate-800 px-2.5 py-1.5 font-mono text-sm tabular-nums">
-        {patient.bed}
-      </span>
+    // The card is a link to the patient, but the pen inside it is not — so the two are
+    // siblings here rather than the pen sitting inside the link.
+    <div className="relative rounded-xl border border-line bg-card">
+      <Link
+        href={`/patients/${patient.id}`}
+        className="flex gap-4 items-start p-4 active:opacity-70"
+      >
+        {/* Bed leads the card: on rounds you are looking for a bed, not a name. */}
+        <span className="shrink-0 rounded-lg bg-slate-800 px-2.5 py-1.5 font-mono text-sm tabular-nums">
+          {patient.bed}
+        </span>
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="truncate text-base font-medium">{patient.display_name}</span>
-          <span className="shrink-0 text-sm text-muted tabular-nums">{dayLabel(patient)}</span>
+        <div className="min-w-0 flex-1">
+          {/* Padding keeps a long name clear of the pen sitting in the corner. */}
+          <p className="truncate pr-9 text-base font-medium">{patientName(patient)}</p>
+          {/* The day count reads with the diagnosis, not apart from it: "POD 3 · lap chole"
+              is one clinical thought, and the number means little without what it counts
+              from. */}
+          <p className="mt-0.5 truncate text-sm text-muted">
+            <span className="text-foreground tabular-nums">{dayLabel(patient)}</span>
+            {/* The operation sits immediately after the day it is counted from, so "POD 2"
+                says what it is two days after. */}
+            {procedure && <span className="text-foreground"> {procedure}</span>}
+            {" · "}
+            {patient.primary_diagnosis || "No diagnosis recorded"}
+          </p>
+
+          {(management || patient.unconfirmed_count > 0 || patient.open_task_count > 0) && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {/* Leads the badges: which kind of patient this is frames everything after it. */}
+              {management && (
+                <p className="inline-flex items-center rounded-md border border-line px-2 py-1 text-xs tracking-wide text-muted">
+                  {management}
+                </p>
+              )}
+              {patient.open_task_count > 0 && (
+                <p className="inline-flex items-center gap-1.5 rounded-md bg-slate-700/60 px-2 py-1 text-xs text-foreground">
+                  {patient.open_task_count} to do
+                </p>
+              )}
+              {patient.unconfirmed_count > 0 && (
+                <p className="inline-flex items-center gap-1.5 rounded-md bg-amber-400/15 px-2 py-1 text-xs text-amber-200">
+                  <span aria-hidden>●</span>
+                  {patient.unconfirmed_count} to confirm
+                </p>
+              )}
+            </div>
+          )}
         </div>
-        <p className="mt-0.5 truncate text-sm text-muted">
-          {patient.primary_diagnosis || "No diagnosis recorded"}
-        </p>
+      </Link>
 
-        {(patient.unconfirmed_count > 0 || patient.open_task_count > 0) && (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {patient.open_task_count > 0 && (
-              <p className="inline-flex items-center gap-1.5 rounded-md bg-slate-700/60 px-2 py-1 text-xs text-foreground">
-                {patient.open_task_count} to do
-              </p>
-            )}
-            {patient.unconfirmed_count > 0 && (
-              <p className="inline-flex items-center gap-1.5 rounded-md bg-amber-400/15 px-2 py-1 text-xs text-amber-200">
-                <span aria-hidden>●</span>
-                {patient.unconfirmed_count} to confirm
-              </p>
-            )}
-          </div>
-        )}
+      <div className="absolute right-2 top-2">
+        <EditIdentity patient={patient} templateChoices={templateChoices} />
       </div>
     </div>
   );

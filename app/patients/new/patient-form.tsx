@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { addPatient, type AddPatientState } from "../actions";
+import { MANAGEMENT_CHOICES } from "@/lib/patients";
 
 /**
  * The one screen in the app where typing is allowed, because it happens once per admission
@@ -50,6 +51,36 @@ export default function PatientForm({
           className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
         />
       </Field>
+
+      {/* Age and sex sit on one row, in the order they are spoken and written: "62/M". */}
+      <div className="flex gap-3">
+        <div className="flex-1">
+          <Field label="Age" hint="Years">
+            <input
+              type="number"
+              name="age_years"
+              inputMode="numeric"
+              min={0}
+              max={120}
+              className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
+            />
+          </Field>
+        </div>
+        <div className="flex-1">
+          <Field label="Sex">
+            <select
+              name="sex"
+              defaultValue=""
+              className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
+            >
+              <option value="">—</option>
+              <option value="M">M</option>
+              <option value="F">F</option>
+              <option value="other">Other</option>
+            </select>
+          </Field>
+        </div>
+      </div>
 
       <Field label="Diagnosis" hint="Type freely — past entries are offered as you type">
         <input
@@ -104,7 +135,7 @@ export default function PatientForm({
         <span>Has been operated</span>
       </label>
 
-      {operated && (
+      {operated ? (
         <Field label="Date of surgery" hint="The day count on the card is taken from this">
           <input
             type="date"
@@ -114,6 +145,23 @@ export default function PatientForm({
             max={localToday}
             className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
           />
+        </Field>
+      ) : (
+        // Only asked for patients not yet operated. Once there is a date of surgery the
+        // patient is post-op, and that is taken from the date rather than chosen here.
+        <Field label="Management" hint="Leave blank until the unit has decided">
+          <select
+            name="management"
+            defaultValue=""
+            className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
+          >
+            <option value="">Not stated</option>
+            {MANAGEMENT_CHOICES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
         </Field>
       )}
 

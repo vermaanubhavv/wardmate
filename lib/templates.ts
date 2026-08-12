@@ -88,6 +88,25 @@ export async function listTemplateChoices(): Promise<TemplateChoice[]> {
   return out;
 }
 
+/** The key a patient's operation is looked up under. Kept in one place so the ward list and
+ *  the patient screen cannot disagree about how family and variant combine. */
+export function procedureKey(p: {
+  template_family: string | null;
+  template_variant: string | null;
+}): string | null {
+  return p.template_family ? `${p.template_family}|${p.template_variant ?? ""}` : null;
+}
+
+/**
+ * Every operation the app knows a name for, as one lookup, so a ward list of thirty patients
+ * costs one query rather than thirty. The name shown is the one the resident chose from the
+ * Operation picker — never anything inferred from the diagnosis.
+ */
+export async function getProcedureLabels(): Promise<Map<string, string>> {
+  const choices = await listTemplateChoices();
+  return new Map(choices.map((c) => [`${c.family}|${c.variant ?? ""}`, c.label]));
+}
+
 export type MatchedItem = {
   item: TemplateItem;
   value: string | null;
