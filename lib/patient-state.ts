@@ -1,5 +1,5 @@
 import { matchTemplate, type CareTemplate, type MatchedItem } from "@/lib/templates";
-import { urgencyRank, type Urgency } from "@/lib/urgency";
+import { effectiveUrgency, urgencyRank, type Urgency } from "@/lib/urgency";
 
 export type Observation = {
   id: string;
@@ -13,6 +13,7 @@ export type Observation = {
   conflict_note: string | null;
   done_at: string | null;
   urgency: Urgency;
+  graded_at: string | null;
   recorded_at: string;
 };
 
@@ -46,10 +47,14 @@ export function derivePatientState(
   const pending = observations.filter((o) => o.needs_confirmation && !o.confirmed_at);
 
   const allPlans = observations.filter((o) => o.kind === "plan");
-  // Most urgent first. Ties keep the order they were said in, which is newest first.
+  // Sorted on what the colour means TODAY, not on the day it was spoken — otherwise a
+  // "tomorrow" job that has come due would still sit below the jobs it now outranks.
   const openTasks = allPlans
     .filter((o) => !o.done_at)
-    .sort((a, b) => urgencyRank(a.urgency) - urgencyRank(b.urgency));
+    .sort(
+      (a, b) =>
+        urgencyRank(effectiveUrgency(a).urgency) - urgencyRank(effectiveUrgency(b).urgency)
+    );
   const doneTasks = allPlans.filter((o) => o.done_at);
 
   const matched = template ? matchTemplate(template, observations) : [];

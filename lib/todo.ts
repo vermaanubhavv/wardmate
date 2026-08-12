@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { compareBeds } from "@/lib/patients";
-import { urgencyRank, type Urgency } from "@/lib/urgency";
+import { effectiveUrgency, urgencyRank, type Urgency } from "@/lib/urgency";
 
 export type WardTask = {
   id: string;
@@ -12,6 +12,10 @@ export type WardTask = {
   graded_at: string | null;
   recorded_at: string;
   patient: { display_name: string; bed: string };
+  /** What the colour means today, once the calendar has been taken into account. */
+  effective: Urgency;
+  /** "due today", "2 days overdue" — null while it is still within its stated timeframe. */
+  note: string | null;
 };
 
 /**
@@ -47,11 +51,27 @@ export async function getWardTasks(wardId: string): Promise<WardTask[]> {
   const out: WardTask[] = [];
   for (const t of tasks ?? []) {
     const patient = byId.get(t.patient_id);
-    if (patient) out.push({ ...t, urgency: t.urgency as Urgency, patient });
+    if (!patient) continue;
+
+    // Worked out once here, so the grouping, the sort and the row all agree about what
+    // colour a job is today.
+    const effective = effectiveUrgency({
+      urgency: t.urgency as Urgency,
+      graded_at: t.graded_at,
+      recorded_at: t.recorded_at,
+    });
+
+    out.push({
+      ...t,
+      urgency: t.urgency as Urgency,
+      patient,
+      effective: effective.urgency,
+      note: effective.note,
+    });
   }
 
   out.sort((a, b) => {
-    const byUrgency = urgencyRank(a.urgency) - urgencyRank(b.urgency);
+    const byUrgency = urgencyRank(a.effective) - urgencyRank(b.effective);
     if (byUrgency !== 0) return byUrgency;
     return compareBeds(a.patient.bed, b.patient.bed);
   });

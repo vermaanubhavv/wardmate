@@ -7,7 +7,7 @@ import { completeTask } from "../patients/[id]/actions";
 
 /** The four groups, in the order they are worked through. */
 const GROUPS: { key: Urgency; title: string; note: string }[] = [
-  { key: "red", title: "Now", note: "Within hours, or today" },
+  { key: "red", title: "Now", note: "Within hours, or today — including anything that has come due" },
   { key: "yellow", title: "Soon", note: "Today or tomorrow" },
   { key: null, title: "Not graded", note: "No timeframe was said — tap a dot to grade" },
   { key: "green", title: "Has time", note: "No hurry" },
@@ -50,7 +50,7 @@ export default async function TodoPage() {
           </p>
         ) : (
           GROUPS.map(({ key, title, note }) => {
-            const group = tasks.filter((t) => t.urgency === key);
+            const group = tasks.filter((t) => t.effective === key);
             if (group.length === 0) return null;
             const meta = key ? URGENCY_META[key] : null;
 
@@ -106,11 +106,20 @@ function TaskRow({ task }: { task: WardTask }) {
           observationId={task.id}
           patientId={task.patient_id}
           urgency={task.urgency}
+          gradedAt={task.graded_at}
+          recordedAt={task.recorded_at}
         />
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="text-sm">{task.value_text ?? task.label}</p>
+        <p className="text-sm">
+          {task.value_text ?? task.label}
+          {/* Said in words, so a job that climbed with the calendar never looks like one
+              somebody graded red. */}
+          {task.note && (
+            <span className="ml-2 whitespace-nowrap text-xs text-red-300">— {task.note}</span>
+          )}
+        </p>
         {/* Which bed to walk to — the thing that turns a list into a route. */}
         <Link
           href={`/patients/${task.patient_id}`}

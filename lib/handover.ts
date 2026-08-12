@@ -7,7 +7,7 @@ import {
   type CareTemplate,
 } from "@/lib/templates";
 import { derivePatientState, type Observation, type PatientState } from "@/lib/patient-state";
-import { URGENCY_META } from "@/lib/urgency";
+import { effectiveUrgency, URGENCY_META } from "@/lib/urgency";
 
 export type HandoverPatient = {
   id: string;
@@ -57,7 +57,7 @@ export async function getWardHandover(ward: { id: string; name: string }): Promi
   const { data: entries } = await supabase
     .from("entries")
     .select(
-      "patient_id, observations(id, kind, label, value_text, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, recorded_at)"
+      "patient_id, observations(id, kind, label, value_text, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at)"
     )
     .in(
       "patient_id",
@@ -123,9 +123,14 @@ export function formatHandoverText(handover: WardHandover): string {
     } else {
       for (const t of openTasks) {
         // Urgency is spelt out rather than coloured: a handover message has no colours, and
-        // "NOW" carries in plain text where a red dot would simply be lost.
-        const mark = t.urgency ? `[${URGENCY_META[t.urgency].label.toUpperCase()}] ` : "";
-        lines.push(`  To do: ${mark}${t.value_text ?? t.label}`);
+        // "NOW" carries in plain text where a red dot would simply be lost. Graded as of
+        // today, so a job that has come due hands over as due.
+        const effective = effectiveUrgency(t);
+        const mark = effective.urgency
+          ? `[${URGENCY_META[effective.urgency].label.toUpperCase()}] `
+          : "";
+        const note = effective.note ? ` (${effective.note})` : "";
+        lines.push(`  To do: ${mark}${t.value_text ?? t.label}${note}`);
       }
       for (const o of pending) {
         lines.push(`  Confirm: ${o.label}${o.value_text ? ` — ${o.value_text}` : ""}`);

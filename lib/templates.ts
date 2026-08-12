@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { istDate } from "@/lib/urgency";
 
 export type TemplateItem = {
   id: string;
@@ -158,7 +159,3 @@ export function matchTemplate(
   });
 }
 
-/** Calendar date in Indian time — the same reason day numbers are counted in IST. */
-function istDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
-}

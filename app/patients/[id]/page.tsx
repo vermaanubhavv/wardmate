@@ -5,6 +5,7 @@ import { getActivePatients } from "@/lib/ward";
 import { getTemplateForPatient, getProcedureLabels, listTemplateChoices, procedureKey } from "@/lib/templates";
 import { derivePatientState, groupIntoSittings, type Observation } from "@/lib/patient-state";
 import { dayLabel, managementLabel, patientName } from "@/lib/patients";
+import { effectiveUrgency } from "@/lib/urgency";
 import BedsideBar from "./bedside-bar";
 import EditIdentity from "../edit-identity";
 import UrgencyDot from "./urgency-dot";
@@ -44,7 +45,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const { data: entriesData } = await supabase
     .from("entries")
     .select(
-      "id, source, transcript, photo_path, recorded_at, extraction_error, observations(id, kind, label, value_text, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, recorded_at)"
+      "id, source, transcript, photo_path, recorded_at, extraction_error, observations(id, kind, label, value_text, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at)"
     )
     .eq("patient_id", id)
     .order("recorded_at", { ascending: false });
@@ -152,10 +153,15 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                       observationId={o.id}
                       patientId={patient.id}
                       urgency={o.urgency}
+                      gradedAt={o.graded_at}
+                      recordedAt={o.recorded_at}
                     />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm">{o.value_text ?? o.label}</p>
+                    <p className="text-sm">
+                      {o.value_text ?? o.label}
+                      <CameDue observation={o} />
+                    </p>
                     {/* The words it came from, so a job is never just the app's paraphrase. */}
                     <p className="mt-0.5 text-xs text-muted italic truncate">
                       “{o.source_quote}”
@@ -368,4 +374,15 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       </div>
     </div>
   );
+}
+
+/**
+ * "due today" or "2 days overdue", shown only when the calendar has moved a job rather than
+ * the resident. Said in words, so an escalation never looks like something they graded.
+ */
+function CameDue({ observation }: { observation: Observation }) {
+  const effective = effectiveUrgency(observation);
+  if (!effective.note) return null;
+
+  return <span className="ml-2 whitespace-nowrap text-xs text-red-300">— {effective.note}</span>;
 }
