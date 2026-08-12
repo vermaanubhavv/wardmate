@@ -13,6 +13,8 @@ export const OBSERVATION_KINDS = [
   "note",
 ] as const;
 
+export const URGENCIES = ["red", "yellow", "green"] as const;
+
 export type ExtractedObservation = {
   kind: (typeof OBSERVATION_KINDS)[number];
   label: string;
@@ -21,6 +23,8 @@ export type ExtractedObservation = {
   unit: string | null;
   source_quote: string;
   needs_confirmation: boolean;
+  /** Plans only, and only when the speaker gave a timeframe. Null otherwise. */
+  urgency: (typeof URGENCIES)[number] | null;
 };
 
 const SYSTEM_PROMPT = `You convert a surgical resident's spoken ward-round note into structured observations.
@@ -45,7 +49,16 @@ Guidance on fields:
 - value_text: always populated, exactly as said.
 - value_num and unit: populate ONLY when the resident actually stated a number and (where relevant) a unit. Otherwise null.
 - day_number: use when a post-operative or admission day is spoken, with value_num as the integer.
-- plan: things to be done — "remove drain tomorrow", "repeat haemoglobin", "discharge if afebrile".`;
+- plan: things to be done — "remove drain tomorrow", "repeat haemoglobin", "discharge if afebrile".
+
+Urgency — plans only, and rule 1 applies to it as hard as to any number:
+
+- "red": the transcript gives a timeframe of hours, or today. "now", "stat", "urgently", "immediately", "this evening", "before I leave", "today", "in two hours".
+- "yellow": the transcript gives a timeframe of today or tomorrow, without pressure. "tomorrow", "in the morning", "on the next round", "by tomorrow".
+- "green": the transcript itself says there is time. "sometime this week", "before discharge", "no hurry", "whenever the report comes", "at follow-up".
+- null: THE DEFAULT, and the correct answer whenever the resident stated no timeframe at all. "Repeat the haemoglobin" is null — not green. Absence of urgency in the words is not evidence of low urgency, and a job wrongly graded green is a job that looks safe to leave undone. Grading it null puts it in front of the resident to grade themselves.
+
+Set urgency to null for every observation that is not a plan.`;
 
 const SCHEMA = {
   type: "object",
@@ -65,6 +78,13 @@ const SCHEMA = {
             description: "A verbatim, contiguous span copied from the transcript.",
           },
           needs_confirmation: { type: "boolean" },
+          // anyOf rather than type: ["string", "null"] with an enum beside it — the API
+          // rejects that combination, because the enum's values do not match a union type.
+          urgency: {
+            anyOf: [{ type: "string", enum: URGENCIES as unknown as string[] }, { type: "null" }],
+            description:
+              "Plans only, and only when the transcript states a timeframe. Null otherwise.",
+          },
         },
         required: [
           "kind",
@@ -74,6 +94,7 @@ const SCHEMA = {
           "unit",
           "source_quote",
           "needs_confirmation",
+          "urgency",
         ],
         additionalProperties: false,
       },
@@ -145,8 +166,13 @@ export async function extractObservations(
 
   for (const obs of candidates) {
     const quote = normalise(obs.source_quote ?? "");
-    if (quote.length > 0 && haystack.includes(quote)) observations.push(obs);
-    else rejected.push(obs);
+    if (quote.length > 0 && haystack.includes(quote)) {
+      // A grade on anything that is not a job has no meaning and nowhere to show, and a value
+      // outside the three colours would be rejected by the database anyway. Dropped here
+      // rather than trusted, for the same reason the quote is checked rather than trusted.
+      if (obs.kind !== "plan" || !URGENCIES.includes(obs.urgency as never)) obs.urgency = null;
+      observations.push(obs);
+    } else rejected.push(obs);
   }
 
   return { observations, rejected, model, raw: parsed };

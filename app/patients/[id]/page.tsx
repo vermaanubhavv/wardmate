@@ -7,6 +7,7 @@ import { derivePatientState, groupIntoSittings, type Observation } from "@/lib/p
 import { dayLabel, managementLabel, patientName } from "@/lib/patients";
 import BedsideBar from "./bedside-bar";
 import EditIdentity from "../edit-identity";
+import UrgencyDot from "./urgency-dot";
 import { confirmObservation, completeTask, reopenTask } from "./actions";
 
 type Entry = {
@@ -43,7 +44,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const { data: entriesData } = await supabase
     .from("entries")
     .select(
-      "id, source, transcript, photo_path, recorded_at, extraction_error, observations(id, kind, label, value_text, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, recorded_at)"
+      "id, source, transcript, photo_path, recorded_at, extraction_error, observations(id, kind, label, value_text, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, recorded_at)"
     )
     .eq("patient_id", id)
     .order("recorded_at", { ascending: false });
@@ -146,6 +147,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                       className="h-6 w-6 rounded-md border border-muted/50 active:bg-accent active:border-accent"
                     />
                   </form>
+                  <div className="pt-1">
+                    <UrgencyDot
+                      observationId={o.id}
+                      patientId={patient.id}
+                      urgency={o.urgency}
+                    />
+                  </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm">{o.value_text ?? o.label}</p>
                     {/* The words it came from, so a job is never just the app's paraphrase. */}

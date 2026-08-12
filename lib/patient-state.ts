@@ -1,4 +1,5 @@
 import { matchTemplate, type CareTemplate, type MatchedItem } from "@/lib/templates";
+import { urgencyRank, type Urgency } from "@/lib/urgency";
 
 export type Observation = {
   id: string;
@@ -11,6 +12,7 @@ export type Observation = {
   confirmed_at: string | null;
   conflict_note: string | null;
   done_at: string | null;
+  urgency: Urgency;
   recorded_at: string;
 };
 
@@ -44,7 +46,10 @@ export function derivePatientState(
   const pending = observations.filter((o) => o.needs_confirmation && !o.confirmed_at);
 
   const allPlans = observations.filter((o) => o.kind === "plan");
-  const openTasks = allPlans.filter((o) => !o.done_at);
+  // Most urgent first. Ties keep the order they were said in, which is newest first.
+  const openTasks = allPlans
+    .filter((o) => !o.done_at)
+    .sort((a, b) => urgencyRank(a.urgency) - urgencyRank(b.urgency));
   const doneTasks = allPlans.filter((o) => o.done_at);
 
   const matched = template ? matchTemplate(template, observations) : [];

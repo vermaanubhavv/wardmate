@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { nextUrgency, type Urgency } from "@/lib/urgency";
 
 /** One-tap confirmation of a number, drug or dose the app flagged as worth checking. */
 export async function confirmObservation(formData: FormData) {
@@ -21,6 +22,39 @@ export async function confirmObservation(formData: FormData) {
     .eq("id", id);
 
   revalidatePath(`/patients/${patientId}`);
+  revalidatePath("/todo");
+  revalidatePath("/");
+}
+
+/**
+ * Cycle a job's colour by hand. Records that a person set it, so the grade a doctor stands
+ * behind is distinguishable from the one read out of a sentence.
+ */
+export async function cycleUrgency(formData: FormData) {
+  const id = String(formData.get("observation_id") ?? "");
+  const patientId = String(formData.get("patient_id") ?? "");
+  const current = String(formData.get("current") ?? "") || null;
+  if (!id) return;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const next = nextUrgency(current as Urgency);
+
+  await supabase
+    .from("observations")
+    .update({
+      urgency: next,
+      graded_by: user.id,
+      graded_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  revalidatePath(`/patients/${patientId}`);
+  revalidatePath("/todo");
   revalidatePath("/");
 }
 
@@ -55,5 +89,6 @@ async function setTaskDone(formData: FormData, done: boolean) {
     .eq("id", id);
 
   revalidatePath(`/patients/${patientId}`);
+  revalidatePath("/todo");
   revalidatePath("/");
 }

@@ -40,6 +40,9 @@ export default async function Home() {
           </p>
         </div>
         <div className="flex items-baseline gap-4">
+          <Link href="/todo" className="text-xs text-accent underline underline-offset-4">
+            To do
+          </Link>
           <Link href="/handover" className="text-xs text-accent underline underline-offset-4">
             Ward round
           </Link>

@@ -134,6 +134,7 @@ export async function POST(request: Request) {
     unit: o.unit,
     source_quote: o.source_quote,
     needs_confirmation: o.needs_confirmation,
+    urgency: o.urgency,
     conflict_note: dayConflict(o, patient),
   }));
 
