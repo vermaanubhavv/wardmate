@@ -3,7 +3,7 @@ import { compareBeds, dayLabel, managementLabel, patientName } from "@/lib/patie
 import {
   getTemplateForPatient,
   getProcedureLabels,
-  procedureKey,
+  procedureFor,
   type CareTemplate,
 } from "@/lib/templates";
 import { derivePatientState, type Observation, type PatientState } from "@/lib/patient-state";
@@ -44,7 +44,7 @@ export async function getWardHandover(ward: { id: string; name: string }): Promi
   const { data: patients } = await supabase
     .from("current_patients")
     .select(
-      "id, display_name, age_years, sex, bed, primary_diagnosis, post_op_day, admission_day, surgery_date, template_family, template_variant, management"
+      "id, display_name, age_years, sex, bed, primary_diagnosis, post_op_day, admission_day, surgery_date, template_family, template_variant, procedure_text, management"
     )
     .eq("ward_id", ward.id)
     .eq("status", "active");
@@ -81,9 +81,7 @@ export async function getWardHandover(ward: { id: string; name: string }): Promi
   for (const p of rows) {
     const template = await getTemplateForPatient(p);
     const state = derivePatientState(byPatient.get(p.id) ?? [], template);
-    const key = procedureKey(p);
-    const procedure = p.post_op_day !== null && key ? (procedures.get(key) ?? null) : null;
-    out.push({ ...p, template, procedure, state });
+    out.push({ ...p, template, procedure: procedureFor(p, procedures), state });
   }
 
   return { ward, patients: out, generated_at };

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { listTemplateChoices, resolveProcedure } from "@/lib/templates";
 
 export type AddPatientState = { error: string | null };
 
@@ -25,9 +26,6 @@ export async function addPatient(
   const diagnosis = String(formData.get("primary_diagnosis") ?? "").trim();
   const admittedOn = String(formData.get("admitted_on") ?? "");
   const surgeryDate = String(formData.get("surgery_date") ?? "").trim();
-
-  // "hernia|inguinal" from the picker, or "" for no template.
-  const [family, variant] = String(formData.get("template") ?? "").split("|");
 
   if (!wardId) return { error: "No ward selected." };
   if (!bed) return { error: "Bed is required." };
@@ -54,8 +52,7 @@ export async function addPatient(
     primary_diagnosis: diagnosis || null,
     admitted_on: admittedOn,
     surgery_date: surgeryDate || null,
-    template_family: family || null,
-    template_variant: variant || null,
+    ...resolveProcedure(String(formData.get("procedure") ?? ""), await listTemplateChoices()),
     created_by: user.id,
   });
 
@@ -116,17 +113,23 @@ export async function updatePatientIdentity(
 
   const id = String(formData.get("patient_id") ?? "");
   const name = String(formData.get("display_name") ?? "").trim();
+  const bed = String(formData.get("bed") ?? "").trim();
   const ageRaw = String(formData.get("age_years") ?? "").trim();
   const sexRaw = String(formData.get("sex") ?? "").trim();
 
   if (!id) return { error: "No patient." };
   if (!name) return { error: "Name cannot be empty." };
+  if (!bed) return { error: "Bed cannot be empty." };
 
   const identity = readIdentity(ageRaw, sexRaw);
   if ("error" in identity) return identity;
 
-  // "hernia|inguinal" from the picker, or "" for no operation recorded.
-  const [family, variant] = String(formData.get("template") ?? "").split("|");
+  // Typed freely. Matching a name the library knows brings its template along; anything else
+  // is kept as the unit's own wording, with no template applied.
+  const procedure = resolveProcedure(
+    String(formData.get("procedure") ?? ""),
+    await listTemplateChoices()
+  );
 
   // Row security decides whether this is allowed: the update reaches only a patient on a ward
   // this doctor belongs to, so no check here is load-bearing.
@@ -134,11 +137,11 @@ export async function updatePatientIdentity(
     .from("patients")
     .update({
       display_name: name,
+      bed,
       age_years: identity.age,
       sex: identity.sex,
       management: readManagement(String(formData.get("management") ?? "")),
-      template_family: family || null,
-      template_variant: variant || null,
+      ...procedure,
     })
     .eq("id", id);
 

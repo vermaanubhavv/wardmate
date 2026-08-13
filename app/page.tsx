@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getCurrentWard, getActivePatients } from "@/lib/ward";
 import { dayLabel, managementLabel, patientName, type WardPatient } from "@/lib/patients";
-import { getProcedureLabels, listTemplateChoices, procedureKey } from "@/lib/templates";
+import { getProcedureLabels, listTemplateChoices, procedureFor } from "@/lib/templates";
 import RegisterButton from "./register-button";
 import EditIdentity from "./patients/edit-identity";
 import { signOut } from "./actions";
@@ -99,8 +99,7 @@ function PatientCard({
   // Named only for patients who have actually been operated on, and only from the operation
   // recorded against them. A patient still awaiting surgery counts from admission and has no
   // procedure to show — never one guessed from the diagnosis.
-  const key = procedureKey(patient);
-  const procedure = patient.post_op_day !== null && key ? procedures.get(key) : null;
+  const procedure = procedureFor(patient, procedures);
 
   return (
     // The card is a link to the patient, but the pen inside it is not — so the two are

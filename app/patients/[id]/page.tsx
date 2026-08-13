@@ -2,7 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActivePatients } from "@/lib/ward";
-import { getTemplateForPatient, getProcedureLabels, listTemplateChoices, procedureKey } from "@/lib/templates";
+import {
+  getTemplateForPatient,
+  getProcedureLabels,
+  listTemplateChoices,
+  procedureFor,
+} from "@/lib/templates";
 import { derivePatientState, groupIntoSittings, type Observation } from "@/lib/patient-state";
 import { dayLabel, managementLabel, patientName } from "@/lib/patients";
 import { effectiveUrgency } from "@/lib/urgency";
@@ -28,7 +33,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const { data: patient } = await supabase
     .from("current_patients")
     .select(
-      "id, ward_id, display_name, age_years, sex, bed, primary_diagnosis, admitted_on, surgery_date, post_op_day, admission_day, status, template_family, template_variant, management"
+      "id, ward_id, display_name, age_years, sex, bed, primary_diagnosis, admitted_on, surgery_date, post_op_day, admission_day, status, template_family, template_variant, procedure_text, management"
     )
     .eq("id", id)
     .maybeSingle();
@@ -85,8 +90,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     getProcedureLabels(),
     listTemplateChoices(),
   ]);
-  const key = procedureKey(patient);
-  const procedure = patient.post_op_day !== null && key ? procedures.get(key) : null;
+  const procedure = procedureFor(patient, procedures);
   const management = managementLabel(patient);
 
   return (

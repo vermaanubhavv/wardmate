@@ -7,15 +7,29 @@ import { MANAGEMENT_CHOICES } from "@/lib/patients";
 type Patient = {
   id: string;
   display_name: string;
+  bed: string;
   age_years: number | null;
   sex: string | null;
   surgery_date: string | null;
   management: string | null;
+  procedure_text: string | null;
   template_family: string | null;
   template_variant: string | null;
 };
 
 type TemplateChoice = { family: string; variant: string | null; label: string };
+
+/** What to put in the box: the unit's own wording if there is any, otherwise the name of the
+ *  template this patient was linked to before free text existed. */
+function currentProcedure(patient: Patient, choices: TemplateChoice[]): string {
+  if (patient.procedure_text) return patient.procedure_text;
+  const match = choices.find(
+    (c) =>
+      c.family === patient.template_family &&
+      (c.variant ?? null) === (patient.template_variant ?? null)
+  );
+  return match?.label ?? "";
+}
 
 /**
  * The pen beside a patient's name. Opens a small dialog holding only name, age and sex — the
@@ -85,6 +99,21 @@ export default function EditIdentity({
             />
           </label>
 
+          <label className="flex flex-col gap-2">
+            <span className="text-sm text-muted">Bed</span>
+            <input
+              name="bed"
+              required
+              defaultValue={patient.bed}
+              autoCapitalize="characters"
+              className="w-full rounded-xl border border-line bg-background px-4 py-4 text-base outline-none focus:border-accent"
+            />
+            {/* Moving a bed reorders the whole ward list, since the list walks in bed order. */}
+            <span className="text-xs text-muted">
+              Include the location, e.g. SW-12 or ICU-3
+            </span>
+          </label>
+
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-2">
               <span className="text-sm text-muted">Age</span>
@@ -115,25 +144,21 @@ export default function EditIdentity({
 
           <label className="flex flex-col gap-2">
             <span className="text-sm text-muted">Operation</span>
-            <select
-              name="template"
-              defaultValue={
-                patient.template_family
-                  ? `${patient.template_family}|${patient.template_variant ?? ""}`
-                  : ""
-              }
+            <input
+              name="procedure"
+              list="operation-suggestions"
+              defaultValue={currentProcedure(patient, templateChoices)}
+              autoCapitalize="none"
               className="w-full rounded-xl border border-line bg-background px-4 py-4 text-base outline-none focus:border-accent"
-            >
-              <option value="">None recorded</option>
+            />
+            <datalist id="operation-suggestions">
               {templateChoices.map((t) => (
-                <option
-                  key={`${t.family}|${t.variant ?? ""}`}
-                  value={`${t.family}|${t.variant ?? ""}`}
-                >
-                  {t.label}
-                </option>
+                <option key={`${t.family}|${t.variant ?? ""}`} value={t.label} />
               ))}
-            </select>
+            </datalist>
+            <span className="text-xs text-muted">
+              Type anything. Picking one of the suggestions also brings its checklist.
+            </span>
           </label>
 
           <label className="flex flex-col gap-2">

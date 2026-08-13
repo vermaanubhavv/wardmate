@@ -108,6 +108,52 @@ export async function getProcedureLabels(): Promise<Map<string, string>> {
   return new Map(choices.map((c) => [`${c.family}|${c.variant ?? ""}`, c.label]));
 }
 
+/**
+ * What the card should call this patient's operation.
+ *
+ * A typed name wins over the template's name, because a unit that writes "Lap chole +
+ * IOC" means that, not the library's wording. Shown only for patients who have actually
+ * been operated on — never a name attached to someone still awaiting surgery.
+ */
+export function procedureFor(
+  patient: {
+    post_op_day: number | null;
+    procedure_text: string | null;
+    template_family: string | null;
+    template_variant: string | null;
+  },
+  labels: Map<string, string>
+): string | null {
+  if (patient.post_op_day === null) return null;
+  if (patient.procedure_text) return patient.procedure_text;
+
+  const key = procedureKey(patient);
+  return key ? (labels.get(key) ?? null) : null;
+}
+
+/**
+ * Turn a freely typed operation into what gets stored.
+ *
+ * Typing a name the library knows links its template too, so the checklist follows the
+ * operation without a second field to keep in step. Typing anything else keeps the name and
+ * leaves the patient with no template — correct, because nobody has told the app what to
+ * expect for that operation, and a checklist invented for it would be a fabrication.
+ */
+export function resolveProcedure(
+  typed: string,
+  choices: TemplateChoice[]
+): { procedure_text: string | null; template_family: string | null; template_variant: string | null } {
+  const text = typed.trim();
+  if (!text) return { procedure_text: null, template_family: null, template_variant: null };
+
+  const match = choices.find((c) => c.label.toLowerCase() === text.toLowerCase());
+  return {
+    procedure_text: text,
+    template_family: match?.family ?? null,
+    template_variant: match?.variant ?? null,
+  };
+}
+
 export type MatchedItem = {
   item: TemplateItem;
   value: string | null;

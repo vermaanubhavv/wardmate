@@ -98,20 +98,19 @@ export default function PatientForm({
 
       <Field
         label="Operation"
-        hint="Decides what the app expects you to mention. Leave blank if none applies."
+        hint="Type anything. Picking one of the suggestions also brings its checklist of what to mention."
       >
-        <select
-          name="template"
-          defaultValue=""
+        <input
+          name="procedure"
+          list="operation-suggestions"
+          autoCapitalize="none"
           className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
-        >
-          <option value="">No template</option>
+        />
+        <datalist id="operation-suggestions">
           {templateChoices.map((t) => (
-            <option key={`${t.family}|${t.variant ?? ""}`} value={`${t.family}|${t.variant ?? ""}`}>
-              {t.label}
-            </option>
+            <option key={`${t.family}|${t.variant ?? ""}`} value={t.label} />
           ))}
-        </select>
+        </datalist>
       </Field>
 
       <Field label="Admitted on">

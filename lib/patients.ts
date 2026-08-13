@@ -12,6 +12,7 @@ export type WardPatient = {
   last_entry_at: string | null;
   template_family: string | null;
   template_variant: string | null;
+  procedure_text: string | null;
   management: string | null;
   unconfirmed_count: number;
   open_task_count: number;
