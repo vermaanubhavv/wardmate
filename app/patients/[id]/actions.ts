@@ -4,25 +4,59 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { nextUrgency, type Urgency } from "@/lib/urgency";
 
-/** One-tap confirmation of a number, drug or dose the app flagged as worth checking. */
-export async function confirmObservation(formData: FormData) {
-  const id = String(formData.get("observation_id") ?? "");
+/** Confirm the ones that were ticked. Nothing ticked writes nothing. */
+export async function confirmChecked(formData: FormData) {
+  const ids = formData.getAll("observation_ids").map(String).filter(Boolean);
   const patientId = String(formData.get("patient_id") ?? "");
-  if (!id) return;
+  if (ids.length === 0) return;
 
+  await confirmIds(ids, patientId);
+}
+
+/**
+ * Confirm everything outstanding on this patient.
+ *
+ * Reads the ids from the database rather than the form, so it means "everything outstanding
+ * now" — including anything that arrived while the screen was open, and unaffected by which
+ * boxes happen to be ticked.
+ */
+export async function confirmAll(formData: FormData) {
+  const patientId = String(formData.get("patient_id") ?? "");
+  if (!patientId) return;
+
+  const supabase = await createClient();
+  const { data: pending } = await supabase
+    .from("observations")
+    .select("id")
+    .eq("patient_id", patientId)
+    .eq("needs_confirmation", true)
+    .is("confirmed_at", null);
+
+  const ids = (pending ?? []).map((o) => o.id);
+  if (ids.length === 0) return;
+
+  await confirmIds(ids, patientId);
+}
+
+async function confirmIds(ids: string[], patientId: string) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return;
 
+  // Scoped to the patient as well as the ids: a tampered form cannot reach a confirmation on
+  // somebody else's record. Row security would refuse a patient outside this doctor's wards
+  // anyway, but this keeps one screen's Accept to one patient.
   await supabase
     .from("observations")
     .update({ confirmed_at: new Date().toISOString(), confirmed_by: user.id })
-    .eq("id", id);
+    .in("id", ids)
+    .eq("patient_id", patientId);
 
   revalidatePath(`/patients/${patientId}`);
   revalidatePath("/todo");
+  revalidatePath("/handover");
   revalidatePath("/");
 }
 

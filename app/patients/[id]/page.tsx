@@ -14,7 +14,7 @@ import { effectiveUrgency } from "@/lib/urgency";
 import BedsideBar from "./bedside-bar";
 import EditIdentity from "../edit-identity";
 import UrgencyDot from "./urgency-dot";
-import { confirmObservation, completeTask, reopenTask } from "./actions";
+import { confirmChecked, confirmAll, completeTask, reopenTask } from "./actions";
 
 type Entry = {
   id: string;
@@ -211,32 +211,61 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           <p className="text-sm text-amber-200 mb-2">
             {pending.length} to confirm before handover
           </p>
-          <ul className="flex flex-col gap-2">
-            {pending.map((o) => (
-              <li
-                key={o.id}
-                className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3"
+          {/* One form around the whole list: the two buttons below are the same submit with
+              different actions, so ticking and accepting is one gesture rather than one tap
+              per value. */}
+          <form action={confirmChecked}>
+            <input type="hidden" name="patient_id" value={patient.id} />
+
+            <ul className="flex flex-col gap-2">
+              {pending.map((o) => (
+                <li
+                  key={o.id}
+                  className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3"
+                >
+                  <label className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      name="observation_ids"
+                      value={o.id}
+                      // Unticked by default. Confirming is the resident vouching for a
+                      // value, so it has to be something they did, not something they
+                      // failed to undo.
+                      className="mt-0.5 h-5 w-5 shrink-0 accent-amber-400"
+                    />
+                    <span className="min-w-0 flex-1 text-sm">
+                      <span className="text-muted">{o.label}</span>{" "}
+                      <span className="font-medium">{o.value_text}</span>
+                    </span>
+                  </label>
+                  <p className="mt-1.5 pl-8 text-xs text-amber-200/70 italic">
+                    “{o.source_quote}”
+                  </p>
+                  {o.conflict_note && (
+                    <p className="mt-1 pl-8 text-xs text-amber-100">{o.conflict_note}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-3 flex gap-3">
+              <button
+                type="submit"
+                className="flex-1 rounded-xl border border-amber-400/50 px-4 py-3 text-sm font-semibold text-amber-200"
               >
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-sm">
-                    <span className="text-muted">{o.label}</span>{" "}
-                    <span className="font-medium">{o.value_text}</span>
-                  </span>
-                  <form action={confirmObservation}>
-                    <input type="hidden" name="observation_id" value={o.id} />
-                    <input type="hidden" name="patient_id" value={patient.id} />
-                    <button className="shrink-0 rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-semibold text-slate-900">
-                      Correct
-                    </button>
-                  </form>
-                </div>
-                <p className="mt-1.5 text-xs text-amber-200/70 italic">“{o.source_quote}”</p>
-                {o.conflict_note && (
-                  <p className="mt-1 text-xs text-amber-100">{o.conflict_note}</p>
-                )}
-              </li>
-            ))}
-          </ul>
+                Accept ticked
+              </button>
+              {/* Same form, different action — this one ignores the ticks and takes
+                  everything still outstanding. */}
+              <button
+                type="submit"
+                formAction={confirmAll}
+                className="flex-1 rounded-xl bg-amber-400 px-4 py-3 text-sm font-semibold text-slate-900"
+              >
+                Accept all {pending.length}
+              </button>
+            </div>
+          </form>
         </section>
       )}
 
