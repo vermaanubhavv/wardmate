@@ -3,6 +3,7 @@ import { getCurrentWard, getActivePatients } from "@/lib/ward";
 import { dayLabel, managementLabel, patientName, type WardPatient } from "@/lib/patients";
 import { getProcedureLabels, listTemplateChoices, procedureFor } from "@/lib/templates";
 import RegisterButton from "./register-button";
+import RoundRecorder from "./round-recorder";
 import EditIdentity from "./patients/edit-identity";
 import { signOut } from "./actions";
 
@@ -73,6 +74,7 @@ export default async function Home() {
 
       <div className="fixed bottom-0 inset-x-0 bg-gradient-to-t from-background via-background to-transparent pt-8 pb-8 px-6">
         <div className="mx-auto max-w-md flex flex-col gap-3">
+          <RoundRecorder />
           <RegisterButton />
           <Link
             href="/patients/new"
