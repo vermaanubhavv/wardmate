@@ -4,7 +4,7 @@ import { dayLabel, managementLabel, patientName, type WardPatient } from "@/lib/
 import { getProcedureLabels, listTemplateChoices, procedureFor } from "@/lib/templates";
 import RegisterButton from "./register-button";
 import RoundRecorder from "./round-recorder";
-import EditIdentity from "./patients/edit-identity";
+import PatientMenu from "./patients/patient-menu";
 import { signOut } from "./actions";
 
 export default async function Home() {
@@ -156,7 +156,7 @@ function PatientCard({
       </Link>
 
       <div className="absolute right-2 top-2">
-        <EditIdentity patient={patient} templateChoices={templateChoices} />
+        <PatientMenu patient={patient} templateChoices={templateChoices} />
       </div>
     </div>
   );

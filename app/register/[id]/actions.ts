@@ -35,10 +35,20 @@ export async function applyRegister(formData: FormData) {
 
   for (let i = 0; i < rows.length; i++) {
     // Unchecked rows send no patient at all, so they are skipped without any write.
-    const patientId = String(formData.get(`patient_${i}`) ?? "");
-    if (!patientId) continue;
+    const chosen = String(formData.get(`patient_${i}`) ?? "");
+    if (!chosen) continue;
 
     const row = rows[i];
+
+    // "new" admits the person this row is about, then carries on writing the row to them —
+    // so a patient the app has never heard of arrives complete with the entry that named
+    // them, rather than as an empty record to be filled in again.
+    const patientId =
+      chosen === "new"
+        ? await admitFromRow(formData, i, read.ward_id, user.id, supabase)
+        : chosen;
+
+    if (!patientId) continue;
 
     const { data: entry } = await supabase
       .from("entries")
@@ -97,6 +107,43 @@ export async function applyRegister(formData: FormData) {
 
   revalidatePath("/");
   redirect("/");
+}
+
+/**
+ * Admit the patient a register row is about, and return their id so the row can then be
+ * written to them.
+ *
+ * Name and bed come from the form, not the row, because the review screen shows them as
+ * editable boxes — these were read off handwriting, and a name misread here becomes a patient
+ * who is wrong from their first day. A row with neither admits nobody.
+ */
+async function admitFromRow(
+  formData: FormData,
+  i: number,
+  wardId: string,
+  userId: string,
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<string | null> {
+  const name = String(formData.get(`new_name_${i}`) ?? "").trim();
+  const bed = String(formData.get(`new_bed_${i}`) ?? "").trim();
+  if (!name || !bed) return null;
+
+  // Admitted today: the register is being read now, and it records no admission date.
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+
+  const { data: patient } = await supabase
+    .from("patients")
+    .insert({
+      ward_id: wardId,
+      bed,
+      display_name: name,
+      admitted_on: today,
+      created_by: userId,
+    })
+    .select("id")
+    .single();
+
+  return patient?.id ?? null;
 }
 
 export async function discardRegister(formData: FormData) {

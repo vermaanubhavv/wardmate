@@ -89,6 +89,36 @@ function readManagement(raw: string): string | null {
   return ["preop", "conservative", "workup"].includes(raw) ? raw : null;
 }
 
+/**
+ * Take a patient off the active ward list.
+ *
+ * This sets their status rather than destroying anything, which is the schema's deliberate
+ * design: there is no delete policy on patients at all, so their entries, observations and
+ * the quotes tying those to what was said all survive. Somebody discharged last week, or
+ * added to the wrong bed this morning, both leave the list the same way — and if either turns
+ * out to be a mistake the record is still there to put back.
+ */
+export async function removePatient(formData: FormData) {
+  const id = String(formData.get("patient_id") ?? "");
+  if (!id) return;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase
+    .from("patients")
+    .update({ status: "discharged", discharged_at: new Date().toISOString() })
+    .eq("id", id);
+
+  revalidatePath("/");
+  revalidatePath("/todo");
+  revalidatePath("/handover");
+  redirect("/");
+}
+
 export type EditPatientState = { error: string | null; ok?: boolean };
 
 /**

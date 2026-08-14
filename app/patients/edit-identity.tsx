@@ -42,9 +42,14 @@ function currentProcedure(patient: Patient, choices: TemplateChoice[]): string {
 export default function EditIdentity({
   patient,
   templateChoices,
+  openSignal,
+  hideTrigger = false,
 }: {
   patient: Patient;
   templateChoices: TemplateChoice[];
+  /** Bumped by a parent (the ⋯ menu) to open the dialog without its own pen button. */
+  openSignal?: number;
+  hideTrigger?: boolean;
 }) {
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const [state, formAction, pending] = useActionState<EditPatientState, FormData>(
@@ -58,22 +63,30 @@ export default function EditIdentity({
     if (state.ok) dialogRef.current?.close();
   }, [state.ok]);
 
+  // A counter rather than a boolean: choosing the same menu item twice has to reopen the
+  // dialog, and a boolean that is already true produces no change to react to.
+  useEffect(() => {
+    if (openSignal) dialogRef.current?.showModal();
+  }, [openSignal]);
+
   return (
     <>
-      <button
-        type="button"
-        aria-label={`Edit ${patient.display_name}`}
-        onClick={(e) => {
-          // The ward-list card is a link to the patient. Without this, editing a name would
-          // also walk you into their record.
-          e.preventDefault();
-          e.stopPropagation();
-          dialogRef.current?.showModal();
-        }}
-        className="shrink-0 rounded-lg p-2 text-muted active:bg-slate-700/60"
-      >
-        <PenIcon />
-      </button>
+      {!hideTrigger && (
+        <button
+          type="button"
+          aria-label={`Edit ${patient.display_name}`}
+          onClick={(e) => {
+            // The ward-list card is a link to the patient. Without this, editing a name would
+            // also walk you into their record.
+            e.preventDefault();
+            e.stopPropagation();
+            dialogRef.current?.showModal();
+          }}
+          className="shrink-0 rounded-lg p-2 text-muted active:bg-slate-700/60"
+        >
+          <PenIcon />
+        </button>
+      )}
 
       <dialog
         ref={dialogRef}

@@ -123,6 +123,10 @@ export default async function RegisterReviewPage({
                       className="mt-1 w-full rounded-lg border border-line bg-background px-3 py-2.5 text-sm outline-none focus:border-accent"
                     >
                       <option value="">Skip this row</option>
+                      {/* A register row is often the first the app hears of somebody
+                          admitted overnight, so the row itself can admit them rather than
+                          being skipped and typed in again from memory. */}
+                      <option value="new">+ Add as a new patient</option>
                       {(m.candidates.length > 0 ? m.candidates : patients).map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.bed} · {p.display_name}
@@ -135,6 +139,30 @@ export default async function RegisterReviewPage({
                       )}
                     </select>
                   </label>
+
+                  {/* Shown for every row, used only by "Add as a new patient". Editable
+                      because these came off handwriting, and a name read wrong becomes a
+                      patient who is wrong from their first day. */}
+                  <div className="mt-2 flex gap-2">
+                    <label className="flex-1">
+                      <span className="text-xs text-muted">New patient name</span>
+                      <input
+                        name={`new_name_${i}`}
+                        defaultValue={m.row.name}
+                        autoCapitalize="words"
+                        className="mt-1 w-full rounded-lg border border-line bg-background px-3 py-2.5 text-sm outline-none focus:border-accent"
+                      />
+                    </label>
+                    <label className="w-28">
+                      <span className="text-xs text-muted">Bed</span>
+                      <input
+                        name={`new_bed_${i}`}
+                        defaultValue={m.row.bed}
+                        autoCapitalize="characters"
+                        className="mt-1 w-full rounded-lg border border-line bg-background px-3 py-2.5 text-sm outline-none focus:border-accent"
+                      />
+                    </label>
+                  </div>
 
                   {(m.row.findings.length > 0 || m.row.plans.length > 0) && (
                     <ul className="mt-3 flex flex-col gap-1 text-sm">
