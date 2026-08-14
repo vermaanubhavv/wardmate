@@ -128,6 +128,11 @@ function TaskRow({ task }: { task: WardTask }) {
           {task.patient.bed} · {task.patient.display_name}
         </Link>
         <p className="mt-0.5 truncate text-xs text-muted italic">“{task.source_quote}”</p>
+        {task.repeats > 0 && (
+          <p className="mt-0.5 text-xs text-muted">
+            said {task.repeats + 1} times — showing the latest
+          </p>
+        )}
       </div>
     </li>
   );

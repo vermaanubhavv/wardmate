@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { compareBeds } from "@/lib/patients";
 import { effectiveUrgency, urgencyRank, type Urgency } from "@/lib/urgency";
+import { dedupeTasks } from "@/lib/dedupe-tasks";
 
 export type WardTask = {
   id: string;
@@ -16,6 +17,8 @@ export type WardTask = {
   effective: Urgency;
   /** "due today", "2 days overdue" — null while it is still within its stated timeframe. */
   note: string | null;
+  /** Earlier sayings of this same job, folded under it. Kept in the record, not shown twice. */
+  repeats: number;
 };
 
 /**
@@ -46,10 +49,25 @@ export async function getWardTasks(wardId: string): Promise<WardTask[]> {
       patients.map((p) => p.id)
     )
     .eq("kind", "plan")
-    .is("done_at", null);
+    .is("done_at", null)
+    // Newest first, which is what folding repeats relies on.
+    .order("recorded_at", { ascending: false });
+
+  // Repeats folded per patient, never across the ward: two patients both needing a drain out
+  // are two jobs, and merging them would hide one entirely.
+  const byPatientTasks = new Map<string, NonNullable<typeof tasks>>();
+  for (const t of tasks ?? []) {
+    const list = byPatientTasks.get(t.patient_id) ?? [];
+    list.push(t);
+    byPatientTasks.set(t.patient_id, list);
+  }
+
+  const folded = [...byPatientTasks.values()].flatMap((list) =>
+    dedupeTasks(list).map(({ task, repeats }) => ({ ...task, repeats: repeats.length }))
+  );
 
   const out: WardTask[] = [];
-  for (const t of tasks ?? []) {
+  for (const t of folded) {
     const patient = byId.get(t.patient_id);
     if (!patient) continue;
 

@@ -14,6 +14,8 @@ import { effectiveUrgency } from "@/lib/urgency";
 import BedsideBar from "./bedside-bar";
 import EditIdentity from "../edit-identity";
 import UrgencyDot from "./urgency-dot";
+import DischargeSection from "./discharge-section";
+import { buildDischargeBrief } from "@/lib/discharge";
 import { confirmChecked, confirmAll, completeTask, reopenTask } from "./actions";
 
 type Entry = {
@@ -93,6 +95,25 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const procedure = procedureFor(patient, procedures);
   const management = managementLabel(patient);
 
+  // Latest of each drug recorded, for the discharge brief. Taken from the same observations
+  // the rest of the screen uses, so it can hold nothing that was not said.
+  const seenDrugs = new Set<string>();
+  const medications = allObservations
+    .filter((o) => o.kind === "medication")
+    .filter((o) => {
+      const key = o.label.toLowerCase().trim();
+      if (seenDrugs.has(key)) return false;
+      seenDrugs.add(key);
+      return true;
+    });
+
+  const dischargeBrief = buildDischargeBrief(
+    patient,
+    { matched, missing, extra, openTasks, doneTasks, pending },
+    medications,
+    procedure
+  );
+
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
       <header className="px-6 pt-8 pb-4">
@@ -170,6 +191,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                     <p className="mt-0.5 text-xs text-muted italic truncate">
                       “{o.source_quote}”
                     </p>
+                    {/* Said again on a later round. The earlier ones are still on the record
+                        below; the list just does not count one job twice. */}
+                    {o.repeats > 0 && (
+                      <p className="mt-0.5 text-xs text-muted">
+                        said {o.repeats + 1} times — showing the latest
+                      </p>
+                    )}
                   </div>
                 </li>
               ))}
@@ -308,7 +336,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       )}
 
       {/* Bottom padding clears the fixed speak bar so the oldest entry stays reachable. */}
-      <section className="px-6 pb-56">
+      <section className="px-6 pb-6">
         <p className="text-sm text-muted mb-2">Record</p>
         {entries.length === 0 ? (
           <p className="rounded-xl border border-line bg-card p-5 text-sm text-muted">
@@ -389,6 +417,12 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             ))}
           </ul>
         )}
+      </section>
+
+      {/* Last on the page: the admission ending, after everything it is assembled from.
+          Bottom padding clears the fixed speak bar so it stays openable. */}
+      <section className="px-6 pb-56">
+        <DischargeSection brief={dischargeBrief} patientName={patient.display_name} />
       </section>
 
       {/* Fixed, so the button is under your thumb no matter how long the record has grown. */}

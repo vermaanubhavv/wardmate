@@ -51,6 +51,12 @@ Guidance on fields:
 - day_number: use when a post-operative or admission day is spoken, with value_num as the integer.
 - plan: things to be done — "remove drain tomorrow", "repeat haemoglobin", "discharge if afebrile".
 
+ONE ACTION PER PLAN. A sentence naming several things to be done becomes several plans, not one. "Drain out and discharge tomorrow" is two plans — "drain out tomorrow" and "discharge tomorrow" — because they are ticked off at different moments and one may happen without the other. A shared timeframe belongs to each of them: both are "tomorrow".
+
+Both plans carry the same source_quote, which is the span that contains them. That is correct and expected; the quote is what was said, and one sentence can be the source of two jobs.
+
+Do not split a single action into pieces. "Remove the drain" is one plan, not "remove" and "the drain". Do not invent an action that was not said in order to make a pair.
+
 Urgency — plans only, and rule 1 applies to it as hard as to any number:
 
 - "red": the transcript gives a timeframe of hours, or today. "now", "stat", "urgently", "immediately", "this evening", "before I leave", "today", "in two hours".

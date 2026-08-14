@@ -1,5 +1,6 @@
 import { matchTemplate, type CareTemplate, type MatchedItem } from "@/lib/templates";
 import { effectiveUrgency, urgencyRank, type Urgency } from "@/lib/urgency";
+import { dedupeTasks } from "@/lib/dedupe-tasks";
 
 export type Observation = {
   id: string;
@@ -17,11 +18,14 @@ export type Observation = {
   recorded_at: string;
 };
 
+/** An outstanding job, with how many earlier sayings of it are folded underneath. */
+export type OpenTask = Observation & { repeats: number };
+
 export type PatientState = {
   matched: MatchedItem[];
   missing: MatchedItem[];
   extra: Observation[];
-  openTasks: Observation[];
+  openTasks: OpenTask[];
   doneTasks: Observation[];
   pending: Observation[];
 };
@@ -47,10 +51,14 @@ export function derivePatientState(
   const pending = observations.filter((o) => o.needs_confirmation && !o.confirmed_at);
 
   const allPlans = observations.filter((o) => o.kind === "plan");
-  // Sorted on what the colour means TODAY, not on the day it was spoken — otherwise a
-  // "tomorrow" job that has come due would still sit below the jobs it now outranks.
-  const openTasks = allPlans
-    .filter((o) => !o.done_at)
+
+  // Repeats folded together first, newest kept — observations arrive newest first, which is
+  // what dedupeTasks relies on. Then sorted on what the colour means TODAY rather than on the
+  // day it was spoken, so a "tomorrow" job that has come due does not sit below jobs it now
+  // outranks. Deduping before sorting matters: the newest saying carries the urgency that
+  // decides the order.
+  const openTasks: OpenTask[] = dedupeTasks(allPlans.filter((o) => !o.done_at))
+    .map(({ task, repeats }) => ({ ...task, repeats: repeats.length }))
     .sort(
       (a, b) =>
         urgencyRank(effectiveUrgency(a).urgency) - urgencyRank(effectiveUrgency(b).urgency)
