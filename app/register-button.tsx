@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { prepareImageForUpload } from "@/lib/image-for-upload";
 
 /**
  * Photograph the round register. Goes straight to a review screen — this never writes to a
@@ -13,9 +14,13 @@ export default function RegisterButton() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  async function upload(file: File) {
+  async function upload(chosen: File) {
     setBusy(true);
     setMessage(null);
+
+    // A library photo may be HEIC, which the server refuses, or larger than the request may
+    // carry. Both are converted here; a camera photo passes through untouched.
+    const file = await prepareImageForUpload(chosen);
 
     const form = new FormData();
     form.append("photo", file);
@@ -41,8 +46,12 @@ export default function RegisterButton() {
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
-        capture="environment"
+        // heic/heif named explicitly so the library does not grey them out on an iPhone.
+        accept="image/*,image/heic,image/heif"
+        // No `capture` attribute on purpose. With it, the phone goes straight to the camera
+        // and a page photographed earlier — or one sent by whoever held the register — is
+        // unreachable. Without it, the phone offers its own sheet: take a photo, or pick
+        // from the library.
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
@@ -56,7 +65,7 @@ export default function RegisterButton() {
         disabled={busy}
         className="w-full rounded-xl border border-line px-4 py-3 text-sm text-muted active:opacity-70 disabled:opacity-50"
       >
-        {busy ? "Reading the register…" : "Read round register"}
+        {busy ? "Reading the register…" : "Read round register — photo or upload"}
       </button>
       {message && <p className="text-center text-xs text-amber-200">{message}</p>}
     </>
