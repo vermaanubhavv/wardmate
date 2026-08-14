@@ -4,6 +4,8 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { addPatient, type AddPatientState } from "../actions";
 import { MANAGEMENT_CHOICES } from "@/lib/patients";
+import SpeakPatient from "./speak-patient";
+import type { SpokenPatient } from "@/lib/read-new-patient";
 
 /**
  * The one screen in the app where typing is allowed, because it happens once per admission
@@ -29,9 +31,44 @@ export default function PatientForm({
 
   const [operated, setOperated] = useState(false);
 
+  // Controlled so speech can fill them. Each starts empty and is only ever written to by a
+  // field the resident actually spoke — see fillFromSpeech.
+  const [fields, setFields] = useState({
+    bed: "",
+    display_name: "",
+    age_years: "",
+    sex: "",
+    primary_diagnosis: "",
+    procedure: "",
+  });
+
+  const set = (k: keyof typeof fields) => (v: string) =>
+    setFields((f) => ({ ...f, [k]: v }));
+
+  /**
+   * Fill in what was heard, and only that.
+   *
+   * A field nobody spoke is left exactly as it is rather than cleared — speaking a bed after
+   * typing a name must not wipe the name, and a half-heard sentence must not undo work
+   * already done by hand.
+   */
+  function fillFromSpeech(p: SpokenPatient) {
+    setFields((f) => ({
+      bed: p.bed ?? f.bed,
+      display_name: p.name ?? f.display_name,
+      age_years: p.age_years !== null ? String(p.age_years) : f.age_years,
+      sex: p.sex ?? f.sex,
+      primary_diagnosis: p.diagnosis ?? f.primary_diagnosis,
+      procedure: p.procedure ?? f.procedure,
+    }));
+  }
+
   return (
     <form action={formAction} className="flex flex-col gap-5">
       <input type="hidden" name="ward_id" value={wardId} />
+
+      {/* Above the boxes it fills, so the order on screen is the order of the work. */}
+      <SpeakPatient onParsed={fillFromSpeech} />
 
       <Field label="Bed" hint="Include the location, e.g. SW-12 or ICU-3">
         <input
@@ -39,6 +76,8 @@ export default function PatientForm({
           required
           autoFocus
           autoCapitalize="characters"
+          value={fields.bed}
+          onChange={(e) => set("bed")(e.target.value)}
           className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
         />
       </Field>
@@ -48,6 +87,8 @@ export default function PatientForm({
           name="display_name"
           required
           autoCapitalize="words"
+          value={fields.display_name}
+          onChange={(e) => set("display_name")(e.target.value)}
           className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
         />
       </Field>
@@ -62,6 +103,8 @@ export default function PatientForm({
               inputMode="numeric"
               min={0}
               max={120}
+              value={fields.age_years}
+              onChange={(e) => set("age_years")(e.target.value)}
               className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
             />
           </Field>
@@ -70,7 +113,8 @@ export default function PatientForm({
           <Field label="Sex">
             <select
               name="sex"
-              defaultValue=""
+              value={fields.sex}
+              onChange={(e) => set("sex")(e.target.value)}
               className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
             >
               <option value="">—</option>
@@ -87,6 +131,8 @@ export default function PatientForm({
           name="primary_diagnosis"
           list="diagnosis-suggestions"
           autoCapitalize="none"
+          value={fields.primary_diagnosis}
+          onChange={(e) => set("primary_diagnosis")(e.target.value)}
           className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
         />
         <datalist id="diagnosis-suggestions">
@@ -103,6 +149,8 @@ export default function PatientForm({
         <input
           name="procedure"
           list="operation-suggestions"
+          value={fields.procedure}
+          onChange={(e) => set("procedure")(e.target.value)}
           autoCapitalize="none"
           className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
         />
