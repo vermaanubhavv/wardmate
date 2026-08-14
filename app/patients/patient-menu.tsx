@@ -101,7 +101,7 @@ export default function PatientMenu({
               onClick={(e) => {
                 if (
                   !confirm(
-                    `Remove ${patient.display_name} from the ward list?\n\nTheir record is kept — nothing recorded about them is deleted.`
+                    `Remove ${patient.display_name} from the ward list?\n\nNothing is deleted. You can put them back from "Removed" at the top of the ward list.`
                   )
                 ) {
                   e.preventDefault();

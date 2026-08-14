@@ -119,6 +119,55 @@ export async function removePatient(formData: FormData) {
   redirect("/");
 }
 
+/** Undo a removal: back onto the active ward list, exactly as they were. */
+export async function restorePatient(formData: FormData) {
+  const id = String(formData.get("patient_id") ?? "");
+  if (!id) return;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase
+    .from("patients")
+    .update({ status: "active", discharged_at: null })
+    .eq("id", id);
+
+  revalidatePath("/");
+  revalidatePath("/removed");
+  revalidatePath("/todo");
+  revalidatePath("/handover");
+  revalidatePath(`/patients/${id}`);
+}
+
+/**
+ * Destroy a patient and everything recorded about them. There is no undoing this one.
+ *
+ * Only reachable from the removed list, and the database enforces that too — the delete
+ * policy refuses a patient still on the ward — so this is always the second of two deliberate
+ * acts rather than one mis-aimed tap. It exists for the patient who should never have been
+ * created: a misheard bed, a name read wrong off a register. Their entries and observations
+ * go with them, which is exactly what is wanted for noise and exactly why it sits behind an
+ * undo list for everything else.
+ */
+export async function deletePatientForever(formData: FormData) {
+  const id = String(formData.get("patient_id") ?? "");
+  if (!id) return;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase.from("patients").delete().eq("id", id).eq("status", "discharged");
+
+  revalidatePath("/");
+  revalidatePath("/removed");
+}
+
 export type EditPatientState = { error: string | null; ok?: boolean };
 
 /**

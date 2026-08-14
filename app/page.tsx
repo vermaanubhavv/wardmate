@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCurrentWard, getActivePatients } from "@/lib/ward";
+import { getCurrentWard, getActivePatients, getRemovedCount } from "@/lib/ward";
 import { dayLabel, managementLabel, patientName, type WardPatient } from "@/lib/patients";
 import { getProcedureLabels, listTemplateChoices, procedureFor } from "@/lib/templates";
 import RegisterButton from "./register-button";
@@ -26,9 +26,10 @@ export default async function Home() {
 
   const { patients } = await getActivePatients(ward.id);
   // One lookup for the whole list, so naming the operation on each card costs no extra query.
-  const [procedures, templateChoices] = await Promise.all([
+  const [procedures, templateChoices, removedCount] = await Promise.all([
     getProcedureLabels(),
     listTemplateChoices(),
+    getRemovedCount(ward.id),
   ]);
 
   return (
@@ -41,6 +42,13 @@ export default async function Home() {
           </p>
         </div>
         <div className="flex items-baseline gap-4">
+          {/* Only once there is something to undo — the way back has to be visible from the
+              screen the removal happened on, but an empty list is not worth a link. */}
+          {removedCount > 0 && (
+            <Link href="/removed" className="text-xs text-muted underline underline-offset-4">
+              Removed · {removedCount}
+            </Link>
+          )}
           <Link href="/todo" className="text-xs text-accent underline underline-offset-4">
             To do
           </Link>

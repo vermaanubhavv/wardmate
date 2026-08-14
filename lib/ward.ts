@@ -75,6 +75,18 @@ export async function getActivePatients(wardId: string) {
   return { patients: withFlags, error: null };
 }
 
+/** How many patients are sitting in the removed list — the count on the way back. */
+export async function getRemovedCount(wardId: string): Promise<number> {
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("patients")
+    .select("id", { count: "exact", head: true })
+    .eq("ward_id", wardId)
+    .eq("status", "discharged");
+
+  return count ?? 0;
+}
+
 /** Diagnoses already used on this ward, most common first, to offer as typing suggestions. */
 export async function getDiagnosisSuggestions(wardId: string): Promise<string[]> {
   const supabase = await createClient();
