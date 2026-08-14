@@ -14,6 +14,7 @@ import { effectiveUrgency } from "@/lib/urgency";
 import BedsideBar from "./bedside-bar";
 import EditIdentity from "../edit-identity";
 import UrgencyDot from "./urgency-dot";
+import EntryReview from "./entry-review";
 import DischargeSection from "./discharge-section";
 import { buildDischargeBrief } from "@/lib/discharge";
 import { confirmChecked, confirmAll, completeTask, reopenTask } from "./actions";
@@ -25,6 +26,8 @@ type Entry = {
   photo_path: string | null;
   recorded_at: string;
   extraction_error: string | null;
+  accepted_at: string | null;
+  edited_at: string | null;
   observations: Observation[];
 };
 
@@ -52,7 +55,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const { data: entriesData } = await supabase
     .from("entries")
     .select(
-      "id, source, transcript, photo_path, recorded_at, extraction_error, observations(id, kind, label, value_text, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at)"
+      "id, source, transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, observations(id, kind, label, value_text, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at)"
     )
     .eq("patient_id", id)
     .order("recorded_at", { ascending: false });
@@ -400,15 +403,16 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                         </a>
                       )}
 
+                      {/* The words themselves, and what can be done about them. Every value
+                          above came out of these, so this is where a mis-hearing shows. */}
                       {entry.transcript && (
-                        <details className="mt-2">
-                          <summary className="text-xs text-muted cursor-pointer">
-                            What you said
-                          </summary>
-                          <p className="mt-1.5 text-xs text-muted italic leading-relaxed">
-                            {entry.transcript}
-                          </p>
-                        </details>
+                        <EntryReview
+                          entryId={entry.id}
+                          patientId={patient.id}
+                          transcript={entry.transcript}
+                          accepted={Boolean(entry.accepted_at)}
+                          edited={Boolean(entry.edited_at)}
+                        />
                       )}
                     </div>
                   ))}
