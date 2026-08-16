@@ -11,7 +11,7 @@ export default async function HandoverPage() {
     return (
       <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
         <h1 className="text-2xl font-semibold">Ward round</h1>
-        <p className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           {wardError ? `Could not read the database: ${wardError.message}` : "No ward found."}
         </p>
       </main>
@@ -61,7 +61,7 @@ function PatientSummary({ patient }: { patient: HandoverPatient }) {
     <Link href={`/patients/${patient.id}`} className="block active:opacity-70">
       <div className="rounded-xl border border-line bg-card p-4">
         <div className="flex items-baseline gap-2 min-w-0">
-          <span className="shrink-0 rounded-lg bg-slate-800 px-2 py-1 font-mono text-xs tabular-nums">
+          <span className="shrink-0 rounded-lg bg-chip px-2 py-1 font-mono text-xs tabular-nums">
             {patient.bed}
           </span>
           <span className="truncate text-base font-medium">{patientName(patient)}</span>
@@ -89,13 +89,13 @@ function PatientSummary({ patient }: { patient: HandoverPatient }) {
               </li>
             ))}
             {pending.map((o) => (
-              <li key={o.id} className="text-sm text-amber-200">
+              <li key={o.id} className="text-sm text-amber-700">
                 <span aria-hidden>●</span> Confirm {o.label}
                 {o.value_text ? ` — ${o.value_text}` : ""}
               </li>
             ))}
             {missing.length > 0 && (
-              <li className="text-sm text-amber-300">
+              <li className="text-sm text-amber-700">
                 Not yet recorded: {missing.map((m) => m.item.label).join(", ")}
               </li>
             )}

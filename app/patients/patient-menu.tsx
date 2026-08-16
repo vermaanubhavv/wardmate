@@ -64,7 +64,7 @@ export default function PatientMenu({
           e.stopPropagation();
           setOpen((o) => !o);
         }}
-        className="shrink-0 rounded-lg px-2 py-1 text-lg leading-none text-muted active:bg-slate-700/60"
+        className="shrink-0 rounded-lg px-2 py-1 text-lg leading-none text-muted active:bg-chip"
       >
         ⋯
       </button>
@@ -80,14 +80,14 @@ export default function PatientMenu({
           <button
             type="button"
             onClick={openEditor}
-            className="block w-full px-4 py-3 text-left text-sm active:bg-slate-700/60"
+            className="block w-full px-4 py-3 text-left text-sm active:bg-chip"
           >
             Change bed
           </button>
           <button
             type="button"
             onClick={openEditor}
-            className="block w-full border-t border-line px-4 py-3 text-left text-sm active:bg-slate-700/60"
+            className="block w-full border-t border-line px-4 py-3 text-left text-sm active:bg-chip"
           >
             Change name, age, sex
           </button>
@@ -107,7 +107,7 @@ export default function PatientMenu({
                   e.preventDefault();
                 }
               }}
-              className="block w-full px-4 py-3 text-left text-sm text-red-300 active:bg-slate-700/60"
+              className="block w-full px-4 py-3 text-left text-sm text-red-600 active:bg-chip"
             >
               Remove from ward
             </button>

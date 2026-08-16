@@ -23,12 +23,12 @@ export default function JoinForm() {
         <button
           type="submit"
           disabled={pending}
-          className="shrink-0 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-slate-900 disabled:opacity-50"
+          className="shrink-0 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-ink disabled:opacity-50"
         >
           {pending ? "Joining…" : "Join"}
         </button>
       </div>
-      {state.error && <p className="text-xs text-amber-200">{state.error}</p>}
+      {state.error && <p className="text-xs text-amber-700">{state.error}</p>}
     </form>
   );
 }

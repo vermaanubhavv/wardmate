@@ -14,7 +14,7 @@ export default async function Home() {
     return (
       <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
         <h1 className="text-2xl font-semibold">CoreResident</h1>
-        <p className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           {wardError ? `Could not read the database: ${wardError.message}` : "No ward found."}
         </p>
         <form action={signOut} className="mt-6">
@@ -96,7 +96,7 @@ export default async function Home() {
           <RegisterButton />
           <Link
             href="/patients/new"
-            className="block rounded-xl bg-accent px-4 py-4 text-center text-base font-semibold text-slate-900"
+            className="block rounded-xl bg-accent px-4 py-4 text-center text-base font-semibold text-accent-ink"
           >
             Add patient
           </Link>
@@ -130,7 +130,7 @@ function PatientCard({
         className="flex gap-4 items-start p-4 active:opacity-70"
       >
         {/* Bed leads the card: on rounds you are looking for a bed, not a name. */}
-        <span className="shrink-0 rounded-lg bg-slate-800 px-2.5 py-1.5 font-mono text-sm tabular-nums">
+        <span className="shrink-0 rounded-lg bg-chip px-2.5 py-1.5 font-mono text-sm tabular-nums">
           {patient.bed}
         </span>
 
@@ -158,12 +158,12 @@ function PatientCard({
                 </p>
               )}
               {patient.open_task_count > 0 && (
-                <p className="inline-flex items-center gap-1.5 rounded-md bg-slate-700/60 px-2 py-1 text-xs text-foreground">
+                <p className="inline-flex items-center gap-1.5 rounded-md bg-chip px-2 py-1 text-xs text-foreground">
                   {patient.open_task_count} to do
                 </p>
               )}
               {patient.unconfirmed_count > 0 && (
-                <p className="inline-flex items-center gap-1.5 rounded-md bg-amber-400/15 px-2 py-1 text-xs text-amber-200">
+                <p className="inline-flex items-center gap-1.5 rounded-md bg-amber-100 px-2 py-1 text-xs text-amber-700">
                   <span aria-hidden>●</span>
                   {patient.unconfirmed_count} to confirm
                 </p>

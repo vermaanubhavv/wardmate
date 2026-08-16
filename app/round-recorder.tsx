@@ -158,7 +158,7 @@ export default function RoundRecorder() {
           Say the bed before each instruction. Nothing saves until you check it.
         </p>
       )}
-      {message && <p className="text-center text-xs text-amber-200">{message}</p>}
+      {message && <p className="text-center text-xs text-amber-700">{message}</p>}
     </div>
   );
 }

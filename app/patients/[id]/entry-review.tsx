@@ -53,7 +53,7 @@ export default function EntryReview({
           </button>
           <button
             type="submit"
-            className="flex-[2] rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-slate-900"
+            className="flex-[2] rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-accent-ink"
           >
             Save and re-read
           </button>
@@ -75,7 +75,7 @@ export default function EntryReview({
           <form action={acceptEntry}>
             <input type="hidden" name="entry_id" value={entryId} />
             <input type="hidden" name="patient_id" value={patientId} />
-            <button className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-slate-900">
+            <button className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-accent-ink">
               Accept
             </button>
           </form>
@@ -104,7 +104,7 @@ export default function EntryReview({
                 e.preventDefault();
               }
             }}
-            className="rounded-lg px-3 py-1.5 text-xs text-red-300"
+            className="rounded-lg px-3 py-1.5 text-xs text-red-600"
           >
             Delete
           </button>

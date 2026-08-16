@@ -173,7 +173,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                     <input type="hidden" name="patient_id" value={patient.id} />
                     <button
                       aria-label={`Mark done: ${o.value_text ?? o.label}`}
-                      className="h-6 w-6 rounded-md border border-muted/50 active:bg-accent active:border-accent"
+                      className="h-6 w-6 rounded-full border-2 border-muted/50 active:bg-accent active:border-accent"
                     />
                   </form>
                   <div className="pt-1">
@@ -239,7 +239,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
       {pending.length > 0 && (
         <section className="px-6 pb-6">
-          <p className="text-sm text-amber-200 mb-2">
+          <p className="text-sm text-amber-700 mb-2">
             {pending.length} to confirm before handover
           </p>
           {/* One form around the whole list: the two buttons below are the same submit with
@@ -252,7 +252,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
               {pending.map((o) => (
                 <li
                   key={o.id}
-                  className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3"
+                  className="rounded-xl border border-amber-200 bg-amber-50 p-3"
                 >
                   <label className="flex items-start gap-3">
                     <input
@@ -262,18 +262,18 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                       // Unticked by default. Confirming is the resident vouching for a
                       // value, so it has to be something they did, not something they
                       // failed to undo.
-                      className="mt-0.5 h-5 w-5 shrink-0 accent-amber-400"
+                      className="mt-0.5 h-5 w-5 shrink-0 accent-amber-500"
                     />
                     <span className="min-w-0 flex-1 text-sm">
                       <span className="text-muted">{o.label}</span>{" "}
                       <span className="font-medium">{o.value_text}</span>
                     </span>
                   </label>
-                  <p className="mt-1.5 pl-8 text-xs text-amber-200/70 italic">
+                  <p className="mt-1.5 pl-8 text-xs text-amber-700/70 italic">
                     “{o.source_quote}”
                   </p>
                   {o.conflict_note && (
-                    <p className="mt-1 pl-8 text-xs text-amber-100">{o.conflict_note}</p>
+                    <p className="mt-1 pl-8 text-xs text-amber-800">{o.conflict_note}</p>
                   )}
                 </li>
               ))}
@@ -282,7 +282,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             <div className="mt-3 flex gap-3">
               <button
                 type="submit"
-                className="flex-1 rounded-xl border border-amber-400/50 px-4 py-3 text-sm font-semibold text-amber-200"
+                className="flex-1 rounded-xl border border-amber-300 px-4 py-3 text-sm font-semibold text-amber-700"
               >
                 Accept ticked
               </button>
@@ -291,7 +291,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
               <button
                 type="submit"
                 formAction={confirmAll}
-                className="flex-1 rounded-xl bg-amber-400 px-4 py-3 text-sm font-semibold text-slate-900"
+                className="flex-1 rounded-xl bg-amber-500 px-4 py-3 text-sm font-semibold text-accent-ink"
               >
                 Accept all {pending.length}
               </button>
@@ -320,7 +320,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                   // Absent is shown as absent. Never a placeholder, never a guess.
                   <span
                     className={
-                      "text-sm text-right " + (m.missing ? "text-amber-300" : "text-muted/50")
+                      "text-sm text-right " + (m.missing ? "text-amber-700" : "text-muted/50")
                     }
                   >
                     not recorded
@@ -375,7 +375,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                       )}
 
                       {entry.extraction_error && (
-                        <p className="mt-2 text-xs text-amber-200">
+                        <p className="mt-2 text-xs text-amber-700">
                           Could not be structured — the words below are what was heard.
                         </p>
                       )}
@@ -436,7 +436,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
               having to remember the set for this operation. */}
           {missing.length > 0 && (
             <p className="text-xs text-muted leading-relaxed">
-              <span className="text-amber-300">Still to cover:</span>{" "}
+              <span className="text-amber-700">Still to cover:</span>{" "}
               {missing.map((m) => m.item.hint ?? m.item.label).join(" · ")}
             </p>
           )}
@@ -455,5 +455,5 @@ function CameDue({ observation }: { observation: Observation }) {
   const effective = effectiveUrgency(observation);
   if (!effective.note) return null;
 
-  return <span className="ml-2 whitespace-nowrap text-xs text-red-300">— {effective.note}</span>;
+  return <span className="ml-2 whitespace-nowrap text-xs text-red-600">— {effective.note}</span>;
 }

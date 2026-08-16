@@ -161,8 +161,8 @@ export default function Recorder({
           (recording
             ? "bg-rose-500 text-white"
             : status === "working" || status === "starting"
-              ? "bg-slate-700 text-muted"
-              : "bg-accent text-slate-900")
+              ? "bg-chip text-muted"
+              : "bg-accent text-accent-ink")
         }
       >
         {recording ? (

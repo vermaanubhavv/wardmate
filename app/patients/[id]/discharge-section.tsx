@@ -44,7 +44,7 @@ export default function DischargeSection({
         <button
           type="button"
           onClick={copy}
-          className="mt-3 w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-slate-900"
+          className="mt-3 w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-ink"
         >
           {copied ? "Copied" : "Copy discharge brief"}
         </button>

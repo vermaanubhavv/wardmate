@@ -29,7 +29,7 @@ export default async function RemovedPage() {
     return (
       <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
         <h1 className="text-2xl font-semibold">Removed</h1>
-        <p className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           {error ? `Could not read the database: ${error.message}` : "No ward found."}
         </p>
       </main>
@@ -86,7 +86,7 @@ function RemovedCard({ patient }: { patient: RemovedPatient }) {
   return (
     <div className="rounded-xl border border-line bg-card p-4">
       <div className="flex items-baseline gap-2">
-        <span className="shrink-0 rounded-lg bg-slate-800 px-2 py-1 font-mono text-xs">
+        <span className="shrink-0 rounded-lg bg-chip px-2 py-1 font-mono text-xs">
           {patient.bed}
         </span>
         <span className="truncate text-base font-medium">{patientName(patient)}</span>
@@ -111,7 +111,7 @@ function RemovedCard({ patient }: { patient: RemovedPatient }) {
       <div className="mt-3 flex gap-3">
         <form action={restorePatient} className="flex-1">
           <input type="hidden" name="patient_id" value={patient.id} />
-          <button className="w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-slate-900">
+          <button className="w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-ink">
             Put back on the ward
           </button>
         </form>
@@ -134,7 +134,7 @@ function RemovedCard({ patient }: { patient: RemovedPatient }) {
                 e.preventDefault();
               }
             }}
-            className="rounded-xl border border-red-400/50 px-4 py-3 text-sm font-semibold text-red-300"
+            className="rounded-xl border border-red-300 px-4 py-3 text-sm font-semibold text-red-600"
           >
             Delete
           </button>

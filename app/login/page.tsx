@@ -82,7 +82,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={busy}
-            className="rounded-xl bg-accent px-4 py-4 text-base font-semibold text-slate-900 disabled:opacity-50"
+            className="rounded-xl bg-accent px-4 py-4 text-base font-semibold text-accent-ink disabled:opacity-50"
           >
             {busy ? "Sending…" : "Send me a code"}
           </button>
@@ -108,7 +108,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={busy || code.length === 0}
-            className="rounded-xl bg-accent px-4 py-4 text-base font-semibold text-slate-900 disabled:opacity-50"
+            className="rounded-xl bg-accent px-4 py-4 text-base font-semibold text-accent-ink disabled:opacity-50"
           >
             {busy ? "Checking…" : "Sign in"}
           </button>
@@ -127,7 +127,7 @@ export default function LoginPage() {
       )}
 
       {error && (
-        <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           {error}
         </p>
       )}

@@ -67,7 +67,7 @@ export default function RegisterButton() {
       >
         {busy ? "Reading the register…" : "Read round register — photo or upload"}
       </button>
-      {message && <p className="text-center text-xs text-amber-200">{message}</p>}
+      {message && <p className="text-center text-xs text-amber-700">{message}</p>}
     </>
   );
 }

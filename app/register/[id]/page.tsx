@@ -88,7 +88,7 @@ export default async function RegisterReviewPage({
                   key={i}
                   className={
                     "rounded-xl border p-4 " +
-                    (clean ? "border-line bg-card" : "border-amber-500/40 bg-amber-500/5")
+                    (clean ? "border-line bg-card" : "border-amber-200 bg-amber-50")
                   }
                 >
                   <div className="flex items-baseline justify-between gap-3">
@@ -107,11 +107,11 @@ export default async function RegisterReviewPage({
                   <p className="mt-1 text-xs text-muted italic">“{m.row.source_quote}”</p>
 
                   {m.row.uncertain && (
-                    <p className="mt-1.5 text-xs text-amber-200">
+                    <p className="mt-1.5 text-xs text-amber-700">
                       Handwriting unclear — read this one against the photo.
                     </p>
                   )}
-                  {m.note && <p className="mt-1.5 text-xs text-amber-200">{m.note}</p>}
+                  {m.note && <p className="mt-1.5 text-xs text-amber-700">{m.note}</p>}
 
                   {/* Where this row will go. Only a clean match is pre-selected; everything
                       else starts on "Skip" so nothing lands anywhere by default. */}
@@ -189,7 +189,7 @@ export default async function RegisterReviewPage({
                 {autoTicked} of {rows.length} matched automatically. Everything saved is
                 flagged for you to confirm.
               </p>
-              <button className="w-full rounded-xl bg-accent px-4 py-4 text-base font-semibold text-slate-900">
+              <button className="w-full rounded-xl bg-accent px-4 py-4 text-base font-semibold text-accent-ink">
                 Save to the ticked patients
               </button>
             </div>

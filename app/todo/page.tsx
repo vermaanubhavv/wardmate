@@ -20,7 +20,7 @@ export default async function TodoPage() {
     return (
       <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
         <h1 className="text-2xl font-semibold">To do</h1>
-        <p className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           {error ? `Could not read the database: ${error.message}` : "No ward found."}
         </p>
       </main>
@@ -97,7 +97,7 @@ function TaskRow({ task }: { task: WardTask }) {
         <input type="hidden" name="patient_id" value={task.patient_id} />
         <button
           aria-label={`Mark done: ${task.value_text ?? task.label}`}
-          className="h-6 w-6 rounded-md border border-muted/50 active:bg-accent active:border-accent"
+          className="h-6 w-6 rounded-full border-2 border-muted/50 active:bg-accent active:border-accent"
         />
       </form>
 
@@ -117,7 +117,7 @@ function TaskRow({ task }: { task: WardTask }) {
           {/* Said in words, so a job that climbed with the calendar never looks like one
               somebody graded red. */}
           {task.note && (
-            <span className="ml-2 whitespace-nowrap text-xs text-red-300">— {task.note}</span>
+            <span className="ml-2 whitespace-nowrap text-xs text-red-600">— {task.note}</span>
           )}
         </p>
         {/* Which bed to walk to — the thing that turns a list into a route. */}

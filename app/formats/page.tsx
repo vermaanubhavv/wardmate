@@ -16,7 +16,7 @@ export default async function FormatsPage() {
     return (
       <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
         <h1 className="text-2xl font-semibold">Formats</h1>
-        <p className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           {error ? `Could not read the database: ${error.message}` : "No ward found."}
         </p>
       </main>

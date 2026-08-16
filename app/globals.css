@@ -1,14 +1,20 @@
 @import "tailwindcss";
 
-/* One fixed dark theme. Ward lighting varies wildly and a phone that changes
-   appearance between rooms is one more thing to think about at 7am. */
+/* One fixed light theme, in the manner of Todoist: a near-white page, content on plain
+   white, hairline rules instead of boxes, and one red used sparingly for the thing to press.
+   Ward lighting varies wildly and a phone that changes appearance between rooms is one more
+   thing to think about at 7am, so this does not follow the system setting. */
 :root {
-  --background: #0f172a;
-  --foreground: #e2e8f0;
-  --muted: #94a3b8;
-  --line: #1e293b;
-  --card: #172033;
-  --accent: #38bdf8;
+  --background: #fafafa;
+  --foreground: #202020;
+  --muted: #808080;
+  --line: #eeeeee;
+  --card: #ffffff;
+  --accent: #dc4c3e;
+  /* What sits ON the accent. Kept as a token so the two can never drift apart. */
+  --accent-ink: #ffffff;
+  /* The flat grey behind a bed number or a count. */
+  --chip: #f1f1f1;
 }
 
 @theme inline {
@@ -18,12 +24,14 @@
   --color-line: var(--line);
   --color-card: var(--card);
   --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-chip: var(--chip);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
   background: var(--background);
 }
 

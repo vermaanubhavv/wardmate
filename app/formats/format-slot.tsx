@@ -34,7 +34,7 @@ export default function FormatSlot({
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-sm font-medium">{label}</p>
         {current ? (
-          <span className="shrink-0 text-xs text-emerald-300">held</span>
+          <span className="shrink-0 text-xs text-emerald-600">held</span>
         ) : (
           <span className="shrink-0 text-xs text-muted">not uploaded</span>
         )}
@@ -92,7 +92,7 @@ export default function FormatSlot({
             <button
               type="submit"
               formAction={removeFormat}
-              className="rounded-lg px-3 py-2 text-xs text-red-300"
+              className="rounded-lg px-3 py-2 text-xs text-red-600"
             >
               Remove
             </button>
@@ -100,7 +100,7 @@ export default function FormatSlot({
         )}
       </form>
 
-      {state.error && <p className="mt-2 text-xs text-amber-200">{state.error}</p>}
+      {state.error && <p className="mt-2 text-xs text-amber-700">{state.error}</p>}
     </div>
   );
 }

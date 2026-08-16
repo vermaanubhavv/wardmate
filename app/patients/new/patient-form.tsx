@@ -177,7 +177,7 @@ export default function PatientForm({
           type="checkbox"
           checked={operated}
           onChange={(e) => setOperated(e.target.checked)}
-          className="h-5 w-5 accent-sky-400"
+          className="h-5 w-5 accent-accent"
         />
         <span>Has been operated</span>
       </label>
@@ -213,7 +213,7 @@ export default function PatientForm({
       )}
 
       {state.error && (
-        <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           {state.error}
         </p>
       )}
@@ -228,7 +228,7 @@ export default function PatientForm({
         <button
           type="submit"
           disabled={pending}
-          className="flex-[2] rounded-xl bg-accent px-4 py-4 text-base font-semibold text-slate-900 disabled:opacity-50"
+          className="flex-[2] rounded-xl bg-accent px-4 py-4 text-base font-semibold text-accent-ink disabled:opacity-50"
         >
           {pending ? "Adding…" : "Add patient"}
         </button>

@@ -84,7 +84,7 @@ export default function BedsideBar({ patientId }: { patientId: string }) {
             type="button"
             onClick={save}
             disabled={busy || !text.trim()}
-            className="flex-[2] rounded-xl bg-accent px-4 py-3 text-base font-semibold text-slate-900 disabled:opacity-50"
+            className="flex-[2] rounded-xl bg-accent px-4 py-3 text-base font-semibold text-accent-ink disabled:opacity-50"
           >
             {busy ? "Saving…" : "Save note"}
           </button>

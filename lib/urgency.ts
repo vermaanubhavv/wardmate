@@ -9,23 +9,23 @@ export const URGENCY_META: Record<
   red: {
     label: "Now",
     meaning: "Within hours, or today",
-    dot: "bg-red-400",
-    chip: "bg-red-400/15 text-red-200",
-    border: "border-red-400/40",
+    dot: "bg-red-500",
+    chip: "bg-red-100 text-red-700",
+    border: "border-red-300",
   },
   yellow: {
     label: "Soon",
     meaning: "Today or tomorrow",
-    dot: "bg-amber-400",
-    chip: "bg-amber-400/15 text-amber-200",
-    border: "border-amber-400/40",
+    dot: "bg-amber-500",
+    chip: "bg-amber-100 text-amber-700",
+    border: "border-amber-300",
   },
   green: {
     label: "Has time",
     meaning: "No hurry",
-    dot: "bg-emerald-400",
-    chip: "bg-emerald-400/15 text-emerald-200",
-    border: "border-emerald-400/40",
+    dot: "bg-emerald-500",
+    chip: "bg-emerald-100 text-emerald-700",
+    border: "border-emerald-300",
   },
 };
 

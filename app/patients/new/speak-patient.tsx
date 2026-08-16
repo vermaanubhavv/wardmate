@@ -149,7 +149,7 @@ export default function SpeakPatient({
       </button>
 
       {message ? (
-        <p className="text-center text-xs text-amber-200">{message}</p>
+        <p className="text-center text-xs text-amber-700">{message}</p>
       ) : (
         status === "idle" && (
           <p className="text-center text-xs text-muted">

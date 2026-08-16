@@ -92,7 +92,7 @@ export default async function RoundReviewPage({
           <div className="mx-auto max-w-md flex flex-col gap-3">
             <button
               type="submit"
-              className="w-full rounded-xl bg-accent px-4 py-4 text-base font-semibold text-slate-900"
+              className="w-full rounded-xl bg-accent px-4 py-4 text-base font-semibold text-accent-ink"
             >
               Save the ticked ones
             </button>
@@ -131,17 +131,17 @@ function UpdateCard({
     <div
       className={
         "rounded-xl border bg-card p-4 " +
-        (sure ? "border-line" : "border-amber-500/40 bg-amber-500/5")
+        (sure ? "border-line" : "border-amber-200 bg-amber-50")
       }
     >
       <div className="flex items-baseline gap-2">
-        <span className="shrink-0 rounded-lg bg-slate-800 px-2 py-1 font-mono text-xs">
+        <span className="shrink-0 rounded-lg bg-chip px-2 py-1 font-mono text-xs">
           bed {segment.bed || "?"}
         </span>
         {matched ? (
           <span className="truncate text-sm font-medium">{patientName(matched)}</span>
         ) : (
-          <span className="text-sm text-amber-200">Which patient?</span>
+          <span className="text-sm text-amber-700">Which patient?</span>
         )}
       </div>
 
@@ -165,7 +165,7 @@ function UpdateCard({
       )}
 
       {(match.note || segment.uncertain) && (
-        <p className="mt-3 text-xs text-amber-200">
+        <p className="mt-3 text-xs text-amber-700">
           {match.note}
           {segment.uncertain &&
             (match.note ? " " : "") + "The recording was unclear here — check it carefully."}
@@ -217,7 +217,7 @@ function AdmitCard({
             name={`admit_${index}`}
             value="yes"
             defaultChecked={free.status === "free"}
-            className="h-5 w-5 accent-sky-400"
+            className="h-5 w-5 accent-accent"
           />
           Admit
         </label>
@@ -225,7 +225,7 @@ function AdmitCard({
 
       <p className="mt-2 text-sm italic text-muted">“{segment.text}”</p>
 
-      {free.note && <p className="mt-3 text-xs text-amber-200">{free.note}</p>}
+      {free.note && <p className="mt-3 text-xs text-amber-700">{free.note}</p>}
 
       <div className="mt-3 flex flex-col gap-3">
         <Box label="Bed" name={`bed_${index}`} defaultValue={segment.bed} />

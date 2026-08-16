@@ -40,8 +40,8 @@ function Check({ ok, label, note }: { ok: boolean | null; label: string; note?: 
           (ok === null
             ? "bg-line text-muted"
             : ok
-              ? "bg-accent text-slate-900"
-              : "bg-amber-400 text-slate-900")
+              ? "bg-accent text-accent-ink"
+              : "bg-amber-500 text-accent-ink")
         }
       >
         {ok === null ? "" : ok ? "✓" : "!"}
