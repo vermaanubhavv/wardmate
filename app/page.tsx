@@ -37,8 +37,18 @@ export default async function Home() {
       <header className="px-6 pt-10 pb-4 flex items-baseline justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{ward.name}</h1>
+          {/* Kept to one line under the ward name: the unit's own settings are looked at
+              once in a rotation, and must not compete with the round for space. */}
           <p className="text-muted text-sm mt-0.5">
             {patients.length} {patients.length === 1 ? "patient" : "patients"}
+            {" · "}
+            <Link href="/unit" className="underline underline-offset-4">
+              Unit
+            </Link>
+            {" · "}
+            <Link href="/formats" className="underline underline-offset-4">
+              Formats
+            </Link>
           </p>
         </div>
         <div className="flex items-baseline gap-4">

@@ -8,15 +8,56 @@ import { compareBeds } from "@/lib/patients";
  */
 export async function getCurrentWard() {
   const supabase = await createClient();
+
+  // The one the doctor last chose, if they still belong to it. Once somebody belongs to two
+  // units "the oldest" stops being a sensible answer — a resident who joins a unit would
+  // otherwise keep landing on the empty ward their account was created with.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("current_ward_id")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profile?.current_ward_id) {
+      // Read through wards, so row security is what decides they may still see it — a doctor
+      // removed from a unit falls back rather than keeping it on screen.
+      const { data: chosen } = await supabase
+        .from("wards")
+        .select("id, name, owner_id, join_code")
+        .eq("id", profile.current_ward_id)
+        .is("archived_at", null)
+        .maybeSingle();
+
+      if (chosen) return { ward: chosen, error: null };
+    }
+  }
+
   const { data, error } = await supabase
     .from("wards")
-    .select("id, name, owner_id")
+    .select("id, name, owner_id, join_code")
     .is("archived_at", null)
     .order("created_at")
     .limit(1)
     .maybeSingle();
 
   return { ward: data, error };
+}
+
+/** Every unit this doctor belongs to, for the switcher. */
+export async function getMyWards() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("wards")
+    .select("id, name, owner_id")
+    .is("archived_at", null)
+    .order("created_at");
+
+  return data ?? [];
 }
 
 export async function getActivePatients(wardId: string) {
