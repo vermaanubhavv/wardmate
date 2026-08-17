@@ -99,3 +99,23 @@ export function dedupeTasks<T extends { value_text: string | null; label: string
 
   return [...groups.values(), ...ungrouped];
 }
+
+/**
+ * Whether showing the words a job came from tells the resident anything.
+ *
+ * The quote is there so a job is never only the app's paraphrase — that matters when the
+ * sentence was long and the job is a summary of it. But most plans are extracted almost
+ * verbatim, so the quote repeats the job word for word, doubling the height of every row in a
+ * list of twenty to say the same thing twice.
+ *
+ * Compared after the same normalisation used for folding repeats, so punctuation and casing do
+ * not make an identical sentence look different.
+ */
+export function quoteAddsNothing(text: string, quote: string): boolean {
+  const t = taskKey(text);
+  const q = taskKey(quote);
+  if (!t || !q) return true;
+  // Contained either way: "discharge tomorrow" against "plan is to discharge tomorrow" adds
+  // only filler, and the job is the part that matters.
+  return t === q || q.includes(t);
+}

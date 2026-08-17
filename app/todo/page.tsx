@@ -4,6 +4,7 @@ import { getWardTasks, type WardTask } from "@/lib/todo";
 import { URGENCY_META, type Urgency } from "@/lib/urgency";
 import UrgencyDot from "../patients/[id]/urgency-dot";
 import Tick from "../patients/[id]/tick";
+import { quoteAddsNothing } from "@/lib/dedupe-tasks";
 
 /** The four groups, in the order they are worked through. */
 const GROUPS: { key: Urgency; title: string; note: string }[] = [
@@ -120,11 +121,17 @@ function TaskRow({ task }: { task: WardTask }) {
         {/* Which bed to walk to — the thing that turns a list into a route. */}
         <Link
           href={`/patients/${task.patient_id}`}
-          className="mt-0.5 block truncate text-[13px] text-muted underline underline-offset-4"
+          className="mt-0.5 flex items-center gap-1.5 truncate text-[13px] text-accent active:opacity-60"
         >
-          {task.patient.bed} · {task.patient.display_name}
+          <span className="rounded bg-chip px-1 font-mono tabular-nums text-muted">
+            {task.patient.bed}
+          </span>
+          {task.patient.display_name}
         </Link>
-        <p className="mt-0.5 truncate text-[13px] text-muted italic">“{task.source_quote}”</p>
+        {/* Only when it says something the job does not. */}
+        {!quoteAddsNothing(task.value_text ?? task.label, task.source_quote) && (
+          <p className="mt-0.5 truncate text-[13px] italic text-muted">“{task.source_quote}”</p>
+        )}
         {task.repeats > 0 && (
           <p className="mt-0.5 text-[13px] text-muted">
             said {task.repeats + 1} times — showing the latest

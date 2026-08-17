@@ -15,6 +15,7 @@ import BedsideBar from "./bedside-bar";
 import EditIdentity from "../edit-identity";
 import UrgencyDot from "./urgency-dot";
 import { ChevronIcon } from "../../icons";
+import { quoteAddsNothing } from "@/lib/dedupe-tasks";
 import Tick from "./tick";
 import EntryReview from "./entry-review";
 import DischargeSection from "./discharge-section";
@@ -159,8 +160,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           {patient.primary_diagnosis || "No diagnosis recorded"}
         </p>
         <p className="mt-1.5 flex items-center gap-2 text-[13px] text-muted">
-          <span className="rounded-md bg-chip px-1.5 py-0.5 font-mono tabular-nums">
-            {patient.bed}
+          <span className="rounded-md bg-chip px-1.5 py-0.5 tabular-nums">
+            Bed <span className="font-mono">{patient.bed}</span>
           </span>
           {management && <span className="tracking-wide">{management}</span>}
         </p>
@@ -195,10 +196,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                       {o.value_text ?? o.label}
                       <CameDue observation={o} />
                     </p>
-                    {/* The words it came from, so a job is never just the app's paraphrase. */}
-                    <p className="mt-0.5 text-[13px] text-muted italic truncate">
-                      “{o.source_quote}”
-                    </p>
+                    {/* The words it came from, so a job is never just the app's paraphrase —
+                        shown only when they say more than the job itself does. */}
+                    {!quoteAddsNothing(o.value_text ?? o.label, o.source_quote) && (
+                      <p className="mt-0.5 truncate text-[13px] italic text-muted">
+                        “{o.source_quote}”
+                      </p>
+                    )}
                     {/* Said again on a later round. The earlier ones are still on the record
                         below; the list just does not count one job twice. */}
                     {o.repeats > 0 && (
@@ -439,9 +443,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         {/* Visible while you hold the button, so you know what is left to cover without
               having to remember the set for this operation. */}
           {missing.length > 0 && (
-            <p className="text-[13px] text-muted leading-relaxed">
+            <p className="truncate text-[13px] text-muted">
               <span className="text-orange-700">Still to cover:</span>{" "}
-              {missing.map((m) => m.item.hint ?? m.item.label).join(" · ")}
+              {missing
+                .slice(0, 3)
+                .map((m) => m.item.hint ?? m.item.label)
+                .join(" · ")}
+              {missing.length > 3 && ` · +${missing.length - 3} more`}
             </p>
           )}
           <BedsideBar patientId={patient.id} />
