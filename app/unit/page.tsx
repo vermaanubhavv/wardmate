@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentWard, getMyWards } from "@/lib/ward";
 import CodeBox from "./code-box";
 import JoinForm from "./join-form";
-import { switchWard, leaveWard, renameWard } from "./actions";
+import { switchWard, leaveWard, renameWard, saveLetterhead } from "./actions";
 
 /**
  * The unit: who is on it, how to join it, and which one the app is showing.
@@ -109,6 +109,28 @@ export default async function UnitPage() {
             </button>
           </form>
           <p className="mt-2 text-[13px] text-muted">Everyone on the unit sees this name.</p>
+        </section>
+      )}
+
+      {isOwner && (
+        <section className="px-6 pb-6">
+          <p className="mb-2 text-[15px] text-muted">Discharge summary heading</p>
+          <form action={saveLetterhead}>
+            <input type="hidden" name="ward_id" value={ward.id} />
+            <textarea
+              name="letterhead"
+              rows={7}
+              defaultValue={ward.letterhead ?? ""}
+              placeholder={"E.S.I.C. MEDICAL COLLEGE & HOSPITAL\nNH-3, N.I.T. FARIDABAD, HARYANA\nDEPARTMENT OF GENERAL SURGERY\nUNIT-II"}
+              className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[15px] leading-relaxed outline-none focus:border-accent"
+            />
+            <button className="mt-2 w-full rounded-[10px] bg-card px-4 py-3 text-[17px] font-medium text-accent">
+              Save heading
+            </button>
+          </form>
+          <p className="mt-2 text-[13px] text-muted">
+            Printed at the top of every discharge summary, exactly as typed.
+          </p>
         </section>
       )}
 

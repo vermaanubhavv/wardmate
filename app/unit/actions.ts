@@ -53,6 +53,29 @@ export async function renameWard(formData: FormData) {
   revalidatePath("/unit");
 }
 
+/**
+ * The heading that goes on top of a discharge summary.
+ *
+ * Free text, reproduced verbatim, because every unit lays its heading out differently — the
+ * consultants, which days are OPD and OT — and a set of fields that guessed at the shape would
+ * be wrong for the next unit. Owner only, like renaming: the wards policy permits nobody else.
+ */
+export async function saveLetterhead(formData: FormData) {
+  const wardId = String(formData.get("ward_id") ?? "");
+  if (!wardId) return;
+
+  const letterhead = String(formData.get("letterhead") ?? "").trim();
+
+  const supabase = await createClient();
+  await supabase
+    .from("wards")
+    .update({ letterhead: letterhead ? letterhead.slice(0, 2000) : null })
+    .eq("id", wardId);
+
+  revalidatePath("/unit");
+  revalidatePath("/");
+}
+
 /** Switch which unit the app is showing. */
 export async function switchWard(formData: FormData) {
   const wardId = String(formData.get("ward_id") ?? "");

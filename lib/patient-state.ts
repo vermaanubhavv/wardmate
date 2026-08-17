@@ -25,6 +25,9 @@ export type PatientState = {
   matched: MatchedItem[];
   missing: MatchedItem[];
   extra: Observation[];
+  /** The newest value for every thing recorded, template or not — what a discharge summary
+   *  is built from, where `extra` is only what the checklist did not ask about. */
+  latest: Observation[];
   openTasks: OpenTask[];
   doneTasks: Observation[];
   pending: Observation[];
@@ -83,7 +86,15 @@ export function derivePatientState(
       !templateLabels.has(o.label.toLowerCase())
   );
 
-  return { matched, missing, extra, openTasks, doneTasks, pending };
+  return {
+    matched,
+    missing,
+    extra,
+    latest: [...latest.values()],
+    openTasks,
+    doneTasks,
+    pending,
+  };
 }
 
 export const SITTING_GAP_MS = 30 * 60 * 1000;

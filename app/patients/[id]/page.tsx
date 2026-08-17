@@ -90,10 +90,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // relies on that order to pick the latest value for each thing.
   const template = await getTemplateForPatient(patient);
   const allObservations = entries.flatMap((e) => e.observations);
-  const { matched, missing, extra, openTasks, doneTasks, pending } = derivePatientState(
-    allObservations,
-    template
-  );
+  const patientState = derivePatientState(allObservations, template);
+  const { matched, missing, extra, openTasks, doneTasks, pending } = patientState;
 
   // One visit to the bedside reads as one block in the record, however many times you spoke
   // or photographed something while standing there.
@@ -114,12 +112,17 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       return true;
     });
 
-  const dischargeBrief = buildDischargeBrief(
-    patient,
-    { matched, missing, extra, openTasks, doneTasks, pending },
-    medications,
-    procedure
-  );
+  // The unit's letterhead and name, so the summary comes out on the unit's own paper.
+  const { data: wardRow } = await supabase
+    .from("wards")
+    .select("name, letterhead")
+    .eq("id", patient.ward_id)
+    .maybeSingle();
+
+  const dischargeBrief = buildDischargeBrief(patient, patientState, medications, procedure, {
+    letterhead: wardRow?.letterhead ?? null,
+    wardName: wardRow?.name ?? null,
+  });
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">

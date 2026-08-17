@@ -27,7 +27,7 @@ export async function getCurrentWard() {
       // removed from a unit falls back rather than keeping it on screen.
       const { data: chosen } = await supabase
         .from("wards")
-        .select("id, name, owner_id, join_code")
+        .select("id, name, owner_id, join_code, letterhead")
         .eq("id", profile.current_ward_id)
         .is("archived_at", null)
         .maybeSingle();
@@ -38,7 +38,7 @@ export async function getCurrentWard() {
 
   const { data, error } = await supabase
     .from("wards")
-    .select("id, name, owner_id, join_code")
+    .select("id, name, owner_id, join_code, letterhead")
     .is("archived_at", null)
     .order("created_at")
     .limit(1)

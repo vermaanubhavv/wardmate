@@ -52,9 +52,10 @@ export default async function FormatsPage() {
           />
         ))}
 
-        <p className="mt-2 text-[13px] text-muted leading-relaxed">
-          These are stored for the unit to refer to. Nothing the app writes follows them yet —
-          the discharge brief is still assembled in its own layout.
+        <p className="mt-2 text-[13px] leading-relaxed text-muted">
+          The discharge summary now follows this unit&rsquo;s own layout. Its heading is set on
+          the <span className="text-foreground">Unit</span> screen. The other four are stored
+          for the unit to refer to — nothing the app writes follows them yet.
         </p>
       </section>
     </div>

@@ -1,5 +1,5 @@
-import { dayLabel, managementLabel, patientName } from "@/lib/patients";
-import type { PatientState } from "@/lib/patient-state";
+import { dayLabel, managementLabel } from "@/lib/patients";
+import type { Observation, PatientState } from "@/lib/patient-state";
 
 export type DischargePatient = {
   display_name: string;
@@ -14,90 +14,180 @@ export type DischargePatient = {
   management: string | null;
 };
 
+/** What the app cannot know and must not invent: a label and a blank to write on. */
+const BLANK = "____________________";
+
+const istDay = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-GB", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+  });
+
 /**
- * The discharge brief, assembled from what is on the record.
+ * The discharge summary, in the unit's own layout.
  *
- * Deliberately assembled rather than written. Nothing here is generated: every line is a
- * value the resident said or photographed, laid out in the order a discharge note is read.
- * That is not a shortcut — a discharge summary is the one document from a ward round that
- * leaves the hospital with the patient, and a model writing prose over these values would be
- * free to smooth over the gaps. The gaps are the useful part: a brief that says "not
- * recorded" is telling the resident what to go and check before anybody signs it.
+ * Built from the unit's actual form rather than a generic one, because a summary that has to be
+ * retyped into the real format has saved nobody anything. The order, the headings and the
+ * wording of the labels are the unit's.
  *
- * So this is a starting point to correct and paste, never a finished summary.
+ * Two rules run through it, the same two the rest of the app follows.
+ *
+ * Nothing is invented. Every value printed was said or photographed on a round. The narrative
+ * sections of a real summary — the history, the course in hospital — are the work of a doctor
+ * who saw the patient, so they print as headings with the round's own notes beneath, to be
+ * written up. A model composing "patient presented with complaints of…" out of four vitals
+ * would be writing fiction into a document that leaves the hospital with the patient.
+ *
+ * Nothing absent is hidden. A field with no value prints as a blank line rather than as
+ * silence, so what still needs filling is visible before signing rather than discovered by
+ * whoever reads it next.
+ *
+ * The identifiers are deliberately blank. Insurance number, MRD number and IP/family are on
+ * the form and this app does not hold them, by design — it stores a name and a bed. That is
+ * worth keeping even at the cost of three lines of handwriting per discharge.
  */
 export function buildDischargeBrief(
   patient: DischargePatient,
   state: PatientState,
-  medications: { label: string; value_text: string | null }[],
-  procedure: string | null
+  medications: Observation[],
+  procedure: string | null,
+  options?: { letterhead?: string | null; wardName?: string | null }
 ): string {
-  const lines: string[] = [];
+  const out: string[] = [];
+  const today = new Date().toISOString();
 
-  const dates = (iso: string) =>
-    new Date(iso).toLocaleDateString("en-IN", {
-      timeZone: "Asia/Kolkata",
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+  if (options?.letterhead?.trim()) out.push(options.letterhead.trim(), "");
 
-  lines.push(patientName(patient));
-  lines.push(`Bed ${patient.bed}`);
-  lines.push("");
+  out.push("DISCHARGE SUMMARY", "");
 
-  lines.push(`Diagnosis: ${patient.primary_diagnosis || "not recorded"}`);
+  out.push(`NAME – ${patient.display_name.toUpperCase()}`);
+  out.push(`AGE – ${patient.age_years !== null ? `${patient.age_years} YEARS` : BLANK}`);
+  out.push(`SEX – ${sexWord(patient.sex)}`);
+  out.push(`INS. NO./EMP ID – ${BLANK}`);
+  out.push(`MRD NO. ${BLANK}`);
+  out.push(`IP/FAMILY – ${BLANK}`);
+  out.push(`WARD – ${(options?.wardName ?? "GENERAL SURGERY").toUpperCase()}`);
+  out.push(`D.O.A – ${istDay(patient.admitted_on)}`);
+  out.push(`D.O.D – ${istDay(today)}`);
+  out.push("");
+
+  out.push(`FINAL DIAGNOSIS: ${(patient.primary_diagnosis || BLANK).toUpperCase()}`);
   if (procedure) {
-    lines.push(
-      `Operation: ${procedure}${patient.surgery_date ? ` on ${dates(patient.surgery_date)}` : ""}`
+    out.push(
+      `PROCEDURE: ${procedure.toUpperCase()}${
+        patient.surgery_date ? ` ON ${istDay(patient.surgery_date)}` : ""
+      }`
     );
   }
-  const management = managementLabel(patient);
-  if (management) lines.push(`Management: ${management}`);
-  lines.push(`Admitted: ${dates(patient.admitted_on)}`);
-  lines.push(`Today: ${dayLabel(patient)}`);
-  lines.push("");
+  out.push("");
 
-  // Where the patient stands, in the operation's own order where there is a template.
-  lines.push("On discharge:");
-  const stand = [
-    ...state.matched.filter((m) => m.value).map((m) => `  ${m.item.label}: ${m.value}`),
-    ...state.extra
-      .filter((o) => o.kind !== "medication")
-      .map((o) => `  ${o.label}: ${o.value_text}`),
-  ];
-  lines.push(stand.length > 0 ? stand.join("\n") : "  nothing recorded");
-  lines.push("");
-
-  if (medications.length > 0) {
-    lines.push("Medications recorded:");
-    for (const m of medications) lines.push(`  ${m.label}${m.value_text ? `: ${m.value_text}` : ""}`);
-    lines.push("");
+  out.push("HISTORY AND COURSE IN HOSPITAL");
+  const notes = kinds(state, ["note", "diagnosis"]);
+  if (notes.length > 0) {
+    out.push("  Recorded on the round — to be written up:");
+    for (const o of notes) out.push(`  · ${o.value_text ?? o.label}`);
+  } else {
+    out.push(`  ${BLANK}`);
   }
+  out.push("");
 
-  // What is still outstanding. On a discharge brief these read as what has to happen before
-  // the patient goes, or as what follow-up they leave with — either way they belong here
-  // rather than being quietly dropped because the admission is ending.
-  if (state.openTasks.length > 0) {
-    lines.push("Still outstanding:");
-    for (const t of state.openTasks) lines.push(`  ${t.value_text ?? t.label}`);
-    lines.push("");
+  out.push("CONDITION AT DISCHARGE –");
+  const vitals = kinds(state, ["vital"]);
+  const exam = kinds(state, ["exam", "drain", "intake_output"]);
+  if (vitals.length > 0) {
+    out.push("  " + vitals.map((o) => `${o.label.toUpperCase()} ${o.value_text}`).join("   "));
+  } else {
+    out.push(`  BP – ${BLANK}   PR – ${BLANK}`);
   }
+  if (exam.length > 0) {
+    for (const o of exam) out.push(`  ${o.label.toUpperCase()} – ${o.value_text}`);
+  } else {
+    out.push(`  P/ABD – ${BLANK}`);
+  }
+  out.push("");
 
-  if (state.pending.length > 0) {
-    lines.push(`${state.pending.length} value(s) never confirmed — check before signing:`);
-    for (const o of state.pending) {
-      lines.push(`  ${o.label}${o.value_text ? `: ${o.value_text}` : ""}`);
+  // Grouped by the day they were recorded, which is how the form's table is read across.
+  out.push("INVESTIGATIONS DONE DURING STAY");
+  const labs = kinds(state, ["lab"]);
+  if (labs.length === 0) {
+    out.push(`  ${BLANK}`);
+  } else {
+    const byDate = new Map<string, Observation[]>();
+    for (const o of labs) {
+      const d = istDay(o.recorded_at);
+      byDate.set(d, [...(byDate.get(d) ?? []), o]);
     }
-    lines.push("");
+    for (const [date, rows] of byDate) {
+      out.push(`  ${date}   ${rows.map((o) => `${o.label} ${o.value_text}`).join("   ")}`);
+    }
+  }
+  out.push("");
+
+  out.push("ADVICE ON DISCHARGE");
+  if (medications.length > 0) {
+    // As said. The form has columns for dose, frequency and duration, and splitting "one gram
+    // twice daily for five days" between them would be the app deciding which part is which.
+    for (const m of medications) {
+      out.push(`  ${m.label.toUpperCase()}   ${m.value_text ?? ""}`.trimEnd());
+    }
+  } else {
+    out.push(`  ${BLANK}`);
+  }
+  out.push("");
+
+  // Plans spoken on a round are follow-up advice at a discharge, so they belong here rather
+  // than being dropped because the admission is ending.
+  if (state.openTasks.length > 0) {
+    out.push("FOLLOW UP — still outstanding on the round:");
+    for (const t of state.openTasks) out.push(`  · ${t.value_text ?? t.label}`);
+    out.push("");
   }
 
+  out.push(`REVIEW IN OPD ON ${BLANK}`);
+  out.push("");
+
+  // Anything a signature would be vouching for that nobody has checked.
+  if (state.pending.length > 0) {
+    out.push(`!! ${state.pending.length} value(s) here were never confirmed — check first:`);
+    for (const o of state.pending) {
+      out.push(`   ${o.label}${o.value_text ? `: ${o.value_text}` : ""}`);
+    }
+    out.push("");
+  }
   if (state.missing.length > 0) {
-    lines.push(`Never recorded: ${state.missing.map((m) => m.item.label).join(", ")}`);
-    lines.push("");
+    out.push(`!! Never recorded: ${state.missing.map((m) => m.item.label).join(", ")}`);
+    out.push("");
   }
 
-  lines.push("Assembled from what was recorded on the round. Check before signing.");
+  out.push("NAME AND SIGNATURE OF DOCTOR");
+  out.push("");
 
-  return lines.join("\n").trimEnd();
+  const management = managementLabel(patient);
+  out.push(
+    `— Assembled from what was recorded on the round (${dayLabel(patient)}${
+      management ? `, ${management}` : ""
+    }). Blanks are things the app was never told. Check before signing.`
+  );
+
+  return out.join("\n");
+}
+
+function sexWord(sex: string | null): string {
+  if (sex === "M") return "MALE";
+  if (sex === "F") return "FEMALE";
+  if (sex === "other") return "OTHER";
+  return BLANK;
+}
+
+/**
+ * The newest value for each thing of the given kinds.
+ *
+ * From `latest` rather than `extra`: `extra` holds only what the operation's checklist did not
+ * ask about, so building a summary from it would silently omit every value the template DOES
+ * expect — the haemoglobin and the drain output, which is most of what a discharge needs.
+ */
+function kinds(state: PatientState, wanted: string[]): Observation[] {
+  return state.latest.filter((o) => wanted.includes(o.kind));
 }
