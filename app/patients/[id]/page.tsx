@@ -17,7 +17,7 @@ import UrgencyDot from "./urgency-dot";
 import { ChevronIcon } from "../../icons";
 import { quoteAddsNothing } from "@/lib/dedupe-tasks";
 import Tick from "./tick";
-import EntryReview from "./entry-review";
+import EntryCard from "./entry-card";
 import DischargeSection from "./discharge-section";
 import { buildDischargeBrief } from "@/lib/discharge";
 import { confirmChecked, confirmAll, reopenTask } from "./actions";
@@ -358,14 +358,12 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             Nothing recorded yet. Hold the button above and say what has changed.
           </p>
         ) : (
-          <ul className="flex flex-col gap-3">
+          <ul className="flex flex-col gap-4">
             {sittings.map((sitting) => (
-              <li
-                key={sitting.entries[0].id}
-                className="ios-group p-4"
-              >
-                <p className="text-[13px] text-muted">
+              <li key={sitting.entries[0].id}>
+                <p className="mb-1.5 px-4 text-[13px] text-muted">
                   {new Date(sitting.recorded_at).toLocaleString("en-IN", {
+                    timeZone: "Asia/Kolkata",
                     day: "numeric",
                     month: "short",
                     hour: "numeric",
@@ -373,60 +371,28 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                   })}
                 </p>
 
-                <div className="mt-2 flex flex-col gap-3">
+                <div className="flex flex-col gap-2">
                   {sitting.entries.map((entry) => (
-                    <div key={entry.id}>
-                      {entry.observations.length > 0 && (
-                        <ul className="flex flex-col gap-1.5">
-                          {entry.observations.map((o) => (
-                            <li key={o.id} className="text-[15px]">
-                              <span className="text-muted">{o.label}:</span> {o.value_text}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-
-                      {entry.extraction_error && (
-                        <p className="mt-2 text-[13px] text-orange-700">
-                          Could not be structured — the words below are what was heard.
-                        </p>
-                      )}
-
-                      {/* The evidence, one tap away, for anything on screen. For a
-                          photographed report this is the only check there is — nothing can
-                          re-read it server side — so the image itself sits right beside the
-                          values it produced. */}
-                      {entry.photo_path && photoUrls.get(entry.photo_path) && (
-                        <a
-                          href={photoUrls.get(entry.photo_path)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-2 block"
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={photoUrls.get(entry.photo_path)}
-                            alt="Photographed lab report"
-                            className="w-full rounded-lg border border-line"
-                          />
-                          <span className="mt-1 block text-[13px] text-muted">
-                            Tap to open the report full size
-                          </span>
-                        </a>
-                      )}
-
-                      {/* The words themselves, and what can be done about them. Every value
-                          above came out of these, so this is where a mis-hearing shows. */}
-                      {entry.transcript && (
-                        <EntryReview
-                          entryId={entry.id}
-                          patientId={patient.id}
-                          transcript={entry.transcript}
-                          accepted={Boolean(entry.accepted_at)}
-                          edited={Boolean(entry.edited_at)}
-                        />
-                      )}
-                    </div>
+                    <EntryCard
+                      key={entry.id}
+                      entryId={entry.id}
+                      patientId={patient.id}
+                      transcript={entry.transcript}
+                      photoUrl={
+                        entry.photo_path ? (photoUrls.get(entry.photo_path) ?? null) : null
+                      }
+                      accepted={Boolean(entry.accepted_at)}
+                      edited={Boolean(entry.edited_at)}
+                      extractionError={entry.extraction_error}
+                      values={entry.observations.map((o) => ({
+                        id: o.id,
+                        label: o.label,
+                        value_text: o.value_text,
+                        source_quote: o.source_quote,
+                        needs_confirmation: o.needs_confirmation,
+                        confirmed_at: o.confirmed_at,
+                      }))}
+                    />
                   ))}
                 </div>
               </li>

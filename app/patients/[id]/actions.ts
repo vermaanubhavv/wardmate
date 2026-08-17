@@ -168,6 +168,50 @@ function revalidateEverywhere(patientId: string) {
   revalidatePath("/");
 }
 
+/**
+ * Correct one value by hand, where it is shown.
+ *
+ * The source quote is deliberately left alone. It records what was SAID, and that does not
+ * change because the resident has corrected what it was taken to mean — so an edited value
+ * sits beside the original words, and the (i) panel shows both. A quote rewritten to match
+ * would destroy the only evidence that the two ever differed.
+ *
+ * Editing also confirms: the resident has just typed this value while looking at it, which is
+ * a stronger check than the tap that confirming asks for.
+ */
+export async function updateObservation(formData: FormData) {
+  const id = String(formData.get("observation_id") ?? "");
+  const patientId = String(formData.get("patient_id") ?? "");
+  const value = String(formData.get("value_text") ?? "").trim();
+  if (!id || !patientId) return;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  // An emptied value deletes the observation rather than storing a blank: a value the
+  // resident has cleared is one the app should never have recorded, and a row reading
+  // "temperature:" with nothing after it is worse than no row.
+  if (!value) {
+    await supabase.from("observations").delete().eq("id", id).eq("patient_id", patientId);
+  } else {
+    await supabase
+      .from("observations")
+      .update({
+        value_text: value,
+        needs_confirmation: false,
+        confirmed_at: new Date().toISOString(),
+        confirmed_by: user.id,
+      })
+      .eq("id", id)
+      .eq("patient_id", patientId);
+  }
+
+  revalidateEverywhere(patientId);
+}
+
 /** Confirm the ones that were ticked. Nothing ticked writes nothing. */
 export async function confirmChecked(formData: FormData) {
   const ids = formData.getAll("observation_ids").map(String).filter(Boolean);
