@@ -16,6 +16,8 @@ export type WardPatient = {
   management: string | null;
   unconfirmed_count: number;
   open_task_count: number;
+  /** Recordings and photographs on this patient's record. */
+  entry_count: number;
 };
 
 export const MANAGEMENT_CHOICES = [

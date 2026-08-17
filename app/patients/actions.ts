@@ -168,6 +168,43 @@ export async function deletePatientForever(formData: FormData) {
   revalidatePath("/removed");
 }
 
+/**
+ * Delete a patient outright, from the ward.
+ *
+ * The delete policy refuses any patient still on the ward, which was the point: it meant a
+ * mis-aimed tap on a small ⋯ could not destroy a record, because destroying took two
+ * deliberate acts on two screens. Deleting from here performs both, so that guard is gone and
+ * the confirmation is what remains — which is why it names the patient and counts what goes
+ * with them rather than asking "are you sure?".
+ *
+ * The status write also matters on its own: it is what makes the delete legal, so if the
+ * second step fails the patient is off the ward rather than half-deleted, and can be put back
+ * from the removed list.
+ */
+export async function deletePatientFromWard(formData: FormData) {
+  const id = String(formData.get("patient_id") ?? "");
+  if (!id) return;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase
+    .from("patients")
+    .update({ status: "discharged", discharged_at: new Date().toISOString() })
+    .eq("id", id);
+
+  await supabase.from("patients").delete().eq("id", id).eq("status", "discharged");
+
+  revalidatePath("/");
+  revalidatePath("/removed");
+  revalidatePath("/todo");
+  revalidatePath("/handover");
+  redirect("/");
+}
+
 export type EditPatientState = { error: string | null; ok?: boolean };
 
 /**

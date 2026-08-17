@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import EditIdentity from "./edit-identity";
-import { removePatient } from "./actions";
+import { removePatient, deletePatientFromWard } from "./actions";
 
 type Patient = {
   id: string;
@@ -15,6 +15,8 @@ type Patient = {
   procedure_text: string | null;
   template_family: string | null;
   template_variant: string | null;
+  /** Only used to say what a permanent delete would destroy. */
+  entry_count?: number;
 };
 
 type TemplateChoice = { family: string; variant: string | null; label: string };
@@ -80,14 +82,14 @@ export default function PatientMenu({
           <button
             type="button"
             onClick={openEditor}
-            className="block w-full px-4 py-3 text-left text-sm active:bg-chip"
+            className="block w-full px-4 py-3 text-left text-[17px] active:bg-chip"
           >
             Change bed
           </button>
           <button
             type="button"
             onClick={openEditor}
-            className="block w-full border-t border-line px-4 py-3 text-left text-sm active:bg-chip"
+            className="block w-full border-t border-line px-4 py-3 text-left text-[17px] active:bg-chip"
           >
             Change name, age, sex
           </button>
@@ -107,9 +109,34 @@ export default function PatientMenu({
                   e.preventDefault();
                 }
               }}
-              className="block w-full px-4 py-3 text-left text-sm text-red-600 active:bg-chip"
+              className="block w-full px-4 py-3 text-left text-[17px] active:bg-chip"
             >
               Remove from ward
+            </button>
+          </form>
+
+          {/* Last, and the only red one. Removing is a change of mind; this is not. */}
+          <form action={deletePatientFromWard} className="border-t border-line">
+            <input type="hidden" name="patient_id" value={patient.id} />
+            <button
+              type="submit"
+              onClick={(e) => {
+                const n = patient.entry_count ?? 0;
+                const what =
+                  n === 0
+                    ? "Nothing has ever been recorded on them."
+                    : `Their ${n} ${n === 1 ? "recording" : "recordings"} and everything taken from ${n === 1 ? "it" : "them"} will be destroyed.`;
+                if (
+                  !confirm(
+                    `Delete ${patient.display_name} permanently?\n\n${what}\n\nThis cannot be undone — there is no way to put them back.`
+                  )
+                ) {
+                  e.preventDefault();
+                }
+              }}
+              className="block w-full px-4 py-3 text-left text-[17px] font-medium text-accent active:bg-chip"
+            >
+              Delete permanently
             </button>
           </form>
         </div>

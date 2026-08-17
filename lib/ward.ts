@@ -66,7 +66,7 @@ export async function getActivePatients(wardId: string) {
   // to get its ids to filter by; joining through patients lets the ward be named directly, so
   // the two round trips overlap instead of queueing — and the two count queries become one,
   // since a row can be tallied into either bucket here rather than by the database twice.
-  const [{ data: patients, error }, { data: flags }] = await Promise.all([
+  const [{ data: patients, error }, { data: flags }, { data: entryRows }] = await Promise.all([
     supabase
       .from("current_patients")
       .select(
@@ -77,6 +77,14 @@ export async function getActivePatients(wardId: string) {
     supabase
       .from("observations")
       .select("patient_id, kind, needs_confirmation, confirmed_at, done_at, patients!inner(ward_id, status)")
+      .eq("patients.ward_id", wardId)
+      .eq("patients.status", "active"),
+    // How much is on each record. Only used to tell the resident what a permanent delete
+    // would destroy — a number in that confirmation is the difference between "are you sure"
+    // and knowing what is at stake.
+    supabase
+      .from("entries")
+      .select("patient_id, patients!inner(ward_id, status)")
       .eq("patients.ward_id", wardId)
       .eq("patients.status", "active"),
   ]);
@@ -101,10 +109,16 @@ export async function getActivePatients(wardId: string) {
     }
   }
 
+  const entryCounts = new Map<string, number>();
+  for (const row of (entryRows ?? []) as unknown as { patient_id: string }[]) {
+    entryCounts.set(row.patient_id, (entryCounts.get(row.patient_id) ?? 0) + 1);
+  }
+
   const withFlags: WardPatient[] = patients.map((p) => ({
     ...p,
     unconfirmed_count: counts.get(p.id) ?? 0,
     open_task_count: taskCounts.get(p.id) ?? 0,
+    entry_count: entryCounts.get(p.id) ?? 0,
   }));
 
   withFlags.sort((a, b) => compareBeds(a.bed, b.bed));
