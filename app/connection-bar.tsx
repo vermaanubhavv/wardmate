@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { countPending, flush } from "@/lib/outbox";
@@ -20,9 +20,29 @@ import { countPending, flush } from "@/lib/outbox";
  * when the app comes back to the foreground — the three moments a resident is actually
  * looking at it.
  */
+
+/**
+ * Whether the browser thinks it has a connection, read as an external store rather than
+ * mirrored into state. Mirroring meant setting state inside an effect on every mount, which
+ * costs a second render of every screen in the app — the wrong tax for a bar that is usually
+ * invisible. The server has no opinion, so it renders as online and corrects on hydration.
+ */
+function subscribeOnline(cb: () => void) {
+  window.addEventListener("online", cb);
+  window.addEventListener("offline", cb);
+  return () => {
+    window.removeEventListener("online", cb);
+    window.removeEventListener("offline", cb);
+  };
+}
+
 export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   const router = useRouter();
-  const [online, setOnline] = useState(true);
+  const online = useSyncExternalStore(
+    subscribeOnline,
+    () => navigator.onLine,
+    () => true
+  );
   const [pending, setPending] = useState(0);
   const [sending, setSending] = useState(false);
   const [reviews, setReviews] = useState<string[]>([]);
@@ -45,34 +65,31 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
     if (result.sent > 0) router.refresh();
   }, [sending, refresh, router]);
 
+  // Runs on mount, and again whenever the connection comes back — `online` is a dependency,
+  // so returning from a dead corridor triggers the send without an event listener of its own.
+  // refresh() awaits IndexedDB before it sets anything, so this is an async read on mount
+  // rather than a synchronous cascade — and there is no other moment to learn what a previous
+  // session left queued. The rule cannot tell the two apart.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    setOnline(navigator.onLine);
     void refresh();
-    void send();
+    if (online) void send();
+  }, [online, refresh, send]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
-    const up = () => {
-      setOnline(true);
-      void send();
-    };
-    const down = () => setOnline(false);
+  useEffect(() => {
     // Coming back to the foreground is the moment a resident has walked somewhere with signal.
     const woke = () => {
       if (document.visibilityState === "visible") {
-        setOnline(navigator.onLine);
         void refresh();
         void send();
       }
     };
-
-    window.addEventListener("online", up);
-    window.addEventListener("offline", down);
     document.addEventListener("visibilitychange", woke);
     // Recorders announce a queued item so the count appears without waiting for a reload.
     window.addEventListener("outbox-changed", refresh as EventListener);
 
     return () => {
-      window.removeEventListener("online", up);
-      window.removeEventListener("offline", down);
       document.removeEventListener("visibilitychange", woke);
       window.removeEventListener("outbox-changed", refresh as EventListener);
     };
@@ -121,7 +138,7 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
       )}
 
       {reviews.length > 0 && (
-        <p className={online ? "mt-1" : "mt-1"}>
+        <p className="mt-1">
           {reviews.length === 1 ? "A dictation" : `${reviews.length} dictations`} came through
           and {reviews.length === 1 ? "needs" : "need"} checking:{" "}
           {reviews.map((id, i) => (
