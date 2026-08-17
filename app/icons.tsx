@@ -69,3 +69,21 @@ export function StopIcon({ className = "h-4 w-4" }: { className?: string }) {
     </svg>
   );
 }
+
+/** The row-accessory chevron iOS puts at the right of anything that navigates. */
+export function ChevronIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="m9 5 7 7-7 7" />
+    </svg>
+  );
+}

@@ -3,7 +3,7 @@ import { getCurrentWard, getActivePatients, getRemovedCount } from "@/lib/ward";
 import { dayLabel, managementLabel, patientName, type WardPatient } from "@/lib/patients";
 import { getProcedureLabels, listTemplateChoices, procedureFor } from "@/lib/templates";
 import RegisterButton from "./register-button";
-import { PlusIcon } from "./icons";
+import { ChevronIcon, PlusIcon } from "./icons";
 import RoundRecorder from "./round-recorder";
 import PatientMenu from "./patients/patient-menu";
 import { signOut } from "./actions";
@@ -15,20 +15,20 @@ export default async function Home() {
 
   if (wardError || !ward) {
     return (
-      <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
-        <h1 className="text-2xl font-semibold">CoreResident</h1>
-        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+      <main className="mx-auto w-full max-w-md flex-1 px-4 py-10">
+        <h1 className="ios-large-title">CoreResident</h1>
+        <p className="ios-group mt-4 px-4 py-3 text-[15px] text-accent">
           {wardError ? `Could not read the database: ${wardError.message}` : "No ward found."}
         </p>
         <form action={signOut} className="mt-6">
-          <button className="text-sm text-muted underline underline-offset-4">Sign out</button>
+          <button className="text-[17px] text-accent">Sign out</button>
         </form>
       </main>
     );
   }
 
   const { patients } = await getActivePatients(ward.id);
-  // One lookup for the whole list, so naming the operation on each card costs no extra query.
+  // One lookup for the whole list, so naming the operation on each row costs no extra query.
   const [procedures, templateChoices, removedCount] = await Promise.all([
     getProcedureLabels(),
     listTemplateChoices(),
@@ -36,87 +36,83 @@ export default async function Home() {
   ]);
 
   return (
-    <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
-      {/* Above the ward, and separated by a hairline, because it names the app rather than
-          anything on this screen — and because a logo dropped in later belongs here rather
-          than competing with the unit's own name. */}
-      <div className="px-4 pt-5 pb-3 border-b border-line">
+    <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
+      {/* The navigation bar: brand on the left, the one destructive-ish action on the right,
+          both at the size iOS puts them. Translucent, so the list passes under it. */}
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line/60 bg-background/80 px-4 py-2.5 backdrop-blur-xl">
         <Wordmark />
+        <form action={signOut}>
+          <button className="text-[15px] text-accent">Sign out</button>
+        </form>
       </div>
 
-      <header className="px-4 pt-5 pb-3 flex items-baseline justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight">{ward.name}</h1>
-          {/* Kept to one line under the ward name: the unit's own settings are looked at
-              once in a rotation, and must not compete with the round for space. */}
-          <p className="text-muted text-xs mt-0.5">
-            {patients.length} {patients.length === 1 ? "patient" : "patients"}
-            {" · "}
-            <Link href="/unit" className="underline underline-offset-4">
-              Unit
-            </Link>
-            {" · "}
-            <Link href="/formats" className="underline underline-offset-4">
-              Formats
-            </Link>
-          </p>
-        </div>
-        <div className="flex items-baseline gap-4">
-          {/* Only once there is something to undo — the way back has to be visible from the
-              screen the removal happened on, but an empty list is not worth a link. */}
-          {removedCount > 0 && (
-            <Link href="/removed" className="text-xs text-muted underline underline-offset-4">
-              Removed · {removedCount}
-            </Link>
-          )}
-          <Link href="/todo" className="text-xs text-accent underline underline-offset-4">
-            To do
-          </Link>
-          <Link href="/handover" className="text-xs text-accent underline underline-offset-4">
-            Ward round
-          </Link>
-          <form action={signOut}>
-            <button className="text-xs text-muted underline underline-offset-4">Sign out</button>
-          </form>
+      <header className="px-4 pb-3 pt-4">
+        <h1 className="ios-large-title">{ward.name}</h1>
+        <p className="mt-1 text-[15px] text-muted">
+          {patients.length} {patients.length === 1 ? "patient" : "patients"}
+        </p>
+
+        {/* Capsules rather than a row of underlined links: a bigger target, and the shape
+            iOS has used for secondary navigation since 17. */}
+        <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
+          <Capsule href="/todo">To do</Capsule>
+          <Capsule href="/handover">Ward round</Capsule>
+          <Capsule href="/unit">Unit</Capsule>
+          <Capsule href="/formats">Formats</Capsule>
+          {/* Only once there is something to undo — an empty list is not worth a capsule. */}
+          {removedCount > 0 && <Capsule href="/removed">Removed · {removedCount}</Capsule>}
         </div>
       </header>
 
-      {/* Bottom padding clears the fixed Add patient button so the last card is reachable. */}
-      <ul className="flex-1 px-4 pb-56 flex flex-col gap-2">
+      {/* Bottom padding clears the floating bar so the last patient stays readable. */}
+      <div className="flex-1 px-4 pb-56">
+        <p className="ios-group-header mb-2 px-4">Patients</p>
+
         {patients.length === 0 ? (
-          <li className="rounded-xl border border-line bg-card p-6 text-sm text-muted">
+          <p className="ios-group px-4 py-3.5 text-[17px] text-muted">
             No patients on this ward yet. Add the first one below.
-          </li>
+          </p>
         ) : (
-          patients.map((p) => (
-            <li key={p.id}>
-              <PatientCard
+          <ul className="ios-group">
+            {patients.map((p) => (
+              <PatientRow
+                key={p.id}
                 patient={p}
                 procedures={procedures}
                 templateChoices={templateChoices}
               />
-            </li>
-          ))
+            ))}
+          </ul>
         )}
-      </ul>
+      </div>
 
       <BottomBar>
-        
-          <RoundRecorder />
-          <RegisterButton />
-          <Link
-            href="/patients/new"
-            className="flex items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2.5 text-sm font-medium text-accent-ink"
-          >
-            <PlusIcon />
-            Add patient
-          </Link>
-        </BottomBar>
+        <RoundRecorder />
+        <RegisterButton />
+        <Link
+          href="/patients/new"
+          className="flex items-center justify-center gap-1.5 rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink active:opacity-80"
+        >
+          <PlusIcon className="h-[18px] w-[18px]" />
+          Add patient
+        </Link>
+      </BottomBar>
     </div>
   );
 }
 
-function PatientCard({
+function Capsule({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="shrink-0 rounded-full bg-card px-3.5 py-1.5 text-[15px] font-medium text-accent active:opacity-70"
+    >
+      {children}
+    </Link>
+  );
+}
+
+function PatientRow({
   patient,
   procedures,
   templateChoices,
@@ -132,60 +128,70 @@ function PatientCard({
   const procedure = procedureFor(patient, procedures);
 
   return (
-    // The card is a link to the patient, but the pen inside it is not — so the two are
-    // siblings here rather than the pen sitting inside the link.
-    <div className="relative rounded-lg border border-line bg-card">
+    // ios-row draws the hairline between rows. The ⋯ is a sibling of the link rather than
+    // inside it, so opening the menu does not also walk into the patient.
+    <li className="ios-row relative">
       <Link
         href={`/patients/${patient.id}`}
-        className="flex gap-3 items-start p-3 active:opacity-70"
+        className="flex items-center gap-3 py-2.5 pl-4 pr-20 active:bg-chip"
       >
-        {/* Bed leads the card: on rounds you are looking for a bed, not a name. */}
-        <span className="shrink-0 rounded-md bg-chip px-2 py-1 font-mono text-xs tabular-nums">
+        {/* Bed leads the row: on rounds you are looking for a bed, not a name. */}
+        <span className="min-w-[34px] shrink-0 rounded-md bg-chip px-1.5 py-1 text-center font-mono text-[13px] tabular-nums">
           {patient.bed}
         </span>
 
-        <div className="min-w-0 flex-1">
-          {/* Padding keeps a long name clear of the pen sitting in the corner. */}
-          <p className="truncate pr-8 text-sm font-medium">{patientName(patient)}</p>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[17px] font-semibold">
+            {patientName(patient)}
+          </span>
           {/* The day count reads with the diagnosis, not apart from it: "POD 3 · lap chole"
               is one clinical thought, and the number means little without what it counts
               from. */}
-          <p className="mt-0.5 truncate text-xs text-muted">
+          <span className="mt-0.5 block truncate text-[15px] text-muted">
             <span className="text-foreground tabular-nums">{dayLabel(patient)}</span>
-            {/* The operation sits immediately after the day it is counted from, so "POD 2"
-                says what it is two days after. */}
             {procedure && <span className="text-foreground"> {procedure}</span>}
             {" · "}
             {patient.primary_diagnosis || "No diagnosis recorded"}
-          </p>
+          </span>
 
           {(management || patient.unconfirmed_count > 0 || patient.open_task_count > 0) && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {/* Leads the badges: which kind of patient this is frames everything after it. */}
-              {management && (
-                <p className="inline-flex items-center rounded border border-line px-1.5 py-0.5 text-[11px] tracking-wide text-muted">
-                  {management}
-                </p>
-              )}
+            <span className="mt-1.5 flex flex-wrap gap-1.5">
+              {management && <Badge>{management}</Badge>}
               {patient.open_task_count > 0 && (
-                <p className="inline-flex items-center gap-1 rounded bg-chip px-1.5 py-0.5 text-[11px] text-foreground">
-                  {patient.open_task_count} to do
-                </p>
+                <Badge>{patient.open_task_count} to do</Badge>
               )}
               {patient.unconfirmed_count > 0 && (
-                <p className="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-700">
-                  <span aria-hidden>●</span>
-                  {patient.unconfirmed_count} to confirm
-                </p>
+                <Badge tone="warn">{patient.unconfirmed_count} to confirm</Badge>
               )}
-            </div>
+            </span>
           )}
-        </div>
+        </span>
       </Link>
 
-      <div className="absolute right-2 top-2">
+      {/* Both sit outside the link, at the right, where iOS puts a row's accessories. */}
+      <div className="absolute inset-y-0 right-3 flex items-center gap-1">
         <PatientMenu patient={patient} templateChoices={templateChoices} />
+        <ChevronIcon className="h-4 w-4 shrink-0 text-muted/60" />
       </div>
-    </div>
+    </li>
+  );
+}
+
+function Badge({
+  children,
+  tone = "plain",
+}: {
+  children: React.ReactNode;
+  tone?: "plain" | "warn";
+}) {
+  return (
+    <span
+      className={
+        "inline-flex items-center rounded-md px-1.5 py-0.5 text-[12px] font-medium " +
+        (tone === "warn" ? "bg-orange-100 text-orange-700" : "bg-chip text-muted")
+      }
+    >
+      {children}
+    </span>
   );
 }

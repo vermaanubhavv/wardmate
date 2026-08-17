@@ -145,20 +145,20 @@ export default function RoundRecorder() {
         onClick={status === "recording" ? stop : start}
         disabled={status === "working" || status === "starting"}
         className={
-          "flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium disabled:opacity-60 " +
+          "flex w-full items-center justify-center gap-1.5 rounded-[10px] px-4 py-3 text-[17px] font-medium disabled:opacity-60 active:opacity-80 " +
           (status === "recording"
             ? "bg-red-500 text-white"
-            : "border border-line bg-card text-foreground")
+            : "bg-card text-accent")
         }
       >
-        {status === "recording" ? <StopIcon /> : <MicIcon />}
+        {status === "recording" ? <StopIcon className="h-[18px] w-[18px]" /> : <MicIcon className="h-[18px] w-[18px]" />}
         {label}
       </button>
 
       {status === "idle" && !message && (
-        <p className="text-center text-xs text-muted">Say the bed before each instruction.</p>
+        <p className="text-center text-[13px] text-muted">Say the bed before each instruction.</p>
       )}
-      {message && <p className="text-center text-xs text-amber-700">{message}</p>}
+      {message && <p className="text-center text-[13px] text-accent">{message}</p>}
     </div>
   );
 }

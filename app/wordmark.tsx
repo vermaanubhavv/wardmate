@@ -14,11 +14,11 @@ export default function Wordmark() {
       {/* Stand-in for the logo. Fixed 20px square so artwork can replace it in place. */}
       <span
         aria-hidden
-        className="grid h-5 w-5 shrink-0 place-items-center rounded-md bg-accent text-[11px] font-bold leading-none text-accent-ink"
+        className="grid h-6 w-6 shrink-0 place-items-center rounded-[7px] bg-accent text-[13px] font-bold leading-none text-accent-ink"
       >
         C
       </span>
-      <span className="text-sm font-medium tracking-tight">
+      <span className="text-[15px] font-semibold tracking-[-0.02em]">
         Core<span className="text-muted">Resident</span>
       </span>
     </div>

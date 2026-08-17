@@ -64,12 +64,12 @@ export default function RegisterButton() {
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={busy}
-        className="flex w-full items-center justify-center gap-2 rounded-lg border border-line bg-card px-3 py-2.5 text-sm font-medium text-foreground active:opacity-70 disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-1.5 rounded-[10px] bg-card px-4 py-3 text-[17px] font-medium text-accent active:opacity-80 disabled:opacity-50"
       >
-        <ImageIcon />
+        <ImageIcon className="h-[18px] w-[18px]" />
         {busy ? "Reading the register…" : "Round register"}
       </button>
-      {message && <p className="text-center text-xs text-amber-700">{message}</p>}
+      {message && <p className="text-center text-[13px] text-accent">{message}</p>}
     </>
   );
 }

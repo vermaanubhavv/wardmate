@@ -1,20 +1,23 @@
 @import "tailwindcss";
 
-/* One fixed light theme, in the manner of Todoist: a near-white page, content on plain
-   white, hairline rules instead of boxes, and one red used sparingly for the thing to press.
-   Ward lighting varies wildly and a phone that changes appearance between rooms is one more
-   thing to think about at 7am, so this does not follow the system setting. */
+/* iOS, as closely as a web app can sit next to it.
+ *
+ * The colours are Apple's own system values rather than approximations, because a phone puts
+ * this beside Settings and Health all day and anything nearly-right reads as wrong. The
+ * background is systemGroupedBackground, content sits on white, and the rule between rows is
+ * the real separator colour — a hairline, not a border box.
+ *
+ * One fixed light theme still: ward lighting varies wildly and a phone that changes
+ * appearance between rooms is one more thing to think about at 7am. */
 :root {
-  --background: #fafafa;
-  --foreground: #202020;
-  --muted: #808080;
-  --line: #eeeeee;
-  --card: #ffffff;
-  --accent: #dc4c3e;
-  /* What sits ON the accent. Kept as a token so the two can never drift apart. */
+  --background: #f2f2f7; /* systemGroupedBackground */
+  --card: #ffffff; /* secondarySystemGroupedBackground */
+  --foreground: #000000; /* label */
+  --muted: #8e8e93; /* secondaryLabel, flattened */
+  --line: #c6c6c8; /* separator */
+  --accent: #ff3b30; /* systemRed */
   --accent-ink: #ffffff;
-  /* The flat grey behind a bed number or a count. */
-  --chip: #f1f1f1;
+  --chip: #efeff4; /* the flat fill behind a bed number */
 }
 
 @theme inline {
@@ -26,8 +29,8 @@
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
   --color-chip: var(--chip);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 }
 
 html {
@@ -38,8 +41,16 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
-  /* Stop the pull-to-refresh bounce swallowing a press-and-hold. */
+  /* The system stack first, so on an iPhone this is literally SF Pro — the typeface every
+     other app on the phone is set in. Geist stays as the fallback for a laptop. */
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI",
+    var(--font-geist-sans), system-ui, sans-serif;
+  /* iOS sets body text at 17px and lets it breathe. */
+  font-size: 17px;
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.01em;
   overscroll-behavior-y: none;
 }
 
@@ -48,4 +59,34 @@ button {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* iOS large title: the screen announces itself once, at the top, and shrinks away as the
+   list scrolls under it. */
+.ios-large-title {
+  font-size: 34px;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.024em;
+}
+
+/* The grey, all-caps run-in above a grouped list. */
+.ios-group-header {
+  font-size: 13px;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+/* A grouped inset list: one rounded card, rows divided by a hairline that starts where the
+   row's text starts rather than at the edge of the card. */
+.ios-group {
+  background: var(--card);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.ios-row + .ios-row {
+  box-shadow: inset 0 0.5px 0 var(--line);
 }
