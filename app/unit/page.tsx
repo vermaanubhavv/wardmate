@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentWard, getMyWards } from "@/lib/ward";
 import CodeBox from "./code-box";
 import JoinForm from "./join-form";
-import { switchWard, leaveWard } from "./actions";
+import { switchWard, leaveWard, renameWard } from "./actions";
 
 /**
  * The unit: who is on it, how to join it, and which one the app is showing.
@@ -89,6 +89,28 @@ export default async function UnitPage() {
           ))}
         </ul>
       </section>
+
+      {/* Only the owner may rename — the policy on wards says so, and offering the box to
+          everyone else would be a control that silently does nothing. */}
+      {isOwner && (
+        <section className="px-6 pb-6">
+          <p className="mb-2 text-sm text-muted">Name of this unit</p>
+          <form action={renameWard} className="flex gap-2">
+            <input type="hidden" name="ward_id" value={ward.id} />
+            <input
+              name="name"
+              defaultValue={ward.name}
+              maxLength={60}
+              autoCapitalize="words"
+              className="min-w-0 flex-1 rounded-xl border border-line bg-card px-4 py-3 text-base outline-none focus:border-accent"
+            />
+            <button className="shrink-0 rounded-xl border border-line px-4 py-3 text-sm font-medium">
+              Rename
+            </button>
+          </form>
+          <p className="mt-2 text-xs text-muted">Everyone on the unit sees this name.</p>
+        </section>
+      )}
 
       <section className="px-6 pb-6">
         <p className="mb-2 text-sm text-muted">Join another unit</p>

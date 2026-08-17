@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { MicIcon, StopIcon } from "./icons";
 
 type Status = "idle" | "starting" | "recording" | "working";
 
@@ -138,25 +139,24 @@ export default function RoundRecorder() {
           : "Dictate the round";
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1.5">
       <button
         type="button"
         onClick={status === "recording" ? stop : start}
         disabled={status === "working" || status === "starting"}
         className={
-          "w-full rounded-xl px-4 py-4 text-base font-semibold disabled:opacity-60 " +
+          "flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium disabled:opacity-60 " +
           (status === "recording"
             ? "bg-red-500 text-white"
-            : "border border-line text-foreground")
+            : "border border-line bg-card text-foreground")
         }
       >
+        {status === "recording" ? <StopIcon /> : <MicIcon />}
         {label}
       </button>
 
       {status === "idle" && !message && (
-        <p className="text-center text-xs text-muted">
-          Say the bed before each instruction. Nothing saves until you check it.
-        </p>
+        <p className="text-center text-xs text-muted">Say the bed before each instruction.</p>
       )}
       {message && <p className="text-center text-xs text-amber-700">{message}</p>}
     </div>

@@ -34,6 +34,25 @@ export async function joinWard(_prev: JoinState, formData: FormData): Promise<Jo
   redirect("/");
 }
 
+/**
+ * Rename the unit.
+ *
+ * Everyone on it sees the new name, which is the point — "My unit", created automatically
+ * with the account, tells a team of four nothing. The database decides who may: the update
+ * policy on wards allows the owner alone, so this needs no check of its own.
+ */
+export async function renameWard(formData: FormData) {
+  const wardId = String(formData.get("ward_id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  if (!wardId || !name) return;
+
+  const supabase = await createClient();
+  await supabase.from("wards").update({ name: name.slice(0, 60) }).eq("id", wardId);
+
+  revalidatePath("/");
+  revalidatePath("/unit");
+}
+
 /** Switch which unit the app is showing. */
 export async function switchWard(formData: FormData) {
   const wardId = String(formData.get("ward_id") ?? "");

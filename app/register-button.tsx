@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { prepareImageForUpload } from "@/lib/image-for-upload";
+import { ImageIcon } from "./icons";
 
 /**
  * Photograph the round register. Goes straight to a review screen — this never writes to a
@@ -63,9 +64,10 @@ export default function RegisterButton() {
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={busy}
-        className="w-full rounded-xl border border-line px-4 py-3 text-sm text-muted active:opacity-70 disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-lg border border-line bg-card px-3 py-2.5 text-sm font-medium text-foreground active:opacity-70 disabled:opacity-50"
       >
-        {busy ? "Reading the register…" : "Read round register — photo or upload"}
+        <ImageIcon />
+        {busy ? "Reading the register…" : "Round register"}
       </button>
       {message && <p className="text-center text-xs text-amber-700">{message}</p>}
     </>

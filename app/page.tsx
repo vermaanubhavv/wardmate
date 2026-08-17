@@ -3,6 +3,7 @@ import { getCurrentWard, getActivePatients, getRemovedCount } from "@/lib/ward";
 import { dayLabel, managementLabel, patientName, type WardPatient } from "@/lib/patients";
 import { getProcedureLabels, listTemplateChoices, procedureFor } from "@/lib/templates";
 import RegisterButton from "./register-button";
+import { PlusIcon } from "./icons";
 import RoundRecorder from "./round-recorder";
 import PatientMenu from "./patients/patient-menu";
 import { signOut } from "./actions";
@@ -34,12 +35,12 @@ export default async function Home() {
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
-      <header className="px-6 pt-10 pb-4 flex items-baseline justify-between gap-3">
+      <header className="px-4 pt-8 pb-3 flex items-baseline justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{ward.name}</h1>
+          <h1 className="text-lg font-semibold tracking-tight">{ward.name}</h1>
           {/* Kept to one line under the ward name: the unit's own settings are looked at
               once in a rotation, and must not compete with the round for space. */}
-          <p className="text-muted text-sm mt-0.5">
+          <p className="text-muted text-xs mt-0.5">
             {patients.length} {patients.length === 1 ? "patient" : "patients"}
             {" · "}
             <Link href="/unit" className="underline underline-offset-4">
@@ -72,7 +73,7 @@ export default async function Home() {
       </header>
 
       {/* Bottom padding clears the fixed Add patient button so the last card is reachable. */}
-      <ul className="flex-1 px-6 pb-44 flex flex-col gap-3">
+      <ul className="flex-1 px-4 pb-36 flex flex-col gap-2">
         {patients.length === 0 ? (
           <li className="rounded-xl border border-line bg-card p-6 text-sm text-muted">
             No patients on this ward yet. Add the first one below.
@@ -90,14 +91,15 @@ export default async function Home() {
         )}
       </ul>
 
-      <div className="fixed bottom-0 inset-x-0 bg-gradient-to-t from-background via-background to-transparent pt-8 pb-8 px-6">
-        <div className="mx-auto max-w-md flex flex-col gap-3">
+      <div className="fixed bottom-0 inset-x-0 bg-gradient-to-t from-background via-background to-transparent pt-8 pb-6 px-4">
+        <div className="mx-auto max-w-md flex flex-col gap-2">
           <RoundRecorder />
           <RegisterButton />
           <Link
             href="/patients/new"
-            className="block rounded-xl bg-accent px-4 py-4 text-center text-base font-semibold text-accent-ink"
+            className="flex items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2.5 text-sm font-medium text-accent-ink"
           >
+            <PlusIcon />
             Add patient
           </Link>
         </div>
@@ -124,23 +126,23 @@ function PatientCard({
   return (
     // The card is a link to the patient, but the pen inside it is not — so the two are
     // siblings here rather than the pen sitting inside the link.
-    <div className="relative rounded-xl border border-line bg-card">
+    <div className="relative rounded-lg border border-line bg-card">
       <Link
         href={`/patients/${patient.id}`}
-        className="flex gap-4 items-start p-4 active:opacity-70"
+        className="flex gap-3 items-start p-3 active:opacity-70"
       >
         {/* Bed leads the card: on rounds you are looking for a bed, not a name. */}
-        <span className="shrink-0 rounded-lg bg-chip px-2.5 py-1.5 font-mono text-sm tabular-nums">
+        <span className="shrink-0 rounded-md bg-chip px-2 py-1 font-mono text-xs tabular-nums">
           {patient.bed}
         </span>
 
         <div className="min-w-0 flex-1">
           {/* Padding keeps a long name clear of the pen sitting in the corner. */}
-          <p className="truncate pr-9 text-base font-medium">{patientName(patient)}</p>
+          <p className="truncate pr-8 text-sm font-medium">{patientName(patient)}</p>
           {/* The day count reads with the diagnosis, not apart from it: "POD 3 · lap chole"
               is one clinical thought, and the number means little without what it counts
               from. */}
-          <p className="mt-0.5 truncate text-sm text-muted">
+          <p className="mt-0.5 truncate text-xs text-muted">
             <span className="text-foreground tabular-nums">{dayLabel(patient)}</span>
             {/* The operation sits immediately after the day it is counted from, so "POD 2"
                 says what it is two days after. */}
@@ -153,17 +155,17 @@ function PatientCard({
             <div className="mt-2 flex flex-wrap gap-2">
               {/* Leads the badges: which kind of patient this is frames everything after it. */}
               {management && (
-                <p className="inline-flex items-center rounded-md border border-line px-2 py-1 text-xs tracking-wide text-muted">
+                <p className="inline-flex items-center rounded border border-line px-1.5 py-0.5 text-[11px] tracking-wide text-muted">
                   {management}
                 </p>
               )}
               {patient.open_task_count > 0 && (
-                <p className="inline-flex items-center gap-1.5 rounded-md bg-chip px-2 py-1 text-xs text-foreground">
+                <p className="inline-flex items-center gap-1 rounded bg-chip px-1.5 py-0.5 text-[11px] text-foreground">
                   {patient.open_task_count} to do
                 </p>
               )}
               {patient.unconfirmed_count > 0 && (
-                <p className="inline-flex items-center gap-1.5 rounded-md bg-amber-100 px-2 py-1 text-xs text-amber-700">
+                <p className="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-700">
                   <span aria-hidden>●</span>
                   {patient.unconfirmed_count} to confirm
                 </p>
