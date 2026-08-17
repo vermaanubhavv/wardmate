@@ -51,8 +51,14 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
   // The next bed in walking order, so finishing one patient and starting the next is one tap
   // rather than a trip back through the ward list.
-  const [{ patients: ward }, { data: entriesData }, procedures, templateChoices] =
-    await Promise.all([
+  const [
+    { patients: ward },
+    { data: entriesData },
+    procedures,
+    templateChoices,
+    { data: wardRow },
+    template,
+  ] = await Promise.all([
       getActivePatients(patient.ward_id),
       supabase
         .from("entries")
@@ -63,6 +69,12 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         .order("recorded_at", { ascending: false }),
       getProcedureLabels(),
       listTemplateChoices(),
+      // Joins the batch rather than following it: two strings are not worth a round trip of
+      // their own on the screen opened most.
+      supabase.from("wards").select("name, letterhead").eq("id", patient.ward_id).maybeSingle(),
+      // Needs only fields already in hand from the patient row, so it was queueing behind the
+      // batch for nothing.
+      getTemplateForPatient(patient),
     ]);
   const here = ward.findIndex((p) => p.id === patient.id);
   const next = here >= 0 ? ward[here + 1] : undefined;
@@ -88,7 +100,6 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // matter for this operation lead the screen instead of whatever happened to be said first.
   // Entries already arrive newest first, so the flattened list is too — derivePatientState
   // relies on that order to pick the latest value for each thing.
-  const template = await getTemplateForPatient(patient);
   const allObservations = entries.flatMap((e) => e.observations);
   const patientState = derivePatientState(allObservations, template);
   const { matched, missing, extra, openTasks, doneTasks, pending } = patientState;
@@ -111,13 +122,6 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       seenDrugs.add(key);
       return true;
     });
-
-  // The unit's letterhead and name, so the summary comes out on the unit's own paper.
-  const { data: wardRow } = await supabase
-    .from("wards")
-    .select("name, letterhead")
-    .eq("id", patient.ward_id)
-    .maybeSingle();
 
   const dischargeBrief = buildDischargeBrief(patient, patientState, medications, procedure, {
     letterhead: wardRow?.letterhead ?? null,
