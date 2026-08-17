@@ -11,6 +11,25 @@ import { createClient } from "@/lib/supabase/client";
  * you in *in the browser* and leave the installed app still logged out. A code can be typed
  * straight into the app, so you never leave it.
  */
+/**
+ * Turn what Supabase says into something the person holding the phone can act on.
+ *
+ * "Error sending confirmation email" is a 500 from the mail provider, and it means one thing
+ * far more often than anything else: the project is still on a shared test sender, which is
+ * only allowed to deliver to the address that owns the mail account. The first doctor gets in;
+ * every colleague is refused, and the message gives no hint why. Somebody standing in a ward
+ * cannot fix that, so the message says who can.
+ */
+function explain(message: string): string {
+  if (/sending|smtp|mail/i.test(message)) {
+    return "The app could not send the code to that address. This usually means the unit's email sending is not set up for anyone but the first account — ask whoever set up CoreResident to finish that. Nothing is wrong with your email.";
+  }
+  if (/rate|limit|too many/i.test(message)) {
+    return "Too many codes requested. Wait a few minutes and try again.";
+  }
+  return message;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [step, setStep] = useState<"email" | "code">("email");
@@ -31,8 +50,11 @@ export default function LoginPage() {
     });
 
     setBusy(false);
-    if (error) setError(error.message);
-    else setStep("code");
+    if (error) {
+      setError(explain(error.message));
+      return;
+    }
+    setStep("code");
   }
 
   async function verifyCode(e: React.FormEvent) {
