@@ -43,9 +43,15 @@ Absolute rules:
 
 5. If the transcript is empty, inaudible, or contains nothing clinical, return an empty list. Returning nothing is correct and expected — never manufacture an observation to avoid an empty result.
 
+6. WHO THE PATIENT IS, AND WHERE THEY ARE, IS NOT AN OBSERVATION. The app already knows the bed, the name, the age and the sex — they are properties of the patient, not findings from a round. A resident naming them is telling you WHOSE round this is, not recording a clinical value.
+
+   So "bed number 1, Shyamlal, 36-year-old male, post-op day 2, abdomen soft" yields exactly TWO observations: the day number and the abdomen. Not a "bed number" observation, not a "patient name" observation, not an age or a sex.
+
+   This matters beyond tidiness: those rows end up in the patient's record and in their discharge summary, where "patient name: Shyamlal" under HISTORY is noise that a doctor then has to read past.
+
 Guidance on fields:
 - kind: the closest category. Use "note" only for clinical content that fits nothing else.
-- label: the short name of the thing measured or described, lowercase — "temperature", "drain output", "ceftriaxone", "abdomen".
+- label: the short name of the thing measured or described, lowercase — "temperature", "drain output", "ceftriaxone", "abdomen". Never let the label and the value be the same word: a diagnosis of cholelithiasis is label "diagnosis", value "cholelithiasis", not both.
 - value_text: always populated, exactly as said.
 - value_num and unit: populate ONLY when the resident actually stated a number and (where relevant) a unit. Otherwise null.
 - day_number: use when a post-operative or admission day is spoken, with value_num as the integer.
@@ -171,6 +177,15 @@ export async function extractObservations(
   const rejected: ExtractedObservation[] = [];
 
   for (const obs of candidates) {
+    // Identifiers are not findings, and the prompt asking nicely is not a guarantee — the
+    // quote check is enforced in code for the same reason, so this is too. A "bed number"
+    // row on a chart is noise the resident has to read past for the rest of the admission,
+    // and it follows them into the discharge summary.
+    if (IDENTIFIER_LABELS.test(obs.label ?? "")) {
+      rejected.push(obs);
+      continue;
+    }
+
     const quote = normalise(obs.source_quote ?? "");
     if (quote.length > 0 && haystack.includes(quote)) {
       // A grade on anything that is not a job has no meaning and nowhere to show, and a value
@@ -183,6 +198,16 @@ export async function extractObservations(
 
   return { observations, rejected, model, raw: parsed };
 }
+
+/**
+ * Labels that describe WHO or WHERE rather than a finding.
+ *
+ * Deliberately matched on the label alone and kept narrow. "Age" and "sex" are here; "wound"
+ * and "drain" obviously are not. Anchored so that "bed sore" — a real finding — does not get
+ * caught by "bed".
+ */
+const IDENTIFIER_LABELS =
+  /^(bed( number| no\.?)?|ward|patient( name)?|name|age|sex|gender|mrd( no\.?)?|uhid|ip( no\.?)?|hospital number)$/i;
 
 /**
  * Lowercase and collapse whitespace before comparing. Deliberately conservative: it does not
