@@ -27,9 +27,10 @@ export default async function Home() {
     );
   }
 
-  const { patients } = await getActivePatients(ward.id);
-  // One lookup for the whole list, so naming the operation on each row costs no extra query.
-  const [procedures, templateChoices, removedCount] = await Promise.all([
+  // All four at once. None depends on another, and each is a round trip to a database in
+  // another city — run in sequence they were most of the time the screen took to appear.
+  const [{ patients }, procedures, templateChoices, removedCount] = await Promise.all([
+    getActivePatients(ward.id),
     getProcedureLabels(),
     listTemplateChoices(),
     getRemovedCount(ward.id),
@@ -133,10 +134,10 @@ function PatientRow({
     <li className="ios-row relative">
       <Link
         href={`/patients/${patient.id}`}
-        className="flex items-center gap-3 py-2.5 pl-4 pr-20 active:bg-chip"
+        className="flex items-start gap-3 py-2.5 pl-4 pr-16 active:bg-chip"
       >
         {/* Bed leads the row: on rounds you are looking for a bed, not a name. */}
-        <span className="min-w-[34px] shrink-0 rounded-md bg-chip px-1.5 py-1 text-center font-mono text-[13px] tabular-nums">
+        <span className="mt-0.5 min-w-[32px] shrink-0 rounded-md bg-chip px-1.5 py-0.5 text-center font-mono text-[13px] tabular-nums">
           {patient.bed}
         </span>
 
@@ -169,7 +170,7 @@ function PatientRow({
       </Link>
 
       {/* Both sit outside the link, at the right, where iOS puts a row's accessories. */}
-      <div className="absolute inset-y-0 right-3 flex items-center gap-1">
+      <div className="absolute right-2 top-2 flex items-center gap-0.5">
         <PatientMenu patient={patient} templateChoices={templateChoices} />
         <ChevronIcon className="h-4 w-4 shrink-0 text-muted/60" />
       </div>

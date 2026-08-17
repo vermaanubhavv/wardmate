@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { istDate } from "@/lib/urgency";
 
@@ -27,7 +28,7 @@ export function phaseFor(patient: { surgery_date: string | null }) {
   return patient.surgery_date ? "after_surgery" : "before_surgery";
 }
 
-export async function getTemplateForPatient(patient: {
+export const getTemplateForPatient = cache(async function getTemplateForPatient(patient: {
   template_family: string | null;
   template_variant: string | null;
   surgery_date: string | null;
@@ -62,10 +63,10 @@ export async function getTemplateForPatient(patient: {
     phase: chosen.phase,
     items,
   };
-}
+})
 
 /** Everything a patient can be assigned to, for the add-patient screen. */
-export async function listTemplateChoices(): Promise<TemplateChoice[]> {
+export const listTemplateChoices = cache(async function listTemplateChoices(): Promise<TemplateChoice[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("care_templates")
@@ -87,7 +88,7 @@ export async function listTemplateChoices(): Promise<TemplateChoice[]> {
     });
   }
   return out;
-}
+})
 
 /** The key a patient's operation is looked up under. Kept in one place so the ward list and
  *  the patient screen cannot disagree about how family and variant combine. */

@@ -14,10 +14,11 @@ import { effectiveUrgency } from "@/lib/urgency";
 import BedsideBar from "./bedside-bar";
 import EditIdentity from "../edit-identity";
 import UrgencyDot from "./urgency-dot";
+import Tick from "./tick";
 import EntryReview from "./entry-review";
 import DischargeSection from "./discharge-section";
 import { buildDischargeBrief } from "@/lib/discharge";
-import { confirmChecked, confirmAll, completeTask, reopenTask } from "./actions";
+import { confirmChecked, confirmAll, reopenTask } from "./actions";
 import BottomBar from "../../bottom-bar";
 
 type Entry = {
@@ -48,18 +49,22 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
   // The next bed in walking order, so finishing one patient and starting the next is one tap
   // rather than a trip back through the ward list.
-  const { patients: ward } = await getActivePatients(patient.ward_id);
+  const [{ patients: ward }, { data: entriesData }, procedures, templateChoices] =
+    await Promise.all([
+      getActivePatients(patient.ward_id),
+      supabase
+        .from("entries")
+        .select(
+          "id, source, transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, observations(id, kind, label, value_text, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at)"
+        )
+        .eq("patient_id", id)
+        .order("recorded_at", { ascending: false }),
+      getProcedureLabels(),
+      listTemplateChoices(),
+    ]);
   const here = ward.findIndex((p) => p.id === patient.id);
   const next = here >= 0 ? ward[here + 1] : undefined;
   const position = here >= 0 ? `${here + 1} of ${ward.length}` : null;
-
-  const { data: entriesData } = await supabase
-    .from("entries")
-    .select(
-      "id, source, transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, observations(id, kind, label, value_text, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at)"
-    )
-    .eq("patient_id", id)
-    .order("recorded_at", { ascending: false });
 
   const entries = (entriesData ?? []) as unknown as Entry[];
 
@@ -92,10 +97,6 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // or photographed something while standing there.
   const sittings = groupIntoSittings(entries);
 
-  const [procedures, templateChoices] = await Promise.all([
-    getProcedureLabels(),
-    listTemplateChoices(),
-  ]);
   const procedure = procedureFor(patient, procedures);
   const management = managementLabel(patient);
 
@@ -169,14 +170,11 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             <ul className="rounded-xl border border-line bg-card divide-y divide-line">
               {openTasks.map((o) => (
                 <li key={o.id} className="flex items-start gap-3 px-4 py-3">
-                  <form action={completeTask} className="shrink-0 pt-0.5">
-                    <input type="hidden" name="observation_id" value={o.id} />
-                    <input type="hidden" name="patient_id" value={patient.id} />
-                    <button
-                      aria-label={`Mark done: ${o.value_text ?? o.label}`}
-                      className="h-6 w-6 rounded-full border-2 border-muted/50 active:bg-accent active:border-accent"
-                    />
-                  </form>
+                  <Tick
+                    observationId={o.id}
+                    patientId={patient.id}
+                    label={o.value_text ?? o.label}
+                  />
                   <div className="pt-1">
                     <UrgencyDot
                       observationId={o.id}

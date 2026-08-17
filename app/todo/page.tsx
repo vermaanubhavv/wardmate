@@ -3,7 +3,7 @@ import { getCurrentWard } from "@/lib/ward";
 import { getWardTasks, type WardTask } from "@/lib/todo";
 import { URGENCY_META, type Urgency } from "@/lib/urgency";
 import UrgencyDot from "../patients/[id]/urgency-dot";
-import { completeTask } from "../patients/[id]/actions";
+import Tick from "../patients/[id]/tick";
 
 /** The four groups, in the order they are worked through. */
 const GROUPS: { key: Urgency; title: string; note: string }[] = [
@@ -92,14 +92,11 @@ export default async function TodoPage() {
 function TaskRow({ task }: { task: WardTask }) {
   return (
     <li className="flex items-start gap-3 px-4 py-3">
-      <form action={completeTask} className="shrink-0 pt-0.5">
-        <input type="hidden" name="observation_id" value={task.id} />
-        <input type="hidden" name="patient_id" value={task.patient_id} />
-        <button
-          aria-label={`Mark done: ${task.value_text ?? task.label}`}
-          className="h-6 w-6 rounded-full border-2 border-muted/50 active:bg-accent active:border-accent"
-        />
-      </form>
+      <Tick
+        observationId={task.id}
+        patientId={task.patient_id}
+        label={task.value_text ?? task.label}
+      />
 
       <div className="pt-1">
         <UrgencyDot

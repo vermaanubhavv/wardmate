@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import type { WardPatient } from "@/lib/patients";
 import { compareBeds } from "@/lib/patients";
 
@@ -12,9 +13,7 @@ export async function getCurrentWard() {
   // The one the doctor last chose, if they still belong to it. Once somebody belongs to two
   // units "the oldest" stops being a sensible answer — a resident who joins a unit would
   // otherwise keep landing on the empty ward their account was created with.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
 
   if (user) {
     const { data: profile } = await supabase
@@ -63,47 +62,43 @@ export async function getMyWards() {
 export async function getActivePatients(wardId: string) {
   const supabase = await createClient();
 
-  const { data: patients, error } = await supabase
-    .from("current_patients")
-    .select(
-      "id, display_name, age_years, sex, bed, primary_diagnosis, admitted_on, surgery_date, post_op_day, admission_day, last_entry_at, template_family, template_variant, procedure_text, management"
-    )
-    .eq("ward_id", wardId)
-    .eq("status", "active");
+  // Both queries go out together. The badge counts used to wait for the patient list purely
+  // to get its ids to filter by; joining through patients lets the ward be named directly, so
+  // the two round trips overlap instead of queueing — and the two count queries become one,
+  // since a row can be tallied into either bucket here rather than by the database twice.
+  const [{ data: patients, error }, { data: flags }] = await Promise.all([
+    supabase
+      .from("current_patients")
+      .select(
+        "id, display_name, age_years, sex, bed, primary_diagnosis, admitted_on, surgery_date, post_op_day, admission_day, last_entry_at, template_family, template_variant, procedure_text, management"
+      )
+      .eq("ward_id", wardId)
+      .eq("status", "active"),
+    supabase
+      .from("observations")
+      .select("patient_id, kind, needs_confirmation, confirmed_at, done_at, patients!inner(ward_id, status)")
+      .eq("patients.ward_id", wardId)
+      .eq("patients.status", "active"),
+  ]);
 
   if (error || !patients) return { patients: [] as WardPatient[], error };
 
-  // Which patients still have a number, drug or dose nobody has confirmed. Fetched as one
-  // query over the whole ward rather than one per card.
-  const { data: pending } = await supabase
-    .from("observations")
-    .select("patient_id")
-    .in(
-      "patient_id",
-      patients.map((p) => p.id)
-    )
-    .eq("needs_confirmation", true)
-    .is("confirmed_at", null);
-
-  // Outstanding jobs, fetched for the whole ward in one query for the same reason.
-  const { data: openPlans } = await supabase
-    .from("observations")
-    .select("patient_id")
-    .in(
-      "patient_id",
-      patients.map((p) => p.id)
-    )
-    .eq("kind", "plan")
-    .is("done_at", null);
-
   const counts = new Map<string, number>();
-  for (const row of pending ?? []) {
-    counts.set(row.patient_id, (counts.get(row.patient_id) ?? 0) + 1);
-  }
-
   const taskCounts = new Map<string, number>();
-  for (const row of openPlans ?? []) {
-    taskCounts.set(row.patient_id, (taskCounts.get(row.patient_id) ?? 0) + 1);
+
+  for (const row of (flags ?? []) as unknown as {
+    patient_id: string;
+    kind: string;
+    needs_confirmation: boolean;
+    confirmed_at: string | null;
+    done_at: string | null;
+  }[]) {
+    if (row.needs_confirmation && !row.confirmed_at) {
+      counts.set(row.patient_id, (counts.get(row.patient_id) ?? 0) + 1);
+    }
+    if (row.kind === "plan" && !row.done_at) {
+      taskCounts.set(row.patient_id, (taskCounts.get(row.patient_id) ?? 0) + 1);
+    }
   }
 
   const withFlags: WardPatient[] = patients.map((p) => ({
