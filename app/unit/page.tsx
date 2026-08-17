@@ -18,8 +18,8 @@ export default async function UnitPage() {
   if (error || !ward) {
     return (
       <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
-        <h1 className="text-2xl font-semibold">Unit</h1>
-        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+        <h1 className="ios-large-title">Unit</h1>
+        <p className="mt-4 ios-group px-4 py-3 text-[15px] text-orange-700">
           {error ? `Could not read the database: ${error.message}` : "No ward found."}
         </p>
       </main>
@@ -52,27 +52,27 @@ export default async function UnitPage() {
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
       <header className="px-6 pt-8 pb-4">
-        <Link href="/" className="text-sm text-muted underline underline-offset-4">
-          ← Ward
+        <Link href="/" className="text-[17px] text-accent">
+          ‹ Ward
         </Link>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight">{ward.name}</h1>
-        <p className="mt-0.5 text-sm text-muted">
+        <h1 className="mt-3 ios-large-title">{ward.name}</h1>
+        <p className="mt-0.5 text-[15px] text-muted">
           {roster.length} {roster.length === 1 ? "person" : "people"} on this unit
         </p>
       </header>
 
       <section className="px-6 pb-6">
-        <p className="mb-2 text-sm text-muted">Code for this unit</p>
+        <p className="mb-2 text-[15px] text-muted">Code for this unit</p>
         <CodeBox code={ward.join_code} />
-        <p className="mt-2 text-xs text-muted leading-relaxed">
+        <p className="mt-2 text-[13px] text-muted leading-relaxed">
           Anyone entering this code joins this unit and sees the same patient list. Everything
           they record is theirs by name. Give it only to the team.
         </p>
       </section>
 
       <section className="px-6 pb-6">
-        <p className="mb-2 text-sm text-muted">On this unit</p>
-        <ul className="rounded-xl border border-line bg-card divide-y divide-line">
+        <p className="mb-2 text-[15px] text-muted">On this unit</p>
+        <ul className="ios-group divide-y divide-line">
           {roster.map((m) => (
             <li
               key={m.user_id}
@@ -84,7 +84,7 @@ export default async function UnitPage() {
                   <span className="text-muted"> · you</span>
                 )}
               </span>
-              <span className="shrink-0 text-xs text-muted">{m.role}</span>
+              <span className="shrink-0 text-[13px] text-muted">{m.role}</span>
             </li>
           ))}
         </ul>
@@ -94,7 +94,7 @@ export default async function UnitPage() {
           everyone else would be a control that silently does nothing. */}
       {isOwner && (
         <section className="px-6 pb-6">
-          <p className="mb-2 text-sm text-muted">Name of this unit</p>
+          <p className="mb-2 text-[15px] text-muted">Name of this unit</p>
           <form action={renameWard} className="flex gap-2">
             <input type="hidden" name="ward_id" value={ward.id} />
             <input
@@ -102,24 +102,24 @@ export default async function UnitPage() {
               defaultValue={ward.name}
               maxLength={60}
               autoCapitalize="words"
-              className="min-w-0 flex-1 rounded-xl border border-line bg-card px-4 py-3 text-base outline-none focus:border-accent"
+              className="min-w-0 flex-1 ios-group px-4 py-3 text-base outline-none focus:border-accent"
             />
-            <button className="shrink-0 rounded-xl border border-line px-4 py-3 text-sm font-medium">
+            <button className="shrink-0 ios-group px-4 py-3 text-[17px] font-medium">
               Rename
             </button>
           </form>
-          <p className="mt-2 text-xs text-muted">Everyone on the unit sees this name.</p>
+          <p className="mt-2 text-[13px] text-muted">Everyone on the unit sees this name.</p>
         </section>
       )}
 
       <section className="px-6 pb-6">
-        <p className="mb-2 text-sm text-muted">Join another unit</p>
+        <p className="mb-2 text-[15px] text-muted">Join another unit</p>
         <JoinForm />
       </section>
 
       {myWards.length > 1 && (
         <section className="px-6 pb-6">
-          <p className="mb-2 text-sm text-muted">Your units</p>
+          <p className="mb-2 text-[15px] text-muted">Your units</p>
           <ul className="flex flex-col gap-2">
             {myWards.map((w) => (
               <li key={w.id}>
@@ -127,7 +127,7 @@ export default async function UnitPage() {
                   <input type="hidden" name="ward_id" value={w.id} />
                   <button
                     className={
-                      "w-full rounded-xl border px-4 py-3 text-left text-sm " +
+                      "w-full rounded-[10px] border px-4 py-3 text-left text-sm " +
                       (w.id === ward.id
                         ? "border-accent text-accent"
                         : "border-line text-foreground")
@@ -147,11 +147,11 @@ export default async function UnitPage() {
         <section className="px-6 pb-16">
           <form action={leaveWard}>
             <input type="hidden" name="ward_id" value={ward.id} />
-            <button className="w-full rounded-xl border border-line px-4 py-3 text-sm text-red-600">
+            <button className="w-full rounded-[10px] bg-card px-4 py-3 text-sm text-red-600">
               Leave this unit
             </button>
           </form>
-          <p className="mt-2 text-xs text-muted">
+          <p className="mt-2 text-[13px] text-muted">
             The patients stay. You simply stop seeing them.
           </p>
         </section>

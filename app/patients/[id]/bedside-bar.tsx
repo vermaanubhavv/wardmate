@@ -67,7 +67,7 @@ export default function BedsideBar({ patientId }: { patientId: string }) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Day 3 post lap chole, afebrile, drain 30 ml serous…"
-          className="w-full rounded-xl border border-line bg-card px-4 py-3 text-base outline-none focus:border-accent"
+          className="w-full rounded-[10px] bg-card px-4 py-3 text-base outline-none focus:border-accent"
         />
         <div className="flex gap-3">
           <button
@@ -76,7 +76,7 @@ export default function BedsideBar({ patientId }: { patientId: string }) {
               setTyping(false);
               setMessage(null);
             }}
-            className="flex-1 rounded-xl border border-line px-4 py-3 text-sm text-muted"
+            className="flex-1 ios-group px-4 py-3 text-[15px] text-muted"
           >
             Cancel
           </button>
@@ -84,12 +84,12 @@ export default function BedsideBar({ patientId }: { patientId: string }) {
             type="button"
             onClick={save}
             disabled={busy || !text.trim()}
-            className="flex-[2] rounded-xl bg-accent px-4 py-3 text-base font-semibold text-accent-ink disabled:opacity-50"
+            className="flex-[2] rounded-xl bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink disabled:opacity-50"
           >
             {busy ? "Saving…" : "Save note"}
           </button>
         </div>
-        {message && <p className="text-center text-sm text-muted">{message}</p>}
+        {message && <p className="text-center text-[15px] text-muted">{message}</p>}
       </div>
     );
   }
@@ -101,14 +101,14 @@ export default function BedsideBar({ patientId }: { patientId: string }) {
         <button
           type="button"
           onClick={() => setTyping(true)}
-          className="self-end text-xs text-muted underline underline-offset-4"
+          className="self-end text-[13px] text-muted underline underline-offset-4"
         >
           Type instead
         </button>
       )}
       <Recorder patientId={patientId} onBusyChange={onBusyChange} />
       <PhotoButton patientId={patientId} />
-      {message && <p className="text-center text-sm text-muted">{message}</p>}
+      {message && <p className="text-center text-[15px] text-muted">{message}</p>}
     </div>
   );
 }

@@ -13,8 +13,8 @@ export default function SetupCheck() {
   }, []);
 
   return (
-    <section className="rounded-xl border border-line bg-card p-5">
-      <p className="text-sm text-muted">Setup check</p>
+    <section className="ios-group p-5">
+      <p className="text-[15px] text-muted">Setup check</p>
       <ul className="mt-3 flex flex-col gap-3 text-sm">
         <Check
           ok={installed}
@@ -41,7 +41,7 @@ function Check({ ok, label, note }: { ok: boolean | null; label: string; note?: 
             ? "bg-line text-muted"
             : ok
               ? "bg-accent text-accent-ink"
-              : "bg-amber-500 text-accent-ink")
+              : "bg-orange-500 text-accent-ink")
         }
       >
         {ok === null ? "" : ok ? "✓" : "!"}

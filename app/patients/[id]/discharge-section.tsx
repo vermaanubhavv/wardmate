@@ -28,11 +28,11 @@ export default function DischargeSection({
   }
 
   return (
-    <details className="rounded-xl border border-line bg-card">
-      <summary className="cursor-pointer px-4 py-3 text-sm font-medium">Discharge</summary>
+    <details className="ios-group">
+      <summary className="cursor-pointer px-4 py-3 text-[17px] font-medium">Discharge</summary>
 
       <div className="border-t border-line px-4 py-4">
-        <p className="text-xs text-muted">
+        <p className="text-[13px] text-muted">
           Assembled from what is on {patientName}&rsquo;s record — nothing here is written by
           the app. Anything never recorded says so, rather than being filled in.
         </p>
@@ -44,12 +44,12 @@ export default function DischargeSection({
         <button
           type="button"
           onClick={copy}
-          className="mt-3 w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-ink"
+          className="mt-3 w-full rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink"
         >
           {copied ? "Copied" : "Copy discharge brief"}
         </button>
 
-        <p className="mt-2 text-center text-xs text-muted">
+        <p className="mt-2 text-center text-[13px] text-muted">
           A starting point to correct — not a signed summary.
         </p>
       </div>

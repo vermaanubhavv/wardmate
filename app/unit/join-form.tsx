@@ -18,17 +18,17 @@ export default function JoinForm() {
           autoComplete="off"
           spellCheck={false}
           maxLength={8}
-          className="min-w-0 flex-1 rounded-xl border border-line bg-card px-4 py-3 font-mono text-base tracking-widest outline-none focus:border-accent"
+          className="min-w-0 flex-1 ios-group px-4 py-3 font-mono text-base tracking-widest outline-none focus:border-accent"
         />
         <button
           type="submit"
           disabled={pending}
-          className="shrink-0 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-ink disabled:opacity-50"
+          className="shrink-0 rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink disabled:opacity-50"
         >
           {pending ? "Joining…" : "Join"}
         </button>
       </div>
-      {state.error && <p className="text-xs text-amber-700">{state.error}</p>}
+      {state.error && <p className="text-[13px] text-orange-700">{state.error}</p>}
     </form>
   );
 }

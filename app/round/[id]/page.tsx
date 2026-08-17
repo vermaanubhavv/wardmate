@@ -40,12 +40,12 @@ export default async function RoundReviewPage({
   if (dictation.status !== "draft") {
     return (
       <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
-        <h1 className="text-2xl font-semibold">Already dealt with</h1>
-        <p className="mt-3 text-sm text-muted">
+        <h1 className="ios-large-title">Already dealt with</h1>
+        <p className="mt-3 text-[15px] text-muted">
           This dictation was {dictation.status === "applied" ? "applied" : "discarded"}.
         </p>
-        <Link href="/" className="mt-6 inline-block text-sm text-accent underline">
-          ← Ward
+        <Link href="/" className="mt-6 inline-block text-[17px] text-accent">
+          ‹ Ward
         </Link>
       </main>
     );
@@ -54,17 +54,17 @@ export default async function RoundReviewPage({
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
       <header className="px-6 pt-8 pb-4">
-        <Link href="/" className="text-sm text-muted underline underline-offset-4">
-          ← Ward
+        <Link href="/" className="text-[17px] text-accent">
+          ‹ Ward
         </Link>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight">Check before saving</h1>
-        <p className="mt-1 text-sm text-muted">
+        <h1 className="mt-3 ios-large-title">Check before saving</h1>
+        <p className="mt-1 text-[15px] text-muted">
           Nothing has been written yet. Check each bed is the patient you meant, then save.
         </p>
 
         <details className="mt-3">
-          <summary className="text-xs text-muted cursor-pointer">What you said</summary>
-          <p className="mt-1.5 text-xs text-muted italic leading-relaxed">
+          <summary className="text-[13px] text-muted cursor-pointer">What you said</summary>
+          <p className="mt-1.5 text-[13px] text-muted italic leading-relaxed">
             {dictation.transcript}
           </p>
         </details>
@@ -75,7 +75,7 @@ export default async function RoundReviewPage({
 
         <section className="px-6 pb-48 flex flex-col gap-4">
           {segments.length === 0 ? (
-            <p className="rounded-xl border border-line bg-card p-6 text-sm text-muted">
+            <p className="ios-group p-6 text-[15px] text-muted">
               No beds were recognised in that recording.
             </p>
           ) : (
@@ -90,10 +90,9 @@ export default async function RoundReviewPage({
         </section>
 
         <BottomBar>
-          
-            <button
+          <button
               type="submit"
-              className="w-full rounded-xl bg-accent px-4 py-4 text-base font-semibold text-accent-ink"
+              className="w-full rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink"
             >
               Save the ticked ones
             </button>
@@ -103,7 +102,7 @@ export default async function RoundReviewPage({
       {/* Its own form, so discarding cannot be reached by pressing enter inside the one above. */}
       <form action={discardRound} className="px-6 pb-10 -mt-32 relative z-10">
         <input type="hidden" name="dictation_id" value={dictation.id} />
-        <button className="w-full rounded-xl border border-line px-4 py-3 text-sm text-muted">
+        <button className="w-full rounded-[10px] bg-card px-4 py-3 text-[15px] text-muted">
           Discard all of it
         </button>
       </form>
@@ -130,18 +129,18 @@ function UpdateCard({
   return (
     <div
       className={
-        "rounded-xl border bg-card p-4 " +
-        (sure ? "border-line" : "border-amber-200 bg-amber-50")
+        "rounded-[10px] border bg-card p-4 " +
+        (sure ? "border-line" : "border-orange-200 bg-orange-50")
       }
     >
       <div className="flex items-baseline gap-2">
-        <span className="shrink-0 rounded-lg bg-chip px-2 py-1 font-mono text-xs">
+        <span className="shrink-0 rounded-md bg-chip px-2 py-1 font-mono text-[13px]">
           bed {segment.bed || "?"}
         </span>
         {matched ? (
-          <span className="truncate text-sm font-medium">{patientName(matched)}</span>
+          <span className="truncate text-[17px] font-medium">{patientName(matched)}</span>
         ) : (
-          <span className="text-sm text-amber-700">Which patient?</span>
+          <span className="text-[15px] text-orange-700">Which patient?</span>
         )}
       </div>
 
@@ -151,7 +150,7 @@ function UpdateCard({
       {segment.observations.length > 0 && (
         <ul className="mt-3 flex flex-col gap-1">
           {segment.observations.map((o, k) => (
-            <li key={k} className="text-sm">
+            <li key={k} className="text-[15px]">
               <span className="text-muted">{o.label}:</span> {o.value_text}
             </li>
           ))}
@@ -159,13 +158,13 @@ function UpdateCard({
       )}
 
       {segment.observations.length === 0 && (
-        <p className="mt-3 text-xs text-muted">
+        <p className="mt-3 text-[13px] text-muted">
           Nothing could be structured from this — the words above will be saved as they are.
         </p>
       )}
 
       {(match.note || segment.uncertain) && (
-        <p className="mt-3 text-xs text-amber-700">
+        <p className="mt-3 text-[13px] text-orange-700">
           {match.note}
           {segment.uncertain &&
             (match.note ? " " : "") + "The recording was unclear here — check it carefully."}
@@ -173,11 +172,11 @@ function UpdateCard({
       )}
 
       <label className="mt-3 flex flex-col gap-2">
-        <span className="text-xs text-muted">Save this to</span>
+        <span className="text-[13px] text-muted">Save this to</span>
         <select
           name={`patient_${index}`}
           defaultValue={sure ? (match.patientId ?? "") : ""}
-          className="w-full rounded-lg border border-line bg-background px-3 py-3 text-sm outline-none focus:border-accent"
+          className="w-full rounded-[10px] border border-line bg-card px-3 py-2.5 text-[15px] outline-none focus:border-accent"
         >
           {/* Nothing selected means nothing is written for this bed, which is the safe
               default whenever the app is not certain who was meant. */}
@@ -208,10 +207,10 @@ function AdmitCard({
   const details = segment.new_patient;
 
   return (
-    <div className="rounded-xl border border-accent/40 bg-card p-4">
+    <div className="rounded-[10px] border border-accent/40 bg-card p-4">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-sm font-medium text-accent">New patient</span>
-        <label className="flex items-center gap-2 text-xs text-muted">
+        <span className="text-[17px] font-medium text-accent">New patient</span>
+        <label className="flex items-center gap-2 text-[13px] text-muted">
           <input
             type="checkbox"
             name={`admit_${index}`}
@@ -225,7 +224,7 @@ function AdmitCard({
 
       <p className="mt-2 text-sm italic text-muted">“{segment.text}”</p>
 
-      {free.note && <p className="mt-3 text-xs text-amber-700">{free.note}</p>}
+      {free.note && <p className="mt-3 text-[13px] text-orange-700">{free.note}</p>}
 
       <div className="mt-3 flex flex-col gap-3">
         <Box label="Bed" name={`bed_${index}`} defaultValue={segment.bed} />
@@ -239,11 +238,11 @@ function AdmitCard({
             type="number"
           />
           <label className="flex flex-1 flex-col gap-1">
-            <span className="text-xs text-muted">Sex</span>
+            <span className="text-[13px] text-muted">Sex</span>
             <select
               name={`sex_${index}`}
               defaultValue={details?.sex ?? ""}
-              className="w-full rounded-lg border border-line bg-background px-3 py-3 text-sm outline-none focus:border-accent"
+              className="w-full rounded-[10px] border border-line bg-card px-3 py-2.5 text-[15px] outline-none focus:border-accent"
             >
               <option value="">—</option>
               <option value="M">M</option>
@@ -260,7 +259,7 @@ function AdmitCard({
         />
       </div>
 
-      <p className="mt-3 text-xs text-muted">
+      <p className="mt-3 text-[13px] text-muted">
         Anything you were not heard to say is left blank rather than guessed. Admitted today.
       </p>
     </div>
@@ -280,12 +279,12 @@ function Box({
 }) {
   return (
     <label className="flex flex-1 flex-col gap-1">
-      <span className="text-xs text-muted">{label}</span>
+      <span className="text-[13px] text-muted">{label}</span>
       <input
         name={name}
         type={type}
         defaultValue={defaultValue}
-        className="w-full rounded-lg border border-line bg-background px-3 py-3 text-sm outline-none focus:border-accent"
+        className="w-full rounded-[10px] border border-line bg-card px-3 py-2.5 text-[15px] outline-none focus:border-accent"
       />
     </label>
   );

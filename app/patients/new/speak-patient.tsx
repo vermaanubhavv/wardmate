@@ -139,7 +139,7 @@ export default function SpeakPatient({
         onClick={status === "recording" ? stop : start}
         disabled={status === "working" || status === "starting"}
         className={
-          "w-full rounded-xl px-4 py-4 text-base font-semibold disabled:opacity-60 " +
+          "w-full rounded-xl px-4 py-4 text-[17px] font-semibold disabled:opacity-60 " +
           (status === "recording"
             ? "bg-red-500 text-white"
             : "border border-line text-foreground")
@@ -149,10 +149,10 @@ export default function SpeakPatient({
       </button>
 
       {message ? (
-        <p className="text-center text-xs text-amber-700">{message}</p>
+        <p className="text-center text-[13px] text-orange-700">{message}</p>
       ) : (
         status === "idle" && (
-          <p className="text-center text-xs text-muted">
+          <p className="text-center text-[13px] text-muted">
             e.g. &ldquo;Madina, 50 year old female, bed 5, abdominal lump&rdquo;. Nothing is
             saved until you press Add.
           </p>

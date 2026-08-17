@@ -28,8 +28,8 @@ export default async function RemovedPage() {
   if (error || !ward) {
     return (
       <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
-        <h1 className="text-2xl font-semibold">Removed</h1>
-        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+        <h1 className="ios-large-title">Removed</h1>
+        <p className="mt-4 ios-group px-4 py-3 text-[15px] text-orange-700">
           {error ? `Could not read the database: ${error.message}` : "No ward found."}
         </p>
       </main>
@@ -57,18 +57,18 @@ export default async function RemovedPage() {
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
       <header className="px-6 pt-8 pb-4">
-        <Link href="/" className="text-sm text-muted underline underline-offset-4">
-          ← Ward
+        <Link href="/" className="text-[17px] text-accent">
+          ‹ Ward
         </Link>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight">Removed</h1>
-        <p className="mt-0.5 text-sm text-muted">
+        <h1 className="mt-3 ios-large-title">Removed</h1>
+        <p className="mt-0.5 text-[15px] text-muted">
           Taken off the ward list. Nothing recorded about them has been deleted.
         </p>
       </header>
 
       <section className="px-6 pb-16 flex flex-col gap-3">
         {patients.length === 0 ? (
-          <p className="rounded-xl border border-line bg-card p-6 text-sm text-muted">
+          <p className="ios-group p-6 text-[15px] text-muted">
             Nobody has been removed from this ward.
           </p>
         ) : (
@@ -84,17 +84,17 @@ export default async function RemovedPage() {
 
 function RemovedCard({ patient }: { patient: RemovedPatient }) {
   return (
-    <div className="rounded-xl border border-line bg-card p-4">
+    <div className="ios-group p-4">
       <div className="flex items-baseline gap-2">
-        <span className="shrink-0 rounded-lg bg-chip px-2 py-1 font-mono text-xs">
+        <span className="shrink-0 rounded-md bg-chip px-2 py-1 font-mono text-[13px]">
           {patient.bed}
         </span>
-        <span className="truncate text-base font-medium">{patientName(patient)}</span>
+        <span className="truncate text-[17px] font-medium">{patientName(patient)}</span>
       </div>
-      <p className="mt-0.5 truncate text-sm text-muted">
+      <p className="mt-0.5 truncate text-[15px] text-muted">
         {patient.primary_diagnosis || "No diagnosis recorded"}
       </p>
-      <p className="mt-1 text-xs text-muted">
+      <p className="mt-1 text-[13px] text-muted">
         {patient.entry_count === 0
           ? "Nothing was ever recorded on this patient."
           : `${patient.entry_count} ${patient.entry_count === 1 ? "entry" : "entries"} on their record.`}
@@ -111,7 +111,7 @@ function RemovedCard({ patient }: { patient: RemovedPatient }) {
       <div className="mt-3 flex gap-3">
         <form action={restorePatient} className="flex-1">
           <input type="hidden" name="patient_id" value={patient.id} />
-          <button className="w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-ink">
+          <button className="w-full rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink">
             Put back on the ward
           </button>
         </form>
@@ -134,7 +134,7 @@ function RemovedCard({ patient }: { patient: RemovedPatient }) {
                 e.preventDefault();
               }
             }}
-            className="rounded-xl border border-red-300 px-4 py-3 text-sm font-semibold text-red-600"
+            className="rounded-[10px] border border-red-300 px-4 py-3 text-[15px] font-semibold text-red-600"
           >
             Delete
           </button>

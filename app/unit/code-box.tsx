@@ -20,10 +20,10 @@ export default function CodeBox({ code }: { code: string }) {
     <button
       type="button"
       onClick={copy}
-      className="w-full rounded-xl border border-line bg-card px-4 py-4 text-center active:opacity-70"
+      className="w-full ios-group px-4 py-4 text-center active:opacity-70"
     >
       <span className="block font-mono text-2xl tracking-[0.3em]">{code}</span>
-      <span className="mt-1 block text-xs text-muted">
+      <span className="mt-1 block text-[13px] text-muted">
         {copied ? "Copied" : "Tap to copy"}
       </span>
     </button>

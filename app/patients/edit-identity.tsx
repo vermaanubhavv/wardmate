@@ -99,37 +99,37 @@ export default function EditIdentity({
         <form action={formAction} className="flex flex-col gap-5 p-6" onClick={(e) => e.stopPropagation()}>
           <input type="hidden" name="patient_id" value={patient.id} />
 
-          <p className="text-base font-semibold">Edit patient</p>
+          <p className="text-[17px] font-semibold">Edit patient</p>
 
           <label className="flex flex-col gap-2">
-            <span className="text-sm text-muted">Name</span>
+            <span className="text-[15px] text-muted">Name</span>
             <input
               name="display_name"
               required
               defaultValue={patient.display_name}
               autoCapitalize="words"
-              className="w-full rounded-xl border border-line bg-background px-4 py-4 text-base outline-none focus:border-accent"
+              className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
             />
           </label>
 
           <label className="flex flex-col gap-2">
-            <span className="text-sm text-muted">Bed</span>
+            <span className="text-[15px] text-muted">Bed</span>
             <input
               name="bed"
               required
               defaultValue={patient.bed}
               autoCapitalize="characters"
-              className="w-full rounded-xl border border-line bg-background px-4 py-4 text-base outline-none focus:border-accent"
+              className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
             />
             {/* Moving a bed reorders the whole ward list, since the list walks in bed order. */}
-            <span className="text-xs text-muted">
+            <span className="text-[13px] text-muted">
               Include the location, e.g. SW-12 or ICU-3
             </span>
           </label>
 
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-2">
-              <span className="text-sm text-muted">Age</span>
+              <span className="text-[15px] text-muted">Age</span>
               <input
                 type="number"
                 name="age_years"
@@ -137,15 +137,15 @@ export default function EditIdentity({
                 min={0}
                 max={120}
                 defaultValue={patient.age_years ?? ""}
-                className="w-full rounded-xl border border-line bg-background px-4 py-4 text-base outline-none focus:border-accent"
+                className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
               />
             </label>
             <label className="flex flex-1 flex-col gap-2">
-              <span className="text-sm text-muted">Sex</span>
+              <span className="text-[15px] text-muted">Sex</span>
               <select
                 name="sex"
                 defaultValue={patient.sex ?? ""}
-                className="w-full rounded-xl border border-line bg-background px-4 py-4 text-base outline-none focus:border-accent"
+                className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
               >
                 <option value="">—</option>
                 <option value="M">M</option>
@@ -156,38 +156,38 @@ export default function EditIdentity({
           </div>
 
           <label className="flex flex-col gap-2">
-            <span className="text-sm text-muted">Operation</span>
+            <span className="text-[15px] text-muted">Operation</span>
             <input
               name="procedure"
               list="operation-suggestions"
               defaultValue={currentProcedure(patient, templateChoices)}
               autoCapitalize="none"
-              className="w-full rounded-xl border border-line bg-background px-4 py-4 text-base outline-none focus:border-accent"
+              className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
             />
             <datalist id="operation-suggestions">
               {templateChoices.map((t) => (
                 <option key={`${t.family}|${t.variant ?? ""}`} value={t.label} />
               ))}
             </datalist>
-            <span className="text-xs text-muted">
+            <span className="text-[13px] text-muted">
               Type anything. Picking one of the suggestions also brings its checklist.
             </span>
           </label>
 
           <label className="flex flex-col gap-2">
-            <span className="text-sm text-muted">Management</span>
+            <span className="text-[15px] text-muted">Management</span>
             {patient.surgery_date ? (
               // Not a choice once an operation has been recorded: the surgery date already
               // settles it, and letting it be overridden here would put "PRE OP" next to a
               // post-op day count.
-              <p className="rounded-xl border border-line bg-background px-4 py-4 text-base text-muted">
+              <p className="rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] text-muted">
                 Post-op — set by the date of surgery
               </p>
             ) : (
               <select
                 name="management"
                 defaultValue={patient.management ?? ""}
-                className="w-full rounded-xl border border-line bg-background px-4 py-4 text-base outline-none focus:border-accent"
+                className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
               >
                 <option value="">Not stated</option>
                 {MANAGEMENT_CHOICES.map((c) => (
@@ -200,7 +200,7 @@ export default function EditIdentity({
           </label>
 
           {state.error && (
-            <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            <p className="ios-group px-4 py-3 text-[15px] text-orange-700">
               {state.error}
             </p>
           )}
@@ -209,14 +209,14 @@ export default function EditIdentity({
             <button
               type="button"
               onClick={() => dialogRef.current?.close()}
-              className="flex-1 rounded-xl border border-line px-4 py-4 text-base text-muted"
+              className="flex-1 rounded-[10px] bg-card px-4 py-3 text-[17px] text-muted"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={pending}
-              className="flex-[2] rounded-xl bg-accent px-4 py-4 text-base font-semibold text-accent-ink disabled:opacity-50"
+              className="flex-[2] rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink disabled:opacity-50"
             >
               {pending ? "Saving…" : "Save"}
             </button>

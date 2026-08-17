@@ -30,19 +30,19 @@ export default function FormatSlot({
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   return (
-    <div className="rounded-xl border border-line bg-card p-4">
+    <div className="ios-group p-4">
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-sm font-medium">{label}</p>
+        <p className="text-[17px] font-medium">{label}</p>
         {current ? (
           <span className="shrink-0 text-xs text-emerald-600">held</span>
         ) : (
-          <span className="shrink-0 text-xs text-muted">not uploaded</span>
+          <span className="shrink-0 text-[13px] text-muted">not uploaded</span>
         )}
       </div>
-      <p className="mt-0.5 text-xs text-muted">{hint}</p>
+      <p className="mt-0.5 text-[13px] text-muted">{hint}</p>
 
       {current && (
-        <p className="mt-2 truncate text-xs text-muted">
+        <p className="mt-2 truncate text-[13px] text-muted">
           {current.url ? (
             <a
               href={current.url}
@@ -100,7 +100,7 @@ export default function FormatSlot({
         )}
       </form>
 
-      {state.error && <p className="mt-2 text-xs text-amber-700">{state.error}</p>}
+      {state.error && <p className="mt-2 text-[13px] text-orange-700">{state.error}</p>}
     </div>
   );
 }

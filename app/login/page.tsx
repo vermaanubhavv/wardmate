@@ -66,7 +66,7 @@ export default function LoginPage() {
       {step === "email" ? (
         <form onSubmit={sendCode} className="flex flex-col gap-4">
           <label className="flex flex-col gap-2">
-            <span className="text-sm text-muted">Your email</span>
+            <span className="text-[15px] text-muted">Your email</span>
             <input
               type="email"
               required
@@ -76,20 +76,20 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@hospital.in"
-              className="rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
+              className="ios-group px-4 py-4 text-base outline-none focus:border-accent"
             />
           </label>
           <button
             type="submit"
             disabled={busy}
-            className="rounded-xl bg-accent px-4 py-4 text-base font-semibold text-accent-ink disabled:opacity-50"
+            className="rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink disabled:opacity-50"
           >
             {busy ? "Sending…" : "Send me a code"}
           </button>
         </form>
       ) : (
         <form onSubmit={verifyCode} className="flex flex-col gap-4">
-          <p className="text-sm text-muted">
+          <p className="text-[15px] text-muted">
             We sent a code to <span className="text-foreground">{email}</span>. It
             expires in an hour.
           </p>
@@ -103,12 +103,12 @@ export default function LoginPage() {
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
             placeholder="the code from the email"
-            className="rounded-xl border border-line bg-card px-4 py-4 text-center text-xl tracking-[0.25em] outline-none focus:border-accent"
+            className="ios-group px-4 py-4 text-center text-xl tracking-[0.25em] outline-none focus:border-accent"
           />
           <button
             type="submit"
             disabled={busy || code.length === 0}
-            className="rounded-xl bg-accent px-4 py-4 text-base font-semibold text-accent-ink disabled:opacity-50"
+            className="rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink disabled:opacity-50"
           >
             {busy ? "Checking…" : "Sign in"}
           </button>
@@ -119,7 +119,7 @@ export default function LoginPage() {
               setCode("");
               setError(null);
             }}
-            className="text-sm text-muted underline underline-offset-4"
+            className="text-[17px] text-accent"
           >
             Use a different email
           </button>
@@ -127,7 +127,7 @@ export default function LoginPage() {
       )}
 
       {error && (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+        <p className="ios-group px-4 py-3 text-[15px] text-orange-700">
           {error}
         </p>
       )}

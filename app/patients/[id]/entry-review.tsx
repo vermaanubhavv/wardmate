@@ -39,7 +39,7 @@ export default function EntryReview({
           autoFocus
           className="w-full rounded-lg border border-line bg-background px-3 py-2 text-sm leading-relaxed outline-none focus:border-accent"
         />
-        <p className="mt-1 text-xs text-muted">
+        <p className="mt-1 text-[13px] text-muted">
           Correcting the words works the values out again from what you write here.
         </p>
 
@@ -47,7 +47,7 @@ export default function EntryReview({
           <button
             type="button"
             onClick={() => setEditing(false)}
-            className="flex-1 rounded-lg border border-line px-3 py-2 text-xs text-muted"
+            className="flex-1 rounded-lg border border-line px-3 py-2 text-[13px] text-muted"
           >
             Cancel
           </button>
@@ -68,7 +68,7 @@ export default function EntryReview({
 
       <div className="mt-2 flex items-center gap-2">
         {accepted ? (
-          <span className="text-xs text-muted">
+          <span className="text-[13px] text-muted">
             ✓ Accepted{edited && " · corrected"}
           </span>
         ) : (
@@ -84,7 +84,7 @@ export default function EntryReview({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="rounded-lg border border-line px-3 py-1.5 text-xs text-muted"
+          className="rounded-lg border border-line px-3 py-1.5 text-[13px] text-muted"
         >
           Edit
         </button>

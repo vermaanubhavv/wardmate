@@ -67,12 +67,12 @@ export default function PhotoButton({ patientId }: { patientId: string }) {
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={busy}
-        className="flex w-full items-center justify-center gap-2 rounded-lg border border-line bg-card px-3 py-2.5 text-sm font-medium text-foreground active:opacity-70 disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-lg border border-line bg-card px-3 py-2.5 text-[17px] font-medium text-foreground active:opacity-70 disabled:opacity-50"
       >
         <ImageIcon />
         {busy ? "Reading the report…" : "Photograph a lab report"}
       </button>
-      {message && <p className="text-center text-xs text-muted">{message}</p>}
+      {message && <p className="text-center text-[13px] text-muted">{message}</p>}
     </>
   );
 }

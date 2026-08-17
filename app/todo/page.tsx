@@ -19,8 +19,8 @@ export default async function TodoPage() {
   if (error || !ward) {
     return (
       <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
-        <h1 className="text-2xl font-semibold">To do</h1>
-        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+        <h1 className="ios-large-title">To do</h1>
+        <p className="mt-4 ios-group px-4 py-3 text-[15px] text-orange-700">
           {error ? `Could not read the database: ${error.message}` : "No ward found."}
         </p>
       </main>
@@ -32,11 +32,11 @@ export default async function TodoPage() {
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
       <header className="px-6 pt-8 pb-4">
-        <Link href="/" className="text-sm text-muted underline underline-offset-4">
-          ← Ward
+        <Link href="/" className="text-[17px] text-accent">
+          ‹ Ward
         </Link>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight">To do</h1>
-        <p className="text-muted text-sm mt-0.5">
+        <h1 className="mt-3 ios-large-title">To do</h1>
+        <p className="mt-1 text-[15px] text-muted">
           {tasks.length === 0
             ? "Nothing outstanding on the unit"
             : `${tasks.length} outstanding across the unit`}
@@ -45,7 +45,7 @@ export default async function TodoPage() {
 
       <section className="px-6 pb-16 flex flex-col gap-6">
         {tasks.length === 0 ? (
-          <p className="rounded-xl border border-line bg-card p-6 text-sm text-muted">
+          <p className="ios-group p-6 text-[15px] text-muted">
             Every job on the unit is ticked off.
           </p>
         ) : (
@@ -64,15 +64,15 @@ export default async function TodoPage() {
                     }
                     aria-hidden
                   />
-                  <p className="text-sm font-medium">
+                  <p className="text-[17px] font-medium">
                     {title} · {group.length}
                   </p>
                 </div>
-                <p className="mb-2 text-xs text-muted">{note}</p>
+                <p className="mb-2 text-[13px] text-muted">{note}</p>
 
                 <ul
                   className={
-                    "rounded-xl border bg-card divide-y divide-line " +
+                    "rounded-[10px] border bg-card divide-y divide-line " +
                     (meta ? meta.border : "border-line")
                   }
                 >
@@ -109,7 +109,7 @@ function TaskRow({ task }: { task: WardTask }) {
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="text-sm">
+        <p className="text-[15px]">
           {task.value_text ?? task.label}
           {/* Said in words, so a job that climbed with the calendar never looks like one
               somebody graded red. */}
@@ -120,13 +120,13 @@ function TaskRow({ task }: { task: WardTask }) {
         {/* Which bed to walk to — the thing that turns a list into a route. */}
         <Link
           href={`/patients/${task.patient_id}`}
-          className="mt-0.5 block truncate text-xs text-muted underline underline-offset-4"
+          className="mt-0.5 block truncate text-[13px] text-muted underline underline-offset-4"
         >
           {task.patient.bed} · {task.patient.display_name}
         </Link>
-        <p className="mt-0.5 truncate text-xs text-muted italic">“{task.source_quote}”</p>
+        <p className="mt-0.5 truncate text-[13px] text-muted italic">“{task.source_quote}”</p>
         {task.repeats > 0 && (
-          <p className="mt-0.5 text-xs text-muted">
+          <p className="mt-0.5 text-[13px] text-muted">
             said {task.repeats + 1} times — showing the latest
           </p>
         )}

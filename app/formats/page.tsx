@@ -15,8 +15,8 @@ export default async function FormatsPage() {
   if (error || !ward) {
     return (
       <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
-        <h1 className="text-2xl font-semibold">Formats</h1>
-        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+        <h1 className="ios-large-title">Formats</h1>
+        <p className="mt-4 ios-group px-4 py-3 text-[15px] text-orange-700">
           {error ? `Could not read the database: ${error.message}` : "No ward found."}
         </p>
       </main>
@@ -28,11 +28,11 @@ export default async function FormatsPage() {
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
       <header className="px-6 pt-8 pb-4">
-        <Link href="/" className="text-sm text-muted underline underline-offset-4">
-          ← Ward
+        <Link href="/" className="text-[17px] text-accent">
+          ‹ Ward
         </Link>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight">Formats</h1>
-        <p className="mt-0.5 text-sm text-muted">
+        <h1 className="mt-3 ios-large-title">Formats</h1>
+        <p className="mt-0.5 text-[15px] text-muted">
           How {ward.name} writes its paperwork. Photograph a blank form or upload a file —
           images and PDFs.
         </p>
@@ -52,7 +52,7 @@ export default async function FormatsPage() {
           />
         ))}
 
-        <p className="mt-2 text-xs text-muted leading-relaxed">
+        <p className="mt-2 text-[13px] text-muted leading-relaxed">
           These are stored for the unit to refer to. Nothing the app writes follows them yet —
           the discharge brief is still assembled in its own layout.
         </p>

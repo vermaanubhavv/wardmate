@@ -71,7 +71,7 @@ export default function PatientMenu({
 
       {open && (
         <div
-          className="absolute right-0 top-8 z-20 w-56 overflow-hidden rounded-xl border border-line bg-card shadow-lg"
+          className="absolute right-0 top-8 z-20 w-56 overflow-hidden ios-group shadow-lg"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();

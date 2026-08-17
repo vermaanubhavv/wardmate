@@ -78,7 +78,7 @@ export default function PatientForm({
           autoCapitalize="characters"
           value={fields.bed}
           onChange={(e) => set("bed")(e.target.value)}
-          className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
+          className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
         />
       </Field>
 
@@ -89,7 +89,7 @@ export default function PatientForm({
           autoCapitalize="words"
           value={fields.display_name}
           onChange={(e) => set("display_name")(e.target.value)}
-          className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
+          className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
         />
       </Field>
 
@@ -105,7 +105,7 @@ export default function PatientForm({
               max={120}
               value={fields.age_years}
               onChange={(e) => set("age_years")(e.target.value)}
-              className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
+              className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
             />
           </Field>
         </div>
@@ -115,7 +115,7 @@ export default function PatientForm({
               name="sex"
               value={fields.sex}
               onChange={(e) => set("sex")(e.target.value)}
-              className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
+              className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
             >
               <option value="">—</option>
               <option value="M">M</option>
@@ -133,7 +133,7 @@ export default function PatientForm({
           autoCapitalize="none"
           value={fields.primary_diagnosis}
           onChange={(e) => set("primary_diagnosis")(e.target.value)}
-          className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
+          className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
         />
         <datalist id="diagnosis-suggestions">
           {diagnosisSuggestions.map((d) => (
@@ -152,7 +152,7 @@ export default function PatientForm({
           value={fields.procedure}
           onChange={(e) => set("procedure")(e.target.value)}
           autoCapitalize="none"
-          className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
+          className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
         />
         <datalist id="operation-suggestions">
           {templateChoices.map((t) => (
@@ -168,7 +168,7 @@ export default function PatientForm({
           required
           defaultValue={localToday}
           max={localToday}
-          className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
+          className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
         />
       </Field>
 
@@ -190,7 +190,7 @@ export default function PatientForm({
             required
             defaultValue={localToday}
             max={localToday}
-            className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
+            className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
           />
         </Field>
       ) : (
@@ -200,7 +200,7 @@ export default function PatientForm({
           <select
             name="management"
             defaultValue=""
-            className="w-full rounded-xl border border-line bg-card px-4 py-4 text-base outline-none focus:border-accent"
+            className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
           >
             <option value="">Not stated</option>
             {MANAGEMENT_CHOICES.map((c) => (
@@ -213,7 +213,7 @@ export default function PatientForm({
       )}
 
       {state.error && (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+        <p className="ios-group px-4 py-3 text-[15px] text-orange-700">
           {state.error}
         </p>
       )}
@@ -221,14 +221,14 @@ export default function PatientForm({
       <div className="flex gap-3 pt-2">
         <Link
           href="/"
-          className="flex-1 rounded-xl border border-line px-4 py-4 text-center text-base text-muted"
+          className="flex-1 rounded-[10px] border border-line px-4 py-4 text-center text-base text-muted"
         >
           Cancel
         </Link>
         <button
           type="submit"
           disabled={pending}
-          className="flex-[2] rounded-xl bg-accent px-4 py-4 text-base font-semibold text-accent-ink disabled:opacity-50"
+          className="flex-[2] rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink disabled:opacity-50"
         >
           {pending ? "Adding…" : "Add patient"}
         </button>
@@ -248,9 +248,9 @@ function Field({
 }) {
   return (
     <label className="flex flex-col gap-2">
-      <span className="text-sm text-muted">{label}</span>
+      <span className="text-[15px] text-muted">{label}</span>
       {children}
-      {hint && <span className="text-xs text-muted">{hint}</span>}
+      {hint && <span className="text-[13px] text-muted">{hint}</span>}
     </label>
   );
 }

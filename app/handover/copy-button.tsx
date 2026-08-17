@@ -22,12 +22,12 @@ export default function CopyHandoverButton({ text }: { text: string }) {
       <button
         type="button"
         onClick={copy}
-        className="w-full rounded-xl bg-accent px-4 py-4 text-center text-base font-semibold text-accent-ink active:opacity-70"
+        className="w-full rounded-xl bg-accent px-4 py-4 text-center text-[17px] font-semibold text-accent-ink active:opacity-70"
       >
         {state === "copied" ? "Copied" : "Copy for WhatsApp"}
       </button>
       {state === "failed" && (
-        <p className="mt-2 text-center text-xs text-amber-700">
+        <p className="mt-2 text-center text-[13px] text-orange-700">
           Could not copy automatically — select the text above and copy it by hand.
         </p>
       )}

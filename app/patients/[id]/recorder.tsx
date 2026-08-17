@@ -182,7 +182,7 @@ export default function Recorder({
         onClick={recording ? stop : start}
         disabled={status === "working" || status === "starting"}
         className={
-          "flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-base font-medium transition-colors " +
+          "flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-[17px] font-medium transition-colors " +
           (recording
             ? "bg-rose-500 text-white"
             : status === "working" || status === "starting"
@@ -213,7 +213,7 @@ export default function Recorder({
         )}
       </button>
 
-      {message && <p className="text-center text-sm text-muted">{message}</p>}
+      {message && <p className="text-center text-[15px] text-muted">{message}</p>}
     </div>
   );
 }
