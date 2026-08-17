@@ -7,6 +7,7 @@ import { PlusIcon } from "./icons";
 import RoundRecorder from "./round-recorder";
 import PatientMenu from "./patients/patient-menu";
 import { signOut } from "./actions";
+import BottomBar from "./bottom-bar";
 
 export default async function Home() {
   const { ward, error: wardError } = await getCurrentWard();
@@ -73,7 +74,7 @@ export default async function Home() {
       </header>
 
       {/* Bottom padding clears the fixed Add patient button so the last card is reachable. */}
-      <ul className="flex-1 px-4 pb-36 flex flex-col gap-2">
+      <ul className="flex-1 px-4 pb-56 flex flex-col gap-2">
         {patients.length === 0 ? (
           <li className="rounded-xl border border-line bg-card p-6 text-sm text-muted">
             No patients on this ward yet. Add the first one below.
@@ -91,8 +92,8 @@ export default async function Home() {
         )}
       </ul>
 
-      <div className="fixed bottom-0 inset-x-0 bg-gradient-to-t from-background via-background to-transparent pt-8 pb-6 px-4">
-        <div className="mx-auto max-w-md flex flex-col gap-2">
+      <BottomBar>
+        
           <RoundRecorder />
           <RegisterButton />
           <Link
@@ -102,8 +103,7 @@ export default async function Home() {
             <PlusIcon />
             Add patient
           </Link>
-        </div>
-      </div>
+        </BottomBar>
     </div>
   );
 }

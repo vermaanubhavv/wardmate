@@ -3,6 +3,7 @@ import { getCurrentWard } from "@/lib/ward";
 import { dayLabel, managementLabel, patientName } from "@/lib/patients";
 import { getWardHandover, formatHandoverText, type HandoverPatient } from "@/lib/handover";
 import CopyHandoverButton from "./copy-button";
+import BottomBar from "../bottom-bar";
 
 export default async function HandoverPage() {
   const { ward, error: wardError } = await getCurrentWard();
@@ -33,7 +34,7 @@ export default async function HandoverPage() {
         </p>
       </header>
 
-      <section className="px-6 pb-40 flex flex-col gap-3">
+      <section className="px-6 pb-48 flex flex-col gap-3">
         {handover.patients.length === 0 ? (
           <p className="rounded-xl border border-line bg-card p-6 text-sm text-muted">
             No active patients on this ward.
@@ -43,11 +44,10 @@ export default async function HandoverPage() {
         )}
       </section>
 
-      <div className="fixed bottom-0 inset-x-0 bg-gradient-to-t from-background via-background to-transparent pt-10 pb-8 px-6">
-        <div className="mx-auto max-w-md">
+      <BottomBar>
+        
           <CopyHandoverButton text={text} />
-        </div>
-      </div>
+        </BottomBar>
     </div>
   );
 }

@@ -90,7 +90,7 @@ export default function LoginPage() {
       ) : (
         <form onSubmit={verifyCode} className="flex flex-col gap-4">
           <p className="text-sm text-muted">
-            We sent a 6-digit code to <span className="text-foreground">{email}</span>. It
+            We sent a code to <span className="text-foreground">{email}</span>. It
             expires in an hour.
           </p>
           <input

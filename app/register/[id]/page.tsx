@@ -5,6 +5,7 @@ import { getCurrentWard, getActivePatients } from "@/lib/ward";
 import { matchRegisterRows } from "@/lib/match-register";
 import type { RegisterRow } from "@/lib/read-register";
 import { applyRegister, discardRegister } from "./actions";
+import BottomBar from "../../bottom-bar";
 
 export default async function RegisterReviewPage({
   params,
@@ -80,7 +81,7 @@ export default async function RegisterReviewPage({
         <form action={applyRegister} className="flex-1 flex flex-col">
           <input type="hidden" name="read_id" value={read.id} />
 
-          <ul className="px-6 pb-40 flex flex-col gap-4">
+          <ul className="px-6 pb-48 flex flex-col gap-4">
             {matches.map((m, i) => {
               const clean = m.status === "matched";
               return (
@@ -183,8 +184,8 @@ export default async function RegisterReviewPage({
             })}
           </ul>
 
-          <div className="fixed bottom-0 inset-x-0 bg-gradient-to-t from-background via-background to-transparent pt-10 pb-8 px-6">
-            <div className="mx-auto max-w-md flex flex-col gap-3">
+          <BottomBar>
+            
               <p className="text-xs text-muted text-center">
                 {autoTicked} of {rows.length} matched automatically. Everything saved is
                 flagged for you to confirm.
@@ -192,8 +193,7 @@ export default async function RegisterReviewPage({
               <button className="w-full rounded-xl bg-accent px-4 py-4 text-base font-semibold text-accent-ink">
                 Save to the ticked patients
               </button>
-            </div>
-          </div>
+            </BottomBar>
         </form>
       )}
     </div>

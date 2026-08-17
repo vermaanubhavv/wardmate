@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { ImageIcon } from "@/app/icons";
 import { useRouter } from "next/navigation";
 
 /**
@@ -66,8 +67,9 @@ export default function PhotoButton({ patientId }: { patientId: string }) {
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={busy}
-        className="w-full rounded-xl border border-line px-4 py-3 text-sm text-muted active:opacity-70 disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-lg border border-line bg-card px-3 py-2.5 text-sm font-medium text-foreground active:opacity-70 disabled:opacity-50"
       >
+        <ImageIcon />
         {busy ? "Reading the report…" : "Photograph a lab report"}
       </button>
       {message && <p className="text-center text-xs text-muted">{message}</p>}

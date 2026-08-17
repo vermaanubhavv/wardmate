@@ -6,6 +6,7 @@ import { patientName } from "@/lib/patients";
 import { matchBed, matchFreeBed } from "@/lib/match-bed";
 import type { DraftSegment } from "@/lib/round-draft";
 import { applyRound, discardRound } from "./actions";
+import BottomBar from "../../bottom-bar";
 
 type WardPatient = {
   id: string;
@@ -72,7 +73,7 @@ export default async function RoundReviewPage({
       <form action={applyRound} className="flex-1 flex flex-col">
         <input type="hidden" name="dictation_id" value={dictation.id} />
 
-        <section className="px-6 pb-40 flex flex-col gap-4">
+        <section className="px-6 pb-48 flex flex-col gap-4">
           {segments.length === 0 ? (
             <p className="rounded-xl border border-line bg-card p-6 text-sm text-muted">
               No beds were recognised in that recording.
@@ -88,16 +89,15 @@ export default async function RoundReviewPage({
           )}
         </section>
 
-        <div className="fixed bottom-0 inset-x-0 bg-gradient-to-t from-background via-background to-transparent pt-10 pb-8 px-6">
-          <div className="mx-auto max-w-md flex flex-col gap-3">
+        <BottomBar>
+          
             <button
               type="submit"
               className="w-full rounded-xl bg-accent px-4 py-4 text-base font-semibold text-accent-ink"
             >
               Save the ticked ones
             </button>
-          </div>
-        </div>
+          </BottomBar>
       </form>
 
       {/* Its own form, so discarding cannot be reached by pressing enter inside the one above. */}

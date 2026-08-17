@@ -18,6 +18,7 @@ import EntryReview from "./entry-review";
 import DischargeSection from "./discharge-section";
 import { buildDischargeBrief } from "@/lib/discharge";
 import { confirmChecked, confirmAll, completeTask, reopenTask } from "./actions";
+import BottomBar from "../../bottom-bar";
 
 type Entry = {
   id: string;
@@ -425,13 +426,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
       {/* Last on the page: the admission ending, after everything it is assembled from.
           Bottom padding clears the fixed speak bar so it stays openable. */}
-      <section className="px-6 pb-56">
+      <section className="px-6 pb-72">
         <DischargeSection brief={dischargeBrief} patientName={patient.display_name} />
       </section>
 
       {/* Fixed, so the button is under your thumb no matter how long the record has grown. */}
-      <div className="fixed bottom-0 inset-x-0 bg-gradient-to-t from-background via-background to-transparent pt-10 pb-8 px-6">
-        <div className="mx-auto max-w-md flex flex-col gap-3">
+      <BottomBar>
+        
           {/* Visible while you hold the button, so you know what is left to cover without
               having to remember the set for this operation. */}
           {missing.length > 0 && (
@@ -441,8 +442,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             </p>
           )}
           <BedsideBar patientId={patient.id} />
-        </div>
-      </div>
+        </BottomBar>
     </div>
   );
 }

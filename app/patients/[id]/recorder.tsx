@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { MicIcon } from "@/app/icons";
 import { useRouter } from "next/navigation";
 
 type Status = "idle" | "starting" | "recording" | "working";
@@ -157,7 +158,7 @@ export default function Recorder({
         onClick={recording ? stop : start}
         disabled={status === "working" || status === "starting"}
         className={
-          "w-full rounded-2xl px-6 py-7 text-lg font-semibold transition-colors " +
+          "flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-base font-medium transition-colors " +
           (recording
             ? "bg-rose-500 text-white"
             : status === "working" || status === "starting"
@@ -181,7 +182,10 @@ export default function Recorder({
         ) : status === "working" ? (
           "Working…"
         ) : (
-          "Tap to speak"
+          <>
+            <MicIcon className="h-5 w-5" />
+            Tap to speak
+          </>
         )}
       </button>
 
