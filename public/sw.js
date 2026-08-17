@@ -9,8 +9,8 @@
 // Writes are never cached or replayed here. They queue in IndexedDB, in the page, where the
 // resident can see how many are waiting. A service worker that silently re-sent a POST could
 // double-record a drug, and on iOS it cannot run in the background anyway.
-const SHELL = "coreresident-shell-v2";
-const PAGES = "coreresident-pages-v2";
+const SHELL = "coreresident-shell-v4";
+const PAGES = "coreresident-pages-v4";
 
 const ASSETS = ["/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/manifest.webmanifest"];
 
@@ -71,10 +71,17 @@ self.addEventListener("fetch", (event) => {
 
   // Screens. Network first, always — a signal that works must win, so nobody is shown
   // yesterday's drain output while standing at the bed. The cache is the fallback only.
-  const wantsHtml =
+  //
+  // Two shapes have to be caught, not one. Typing a URL or reopening the app from the home
+  // screen fetches a document. But tapping a patient inside the app does NOT: Next.js fetches
+  // a React payload instead, marked by an RSC header and an `_rsc` query parameter. Caching
+  // only documents therefore cached only the screen the app happened to open on, and every
+  // patient tapped from the list stayed unavailable offline — the exact case this is for.
+  const isDocument =
     request.mode === "navigate" || (request.headers.get("accept") || "").includes("text/html");
+  const isPayload = request.headers.has("RSC") || url.searchParams.has("_rsc");
 
-  if (wantsHtml) {
+  if (isDocument || isPayload) {
     event.respondWith(
       fetch(request)
         .then((res) => {
@@ -87,8 +94,24 @@ self.addEventListener("fetch", (event) => {
           return res;
         })
         .catch(async () => {
-          const hit = await caches.match(request, { ignoreSearch: false });
+          // Both relaxations are load-bearing for payloads, and neither is optional.
+          //
+          // ignoreSearch: the `_rsc` parameter is a build fingerprint, so after a deploy an
+          // exact match misses and a patient cached this morning looks unvisited.
+          //
+          // ignoreVary: Next.js sends `Vary: RSC` on these, so the cache will only return one
+          // to a request carrying the identical RSC header. Without this the entries are
+          // written and then never found again — offline support that silently does nothing,
+          // which is worse than none, because it is only discovered on a ward with no signal.
+          const hit = await caches.match(request, {
+            ignoreSearch: isPayload,
+            ignoreVary: isPayload,
+          });
           if (hit) return hit;
+
+          // A payload has no useful fallback — the app would try to render an error page as
+          // React data. Better to fail the fetch and let the app keep the screen it is on.
+          if (isPayload) return Response.error();
 
           // Never seen this screen before, and no signal to fetch it. Say so rather than
           // showing the browser's own error, which reads like the app is broken.
