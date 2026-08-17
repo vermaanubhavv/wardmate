@@ -8,6 +8,7 @@ import RoundRecorder from "./round-recorder";
 import PatientMenu from "./patients/patient-menu";
 import { signOut } from "./actions";
 import BottomBar from "./bottom-bar";
+import Wordmark from "./wordmark";
 
 export default async function Home() {
   const { ward, error: wardError } = await getCurrentWard();
@@ -36,7 +37,14 @@ export default async function Home() {
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
-      <header className="px-4 pt-8 pb-3 flex items-baseline justify-between gap-3">
+      {/* Above the ward, and separated by a hairline, because it names the app rather than
+          anything on this screen — and because a logo dropped in later belongs here rather
+          than competing with the unit's own name. */}
+      <div className="px-4 pt-5 pb-3 border-b border-line">
+        <Wordmark />
+      </div>
+
+      <header className="px-4 pt-5 pb-3 flex items-baseline justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">{ward.name}</h1>
           {/* Kept to one line under the ward name: the unit's own settings are looked at
