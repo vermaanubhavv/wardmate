@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { MicIcon } from "@/app/icons";
 import { useRouter } from "next/navigation";
+import { enqueue } from "@/lib/outbox";
 
 type Status = "idle" | "starting" | "recording" | "working";
 
@@ -122,6 +123,9 @@ export default function Recorder({
     form.append("patient_id", patientId);
     form.append("audio", blob);
 
+    // Offline before we even try: queue rather than spend half a minute failing.
+    if (!navigator.onLine) return void queueIt(blob, mimeType);
+
     try {
       const res = await fetch("/api/entries/voice", { method: "POST", body: form });
       const data = await res.json();
@@ -142,8 +146,28 @@ export default function Recorder({
       );
       router.refresh();
     } catch {
+      // The signal went mid-upload. What was said at a bedside is the one thing that cannot
+      // be reconstructed later, so it goes to the phone rather than being lost.
+      void queueIt(blob, mimeType);
+    }
+  }
+
+  async function queueIt(blob: Blob, mimeType: string) {
+    try {
+      await enqueue({
+        kind: "bedside",
+        url: "/api/entries/voice",
+        patientId,
+        label: "Bedside note",
+        audio: blob,
+        mimeType,
+      });
+      window.dispatchEvent(new Event("outbox-changed"));
       setStatus("idle");
-      setMessage("No connection. Nothing was saved — try again in better signal.");
+      setMessage("No signal — saved on this phone. It will be sent when you are back online.");
+    } catch {
+      setStatus("idle");
+      setMessage("No signal, and this phone would not store it. Do not close the app.");
     }
   }
 

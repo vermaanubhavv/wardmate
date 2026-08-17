@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MicIcon, StopIcon } from "./icons";
+import { enqueue } from "@/lib/outbox";
 
 type Status = "idle" | "starting" | "recording" | "working";
 
@@ -111,6 +112,9 @@ export default function RoundRecorder() {
     const form = new FormData();
     form.append("audio", blob);
 
+    // Offline before we even try: queue it rather than spending 30 seconds failing.
+    if (!navigator.onLine) return void queueIt(blob, mimeType);
+
     try {
       const res = await fetch("/api/round", { method: "POST", body: form });
       const data = await res.json();
@@ -124,8 +128,27 @@ export default function RoundRecorder() {
       // Straight to the review screen. Nothing has been written to anyone yet.
       router.push(`/round/${data.dictation_id}`);
     } catch {
+      // The signal went during the upload. The words are the one thing that cannot be
+      // reconstructed later, so they go to the phone rather than being lost.
+      void queueIt(blob, mimeType);
+    }
+  }
+
+  async function queueIt(blob: Blob, mimeType: string) {
+    try {
+      await enqueue({
+        kind: "round",
+        url: "/api/round",
+        label: "Round dictation",
+        audio: blob,
+        mimeType,
+      });
+      window.dispatchEvent(new Event("outbox-changed"));
       setStatus("idle");
-      setMessage("No connection. Nothing was saved.");
+      setMessage("No signal — saved on this phone. It will be read when you are back online.");
+    } catch {
+      setStatus("idle");
+      setMessage("No signal, and this phone would not store it. Do not close the app.");
     }
   }
 

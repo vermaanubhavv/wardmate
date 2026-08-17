@@ -1,11 +1,25 @@
-// Deliberately minimal for now: it exists so the phone will offer "Add to Home Screen",
-// and it caches only the icons. Nothing clinical is cached, so you can never be shown a
-// stale patient record. Real offline support comes later, once the data model is settled.
-const CACHE = "coreresident-static-v1";
-const ASSETS = ["/icon-192.png", "/icon-512.png", "/apple-touch-icon.png"];
+// Offline support.
+//
+// The rule this has to respect: nothing clinical may be shown as if it were current when it
+// is not. So pages ARE cached now — a round in a basement corridor is the case this exists
+// for — but the app says plainly when what you are looking at came out of that cache, and
+// when it was fetched. A stale patient record you know is stale is useful. One you think is
+// live is dangerous.
+//
+// Writes are never cached or replayed here. They queue in IndexedDB, in the page, where the
+// resident can see how many are waiting. A service worker that silently re-sent a POST could
+// double-record a drug, and on iOS it cannot run in the background anyway.
+const SHELL = "coreresident-shell-v2";
+const PAGES = "coreresident-pages-v2";
+
+const ASSETS = ["/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
+  // addAll fails the whole install if one asset 404s; each is added on its own so a missing
+  // icon cannot leave the app with no service worker at all.
+  event.waitUntil(
+    caches.open(SHELL).then((c) => Promise.all(ASSETS.map((a) => c.add(a).catch(() => {}))))
+  );
   self.skipWaiting();
 });
 
@@ -13,14 +27,84 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) =>
+        Promise.all(keys.filter((k) => k !== SHELL && k !== PAGES).map((k) => caches.delete(k)))
+      )
       .then(() => self.clients.claim())
   );
 });
 
+// Emptied when the app reaches /login, so a signed-out phone is not still holding the ward.
+self.addEventListener("message", (event) => {
+  if (event.data === "clear-pages") {
+    caches.delete(PAGES);
+  }
+});
+
 self.addEventListener("fetch", (event) => {
-  const url = new URL(event.request.url);
-  if (event.request.method === "GET" && ASSETS.includes(url.pathname)) {
-    event.respondWith(caches.match(event.request).then((hit) => hit || fetch(event.request)));
+  const { request } = event;
+  if (request.method !== "GET") return;
+
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  // Build output is content-hashed, so it can be served from cache forever and fetched once.
+  if (url.pathname.startsWith("/_next/static/")) {
+    event.respondWith(
+      caches.match(request).then(
+        (hit) =>
+          hit ||
+          fetch(request).then((res) => {
+            const copy = res.clone();
+            caches.open(SHELL).then((c) => c.put(request, copy));
+            return res;
+          })
+      )
+    );
+    return;
+  }
+
+  if (ASSETS.includes(url.pathname)) {
+    event.respondWith(caches.match(request).then((hit) => hit || fetch(request)));
+    return;
+  }
+
+  // Screens. Network first, always — a signal that works must win, so nobody is shown
+  // yesterday's drain output while standing at the bed. The cache is the fallback only.
+  const wantsHtml =
+    request.mode === "navigate" || (request.headers.get("accept") || "").includes("text/html");
+
+  if (wantsHtml) {
+    event.respondWith(
+      fetch(request)
+        .then((res) => {
+          // A redirect to /login means the session is gone; caching that would strand the app
+          // on a sign-in page it serves to itself from disk.
+          if (res.ok && res.type !== "opaqueredirect") {
+            const copy = res.clone();
+            caches.open(PAGES).then((c) => c.put(request, copy));
+          }
+          return res;
+        })
+        .catch(async () => {
+          const hit = await caches.match(request, { ignoreSearch: false });
+          if (hit) return hit;
+
+          // Never seen this screen before, and no signal to fetch it. Say so rather than
+          // showing the browser's own error, which reads like the app is broken.
+          return new Response(
+            `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
+             <style>body{font:17px -apple-system,system-ui,sans-serif;margin:0;padding:24px;
+             background:#f2f2f7;color:#000}h1{font-size:22px;margin:0 0 8px}
+             p{color:#8e8e93;margin:0 0 16px;line-height:1.4}a{color:#ff3b30;text-decoration:none}</style>
+             <h1>No signal</h1>
+             <p>This screen has not been opened on this phone yet, so there is nothing saved to
+             show. Anything you have recorded is still safe and will be sent when you are back
+             online.</p>
+             <p><a href="/">Go to the ward</a></p>`,
+            { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } }
+          );
+        })
+    );
   }
 });
