@@ -68,7 +68,13 @@ function secondsUntilExpiry(cookie: string): number | null {
 const REFRESH_WINDOW_SECONDS = 10 * 60;
 
 export async function middleware(request: NextRequest) {
-  const isLoginPage = request.nextUrl.pathname.startsWith("/login");
+  const path = request.nextUrl.pathname;
+
+  // Where Google returns the doctor with a one-time code, before any session exists. Bouncing
+  // it to /login would turn a successful sign-in into a loop back to the sign-in screen.
+  if (path.startsWith("/auth/callback")) return NextResponse.next({ request });
+
+  const isLoginPage = path.startsWith("/login");
   const cookie = readAuthCookie(request);
 
   // No session at all. Nothing to refresh and nothing to verify — decided without a network
