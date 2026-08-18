@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { getUser } from "@/lib/auth";
 import type { WardPatient } from "@/lib/patients";
 import { compareBeds } from "@/lib/patients";
 

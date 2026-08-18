@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { getCurrentWard, getActivePatients, getRemovedCount } from "@/lib/ward";
+import { getWardScreen } from "@/lib/ward-screen";
 import { dayLabel, managementLabel, patientName, type WardPatient } from "@/lib/patients";
-import { getProcedureLabels, listTemplateChoices, procedureFor } from "@/lib/templates";
+import { procedureFor } from "@/lib/templates";
 import RegisterButton from "./register-button";
 import { ChevronIcon, PlusIcon } from "./icons";
 import RoundRecorder from "./round-recorder";
@@ -11,7 +11,9 @@ import BottomBar from "./bottom-bar";
 import Wordmark from "./wordmark";
 
 export default async function Home() {
-  const { ward, error: wardError } = await getCurrentWard();
+  // One round trip for the whole screen. See lib/ward-screen.ts — it was six.
+  const { ward, patients, procedures, templateChoices, removedCount, error: wardError } =
+    await getWardScreen();
 
   if (wardError || !ward) {
     return (
@@ -26,15 +28,6 @@ export default async function Home() {
       </main>
     );
   }
-
-  // All four at once. None depends on another, and each is a round trip to a database in
-  // another city — run in sequence they were most of the time the screen took to appear.
-  const [{ patients }, procedures, templateChoices, removedCount] = await Promise.all([
-    getActivePatients(ward.id),
-    getProcedureLabels(),
-    listTemplateChoices(),
-    getRemovedCount(ward.id),
-  ]);
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
