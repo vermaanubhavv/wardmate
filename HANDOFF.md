@@ -1,4 +1,4 @@
-# CoreResident — what exists, for a design handoff
+# WardMate — what exists, for a design handoff
 
 Paste this into Claude chat or Claude design when you want help with layout or new screens.
 It describes what is already built and the rules the app is held to, so that anything designed
@@ -39,9 +39,14 @@ to keep them.
 
 ## Visual language as it stands
 
-- **Dark throughout.** Background near-black, cards a slightly lighter slate, thin borders.
-- **Accent is a light sky blue**, used for primary buttons (dark text on blue) and links.
-- **Amber** means "needs your attention but nothing is wrong" — unconfirmed values, gaps.
+- **Light, and close to iOS on purpose**, because it sits on the same phone as Settings and
+  Health. Apple's own values: `#f2f2f7` behind, white content, the real separator hairline.
+- **Accent is systemRed `#ff3b30`**, used for the thing to press and for links.
+- **systemOrange** means "needs your attention but nothing is wrong" — unconfirmed values, gaps.
+- The system font stack first, so on an iPhone this is literally SF Pro. iOS type scale: 17 for
+  content, 15 for secondary, 13 for footnotes.
+- Content sits in **grouped inset lists** — one rounded white card, rows divided by hairlines —
+  not in separate bordered cards.
 - **Red / yellow / green** are reserved exclusively for job urgency (see below).
 - Type: system sans. Bed numbers and day counts are **monospace / tabular** so columns line up.
 - Layout: single column, `max-width` about 28rem, centred, generous vertical padding.

@@ -1,6 +1,6 @@
 {
-  "name": "CoreResident",
-  "short_name": "CoreResident",
+  "name": "WardMate",
+  "short_name": "WardMate",
   "description": "Ward rounds by voice.",
   "start_url": "/",
   "scope": "/",

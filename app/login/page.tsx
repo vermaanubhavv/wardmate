@@ -22,7 +22,7 @@ import { createClient } from "@/lib/supabase/client";
  */
 function explain(message: string): string {
   if (/sending|smtp|mail/i.test(message)) {
-    return "The app could not send the code to that address. This usually means the unit's email sending is not set up for anyone but the first account — ask whoever set up CoreResident to finish that. Nothing is wrong with your email.";
+    return "The app could not send the code to that address. This usually means the unit's email sending is not set up for anyone but the first account — ask whoever set up WardMate to finish that. Nothing is wrong with your email.";
   }
   if (/rate|limit|too many/i.test(message)) {
     return "Too many codes requested. Wait a few minutes and try again.";
@@ -81,7 +81,7 @@ export default function LoginPage() {
   return (
     <main className="flex-1 px-6 py-16 flex flex-col gap-8 max-w-md mx-auto w-full">
       <header>
-        <h1 className="text-3xl font-semibold tracking-tight">CoreResident</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">WardMate</h1>
         <p className="text-muted mt-1">Ward rounds by voice.</p>
       </header>
 

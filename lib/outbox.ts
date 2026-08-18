@@ -16,6 +16,9 @@
  * flush runs while the app is open, and its progress is on screen.
  */
 
+// Deliberately still the old name. A phone may be holding recordings that were made offline
+// and never sent; renaming the database would orphan them somewhere nobody would ever look.
+// A rebrand is not worth losing a round.
 const DB_NAME = "coreresident-outbox";
 const STORE = "pending";
 const VERSION = 1;

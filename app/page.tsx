@@ -18,7 +18,7 @@ export default async function Home() {
   if (wardError || !ward) {
     return (
       <main className="mx-auto w-full max-w-md flex-1 px-4 py-10">
-        <h1 className="ios-large-title">CoreResident</h1>
+        <h1 className="ios-large-title">WardMate</h1>
         <p className="ios-group mt-4 px-4 py-3 text-[15px] text-accent">
           {wardError ? `Could not read the database: ${wardError.message}` : "No ward found."}
         </p>

@@ -123,7 +123,7 @@ function renderFamily(family: string): string {
   </section>`;
 }
 
-const html = `<title>CoreResident — template review</title>
+const html = `<title>WardMate — template review</title>
 <style>
 :root {
   /* Neutrals biased green rather than a default grey — the accent is surgical drape green,
@@ -250,7 +250,7 @@ body.hide-optional .item--optional { display: none; }
 <div class="wrap">
   <header class="masthead">
     <h1>Ward round templates — draft for review</h1>
-    <p>What CoreResident will expect you to mention for each operation, before and after surgery. Read it as a strawman and tell me what is wrong.</p>
+    <p>What WardMate will expect you to mention for each operation, before and after surgery. Read it as a strawman and tell me what is wrong.</p>
     <div class="counts">
       <div class="count"><strong>${templates.length}</strong><span>Templates</span></div>
       <div class="count"><strong>${itemCount}</strong><span>Items</span></div>

@@ -15,10 +15,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CoreResident",
+  title: "WardMate",
   description: "Ward rounds by voice.",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "CoreResident", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "WardMate", statusBarStyle: "black-translucent" },
   icons: { icon: "/icon-192.png", apple: "/apple-touch-icon.png" },
 };
 

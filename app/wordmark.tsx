@@ -5,21 +5,22 @@
  * and the whole row is sized so that dropping a real logo in its place changes nothing around
  * it — same height, same alignment, same gap to the ward name below.
  *
- * Set in Geist, which the app already loads, at tight tracking and medium weight. A second
- * font for one word would cost a download on a hospital connection to say the same thing.
+ * Set in the system face the rest of the app uses — SF Pro on an iPhone — at tight tracking.
+ * A second font for one word would cost a download on a hospital connection to say the same
+ * thing in a slightly different shape.
  */
 export default function Wordmark() {
   return (
     <div className="flex items-center gap-2">
-      {/* Stand-in for the logo. Fixed 20px square so artwork can replace it in place. */}
+      {/* Stand-in for the logo. Fixed square so artwork can replace it in place. */}
       <span
         aria-hidden
         className="grid h-6 w-6 shrink-0 place-items-center rounded-[7px] bg-accent text-[13px] font-bold leading-none text-accent-ink"
       >
-        C
+        W
       </span>
       <span className="text-[15px] font-semibold tracking-[-0.02em]">
-        Core<span className="text-muted">Resident</span>
+        Ward<span className="text-muted">Mate</span>
       </span>
     </div>
   );

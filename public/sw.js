@@ -9,8 +9,8 @@
 // Writes are never cached or replayed here. They queue in IndexedDB, in the page, where the
 // resident can see how many are waiting. A service worker that silently re-sent a POST could
 // double-record a drug, and on iOS it cannot run in the background anyway.
-const SHELL = "coreresident-shell-v4";
-const PAGES = "coreresident-pages-v4";
+const SHELL = "wardmate-shell-v1";
+const PAGES = "wardmate-pages-v1";
 
 const ASSETS = ["/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/manifest.webmanifest"];
 
