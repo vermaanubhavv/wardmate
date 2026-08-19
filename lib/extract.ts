@@ -192,6 +192,13 @@ export async function extractObservations(
       // outside the three colours would be rejected by the database anyway. Dropped here
       // rather than trusted, for the same reason the quote is checked rather than trusted.
       if (obs.kind !== "plan" || !URGENCIES.includes(obs.urgency as never)) obs.urgency = null;
+
+      // The prompt asks the model never to let a diagnosis's label repeat its value — "label:
+      // diagnosis, value: cholelithiasis", not "label: cholelithiasis, value: cholelithiasis".
+      // Enforced here rather than trusted for the same reason everything else on this list is:
+      // a row that says the same word twice is exactly the noise this app exists to cut.
+      if (obs.kind === "diagnosis") obs.label = "diagnosis";
+
       observations.push(obs);
     } else rejected.push(obs);
   }

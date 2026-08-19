@@ -390,6 +390,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                       extractionError={entry.extraction_error}
                       values={entry.observations.map((o) => ({
                         id: o.id,
+                        kind: o.kind,
                         label: o.label,
                         value_text: o.value_text,
                         source_quote: o.source_quote,

@@ -5,6 +5,7 @@ import { acceptEntry, editEntry, deleteEntry, updateObservation } from "./action
 
 type Value = {
   id: string;
+  kind: string;
   label: string;
   value_text: string | null;
   source_quote: string;
@@ -47,56 +48,52 @@ export default function EntryCard({
   const [editingWords, setEditingWords] = useState(false);
   const [editingValue, setEditingValue] = useState<string | null>(null);
 
+  // Plans read as instructions, not findings — "discharge tomorrow" sitting in the same list
+  // as "abdomen soft" makes both look like the same kind of fact, when one is a job someone
+  // still has to do. Split so the two never share a row style.
+  const findings = values.filter((v) => v.kind !== "plan");
+  const plans = values.filter((v) => v.kind === "plan");
+
   return (
     <div className="ios-group">
-      {/* The values. Nothing above them, because they are what this block is for. */}
       {values.length > 0 ? (
-        <ul>
-          {values.map((v) =>
-            editingValue === v.id ? (
-              <li key={v.id} className="ios-row px-4 py-2.5">
-                <form
-                  action={updateObservation}
-                  onSubmit={() => setEditingValue(null)}
-                  className="flex items-center gap-2"
-                >
-                  <input type="hidden" name="observation_id" value={v.id} />
-                  <input type="hidden" name="patient_id" value={patientId} />
-                  <span className="shrink-0 text-[15px] text-muted">{v.label}</span>
-                  <input
-                    name="value_text"
-                    defaultValue={v.value_text ?? ""}
-                    autoFocus
-                    className="min-w-0 flex-1 rounded-md border border-line bg-background px-2 py-1 text-[17px] outline-none focus:border-accent"
-                  />
-                  <button className="shrink-0 text-[15px] font-medium text-accent">Save</button>
-                </form>
-                <p className="mt-1 text-[13px] text-muted">
-                  Clearing it removes the value. The words it came from are kept.
-                </p>
-              </li>
-            ) : (
-              <li key={v.id} className="ios-row">
-                <button
-                  type="button"
-                  onClick={() => setEditingValue(v.id)}
-                  className="flex w-full items-baseline justify-between gap-3 px-4 py-2.5 text-left active:bg-chip"
-                >
-                  <span className="shrink-0 text-[15px] text-muted">{v.label}</span>
-                  <span className="min-w-0 flex-1 text-right text-[17px]">
-                    {v.value_text}
-                    {/* Amber dot rather than a word: the row is already two columns wide. */}
-                    {v.needs_confirmation && !v.confirmed_at && (
-                      <span className="ml-1.5 text-orange-500" aria-label="not confirmed">
-                        ●
-                      </span>
-                    )}
-                  </span>
-                </button>
-              </li>
-            )
+        <>
+          {findings.length > 0 && (
+            <ul>
+              {findings.map((v) => (
+                <ValueRow
+                  key={v.id}
+                  value={v}
+                  patientId={patientId}
+                  editing={editingValue === v.id}
+                  onEdit={() => setEditingValue(v.id)}
+                  onDoneEditing={() => setEditingValue(null)}
+                />
+              ))}
+            </ul>
           )}
-        </ul>
+
+          {plans.length > 0 && (
+            <>
+              <p className="ios-row px-4 pt-3 pb-1 text-[12px] font-semibold uppercase tracking-wide text-accent">
+                Plan
+              </p>
+              <ul>
+                {plans.map((v) => (
+                  <ValueRow
+                    key={v.id}
+                    value={v}
+                    patientId={patientId}
+                    editing={editingValue === v.id}
+                    onEdit={() => setEditingValue(v.id)}
+                    onDoneEditing={() => setEditingValue(null)}
+                    planStyle
+                  />
+                ))}
+              </ul>
+            </>
+          )}
+        </>
       ) : (
         <p className="px-4 py-2.5 text-[15px] text-muted">
           {extractionError
@@ -221,5 +218,90 @@ export default function EntryCard({
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * One value, editable where it sits. Split out of EntryCard so a finding and a plan can share
+ * the exact same edit behaviour while looking different — a plan drops the label prefix and
+ * reads as the sentence it is ("Discharge tomorrow"), since "discharge: Discharge tomorrow"
+ * says the same word twice.
+ */
+function ValueRow({
+  value: v,
+  patientId,
+  editing,
+  onEdit,
+  onDoneEditing,
+  planStyle = false,
+}: {
+  value: Value;
+  patientId: string;
+  editing: boolean;
+  onEdit: () => void;
+  onDoneEditing: () => void;
+  planStyle?: boolean;
+}) {
+  if (editing) {
+    return (
+      <li className="ios-row px-4 py-2.5">
+        <form
+          action={updateObservation}
+          onSubmit={onDoneEditing}
+          className="flex items-center gap-2"
+        >
+          <input type="hidden" name="observation_id" value={v.id} />
+          <input type="hidden" name="patient_id" value={patientId} />
+          {!planStyle && <span className="shrink-0 text-[15px] text-muted">{v.label}</span>}
+          <input
+            name="value_text"
+            defaultValue={v.value_text ?? ""}
+            autoFocus
+            className="min-w-0 flex-1 rounded-md border border-line bg-background px-2 py-1 text-[17px] outline-none focus:border-accent"
+          />
+          <button className="shrink-0 text-[15px] font-medium text-accent">Save</button>
+        </form>
+        <p className="mt-1 text-[13px] text-muted">
+          Clearing it removes the value. The words it came from are kept.
+        </p>
+      </li>
+    );
+  }
+
+  return (
+    <li className="ios-row">
+      <button
+        type="button"
+        onClick={onEdit}
+        className={
+          "flex w-full items-baseline gap-3 px-4 py-2.5 text-left active:bg-chip " +
+          (planStyle ? "" : "justify-between")
+        }
+      >
+        {planStyle ? (
+          <span className="min-w-0 flex-1 text-[17px]">
+            {v.value_text}
+            {v.needs_confirmation && !v.confirmed_at && (
+              <span className="ml-1.5 text-orange-500" aria-label="not confirmed">
+                ●
+              </span>
+            )}
+          </span>
+        ) : (
+          <>
+            <span className="shrink-0 text-[15px] text-muted">{v.label}</span>
+            <span className="min-w-0 flex-1 text-right text-[17px]">
+              {v.value_text}
+              {/* Amber dot rather than a word: the row is already two columns wide. */}
+              {v.needs_confirmation && !v.confirmed_at && (
+                <span className="ml-1.5 text-orange-500" aria-label="not confirmed">
+                  ●
+                </span>
+              )}
+            </span>
+          </>
+        )}
+      </button>
+    </li>
   );
 }
