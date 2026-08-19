@@ -22,7 +22,12 @@ type RemovedPatient = {
  * to be a decision that can be reversed — and a patient created by a misheard bed number is
  * exactly the kind of mistake that is noticed a screen later, not at the moment it is made.
  */
-export default async function RemovedPage() {
+export default async function RemovedPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ failed?: string }>;
+}) {
+  const failed = (await searchParams).failed;
   const { ward, error } = await getCurrentWard();
 
   if (error || !ward) {
@@ -56,6 +61,29 @@ export default async function RemovedPage() {
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
+      {/* Only ever shown after a delete that did not happen. Silence here was the whole
+          problem: the row security check refuses without raising an error, so a delete could
+          be tapped over and over with nothing to show for it and nothing said. */}
+      {failed && (
+        <div className="mx-6 mt-6 rounded-[10px] border border-orange-300 bg-orange-50 px-4 py-3">
+          <p className="text-[15px] font-semibold text-orange-800">
+            That patient was not deleted.
+          </p>
+          {failed === "refused" ? (
+            <p className="mt-1 text-[13px] leading-relaxed text-orange-800">
+              The database refused it. Permanent deletion has to be switched on there once, and
+              on this project it has not been — run the patch{" "}
+              <span className="font-mono">0015_permanent_delete.sql</span> in the Supabase SQL
+              editor and try again. Nothing has been lost: the patient is still here.
+            </p>
+          ) : (
+            <p className="mt-1 text-[13px] leading-relaxed text-orange-800">
+              The database said: {failed}
+            </p>
+          )}
+        </div>
+      )}
+
       <header className="px-6 pt-8 pb-4">
         <Link href="/" className="text-[17px] text-accent">
           ‹ Ward

@@ -179,10 +179,22 @@ export async function deletePatientForever(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) return;
 
-  await supabase.from("patients").delete().eq("id", id).eq("status", "discharged");
+  // .select() so the outcome is actually known. A delete that row security refuses is NOT an
+  // error — PostgREST returns success having removed nothing — so without asking which rows
+  // came back, a refusal and a success look identical, and this reported neither. That is
+  // exactly how a delete could appear to do nothing, repeatedly, and say nothing about it.
+  const { data: deleted, error } = await supabase
+    .from("patients")
+    .delete()
+    .eq("id", id)
+    .eq("status", "discharged")
+    .select("id");
 
   revalidatePath("/");
   revalidatePath("/removed");
+
+  if (error) redirect(`/removed?failed=${encodeURIComponent(error.message)}`);
+  if (!deleted || deleted.length === 0) redirect("/removed?failed=refused");
 }
 
 /**
@@ -213,12 +225,26 @@ export async function deletePatientFromWard(formData: FormData) {
     .update({ status: "discharged", discharged_at: new Date().toISOString() })
     .eq("id", id);
 
-  await supabase.from("patients").delete().eq("id", id).eq("status", "discharged");
+  // See deletePatientForever: a refused delete is silent, so the rows have to be asked for.
+  const { data: deleted, error } = await supabase
+    .from("patients")
+    .delete()
+    .eq("id", id)
+    .eq("status", "discharged")
+    .select("id");
 
   revalidatePath("/");
   revalidatePath("/removed");
   revalidatePath("/todo");
   revalidatePath("/handover");
+
+  // The status write above already succeeded, so the patient is off the ward either way and is
+  // sitting in the removed list. Sending the resident there — rather than to a ward list where
+  // the patient has simply vanished from view — puts them where the record actually is, with
+  // the reason the destroy did not happen.
+  if (error) redirect(`/removed?failed=${encodeURIComponent(error.message)}`);
+  if (!deleted || deleted.length === 0) redirect("/removed?failed=refused");
+
   redirect("/");
 }
 
