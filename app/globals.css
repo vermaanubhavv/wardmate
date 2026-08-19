@@ -46,12 +46,10 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  /* Sora leads now — the brand's own face, not the phone's. The system stack still closes it
-     out, so a request that somehow reaches a browser before the font has loaded, or one
-     where next/font's own preload has not run, still gets a legible native font rather than
-     a flash of the browser default. */
-  font-family: var(--font-sora), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
-    sans-serif;
+  /* Back to the system font — SF Pro on an iPhone. Sora was tried and pulled: this app sits
+     beside Settings and Health all day, and a borrowed brand face there read as less native
+     than the free, zero-load-cost system font it replaced. */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   /* iOS sets body text at 17px and lets it breathe. */
   font-size: 17px;
   line-height: 1.35;

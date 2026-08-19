@@ -109,9 +109,17 @@ export default function LoginPage() {
 
   return (
     <main className="flex-1 px-6 py-16 flex flex-col gap-8 max-w-md mx-auto w-full">
-      <header>
-        <h1 className="text-3xl font-semibold tracking-tight">WardMate</h1>
-        <p className="text-muted mt-1">Ward rounds by voice.</p>
+      <header className="flex flex-col items-center text-center gap-3">
+        {/* The real mark, large — the one thing on this screen that isn't a form control,
+            so it's the one thing allowed to be a little bigger than it needs to be. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/mark.png" alt="" className="h-14 w-14" aria-hidden />
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">
+            ward<span className="text-accent">mate</span>
+          </h1>
+          <p className="text-muted mt-1">Ward rounds by voice.</p>
+        </div>
       </header>
 
       {step === "email" && (

@@ -3,7 +3,15 @@ import { getWardScreen } from "@/lib/ward-screen";
 import { dayLabel, managementLabel, patientName, type WardPatient } from "@/lib/patients";
 import { procedureFor } from "@/lib/templates";
 import RegisterButton from "./register-button";
-import { ChevronIcon, PlusIcon } from "./icons";
+import {
+  ChecklistIcon,
+  ChevronIcon,
+  ClipboardIcon,
+  DocumentIcon,
+  PlusIcon,
+  TrayIcon,
+  UsersIcon,
+} from "./icons";
 import RoundRecorder from "./round-recorder";
 import PatientMenu from "./patients/patient-menu";
 import { signOut } from "./actions";
@@ -47,14 +55,28 @@ export default async function Home() {
         </p>
 
         {/* Capsules rather than a row of underlined links: a bigger target, and the shape
-            iOS has used for secondary navigation since 17. */}
+            iOS has used for secondary navigation since 17. Each carries a small icon — not
+            decoration, a faster-than-reading way to find "Ward round" among five capsules
+            while walking. */}
         <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
-          <Capsule href="/todo">To do</Capsule>
-          <Capsule href="/handover">Ward round</Capsule>
-          <Capsule href="/unit">Unit</Capsule>
-          <Capsule href="/formats">Formats</Capsule>
+          <Capsule href="/todo" icon={<ChecklistIcon className="h-3.5 w-3.5" />}>
+            To do
+          </Capsule>
+          <Capsule href="/handover" icon={<ClipboardIcon className="h-3.5 w-3.5" />}>
+            Ward round
+          </Capsule>
+          <Capsule href="/unit" icon={<UsersIcon className="h-3.5 w-3.5" />}>
+            Unit
+          </Capsule>
+          <Capsule href="/formats" icon={<DocumentIcon className="h-3.5 w-3.5" />}>
+            Formats
+          </Capsule>
           {/* Only once there is something to undo — an empty list is not worth a capsule. */}
-          {removedCount > 0 && <Capsule href="/removed">Removed · {removedCount}</Capsule>}
+          {removedCount > 0 && (
+            <Capsule href="/removed" icon={<TrayIcon className="h-3.5 w-3.5" />}>
+              Removed · {removedCount}
+            </Capsule>
+          )}
         </div>
       </header>
 
@@ -63,9 +85,17 @@ export default async function Home() {
         <p className="ios-group-header mb-2 px-4">Patients</p>
 
         {patients.length === 0 ? (
-          <p className="ios-group px-4 py-3.5 text-[17px] text-muted">
-            No patients on this ward yet. Add the first one below.
-          </p>
+          <div className="ios-group flex flex-col items-center gap-3 px-4 py-10 text-center">
+            {/* The ring, faint — the same mark on the home screen, quiet here rather than
+                an empty box with nothing to look at. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/mark.png" alt="" className="h-10 w-10 opacity-30" aria-hidden />
+            <p className="text-[17px] text-muted">
+              No patients on this ward yet.
+              <br />
+              Add the first one below.
+            </p>
+          </div>
         ) : (
           <ul className="ios-group">
             {patients.map((p) => (
@@ -95,12 +125,21 @@ export default async function Home() {
   );
 }
 
-function Capsule({ href, children }: { href: string; children: React.ReactNode }) {
+function Capsule({
+  href,
+  icon,
+  children,
+}: {
+  href: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <Link
       href={href}
-      className="shrink-0 rounded-full bg-card px-3.5 py-1.5 text-[15px] font-medium text-accent active:opacity-70"
+      className="flex shrink-0 items-center gap-1.5 rounded-full bg-card px-3.5 py-1.5 text-[15px] font-medium text-accent active:opacity-70"
     >
+      {icon}
       {children}
     </Link>
   );
