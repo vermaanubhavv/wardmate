@@ -153,49 +153,58 @@ export default function RoundRecorder() {
     }
   }
 
-  const label =
+  // The caption under the circle carries the state the button's own words used to. Recording
+  // shows the count, because the one thing you want to know mid-dictation is how long you have
+  // been talking.
+  const caption =
     status === "recording"
-      ? `Stop · ${seconds}s`
+      ? `${seconds}s · stop`
       : status === "starting"
         ? "Starting…"
         : status === "working"
-          ? "Working out the beds…"
-          : "Dictate the round";
+          ? "Working…"
+          : "Dictate";
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col items-center">
       <button
         type="button"
         onClick={status === "recording" ? stop : start}
         disabled={status === "working" || status === "starting"}
+        aria-label={status === "recording" ? "Stop recording" : "Dictate the round"}
         className={
-          "flex w-full items-center justify-center gap-1.5 rounded-[10px] px-4 py-3 text-[17px] font-medium disabled:opacity-60 active:opacity-80 " +
-          (status === "recording"
-            ? "bg-red-500 text-white"
-            : "bg-card text-accent")
+          "grid h-14 w-14 place-items-center rounded-full disabled:opacity-60 active:opacity-80 " +
+          (status === "recording" ? "bg-red-500 text-white" : "bg-accent text-accent-ink")
         }
       >
         {status === "recording" ? (
           // The ping sits behind the square, at the same size, and swells out from under it.
-          <span className="relative inline-flex h-[18px] w-[18px] items-center justify-center">
-            <span
-              aria-hidden
-              className="wm-listen absolute inset-0 rounded-full bg-white/70"
-            />
-            <StopIcon className="relative h-[18px] w-[18px]" />
+          <span className="relative inline-flex h-6 w-6 items-center justify-center">
+            <span aria-hidden className="wm-listen absolute inset-0 rounded-full bg-white/70" />
+            <StopIcon className="relative h-6 w-6" />
           </span>
         ) : status === "working" ? (
-          <Mark className="h-[18px] w-[18px]" spinning />
+          <Mark className="h-7 w-7" spinning />
         ) : (
-          <MicIcon className="h-[18px] w-[18px]" />
+          <MicIcon className="h-6 w-6" />
         )}
-        {label}
       </button>
 
-      {status === "idle" && !message && (
-        <p className="text-center text-[13px] text-muted">Say the bed before each instruction.</p>
+      <span
+        className={
+          "mt-1.5 text-[12px] tabular-nums " +
+          (status === "recording" ? "text-red-600" : "text-muted")
+        }
+      >
+        {caption}
+      </span>
+
+      {/* Above the bar, full width: these run to a sentence and must not stretch the row. */}
+      {message && (
+        <p className="absolute inset-x-0 bottom-full mb-2 px-2 text-center text-[13px] text-accent">
+          {message}
+        </p>
       )}
-      {message && <p className="text-center text-[13px] text-accent">{message}</p>}
     </div>
   );
 }

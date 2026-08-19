@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { prepareImageForUpload } from "@/lib/image-for-upload";
 import { ImageIcon } from "./icons";
+import Mark from "./mark";
 
 /**
  * Photograph the round register. Goes straight to a review screen — this never writes to a
@@ -60,16 +61,25 @@ export default function RegisterButton() {
           e.target.value = "";
         }}
       />
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        disabled={busy}
-        className="flex w-full items-center justify-center gap-1.5 rounded-[10px] bg-card px-4 py-3 text-[17px] font-medium text-accent active:opacity-80 disabled:opacity-50"
-      >
-        <ImageIcon className="h-[18px] w-[18px]" />
-        {busy ? "Reading the register…" : "Round register"}
-      </button>
-      {message && <p className="text-center text-[13px] text-accent">{message}</p>}
+      <div className="flex flex-col items-center">
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={busy}
+          aria-label="Photograph the round register"
+          className="grid h-14 w-14 place-items-center rounded-full bg-card text-accent active:opacity-80 disabled:opacity-50"
+        >
+          {busy ? <Mark className="h-7 w-7" spinning /> : <ImageIcon className="h-6 w-6" />}
+        </button>
+        <span className="mt-1.5 text-[12px] text-muted">{busy ? "Reading…" : "Register"}</span>
+
+        {/* Above the bar, full width — see round-recorder for why. */}
+        {message && (
+          <p className="absolute inset-x-0 bottom-full mb-2 px-2 text-center text-[13px] text-accent">
+            {message}
+          </p>
+        )}
+      </div>
     </>
   );
 }

@@ -86,8 +86,9 @@ export default async function Home() {
         </div>
       </header>
 
-      {/* Bottom padding clears the floating bar so the last patient stays readable. */}
-      <div className="flex-1 px-4 pb-56">
+      {/* Bottom padding clears the floating bar so the last patient stays readable. The bar is
+          a row of circles now rather than three stacked buttons, so this is much less. */}
+      <div className="flex-1 px-4 pb-32">
         <p className="ios-group-header mb-2 px-4">
           Patients · {patients.length}
         </p>
@@ -118,15 +119,25 @@ export default async function Home() {
       </div>
 
       <BottomBar>
-        <RoundRecorder />
-        <RegisterButton />
-        <Link
-          href="/patients/new"
-          className="flex items-center justify-center gap-1.5 rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink active:opacity-80"
-        >
-          <PlusIcon className="h-[18px] w-[18px]" />
-          Add patient
-        </Link>
+        {/* Three circles rather than three stacked bars: the old row of full-width buttons ate
+            a third of the screen on a phone, and the ward list is the thing worth the room.
+            Dictating is the app's whole point, so it is the filled one, and it sits in the
+            middle where a thumb reaches without stretching. */}
+        <div className="flex items-start justify-center gap-10">
+          <div className="flex flex-col items-center">
+            <Link
+              href="/patients/new"
+              aria-label="Add patient"
+              className="grid h-14 w-14 place-items-center rounded-full bg-card text-accent active:opacity-80"
+            >
+              <PlusIcon className="h-6 w-6" />
+            </Link>
+            <span className="mt-1.5 text-[12px] text-muted">Add</span>
+          </div>
+
+          <RoundRecorder />
+          <RegisterButton />
+        </div>
       </BottomBar>
     </div>
   );
