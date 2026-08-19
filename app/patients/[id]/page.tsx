@@ -42,7 +42,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const { data: patient } = await supabase
     .from("current_patients")
     .select(
-      "id, ward_id, display_name, age_years, sex, bed, primary_diagnosis, admitted_on, surgery_date, post_op_day, admission_day, status, template_family, template_variant, procedure_text, management"
+      "id, ward_id, display_name, age_years, sex, bed, primary_diagnosis, admitted_on, surgery_date, planned_surgery_date, post_op_day, admission_day, status, template_family, template_variant, procedure_text, management"
     )
     .eq("id", id)
     .maybeSingle();

@@ -10,7 +10,9 @@ type Patient = {
   bed: string;
   age_years: number | null;
   sex: string | null;
+  primary_diagnosis: string | null;
   surgery_date: string | null;
+  planned_surgery_date: string | null;
   management: string | null;
   procedure_text: string | null;
   template_family: string | null;

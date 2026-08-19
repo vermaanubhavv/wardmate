@@ -7,6 +7,9 @@ export type WardPatient = {
   primary_diagnosis: string | null;
   admitted_on: string;
   surgery_date: string | null;
+  /** An upcoming, not-yet-happened operation date. Never drives post_op_day — see the column
+   *  comment in supabase/patches/0021_planned_surgery_date.sql. */
+  planned_surgery_date: string | null;
   post_op_day: number | null;
   admission_day: number;
   last_entry_at: string | null;
@@ -24,6 +27,45 @@ export const MANAGEMENT_CHOICES = [
   { value: "preop", label: "Pre-op" },
   { value: "conservative", label: "Conservative" },
   { value: "workup", label: "Workup" },
+] as const;
+
+/**
+ * Common general-surgery diagnoses, offered as typing suggestions.
+ *
+ * A datalist, exactly like the operation field: picking one is faster than typing it out, but
+ * it is never the only option — anything typed is kept as written, so a diagnosis outside this
+ * list is never blocked or silently corrected to the nearest match.
+ */
+export const COMMON_DIAGNOSES = [
+  "Acute appendicitis",
+  "Acute cholecystitis",
+  "Cholelithiasis",
+  "Choledocholithiasis",
+  "Acute pancreatitis",
+  "Chronic pancreatitis",
+  "Intestinal obstruction",
+  "Perforation peritonitis",
+  "Inguinal hernia",
+  "Umbilical hernia",
+  "Incisional hernia",
+  "Carcinoma breast",
+  "Carcinoma stomach",
+  "Carcinoma colon",
+  "Carcinoma rectum",
+  "Thyroid swelling",
+  "Anal fistula",
+  "Perianal abscess",
+  "Hemorrhoids",
+  "Pilonidal sinus",
+  "Varicose veins",
+  "Diabetic foot",
+  "Cellulitis",
+  "Soft tissue abscess",
+  "Blunt abdominal trauma",
+  "Road traffic accident",
+  "Hydrocele",
+  "Lipoma",
+  "Sebaceous cyst",
 ] as const;
 
 /**

@@ -208,13 +208,19 @@ export async function deletePatientFromWard(formData: FormData) {
 export type EditPatientState = { error: string | null; ok?: boolean };
 
 /**
- * Correct who a patient is — name, age, sex — from wherever you are looking at them.
+ * Correct who a patient is, and their diagnosis and management, from wherever you are looking
+ * at them.
  *
- * This exists because these three are the facts most often typed in a hurry at admission and
- * discovered to be wrong on a later round, and because every patient added before age and sex
- * existed has no way to gain them otherwise. Deliberately narrow: bed, diagnosis and dates are
- * not editable here, so a tap meant to fix a spelling cannot quietly move a patient or change
- * what day they are on.
+ * Bed is the one field a mis-aimed tap could use to quietly move a patient, so it stays
+ * required and validated exactly as before. Diagnosis, management and the two operation dates
+ * are here because they are corrected on the same rhythm as the name — typed once at
+ * admission, wrong or incomplete, fixed on a later round.
+ *
+ * "Post-op" in the form is not a stored management value — see readManagement — so choosing it
+ * writes surgery_date instead, which is the single fact that already drives the post-op day
+ * count and the derived label. Choosing "Pre-op" with a date writes planned_surgery_date
+ * instead: an upcoming operation that has not happened yet must never touch surgery_date, or
+ * the day count would go negative before the surgery has actually taken place.
  */
 export async function updatePatientIdentity(
   _prev: EditPatientState,
@@ -232,10 +238,16 @@ export async function updatePatientIdentity(
   const bed = String(formData.get("bed") ?? "").trim();
   const ageRaw = String(formData.get("age_years") ?? "").trim();
   const sexRaw = String(formData.get("sex") ?? "").trim();
+  const diagnosis = String(formData.get("primary_diagnosis") ?? "").trim();
+  const managementRaw = String(formData.get("management") ?? "");
+  const operationDate = String(formData.get("operation_date") ?? "").trim();
 
   if (!id) return { error: "No patient." };
   if (!name) return { error: "Name cannot be empty." };
   if (!bed) return { error: "Bed cannot be empty." };
+  if (managementRaw === "postop" && !operationDate) {
+    return { error: "Date of operation is required for post-op." };
+  }
 
   const identity = readIdentity(ageRaw, sexRaw);
   if ("error" in identity) return identity;
@@ -247,6 +259,16 @@ export async function updatePatientIdentity(
     await listTemplateChoices()
   );
 
+  // Only postop and preop say anything about the operation dates at all. Conservative, workup
+  // and "not stated" leave both columns exactly as they were — an edit made to fix a typo in
+  // the name must never silently erase a surgery date recorded on a different round.
+  const dates =
+    managementRaw === "postop"
+      ? { surgery_date: operationDate, planned_surgery_date: null }
+      : managementRaw === "preop"
+        ? { planned_surgery_date: operationDate || null }
+        : {};
+
   // Row security decides whether this is allowed: the update reaches only a patient on a ward
   // this doctor belongs to, so no check here is load-bearing.
   const { error } = await supabase
@@ -256,7 +278,9 @@ export async function updatePatientIdentity(
       bed,
       age_years: identity.age,
       sex: identity.sex,
-      management: readManagement(String(formData.get("management") ?? "")),
+      primary_diagnosis: diagnosis || null,
+      management: readManagement(managementRaw),
+      ...dates,
       ...procedure,
     })
     .eq("id", id);

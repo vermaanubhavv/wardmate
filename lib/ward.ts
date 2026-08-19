@@ -71,7 +71,7 @@ export async function getActivePatients(wardId: string) {
     supabase
       .from("current_patients")
       .select(
-        "id, display_name, age_years, sex, bed, primary_diagnosis, admitted_on, surgery_date, post_op_day, admission_day, last_entry_at, template_family, template_variant, procedure_text, management"
+        "id, display_name, age_years, sex, bed, primary_diagnosis, admitted_on, surgery_date, planned_surgery_date, post_op_day, admission_day, last_entry_at, template_family, template_variant, procedure_text, management"
       )
       .eq("ward_id", wardId)
       .eq("status", "active"),

@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { updatePatientIdentity, type EditPatientState } from "./actions";
-import { MANAGEMENT_CHOICES } from "@/lib/patients";
+import { COMMON_DIAGNOSES, MANAGEMENT_CHOICES } from "@/lib/patients";
 
 type Patient = {
   id: string;
@@ -10,12 +10,21 @@ type Patient = {
   bed: string;
   age_years: number | null;
   sex: string | null;
+  primary_diagnosis: string | null;
   surgery_date: string | null;
+  planned_surgery_date: string | null;
   management: string | null;
   procedure_text: string | null;
   template_family: string | null;
   template_variant: string | null;
 };
+
+/** What the Management select shows right now, given what's stored. Post-op is a fourth
+ *  option here even though it is never itself stored — see readManagement in actions.ts. */
+function currentManagementChoice(patient: Patient): string {
+  if (patient.surgery_date) return "postop";
+  return patient.management ?? "";
+}
 
 type TemplateChoice = { family: string; variant: string | null; label: string };
 
@@ -56,6 +65,7 @@ export default function EditIdentity({
     updatePatientIdentity,
     { error: null }
   );
+  const [management, setManagement] = useState(() => currentManagementChoice(patient));
 
   // Close only once the save has actually succeeded, so a rejected value stays on screen with
   // its reason instead of the dialog vanishing and the old name still showing behind it.
@@ -66,7 +76,18 @@ export default function EditIdentity({
   // A counter rather than a boolean: choosing the same menu item twice has to reopen the
   // dialog, and a boolean that is already true produces no change to react to.
   useEffect(() => {
-    if (openSignal) dialogRef.current?.showModal();
+    if (!openSignal) return;
+    // The dialog element stays mounted between opens, so without this a management choice made
+    // and saved on a previous open would still be showing on this one, even though the ward
+    // list has since revalidated and patient.surgery_date has changed under it. This reacts to
+    // a menu click (openSignal), not to patient changing, so it belongs here rather than in a
+    // separate effect keyed on patient.
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    setManagement(currentManagementChoice(patient));
+    dialogRef.current?.showModal();
+    // Deliberately keyed on openSignal only, not patient: this must fire on every menu click,
+    // not on every patient prop change (which happens on every ward-list revalidation).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openSignal]);
 
   return (
@@ -80,6 +101,7 @@ export default function EditIdentity({
             // also walk you into their record.
             e.preventDefault();
             e.stopPropagation();
+            setManagement(currentManagementChoice(patient));
             dialogRef.current?.showModal();
           }}
           className="shrink-0 rounded-lg p-2 text-muted active:bg-chip"
@@ -156,6 +178,22 @@ export default function EditIdentity({
           </div>
 
           <label className="flex flex-col gap-2">
+            <span className="text-[15px] text-muted">Diagnosis</span>
+            <input
+              name="primary_diagnosis"
+              list="diagnosis-suggestions"
+              defaultValue={patient.primary_diagnosis ?? ""}
+              autoCapitalize="sentences"
+              className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+            />
+            <datalist id="diagnosis-suggestions">
+              {COMMON_DIAGNOSES.map((d) => (
+                <option key={d} value={d} />
+              ))}
+            </datalist>
+          </label>
+
+          <label className="flex flex-col gap-2">
             <span className="text-[15px] text-muted">Operation</span>
             <input
               name="procedure"
@@ -176,28 +214,47 @@ export default function EditIdentity({
 
           <label className="flex flex-col gap-2">
             <span className="text-[15px] text-muted">Management</span>
-            {patient.surgery_date ? (
-              // Not a choice once an operation has been recorded: the surgery date already
-              // settles it, and letting it be overridden here would put "PRE OP" next to a
-              // post-op day count.
-              <p className="rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] text-muted">
-                Post-op — set by the date of surgery
-              </p>
-            ) : (
-              <select
-                name="management"
-                defaultValue={patient.management ?? ""}
-                className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
-              >
-                <option value="">Not stated</option>
-                {MANAGEMENT_CHOICES.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            )}
+            <select
+              name="management"
+              value={management}
+              onChange={(e) => setManagement(e.target.value)}
+              className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+            >
+              <option value="">Not stated</option>
+              {MANAGEMENT_CHOICES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+              <option value="postop">Post-op</option>
+            </select>
           </label>
+
+          {/* Only pre-op and post-op say anything about an operation date — conservative and
+              workup patients have no operation to date. */}
+          {(management === "preop" || management === "postop") && (
+            <label className="flex flex-col gap-2">
+              <span className="text-[15px] text-muted">
+                {management === "postop" ? "Date of operation" : "Planned date of operation"}
+              </span>
+              <input
+                type="date"
+                name="operation_date"
+                required={management === "postop"}
+                defaultValue={
+                  management === "postop"
+                    ? (patient.surgery_date ?? "")
+                    : (patient.planned_surgery_date ?? "")
+                }
+                className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+              />
+              {management === "postop" && (
+                <span className="text-[13px] text-muted">
+                  Sets the post-op day count shown on the ward list.
+                </span>
+              )}
+            </label>
+          )}
 
           {state.error && (
             <p className="ios-group px-4 py-3 text-[15px] text-orange-700">
