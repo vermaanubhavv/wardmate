@@ -376,14 +376,6 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       {/* Bottom padding clears the fixed speak bar so the oldest entry stays reachable. */}
       <section className="px-4 pb-6">
         <p className="ios-group-header mb-2 px-4">Record</p>
-        {entries.length > 0 && (
-          // Said once, here, rather than under every entry. The values are written as prose so
-          // the record stays short, and prose gives no clue that it can be tapped — the dotted
-          // underline is the mark, this is what the mark means.
-          <p className="mb-2 px-4 text-[13px] text-muted">
-            Tap any underlined value to correct it.
-          </p>
-        )}
         {entries.length === 0 ? (
           <p className="ios-group p-5 text-[15px] text-muted">
             Nothing recorded yet. Hold the button above and say what has changed.

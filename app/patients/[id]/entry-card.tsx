@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { acceptEntry, editEntry, deleteEntry, updateObservation } from "./actions";
 
 type Value = {
@@ -135,8 +135,11 @@ export default function EntryCard({
   const [showEvidence, setShowEvidence] = useState(false);
   const [editingWords, setEditingWords] = useState(false);
   const [editingValue, setEditingValue] = useState<string | null>(null);
-  const valueRef = useRef<HTMLInputElement | null>(null);
   const [flagged, setFlagged] = useState<string | null>(null);
+  // Reading is the default and correcting is a mode. A record is read twenty times for every
+  // once it is corrected, so the marks that make values tappable are off until asked for.
+  const [correcting, setCorrecting] = useState(false);
+  const [draft, setDraft] = useState("");
 
   const context = values.filter((v) => CONTEXT_KINDS.includes(v.kind));
   const plans = values.filter((v) => v.kind === "plan");
@@ -149,6 +152,7 @@ export default function EntryCard({
   /** Opening a different value must not leave the last one's flag message under it. */
   const openEditor = (id: string) => {
     setEditingValue(id);
+    setDraft(values.find((v) => v.id === id)?.value_text ?? "");
     setFlagged(null);
   };
 
@@ -161,13 +165,9 @@ export default function EntryCard({
    * nobody uses.
    */
   async function flagMisheard(observation: Value) {
-    const correctTerm = valueRef.current?.value.trim() ?? "";
+    const correctTerm = draft.trim();
     const wrongTerm = (observation.value_text ?? "").trim();
-
-    if (!correctTerm || correctTerm === wrongTerm) {
-      setFlagged("Change the wording first, then flag it.");
-      return;
-    }
+    if (!correctTerm || correctTerm === wrongTerm) return;
 
     setFlagged("Sending…");
     try {
@@ -219,13 +219,13 @@ export default function EntryCard({
           <>
             {context.length > 0 && (
               <p className="text-[17px] font-semibold leading-snug">
-                <Phrases values={context} withLabel={false} onEdit={openEditor} />
+                <Phrases values={context} withLabel={false} onEdit={openEditor} interactive={correcting} />
               </p>
             )}
 
             {progress.length > 0 && (
               <p className={"text-[17px] leading-snug " + (context.length > 0 ? "mt-1" : "")}>
-                <Phrases values={progress} withLabel onEdit={openEditor} />
+                <Phrases values={progress} withLabel onEdit={openEditor} interactive={correcting} />
               </p>
             )}
 
@@ -238,7 +238,7 @@ export default function EntryCard({
                     separate moments, and one may happen without the other. */}
                 {plans.map((v) => (
                   <p key={v.id} className="text-[17px] leading-snug">
-                    <PhraseButton value={v} withLabel={false} onEdit={openEditor} />
+                    <PhraseButton value={v} withLabel={false} onEdit={openEditor} interactive={correcting} />
                   </p>
                 ))}
               </div>
@@ -257,9 +257,9 @@ export default function EntryCard({
             <div className="flex items-center gap-2">
               <span className="shrink-0 text-[13px] text-muted">{editing.label}</span>
               <input
-                ref={valueRef}
                 name="value_text"
-                defaultValue={editing.value_text ?? ""}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
                 autoFocus
                 className="min-w-0 flex-1 rounded-md border border-line bg-card px-2 py-1 text-[17px] outline-none focus:border-accent"
               />
@@ -276,14 +276,18 @@ export default function EntryCard({
               Clearing it removes the value. The words it came from are kept.
             </p>
 
-            {/* type="button", so flagging never submits the correction by accident. */}
-            <button
-              type="button"
-              onClick={() => void flagMisheard(editing)}
-              className="mt-2 text-[13px] font-medium text-accent"
-            >
-              The app misheard this word
-            </button>
+            {/* Only once there is a correction to teach. Before that the button could do
+                nothing, so it was one more control to read past mid-round.
+                type="button", so flagging never submits the correction by accident. */}
+            {draft.trim() && draft.trim() !== (editing.value_text ?? "").trim() && (
+              <button
+                type="button"
+                onClick={() => void flagMisheard(editing)}
+                className="mt-2 text-[13px] font-medium text-accent"
+              >
+                The app misheard this word
+              </button>
+            )}
             {flagged && <p className="mt-1 text-[13px] text-muted">{flagged}</p>}
           </form>
         )}
@@ -305,6 +309,30 @@ export default function EntryCard({
         >
           i
         </button>
+
+        {values.length > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              const next = !correcting;
+              setCorrecting(next);
+              if (!next) {
+                setEditingValue(null);
+                setFlagged(null);
+              }
+            }}
+            aria-pressed={correcting}
+            aria-label="Correct a value"
+            className={
+              "grid h-7 w-7 shrink-0 place-items-center rounded-full border " +
+              (correcting
+                ? "border-accent bg-accent text-accent-ink"
+                : "border-muted/40 text-muted")
+            }
+          >
+            <PenIcon />
+          </button>
+        )}
 
         {accepted ? (
           <span className="text-[13px] text-muted">Accepted{edited && " · corrected"}</span>
@@ -420,17 +448,19 @@ function Phrases({
   values,
   withLabel,
   onEdit,
+  interactive,
 }: {
   values: Value[];
   withLabel: boolean;
   onEdit: (id: string) => void;
+  interactive: boolean;
 }) {
   return (
     <>
       {values.map((v, i) => (
         <span key={v.id}>
           {i > 0 && <span className="text-muted"> · </span>}
-          <PhraseButton value={v} withLabel={withLabel} onEdit={onEdit} />
+          <PhraseButton value={v} withLabel={withLabel} onEdit={onEdit} interactive={interactive} />
         </span>
       ))}
     </>
@@ -441,11 +471,30 @@ function PhraseButton({
   value: v,
   withLabel,
   onEdit,
+  interactive,
 }: {
   value: Value;
   withLabel: boolean;
   onEdit: (id: string) => void;
+  interactive: boolean;
 }) {
+  const dot = v.needs_confirmation && !v.confirmed_at && (
+    <span className="ml-1 text-orange-500" aria-label="not confirmed">
+      ●
+    </span>
+  );
+
+  // Reading: plain prose, nothing to look past. The amber dot stays, because it is information
+  // about the value rather than an invitation to press it.
+  if (!interactive) {
+    return (
+      <span>
+        {phrase(v, withLabel)}
+        {dot}
+      </span>
+    );
+  }
+
   return (
     <button
       type="button"
@@ -460,12 +509,27 @@ function PhraseButton({
       className="inline text-left underline decoration-dotted decoration-muted/50 underline-offset-[3px] active:opacity-60"
     >
       {phrase(v, withLabel)}
-      {/* Amber dot: this value was never checked by a human after being heard. */}
-      {v.needs_confirmation && !v.confirmed_at && (
-        <span className="ml-1 text-orange-500" aria-label="not confirmed">
-          ●
-        </span>
-      )}
+      {dot}
     </button>
+  );
+}
+
+/** Small enough for the controls row, and the same mark the patient header already uses. */
+function PenIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
   );
 }
