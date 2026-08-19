@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { acceptEntry, editEntry, deleteEntry, updateObservation } from "./actions";
 
 type Value = {
@@ -135,6 +135,8 @@ export default function EntryCard({
   const [showEvidence, setShowEvidence] = useState(false);
   const [editingWords, setEditingWords] = useState(false);
   const [editingValue, setEditingValue] = useState<string | null>(null);
+  const valueRef = useRef<HTMLInputElement | null>(null);
+  const [flagged, setFlagged] = useState<string | null>(null);
 
   const context = values.filter((v) => CONTEXT_KINDS.includes(v.kind));
   const plans = values.filter((v) => v.kind === "plan");
@@ -143,6 +145,51 @@ export default function EntryCard({
   );
 
   const editing = values.find((v) => v.id === editingValue) ?? null;
+
+  /** Opening a different value must not leave the last one's flag message under it. */
+  const openEditor = (id: string) => {
+    setEditingValue(id);
+    setFlagged(null);
+  };
+
+  /**
+   * Tell the app it misheard this word.
+   *
+   * Offered here, inside the edit box, because this is the one moment the resident has both
+   * halves in front of them: what was recorded, and what it should have said. Anywhere else it
+   * would mean typing the pair out again, and a flag that costs typing mid-round is a flag
+   * nobody uses.
+   */
+  async function flagMisheard(observation: Value) {
+    const correctTerm = valueRef.current?.value.trim() ?? "";
+    const wrongTerm = (observation.value_text ?? "").trim();
+
+    if (!correctTerm || correctTerm === wrongTerm) {
+      setFlagged("Change the wording first, then flag it.");
+      return;
+    }
+
+    setFlagged("Sending…");
+    try {
+      const res = await fetch("/api/glossary/flag", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          wrongTerm,
+          correctTerm,
+          // Guessed only where it is not a guess. Everything else goes uncategorised rather
+          // than sorted into a bucket the app made up.
+          category: observation.kind === "medication" ? "drug" : null,
+        }),
+      });
+      const data = await res.json();
+      setFlagged(
+        res.ok ? "Noted. The app will correct this next time." : (data.error ?? "Could not save that.")
+      );
+    } catch {
+      setFlagged("No connection — not saved.");
+    }
+  }
 
   // What the record says when it is folded shut. The heading if there is one, otherwise the
   // start of the progress — enough to know whether this is the day worth opening.
@@ -172,13 +219,13 @@ export default function EntryCard({
           <>
             {context.length > 0 && (
               <p className="text-[17px] font-semibold leading-snug">
-                <Phrases values={context} withLabel={false} onEdit={setEditingValue} />
+                <Phrases values={context} withLabel={false} onEdit={openEditor} />
               </p>
             )}
 
             {progress.length > 0 && (
               <p className={"text-[17px] leading-snug " + (context.length > 0 ? "mt-1" : "")}>
-                <Phrases values={progress} withLabel onEdit={setEditingValue} />
+                <Phrases values={progress} withLabel onEdit={openEditor} />
               </p>
             )}
 
@@ -191,7 +238,7 @@ export default function EntryCard({
                     separate moments, and one may happen without the other. */}
                 {plans.map((v) => (
                   <p key={v.id} className="text-[17px] leading-snug">
-                    <PhraseButton value={v} withLabel={false} onEdit={setEditingValue} />
+                    <PhraseButton value={v} withLabel={false} onEdit={openEditor} />
                   </p>
                 ))}
               </div>
@@ -210,6 +257,7 @@ export default function EntryCard({
             <div className="flex items-center gap-2">
               <span className="shrink-0 text-[13px] text-muted">{editing.label}</span>
               <input
+                ref={valueRef}
                 name="value_text"
                 defaultValue={editing.value_text ?? ""}
                 autoFocus
@@ -227,6 +275,16 @@ export default function EntryCard({
             <p className="mt-1 text-[13px] text-muted">
               Clearing it removes the value. The words it came from are kept.
             </p>
+
+            {/* type="button", so flagging never submits the correction by accident. */}
+            <button
+              type="button"
+              onClick={() => void flagMisheard(editing)}
+              className="mt-2 text-[13px] font-medium text-accent"
+            >
+              The app misheard this word
+            </button>
+            {flagged && <p className="mt-1 text-[13px] text-muted">{flagged}</p>}
           </form>
         )}
       </div>
