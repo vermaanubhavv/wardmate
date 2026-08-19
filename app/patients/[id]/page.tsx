@@ -33,6 +33,8 @@ type Entry = {
   id: string;
   source: "voice" | "photo" | "manual";
   transcript: string | null;
+  /** What was first heard, kept whenever the app or a resident changed the words. */
+  original_transcript: string | null;
   photo_path: string | null;
   recorded_at: string;
   extraction_error: string | null;
@@ -69,7 +71,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       supabase
         .from("entries")
         .select(
-          "id, source, transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at)"
+          "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at)"
         )
         .eq("patient_id", id)
         .order("recorded_at", { ascending: false }),
@@ -413,6 +415,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                               minute: "2-digit",
                             })}
                             transcript={entry.transcript}
+                            heard={entry.original_transcript}
                             photoUrl={
                               entry.photo_path ? (photoUrls.get(entry.photo_path) ?? null) : null
                             }

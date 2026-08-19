@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
+import { applyCorrections } from "@/lib/corrections";
 import { readSpokenPatient } from "@/lib/read-new-patient";
 
 /**
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
   try {
     const stt = getTranscriber();
     const result = await stt.transcribe(audio, MEDICAL_VOCABULARY_HINT);
-    transcript = result.text;
+    transcript = applyCorrections(result.text).text;
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Transcription failed." },

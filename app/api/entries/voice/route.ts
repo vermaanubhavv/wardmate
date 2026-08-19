@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
 import { extractObservations } from "@/lib/extract";
+import { applyCorrections } from "@/lib/corrections";
 import { getTemplateForPatient } from "@/lib/templates";
 
 /**
@@ -42,13 +43,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Patient not found." }, { status: 404 });
   }
 
-  // 1. Speech to text.
+  // 1. Speech to text, then the engine's known mishearings of surgical terms — "lab chole" for
+  // lap chole, "PAS" for PAC. Corrected BEFORE extraction, so a template matches the operation
+  // it was meant to and the quote check still holds against the words actually stored. The raw
+  // hearing goes into original_transcript below and is never thrown away.
   let transcript: string;
+  let heard: string;
   let stt;
   try {
     stt = getTranscriber();
     const result = await stt.transcribe(audio, MEDICAL_VOCABULARY_HINT);
-    transcript = result.text;
+    heard = result.text;
+    transcript = applyCorrections(heard).text;
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Transcription failed." },
@@ -82,6 +88,7 @@ export async function POST(request: Request) {
         author_id: user.id,
         source: "voice",
         transcript,
+        original_transcript: heard === transcript ? null : heard,
         stt_provider: stt.provider,
         stt_model: stt.model,
         extraction_error: e instanceof Error ? e.message : String(e),
@@ -108,6 +115,8 @@ export async function POST(request: Request) {
       author_id: user.id,
       source: "voice",
       transcript,
+      // Only when the app changed something. Equal strings would just be noise behind the (i).
+      original_transcript: heard === transcript ? null : heard,
       stt_provider: stt.provider,
       stt_model: stt.model,
       extraction_model: extraction.model,

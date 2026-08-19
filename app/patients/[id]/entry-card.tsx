@@ -112,6 +112,7 @@ export default function EntryCard({
   patientId,
   time,
   transcript,
+  heard,
   photoUrl,
   accepted,
   edited,
@@ -123,6 +124,8 @@ export default function EntryCard({
   /** Preformatted on the server, so the markup cannot disagree between server and browser. */
   time: string;
   transcript: string | null;
+  /** What was first heard, when the words shown are not what came back from the engine. */
+  heard?: string | null;
   photoUrl?: string | null;
   accepted: boolean;
   edited: boolean;
@@ -291,6 +294,15 @@ export default function EntryCard({
               />
               <span className="mt-1 block text-[13px] text-muted">Tap to open full size</span>
             </a>
+          )}
+
+          {/* When the app fixed a mishearing, both are shown. A correction the resident cannot
+              see is a correction they cannot check, and this app does not rewrite the record
+              quietly — "lab chole" really was what the engine heard. */}
+          {heard && heard !== transcript && (
+            <p className="mt-1.5 text-[13px] leading-relaxed text-muted">
+              Heard: <span className="italic">“{heard}”</span>
+            </p>
           )}
 
           {transcript &&

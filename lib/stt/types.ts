@@ -31,5 +31,11 @@ export const MEDICAL_VOCABULARY_HINT = [
   "tolerating orals, nil by mouth, NPO, suture line, wound healthy, dehiscence,",
   "post-op day, POD, ceftriaxone, metronidazole, ondansetron, pantoprazole,",
   "paracetamol, tramadol, enoxaparin, insulin, saline, Ringer lactate,",
-  "haemoglobin, total count, TLC, creatinine, urea, bilirubin, potassium, sodium.",
+  "haemoglobin, total count, TLC, creatinine, urea, bilirubin, potassium, sodium,",
+  // Named because the engine reliably gets these wrong: PAC comes back as "PAS" or "pack",
+  // and the ward's own shorthand comes back spelled out letter by letter. Prevention is
+  // better than the correction pass in lib/corrections.ts, which only exists for what
+  // still slips through.
+  "PAC, pre-anaesthetic checkup, OT list, USG, CBC, LFT, RFT, ECG, NBM, ICD,",
+  "stitch removal, per abdomen, catheter, Foley's, stoma, colostomy, ileostomy.",
 ].join(" ");

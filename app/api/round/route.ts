@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
+import { applyCorrections } from "@/lib/corrections";
 import { buildRoundDraft } from "@/lib/round-draft";
 import { getCurrentWard, getActivePatients } from "@/lib/ward";
 
@@ -38,7 +39,9 @@ export async function POST(request: Request) {
     try {
       stt = getTranscriber();
       const result = await stt.transcribe(audio, MEDICAL_VOCABULARY_HINT);
-      transcript = result.text;
+      // Only what the engine heard. `typed` above is the resident's own writing and is left
+      // exactly as they wrote it — this fixes mishearings, not people.
+      transcript = applyCorrections(result.text).text;
     } catch (e) {
       return NextResponse.json(
         { error: e instanceof Error ? e.message : "Transcription failed." },
