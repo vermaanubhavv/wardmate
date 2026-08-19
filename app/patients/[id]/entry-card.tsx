@@ -450,7 +450,14 @@ function PhraseButton({
     <button
       type="button"
       onClick={() => onEdit(v.id)}
-      className="text-left active:opacity-60"
+      // `inline` rather than the button default, so a long value wraps with the sentence
+      // instead of sitting in an unbreakable block of its own.
+      //
+      // The dotted underline is not decoration. Written as plain prose these values looked
+      // exactly like text and nothing said they could be corrected — which is precisely how a
+      // resident ends up believing there is no way to fix a mis-heard word. It is the quietest
+      // mark that still means "you can change this".
+      className="inline text-left underline decoration-dotted decoration-muted/50 underline-offset-[3px] active:opacity-60"
     >
       {phrase(v, withLabel)}
       {/* Amber dot: this value was never checked by a human after being heard. */}
