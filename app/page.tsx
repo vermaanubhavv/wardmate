@@ -49,14 +49,22 @@ export default async function Home() {
       </div>
 
       <header className="px-4 pb-3 pt-4">
-        <h1 className="ios-large-title">{ward.name}</h1>
-        <p className="mt-1 text-[15px] text-muted">
-          {patients.length} {patients.length === 1 ? "patient" : "patients"}
-        </p>
+        {/* The unit switcher sits beside the name it switches away from, not buried among
+            the capsules below — it acts on the title, so it reads as part of the title. */}
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="ios-large-title truncate">{ward.name}</h1>
+          <Link
+            href="/unit"
+            className="flex shrink-0 items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-[14px] font-medium text-accent active:opacity-70"
+          >
+            <UsersIcon className="h-3.5 w-3.5" />
+            Unit
+          </Link>
+        </div>
 
         {/* Capsules rather than a row of underlined links: a bigger target, and the shape
             iOS has used for secondary navigation since 17. Each carries a small icon — not
-            decoration, a faster-than-reading way to find "Ward round" among five capsules
+            decoration, a faster-than-reading way to find "Ward round" among four capsules
             while walking. */}
         <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
           <Capsule href="/todo" icon={<ChecklistIcon className="h-3.5 w-3.5" />}>
@@ -64,9 +72,6 @@ export default async function Home() {
           </Capsule>
           <Capsule href="/handover" icon={<ClipboardIcon className="h-3.5 w-3.5" />}>
             Ward round
-          </Capsule>
-          <Capsule href="/unit" icon={<UsersIcon className="h-3.5 w-3.5" />}>
-            Unit
           </Capsule>
           <Capsule href="/formats" icon={<DocumentIcon className="h-3.5 w-3.5" />}>
             Formats
@@ -82,7 +87,9 @@ export default async function Home() {
 
       {/* Bottom padding clears the floating bar so the last patient stays readable. */}
       <div className="flex-1 px-4 pb-56">
-        <p className="ios-group-header mb-2 px-4">Patients</p>
+        <p className="ios-group-header mb-2 px-4">
+          Patients · {patients.length}
+        </p>
 
         {patients.length === 0 ? (
           <div className="ios-group flex flex-col items-center gap-3 px-4 py-10 text-center">
