@@ -2,10 +2,15 @@
 
 /* iOS, as closely as a web app can sit next to it.
  *
- * The colours are Apple's own system values rather than approximations, because a phone puts
- * this beside Settings and Health all day and anything nearly-right reads as wrong. The
- * background is systemGroupedBackground, content sits on white, and the rule between rows is
- * the real separator colour — a hairline, not a border box.
+ * Everything except the accent is Apple's own system value rather than an approximation,
+ * because a phone puts this beside Settings and Health all day and anything nearly-right
+ * reads as wrong. The background is systemGroupedBackground, content sits on white, and the
+ * rule between rows is the real separator colour — a hairline, not a border box.
+ *
+ * The accent is the one deliberate departure: it is the teal from the WardMate mark, not
+ * systemRed. Brand identity wins there on purpose — the colour a doctor presses fifty times a
+ * round should be the same colour as the icon on their home screen, not whatever iOS happens
+ * to tint its own buttons.
  *
  * One fixed light theme still: ward lighting varies wildly and a phone that changes
  * appearance between rooms is one more thing to think about at 7am. */
@@ -15,7 +20,7 @@
   --foreground: #000000; /* label */
   --muted: #8e8e93; /* secondaryLabel, flattened */
   --line: #c6c6c8; /* separator */
-  --accent: #ff3b30; /* systemRed */
+  --accent: #0f9e96; /* WardMate teal — from the mark, not a system colour */
   --accent-ink: #ffffff;
   --chip: #efeff4; /* the flat fill behind a bed number */
 }
