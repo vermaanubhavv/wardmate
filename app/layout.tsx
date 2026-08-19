@@ -11,7 +11,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "WardMate",
-  description: "Ward rounds by voice.",
+  description: "Your Residency Companion",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "WardMate", statusBarStyle: "black-translucent" },
   icons: { icon: "/icon-192.png", apple: "/apple-touch-icon.png" },

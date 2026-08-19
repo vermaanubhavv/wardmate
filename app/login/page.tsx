@@ -118,7 +118,7 @@ export default function LoginPage() {
           <h1 className="text-3xl font-semibold tracking-tight">
             ward<span className="text-accent">mate</span>
           </h1>
-          <p className="text-muted mt-1">Ward rounds by voice.</p>
+          <p className="text-muted mt-1">Your Residency Companion</p>
         </div>
       </header>
 
