@@ -23,6 +23,26 @@ export type WardPatient = {
   entry_count: number;
 };
 
+/**
+ * Labels that describe WHO or WHERE rather than a finding.
+ *
+ * Deliberately matched on the label alone and kept narrow. "Age" and "sex" are here; "wound"
+ * and "drain" obviously are not. Anchored so that "bed sore" — a real finding — does not get
+ * caught by "bed".
+ *
+ * Lives here rather than in lib/extract.ts so the record screen can apply the same rule when
+ * DISPLAYING. Extraction drops these going in, but entries recorded before that filter existed
+ * still hold them, and a rule enforced in only one of the two places leaves a patient's record
+ * disagreeing with itself.
+ */
+const IDENTIFIER_LABELS =
+  /^(bed( number| no\.?)?|ward|patient( name)?|name|age|sex|gender|mrd( no\.?)?|uhid|ip( no\.?)?|hospital number)$/i;
+
+/** True for a label naming who or where the patient is — never a clinical finding. */
+export function isIdentifierLabel(label: string | null | undefined): boolean {
+  return IDENTIFIER_LABELS.test((label ?? "").trim());
+}
+
 export const MANAGEMENT_CHOICES = [
   { value: "preop", label: "Pre-op" },
   { value: "conservative", label: "Conservative" },

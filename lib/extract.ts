@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { isIdentifierLabel } from "@/lib/patients";
 
 export const OBSERVATION_KINDS = [
   "diagnosis",
@@ -181,7 +182,7 @@ export async function extractObservations(
     // quote check is enforced in code for the same reason, so this is too. A "bed number"
     // row on a chart is noise the resident has to read past for the rest of the admission,
     // and it follows them into the discharge summary.
-    if (IDENTIFIER_LABELS.test(obs.label ?? "")) {
+    if (isIdentifierLabel(obs.label)) {
       rejected.push(obs);
       continue;
     }
@@ -205,16 +206,6 @@ export async function extractObservations(
 
   return { observations, rejected, model, raw: parsed };
 }
-
-/**
- * Labels that describe WHO or WHERE rather than a finding.
- *
- * Deliberately matched on the label alone and kept narrow. "Age" and "sex" are here; "wound"
- * and "drain" obviously are not. Anchored so that "bed sore" — a real finding — does not get
- * caught by "bed".
- */
-const IDENTIFIER_LABELS =
-  /^(bed( number| no\.?)?|ward|patient( name)?|name|age|sex|gender|mrd( no\.?)?|uhid|ip( no\.?)?|hospital number)$/i;
 
 /**
  * Lowercase and collapse whitespace before comparing. Deliberately conservative: it does not

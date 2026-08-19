@@ -7,6 +7,9 @@ export type Observation = {
   kind: string;
   label: string;
   value_text: string | null;
+  /** The number the resident actually said, when they said one. Extraction fills this only
+   *  from a spoken figure — it is never derived from anything else. */
+  value_num: number | null;
   unit: string | null;
   source_quote: string;
   needs_confirmation: boolean;
@@ -131,4 +134,35 @@ export function groupIntoSittings<T extends { recorded_at: string }>(
     recorded_at: group[group.length - 1].recorded_at,
     entries: group,
   }));
+}
+
+/** The calendar day an instant falls on in IST — the day the round actually happened, which
+ *  is not the same as the UTC day for anything recorded after 5.30am. */
+export function istDayKey(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+}
+
+/**
+ * Sittings gathered into the day they happened on.
+ *
+ * A patient a week into an admission has a long record, and what a resident wants from it is
+ * almost always one day — today's note, or the day the drain came out. Days are the unit that
+ * question is asked in, so they are the unit the record collapses by.
+ *
+ * Order is preserved: newest-first in, newest-first out, both for the days and within them.
+ */
+export function groupByDay<T extends { recorded_at: string }>(
+  sittings: T[]
+): { day: string; recorded_at: string; sittings: T[] }[] {
+  const days: { day: string; recorded_at: string; sittings: T[] }[] = [];
+
+  for (const sitting of sittings) {
+    const day = istDayKey(sitting.recorded_at);
+    const current = days[days.length - 1];
+
+    if (current && current.day === day) current.sittings.push(sitting);
+    else days.push({ day, recorded_at: sitting.recorded_at, sittings: [sitting] });
+  }
+
+  return days;
 }

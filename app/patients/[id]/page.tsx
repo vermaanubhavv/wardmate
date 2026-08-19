@@ -8,8 +8,14 @@ import {
   listTemplateChoices,
   procedureFor,
 } from "@/lib/templates";
-import { derivePatientState, groupIntoSittings, type Observation } from "@/lib/patient-state";
-import { dayLabel, managementLabel, patientName } from "@/lib/patients";
+import {
+  derivePatientState,
+  groupByDay,
+  groupIntoSittings,
+  istDayKey,
+  type Observation,
+} from "@/lib/patient-state";
+import { dayLabel, isIdentifierLabel, managementLabel, patientName } from "@/lib/patients";
 import { effectiveUrgency } from "@/lib/urgency";
 import BedsideBar from "./bedside-bar";
 import EditIdentity from "../edit-identity";
@@ -63,7 +69,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       supabase
         .from("entries")
         .select(
-          "id, source, transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, observations(id, kind, label, value_text, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at)"
+          "id, source, transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at)"
         )
         .eq("patient_id", id)
         .order("recorded_at", { ascending: false }),
@@ -80,7 +86,14 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const next = here >= 0 ? ward[here + 1] : undefined;
   const position = here >= 0 ? `${here + 1} of ${ward.length}` : null;
 
-  const entries = (entriesData ?? []) as unknown as Entry[];
+  // Who and where the patient is, dropped once here rather than at each place that reads an
+  // observation — so the record, the derived state and the discharge summary cannot disagree
+  // about whether "bed number" is a clinical finding. Extraction stopped storing these, but
+  // entries recorded before that filter existed still hold them.
+  const entries = ((entriesData ?? []) as unknown as Entry[]).map((e) => ({
+    ...e,
+    observations: e.observations.filter((o) => !isIdentifierLabel(o.label)),
+  }));
 
   // Short-lived links for the stored photographs. The bucket is private, so these are the
   // only way to see one, they expire in an hour, and they are only ever minted here — for a
@@ -105,8 +118,12 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const { matched, missing, extra, openTasks, doneTasks, pending } = patientState;
 
   // One visit to the bedside reads as one block in the record, however many times you spoke
-  // or photographed something while standing there.
+  // or photographed something while standing there. Those then gather into days, which is the
+  // unit the record is actually asked about — "what happened yesterday", not "what happened
+  // between 9.25 and 9.40".
   const sittings = groupIntoSittings(entries);
+  const days = groupByDay(sittings);
+  const todayKey = istDayKey(new Date().toISOString());
 
   const procedure = procedureFor(patient, procedures);
   const management = managementLabel(patient);
@@ -362,46 +379,64 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             Nothing recorded yet. Hold the button above and say what has changed.
           </p>
         ) : (
-          <ul className="flex flex-col gap-4">
-            {sittings.map((sitting) => (
-              <li key={sitting.entries[0].id}>
-                <p className="mb-1.5 px-4 text-[13px] text-muted">
-                  {new Date(sitting.recorded_at).toLocaleString("en-IN", {
-                    timeZone: "Asia/Kolkata",
-                    day: "numeric",
-                    month: "short",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
-                </p>
+          <ul className="flex flex-col gap-3">
+            {days.map((day, i) => {
+              const count = day.sittings.reduce((n, s) => n + s.entries.length, 0);
 
-                <div className="flex flex-col gap-2">
-                  {sitting.entries.map((entry) => (
-                    <EntryCard
-                      key={entry.id}
-                      entryId={entry.id}
-                      patientId={patient.id}
-                      transcript={entry.transcript}
-                      photoUrl={
-                        entry.photo_path ? (photoUrls.get(entry.photo_path) ?? null) : null
-                      }
-                      accepted={Boolean(entry.accepted_at)}
-                      edited={Boolean(entry.edited_at)}
-                      extractionError={entry.extraction_error}
-                      values={entry.observations.map((o) => ({
-                        id: o.id,
-                        kind: o.kind,
-                        label: o.label,
-                        value_text: o.value_text,
-                        source_quote: o.source_quote,
-                        needs_confirmation: o.needs_confirmation,
-                        confirmed_at: o.confirmed_at,
-                      }))}
-                    />
-                  ))}
-                </div>
-              </li>
-            ))}
+              return (
+                <li key={day.day}>
+                  {/* Today open, the rest folded. A week-long admission is mostly history you
+                      are not looking for, and the one day you are is nearly always this one. */}
+                  <details open={i === 0} className="[&[open]_.chev]:rotate-90">
+                    <summary className="flex cursor-pointer list-none items-baseline gap-2 px-4 py-1.5 active:opacity-60 [&::-webkit-details-marker]:hidden">
+                      <span className="chev shrink-0 text-[11px] text-muted transition-transform">
+                        ▶
+                      </span>
+                      <span className="text-[15px] font-semibold">
+                        {dayHeading(day.recorded_at, todayKey)}
+                      </span>
+                      <span className="text-[13px] text-muted tabular-nums">
+                        {count} {count === 1 ? "record" : "records"}
+                      </span>
+                    </summary>
+
+                    <div className="mt-1.5 flex flex-col gap-2">
+                      {day.sittings.flatMap((sitting) =>
+                        sitting.entries.map((entry) => (
+                          <EntryCard
+                            key={entry.id}
+                            entryId={entry.id}
+                            patientId={patient.id}
+                            time={new Date(entry.recorded_at).toLocaleTimeString("en-IN", {
+                              timeZone: "Asia/Kolkata",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })}
+                            transcript={entry.transcript}
+                            photoUrl={
+                              entry.photo_path ? (photoUrls.get(entry.photo_path) ?? null) : null
+                            }
+                            accepted={Boolean(entry.accepted_at)}
+                            edited={Boolean(entry.edited_at)}
+                            extractionError={entry.extraction_error}
+                            values={entry.observations.map((o) => ({
+                              id: o.id,
+                              kind: o.kind,
+                              label: o.label,
+                              value_text: o.value_text,
+                              value_num: o.value_num,
+                              source_quote: o.source_quote,
+                              needs_confirmation: o.needs_confirmation,
+                              confirmed_at: o.confirmed_at,
+                            }))}
+                          />
+                        ))
+                      )}
+                    </div>
+                  </details>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
@@ -430,6 +465,28 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         </BottomBar>
     </div>
   );
+}
+
+/**
+ * A day's heading in the record. "Today" and "Yesterday" carry the date with them rather than
+ * replacing it — on a ward round the relative word is what you scan for, but the date is what
+ * gets written in the notes.
+ */
+function dayHeading(iso: string, todayKey: string): string {
+  const date = new Date(iso).toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "numeric",
+    month: "short",
+  });
+
+  const key = istDayKey(iso);
+  if (key === todayKey) return `Today · ${date}`;
+
+  const yesterday = new Date(`${todayKey}T00:00:00Z`);
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  if (key === yesterday.toISOString().slice(0, 10)) return `Yesterday · ${date}`;
+
+  return date;
 }
 
 /**

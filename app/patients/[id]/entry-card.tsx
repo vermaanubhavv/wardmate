@@ -8,26 +8,109 @@ type Value = {
   kind: string;
   label: string;
   value_text: string | null;
+  value_num: number | null;
   source_quote: string;
   needs_confirmation: boolean;
   confirmed_at: string | null;
 };
 
+/** What operation and which day — the note's heading, not a finding from it. */
+const CONTEXT_KINDS = ["day_number", "diagnosis"];
+
+const NUMBER_WORDS: Record<string, number> = {
+  zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
+  ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16,
+  seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50,
+  sixty: 60, seventy: 70, eighty: 80, ninety: 90,
+};
+
 /**
- * One visit to a bedside, shown as what the app understood rather than as what was said.
+ * The figure inside a spoken day, as a number. Null when there isn't one — never a guess.
  *
- * The transcript used to lead this block, and on a patient with a week of rounds it made the
- * record a wall of prose — every value stated twice, once in a sentence and once as a value.
- * What a resident checks is the values: is the drain output right, is the drug right. So those
- * come first, each editable where it sits, and the words move behind the (i).
+ * Only reached when extraction did not already store value_num, which it does whenever the
+ * resident stated a figure. This is the fallback for entries recorded before that, and for
+ * "post-op day four", where the number arrived as a word.
+ */
+function readNumber(text: string): number | null {
+  const digits = text.match(/\d+/);
+  if (digits) return Number(digits[0]);
+
+  const words = text.toLowerCase().split(/[^a-z]+/).filter(Boolean);
+  for (let i = 0; i < words.length; i++) {
+    const n = NUMBER_WORDS[words[i]];
+    if (n === undefined) continue;
+    // "twenty one" is one number, not two.
+    const next = NUMBER_WORDS[words[i + 1]];
+    if (n >= 20 && next !== undefined && next < 10) return n + next;
+    return n;
+  }
+  return null;
+}
+
+/**
+ * A spoken day, written the way it is written on a chart: "POD 4", not "post-op day four".
  *
- * The evidence has not gone anywhere, and that matters more than the tidiness. Every value on
- * screen came out of that sentence or that photograph, and one tap still shows it — which is
- * the whole basis for trusting a number here. Hidden by default, never absent.
+ * The figure comes from value_num — what the resident actually said — falling back to reading
+ * it out of their own words. If there is no number to be found the words are left exactly as
+ * spoken rather than forced into a shape they do not fit.
+ */
+function dayPhrase(v: Value): string {
+  const said = (v.value_text ?? "").trim();
+  const n = v.value_num ?? readNumber(said);
+  if (n === null) return said;
+  return /\bpo|\bpod\b/i.test(said) ? `POD ${n}` : `Day ${n}`;
+}
+
+/**
+ * How one value reads inside a sentence.
+ *
+ * The label is dropped when the value already says it: "vital is stable" under the label
+ * "vitals" would otherwise print as "vitals vital is stable". Matched word by word rather than
+ * as one string, because the words often arrive reordered — label "pac review", value "review
+ * PAC and review pas done" — and a substring test misses that and stutters.
+ *
+ * Each word is matched from its start so a plural label still finds its singular ("vitals" →
+ * "vital is stable"). Stored data is never touched; this is only how it is set on the page.
+ */
+function phrase(v: Value, withLabel: boolean): string {
+  const label = (v.label ?? "").trim();
+  const value = (v.value_text ?? "").trim();
+  if (v.kind === "day_number") return dayPhrase(v);
+  if (!value) return label;
+  if (!withLabel || !label) return value;
+
+  const haystack = value.toLowerCase();
+  const words = label.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  const alreadySaid =
+    words.length > 0 &&
+    words.every((w) => {
+      const stem = w.replace(/s$/, "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return new RegExp(`\\b${stem}`).test(haystack);
+    });
+
+  return alreadySaid ? value : `${label} ${value}`;
+}
+
+/**
+ * One visit to a bedside, written as a note rather than a table.
+ *
+ * A row per value made every record twenty lines tall — "bed number | Bed number five" above
+ * "patient | Ramlal, 55-year-old male" — so a week of rounds could not be read without
+ * scrolling past the same four facts every time. It now reads the way a resident writes in a
+ * register: what this is (POD and operation), how they are (progress), what to do (plan).
+ *
+ * Who the patient is has gone entirely. The bed, the name, the age and the sex are properties
+ * of the patient and are already at the top of this screen; repeating them under every entry
+ * is noise that has to be read past to reach the one line that changed today.
+ *
+ * Every value is still individually editable — tap the words. And the evidence has not moved:
+ * whatever was said or photographed is one tap away under the (i), which is the whole basis
+ * for trusting a number here.
  */
 export default function EntryCard({
   entryId,
   patientId,
+  time,
   transcript,
   photoUrl,
   accepted,
@@ -37,6 +120,8 @@ export default function EntryCard({
 }: {
   entryId: string;
   patientId: string;
+  /** Preformatted on the server, so the markup cannot disagree between server and browser. */
+  time: string;
   transcript: string | null;
   photoUrl?: string | null;
   accepted: boolean;
@@ -48,59 +133,100 @@ export default function EntryCard({
   const [editingWords, setEditingWords] = useState(false);
   const [editingValue, setEditingValue] = useState<string | null>(null);
 
-  // Plans read as instructions, not findings — "discharge tomorrow" sitting in the same list
-  // as "abdomen soft" makes both look like the same kind of fact, when one is a job someone
-  // still has to do. Split so the two never share a row style.
-  const findings = values.filter((v) => v.kind !== "plan");
+  const context = values.filter((v) => CONTEXT_KINDS.includes(v.kind));
   const plans = values.filter((v) => v.kind === "plan");
+  const progress = values.filter(
+    (v) => !CONTEXT_KINDS.includes(v.kind) && v.kind !== "plan"
+  );
+
+  const editing = values.find((v) => v.id === editingValue) ?? null;
+
+  // What the record says when it is folded shut. The heading if there is one, otherwise the
+  // start of the progress — enough to know whether this is the day worth opening.
+  const gist =
+    context.length > 0
+      ? context.map((v) => phrase(v, false)).join(" · ")
+      : progress.length > 0
+        ? progress.slice(0, 2).map((v) => phrase(v, true)).join(" · ")
+        : "Nothing structured";
 
   return (
-    <div className="ios-group">
-      {values.length > 0 ? (
-        <>
-          {findings.length > 0 && (
-            <ul>
-              {findings.map((v) => (
-                <ValueRow
-                  key={v.id}
-                  value={v}
-                  patientId={patientId}
-                  editing={editingValue === v.id}
-                  onEdit={() => setEditingValue(v.id)}
-                  onDoneEditing={() => setEditingValue(null)}
-                />
-              ))}
-            </ul>
-          )}
+    <details open className="ios-group [&[open]_.chev]:rotate-90">
+      <summary className="flex cursor-pointer list-none items-baseline gap-2 px-4 py-2.5 active:bg-chip [&::-webkit-details-marker]:hidden">
+        <span className="chev shrink-0 text-[11px] text-muted transition-transform">▶</span>
+        <span className="shrink-0 text-[13px] tabular-nums text-muted">{time}</span>
+        <span className="min-w-0 flex-1 truncate text-[13px] text-muted">{gist}</span>
+      </summary>
 
-          {plans.length > 0 && (
-            <>
-              <p className="ios-row px-4 pt-3 pb-1 text-[12px] font-semibold uppercase tracking-wide text-accent">
-                Plan
+      <div className="px-4 pb-3">
+        {values.length === 0 ? (
+          <p className="text-[15px] text-muted">
+            {extractionError
+              ? "Nothing could be structured from this — the words are under the i."
+              : "Nothing clinical was found in this."}
+          </p>
+        ) : (
+          <>
+            {context.length > 0 && (
+              <p className="text-[17px] font-semibold leading-snug">
+                <Phrases values={context} withLabel={false} onEdit={setEditingValue} />
               </p>
-              <ul>
+            )}
+
+            {progress.length > 0 && (
+              <p className={"text-[17px] leading-snug " + (context.length > 0 ? "mt-1" : "")}>
+                <Phrases values={progress} withLabel onEdit={setEditingValue} />
+              </p>
+            )}
+
+            {plans.length > 0 && (
+              <div className="mt-2">
+                <p className="text-[12px] font-semibold uppercase tracking-wide text-accent">
+                  Plan
+                </p>
+                {/* One line each, not run together: these are separate jobs, ticked off at
+                    separate moments, and one may happen without the other. */}
                 {plans.map((v) => (
-                  <ValueRow
-                    key={v.id}
-                    value={v}
-                    patientId={patientId}
-                    editing={editingValue === v.id}
-                    onEdit={() => setEditingValue(v.id)}
-                    onDoneEditing={() => setEditingValue(null)}
-                    planStyle
-                  />
+                  <p key={v.id} className="text-[17px] leading-snug">
+                    <PhraseButton value={v} withLabel={false} onEdit={setEditingValue} />
+                  </p>
                 ))}
-              </ul>
-            </>
-          )}
-        </>
-      ) : (
-        <p className="px-4 py-2.5 text-[15px] text-muted">
-          {extractionError
-            ? "Nothing could be structured from this — the words are under the i."
-            : "Nothing clinical was found in this."}
-        </p>
-      )}
+              </div>
+            )}
+          </>
+        )}
+
+        {editing && (
+          <form
+            action={updateObservation}
+            onSubmit={() => setEditingValue(null)}
+            className="mt-3 rounded-[10px] bg-chip/50 p-3"
+          >
+            <input type="hidden" name="observation_id" value={editing.id} />
+            <input type="hidden" name="patient_id" value={patientId} />
+            <div className="flex items-center gap-2">
+              <span className="shrink-0 text-[13px] text-muted">{editing.label}</span>
+              <input
+                name="value_text"
+                defaultValue={editing.value_text ?? ""}
+                autoFocus
+                className="min-w-0 flex-1 rounded-md border border-line bg-card px-2 py-1 text-[17px] outline-none focus:border-accent"
+              />
+              <button className="shrink-0 text-[15px] font-medium text-accent">Save</button>
+              <button
+                type="button"
+                onClick={() => setEditingValue(null)}
+                className="shrink-0 text-[15px] text-muted"
+              >
+                Cancel
+              </button>
+            </div>
+            <p className="mt-1 text-[13px] text-muted">
+              Clearing it removes the value. The words it came from are kept.
+            </p>
+          </form>
+        )}
+      </div>
 
       {/* The row of controls, and the evidence behind the i. */}
       <div className="ios-row flex items-center gap-2 px-3 py-2">
@@ -120,9 +246,7 @@ export default function EntryCard({
         </button>
 
         {accepted ? (
-          <span className="text-[13px] text-muted">
-            Accepted{edited && " · corrected"}
-          </span>
+          <span className="text-[13px] text-muted">Accepted{edited && " · corrected"}</span>
         ) : (
           <form action={acceptEntry}>
             <input type="hidden" name="entry_id" value={entryId} />
@@ -217,91 +341,54 @@ export default function EntryCard({
           )}
         </div>
       )}
-    </div>
+    </details>
   );
 }
 
-/**
- * One value, editable where it sits. Split out of EntryCard so a finding and a plan can share
- * the exact same edit behaviour while looking different — a plan drops the label prefix and
- * reads as the sentence it is ("Discharge tomorrow"), since "discharge: Discharge tomorrow"
- * says the same word twice.
- */
-function ValueRow({
-  value: v,
-  patientId,
-  editing,
+/** A run of values as one sentence, each still its own tap target. */
+function Phrases({
+  values,
+  withLabel,
   onEdit,
-  onDoneEditing,
-  planStyle = false,
+}: {
+  values: Value[];
+  withLabel: boolean;
+  onEdit: (id: string) => void;
+}) {
+  return (
+    <>
+      {values.map((v, i) => (
+        <span key={v.id}>
+          {i > 0 && <span className="text-muted"> · </span>}
+          <PhraseButton value={v} withLabel={withLabel} onEdit={onEdit} />
+        </span>
+      ))}
+    </>
+  );
+}
+
+function PhraseButton({
+  value: v,
+  withLabel,
+  onEdit,
 }: {
   value: Value;
-  patientId: string;
-  editing: boolean;
-  onEdit: () => void;
-  onDoneEditing: () => void;
-  planStyle?: boolean;
+  withLabel: boolean;
+  onEdit: (id: string) => void;
 }) {
-  if (editing) {
-    return (
-      <li className="ios-row px-4 py-2.5">
-        <form
-          action={updateObservation}
-          onSubmit={onDoneEditing}
-          className="flex items-center gap-2"
-        >
-          <input type="hidden" name="observation_id" value={v.id} />
-          <input type="hidden" name="patient_id" value={patientId} />
-          {!planStyle && <span className="shrink-0 text-[15px] text-muted">{v.label}</span>}
-          <input
-            name="value_text"
-            defaultValue={v.value_text ?? ""}
-            autoFocus
-            className="min-w-0 flex-1 rounded-md border border-line bg-background px-2 py-1 text-[17px] outline-none focus:border-accent"
-          />
-          <button className="shrink-0 text-[15px] font-medium text-accent">Save</button>
-        </form>
-        <p className="mt-1 text-[13px] text-muted">
-          Clearing it removes the value. The words it came from are kept.
-        </p>
-      </li>
-    );
-  }
-
   return (
-    <li className="ios-row">
-      <button
-        type="button"
-        onClick={onEdit}
-        className={
-          "flex w-full items-baseline gap-3 px-4 py-2.5 text-left active:bg-chip " +
-          (planStyle ? "" : "justify-between")
-        }
-      >
-        {planStyle ? (
-          <span className="min-w-0 flex-1 text-[17px]">
-            {v.value_text}
-            {v.needs_confirmation && !v.confirmed_at && (
-              <span className="ml-1.5 text-orange-500" aria-label="not confirmed">
-                ●
-              </span>
-            )}
-          </span>
-        ) : (
-          <>
-            <span className="shrink-0 text-[15px] text-muted">{v.label}</span>
-            <span className="min-w-0 flex-1 text-right text-[17px]">
-              {v.value_text}
-              {/* Amber dot rather than a word: the row is already two columns wide. */}
-              {v.needs_confirmation && !v.confirmed_at && (
-                <span className="ml-1.5 text-orange-500" aria-label="not confirmed">
-                  ●
-                </span>
-              )}
-            </span>
-          </>
-        )}
-      </button>
-    </li>
+    <button
+      type="button"
+      onClick={() => onEdit(v.id)}
+      className="text-left active:opacity-60"
+    >
+      {phrase(v, withLabel)}
+      {/* Amber dot: this value was never checked by a human after being heard. */}
+      {v.needs_confirmation && !v.confirmed_at && (
+        <span className="ml-1 text-orange-500" aria-label="not confirmed">
+          ●
+        </span>
+      )}
+    </button>
   );
 }
