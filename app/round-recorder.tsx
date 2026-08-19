@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MicIcon, StopIcon } from "./icons";
+import Mark from "./mark";
 import { enqueue } from "@/lib/outbox";
 
 type Status = "idle" | "starting" | "recording" | "working";
@@ -174,7 +175,20 @@ export default function RoundRecorder() {
             : "bg-card text-accent")
         }
       >
-        {status === "recording" ? <StopIcon className="h-[18px] w-[18px]" /> : <MicIcon className="h-[18px] w-[18px]" />}
+        {status === "recording" ? (
+          // The ping sits behind the square, at the same size, and swells out from under it.
+          <span className="relative inline-flex h-[18px] w-[18px] items-center justify-center">
+            <span
+              aria-hidden
+              className="wm-listen absolute inset-0 rounded-full bg-white/70"
+            />
+            <StopIcon className="relative h-[18px] w-[18px]" />
+          </span>
+        ) : status === "working" ? (
+          <Mark className="h-[18px] w-[18px]" spinning />
+        ) : (
+          <MicIcon className="h-[18px] w-[18px]" />
+        )}
         {label}
       </button>
 

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import Mark from "@/app/mark";
 
 /**
  * Sign-in is a 6-digit code sent by email, not a "click this link" email.
@@ -112,8 +113,7 @@ export default function LoginPage() {
       <header className="flex flex-col items-center text-center gap-3">
         {/* The real mark, large — the one thing on this screen that isn't a form control,
             so it's the one thing allowed to be a little bigger than it needs to be. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/mark.png" alt="" className="h-14 w-14" aria-hidden />
+        <Mark className="h-14 w-14" />
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">
             ward<span className="text-accent">mate</span>

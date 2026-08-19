@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MicIcon } from "@/app/icons";
+import Mark from "@/app/mark";
 import { useRouter } from "next/navigation";
 import { enqueue } from "@/lib/outbox";
 
@@ -192,10 +193,14 @@ export default function Recorder({
       >
         {recording ? (
           <span className="flex items-center justify-center gap-3">
-            <span
-              aria-hidden
-              className="h-3 w-3 rounded-full bg-white motion-safe:animate-pulse"
-            />
+            {/* The dot is the live one; the ring swelling out from under it is the listening. */}
+            <span className="relative inline-flex h-3 w-3 items-center justify-center">
+              <span
+                aria-hidden
+                className="wm-listen absolute inset-0 rounded-full bg-white/70"
+              />
+              <span aria-hidden className="relative h-3 w-3 rounded-full bg-white" />
+            </span>
             Tap to stop
             <span className="font-mono text-base tabular-nums opacity-90">
               {mm}:{ss}
@@ -204,7 +209,10 @@ export default function Recorder({
         ) : status === "starting" ? (
           "Starting…"
         ) : status === "working" ? (
-          "Working…"
+          <span className="flex items-center justify-center gap-2">
+            <Mark className="h-5 w-5" spinning />
+            Working…
+          </span>
         ) : (
           <>
             <MicIcon className="h-5 w-5" />

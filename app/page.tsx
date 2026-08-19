@@ -17,6 +17,7 @@ import PatientMenu from "./patients/patient-menu";
 import { signOut } from "./actions";
 import BottomBar from "./bottom-bar";
 import Wordmark from "./wordmark";
+import Mark from "./mark";
 
 export default async function Home() {
   // One round trip for the whole screen. See lib/ward-screen.ts — it was six.
@@ -95,8 +96,7 @@ export default async function Home() {
           <div className="ios-group flex flex-col items-center gap-3 px-4 py-10 text-center">
             {/* The ring, faint — the same mark on the home screen, quiet here rather than
                 an empty box with nothing to look at. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/mark.png" alt="" className="h-10 w-10 opacity-30" aria-hidden />
+            <Mark className="h-10 w-10 opacity-30" />
             <p className="text-[17px] text-muted">
               No patients on this ward yet.
               <br />

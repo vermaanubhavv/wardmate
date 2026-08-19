@@ -94,3 +94,69 @@ button {
 .ios-row + .ios-row {
   box-shadow: inset 0 0.5px 0 var(--line);
 }
+
+/* The mark, working.
+ *
+ * The mark already looks like a listening indicator standing still — an open ring with three
+ * dots inside it — so the busy state is the logo doing what it depicts rather than a borrowed
+ * spinner sitting next to it.
+ *
+ * The ring turns about the centre of the viewBox, not its own bounding box: the arc has a gap
+ * and the bell hangs outside it, so a fill-box origin would sit off-centre and the whole mark
+ * would wobble as it went round. */
+@keyframes wm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.wm-spin {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: wm-spin 1.5s linear infinite;
+}
+
+/* Each dot lifts and settles in turn, left to right — the delay is set per dot in mark.tsx.
+   It never reaches zero: three dots blinking fully out reads as something broken. */
+@keyframes wm-dot {
+  0%,
+  70%,
+  100% {
+    opacity: 0.22;
+  }
+  25% {
+    opacity: 1;
+  }
+}
+
+.wm-dot {
+  animation: wm-dot 1.35s ease-in-out infinite;
+}
+
+/* Recording: a ring swelling out of the button and fading, the shape a microphone picking
+   something up has meant on a phone for a decade. */
+@keyframes wm-listen {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  70%,
+  100% {
+    transform: scale(2.3);
+    opacity: 0;
+  }
+}
+
+.wm-listen {
+  animation: wm-listen 1.6s ease-out infinite;
+}
+
+/* Nothing here carries meaning that the words beside it do not also carry, so a resident who
+   has asked their phone to stop moving things loses nothing by it. */
+@media (prefers-reduced-motion: reduce) {
+  .wm-spin,
+  .wm-dot,
+  .wm-listen {
+    animation: none;
+  }
+}
