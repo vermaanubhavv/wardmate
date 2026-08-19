@@ -337,12 +337,29 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
       {(matched.length > 0 || extra.length > 0) && (
         <section className="px-4 pb-6">
-          <div className="flex items-baseline justify-between gap-3 mb-2">
-            <p className="ios-group-header">Where things stand</p>
-            {template && <p className="text-[13px] text-muted truncate">{template.name}</p>}
-          </div>
+          {/* Folded by default. This is the reference table — every value currently on record —
+              and it is the longest block on the page, sitting between the jobs at the top and
+              the round at the bottom, which are the two things a patient is actually opened
+              for. What is ACTIONABLE about it survives the fold: the count of things never
+              recorded stays on the summary line, in orange, so nothing is hidden that somebody
+              needs to act on. */}
+          <details className="[&[open]_.chev]:rotate-90">
+            <summary className="mb-2 flex cursor-pointer list-none items-baseline gap-2 active:opacity-60 [&::-webkit-details-marker]:hidden">
+              <span className="chev shrink-0 text-[11px] text-muted transition-transform">▶</span>
+              <span className="ios-group-header">Where things stand</span>
+              {missing.length > 0 && (
+                <span className="shrink-0 text-[13px] text-orange-700 tabular-nums">
+                  {missing.length} not recorded
+                </span>
+              )}
+              {template && (
+                <span className="ml-auto min-w-0 truncate text-[13px] text-muted">
+                  {template.name}
+                </span>
+              )}
+            </summary>
 
-          <ul className="ios-group divide-y divide-line">
+            <ul className="ios-group divide-y divide-line">
             {matched.map((m) => (
               <li
                 key={m.item.id}
@@ -364,12 +381,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
               </li>
             ))}
             {extra.map((o) => (
-              <li key={o.id} className="flex items-baseline justify-between gap-3 px-4 py-2.5">
-                <span className="text-[15px] text-muted">{o.label}</span>
-                <span className="text-sm text-right">{o.value_text}</span>
-              </li>
-            ))}
-          </ul>
+                <li key={o.id} className="flex items-baseline justify-between gap-3 px-4 py-2.5">
+                  <span className="text-[15px] text-muted">{o.label}</span>
+                  <span className="text-sm text-right">{o.value_text}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
         </section>
       )}
 

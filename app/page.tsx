@@ -53,7 +53,12 @@ export default async function Home() {
         {/* The unit switcher sits beside the name it switches away from, not buried among
             the capsules below — it acts on the title, so it reads as part of the title. */}
         <div className="flex items-center justify-between gap-3">
-          <h1 className="ios-large-title truncate">{ward.name}</h1>
+          <h1 className="ios-large-title min-w-0 truncate">
+            {ward.name}
+            <span className="ml-2 align-middle text-[15px] font-normal text-muted tabular-nums">
+              {patients.length}
+            </span>
+          </h1>
           <Link
             href="/unit"
             className="flex shrink-0 items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-[14px] font-medium text-accent active:opacity-70"
@@ -89,10 +94,6 @@ export default async function Home() {
       {/* Bottom padding clears the floating bar so the last patient stays readable. The bar is
           a row of circles now rather than three stacked buttons, so this is much less. */}
       <div className="flex-1 px-4 pb-32">
-        <p className="ios-group-header mb-2 px-4">
-          Patients · {patients.length}
-        </p>
-
         {patients.length === 0 ? (
           <div className="ios-group flex flex-col items-center gap-3 px-4 py-10 text-center">
             {/* The ring, faint — the same mark on the home screen, quiet here rather than
@@ -205,17 +206,27 @@ function PatientRow({
             {patient.primary_diagnosis || "No diagnosis recorded"}
           </span>
 
-          {(management || patient.unconfirmed_count > 0 || patient.open_task_count > 0) && (
-            <span className="mt-1.5 flex flex-wrap gap-1.5">
-              {management && <Badge>{management}</Badge>}
-              {patient.open_task_count > 0 && (
-                <Badge>{patient.open_task_count} to do</Badge>
-              )}
-              {patient.unconfirmed_count > 0 && (
-                <Badge tone="warn">{patient.unconfirmed_count} to confirm</Badge>
-              )}
-            </span>
-          )}
+          {/* ONE chip, not three. Twenty patients carrying "PREOP", "3 to do" and "2 to confirm"
+              put eighty chips on one screen, and a row that shouts three things shouts none of
+              them. Only the most pressing shows: something unchecked outranks something still
+              to do, which outranks a management label that is not going to change today. The
+              other two are on the patient's own page, one tap away. */}
+          {(() => {
+            const chip =
+              patient.unconfirmed_count > 0
+                ? { text: `${patient.unconfirmed_count} to confirm`, tone: "warn" as const }
+                : patient.open_task_count > 0
+                  ? { text: `${patient.open_task_count} to do`, tone: "plain" as const }
+                  : management
+                    ? { text: management, tone: "plain" as const }
+                    : null;
+
+            return chip && (
+              <span className="mt-1.5 block">
+                <Badge tone={chip.tone}>{chip.text}</Badge>
+              </span>
+            );
+          })()}
         </span>
       </Link>
 

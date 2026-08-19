@@ -272,9 +272,6 @@ export default function EntryCard({
                 Cancel
               </button>
             </div>
-            <p className="mt-1 text-[13px] text-muted">
-              Clearing it removes the value. The words it came from are kept.
-            </p>
 
             {/* Only once there is a correction to teach. Before that the button could do
                 nothing, so it was one more control to read past mid-round.
