@@ -29,7 +29,7 @@ export default function PatientForm({
   const today = new Date();
   const localToday = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
-  const [operated, setOperated] = useState(false);
+  const [management, setManagement] = useState("");
 
   // Controlled so speech can fill them. Each starts empty and is only ever written to by a
   // field the resident actually spoke — see fillFromSpeech.
@@ -142,25 +142,6 @@ export default function PatientForm({
         </datalist>
       </Field>
 
-      <Field
-        label="Operation"
-        hint="Type anything. Picking one of the suggestions also brings its checklist of what to mention."
-      >
-        <input
-          name="procedure"
-          list="operation-suggestions"
-          value={fields.procedure}
-          onChange={(e) => set("procedure")(e.target.value)}
-          autoCapitalize="none"
-          className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
-        />
-        <datalist id="operation-suggestions">
-          {templateChoices.map((t) => (
-            <option key={`${t.family}|${t.variant ?? ""}`} value={t.label} />
-          ))}
-        </datalist>
-      </Field>
-
       <Field label="Admitted on">
         <input
           type="date"
@@ -172,44 +153,76 @@ export default function PatientForm({
         />
       </Field>
 
-      <label className="flex items-center gap-3 text-base">
-        <input
-          type="checkbox"
-          checked={operated}
-          onChange={(e) => setOperated(e.target.checked)}
-          className="h-5 w-5 accent-accent"
-        />
-        <span>Has been operated</span>
-      </label>
+      {/* Management leads, and decides what else is worth asking. A conservative or workup
+          patient has no operation to name and no date to give, so neither is put in front of
+          somebody admitting at 3am. "Post-op" is offered here but never stored as management —
+          see readManagement in ../actions.ts; choosing it records the surgery date, which is
+          what the POD count and the POST OP badge are both derived from. */}
+      <Field label="Management" hint="Leave blank until the unit has decided">
+        <select
+          name="management"
+          value={management}
+          onChange={(e) => setManagement(e.target.value)}
+          className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+        >
+          <option value="">Not stated</option>
+          {MANAGEMENT_CHOICES.map((c) => (
+            <option key={c.value} value={c.value}>
+              {c.label}
+            </option>
+          ))}
+          <option value="postop">Post-op</option>
+        </select>
+      </Field>
 
-      {operated ? (
-        <Field label="Date of surgery" hint="The day count on the card is taken from this">
-          <input
-            type="date"
-            name="surgery_date"
-            required
-            defaultValue={localToday}
-            max={localToday}
-            className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
-          />
-        </Field>
-      ) : (
-        // Only asked for patients not yet operated. Once there is a date of surgery the
-        // patient is post-op, and that is taken from the date rather than chosen here.
-        <Field label="Management" hint="Leave blank until the unit has decided">
-          <select
-            name="management"
-            defaultValue=""
-            className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+      {(management === "preop" || management === "postop") && (
+        <>
+          <Field
+            label="Operation"
+            hint="Type anything. Picking one of the suggestions also brings its checklist of what to mention."
           >
-            <option value="">Not stated</option>
-            {MANAGEMENT_CHOICES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-        </Field>
+            <input
+              name="procedure"
+              list="operation-suggestions"
+              value={fields.procedure}
+              onChange={(e) => set("procedure")(e.target.value)}
+              autoCapitalize="none"
+              className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+            />
+            <datalist id="operation-suggestions">
+              {templateChoices.map((t) => (
+                <option key={`${t.family}|${t.variant ?? ""}`} value={t.label} />
+              ))}
+            </datalist>
+          </Field>
+
+          <Field
+            label={management === "postop" ? "Date of operation" : "Planned date of operation"}
+            hint={
+              management === "postop"
+                ? "The day count on the card is taken from this"
+                : "Left blank if the date is not fixed yet"
+            }
+          >
+            <input
+              type="date"
+              name="operation_date"
+              required={management === "postop"}
+              // An operation that has happened cannot be in the future. A planned one is
+              // deliberately unbounded: a postponed list still needs its old date recorded.
+              max={management === "postop" ? localToday : undefined}
+              defaultValue={management === "postop" ? localToday : ""}
+              className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+            />
+          </Field>
+        </>
+      )}
+
+      {/* Nothing spoken is lost because a dropdown above it happens to be unset. The visible
+          Operation box only appears for pre-op and post-op, but if the resident named an
+          operation out loud it still goes with the patient. */}
+      {management !== "preop" && management !== "postop" && fields.procedure && (
+        <input type="hidden" name="procedure" value={fields.procedure} />
       )}
 
       {state.error && (

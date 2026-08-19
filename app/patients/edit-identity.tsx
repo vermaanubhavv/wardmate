@@ -193,25 +193,10 @@ export default function EditIdentity({
             </datalist>
           </label>
 
-          <label className="flex flex-col gap-2">
-            <span className="text-[15px] text-muted">Operation</span>
-            <input
-              name="procedure"
-              list="operation-suggestions"
-              defaultValue={currentProcedure(patient, templateChoices)}
-              autoCapitalize="none"
-              className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
-            />
-            <datalist id="operation-suggestions">
-              {templateChoices.map((t) => (
-                <option key={`${t.family}|${t.variant ?? ""}`} value={t.label} />
-              ))}
-            </datalist>
-            <span className="text-[13px] text-muted">
-              Type anything. Picking one of the suggestions also brings its checklist.
-            </span>
-          </label>
-
+          {/* Management follows the diagnosis and decides what else is worth asking, the same
+              order the add-patient screen uses. "Post-op" is offered but never stored as
+              management — see readManagement in ./actions.ts; choosing it records the surgery
+              date, which is what the POD count and the POST OP badge are derived from. */}
           <label className="flex flex-col gap-2">
             <span className="text-[15px] text-muted">Management</span>
             <select
@@ -230,30 +215,60 @@ export default function EditIdentity({
             </select>
           </label>
 
-          {/* Only pre-op and post-op say anything about an operation date — conservative and
-              workup patients have no operation to date. */}
-          {(management === "preop" || management === "postop") && (
-            <label className="flex flex-col gap-2">
-              <span className="text-[15px] text-muted">
-                {management === "postop" ? "Date of operation" : "Planned date of operation"}
-              </span>
-              <input
-                type="date"
-                name="operation_date"
-                required={management === "postop"}
-                defaultValue={
-                  management === "postop"
-                    ? (patient.surgery_date ?? "")
-                    : (patient.planned_surgery_date ?? "")
-                }
-                className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
-              />
-              {management === "postop" && (
+          {/* A conservative or workup patient has no operation to name and no date to give. */}
+          {management === "preop" || management === "postop" ? (
+            <>
+              <label className="flex flex-col gap-2">
+                <span className="text-[15px] text-muted">Operation</span>
+                <input
+                  name="procedure"
+                  list="operation-suggestions"
+                  defaultValue={currentProcedure(patient, templateChoices)}
+                  autoCapitalize="none"
+                  className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+                />
+                <datalist id="operation-suggestions">
+                  {templateChoices.map((t) => (
+                    <option key={`${t.family}|${t.variant ?? ""}`} value={t.label} />
+                  ))}
+                </datalist>
                 <span className="text-[13px] text-muted">
-                  Sets the post-op day count shown on the ward list.
+                  Type anything. Picking one of the suggestions also brings its checklist.
                 </span>
-              )}
-            </label>
+              </label>
+
+              <label className="flex flex-col gap-2">
+                <span className="text-[15px] text-muted">
+                  {management === "postop" ? "Date of operation" : "Planned date of operation"}
+                </span>
+                <input
+                  type="date"
+                  name="operation_date"
+                  required={management === "postop"}
+                  defaultValue={
+                    management === "postop"
+                      ? (patient.surgery_date ?? "")
+                      : (patient.planned_surgery_date ?? "")
+                  }
+                  className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+                />
+                {management === "postop" && (
+                  <span className="text-[13px] text-muted">
+                    Sets the post-op day count shown on the ward list.
+                  </span>
+                )}
+              </label>
+            </>
+          ) : (
+            /* THIS IS LOAD-BEARING. The save always writes the operation from this form, so
+               without it, switching an operated patient to "conservative" would silently wipe
+               an operation somebody recorded on a round. Hidden, the box still carries what is
+               already stored, so only a deliberate edit of the visible field changes it. */
+            <input
+              type="hidden"
+              name="procedure"
+              value={currentProcedure(patient, templateChoices)}
+            />
           )}
 
           {state.error && (

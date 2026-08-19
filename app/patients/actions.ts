@@ -25,18 +25,35 @@ export async function addPatient(
   const sexRaw = String(formData.get("sex") ?? "").trim();
   const diagnosis = String(formData.get("primary_diagnosis") ?? "").trim();
   const admittedOn = String(formData.get("admitted_on") ?? "");
-  const surgeryDate = String(formData.get("surgery_date") ?? "").trim();
+  const managementRaw = String(formData.get("management") ?? "");
+  const operationDate = String(formData.get("operation_date") ?? "").trim();
 
   if (!wardId) return { error: "No ward selected." };
   if (!bed) return { error: "Bed is required." };
   if (!name) return { error: "Name is required." };
   if (!admittedOn) return { error: "Admission date is required." };
+  if (managementRaw === "postop" && !operationDate) {
+    return { error: "Date of operation is required for post-op." };
+  }
 
   // A surgery date before admission is almost always a typo in one of the two fields, and
-  // it would produce a post-op day larger than the admission day on the card.
-  if (surgeryDate && surgeryDate < admittedOn) {
-    return { error: "Surgery date is before the admission date. Check both." };
+  // it would produce a post-op day larger than the admission day on the card. Only checked
+  // for an operation that has actually happened — a planned date is ahead of the admission
+  // by definition, and a postponed list still needs its original date recorded.
+  if (managementRaw === "postop" && operationDate < admittedOn) {
+    return { error: "Date of operation is before the admission date. Check both." };
   }
+
+  // Post-op is never stored as management — see readManagement. Choosing it records the
+  // surgery date instead, which is the single fact the POD count and the POST OP badge are
+  // both derived from. Pre-op writes the planned date, which carries no such meaning: a
+  // future date in surgery_date would make a patient post-op before they were operated on.
+  const dates =
+    managementRaw === "postop"
+      ? { surgery_date: operationDate, planned_surgery_date: null }
+      : managementRaw === "preop"
+        ? { surgery_date: null, planned_surgery_date: operationDate || null }
+        : { surgery_date: null, planned_surgery_date: null };
 
   const identity = readIdentity(ageRaw, sexRaw);
   if ("error" in identity) return identity;
@@ -48,10 +65,10 @@ export async function addPatient(
     display_name: name,
     age_years: age,
     sex,
-    management: readManagement(String(formData.get("management") ?? "")),
+    management: readManagement(managementRaw),
     primary_diagnosis: diagnosis || null,
     admitted_on: admittedOn,
-    surgery_date: surgeryDate || null,
+    ...dates,
     ...resolveProcedure(String(formData.get("procedure") ?? ""), await listTemplateChoices()),
     created_by: user.id,
   });
@@ -259,15 +276,21 @@ export async function updatePatientIdentity(
     await listTemplateChoices()
   );
 
-  // Only postop and preop say anything about the operation dates at all. Conservative, workup
-  // and "not stated" leave both columns exactly as they were — an edit made to fix a typo in
-  // the name must never silently erase a surgery date recorded on a different round.
+  // The dropdown is the authority on which dates a patient may hold, so every branch states
+  // both columns rather than leaving one behind. Choosing conservative for someone carrying a
+  // surgery date has to clear it: managementLabel() reads POST OP off that date alone, so a
+  // date left in place would go on showing POST OP next to a resident's explicit "conservative"
+  // — and reopening the dialog would show Post-op again, as if the change had been refused.
+  //
+  // This is not the app inventing or discarding anything on its own. The select is filled from
+  // what is already stored, so it can only reach these branches by somebody deliberately
+  // choosing them, and re-entering the date puts it straight back.
   const dates =
     managementRaw === "postop"
       ? { surgery_date: operationDate, planned_surgery_date: null }
       : managementRaw === "preop"
-        ? { planned_surgery_date: operationDate || null }
-        : {};
+        ? { surgery_date: null, planned_surgery_date: operationDate || null }
+        : { surgery_date: null, planned_surgery_date: null };
 
   // Row security decides whether this is allowed: the update reaches only a patient on a ward
   // this doctor belongs to, so no check here is load-bearing.
