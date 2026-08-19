@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getWardScreen } from "@/lib/ward-screen";
-import { dayLabel, managementLabel, patientName, type WardPatient } from "@/lib/patients";
+import { dayLabel, patientName, type WardPatient } from "@/lib/patients";
 import { procedureFor } from "@/lib/templates";
 import RegisterButton from "./register-button";
 import {
@@ -173,7 +173,6 @@ function PatientRow({
   procedures: Map<string, string>;
   templateChoices: { family: string; variant: string | null; label: string }[];
 }) {
-  const management = managementLabel(patient);
   // Named only for patients who have actually been operated on, and only from the operation
   // recorded against them. A patient still awaiting surgery counts from admission and has no
   // procedure to show — never one guessed from the diagnosis.
@@ -212,14 +211,16 @@ function PatientRow({
               to do, which outranks a management label that is not going to change today. The
               other two are on the patient's own page, one tap away. */}
           {(() => {
+            // Management is deliberately NOT here. "POST OP" only repeats the POD count already
+            // on the line above, and a management label is a standing fact about the patient
+            // rather than something the ward list needs to shout — it lives on their own page.
+            // What is left is only ever a number of things waiting to be done.
             const chip =
               patient.unconfirmed_count > 0
                 ? { text: `${patient.unconfirmed_count} to confirm`, tone: "warn" as const }
                 : patient.open_task_count > 0
                   ? { text: `${patient.open_task_count} to do`, tone: "plain" as const }
-                  : management
-                    ? { text: management, tone: "plain" as const }
-                    : null;
+                  : null;
 
             return chip && (
               <span className="mt-1.5 block">
