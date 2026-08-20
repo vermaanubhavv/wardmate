@@ -83,7 +83,7 @@ export default async function Home({
         {/* The unit switcher sits beside the name it switches away from, not buried among
             the capsules below — it acts on the title, so it reads as part of the title. */}
         <div className="mt-0.5 flex items-center justify-between gap-3">
-          <h1 className="ios-large-title min-w-0 truncate">
+          <h1 className="ios-large-title min-w-0 truncate text-[28px]">
             {heading}
             <span className="ml-2 align-middle text-[15px] font-normal text-muted tabular-nums">
               {patients.length}
