@@ -44,7 +44,7 @@ export default async function RoundReviewPage({
         <p className="mt-3 text-[15px] text-muted">
           This dictation was {dictation.status === "applied" ? "applied" : "discarded"}.
         </p>
-        <Link href="/" className="mt-6 inline-block text-[17px] text-accent">
+        <Link href="/ward" className="mt-6 inline-block text-[17px] text-accent">
           ‹ Ward
         </Link>
       </main>
@@ -54,7 +54,7 @@ export default async function RoundReviewPage({
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
       <header className="px-6 pt-8 pb-4">
-        <Link href="/" className="text-[17px] text-accent">
+        <Link href="/ward" className="text-[17px] text-accent">
           ‹ Ward
         </Link>
         <h1 className="mt-3 ios-large-title">Check before saving</h1>

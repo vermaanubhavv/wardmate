@@ -89,9 +89,10 @@ export async function applyRound(formData: FormData) {
     .eq("id", dictationId);
 
   revalidatePath("/");
+  revalidatePath("/ward");
   revalidatePath("/todo");
   revalidatePath("/handover");
-  redirect("/");
+  redirect("/ward");
 }
 
 /**
@@ -157,5 +158,5 @@ export async function discardRound(formData: FormData) {
   const supabase = await createClient();
   await supabase.from("round_dictations").update({ status: "discarded" }).eq("id", dictationId);
 
-  redirect("/");
+  redirect("/ward");
 }

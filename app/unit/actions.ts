@@ -30,8 +30,9 @@ export async function joinWard(_prev: JoinState, formData: FormData): Promise<Jo
   if (!data) return { error: "No unit has that code. Check it and try again." };
 
   revalidatePath("/");
+  revalidatePath("/ward");
   revalidatePath("/unit");
-  redirect("/");
+  redirect("/ward");
 }
 
 /**
@@ -50,6 +51,7 @@ export async function renameWard(formData: FormData) {
   await supabase.from("wards").update({ name: name.slice(0, 60) }).eq("id", wardId);
 
   revalidatePath("/");
+  revalidatePath("/ward");
   revalidatePath("/unit");
 }
 
@@ -74,6 +76,7 @@ export async function saveLetterhead(formData: FormData) {
 
   revalidatePath("/unit");
   revalidatePath("/");
+  revalidatePath("/ward");
 }
 
 /** Switch which unit the app is showing. */
@@ -92,8 +95,9 @@ export async function switchWard(formData: FormData) {
   await supabase.from("profiles").update({ current_ward_id: wardId }).eq("id", user.id);
 
   revalidatePath("/");
+  revalidatePath("/ward");
   revalidatePath("/unit");
-  redirect("/");
+  redirect("/ward");
 }
 
 /**
@@ -124,5 +128,44 @@ export async function leaveWard(formData: FormData) {
   await supabase.from("profiles").update({ current_ward_id: null }).eq("id", user.id);
 
   revalidatePath("/");
-  redirect("/");
+  revalidatePath("/ward");
+  redirect("/ward");
+}
+
+/**
+ * The doctor's own details, for the landing page.
+ *
+ * profiles has carried display_name since the first schema and nothing has ever written to it —
+ * handle_new_user inserts the id alone. This is where all three get set. Row security already
+ * restricts profiles to the caller's own row (profiles_self_update), so the update needs no
+ * check of its own: it can only ever reach the row belonging to whoever called it.
+ */
+export async function saveProfile(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const name = String(formData.get("display_name") ?? "").trim();
+  const designationRaw = String(formData.get("designation") ?? "").trim();
+  const department = String(formData.get("department") ?? "").trim();
+
+  // Anything not on the ladder is stored as nothing rather than as itself: the column has a
+  // check constraint, and an insert it refuses would surface as a database error at a bedside.
+  const designation = ["JR-1", "JR-2", "JR-3", "SR", "AP"].includes(designationRaw)
+    ? designationRaw
+    : null;
+
+  await supabase
+    .from("profiles")
+    .update({
+      display_name: name || null,
+      designation,
+      department: department || null,
+    })
+    .eq("id", user.id);
+
+  revalidatePath("/");
+  revalidatePath("/unit");
 }

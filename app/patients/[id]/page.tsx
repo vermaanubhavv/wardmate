@@ -50,7 +50,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const { data: patient } = await supabase
     .from("current_patients")
     .select(
-      "id, ward_id, display_name, age_years, sex, bed, primary_diagnosis, admitted_on, surgery_date, planned_surgery_date, post_op_day, admission_day, status, template_family, template_variant, procedure_text, management"
+      "id, ward_id, display_name, age_years, sex, bed, primary_diagnosis, admitted_on, surgery_date, planned_surgery_date, post_op_day, admission_day, status, template_family, template_variant, procedure_text, management, location"
     )
     .eq("id", id)
     .maybeSingle();
@@ -152,7 +152,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       {/* A real navigation bar: back on the left, where the eye and thumb both go for it, and
           the walk to the next bed on the right. Both at iOS's size. */}
       <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-line/60 bg-background/80 px-2 py-2.5 backdrop-blur-xl">
-        <Link href="/" className="flex items-center text-[17px] text-accent active:opacity-60">
+        <Link href="/ward" className="flex items-center text-[17px] text-accent active:opacity-60">
           <ChevronIcon className="h-[18px] w-[18px] rotate-180" />
           Ward
         </Link>

@@ -17,6 +17,7 @@ export type WardPatient = {
   template_variant: string | null;
   procedure_text: string | null;
   management: string | null;
+  location: string;
   unconfirmed_count: number;
   open_task_count: number;
   /** Recordings and photographs on this patient's record. */
@@ -42,6 +43,17 @@ const IDENTIFIER_LABELS =
 export function isIdentifierLabel(label: string | null | undefined): boolean {
   return IDENTIFIER_LABELS.test((label ?? "").trim());
 }
+
+/** Where the patient physically is. Stored, never read out of the bed label — see
+ *  supabase/patches/0023_home_screen.sql for why a guess was not good enough. */
+export const LOCATION_CHOICES = [
+  { value: "ward", label: "Ward" },
+  { value: "icu", label: "ICU" },
+  { value: "emergency", label: "Emergency" },
+] as const;
+
+/** What a resident is. The ladder as an Indian surgical unit writes it. */
+export const DESIGNATION_CHOICES = ["JR-1", "JR-2", "JR-3", "SR", "AP"] as const;
 
 export const MANAGEMENT_CHOICES = [
   { value: "preop", label: "Pre-op" },

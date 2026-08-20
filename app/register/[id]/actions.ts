@@ -106,7 +106,8 @@ export async function applyRegister(formData: FormData) {
     .eq("id", readId);
 
   revalidatePath("/");
-  redirect("/");
+  revalidatePath("/ward");
+  redirect("/ward");
 }
 
 /**
@@ -153,5 +154,5 @@ export async function discardRegister(formData: FormData) {
   const supabase = await createClient();
   await supabase.from("register_reads").update({ status: "discarded" }).eq("id", readId);
 
-  redirect("/");
+  redirect("/ward");
 }

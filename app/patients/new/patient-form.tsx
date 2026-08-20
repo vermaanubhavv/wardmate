@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { addPatient, type AddPatientState } from "../actions";
-import { MANAGEMENT_CHOICES } from "@/lib/patients";
+import { LOCATION_CHOICES, MANAGEMENT_CHOICES } from "@/lib/patients";
 import SpeakPatient from "./speak-patient";
 import type { SpokenPatient } from "@/lib/read-new-patient";
 
@@ -70,17 +70,39 @@ export default function PatientForm({
       {/* Above the boxes it fills, so the order on screen is the order of the work. */}
       <SpeakPatient onParsed={fillFromSpeech} />
 
-      <Field label="Bed" hint="Include the location, e.g. SW-12 or ICU-3">
-        <input
-          name="bed"
-          required
-          autoFocus
-          autoCapitalize="characters"
-          value={fields.bed}
-          onChange={(e) => set("bed")(e.target.value)}
-          className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
-        />
-      </Field>
+      {/* Bed and location together: the bed label often already says ICU, but the label is
+          free text and the landing page counts real rows, so where a patient is gets asked
+          rather than read out of how somebody happened to write their bed. */}
+      <div className="flex gap-3">
+        <div className="flex-[3]">
+          <Field label="Bed" hint="e.g. SW-12">
+            <input
+              name="bed"
+              required
+              autoFocus
+              autoCapitalize="characters"
+              value={fields.bed}
+              onChange={(e) => set("bed")(e.target.value)}
+              className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+            />
+          </Field>
+        </div>
+        <div className="flex-[2]">
+          <Field label="Location">
+            <select
+              name="location"
+              defaultValue="ward"
+              className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+            >
+              {LOCATION_CHOICES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      </div>
 
       <Field label="Name">
         <input
@@ -233,7 +255,7 @@ export default function PatientForm({
 
       <div className="flex gap-3 pt-2">
         <Link
-          href="/"
+          href="/ward"
           className="flex-1 rounded-[10px] border border-line px-4 py-4 text-center text-base text-muted"
         >
           Cancel

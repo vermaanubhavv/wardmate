@@ -11,6 +11,7 @@ type Patient = {
   age_years: number | null;
   sex: string | null;
   primary_diagnosis: string | null;
+  location: string;
   surgery_date: string | null;
   planned_surgery_date: string | null;
   management: string | null;

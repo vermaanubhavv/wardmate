@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { updatePatientIdentity, type EditPatientState } from "./actions";
-import { COMMON_DIAGNOSES, MANAGEMENT_CHOICES } from "@/lib/patients";
+import { COMMON_DIAGNOSES, LOCATION_CHOICES, MANAGEMENT_CHOICES } from "@/lib/patients";
 
 type Patient = {
   id: string;
@@ -11,6 +11,7 @@ type Patient = {
   age_years: number | null;
   sex: string | null;
   primary_diagnosis: string | null;
+  location: string;
   surgery_date: string | null;
   planned_surgery_date: string | null;
   management: string | null;
@@ -144,9 +145,22 @@ export default function EditIdentity({
               className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
             />
             {/* Moving a bed reorders the whole ward list, since the list walks in bed order. */}
-            <span className="text-[13px] text-muted">
-              Include the location, e.g. SW-12 or ICU-3
-            </span>
+            <span className="text-[13px] text-muted">e.g. SW-12</span>
+          </label>
+
+          <label className="flex flex-col gap-2">
+            <span className="text-[15px] text-muted">Location</span>
+            <select
+              name="location"
+              defaultValue={patient.location ?? "ward"}
+              className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+            >
+              {LOCATION_CHOICES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
           </label>
 
           <div className="flex gap-3">

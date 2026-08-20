@@ -26,6 +26,7 @@ export async function addPatient(
   const diagnosis = String(formData.get("primary_diagnosis") ?? "").trim();
   const admittedOn = String(formData.get("admitted_on") ?? "");
   const managementRaw = String(formData.get("management") ?? "");
+  const location = readLocation(String(formData.get("location") ?? ""));
   const operationDate = String(formData.get("operation_date") ?? "").trim();
 
   if (!wardId) return { error: "No ward selected." };
@@ -66,6 +67,7 @@ export async function addPatient(
     age_years: age,
     sex,
     management: readManagement(managementRaw),
+    location,
     primary_diagnosis: diagnosis || null,
     admitted_on: admittedOn,
     ...dates,
@@ -76,7 +78,8 @@ export async function addPatient(
   if (error) return { error: error.message };
 
   revalidatePath("/");
-  redirect("/");
+  revalidatePath("/ward");
+  redirect("/ward");
 }
 
 /**
@@ -102,6 +105,12 @@ function readIdentity(
  * Post-op is deliberately not accepted here. It is derived from the surgery date, so storing
  * it would let the badge disagree with the day count beside it.
  */
+/** Anything unrecognised becomes 'ward' — the column's own default, and the honest answer for
+ *  a patient nobody has said otherwise about. */
+function readLocation(raw: string): string {
+  return ["ward", "icu", "emergency"].includes(raw) ? raw : "ward";
+}
+
 function readManagement(raw: string): string | null {
   return ["preop", "conservative", "workup"].includes(raw) ? raw : null;
 }
@@ -131,9 +140,10 @@ export async function removePatient(formData: FormData) {
     .eq("id", id);
 
   revalidatePath("/");
+  revalidatePath("/ward");
   revalidatePath("/todo");
   revalidatePath("/handover");
-  redirect("/");
+  redirect("/ward");
 }
 
 /** Undo a removal: back onto the active ward list, exactly as they were. */
@@ -153,6 +163,7 @@ export async function restorePatient(formData: FormData) {
     .eq("id", id);
 
   revalidatePath("/");
+  revalidatePath("/ward");
   revalidatePath("/removed");
   revalidatePath("/todo");
   revalidatePath("/handover");
@@ -191,6 +202,7 @@ export async function deletePatientForever(formData: FormData) {
     .select("id");
 
   revalidatePath("/");
+  revalidatePath("/ward");
   revalidatePath("/removed");
 
   if (error) redirect(`/removed?failed=${encodeURIComponent(error.message)}`);
@@ -234,6 +246,7 @@ export async function deletePatientFromWard(formData: FormData) {
     .select("id");
 
   revalidatePath("/");
+  revalidatePath("/ward");
   revalidatePath("/removed");
   revalidatePath("/todo");
   revalidatePath("/handover");
@@ -245,7 +258,7 @@ export async function deletePatientFromWard(formData: FormData) {
   if (error) redirect(`/removed?failed=${encodeURIComponent(error.message)}`);
   if (!deleted || deleted.length === 0) redirect("/removed?failed=refused");
 
-  redirect("/");
+  redirect("/ward");
 }
 
 export type EditPatientState = { error: string | null; ok?: boolean };
@@ -284,6 +297,7 @@ export async function updatePatientIdentity(
   const diagnosis = String(formData.get("primary_diagnosis") ?? "").trim();
   const managementRaw = String(formData.get("management") ?? "");
   const operationDate = String(formData.get("operation_date") ?? "").trim();
+  const location = readLocation(String(formData.get("location") ?? ""));
 
   if (!id) return { error: "No patient." };
   if (!name) return { error: "Name cannot be empty." };
@@ -328,6 +342,7 @@ export async function updatePatientIdentity(
       age_years: identity.age,
       sex: identity.sex,
       primary_diagnosis: diagnosis || null,
+      location,
       management: readManagement(managementRaw),
       ...dates,
       ...procedure,
@@ -337,6 +352,7 @@ export async function updatePatientIdentity(
   if (error) return { error: error.message };
 
   revalidatePath("/");
+  revalidatePath("/ward");
   revalidatePath("/handover");
   revalidatePath(`/patients/${id}`);
   return { error: null, ok: true };

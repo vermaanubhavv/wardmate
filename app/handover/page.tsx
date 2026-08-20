@@ -25,7 +25,7 @@ export default async function HandoverPage() {
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
       <header className="px-6 pt-8 pb-4">
-        <Link href="/" className="text-[17px] text-accent">
+        <Link href="/ward" className="text-[17px] text-accent">
           ‹ Ward
         </Link>
         <h1 className="mt-3 ios-large-title">{ward.name} — ward round</h1>

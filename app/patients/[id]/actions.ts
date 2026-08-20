@@ -166,6 +166,7 @@ function revalidateEverywhere(patientId: string) {
   revalidatePath("/todo");
   revalidatePath("/handover");
   revalidatePath("/");
+  revalidatePath("/ward");
 }
 
 /**
@@ -266,6 +267,7 @@ async function confirmIds(ids: string[], patientId: string) {
   revalidatePath("/todo");
   revalidatePath("/handover");
   revalidatePath("/");
+  revalidatePath("/ward");
 }
 
 /**
@@ -298,6 +300,7 @@ export async function cycleUrgency(formData: FormData) {
   revalidatePath(`/patients/${patientId}`);
   revalidatePath("/todo");
   revalidatePath("/");
+  revalidatePath("/ward");
 }
 
 /** Tick a job off. The plan itself is kept — only its done state changes. */
@@ -333,4 +336,5 @@ async function setTaskDone(formData: FormData, done: boolean) {
   revalidatePath(`/patients/${patientId}`);
   revalidatePath("/todo");
   revalidatePath("/");
+  revalidatePath("/ward");
 }

@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentWard, getMyWards } from "@/lib/ward";
 import CodeBox from "./code-box";
 import JoinForm from "./join-form";
-import { switchWard, leaveWard, renameWard, saveLetterhead } from "./actions";
+import { switchWard, leaveWard, renameWard, saveLetterhead, saveProfile } from "./actions";
+import { DESIGNATION_CHOICES } from "@/lib/patients";
 
 /**
  * The unit: who is on it, how to join it, and which one the app is showing.
@@ -31,14 +32,22 @@ export default async function UnitPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: members }, myWards] = await Promise.all([
+  const [{ data: members }, myWards, { data: me }] = await Promise.all([
     supabase
       .from("ward_members")
       .select("user_id, role, added_at, profiles(display_name)")
       .eq("ward_id", ward.id)
       .order("added_at"),
     getMyWards(),
+    // Row security restricts profiles to the caller's own row, so this needs no where clause.
+    supabase.from("profiles").select("display_name, designation, department").maybeSingle(),
   ]);
+
+  const profile = (me ?? {}) as {
+    display_name?: string | null;
+    designation?: string | null;
+    department?: string | null;
+  };
 
   const roster = (members ?? []) as unknown as {
     user_id: string;
@@ -52,7 +61,7 @@ export default async function UnitPage() {
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
       <header className="px-6 pt-8 pb-4">
-        <Link href="/" className="text-[17px] text-accent">
+        <Link href="/ward" className="text-[17px] text-accent">
           ‹ Ward
         </Link>
         <h1 className="mt-3 ios-large-title">{ward.name}</h1>
@@ -60,6 +69,55 @@ export default async function UnitPage() {
           {roster.length} {roster.length === 1 ? "person" : "people"} on this unit
         </p>
       </header>
+
+      {/* First, because it is the only section on this screen about the person reading it.
+          What is set here is what the landing page greets you with. */}
+      <section className="px-6 pb-6">
+        <p className="mb-2 text-[15px] text-muted">You</p>
+        <form action={saveProfile} className="ios-group flex flex-col gap-3 p-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[13px] text-muted">Name</span>
+            <input
+              name="display_name"
+              defaultValue={profile.display_name ?? ""}
+              autoCapitalize="words"
+              placeholder="As your unit says it"
+              className="w-full rounded-[10px] border border-line bg-card px-3 py-2.5 text-[17px] outline-none focus:border-accent"
+            />
+          </label>
+
+          <div className="flex gap-3">
+            <label className="flex flex-1 flex-col gap-1.5">
+              <span className="text-[13px] text-muted">Designation</span>
+              <select
+                name="designation"
+                defaultValue={profile.designation ?? ""}
+                className="w-full rounded-[10px] border border-line bg-card px-3 py-2.5 text-[17px] outline-none focus:border-accent"
+              >
+                <option value="">—</option>
+                {DESIGNATION_CHOICES.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-[2] flex-col gap-1.5">
+              <span className="text-[13px] text-muted">Department</span>
+              <input
+                name="department"
+                defaultValue={profile.department ?? ""}
+                placeholder="General Surgery"
+                className="w-full rounded-[10px] border border-line bg-card px-3 py-2.5 text-[17px] outline-none focus:border-accent"
+              />
+            </label>
+          </div>
+
+          <button className="rounded-[10px] bg-accent px-4 py-2.5 text-[15px] font-semibold text-accent-ink">
+            Save
+          </button>
+        </form>
+      </section>
 
       <section className="px-6 pb-6">
         <p className="mb-2 text-[15px] text-muted">Code for this unit</p>
