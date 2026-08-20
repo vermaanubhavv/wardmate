@@ -1,22 +1,25 @@
 /**
- * The WardMate mark, as vector — the ring, its bell, and the three dots.
+ * The WardMate mark.
  *
- * WHY THIS IS NOT THE DESIGNER'S FILE. The supplied logo SVGs turned out to carry the mark as
- * an embedded raster image; only the "wardmate" lettering in them is really vector. A bitmap
- * cannot have its ring turned independently of its dots, so animating it was impossible. This
- * is a reconstruction measured off the artwork itself — centre, radius, stroke width, the arc's
- * 280° sweep, the dot spacing and the gradient were all read out of the rendered pixels rather
- * than guessed. It sits within a pixel or so of the original at every size the app uses. The
- * one thing it does not reproduce is the way the designer's arc physically thins towards its
- * end; that is approximated by fading the colour instead, which a stroke can do and a taper
- * cannot.
+ * Two different sources, on purpose, and the choice is made here so no caller has to know it.
  *
- * If a true vector master ever arrives from the designer, its paths drop straight in here and
- * nothing else has to change.
+ * STANDING STILL: the real artwork. `public/mark.png` is the ring cropped straight out of the
+ * designer's own lockup — not a redraw, the actual pixels — so this is what "the icon is not
+ * original" is asking for. Compared side by side against the vector below, the vector reads
+ * darker, its gap sits at the wrong angle, and it is missing the soft fade the real arc has
+ * toward its tip. Nobody should be looking at an approximation when the exact thing is sitting
+ * right there.
  *
- * The gradient id is shared across every instance on purpose. Each copy defines it identically,
- * so a duplicate resolves to the same colours — and keeping it fixed lets this stay a server
- * component rather than pulling a whole tree into the browser for a logo.
+ * MOVING: a hand-measured vector reconstruction. The designer's supplied SVGs turn out to embed
+ * the mark as a raster image — only the "wardmate" lettering in them is real vector — and a
+ * bitmap cannot have its ring turned independently of its dots. So the spinning state alone
+ * falls back to a redraw, geometry read off the rendered pixels (centre, radius, stroke width,
+ * the arc's 280° sweep, dot spacing, the gradient), because animation cannot happen any other
+ * way with what was supplied. It is close but not exact, and it should stay confined to the
+ * few seconds a resident is looking at a spinner rather than at the brand.
+ *
+ * If a true vector master ever arrives from the designer, its paths replace the ones below and
+ * this whole split goes away.
  */
 export default function Mark({
   className = "h-6 w-6",
@@ -26,6 +29,11 @@ export default function Mark({
   className?: string;
   spinning?: boolean;
 }) {
+  if (!spinning) {
+    // eslint-disable-next-line @next/next/no-img-element -- the real artwork, not a Next asset
+    return <img src="/mark.png" alt="" className={className} aria-hidden />;
+  }
+
   return (
     <svg viewBox="0 0 100 100" className={className} aria-hidden>
       <defs>
@@ -38,7 +46,7 @@ export default function Mark({
       </defs>
 
       {/* Ring and bell turn together: the bell is the end of the tube, not a separate object. */}
-      <g className={spinning ? "wm-spin" : undefined}>
+      <g className="wm-spin">
         <circle
           cx="50"
           cy="50"
@@ -62,8 +70,8 @@ export default function Mark({
           cy="50.15"
           r="4.68"
           fill="#0d9c93"
-          className={spinning ? "wm-dot" : undefined}
-          style={spinning ? { animationDelay: `${i * 180}ms` } : undefined}
+          className="wm-dot"
+          style={{ animationDelay: `${i * 180}ms` }}
         />
       ))}
     </svg>
