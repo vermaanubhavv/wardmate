@@ -56,7 +56,7 @@ Guidance on fields:
 - value_text: always populated, exactly as said.
 - value_num and unit: populate ONLY when the resident actually stated a number and (where relevant) a unit. Otherwise null.
 - day_number: use when a post-operative or admission day is spoken, with value_num as the integer.
-- plan: things to be done — "remove drain tomorrow", "repeat haemoglobin", "discharge if afebrile".
+- plan: unfinished future actions only — "remove drain tomorrow", "repeat haemoglobin", "discharge if afebrile". Do NOT use plan for treatment updates: "Telma Amlo given stat", "CST", "continue same treatment", "antibiotics started", or "drain removed" are medication/exam/note updates, never jobs.
 
 ONE ACTION PER PLAN. A sentence naming several things to be done becomes several plans, not one. "Drain out and discharge tomorrow" is two plans — "drain out tomorrow" and "discharge tomorrow" — because they are ticked off at different moments and one may happen without the other. A shared timeframe belongs to each of them: both are "tomorrow".
 

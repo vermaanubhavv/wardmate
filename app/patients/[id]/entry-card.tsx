@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { mergeLabelValue } from "@/lib/patients";
 import { acceptEntry, editEntry, deleteEntry, updateObservation } from "./actions";
+import { isActionableTask } from "@/lib/task-classification";
 
 type Value = {
   id: string;
@@ -130,9 +131,9 @@ export default function EntryCard({
   const [draft, setDraft] = useState("");
 
   const context = values.filter((v) => CONTEXT_KINDS.includes(v.kind));
-  const plans = values.filter((v) => v.kind === "plan");
+  const plans = values.filter((v) => v.kind === "plan" && isActionableTask(v.value_text ?? v.label));
   const progress = values.filter(
-    (v) => !CONTEXT_KINDS.includes(v.kind) && v.kind !== "plan"
+    (v) => !CONTEXT_KINDS.includes(v.kind) && (v.kind !== "plan" || !isActionableTask(v.value_text ?? v.label))
   );
 
   const editing = values.find((v) => v.id === editingValue) ?? null;

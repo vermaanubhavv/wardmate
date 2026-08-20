@@ -1,6 +1,7 @@
 import { matchTemplate, type CareTemplate, type MatchedItem } from "@/lib/templates";
 import { effectiveUrgency, urgencyRank, type Urgency } from "@/lib/urgency";
 import { dedupeTasks } from "@/lib/dedupe-tasks";
+import { isActionableTask } from "@/lib/task-classification";
 
 export type Observation = {
   id: string;
@@ -56,7 +57,7 @@ export function derivePatientState(
 
   const pending = observations.filter((o) => o.needs_confirmation && !o.confirmed_at);
 
-  const allPlans = observations.filter((o) => o.kind === "plan");
+  const allPlans = observations.filter((o) => o.kind === "plan" && isActionableTask(o.value_text ?? o.label));
 
   // Repeats folded together first, newest kept — observations arrive newest first, which is
   // what dedupeTasks relies on. Then sorted on what the colour means TODAY rather than on the
@@ -85,7 +86,7 @@ export function derivePatientState(
   const extra = [...latest.values()].filter(
     (o) =>
       o.kind !== "note" &&
-      o.kind !== "plan" &&
+      (o.kind !== "plan" || !isActionableTask(o.value_text ?? o.label)) &&
       !templateLabels.has(o.label.toLowerCase())
   );
 

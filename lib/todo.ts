@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { compareBeds } from "@/lib/patients";
 import { effectiveUrgency, urgencyRank, type Urgency } from "@/lib/urgency";
 import { dedupeTasks } from "@/lib/dedupe-tasks";
+import { isActionableTask } from "@/lib/task-classification";
 
 export type WardTask = {
   id: string;
@@ -56,7 +57,7 @@ export async function getWardTasks(wardId: string): Promise<WardTask[]> {
   // Repeats folded per patient, never across the ward: two patients both needing a drain out
   // are two jobs, and merging them would hide one entirely.
   const byPatientTasks = new Map<string, NonNullable<typeof tasks>>();
-  for (const t of tasks ?? []) {
+  for (const t of (tasks ?? []).filter((t) => isActionableTask(t.value_text ?? t.label))) {
     const list = byPatientTasks.get(t.patient_id) ?? [];
     list.push(t);
     byPatientTasks.set(t.patient_id, list);
