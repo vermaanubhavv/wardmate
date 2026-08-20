@@ -26,6 +26,7 @@ export default async function Home({
 }: {
   searchParams: Promise<{ delete_failed?: string }>;
 }) {
+  const supabase = await createClient();
   // One round trip for the whole screen. See lib/ward-screen.ts — it was six. The greeting
   // rides alongside it: getDoctorName reads the session cookie rather than asking Supabase,
   // so it adds no round trip of its own.
@@ -33,12 +34,16 @@ export default async function Home({
     { ward, patients, procedures, templateChoices, removedCount, error: wardError },
     doctor,
     { data: isProtocolPublisher },
+    { data: profile },
   ] = await Promise.all([
     getWardScreen(),
     getDoctorName(),
-    (await createClient()).rpc("is_protocol_publisher"),
+    supabase.rpc("is_protocol_publisher"),
+    supabase.from("profiles").select("department").maybeSingle(),
   ]);
   const deleteFailed = (await searchParams).delete_failed;
+  const department = profile?.department?.trim() || null;
+  const heading = [department, ward?.name].filter(Boolean).join(" ");
 
   if (wardError || !ward) {
     return (
@@ -79,7 +84,7 @@ export default async function Home({
             the capsules below — it acts on the title, so it reads as part of the title. */}
         <div className="mt-0.5 flex items-center justify-between gap-3">
           <h1 className="ios-large-title min-w-0 truncate">
-            {ward.name}
+            {heading}
             <span className="ml-2 align-middle text-[15px] font-normal text-muted tabular-nums">
               {patients.length}
             </span>
@@ -180,6 +185,7 @@ export default async function Home({
     </div>
   );
 }
+
 
 function Capsule({
   href,
