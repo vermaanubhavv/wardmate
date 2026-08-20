@@ -82,6 +82,8 @@ create table patients (
   -- phone, no address. If this database leaked it would be close to useless to anyone.
   display_name text not null,
   bed          text not null,      -- carries location, e.g. 'SW-12', 'ICU-3'
+  uhid_ip_no   text,
+  mrd_no       text,
 
   -- Typed once when the patient is added, so the ward list card is useful on day zero,
   -- before anything has been spoken. Later spoken diagnoses are stored as observations.

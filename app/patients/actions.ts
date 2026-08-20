@@ -21,6 +21,8 @@ export async function addPatient(
   const wardId = String(formData.get("ward_id") ?? "");
   const bed = String(formData.get("bed") ?? "").trim();
   const name = String(formData.get("display_name") ?? "").trim();
+  const uhidIpNo = String(formData.get("uhid_ip_no") ?? "").trim();
+  const mrdNo = String(formData.get("mrd_no") ?? "").trim();
   const ageRaw = String(formData.get("age_years") ?? "").trim();
   const sexRaw = String(formData.get("sex") ?? "").trim();
   const diagnosis = String(formData.get("primary_diagnosis") ?? "").trim();
@@ -64,6 +66,8 @@ export async function addPatient(
     ward_id: wardId,
     bed,
     display_name: name,
+    uhid_ip_no: uhidIpNo || null,
+    mrd_no: mrdNo || null,
     age_years: age,
     sex,
     management: readManagement(managementRaw),
@@ -291,6 +295,8 @@ export async function updatePatientIdentity(
 
   const id = String(formData.get("patient_id") ?? "");
   const name = String(formData.get("display_name") ?? "").trim();
+  const uhidIpNo = String(formData.get("uhid_ip_no") ?? "").trim();
+  const mrdNo = String(formData.get("mrd_no") ?? "").trim();
   const bed = String(formData.get("bed") ?? "").trim();
   const ageRaw = String(formData.get("age_years") ?? "").trim();
   const sexRaw = String(formData.get("sex") ?? "").trim();
@@ -338,6 +344,8 @@ export async function updatePatientIdentity(
     .from("patients")
     .update({
       display_name: name,
+      uhid_ip_no: uhidIpNo || null,
+      mrd_no: mrdNo || null,
       bed,
       age_years: identity.age,
       sex: identity.sex,

@@ -15,7 +15,7 @@ import {
   istDayKey,
   type Observation,
 } from "@/lib/patient-state";
-import { dayLabel, isIdentifierLabel, managementLabel, patientName } from "@/lib/patients";
+import { dayLabel, isIdentifierLabel, managementLabel } from "@/lib/patients";
 import { effectiveUrgency } from "@/lib/urgency";
 import BedsideBar from "./bedside-bar";
 import EditIdentity from "../edit-identity";
@@ -50,7 +50,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const { data: patient } = await supabase
     .from("current_patients")
     .select(
-      "id, ward_id, display_name, age_years, sex, bed, primary_diagnosis, admitted_on, surgery_date, planned_surgery_date, post_op_day, admission_day, status, template_family, template_variant, procedure_text, management, location"
+      "id, ward_id, display_name, age_years, sex, bed, uhid_ip_no, mrd_no, primary_diagnosis, admitted_on, surgery_date, planned_surgery_date, post_op_day, admission_day, status, template_family, template_variant, procedure_text, management, location"
     )
     .eq("id", id)
     .maybeSingle();
@@ -129,6 +129,12 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
   const procedure = procedureFor(patient, procedures);
   const management = managementLabel(patient);
+  // Comorbidities are not an identity field. They are only shown when someone recorded them,
+  // and the newest value wins for the same reason it does everywhere else on this page.
+  const comorbidities = patientState.latest.find(
+    (o) => /co[- ]?morbid|comorbid/i.test(o.label)
+  );
+  const latestEntry = entries[0] ?? null;
 
   // Latest of each drug recorded, for the discharge brief. Taken from the same observations
   // the rest of the screen uses, so it can hold nothing that was not said.
@@ -170,33 +176,51 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         </div>
       </div>
 
-      <header className="px-4 pb-3 pt-4">
+      <header className="px-4 pb-6 pt-4">
         <div className="flex items-start justify-between gap-2">
-          <h1 className="ios-large-title min-w-0 flex-1">{patientName(patient)}</h1>
+          <div className="min-w-0 flex-1">
+            <h1 className="ios-large-title">{patient.display_name}</h1>
+            {(patient.age_years || patient.sex) && (
+              <p className="mt-1 text-[15px] text-muted">
+                {[patient.age_years && `${patient.age_years} years`, patient.sex]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            )}
+          </div>
           <div className="shrink-0 pt-1">
             <EditIdentity patient={patient} templateChoices={templateChoices} />
           </div>
         </div>
 
-        {/* One line, in the order a resident says it: which day, what was done, what for. */}
-        <p className="mt-1 text-[15px] text-muted">
-          <span className="text-foreground tabular-nums">{dayLabel(patient)}</span>
-          {procedure && <span className="text-foreground"> {procedure}</span>}
-          {" · "}
-          {patient.primary_diagnosis || "No diagnosis recorded"}
-        </p>
-        <p className="mt-1.5 flex items-center gap-2 text-[13px] text-muted">
-          <span className="rounded-md bg-chip px-1.5 py-0.5 tabular-nums">
-            Bed <span className="font-mono">{patient.bed}</span>
-          </span>
-          {management && <span className="tracking-wide">{management}</span>}
-        </p>
+        {/* This is the compact patient identity block from the bedside sketch. An IP number is
+            deliberately absent: WardMate's data model does not retain hospital identifiers. */}
+        <dl className="ios-group mt-4 text-[15px]">
+          <SummaryRow label="UHID / IP no." value={patient.uhid_ip_no ?? "Not recorded"} mono />
+          <SummaryRow label="MRD no." value={patient.mrd_no ?? "Not recorded"} mono />
+          <SummaryRow label="Bed / location" value={patient.bed} mono />
+          <SummaryRow label="Diagnosis" value={patient.primary_diagnosis ?? "Not recorded"} />
+          <SummaryRow
+            label={management === "PRE-OP" ? "Planned procedure" : "Procedure"}
+            value={[dayLabel(patient), procedure].filter(Boolean).join(" · ") || "Not recorded"}
+          />
+          <SummaryRow label="Co-morbidities" value={comorbidities?.value_text ?? "Not recorded"} />
+        </dl>
       </header>
+
+      <section className="px-4 pb-6">
+        <p className="ios-group-header mb-2 px-4">Latest progress</p>
+        {latestEntry ? (
+          <LatestProgress entry={latestEntry} />
+        ) : (
+          <p className="ios-group px-4 py-3 text-[15px] text-muted">Nothing recorded yet.</p>
+        )}
+      </section>
 
       {(openTasks.length > 0 || doneTasks.length > 0) && (
         <section className="px-4 pb-6">
           <p className="ios-group-header mb-2 px-4">
-            To do{openTasks.length > 0 ? ` · ${openTasks.length}` : ""}
+            Advices, plans &amp; to do{openTasks.length > 0 ? ` · ${openTasks.length}` : ""}
           </p>
 
           {openTasks.length > 0 ? (
@@ -393,7 +417,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
       {/* Bottom padding clears the fixed speak bar so the oldest entry stays reachable. */}
       <section className="px-4 pb-6">
-        <p className="ios-group-header mb-2 px-4">Record</p>
+        <p className="ios-group-header mb-2 px-4">Previous records</p>
         {entries.length === 0 ? (
           <p className="ios-group p-5 text-[15px] text-muted">
             Nothing recorded yet. Hold the button above and say what has changed.
@@ -519,4 +543,79 @@ function CameDue({ observation }: { observation: Observation }) {
   if (!effective.note) return null;
 
   return <span className="ml-2 whitespace-nowrap text-xs text-red-600">— {effective.note}</span>;
+}
+
+/** A fact in the patient identity block. The long text gets room; the label stays scannable. */
+function SummaryRow({
+  label,
+  value,
+  mono = false,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className="ios-row grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3 px-4 py-2.5">
+      <dt className="text-muted">{label}</dt>
+      <dd className={mono ? "font-mono text-right" : "text-right"}>{value}</dd>
+    </div>
+  );
+}
+
+/**
+ * The most recent entry, arranged like a ward note. The extraction schema does not claim that
+ * every spoken value is subjective, objective, or an assessment, so values are placed in those
+ * sections only where their recorded label says so. All remaining clinical facts stay visible
+ * in Objective rather than being silently classified by the UI.
+ */
+function LatestProgress({ entry }: { entry: Entry }) {
+  const values = entry.observations;
+  const subjective = values.filter((o) => /subjective|symptom|complaint|history/i.test(o.label));
+  const assessment = values.filter((o) => /assessment|issue|impression|diagnosis/i.test(o.label));
+  const objective = values.filter(
+    (o) =>
+      o.kind !== "plan" &&
+      !subjective.includes(o) &&
+      !assessment.includes(o) &&
+      !isIdentifierLabel(o.label)
+  );
+  const plans = values.filter((o) => o.kind === "plan");
+  const time = new Date(entry.recorded_at).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  return (
+    <div className="ios-group">
+      <div className="border-b border-line px-4 py-2.5 text-[13px] text-muted">{time}</div>
+      <ProgressGroup label="Subjective" values={subjective} />
+      <ProgressGroup label="Objective" values={objective} />
+      <ProgressGroup label="Assessment & issues" values={assessment} />
+      {plans.length > 0 && <ProgressGroup label="Advice / plan" values={plans} />}
+    </div>
+  );
+}
+
+function ProgressGroup({ label, values }: { label: string; values: Observation[] }) {
+  return (
+    <div className="ios-row px-4 py-3">
+      <h2 className="text-[13px] font-medium text-muted">{label}</h2>
+      {values.length > 0 ? (
+        <ul className="mt-1 space-y-1 text-[15px]">
+          {values.map((value) => (
+            <li key={value.id}>
+              <span className="text-muted">{value.label}</span>
+              {value.value_text && <span>: {value.value_text}</span>}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-1 text-[15px] text-muted">Not recorded</p>
+      )}
+    </div>
+  );
 }

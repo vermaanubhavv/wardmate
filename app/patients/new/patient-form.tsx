@@ -115,6 +115,25 @@ export default function PatientForm({
         />
       </Field>
 
+      <div className="flex gap-3">
+        <div className="flex-1">
+          <Field label="UHID / IP no.">
+            <input
+              name="uhid_ip_no"
+              className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+            />
+          </Field>
+        </div>
+        <div className="flex-1">
+          <Field label="MRD no.">
+            <input
+              name="mrd_no"
+              className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+            />
+          </Field>
+        </div>
+      </div>
+
       {/* Age and sex sit on one row, in the order they are spoken and written: "62/M". */}
       <div className="flex gap-3">
         <div className="flex-1">

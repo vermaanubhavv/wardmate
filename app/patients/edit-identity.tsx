@@ -8,6 +8,8 @@ type Patient = {
   id: string;
   display_name: string;
   bed: string;
+  uhid_ip_no: string | null;
+  mrd_no: string | null;
   age_years: number | null;
   sex: string | null;
   primary_diagnosis: string | null;
@@ -147,6 +149,25 @@ export default function EditIdentity({
             {/* Moving a bed reorders the whole ward list, since the list walks in bed order. */}
             <span className="text-[13px] text-muted">e.g. SW-12</span>
           </label>
+
+          <div className="flex gap-3">
+            <label className="flex flex-1 flex-col gap-2">
+              <span className="text-[15px] text-muted">UHID / IP no.</span>
+              <input
+                name="uhid_ip_no"
+                defaultValue={patient.uhid_ip_no ?? ""}
+                className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+              />
+            </label>
+            <label className="flex flex-1 flex-col gap-2">
+              <span className="text-[15px] text-muted">MRD no.</span>
+              <input
+                name="mrd_no"
+                defaultValue={patient.mrd_no ?? ""}
+                className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+              />
+            </label>
+          </div>
 
           <label className="flex flex-col gap-2">
             <span className="text-[15px] text-muted">Location</span>

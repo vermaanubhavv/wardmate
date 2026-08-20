@@ -4,6 +4,8 @@ export type WardPatient = {
   age_years: number | null;
   sex: string | null;
   bed: string;
+  uhid_ip_no: string | null;
+  mrd_no: string | null;
   primary_diagnosis: string | null;
   admitted_on: string;
   surgery_date: string | null;

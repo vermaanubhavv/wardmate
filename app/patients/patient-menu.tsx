@@ -8,6 +8,8 @@ type Patient = {
   id: string;
   display_name: string;
   bed: string;
+  uhid_ip_no: string | null;
+  mrd_no: string | null;
   age_years: number | null;
   sex: string | null;
   primary_diagnosis: string | null;
