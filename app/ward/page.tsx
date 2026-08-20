@@ -101,6 +101,9 @@ export default async function Home({
           <Capsule href="/formats" icon={<DocumentIcon className="h-3.5 w-3.5" />}>
             Formats
           </Capsule>
+          <Capsule href="/protocols" icon={<ChecklistIcon className="h-3.5 w-3.5" />}>
+            Protocols
+          </Capsule>
           {/* Only once there is something to undo — an empty list is not worth a capsule. */}
           {removedCount > 0 && (
             <Capsule href="/removed" icon={<TrayIcon className="h-3.5 w-3.5" />}>
