@@ -62,28 +62,35 @@ export async function addPatient(
   if ("error" in identity) return identity;
   const { age, sex } = identity;
 
-  const { error } = await supabase.from("patients").insert({
-    ward_id: wardId,
-    bed,
-    display_name: name,
-    uhid_ip_no: uhidIpNo || null,
-    mrd_no: mrdNo || null,
-    age_years: age,
-    sex,
-    management: readManagement(managementRaw),
-    location,
-    primary_diagnosis: diagnosis || null,
-    admitted_on: admittedOn,
-    ...dates,
-    ...resolveProcedure(String(formData.get("procedure") ?? ""), await listTemplateChoices()),
-    created_by: user.id,
-  });
+  const { data: created, error } = await supabase
+    .from("patients")
+    .insert({
+      ward_id: wardId,
+      bed,
+      display_name: name,
+      uhid_ip_no: uhidIpNo || null,
+      mrd_no: mrdNo || null,
+      age_years: age,
+      sex,
+      management: readManagement(managementRaw),
+      location,
+      primary_diagnosis: diagnosis || null,
+      admitted_on: admittedOn,
+      ...dates,
+      ...resolveProcedure(String(formData.get("procedure") ?? ""), await listTemplateChoices()),
+      created_by: user.id,
+    })
+    .select("id")
+    .single();
 
-  if (error) return { error: error.message };
+  if (error || !created) return { error: error?.message ?? "Could not add the patient." };
 
   revalidatePath("/");
   revalidatePath("/ward");
-  redirect("/ward");
+  // The new patient's own page, not the ward list — that page is where the case history
+  // capture prompt lives, and clerking usually happens right after admitting somebody, not
+  // sometime later after a trip back through the whole ward.
+  redirect(`/patients/${created.id}`);
 }
 
 /**

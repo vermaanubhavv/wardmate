@@ -24,6 +24,7 @@ import { ChevronIcon } from "../../icons";
 import { quoteAddsNothing } from "@/lib/dedupe-tasks";
 import Tick from "./tick";
 import EntryCard from "./entry-card";
+import CaseHistoryCapture from "./case-history-capture";
 import DischargeSection from "./discharge-section";
 import { buildDischargeBrief } from "@/lib/discharge";
 import { confirmChecked, confirmAll, reopenTask } from "./actions";
@@ -40,6 +41,8 @@ type Entry = {
   extraction_error: string | null;
   accepted_at: string | null;
   edited_at: string | null;
+  /** The admission clerking note rather than a round entry — see CaseHistoryCapture. */
+  is_case_history: boolean;
   observations: Observation[];
 };
 
@@ -71,7 +74,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       supabase
         .from("entries")
         .select(
-          "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at)"
+          "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, is_case_history, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at)"
         )
         .eq("patient_id", id)
         .order("recorded_at", { ascending: false }),
@@ -92,15 +95,23 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // observation — so the record, the derived state and the discharge summary cannot disagree
   // about whether "bed number" is a clinical finding. Extraction stopped storing these, but
   // entries recorded before that filter existed still hold them.
-  const entries = ((entriesData ?? []) as unknown as Entry[]).map((e) => ({
+  const allEntries = ((entriesData ?? []) as unknown as Entry[]).map((e) => ({
     ...e,
     observations: e.observations.filter((o) => !isIdentifierLabel(o.label)),
   }));
 
+  // Case history is pinned in its own section rather than folded into a dated day — see
+  // CaseHistoryCapture. Split here, once, so nothing downstream has to keep checking the flag:
+  // the day-by-day record only ever sees round entries, while allObservations (below) still
+  // draws from both, because a plan stated in the case history belongs on the to-do list
+  // exactly as a spoken one would.
+  const caseHistoryEntries = allEntries.filter((e) => e.is_case_history);
+  const entries = allEntries.filter((e) => !e.is_case_history);
+
   // Short-lived links for the stored photographs. The bucket is private, so these are the
   // only way to see one, they expire in an hour, and they are only ever minted here — for a
   // doctor the database has already confirmed is a member of this patient's ward.
-  const photoPaths = entries.map((e) => e.photo_path).filter((p): p is string => Boolean(p));
+  const photoPaths = allEntries.map((e) => e.photo_path).filter((p): p is string => Boolean(p));
   const photoUrls = new Map<string, string>();
   if (photoPaths.length > 0) {
     const { data: signed } = await supabase.storage
@@ -114,8 +125,10 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // The template decides both what to expect and what order to show it in, so the things that
   // matter for this operation lead the screen instead of whatever happened to be said first.
   // Entries already arrive newest first, so the flattened list is too — derivePatientState
-  // relies on that order to pick the latest value for each thing.
-  const allObservations = entries.flatMap((e) => e.observations);
+  // relies on that order to pick the latest value for each thing. Drawn from allEntries, not
+  // entries: the case history is excluded from the day-by-day record but not from what decides
+  // the to-do list and "where things stand" — a plan is a plan whichever way it was captured.
+  const allObservations = allEntries.flatMap((e) => e.observations);
   const patientState = derivePatientState(allObservations, template);
   const { matched, missing, extra, openTasks, doneTasks, pending } = patientState;
 
@@ -204,6 +217,48 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           <SummaryRow label="Co-morbidities" value={comorbidities?.value_text ?? "Not recorded"} />
         </dl>
       </header>
+
+      {/* Standing context, not a dated round — the clerking note the rest of the admission is
+          read against. Pinned here, above even the latest progress, because a plan someone
+          decides today is decided in light of this, not the other way round. */}
+      <section className="px-4 pb-6">
+        <p className="ios-group-header mb-2 px-4">Case history</p>
+        {caseHistoryEntries.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            {caseHistoryEntries.map((entry) => (
+              <EntryCard
+                key={entry.id}
+                entryId={entry.id}
+                patientId={patient.id}
+                time={new Date(entry.recorded_at).toLocaleDateString("en-IN", {
+                  timeZone: "Asia/Kolkata",
+                  day: "numeric",
+                  month: "short",
+                })}
+                transcript={entry.transcript}
+                heard={entry.original_transcript}
+                photoUrl={entry.photo_path ? (photoUrls.get(entry.photo_path) ?? null) : null}
+                accepted={Boolean(entry.accepted_at)}
+                edited={Boolean(entry.edited_at)}
+                extractionError={entry.extraction_error}
+                values={entry.observations.map((o) => ({
+                  id: o.id,
+                  kind: o.kind,
+                  label: o.label,
+                  value_text: o.value_text,
+                  value_num: o.value_num,
+                  source_quote: o.source_quote,
+                  needs_confirmation: o.needs_confirmation,
+                  confirmed_at: o.confirmed_at,
+                }))}
+              />
+            ))}
+            <CaseHistoryCapture patientId={patient.id} hasExisting />
+          </div>
+        ) : (
+          <CaseHistoryCapture patientId={patient.id} />
+        )}
+      </section>
 
       <section className="px-4 pb-6">
         <p className="ios-group-header mb-2 px-4">Latest progress</p>
