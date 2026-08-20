@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getWardScreen } from "@/lib/ward-screen";
+import { getDoctorName } from "@/lib/auth";
 import { dayLabel, patientName, type WardPatient } from "@/lib/patients";
 import { procedureFor } from "@/lib/templates";
 import RegisterButton from "./register-button";
@@ -20,9 +21,13 @@ import Wordmark from "./wordmark";
 import Mark from "./mark";
 
 export default async function Home() {
-  // One round trip for the whole screen. See lib/ward-screen.ts — it was six.
-  const { ward, patients, procedures, templateChoices, removedCount, error: wardError } =
-    await getWardScreen();
+  // One round trip for the whole screen. See lib/ward-screen.ts — it was six. The greeting
+  // rides alongside it: getDoctorName reads the session cookie rather than asking Supabase,
+  // so it adds no round trip of its own.
+  const [
+    { ward, patients, procedures, templateChoices, removedCount, error: wardError },
+    doctor,
+  ] = await Promise.all([getWardScreen(), getDoctorName()]);
 
   if (wardError || !ward) {
     return (
@@ -50,9 +55,18 @@ export default async function Home() {
       </div>
 
       <header className="px-4 pb-3 pt-4">
+        {/* A quiet line above the title, not a heading of its own: it is the one thing on this
+            screen that is not work, and it should not take space from the ward. Absent
+            entirely when there is no real name to use — see getDoctorName. */}
+        {doctor && (
+          <p className="text-[15px] text-muted">
+            Hello Dr. <span className="text-foreground">{doctor}</span>
+          </p>
+        )}
+
         {/* The unit switcher sits beside the name it switches away from, not buried among
             the capsules below — it acts on the title, so it reads as part of the title. */}
-        <div className="flex items-center justify-between gap-3">
+        <div className="mt-0.5 flex items-center justify-between gap-3">
           <h1 className="ios-large-title min-w-0 truncate">
             {ward.name}
             <span className="ml-2 align-middle text-[15px] font-normal text-muted tabular-nums">
