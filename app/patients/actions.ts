@@ -216,15 +216,8 @@ export async function deletePatientForever(formData: FormData) {
 /**
  * Delete a patient outright, from the ward.
  *
- * The delete policy refuses any patient still on the ward, which was the point: it meant a
- * mis-aimed tap on a small ⋯ could not destroy a record, because destroying took two
- * deliberate acts on two screens. Deleting from here performs both, so that guard is gone and
- * the confirmation is what remains — which is why it names the patient and counts what goes
- * with them rather than asking "are you sure?".
- *
- * The status write also matters on its own: it is what makes the delete legal, so if the
- * second step fails the patient is off the ward rather than half-deleted, and can be put back
- * from the removed list.
+ * The confirmation in the menu is the deliberate safety boundary. Once confirmed, this is a
+ * one-step deletion — the patient is never moved through a separate Removed screen first.
  */
 export async function deletePatientFromWard(formData: FormData) {
   const id = String(formData.get("patient_id") ?? "");
@@ -236,17 +229,11 @@ export async function deletePatientFromWard(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) return;
 
-  await supabase
-    .from("patients")
-    .update({ status: "discharged", discharged_at: new Date().toISOString() })
-    .eq("id", id);
-
-  // See deletePatientForever: a refused delete is silent, so the rows have to be asked for.
+  // Row security may refuse a delete without raising an error, so ask which rows came back.
   const { data: deleted, error } = await supabase
     .from("patients")
     .delete()
     .eq("id", id)
-    .eq("status", "discharged")
     .select("id");
 
   revalidatePath("/");
@@ -255,12 +242,8 @@ export async function deletePatientFromWard(formData: FormData) {
   revalidatePath("/todo");
   revalidatePath("/handover");
 
-  // The status write above already succeeded, so the patient is off the ward either way and is
-  // sitting in the removed list. Sending the resident there — rather than to a ward list where
-  // the patient has simply vanished from view — puts them where the record actually is, with
-  // the reason the destroy did not happen.
-  if (error) redirect(`/removed?failed=${encodeURIComponent(error.message)}`);
-  if (!deleted || deleted.length === 0) redirect("/removed?failed=refused");
+  if (error) redirect(`/ward?delete_failed=${encodeURIComponent(error.message)}`);
+  if (!deleted || deleted.length === 0) redirect("/ward?delete_failed=refused");
 
   redirect("/ward");
 }

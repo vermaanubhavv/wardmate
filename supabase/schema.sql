@@ -259,7 +259,9 @@ create policy patients_insert on patients for insert with check (is_ward_member(
 -- with check as well as using, so an update cannot move a patient into a ward you are not in
 create policy patients_update on patients for update
   using (is_ward_member(ward_id)) with check (is_ward_member(ward_id));
--- deliberately no delete policy: discharge sets status, it does not destroy the record
+-- The application asks for confirmation before permanent deletion; membership remains the
+-- database boundary that prevents one ward touching another's patient record.
+create policy patients_delete on patients for delete using (is_ward_member(ward_id));
 
 -- entries and observations: reachable only through a patient in a ward you belong to
 create policy entries_read on entries for select using (
@@ -291,7 +293,7 @@ grant usage on schema public to authenticated;
 grant select, insert, update on profiles         to authenticated;
 grant select, insert, update on wards            to authenticated;
 grant select, insert, delete on ward_members     to authenticated;
-grant select, insert, update on patients         to authenticated;
+grant select, insert, update, delete on patients to authenticated;
 grant select, insert         on entries          to authenticated;
 grant select, insert, update on observations     to authenticated;
 grant select                 on current_patients to authenticated;

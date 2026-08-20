@@ -20,7 +20,11 @@ import BottomBar from "../bottom-bar";
 import Wordmark from "../wordmark";
 import Mark from "../mark";
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ delete_failed?: string }>;
+}) {
   // One round trip for the whole screen. See lib/ward-screen.ts — it was six. The greeting
   // rides alongside it: getDoctorName reads the session cookie rather than asking Supabase,
   // so it adds no round trip of its own.
@@ -28,6 +32,7 @@ export default async function Home() {
     { ward, patients, procedures, templateChoices, removedCount, error: wardError },
     doctor,
   ] = await Promise.all([getWardScreen(), getDoctorName()]);
+  const deleteFailed = (await searchParams).delete_failed;
 
   if (wardError || !ward) {
     return (
@@ -108,6 +113,13 @@ export default async function Home() {
       {/* Bottom padding clears the floating bar so the last patient stays readable. The bar is
           a row of circles now rather than three stacked buttons, so this is much less. */}
       <div className="flex-1 px-4 pb-32">
+        {deleteFailed && (
+          <p className="ios-group mb-4 px-4 py-3 text-[15px] text-orange-700">
+            {deleteFailed === "refused"
+              ? "The database refused the deletion. Run patch 0025_direct_patient_delete.sql in Supabase, then try again."
+              : `Could not delete this patient: ${deleteFailed}`}
+          </p>
+        )}
         {patients.length === 0 ? (
           <div className="ios-group flex flex-col items-center gap-3 px-4 py-10 text-center">
             {/* The ring, faint — the same mark on the home screen, quiet here rather than
