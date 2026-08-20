@@ -92,7 +92,7 @@ export default async function UnitPage() {
               <select
                 name="designation"
                 defaultValue={profile.designation ?? ""}
-                className="w-full rounded-[10px] border border-line bg-card px-3 py-2.5 text-[17px] outline-none focus:border-accent"
+                className="h-12 w-full rounded-[10px] border border-line bg-card px-3 text-[17px] outline-none focus:border-accent"
               >
                 <option value="">—</option>
                 {DESIGNATION_CHOICES.map((d) => (
@@ -108,7 +108,7 @@ export default async function UnitPage() {
                 name="department"
                 defaultValue={profile.department ?? ""}
                 placeholder="General Surgery"
-                className="w-full rounded-[10px] border border-line bg-card px-3 py-2.5 text-[17px] outline-none focus:border-accent"
+                className="h-12 w-full rounded-[10px] border border-line bg-card px-3 text-[17px] outline-none focus:border-accent"
               />
             </label>
           </div>
