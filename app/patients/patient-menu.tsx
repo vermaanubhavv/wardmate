@@ -80,7 +80,9 @@ export default function PatientMenu({
         <div
           className="absolute right-0 top-8 z-20 w-56 overflow-hidden ios-group shadow-lg"
           onClick={(e) => {
-            e.preventDefault();
+            // This menu is already a sibling of the patient link, so it only needs to stop
+            // propagation. Preventing the default here also cancels the submit on Remove and
+            // Delete, making both menu actions appear to do nothing.
             e.stopPropagation();
           }}
         >
