@@ -15,8 +15,8 @@ import {
   istDayKey,
   type Observation,
 } from "@/lib/patient-state";
-import { dayLabel, isIdentifierLabel, managementLabel } from "@/lib/patients";
-import { effectiveUrgency } from "@/lib/urgency";
+import { dayLabel, isIdentifierLabel, managementLabel, mergeLabelValue } from "@/lib/patients";
+import { describeWhen, effectiveUrgency } from "@/lib/urgency";
 import BedsideBar from "./bedside-bar";
 import EditIdentity from "../edit-identity";
 import UrgencyDot from "./urgency-dot";
@@ -222,12 +222,18 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
           {openTasks.length > 0 ? (
             <ul className="ios-group divide-y divide-line">
-              {openTasks.map((o) => (
+              {openTasks.map((o) => {
+                // "Tomorrow" is only true on the day it was said. Rewritten fresh on every
+                // read, the same way effectiveUrgency below re-reads the colour — neither is
+                // stored, both are computed from the calendar as it stands right now. See
+                // lib/urgency.ts describeWhen.
+                const jobText = describeWhen(o.value_text ?? o.label, o.recorded_at);
+                return (
                 <li key={o.id} className="flex items-start gap-3 px-4 py-3">
                   <Tick
                     observationId={o.id}
                     patientId={patient.id}
-                    label={o.value_text ?? o.label}
+                    label={jobText}
                   />
                   <div className="pt-1">
                     <UrgencyDot
@@ -240,7 +246,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-[15px]">
-                      {o.value_text ?? o.label}
+                      {jobText}
                       <CameDue observation={o} />
                     </p>
                     {/* The words it came from, so a job is never just the app's paraphrase —
@@ -259,7 +265,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                     )}
                   </div>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           ) : (
             <p className="ios-group px-4 py-3 text-[15px] text-muted">
@@ -615,23 +622,34 @@ function LatestProgress({ entry }: { entry: Entry }) {
     <div className="ios-group">
       <div className="border-b border-line px-4 py-2.5 text-[13px] text-muted">{time}</div>
       <ProgressGroup label="Latest update" values={update} />
-      {plans.length > 0 && <ProgressGroup label="Advice / plan" values={plans} />}
+      {plans.length > 0 && <ProgressGroup label="Advice / plan" values={plans} timeAware />}
     </div>
   );
 }
 
-function ProgressGroup({ label, values }: { label: string; values: Observation[] }) {
+function ProgressGroup({
+  label,
+  values,
+  timeAware = false,
+}: {
+  label: string;
+  values: Observation[];
+  /** Plans read words like "tomorrow" that go stale the day after they are said — see
+   *  lib/urgency.ts describeWhen. Findings ("abdomen soft") carry no such word, so this stays
+   *  off for them rather than running a check that can never match anything. */
+  timeAware?: boolean;
+}) {
   return (
     <div className="ios-row px-4 py-3">
       <h2 className="text-[13px] font-medium text-muted">{label}</h2>
       {values.length > 0 ? (
         <ul className="mt-1 space-y-1 text-[15px]">
-          {values.map((value) => (
-            <li key={value.id}>
-              <span className="text-muted">{value.label}</span>
-              {value.value_text && <span>: {value.value_text}</span>}
-            </li>
-          ))}
+          {values.map((value) => {
+            const text = timeAware
+              ? describeWhen(mergeLabelValue(value.label, value.value_text), value.recorded_at)
+              : mergeLabelValue(value.label, value.value_text);
+            return <li key={value.id}>{text}</li>;
+          })}
         </ul>
       ) : (
         <p className="mt-1 text-[15px] text-muted">Not recorded</p>

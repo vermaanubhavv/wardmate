@@ -46,6 +46,34 @@ export function isIdentifierLabel(label: string | null | undefined): boolean {
   return IDENTIFIER_LABELS.test((label ?? "").trim());
 }
 
+/**
+ * A label folded into its value when the value already says it — "vitals" + "vital is stable"
+ * reads once, not as "vitals vital is stable". Matched word by word rather than as one string,
+ * because the words often arrive reordered ("pac review" label, "review PAC and pas done"
+ * value), and a plain substring test misses that and stutters.
+ *
+ * Shared rather than reimplemented per screen: the record, the plan list and the discharge
+ * summary all show the same observations, and a rule for when a label is redundant should not
+ * disagree between them.
+ */
+export function mergeLabelValue(label: string | null, value: string | null): string {
+  const l = (label ?? "").trim();
+  const v = (value ?? "").trim();
+  if (!v) return l;
+  if (!l) return v;
+
+  const haystack = v.toLowerCase();
+  const words = l.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  const alreadySaid =
+    words.length > 0 &&
+    words.every((w) => {
+      const stem = w.replace(/s$/, "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return new RegExp(`\\b${stem}`).test(haystack);
+    });
+
+  return alreadySaid ? v : `${l} ${v}`;
+}
+
 /** Where the patient physically is. Stored, never read out of the bed label — see
  *  supabase/patches/0023_home_screen.sql for why a guess was not good enough. */
 export const LOCATION_CHOICES = [

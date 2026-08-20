@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { mergeLabelValue } from "@/lib/patients";
 import { acceptEntry, editEntry, deleteEntry, updateObservation } from "./actions";
 
 type Value = {
@@ -73,22 +74,9 @@ function dayPhrase(v: Value): string {
  * "vital is stable"). Stored data is never touched; this is only how it is set on the page.
  */
 function phrase(v: Value, withLabel: boolean): string {
-  const label = (v.label ?? "").trim();
-  const value = (v.value_text ?? "").trim();
   if (v.kind === "day_number") return dayPhrase(v);
-  if (!value) return label;
-  if (!withLabel || !label) return value;
-
-  const haystack = value.toLowerCase();
-  const words = label.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
-  const alreadySaid =
-    words.length > 0 &&
-    words.every((w) => {
-      const stem = w.replace(/s$/, "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      return new RegExp(`\\b${stem}`).test(haystack);
-    });
-
-  return alreadySaid ? value : `${label} ${value}`;
+  if (!withLabel) return (v.value_text ?? "").trim() || (v.label ?? "").trim();
+  return mergeLabelValue(v.label, v.value_text);
 }
 
 /**
