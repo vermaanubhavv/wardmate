@@ -119,11 +119,11 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const patientState = derivePatientState(allObservations, template);
   const { matched, missing, extra, openTasks, doneTasks, pending } = patientState;
 
-  // One visit to the bedside reads as one block in the record, however many times you spoke
-  // or photographed something while standing there. Those then gather into days, which is the
-  // unit the record is actually asked about — "what happened yesterday", not "what happened
-  // between 9.25 and 9.40".
-  const sittings = groupIntoSittings(entries);
+  // Latest progress is its own summary above. The historical list therefore begins with the
+  // entry before it rather than making the same update appear twice on one screen.
+  const latestEntry = entries[0] ?? null;
+  const previousEntries = entries.slice(1);
+  const sittings = groupIntoSittings(previousEntries);
   const days = groupByDay(sittings);
   const todayKey = istDayKey(new Date().toISOString());
 
@@ -134,7 +134,6 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const comorbidities = patientState.latest.find(
     (o) => /co[- ]?morbid|comorbid/i.test(o.label)
   );
-  const latestEntry = entries[0] ?? null;
 
   // Latest of each drug recorded, for the discharge brief. Taken from the same observations
   // the rest of the screen uses, so it can hold nothing that was not said.
@@ -193,11 +192,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
-        {/* This is the compact patient identity block from the bedside sketch. An IP number is
-            deliberately absent: WardMate's data model does not retain hospital identifiers. */}
+        {/* The identifiers stay available, but do not crowd the facts scanned on every visit. */}
         <dl className="ios-group mt-4 text-[15px]">
-          <SummaryRow label="UHID / IP no." value={patient.uhid_ip_no ?? "Not recorded"} mono />
-          <SummaryRow label="MRD no." value={patient.mrd_no ?? "Not recorded"} mono />
+          <IdentifierDetails uhidIpNo={patient.uhid_ip_no} mrdNo={patient.mrd_no} />
           <SummaryRow label="Bed / location" value={patient.bed} mono />
           <SummaryRow label="Diagnosis" value={patient.primary_diagnosis ?? "Not recorded"} />
           <SummaryRow
@@ -418,9 +415,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       {/* Bottom padding clears the fixed speak bar so the oldest entry stays reachable. */}
       <section className="px-4 pb-6">
         <p className="ios-group-header mb-2 px-4">Previous records</p>
-        {entries.length === 0 ? (
+        {previousEntries.length === 0 ? (
           <p className="ios-group p-5 text-[15px] text-muted">
-            Nothing recorded yet. Hold the button above and say what has changed.
+            No earlier records yet.
           </p>
         ) : (
           <ul className="flex flex-col gap-3">
@@ -563,23 +560,48 @@ function SummaryRow({
   );
 }
 
+function IdentifierDetails({
+  uhidIpNo,
+  mrdNo,
+}: {
+  uhidIpNo: string | null;
+  mrdNo: string | null;
+}) {
+  const recorded = Boolean(uhidIpNo || mrdNo);
+  return (
+    <details className="ios-row group">
+      <summary className="flex cursor-pointer list-none items-baseline justify-between gap-3 px-4 py-2.5 active:bg-chip [&::-webkit-details-marker]:hidden">
+        <span className="text-muted">Identifiers</span>
+        <span className="text-right text-accent">{recorded ? "Show" : "Not recorded"}</span>
+      </summary>
+      {recorded && (
+        <dl className="border-t border-line px-4 py-2.5 text-[13px]">
+          {uhidIpNo && (
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">UHID / IP no.</dt>
+              <dd className="font-mono text-right">{uhidIpNo}</dd>
+            </div>
+          )}
+          {mrdNo && (
+            <div className="mt-1 flex justify-between gap-3">
+              <dt className="text-muted">MRD no.</dt>
+              <dd className="font-mono text-right">{mrdNo}</dd>
+            </div>
+          )}
+        </dl>
+      )}
+    </details>
+  );
+}
+
 /**
- * The most recent entry, arranged like a ward note. The extraction schema does not claim that
- * every spoken value is subjective, objective, or an assessment, so values are placed in those
- * sections only where their recorded label says so. All remaining clinical facts stay visible
- * in Objective rather than being silently classified by the UI.
+ * The most recent entry, shown without imposing SOAP labels. The extraction schema does not
+ * reliably classify every spoken value as subjective, objective, or assessment, and the screen
+ * must not make that clinical judgement on the resident's behalf.
  */
 function LatestProgress({ entry }: { entry: Entry }) {
   const values = entry.observations;
-  const subjective = values.filter((o) => /subjective|symptom|complaint|history/i.test(o.label));
-  const assessment = values.filter((o) => /assessment|issue|impression|diagnosis/i.test(o.label));
-  const objective = values.filter(
-    (o) =>
-      o.kind !== "plan" &&
-      !subjective.includes(o) &&
-      !assessment.includes(o) &&
-      !isIdentifierLabel(o.label)
-  );
+  const update = values.filter((o) => o.kind !== "plan" && !isIdentifierLabel(o.label));
   const plans = values.filter((o) => o.kind === "plan");
   const time = new Date(entry.recorded_at).toLocaleString("en-IN", {
     timeZone: "Asia/Kolkata",
@@ -592,9 +614,7 @@ function LatestProgress({ entry }: { entry: Entry }) {
   return (
     <div className="ios-group">
       <div className="border-b border-line px-4 py-2.5 text-[13px] text-muted">{time}</div>
-      <ProgressGroup label="Subjective" values={subjective} />
-      <ProgressGroup label="Objective" values={objective} />
-      <ProgressGroup label="Assessment & issues" values={assessment} />
+      <ProgressGroup label="Latest update" values={update} />
       {plans.length > 0 && <ProgressGroup label="Advice / plan" values={plans} />}
     </div>
   );

@@ -18,7 +18,7 @@
   --background: #f2f2f7; /* systemGroupedBackground */
   --card: #ffffff; /* secondarySystemGroupedBackground */
   --foreground: #000000; /* label */
-  --muted: #8e8e93; /* secondaryLabel, flattened */
+  --muted: #636366; /* stronger secondary label, readable in bright ward lighting */
   --line: #c6c6c8; /* separator */
   --accent: #0f9e96; /* WardMate teal — from the mark, not a system colour */
   --accent-ink: #ffffff;
@@ -93,6 +93,12 @@ button {
 
 .ios-row + .ios-row {
   box-shadow: inset 0 0.5px 0 var(--line);
+}
+
+/* `viewport-fit=cover` lets an installed PWA reach the bottom edge. Put the action bar above
+   the home indicator as well as above the normal page edge. */
+.bottom-bar {
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
 }
 
 /* The mark, working.

@@ -16,7 +16,7 @@ export default function BottomBar({ children }: { children: React.ReactNode }) {
   return (
     // relative, so a button inside can hang its message above the bar rather than widening the
     // row it sits in — an error sentence is long and the buttons beside it are 56px wide.
-    <div className="fixed inset-x-0 bottom-0 border-t border-line/60 bg-background/80 px-4 pb-6 pt-3 backdrop-blur-xl">
+    <div className="bottom-bar fixed inset-x-0 bottom-0 border-t border-line/60 bg-background/80 px-4 pt-3 backdrop-blur-xl">
       <div className="relative mx-auto flex max-w-md flex-col gap-2">{children}</div>
     </div>
   );
