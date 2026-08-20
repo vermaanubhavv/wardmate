@@ -49,7 +49,7 @@ export default function UrgencyDot({
       >
         <span
           className={
-            "block h-2.5 w-2.5 rounded-full " +
+            "block h-3 w-3 rounded-full " +
             (meta ? meta.dot : "border-2 border-dashed border-muted/60")
           }
         />
