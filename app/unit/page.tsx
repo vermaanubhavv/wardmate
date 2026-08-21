@@ -91,7 +91,7 @@ export default async function UnitPage() {
         <Link href="/ward" className="text-[17px] text-accent">
           ‹ Ward
         </Link>
-        <h1 className="mt-3 ios-large-title">{ward.name}</h1>
+        <h1 className="mt-3 ios-large-title break-words text-[28px] leading-tight">{ward.name}</h1>
         <p className="mt-0.5 text-[15px] text-muted">
           {roster.length} {roster.length === 1 ? "person" : "people"} on this unit
         </p>

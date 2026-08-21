@@ -86,7 +86,7 @@ export default async function Home({
         {/* The unit switcher sits beside the name it switches away from, not buried among
             the capsules below — it acts on the title, so it reads as part of the title. */}
         <div className="mt-0.5 flex items-center justify-between gap-3">
-          <h1 className="ios-large-title min-w-0 truncate text-[28px]">
+          <h1 className="ios-large-title min-w-0 truncate text-[18px] leading-tight">
             {heading}
             <span className="ml-2 align-middle text-[15px] font-normal text-muted tabular-nums">
               {patients.length}
@@ -94,7 +94,7 @@ export default async function Home({
           </h1>
           <Link
             href="/unit"
-            className="flex shrink-0 items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-[14px] font-medium text-accent active:opacity-70"
+            className="flex shrink-0 items-center gap-1 rounded-full bg-card px-2.5 py-1.5 text-[13px] font-medium text-accent active:opacity-70"
           >
             <UsersIcon className="h-3.5 w-3.5" />
             Unit
