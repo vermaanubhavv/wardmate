@@ -36,13 +36,65 @@ export const getTemplateForPatient = cache(async function getTemplateForPatient(
   if (!patient.template_family) return null;
 
   const supabase = await createClient();
+  const phase = phaseFor(patient);
+
+  // A published protocol scoped to this procedure and phase takes over from the old
+  // care_templates row — see supabase/patches/0037_lap_chole_checklist_protocol_seed.sql. This
+  // is checked first so publishing a checklist protocol is the only step needed to switch a
+  // procedure over; nothing else about how a patient page reads its template changes.
+  const { data: protocolRows } = await supabase
+    .from("company_protocols")
+    .select(
+      "id, title, template_family, template_variant, phase, company_protocol_items(id, kind, prompt, importance, aliases, position)"
+    )
+    .eq("template_family", patient.template_family)
+    .eq("phase", phase)
+    .eq("status", "published");
+
+  const protocolMatch = (protocolRows ?? []).find(
+    (p) => (p.template_variant ?? null) === (patient.template_variant ?? null)
+  );
+
+  if (protocolMatch) {
+    const items = (
+      (protocolMatch.company_protocol_items as {
+        id: string;
+        kind: string;
+        prompt: string;
+        importance: "core" | "optional";
+        aliases: string[];
+        position: number;
+      }[]) ?? []
+    )
+      .slice()
+      .sort((a, b) => a.position - b.position)
+      .map((i) => ({
+        id: i.id,
+        label: i.prompt,
+        aliases: i.aliases ?? [],
+        kind: i.kind,
+        importance: i.importance,
+        position: i.position,
+        hint: null,
+      }));
+
+    return {
+      id: protocolMatch.id,
+      name: protocolMatch.title,
+      family: protocolMatch.template_family as string,
+      variant: protocolMatch.template_variant,
+      phase: protocolMatch.phase as "before_surgery" | "after_surgery",
+      items,
+    };
+  }
+
   const { data } = await supabase
     .from("care_templates")
     .select(
       "id, name, family, variant, phase, ward_id, care_template_items(id, label, aliases, kind, importance, position, hint)"
     )
     .eq("family", patient.template_family)
-    .eq("phase", phaseFor(patient));
+    .eq("phase", phase);
 
   if (!data || data.length === 0) return null;
 
