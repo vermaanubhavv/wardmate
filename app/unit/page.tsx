@@ -230,6 +230,16 @@ export default async function UnitPage() {
       )}
 
       <section className="px-6 pb-6">
+        <Link
+          href="/protocols"
+          className="flex items-center justify-between rounded-[10px] bg-card px-4 py-3 text-[15px]"
+        >
+          <span>Protocols</span>
+          <span className="text-muted">Company guidance ›</span>
+        </Link>
+      </section>
+
+      <section className="px-6 pb-6">
         <p className="mb-2 text-[15px] text-muted">Join another unit</p>
         <JoinForm />
       </section>
