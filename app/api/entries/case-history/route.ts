@@ -20,7 +20,7 @@ const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
  * list rather than leaving it sitting unread inside a document.
  *
  * The only marker distinguishing this from an ordinary entry is is_case_history — see
- * supabase/patches/0024_case_history.sql. Everything else about how it is captured, checked
+ * supabase/patches/0030_case_history.sql. Everything else about how it is captured, checked
  * and stored is identical to a round note.
  */
 export async function POST(request: Request) {
