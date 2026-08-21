@@ -282,7 +282,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       <section className="px-4 pb-6">
         <p className="ios-group-header mb-2 px-4">Latest progress</p>
         {latestEntry ? (
-          <LatestProgress entry={latestEntry} />
+          <LatestProgress entry={latestEntry} protocolTitles={protocolTitles} />
         ) : (
           <p className="ios-group px-4 py-3 text-[15px] text-muted">Nothing recorded yet.</p>
         )}
@@ -683,7 +683,13 @@ function IdentifierDetails({
  * reliably classify every spoken value as subjective, objective, or assessment, and the screen
  * must not make that clinical judgement on the resident's behalf.
  */
-function LatestProgress({ entry }: { entry: Entry }) {
+function LatestProgress({
+  entry,
+  protocolTitles,
+}: {
+  entry: Entry;
+  protocolTitles: Map<string, string>;
+}) {
   const values = entry.observations;
   const update = values.filter((o) => o.kind !== "plan" && !isIdentifierLabel(o.label));
   const plans = values.filter((o) => o.kind === "plan");
@@ -695,11 +701,29 @@ function LatestProgress({ entry }: { entry: Entry }) {
     minute: "2-digit",
   });
 
+  const matched = (entry.matched_protocol_ids ?? [])
+    .filter((id) => protocolTitles.has(id))
+    .map((id) => ({ id, title: protocolTitles.get(id)! }));
+
   return (
     <div className="ios-group">
       <div className="border-b border-line px-4 py-2.5 text-[13px] text-muted">{time}</div>
       <ProgressGroup label="Latest update" values={update} />
       {plans.length > 0 && <ProgressGroup label="Advice / plan" values={plans} timeAware />}
+
+      {matched.length > 0 && (
+        <div className="ios-row flex flex-wrap gap-1.5 px-4 py-3">
+          {matched.map((p) => (
+            <Link
+              key={p.id}
+              href={`/protocols#${p.id}`}
+              className="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-1 text-[12px] font-medium text-accent"
+            >
+              Protocol: {p.title} ›
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

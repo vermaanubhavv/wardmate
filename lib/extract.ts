@@ -152,7 +152,7 @@ export async function extractObservations(
 
   const protocolBlock =
     protocols.length > 0
-      ? `\n\nThe unit has these approved protocols on file. If the transcript's own clinical content genuinely relates to one — the same condition, drug, or situation it covers, not just a passing word in common — list its exact title in related_protocol_titles. This is a suggestion for the resident to go read, not a diagnosis and not something that changes anything on its own. Leave it empty rather than guess; a wrong suggestion is read and dismissed, a missing one is merely not offered, and the second is the safer failure.\n\n${protocols.map((p) => `- "${p.title}"${p.summary ? `: ${p.summary}` : ""}`).join("\n")}`
+      ? `\n\nThe unit has these approved protocols on file. Each has a line describing when it applies — where that line gives a concrete threshold (a number, a count, a named sign), treat it as a rule to check the transcript's own stated values against, not a vibe to judge by. Where the transcript states a value crossing that threshold, list the protocol's exact title in related_protocol_titles. Where the description is looser, use it only when the transcript's actual clinical content genuinely matches, not on a passing shared word. This is a suggestion for the resident to go read, not a diagnosis and not something that changes anything on its own. Leave it empty rather than guess; a wrong suggestion is read and dismissed, a missing one is merely not offered, and the second is the safer failure.\n\n${protocols.map((p) => `- "${p.title}"${p.summary ? `: ${p.summary}` : ""}`).join("\n")}`
       : "";
 
   const schema =
