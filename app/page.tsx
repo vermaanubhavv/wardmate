@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getHomeScreen } from "@/lib/home-screen";
+import { getCurrentWard } from "@/lib/ward";
 import { getDoctorName } from "@/lib/auth";
 import { signOut } from "./actions";
 import Wordmark from "./wordmark";
@@ -19,7 +21,13 @@ import { ChevronIcon } from "./icons";
  */
 export default async function Home() {
   // The greeting name is a local cookie read; the rest is one round trip. See lib/home-screen.
-  const [home, googleName] = await Promise.all([getHomeScreen(), getDoctorName()]);
+  const [home, googleName, { ward: currentWard, error: wardError }] = await Promise.all([
+    getHomeScreen(),
+    getDoctorName(),
+    getCurrentWard(),
+  ]);
+
+  if (!wardError && !currentWard) redirect("/onboarding");
 
   // The profile is the doctor's own to set and wins when they have set it. Google's name is
   // the fallback, and neither is invented — see getDoctorName.

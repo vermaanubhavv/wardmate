@@ -5,6 +5,30 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export type JoinState = { error: string | null; joined?: string };
+export type CreateWardState = { error: string | null };
+
+/** Create a first unit and make its creator the owner. */
+export async function createWard(
+  _prev: CreateWardState,
+  formData: FormData,
+): Promise<CreateWardState> {
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return { error: "Enter a unit name." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You are signed out. Sign in again." };
+
+  const { error } = await supabase.rpc("create_ward_for_current_user", { unit_name: name });
+  if (error) return { error: error.message };
+
+  revalidatePath("/");
+  revalidatePath("/ward");
+  revalidatePath("/unit");
+  redirect("/ward");
+}
 
 /**
  * Join a unit with its code.

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getWardScreen } from "@/lib/ward-screen";
 import { getDoctorName } from "@/lib/auth";
 import { dayLabel, patientName, type WardPatient } from "@/lib/patients";
@@ -44,6 +45,8 @@ export default async function Home({
   const deleteFailed = (await searchParams).delete_failed;
   const department = profile?.department?.trim() || null;
   const heading = [department, ward?.name].filter(Boolean).join(" ");
+
+  if (!wardError && !ward) redirect("/onboarding");
 
   if (wardError || !ward) {
     return (

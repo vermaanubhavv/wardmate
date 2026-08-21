@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWard, getMyWards } from "@/lib/ward";
 import CodeBox from "./code-box";
@@ -15,6 +16,8 @@ import { DESIGNATION_CHOICES } from "@/lib/patients";
  */
 export default async function UnitPage() {
   const { ward, error } = await getCurrentWard();
+
+  if (!error && !ward) redirect("/onboarding");
 
   if (error || !ward) {
     return (

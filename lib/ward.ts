@@ -3,8 +3,7 @@ import type { WardPatient } from "@/lib/patients";
 import { compareBeds } from "@/lib/patients";
 
 /**
- * The doctor's current ward. Only one exists today; picking the oldest keeps the choice
- * stable once there are several, until a ward switcher is built.
+ * The doctor's selected unit. A user who has not joined or created one has no current ward.
  */
 export async function getCurrentWard() {
   const supabase = await createClient();
@@ -21,21 +20,10 @@ export async function getCurrentWard() {
   // row. Asking "which profiles may I see" returns one: theirs. The token is still verified,
   // by the database, on every one of these queries.
   //
-  // The fallback ward is fetched at the same time rather than after finding no preference,
-  // because a second trip costs more than a query that is usually discarded.
-  const [{ data: profile }, { data: firstWard, error }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("current_ward_id, wards!current_ward_id(id, name, owner_id, join_code, letterhead)")
-      .maybeSingle(),
-    supabase
-      .from("wards")
-      .select("id, name, owner_id, join_code, letterhead")
-      .is("archived_at", null)
-      .order("created_at")
-      .limit(1)
-      .maybeSingle(),
-  ]);
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("current_ward_id, wards!current_ward_id(id, name, owner_id, join_code, letterhead)")
+    .maybeSingle();
 
   // The embedded ward comes back as an object or, depending on how the relationship is
   // resolved, a one-element array. Both shapes are handled rather than assumed.
@@ -45,7 +33,7 @@ export async function getCurrentWard() {
     | undefined;
 
   if (chosen) return { ward: chosen, error: null };
-  return { ward: firstWard, error };
+  return { ward: null, error };
 }
 
 /** Every unit this doctor belongs to, for the switcher. */
