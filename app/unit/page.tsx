@@ -96,18 +96,6 @@ export default async function UnitPage() {
           {roster.length} {roster.length === 1 ? "person" : "people"} on this unit
         </p>
 
-        {/* Only once there is something in it — an empty trash is not worth a row. */}
-        {Boolean(trashCount) && (
-          <Link
-            href="/unit/trash"
-            className="mt-3 flex items-center justify-between rounded-[10px] bg-card px-4 py-3 text-[15px]"
-          >
-            <span>Trash</span>
-            <span className="text-muted">
-              {trashCount} {trashCount === 1 ? "patient" : "patients"} ›
-            </span>
-          </Link>
-        )}
       </header>
 
       {/* First, because it is the only section on this screen about the person reading it.
@@ -273,7 +261,7 @@ export default async function UnitPage() {
       )}
 
       {!isOwner && (
-        <section className="px-6 pb-16">
+        <section className="px-6 pb-6">
           <form action={leaveWard}>
             <input type="hidden" name="ward_id" value={ward.id} />
             <button className="w-full rounded-[10px] bg-card px-4 py-3 text-sm text-red-600">
@@ -283,6 +271,22 @@ export default async function UnitPage() {
           <p className="mt-2 text-[13px] text-muted">
             The patients stay. You simply stop seeing them.
           </p>
+        </section>
+      )}
+
+      {/* Kept at the end, away from routine profile and unit controls. It remains hidden when
+          empty, so it never creates a destination without something recoverable in it. */}
+      {Boolean(trashCount) && (
+        <section className="px-6 pb-16">
+          <Link
+            href="/unit/trash"
+            className="flex items-center justify-between rounded-[10px] bg-card px-4 py-3 text-[15px]"
+          >
+            <span>Trash</span>
+            <span className="text-muted">
+              {trashCount} {trashCount === 1 ? "patient" : "patients"} ›
+            </span>
+          </Link>
         </section>
       )}
     </div>
