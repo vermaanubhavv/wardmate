@@ -135,7 +135,7 @@ export default async function Home({
         {deleteFailed && (
           <p className="ios-group mb-4 px-4 py-3 text-[15px] text-orange-700">
             {deleteFailed === "refused"
-              ? "The database refused the deletion. Run patch 0025_direct_patient_delete.sql in Supabase, then try again."
+              ? "The database could not move this patient to Trash. Run patch 0029_patient_trash.sql in Supabase, then try again."
               : `Could not delete this patient: ${deleteFailed}`}
           </p>
         )}
