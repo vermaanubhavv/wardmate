@@ -3,9 +3,14 @@ import CreateUnitForm from "./create-unit-form";
 import JoinForm from "../unit/join-form";
 import Wordmark from "../wordmark";
 import { signOut } from "../actions";
+import { createClient } from "@/lib/supabase/server";
+import ProfessionalForm from "./professional-form";
 
 /** The only first-run decision: join the team already working, or start a new one. */
-export default function OnboardingPage() {
+export default async function OnboardingPage() {
+  const supabase = await createClient();
+  const { data: access } = await supabase.from("clinician_access").select("verification_status").maybeSingle();
+  const hasProfessionalAccess = access?.verification_status === "self_attested" || access?.verification_status === "verified" || access?.verification_status === "legacy";
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
       <header className="flex items-center justify-between border-b border-line/60 px-4 py-2.5">
@@ -17,10 +22,10 @@ export default function OnboardingPage() {
 
       <main className="flex-1 px-6 pb-10 pt-9">
         <p className="text-[15px] text-muted">Welcome to WardMate</p>
-        <h1 className="ios-large-title mt-0.5">Choose your unit</h1>
-        <p className="mt-3 text-[15px] leading-relaxed text-muted">
-          Join the unit your team already uses, or create one for a new team.
-        </p>
+        <h1 className="ios-large-title mt-0.5">{hasProfessionalAccess ? "Choose your unit" : "Professional access"}</h1>
+        <p className="mt-3 text-[15px] leading-relaxed text-muted">{hasProfessionalAccess ? "Join the unit your team already uses, or create one for a new team." : "WardMate is for doctors and medical interns. Confirm your professional details before entering a unit."}</p>
+
+        {!hasProfessionalAccess ? <ProfessionalForm /> : <>
 
         <section className="mt-8">
           <h2 className="mb-2 text-[17px] font-semibold">Join an existing unit</h2>
@@ -47,6 +52,7 @@ export default function OnboardingPage() {
         <p className="mt-8 text-center text-[13px] text-muted">
           Already belong to a unit? <Link href="/unit" className="text-accent">Manage units</Link>
         </p>
+        </>}
       </main>
     </div>
   );

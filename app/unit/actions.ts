@@ -177,7 +177,7 @@ export async function saveProfile(formData: FormData) {
 
   // Anything not on the ladder is stored as nothing rather than as itself: the column has a
   // check constraint, and an insert it refuses would surface as a database error at a bedside.
-  const designation = ["JR-1", "JR-2", "JR-3", "SR", "AP"].includes(designationRaw)
+  const designation = ["Intern", "JR-1", "JR-2", "JR-3", "SR", "AP", "Medical Officer", "Consultant"].includes(designationRaw)
     ? designationRaw
     : null;
 

@@ -83,7 +83,7 @@ export const LOCATION_CHOICES = [
 ] as const;
 
 /** What a resident is. The ladder as an Indian surgical unit writes it. */
-export const DESIGNATION_CHOICES = ["JR-1", "JR-2", "JR-3", "SR", "AP"] as const;
+export const DESIGNATION_CHOICES = ["Intern", "JR-1", "JR-2", "JR-3", "SR", "AP", "Medical Officer", "Consultant"] as const;
 
 export const MANAGEMENT_CHOICES = [
   { value: "preop", label: "Pre-op" },
