@@ -121,6 +121,8 @@ export type ExtractionResult = {
   observations: ExtractedObservation[];
   /** Observations the model produced whose quote was not actually in the transcript. */
   rejected: ExtractedObservation[];
+  /** Published protocols the transcript looks related to — a suggestion, not an action. */
+  matchedProtocolIds: string[];
   model: string;
   raw: unknown;
 };
@@ -134,7 +136,8 @@ export type ExtractionResult = {
  */
 export async function extractObservations(
   transcript: string,
-  expectedLabels: string[] = []
+  expectedLabels: string[] = [],
+  protocols: { id: string; title: string; summary: string }[] = []
 ): Promise<ExtractionResult> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
@@ -147,15 +150,36 @@ export async function extractObservations(
       ? `\n\nThis patient is being followed against a template. If — and only if — the resident actually mentions one of the things below, use that exact wording as the label so it can be matched:\n${expectedLabels.map((l) => `- ${l}`).join("\n")}\n\nThis list tells you what to CALL things. It does not tell you what is true. Anything on this list that the resident did not mention must simply be absent from your output — never emit an observation for it.`
       : "";
 
+  const protocolBlock =
+    protocols.length > 0
+      ? `\n\nThe unit has these approved protocols on file. If the transcript's own clinical content genuinely relates to one — the same condition, drug, or situation it covers, not just a passing word in common — list its exact title in related_protocol_titles. This is a suggestion for the resident to go read, not a diagnosis and not something that changes anything on its own. Leave it empty rather than guess; a wrong suggestion is read and dismissed, a missing one is merely not offered, and the second is the safer failure.\n\n${protocols.map((p) => `- "${p.title}"${p.summary ? `: ${p.summary}` : ""}`).join("\n")}`
+      : "";
+
+  const schema =
+    protocols.length > 0
+      ? {
+          ...SCHEMA,
+          properties: {
+            ...SCHEMA.properties,
+            related_protocol_titles: {
+              type: "array",
+              items: { type: "string" },
+              description: "Exact titles, copied from the list given, or empty.",
+            },
+          },
+          required: [...SCHEMA.required, "related_protocol_titles"],
+        }
+      : SCHEMA;
+
   const response = await client.messages.create({
     model,
     max_tokens: 4000,
-    system: SYSTEM_PROMPT + expected,
+    system: SYSTEM_PROMPT + expected + protocolBlock,
     // Low effort: this is constrained extraction from a short transcript, and the resident
     // is standing at a bedside. Raise it if extraction quality turns out to need it.
     output_config: {
       effort: "low",
-      format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> },
+      format: { type: "json_schema", schema: schema as unknown as Record<string, unknown> },
     },
     messages: [
       {
@@ -168,6 +192,14 @@ export async function extractObservations(
   const text = response.content.find((b) => b.type === "text");
   const parsed = text && text.type === "text" ? JSON.parse(text.text) : { observations: [] };
   const candidates: ExtractedObservation[] = parsed.observations ?? [];
+
+  // Only a title that was actually offered can survive — the same "the model's word alone is
+  // not enough" rule the quote check below applies to observations. A hallucinated or
+  // paraphrased title is dropped rather than fuzzy-matched.
+  const offeredTitles: string[] = parsed.related_protocol_titles ?? [];
+  const matchedProtocolIds = protocols
+    .filter((p) => offeredTitles.includes(p.title))
+    .map((p) => p.id);
 
   // THE ENFORCEMENT STEP. The prompt asks for verbatim quotes; this checks. Any observation
   // whose quote is not actually present in the transcript is discarded rather than stored —
@@ -204,7 +236,7 @@ export async function extractObservations(
     } else rejected.push(obs);
   }
 
-  return { observations, rejected, model, raw: parsed };
+  return { observations, rejected, matchedProtocolIds, model, raw: parsed };
 }
 
 /**

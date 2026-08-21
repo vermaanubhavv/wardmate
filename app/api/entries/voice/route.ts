@@ -4,6 +4,7 @@ import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
 import { extractObservations } from "@/lib/extract";
 import { correctTranscript } from "@/lib/glossary";
 import { getTemplateForPatient } from "@/lib/templates";
+import { getPublishedProtocolContext } from "@/lib/protocols";
 
 /**
  * The whole voice round-trip, on the server: audio in, stored observations out.
@@ -74,10 +75,11 @@ export async function POST(request: Request) {
   // and can be matched back — it does not license inventing the ones they skipped.
   const template = await getTemplateForPatient(patient);
   const expectedLabels = template?.items.map((i) => i.label) ?? [];
+  const protocols = await getPublishedProtocolContext();
 
   let extraction;
   try {
-    extraction = await extractObservations(transcript, expectedLabels);
+    extraction = await extractObservations(transcript, expectedLabels, protocols);
   } catch (e) {
     // The transcript is worth keeping even when extraction fails — it is the evidence, and
     // the resident can still read it. Store the entry with the error recorded against it.
@@ -121,6 +123,7 @@ export async function POST(request: Request) {
       stt_model: stt.model,
       extraction_model: extraction.model,
       extraction_raw: extraction.raw as never,
+      matched_protocol_ids: extraction.matchedProtocolIds,
     })
     .select("id")
     .single();

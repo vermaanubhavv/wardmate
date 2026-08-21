@@ -43,6 +43,8 @@ type Entry = {
   edited_at: string | null;
   /** The admission clerking note rather than a round entry — see CaseHistoryCapture. */
   is_case_history: boolean;
+  /** Published protocols this entry's words looked related to — see lib/protocols.ts. */
+  matched_protocol_ids: string[] | null;
   observations: Observation[];
 };
 
@@ -74,7 +76,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       supabase
         .from("entries")
         .select(
-          "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, is_case_history, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at)"
+          "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, is_case_history, matched_protocol_ids, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at)"
         )
         .eq("patient_id", id)
         .order("recorded_at", { ascending: false }),
@@ -107,6 +109,20 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // exactly as a spoken one would.
   const caseHistoryEntries = allEntries.filter((e) => e.is_case_history);
   const entries = allEntries.filter((e) => !e.is_case_history);
+
+  // Titles for whatever protocols got matched, fetched once for the whole page rather than
+  // once per entry — the same batching reasoning as the photo URLs just above.
+  const matchedIds = Array.from(
+    new Set(allEntries.flatMap((e) => e.matched_protocol_ids ?? []))
+  );
+  const protocolTitles = new Map<string, string>();
+  if (matchedIds.length > 0) {
+    const { data: matchedProtocols } = await supabase
+      .from("company_protocols")
+      .select("id, title")
+      .in("id", matchedIds);
+    for (const p of matchedProtocols ?? []) protocolTitles.set(p.id, p.title);
+  }
 
   // Short-lived links for the stored photographs. The bucket is private, so these are the
   // only way to see one, they expire in an hour, and they are only ever minted here — for a
@@ -251,6 +267,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                   needs_confirmation: o.needs_confirmation,
                   confirmed_at: o.confirmed_at,
                 }))}
+                matchedProtocols={(entry.matched_protocol_ids ?? [])
+                  .filter((id) => protocolTitles.has(id))
+                  .map((id) => ({ id, title: protocolTitles.get(id)! }))}
               />
             ))}
             <CaseHistoryCapture patientId={patient.id} hasExisting />
@@ -533,6 +552,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                               needs_confirmation: o.needs_confirmation,
                               confirmed_at: o.confirmed_at,
                             }))}
+                            matchedProtocols={(entry.matched_protocol_ids ?? [])
+                              .filter((id) => protocolTitles.has(id))
+                              .map((id) => ({ id, title: protocolTitles.get(id)! }))}
                           />
                         ))
                       )}

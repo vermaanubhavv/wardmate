@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { mergeLabelValue } from "@/lib/patients";
 import { acceptEntry, editEntry, deleteEntry, updateObservation } from "./actions";
@@ -107,6 +108,7 @@ export default function EntryCard({
   edited,
   extractionError,
   values,
+  matchedProtocols,
 }: {
   entryId: string;
   patientId: string;
@@ -120,6 +122,8 @@ export default function EntryCard({
   edited: boolean;
   extractionError: string | null;
   values: Value[];
+  /** Published protocols this entry's words looked related to — a suggestion, never applied. */
+  matchedProtocols?: { id: string; title: string }[];
 }) {
   const [showEvidence, setShowEvidence] = useState(false);
   const [editingWords, setEditingWords] = useState(false);
@@ -229,6 +233,20 @@ export default function EntryCard({
                   <p key={v.id} className="text-[17px] leading-snug">
                     <PhraseButton value={v} withLabel={false} onEdit={openEditor} interactive={correcting} />
                   </p>
+                ))}
+              </div>
+            )}
+
+            {matchedProtocols && matchedProtocols.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {matchedProtocols.map((p) => (
+                  <Link
+                    key={p.id}
+                    href={`/protocols#${p.id}`}
+                    className="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-1 text-[12px] font-medium text-accent"
+                  >
+                    Protocol: {p.title} ›
+                  </Link>
                 ))}
               </div>
             )}

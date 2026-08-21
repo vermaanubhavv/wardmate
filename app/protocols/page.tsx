@@ -185,7 +185,7 @@ function ProtocolCard({ protocol: p, isPublisher }: { protocol: Protocol; isPubl
   const pathway = byKind("pathway_step");
 
   return (
-    <article className="ios-group p-4">
+    <article id={p.id} className="ios-group scroll-mt-6 p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="truncate font-semibold">{p.title}</h2>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { extractObservations } from "@/lib/extract";
 import { getTemplateForPatient } from "@/lib/templates";
+import { getPublishedProtocolContext } from "@/lib/protocols";
 
 /**
  * Typed note in, stored observations out — the voice route with the speech step removed.
@@ -41,10 +42,11 @@ export async function POST(request: Request) {
 
   const template = await getTemplateForPatient(patient);
   const expectedLabels = template?.items.map((i) => i.label) ?? [];
+  const protocols = await getPublishedProtocolContext();
 
   let extraction;
   try {
-    extraction = await extractObservations(text, expectedLabels);
+    extraction = await extractObservations(text, expectedLabels, protocols);
   } catch (e) {
     // Keep the note even when structuring fails — the words are the evidence.
     const { data: entry } = await supabase
@@ -75,6 +77,7 @@ export async function POST(request: Request) {
       transcript: text,
       extraction_model: extraction.model,
       extraction_raw: extraction.raw as never,
+      matched_protocol_ids: extraction.matchedProtocolIds,
     })
     .select("id")
     .single();
