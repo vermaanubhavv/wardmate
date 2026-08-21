@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import EditIdentity from "./edit-identity";
-import { removePatient, deletePatientFromWard } from "./actions";
+import { removePatient } from "./actions";
 
 type Patient = {
   id: string;
@@ -20,7 +20,8 @@ type Patient = {
   procedure_text: string | null;
   template_family: string | null;
   template_variant: string | null;
-  /** Only used to say what a permanent delete would destroy. */
+  /** Unused now that trashing is reachable only from the Removed list, not this menu — kept
+   *  on the type since callers still pass it and removing it buys nothing. */
   entry_count?: number;
 };
 
@@ -119,31 +120,6 @@ export default function PatientMenu({
               className="block w-full px-4 py-3 text-left text-[17px] active:bg-chip"
             >
               Remove from ward
-            </button>
-          </form>
-
-          {/* Last, and the only red one. Removing is a change of mind; this is not. */}
-          <form action={deletePatientFromWard} className="border-t border-line">
-            <input type="hidden" name="patient_id" value={patient.id} />
-            <button
-              type="submit"
-              onClick={(e) => {
-                const n = patient.entry_count ?? 0;
-                const what =
-                  n === 0
-                    ? "Nothing has ever been recorded on them."
-                    : `Their ${n} ${n === 1 ? "recording" : "recordings"} and everything taken from ${n === 1 ? "it" : "them"} will be destroyed.`;
-                if (
-                  !confirm(
-                    `Delete ${patient.display_name} permanently?\n\n${what}\n\nThis cannot be undone — there is no way to put them back.`
-                  )
-                ) {
-                  e.preventDefault();
-                }
-              }}
-              className="block w-full px-4 py-3 text-left text-[17px] font-medium text-accent active:bg-chip"
-            >
-              Delete permanently
             </button>
           </form>
         </div>

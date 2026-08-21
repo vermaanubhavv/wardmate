@@ -182,14 +182,13 @@ export async function restorePatient(formData: FormData) {
 }
 
 /**
- * Destroy a patient and everything recorded about them. There is no undoing this one.
+ * Move a patient into the trash. Nothing is destroyed here — see
+ * supabase/patches/0029_patient_trash.sql for the full shape this is one step of.
  *
- * Only reachable from the removed list, and the database enforces that too — the delete
- * policy refuses a patient still on the ward — so this is always the second of two deliberate
- * acts rather than one mis-aimed tap. It exists for the patient who should never have been
- * created: a misheard bed, a name read wrong off a register. Their entries and observations
- * go with them, which is exactly what is wanted for noise and exactly why it sits behind an
- * undo list for everything else.
+ * Only reachable from the removed list, and only a patient already discharged can be trashed:
+ * this is the SECOND of two deliberate acts (remove, then trash), not a shortcut past the
+ * first. A row moved here sits recoverable for seven days before purge_expired_trash() ever
+ * touches it, and restoreFromTrash() below is the only other thing that can move it again.
  */
 export async function deletePatientForever(formData: FormData) {
   const id = String(formData.get("patient_id") ?? "");
@@ -201,13 +200,13 @@ export async function deletePatientForever(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) return;
 
-  // .select() so the outcome is actually known. A delete that row security refuses is NOT an
-  // error — PostgREST returns success having removed nothing — so without asking which rows
-  // came back, a refusal and a success look identical, and this reported neither. That is
-  // exactly how a delete could appear to do nothing, repeatedly, and say nothing about it.
-  const { data: deleted, error } = await supabase
+  // An UPDATE, not a delete, so its outcome is unambiguous — no more "row security refused it
+  // and PostgREST called that success" to work around. Zero rows back means either the id was
+  // wrong or the patient was not discharged (the two-step order was skipped), and either way
+  // that is the honest reason nothing happened.
+  const { data: trashed, error } = await supabase
     .from("patients")
-    .delete()
+    .update({ status: "trashed", trashed_at: new Date().toISOString() })
     .eq("id", id)
     .eq("status", "discharged")
     .select("id");
@@ -215,18 +214,20 @@ export async function deletePatientForever(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/ward");
   revalidatePath("/removed");
+  revalidatePath("/unit/trash");
 
   if (error) redirect(`/removed?failed=${encodeURIComponent(error.message)}`);
-  if (!deleted || deleted.length === 0) redirect("/removed?failed=refused");
+  if (!trashed || trashed.length === 0) redirect("/removed?failed=refused");
+
+  redirect("/removed");
 }
 
 /**
- * Delete a patient outright, from the ward.
- *
- * The confirmation in the menu is the deliberate safety boundary. Once confirmed, this is a
- * one-step deletion — the patient is never moved through a separate Removed screen first.
+ * Undo a trash: back to the removed list, not straight onto the ward. This reverses the ONE
+ * act that put a patient here — the earlier decision to remove them from the ward is a
+ * separate question, answered separately from the removed list's own "Put back on the ward".
  */
-export async function deletePatientFromWard(formData: FormData) {
+export async function restoreFromTrash(formData: FormData) {
   const id = String(formData.get("patient_id") ?? "");
   if (!id) return;
 
@@ -236,23 +237,16 @@ export async function deletePatientFromWard(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) return;
 
-  // Row security may refuse a delete without raising an error, so ask which rows came back.
-  const { data: deleted, error } = await supabase
+  await supabase
     .from("patients")
-    .delete()
+    .update({ status: "discharged", trashed_at: null })
     .eq("id", id)
-    .select("id");
+    .eq("status", "trashed");
 
   revalidatePath("/");
   revalidatePath("/ward");
   revalidatePath("/removed");
-  revalidatePath("/todo");
-  revalidatePath("/handover");
-
-  if (error) redirect(`/ward?delete_failed=${encodeURIComponent(error.message)}`);
-  if (!deleted || deleted.length === 0) redirect("/ward?delete_failed=refused");
-
-  redirect("/ward");
+  revalidatePath("/unit/trash");
 }
 
 export type EditPatientState = { error: string | null; ok?: boolean };

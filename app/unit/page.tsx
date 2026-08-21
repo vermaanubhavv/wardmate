@@ -35,7 +35,7 @@ export default async function UnitPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: members }, myWards, { data: me }] = await Promise.all([
+  const [{ data: members }, myWards, { data: me }, { count: trashCount }] = await Promise.all([
     supabase
       .from("ward_members")
       .select("user_id, role, added_at, profiles(display_name)")
@@ -44,6 +44,11 @@ export default async function UnitPage() {
     getMyWards(),
     // Row security restricts profiles to the caller's own row, so this needs no where clause.
     supabase.from("profiles").select("display_name, designation, department").maybeSingle(),
+    supabase
+      .from("patients")
+      .select("id", { count: "exact", head: true })
+      .eq("ward_id", ward.id)
+      .eq("status", "trashed"),
   ]);
 
   const profile = (me ?? {}) as {
@@ -71,6 +76,19 @@ export default async function UnitPage() {
         <p className="mt-0.5 text-[15px] text-muted">
           {roster.length} {roster.length === 1 ? "person" : "people"} on this unit
         </p>
+
+        {/* Only once there is something in it — an empty trash is not worth a row. */}
+        {Boolean(trashCount) && (
+          <Link
+            href="/unit/trash"
+            className="mt-3 flex items-center justify-between rounded-[10px] bg-card px-4 py-3 text-[15px]"
+          >
+            <span>Trash</span>
+            <span className="text-muted">
+              {trashCount} {trashCount === 1 ? "patient" : "patients"} ›
+            </span>
+          </Link>
+        )}
       </header>
 
       {/* First, because it is the only section on this screen about the person reading it.

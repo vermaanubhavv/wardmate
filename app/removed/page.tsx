@@ -61,20 +61,18 @@ export default async function RemovedPage({
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
-      {/* Only ever shown after a delete that did not happen. Silence here was the whole
-          problem: the row security check refuses without raising an error, so a delete could
-          be tapped over and over with nothing to show for it and nothing said. */}
+      {/* Only ever shown after a move to trash that did not happen — most likely because
+          another device already moved (or restored) this same patient a moment earlier, so
+          the update matched nothing rather than being refused outright. */}
       {failed && (
         <div className="mx-6 mt-6 rounded-[10px] border border-orange-300 bg-orange-50 px-4 py-3">
           <p className="text-[15px] font-semibold text-orange-800">
-            That patient was not deleted.
+            That patient was not moved to the trash.
           </p>
           {failed === "refused" ? (
             <p className="mt-1 text-[13px] leading-relaxed text-orange-800">
-              The database refused it. Permanent deletion has to be switched on there once, and
-              on this project it has not been — run the patch{" "}
-              <span className="font-mono">0015_permanent_delete.sql</span> in the Supabase SQL
-              editor and try again. Nothing has been lost: the patient is still here.
+              Either they are not here any more, or someone else just changed them. Refresh and
+              check the list — nothing has been lost either way.
             </p>
           ) : (
             <p className="mt-1 text-[13px] leading-relaxed text-orange-800">
@@ -147,16 +145,13 @@ function RemovedCard({ patient }: { patient: RemovedPatient }) {
         <form action={deletePatientForever}>
           <input type="hidden" name="patient_id" value={patient.id} />
           <button
-            // The only irreversible action in the app, so it says exactly what goes and
-            // names what is being destroyed rather than asking "are you sure?".
+            // No longer the irreversible action in the app — it moves to the trash, where it
+            // sits recoverable for seven days. Still confirmed, because it is still a
+            // deliberate step away from where the patient currently is, just not a final one.
             onClick={(e) => {
-              const what =
-                patient.entry_count === 0
-                  ? "Nothing was ever recorded on them."
-                  : `Their ${patient.entry_count} ${patient.entry_count === 1 ? "entry" : "entries"} and everything recorded in ${patient.entry_count === 1 ? "it" : "them"} will be destroyed.`;
               if (
                 !confirm(
-                  `Delete ${patient.display_name} permanently?\n\n${what}\n\nThis cannot be undone.`
+                  `Move ${patient.display_name} to the trash?\n\nThey stay recoverable there for 7 days, from the unit page, before being deleted for good.`
                 )
               ) {
                 e.preventDefault();
@@ -164,7 +159,7 @@ function RemovedCard({ patient }: { patient: RemovedPatient }) {
             }}
             className="rounded-[10px] border border-red-300 px-4 py-3 text-[15px] font-semibold text-red-600"
           >
-            Delete
+            Move to trash
           </button>
         </form>
       </div>
