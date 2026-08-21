@@ -51,6 +51,27 @@ export default async function UnitPage() {
       .eq("status", "trashed"),
   ]);
 
+  const isOwner = ward.owner_id === user?.id;
+
+  // Only the owner ever sees this, and only for their own team — see
+  // supabase/patches/0031_clinician_access_owner_read.sql. Not a verification, still just
+  // what each person typed and attested themselves; this only makes that visible to the one
+  // person in a position to notice something wrong with somebody they actually know.
+  const attestations = new Map<
+    string,
+    { registration_number: string; hospital_name: string; designation: string }
+  >();
+  if (isOwner && members && members.length > 0) {
+    const { data: access } = await supabase
+      .from("clinician_access")
+      .select("user_id, registration_number, hospital_name, designation")
+      .in(
+        "user_id",
+        members.map((m) => m.user_id)
+      );
+    for (const a of access ?? []) attestations.set(a.user_id, a);
+  }
+
   const profile = (me ?? {}) as {
     display_name?: string | null;
     designation?: string | null;
@@ -63,8 +84,6 @@ export default async function UnitPage() {
     added_at: string;
     profiles: { display_name: string | null } | null;
   }[];
-
-  const isOwner = ward.owner_id === user?.id;
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
@@ -152,20 +171,29 @@ export default async function UnitPage() {
       <section className="px-6 pb-6">
         <p className="mb-2 text-[15px] text-muted">On this unit</p>
         <ul className="ios-group divide-y divide-line">
-          {roster.map((m) => (
-            <li
-              key={m.user_id}
-              className="flex items-baseline justify-between gap-3 px-4 py-3"
-            >
-              <span className="truncate text-sm">
-                {m.profiles?.display_name || "Doctor"}
-                {m.user_id === user?.id && (
-                  <span className="text-muted"> · you</span>
+          {roster.map((m) => {
+            const attested = attestations.get(m.user_id);
+            return (
+              <li key={m.user_id} className="px-4 py-3">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="truncate text-sm">
+                    {m.profiles?.display_name || "Doctor"}
+                    {m.user_id === user?.id && <span className="text-muted"> · you</span>}
+                  </span>
+                  <span className="shrink-0 text-[13px] text-muted">{m.role}</span>
+                </div>
+                {/* Owner-only, and self-attested rather than checked against anything — see
+                    supabase/patches/0031_clinician_access_owner_read.sql. Shown as what it is:
+                    what this person typed about themselves, not a credential this app confirmed. */}
+                {attested && (
+                  <p className="mt-0.5 truncate text-[13px] text-muted">
+                    {attested.designation} · {attested.hospital_name} ·{" "}
+                    <span className="font-mono">{attested.registration_number}</span>
+                  </p>
                 )}
-              </span>
-              <span className="shrink-0 text-[13px] text-muted">{m.role}</span>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       </section>
 
