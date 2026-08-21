@@ -40,11 +40,12 @@ export default async function Home({
     getWardScreen(),
     getDoctorName(),
     supabase.rpc("is_protocol_publisher"),
-    supabase.from("profiles").select("department").maybeSingle(),
+    supabase.from("profiles").select("department, designation").maybeSingle(),
   ]);
   const deleteFailed = (await searchParams).delete_failed;
   const department = profile?.department?.trim() || null;
-  const heading = [department, ward?.name].filter(Boolean).join(" ");
+  const designation = profile?.designation?.trim() || null;
+  const departmentLabel = department === "General Surgery" ? "Gen. Surgery" : department;
 
   if (!wardError && !ward) redirect("/onboarding");
 
@@ -83,18 +84,24 @@ export default async function Home({
           </p>
         )}
 
-        {/* The unit switcher sits beside the name it switches away from, not buried among
-            the capsules below — it acts on the title, so it reads as part of the title. */}
-        <div className="mt-0.5 flex items-center justify-between gap-3">
-          <h1 className="ios-large-title min-w-0 truncate text-[18px] leading-tight">
-            {heading}
+        {(designation || departmentLabel) && (
+          <p className="mt-1 text-[15px] text-muted">
+            {[designation, departmentLabel].filter(Boolean).join(" · ")}
+          </p>
+        )}
+
+        {/* The name of the actual working unit is its own line; department and designation
+            identify the clinician, not the team. */}
+        <div className="mt-1 flex items-center justify-between gap-3">
+          <h1 className="ios-large-title min-w-0 truncate text-[28px]">
+            {ward.name}
             <span className="ml-2 align-middle text-[15px] font-normal text-muted tabular-nums">
               {patients.length}
             </span>
           </h1>
           <Link
             href="/unit"
-            className="flex shrink-0 items-center gap-1 rounded-full bg-card px-2.5 py-1.5 text-[13px] font-medium text-accent active:opacity-70"
+            className="flex shrink-0 items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-[14px] font-medium text-accent active:opacity-70"
           >
             <UsersIcon className="h-3.5 w-3.5" />
             Unit
