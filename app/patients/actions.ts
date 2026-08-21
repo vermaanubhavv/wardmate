@@ -135,7 +135,7 @@ function readManagement(raw: string): string | null {
  * added to the wrong bed this morning, both leave the list the same way — and if either turns
  * out to be a mistake the record is still there to put back.
  */
-export async function removePatient(formData: FormData) {
+export async function dischargePatient(formData: FormData) {
   const id = String(formData.get("patient_id") ?? "");
   if (!id) return;
 
@@ -185,10 +185,9 @@ export async function restorePatient(formData: FormData) {
  * Move a patient into the trash. Nothing is destroyed here — see
  * supabase/patches/0029_patient_trash.sql for the full shape this is one step of.
  *
- * Only reachable from the removed list, and only a patient already discharged can be trashed:
- * this is the SECOND of two deliberate acts (remove, then trash), not a shortcut past the
- * first. A row moved here sits recoverable for seven days before purge_expired_trash() ever
- * touches it, and restoreFromTrash() below is the only other thing that can move it again.
+ * Starts a seven-day deletion window from the active ward. The menu calls this “Delete
+ * permanently” because that is the intended outcome, but its first action is a recoverable
+ * move to trash so an accidental tap never destroys a clinical record immediately.
  */
 export async function deletePatientForever(formData: FormData) {
   const id = String(formData.get("patient_id") ?? "");
@@ -200,15 +199,13 @@ export async function deletePatientForever(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) return;
 
-  // An UPDATE, not a delete, so its outcome is unambiguous — no more "row security refused it
-  // and PostgREST called that success" to work around. Zero rows back means either the id was
-  // wrong or the patient was not discharged (the two-step order was skipped), and either way
-  // that is the honest reason nothing happened.
+  // An UPDATE, not a delete, so a direct destructive action never depends on a client-side
+  // confirmation alone. The scheduled database job performs the eventual irreversible purge.
   const { data: trashed, error } = await supabase
     .from("patients")
     .update({ status: "trashed", trashed_at: new Date().toISOString() })
     .eq("id", id)
-    .eq("status", "discharged")
+    .eq("status", "active")
     .select("id");
 
   revalidatePath("/");
@@ -216,16 +213,14 @@ export async function deletePatientForever(formData: FormData) {
   revalidatePath("/removed");
   revalidatePath("/unit/trash");
 
-  if (error) redirect(`/removed?failed=${encodeURIComponent(error.message)}`);
-  if (!trashed || trashed.length === 0) redirect("/removed?failed=refused");
+  if (error) redirect(`/ward?delete_failed=${encodeURIComponent(error.message)}`);
+  if (!trashed || trashed.length === 0) redirect("/ward?delete_failed=refused");
 
-  redirect("/removed");
+  redirect("/unit/trash");
 }
 
 /**
- * Undo a trash: back to the removed list, not straight onto the ward. This reverses the ONE
- * act that put a patient here — the earlier decision to remove them from the ward is a
- * separate question, answered separately from the removed list's own "Put back on the ward".
+ * Undo a trash: back onto the active ward, exactly reversing the direct delete action.
  */
 export async function restoreFromTrash(formData: FormData) {
   const id = String(formData.get("patient_id") ?? "");
@@ -239,7 +234,7 @@ export async function restoreFromTrash(formData: FormData) {
 
   await supabase
     .from("patients")
-    .update({ status: "discharged", trashed_at: null })
+    .update({ status: "active", trashed_at: null })
     .eq("id", id)
     .eq("status", "trashed");
 
@@ -247,6 +242,7 @@ export async function restoreFromTrash(formData: FormData) {
   revalidatePath("/ward");
   revalidatePath("/removed");
   revalidatePath("/unit/trash");
+  revalidatePath(`/patients/${id}`);
 }
 
 export type EditPatientState = { error: string | null; ok?: boolean };

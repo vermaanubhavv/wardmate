@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import EditIdentity from "./edit-identity";
-import { removePatient } from "./actions";
+import { deletePatientForever, dischargePatient } from "./actions";
 
 type Patient = {
   id: string;
@@ -20,8 +20,6 @@ type Patient = {
   procedure_text: string | null;
   template_family: string | null;
   template_variant: string | null;
-  /** Unused now that trashing is reachable only from the Removed list, not this menu — kept
-   *  on the type since callers still pass it and removing it buys nothing. */
   entry_count?: number;
 };
 
@@ -102,16 +100,14 @@ export default function PatientMenu({
             Change name, age, sex
           </button>
 
-          <form action={removePatient} className="border-t border-line">
+          <form action={dischargePatient} className="border-t border-line">
             <input type="hidden" name="patient_id" value={patient.id} />
             <button
               type="submit"
-              // Asked before it happens, because the ⋯ is a small target next to a card you
-              // may only have meant to open, and this is the one item that changes the ward.
               onClick={(e) => {
                 if (
                   !confirm(
-                    `Remove ${patient.display_name} from the ward list?\n\nNothing is deleted. You can put them back from "Removed" at the top of the ward list.`
+                    `Discharge ${patient.display_name} from the ward?\n\nTheir record will move to the Discharged list and can be restored if needed.`
                   )
                 ) {
                   e.preventDefault();
@@ -119,7 +115,26 @@ export default function PatientMenu({
               }}
               className="block w-full px-4 py-3 text-left text-[17px] active:bg-chip"
             >
-              Remove from ward
+              Discharge from ward
+            </button>
+          </form>
+
+          <form action={deletePatientForever} className="border-t border-line">
+            <input type="hidden" name="patient_id" value={patient.id} />
+            <button
+              type="submit"
+              onClick={(e) => {
+                if (
+                  !confirm(
+                    `Delete ${patient.display_name}?\n\nThey will move to the trash bin now, remain recoverable for 7 days, and then be permanently deleted automatically.`
+                  )
+                ) {
+                  e.preventDefault();
+                }
+              }}
+              className="block w-full px-4 py-3 text-left text-[17px] text-red-600 active:bg-chip"
+            >
+              Delete permanently
             </button>
           </form>
         </div>

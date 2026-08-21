@@ -17,9 +17,7 @@ type TrashedPatient = {
 const TRASH_DAYS = 7;
 
 /**
- * Patients moved to the trash from the Removed list, each recoverable until seven days after
- * they landed here — see supabase/patches/0029_patient_trash.sql for the full shape this is
- * the last reversible step of.
+ * Patients deleted from the ward, recoverable until seven days after they landed here.
  */
 export default async function TrashPage() {
   const { ward, error } = await getCurrentWard();
@@ -37,9 +35,8 @@ export default async function TrashPage() {
 
   const supabase = await createClient();
 
-  // Opportunistic, not scheduled — there is no cron in this project, and a doctor opening
-  // this page is exactly the moment it is worth checking whether anything has aged out. See
-  // the function's own comment for why running it here, on every visit, by anyone, is safe.
+  // A scheduled job performs deletion on time; this is an additional harmless cleanup for
+  // records that expired before that job was configured.
   await supabase.rpc("purge_expired_trash");
 
   const { data } = await supabase
@@ -61,8 +58,8 @@ export default async function TrashPage() {
         </Link>
         <h1 className="mt-3 ios-large-title">Trash</h1>
         <p className="mt-0.5 text-[15px] text-muted">
-          Deleted from the Removed list. Kept here for {TRASH_DAYS} days in case that was a
-          mistake, then gone for good — nothing left to undo after that.
+          Deleted from the ward. Kept here for {TRASH_DAYS} days in case that was a mistake,
+          then deleted permanently.
         </p>
       </header>
 
@@ -107,7 +104,7 @@ function TrashCard({ patient }: { patient: TrashedPatient }) {
       <form action={restoreFromTrash} className="mt-3">
         <input type="hidden" name="patient_id" value={patient.id} />
         <button className="w-full rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink">
-          Restore to Removed
+          Restore to ward
         </button>
       </form>
     </div>

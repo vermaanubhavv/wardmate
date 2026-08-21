@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWard } from "@/lib/ward";
 import { compareBeds, patientName } from "@/lib/patients";
-import { restorePatient, deletePatientForever } from "../patients/actions";
+import { restorePatient } from "../patients/actions";
 
 type RemovedPatient = {
   id: string;
@@ -33,7 +33,7 @@ export default async function RemovedPage({
   if (error || !ward) {
     return (
       <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
-        <h1 className="ios-large-title">Removed</h1>
+        <h1 className="ios-large-title">Discharged</h1>
         <p className="mt-4 ios-group px-4 py-3 text-[15px] text-orange-700">
           {error ? `Could not read the database: ${error.message}` : "No ward found."}
         </p>
@@ -86,16 +86,16 @@ export default async function RemovedPage({
         <Link href="/ward" className="text-[17px] text-accent">
           ‹ Ward
         </Link>
-        <h1 className="mt-3 ios-large-title">Removed</h1>
+        <h1 className="mt-3 ios-large-title">Discharged</h1>
         <p className="mt-0.5 text-[15px] text-muted">
-          Taken off the ward list. Nothing recorded about them has been deleted.
+          Discharged from the ward. Nothing recorded about them has been deleted.
         </p>
       </header>
 
       <section className="px-6 pb-16 flex flex-col gap-3">
         {patients.length === 0 ? (
           <p className="ios-group p-6 text-[15px] text-muted">
-            Nobody has been removed from this ward.
+            Nobody has been discharged from this ward.
           </p>
         ) : (
           patients
@@ -125,7 +125,7 @@ function RemovedCard({ patient }: { patient: RemovedPatient }) {
           ? "Nothing was ever recorded on this patient."
           : `${patient.entry_count} ${patient.entry_count === 1 ? "entry" : "entries"} on their record.`}
         {patient.discharged_at &&
-          ` Removed ${new Date(patient.discharged_at).toLocaleString("en-IN", {
+          ` Discharged ${new Date(patient.discharged_at).toLocaleString("en-IN", {
             timeZone: "Asia/Kolkata",
             day: "numeric",
             month: "short",
@@ -142,26 +142,6 @@ function RemovedCard({ patient }: { patient: RemovedPatient }) {
           </button>
         </form>
 
-        <form action={deletePatientForever}>
-          <input type="hidden" name="patient_id" value={patient.id} />
-          <button
-            // No longer the irreversible action in the app — it moves to the trash, where it
-            // sits recoverable for seven days. Still confirmed, because it is still a
-            // deliberate step away from where the patient currently is, just not a final one.
-            onClick={(e) => {
-              if (
-                !confirm(
-                  `Move ${patient.display_name} to the trash?\n\nThey stay recoverable there for 7 days, from the unit page, before being deleted for good.`
-                )
-              ) {
-                e.preventDefault();
-              }
-            }}
-            className="rounded-[10px] border border-red-300 px-4 py-3 text-[15px] font-semibold text-red-600"
-          >
-            Move to trash
-          </button>
-        </form>
       </div>
     </div>
   );
