@@ -272,13 +272,11 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       </header>
 
       {/* Standing context, not a dated round — the clerking note the rest of the admission is
-          read against. Pinned here, above even the latest progress, because a plan someone
-          decides today is decided in light of this, not the other way round. */}
+          read against. Pinned here, above even the current progress, because a plan someone
+          decides today is decided in light of this, not the other way round. Always collapsed:
+          it is background you consult, not what you came to the page to read. */}
       <section className="px-4 pb-6">
-        <details
-          open={patient.admission_day <= 1}
-          className="ios-group [&[open]_.case-history-chev]:rotate-90"
-        >
+        <details className="ios-group [&[open]_.case-history-chev]:rotate-90">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[15px] font-semibold active:bg-chip [&::-webkit-details-marker]:hidden">
             <span>Case history</span>
             <span className="flex items-center gap-2">
@@ -293,6 +291,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             {caseHistoryEntries.length > 0 && (
               <CaseHistoryCard
                 observations={caseHistoryEntries.flatMap((e) => e.observations)}
+                sex={patient.sex}
+                wardRanges={wardRanges}
               />
             )}
 
@@ -801,8 +801,33 @@ function PacSection({ pac }: { pac: Observation[] }) {
  * itself information, family history only when positive because a negative one is the default
  * and printing it on every patient is noise.
  */
-function CaseHistoryCard({ observations }: { observations: Observation[] }) {
+function CaseHistoryCard({
+  observations,
+  sex,
+  wardRanges,
+}: {
+  observations: Observation[];
+  sex: string | null;
+  wardRanges: WardRanges;
+}) {
   const { sections, other } = summariseCaseHistory(observations);
+
+  // Everything the note carries that isn't chief complaints, HOPI, past or family history is
+  // the admission examination — read the same way "Current progress" reads one, so the same
+  // vitals, PICCLE, findings and lab-derangement rules apply regardless of which day an exam
+  // was written down on.
+  const exam = summariseObjective(
+    other.map((o) => ({
+      id: o.id,
+      label: o.label,
+      value: o.value_text,
+      recordedAt: o.recorded_at,
+      refLow: o.ref_low,
+      refHigh: o.ref_high,
+      refText: o.ref_text,
+    })),
+    { sex, wardRanges }
+  );
 
   return (
     <div className="px-4 py-3 text-[15px] leading-relaxed">
@@ -835,14 +860,10 @@ function CaseHistoryCard({ observations }: { observations: Observation[] }) {
 
       {other.length > 0 && (
         <div className="mt-3 border-t border-line pt-2.5">
-          <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
-            Examination &amp; other
+          <p className="mb-0.5 text-[12px] font-semibold uppercase tracking-wide text-muted">
+            Examination
           </p>
-          {other.map((line) => (
-            <p key={line.id} className="mt-0.5">
-              {line.text}
-            </p>
-          ))}
+          <ObjectiveSummaryView summary={exam} />
         </div>
       )}
     </div>
@@ -906,6 +927,32 @@ function ObjectiveBlock({
   // above prints its value would have the same line saying both at once.
   const outstanding = matchedItems.filter((m) => m.missing && !m.value).map((m) => m.item.label);
 
+  return (
+    <ObjectiveSummaryView summary={summary} outstanding={outstanding} bordered emptyText="Nothing examined yet." />
+  );
+}
+
+/**
+ * The rendering half of an objective examination — shared so "Current progress" and the case
+ * history's examination read as the same document structured the same way, regardless of which
+ * day the exam was recorded on. Takes an already-computed summary; ObjectiveBlock builds one
+ * from the template/checklist match, CaseHistoryExam builds one straight from the clerking
+ * note's own observations.
+ */
+function ObjectiveSummaryView({
+  summary,
+  outstanding = [],
+  bordered = false,
+  emptyText,
+}: {
+  summary: ReturnType<typeof summariseObjective>;
+  outstanding?: string[];
+  /** ios-group styling — used standalone (Current progress) but not inside another card
+   *  (the case history sheet, which already has its own border). */
+  bordered?: boolean;
+  /** Shown when there is genuinely nothing to report. Omit to render nothing in that case. */
+  emptyText?: string;
+}) {
   const empty =
     summary.vitals.length === 0 &&
     !summary.piccle &&
@@ -915,7 +962,7 @@ function ObjectiveBlock({
     summary.normalCount === 0;
 
   return (
-    <div className="ios-group px-4 py-3 text-[15px] leading-relaxed">
+    <div className={(bordered ? "ios-group px-4 py-3 " : "") + "text-[15px] leading-relaxed"}>
       {summary.vitals.length > 0 && (
         <p className="tabular-nums">
           {summary.vitals.map((v) => `${v.label} ${v.value}`).join("  ·  ")}
@@ -972,7 +1019,7 @@ function ObjectiveBlock({
 
       {summary.normalCount > 0 && <p className="mt-1 text-muted">Rest — NAD</p>}
 
-      {empty && <p className="text-muted">Nothing examined yet.</p>}
+      {empty && emptyText && <p className="text-muted">{emptyText}</p>}
 
       {outstanding.length > 0 && (
         <p className="mt-2 text-[13px] text-orange-700">

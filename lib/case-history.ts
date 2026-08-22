@@ -1,5 +1,3 @@
-import { mergeLabelValue } from "@/lib/patients";
-
 /**
  * The clerking note, ordered the way a case sheet is written rather than the order it happened
  * to be dictated in: complaints, then the story of them, then background, then family.
@@ -14,8 +12,12 @@ import { mergeLabelValue } from "@/lib/patients";
  *   default and printing it on every patient is noise nobody reads.
  *
  * Anything recorded that does not belong to one of the four sections is still returned, in
- * `other`, and the caller must show it. Nothing recorded is ever dropped just because this
- * file has no section for it.
+ * `other` — as the caller's own observation objects, unmodified — and the caller must show it.
+ * Nothing recorded is ever dropped just because this file has no section for it. In practice
+ * `other` is the examination and everything else the clerking note carries, which is why the
+ * patient page runs it back through summariseObjective and renders it exactly the way "Current
+ * progress" renders an exam: same vitals line, same PICCLE, same deranged-lab flags. One
+ * examination should not be read two different ways depending only on which day it was written.
  */
 
 export type HistoryLine = { id: string; text: string };
@@ -30,7 +32,7 @@ export type HistorySection = {
   hidden: boolean;
 };
 
-export type CaseHistoryView = { sections: HistorySection[]; other: HistoryLine[] };
+export type CaseHistoryView<T> = { sections: HistorySection[]; other: T[] };
 
 const SECTIONS: {
   key: HistorySection["key"];
@@ -136,11 +138,11 @@ function sectionFor(label: string): HistorySection["key"] | null {
   return SECTIONS.find((s) => s.aliases.some((a) => a === l))?.key ?? null;
 }
 
-export function summariseCaseHistory(
-  observations: { id: string; kind: string; label: string; value_text: string | null }[]
-): CaseHistoryView {
+export function summariseCaseHistory<
+  T extends { id: string; kind: string; label: string; value_text: string | null },
+>(observations: T[]): CaseHistoryView<T> {
   const buckets = new Map<HistorySection["key"], { id: string; text: string; normal: boolean }[]>();
-  const other: HistoryLine[] = [];
+  const other: T[] = [];
 
   for (const o of observations) {
     // Jobs stated in the clerking note live on the to-do list, which is where they get ticked
@@ -150,8 +152,7 @@ export function summariseCaseHistory(
     const key = sectionFor(o.label);
     const text = (o.value_text ?? "").trim();
     if (!key) {
-      const line = mergeLabelValue(o.label, o.value_text);
-      if (line.trim()) other.push({ id: o.id, text: line });
+      other.push(o);
       continue;
     }
     const list = buckets.get(key) ?? [];
