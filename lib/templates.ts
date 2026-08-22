@@ -10,6 +10,9 @@ export type TemplateItem = {
   importance: "core" | "optional";
   position: number;
   hint: string | null;
+  /** Which part of "Current progress" this belongs under — null for anything not yet
+   *  classified (care_templates items, and any protocol item filed before this existed). */
+  soap_section: "subjective" | "objective" | "assessment" | "plan" | "checks" | null;
 };
 
 export type CareTemplate = {
@@ -45,7 +48,7 @@ export const getTemplateForPatient = cache(async function getTemplateForPatient(
   const { data: protocolRows } = await supabase
     .from("company_protocols")
     .select(
-      "id, title, template_family, template_variant, phase, company_protocol_items(id, kind, prompt, importance, aliases, position)"
+      "id, title, template_family, template_variant, phase, company_protocol_items(id, kind, prompt, importance, aliases, position, soap_section)"
     )
     .eq("template_family", patient.template_family)
     .eq("phase", phase)
@@ -64,6 +67,7 @@ export const getTemplateForPatient = cache(async function getTemplateForPatient(
         importance: "core" | "optional";
         aliases: string[];
         position: number;
+        soap_section: TemplateItem["soap_section"];
       }[]) ?? []
     )
       .slice()
@@ -76,6 +80,7 @@ export const getTemplateForPatient = cache(async function getTemplateForPatient(
         importance: i.importance,
         position: i.position,
         hint: null,
+        soap_section: i.soap_section,
       }));
 
     return {

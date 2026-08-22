@@ -7,6 +7,7 @@ import {
   getProcedureLabels,
   listTemplateChoices,
   procedureFor,
+  type MatchedItem,
 } from "@/lib/templates";
 import {
   derivePatientState,
@@ -15,7 +16,7 @@ import {
   istDayKey,
   type Observation,
 } from "@/lib/patient-state";
-import { dayLabel, isIdentifierLabel, managementLabel, mergeLabelValue } from "@/lib/patients";
+import { isIdentifierLabel, mergeLabelValue, stripPatientHonorific } from "@/lib/patients";
 import { describeWhen, effectiveUrgency } from "@/lib/urgency";
 import BedsideBar from "./bedside-bar";
 import EditIdentity from "../edit-identity";
@@ -29,6 +30,7 @@ import DischargeSection from "./discharge-section";
 import { buildDischargeBrief } from "@/lib/discharge";
 import { confirmChecked, confirmAll, reopenTask } from "./actions";
 import BottomBar from "../../bottom-bar";
+import { listedComorbidities } from "@/lib/comorbidities";
 
 type Entry = {
   id: string;
@@ -157,12 +159,14 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const todayKey = istDayKey(new Date().toISOString());
 
   const procedure = procedureFor(patient, procedures);
-  const management = managementLabel(patient);
-  // Comorbidities are not an identity field. They are only shown when someone recorded them,
-  // and the newest value wins for the same reason it does everywhere else on this page.
-  const comorbidities = patientState.latest.find(
-    (o) => /co[- ]?morbid|comorbid/i.test(o.label)
-  );
+  const caseHistoryDiagnosis = caseHistoryEntries
+    .flatMap((entry) => entry.observations)
+    .find((observation) => observation.kind === "diagnosis");
+  const diagnosis = patient.primary_diagnosis ?? caseHistoryDiagnosis?.value_text ?? null;
+  // Background illness is cumulative, not a latest-wins vital: "K/C/O asthma" from the
+  // admission sheet must remain visible when diabetes is mentioned on a later round. The
+  // helper also recognises older entries captured before the extractor used this label.
+  const comorbidities = listedComorbidities(allObservations);
 
   // Latest of each drug recorded, for the discharge brief. Taken from the same observations
   // the rest of the screen uses, so it can hold nothing that was not said.
@@ -205,32 +209,51 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       </div>
 
       <header className="px-4 pb-6 pt-4">
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2.5">
           <div className="min-w-0 flex-1">
-            <h1 className="ios-large-title">{patient.display_name}</h1>
-            {(patient.age_years || patient.sex) && (
-              <p className="mt-1 text-[15px] text-muted">
-                {[patient.age_years && `${patient.age_years} years`, patient.sex]
-                  .filter(Boolean)
-                  .join(" · ")}
+            <h1 className="flex min-w-0 items-baseline gap-2 text-[clamp(1.05rem,5vw,1.5rem)] tracking-tight">
+              <span className="shrink-0 rounded-md bg-chip px-1.5 py-0.5 font-mono text-[0.72em] font-semibold text-accent">
+                {patient.bed}
+              </span>
+              <span className="min-w-0 truncate font-bold">
+                {stripPatientHonorific(patient.display_name)}
+              </span>
+              <span className="shrink-0 whitespace-nowrap text-[0.72em] font-medium tracking-normal text-muted">
+                {[
+                  patient.age_years !== null ? patient.age_years : null,
+                  patient.sex === "other" ? "O" : patient.sex,
+                ]
+                  .filter((value) => value !== null && value !== "")
+                  .join("/")}
+              </span>
+            </h1>
+            {patient.uhid_ip_no && (
+              <p className="mt-2 truncate pl-0.5 text-[12px] text-muted">
+                <span className="uppercase tracking-wide">UHID / IP</span>
+                <span className="mx-1.5">·</span>
+                <span className="font-mono text-foreground/80">{patient.uhid_ip_no}</span>
               </p>
             )}
           </div>
-          <div className="shrink-0 pt-1">
+          <div className="shrink-0">
             <EditIdentity patient={patient} templateChoices={templateChoices} />
           </div>
         </div>
 
-        {/* The identifiers stay available, but do not crowd the facts scanned on every visit. */}
-        <dl className="ios-group mt-4 text-[15px]">
-          <IdentifierDetails uhidIpNo={patient.uhid_ip_no} mrdNo={patient.mrd_no} />
-          <SummaryRow label="Bed / location" value={patient.bed} mono />
-          <SummaryRow label="Diagnosis" value={patient.primary_diagnosis ?? "Not recorded"} />
+        {/* Only the clinical facts needed to identify the admission live here. Bed and hospital
+            number have moved into the header above; the rest of the record follows below. */}
+        <dl className="ios-group mt-5 text-[15px]">
+          <SummaryRow label="Diagnosis" value={diagnosis ?? "Not recorded"} />
+          {patient.post_op_day !== null && (
+            <SummaryRow
+              label="Operation"
+              value={`POD ${patient.post_op_day}${procedure ? ` (${procedure})` : ""}`}
+            />
+          )}
           <SummaryRow
-            label={management === "PRE-OP" ? "Planned procedure" : "Procedure"}
-            value={[dayLabel(patient), procedure].filter(Boolean).join(" · ") || "Not recorded"}
+            label="Co-morbidities"
+            value={comorbidities.length > 0 ? comorbidities.join(" · ") : "Not recorded"}
           />
-          <SummaryRow label="Co-morbidities" value={comorbidities?.value_text ?? "Not recorded"} />
         </dl>
       </header>
 
@@ -238,12 +261,22 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           read against. Pinned here, above even the latest progress, because a plan someone
           decides today is decided in light of this, not the other way round. */}
       <section className="px-4 pb-6">
-        <p className="ios-group-header mb-2 px-4">Case history</p>
-        {caseHistoryEntries.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            {caseHistoryEntries.map((entry) => (
+        <details open className="ios-group [&[open]_.case-history-chev]:rotate-90">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[15px] font-semibold active:bg-chip [&::-webkit-details-marker]:hidden">
+            <span>Case history</span>
+            <span className="flex items-center gap-2">
+              <span className="text-[12px] font-normal text-muted">
+                {caseHistoryEntries.length > 0 ? "Recorded" : "Not recorded"}
+              </span>
+              <span className="case-history-chev text-xl font-normal text-muted transition-transform">›</span>
+            </span>
+          </summary>
+
+          <div className="border-t border-line">
+            {caseHistoryEntries.length > 0 ? caseHistoryEntries.map((entry) => (
               <EntryCard
                 key={entry.id}
+                embedded
                 entryId={entry.id}
                 patientId={patient.id}
                 time={new Date(entry.recorded_at).toLocaleDateString("en-IN", {
@@ -271,12 +304,15 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                   .filter((id) => protocolTitles.has(id))
                   .map((id) => ({ id, title: protocolTitles.get(id)! }))}
               />
-            ))}
-            <CaseHistoryCapture patientId={patient.id} hasExisting />
+            )) : (
+              <p className="px-4 py-3 text-[14px] text-muted">No case history recorded yet.</p>
+            )}
+            <CaseHistoryCapture
+              patientId={patient.id}
+              hasExisting={caseHistoryEntries.length > 0}
+            />
           </div>
-        ) : (
-          <CaseHistoryCapture patientId={patient.id} />
-        )}
+        </details>
       </section>
 
       <section className="px-4 pb-6">
@@ -448,7 +484,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           <details className="[&[open]_.chev]:rotate-90">
             <summary className="mb-2 flex cursor-pointer list-none items-baseline gap-2 active:opacity-60 [&::-webkit-details-marker]:hidden">
               <span className="chev shrink-0 text-[11px] text-muted transition-transform">▶</span>
-              <span className="ios-group-header">Where things stand</span>
+              <span className="ios-group-header">Current progress</span>
               {missing.length > 0 && (
                 <span className="shrink-0 text-[13px] text-orange-700 tabular-nums">
                   {missing.length} not recorded
@@ -461,34 +497,42 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
               )}
             </summary>
 
-            <ul className="ios-group divide-y divide-line">
-            {matched.map((m) => (
-              <li
-                key={m.item.id}
-                className="flex items-baseline justify-between gap-3 px-4 py-2.5"
-              >
-                <span className="text-[15px] text-muted">{m.item.label}</span>
-                {m.value ? (
-                  <span className="text-sm text-right">{m.value}</span>
-                ) : (
-                  // Absent is shown as absent. Never a placeholder, never a guess.
-                  <span
-                    className={
-                      "text-sm text-right " + (m.missing ? "text-orange-700" : "text-muted/50")
-                    }
-                  >
-                    not recorded
-                  </span>
-                )}
-              </li>
+            {soapGroups(matched, extra).map(({ section, label, matchedItems, extraItems }) => (
+              <div key={section} className="mb-3 last:mb-0">
+                <p className="mb-1 px-1 text-[12px] font-semibold uppercase tracking-wide text-muted">
+                  {label}
+                </p>
+                <ul className="ios-group divide-y divide-line">
+                  {matchedItems.map((m) => (
+                    <li
+                      key={m.item.id}
+                      className="flex items-baseline justify-between gap-3 px-4 py-2.5"
+                    >
+                      <span className="text-[15px] text-muted">{m.item.label}</span>
+                      {m.value ? (
+                        <span className="text-sm text-right">{m.value}</span>
+                      ) : (
+                        // Absent is shown as absent. Never a placeholder, never a guess.
+                        <span
+                          className={
+                            "text-sm text-right " +
+                            (m.missing ? "text-orange-700" : "text-muted/50")
+                          }
+                        >
+                          not recorded
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                  {extraItems.map((o) => (
+                    <li key={o.id} className="flex items-baseline justify-between gap-3 px-4 py-2.5">
+                      <span className="text-[15px] text-muted">{o.label}</span>
+                      <span className="text-sm text-right">{o.value_text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
-            {extra.map((o) => (
-                <li key={o.id} className="flex items-baseline justify-between gap-3 px-4 py-2.5">
-                  <span className="text-[15px] text-muted">{o.label}</span>
-                  <span className="text-sm text-right">{o.value_text}</span>
-                </li>
-              ))}
-            </ul>
           </details>
         </section>
       )}
@@ -570,7 +614,10 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       {/* Last on the page: the admission ending, after everything it is assembled from.
           Bottom padding clears the fixed speak bar so it stays openable. */}
       <section className="px-6 pb-72">
-        <DischargeSection brief={dischargeBrief} patientName={patient.display_name} />
+        <DischargeSection
+          brief={dischargeBrief}
+          patientName={stripPatientHonorific(patient.display_name)}
+        />
       </section>
 
       {/* Fixed, so the button is under your thumb no matter how long the record has grown. */}
@@ -591,6 +638,54 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         </BottomBar>
     </div>
   );
+}
+
+const SOAP_ORDER = ["subjective", "objective", "assessment", "plan", "checks"] as const;
+const SOAP_LABELS: Record<(typeof SOAP_ORDER)[number], string> = {
+  subjective: "Subjective",
+  objective: "Objective",
+  assessment: "Assessment",
+  plan: "Plan",
+  checks: "Checks",
+};
+
+/** Raw observation kinds, for the "extra" items a checklist never asked about — they carry a
+ *  kind but no soap_section of their own, so this is the same default a checklist item without
+ *  an explicit section would fall back to. */
+function kindToSoapSection(kind: string): (typeof SOAP_ORDER)[number] {
+  switch (kind) {
+    case "day_number":
+    case "vital":
+    case "exam":
+    case "drain":
+    case "intake_output":
+    case "lab":
+      return "objective";
+    case "medication":
+    case "plan":
+      return "plan";
+    case "diagnosis":
+      return "assessment";
+    default:
+      return "checks";
+  }
+}
+
+/**
+ * "Current progress" grouped as Subjective / Objective / Assessment / Plan, with a fifth
+ * bucket for the genuinely administrative checks (consent, fitness, fasting status) that do
+ * not honestly belong in any SOAP section — see the conversation that decided this rather than
+ * forcing them into Plan. A checklist item without a soap_section yet (not every procedure has
+ * been migrated and backfilled) falls back the same way an "extra" observation does, so nothing
+ * silently disappears — it just lands in Checks until it's classified.
+ */
+function soapGroups(matched: MatchedItem[], extra: Observation[]) {
+  return SOAP_ORDER.map((section) => ({
+    section,
+    label: SOAP_LABELS[section],
+    matchedItems: matched.filter((m) => (m.item.soap_section ?? "checks") === section),
+    extraItems: extra.filter((o) => kindToSoapSection(o.kind) === section),
+  })).filter((g) => g.matchedItems.length > 0 || g.extraItems.length > 0);
 }
 
 /**
@@ -630,51 +725,15 @@ function CameDue({ observation }: { observation: Observation }) {
 function SummaryRow({
   label,
   value,
-  mono = false,
 }: {
   label: string;
   value: string;
-  mono?: boolean;
 }) {
   return (
-    <div className="ios-row grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3 px-4 py-2.5">
-      <dt className="text-muted">{label}</dt>
-      <dd className={mono ? "font-mono text-right" : "text-right"}>{value}</dd>
+    <div className="ios-row px-4 py-3">
+      <dt className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">{label}</dt>
+      <dd className="mt-0.5 text-[16px] leading-snug">{value}</dd>
     </div>
-  );
-}
-
-function IdentifierDetails({
-  uhidIpNo,
-  mrdNo,
-}: {
-  uhidIpNo: string | null;
-  mrdNo: string | null;
-}) {
-  const recorded = Boolean(uhidIpNo || mrdNo);
-  return (
-    <details className="ios-row group">
-      <summary className="flex cursor-pointer list-none items-baseline justify-between gap-3 px-4 py-2.5 active:bg-chip [&::-webkit-details-marker]:hidden">
-        <span className="text-muted">Identifiers</span>
-        <span className="text-right text-accent">{recorded ? "Show" : "Not recorded"}</span>
-      </summary>
-      {recorded && (
-        <dl className="border-t border-line px-4 py-2.5 text-[13px]">
-          {uhidIpNo && (
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">UHID / IP no.</dt>
-              <dd className="font-mono text-right">{uhidIpNo}</dd>
-            </div>
-          )}
-          {mrdNo && (
-            <div className="mt-1 flex justify-between gap-3">
-              <dt className="text-muted">MRD no.</dt>
-              <dd className="font-mono text-right">{mrdNo}</dd>
-            </div>
-          )}
-        </dl>
-      )}
-    </details>
   );
 }
 
