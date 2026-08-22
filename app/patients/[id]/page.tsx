@@ -744,25 +744,25 @@ function VitalsPanel({ observations }: { observations: Observation[] }) {
         <p className="text-[13px] text-muted">{vitalsWhen(latestTime)}</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      {/* One card, not a tile each — a grid of separately bordered boxes read as its own
+          dashboard sitting on top of the page rather than another line in the same record. */}
+      <div className="ios-group flex flex-wrap gap-x-4 gap-y-2 px-4 py-3">
         {tiles.map((t) => (
-          <div key={t.id} className="ios-group px-3 py-2.5">
-            <p className="text-[11px] uppercase tracking-wide text-muted">{t.label}</p>
-            <p
+          <div key={t.id} className="min-w-[4.5rem]">
+            <span className="text-[11px] uppercase tracking-wide text-muted">{t.label}</span>{" "}
+            <span
               className={
-                "text-[20px] font-semibold tabular-nums " +
+                "text-[15px] font-semibold tabular-nums " +
                 (t.flag ? "text-red-600" : "text-foreground")
               }
             >
               {t.value}
-            </p>
+            </span>
             {/* The range rides along with the flag rather than the flag standing alone —
                 a colour with no stated reason is exactly the "trust me" the rival app asks
                 for. This one shows its work. */}
             {t.flag && (
-              <p className="text-[11px] font-medium text-red-600">
-                {t.flag} · {t.range}
-              </p>
+              <span className="ml-1 text-[11px] font-medium text-red-600">({t.range})</span>
             )}
           </div>
         ))}
