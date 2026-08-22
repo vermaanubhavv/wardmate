@@ -18,7 +18,7 @@ type Value = {
 };
 
 /** What operation and which day — the note's heading, not a finding from it. */
-const CONTEXT_KINDS = ["day_number", "diagnosis"];
+const CONTEXT_KINDS = ["day_number", "diagnosis", "planned_procedure"];
 
 const NUMBER_WORDS: Record<string, number> = {
   zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
@@ -109,6 +109,7 @@ export default function EntryCard({
   extractionError,
   values,
   matchedProtocols,
+  embedded = false,
 }: {
   entryId: string;
   patientId: string;
@@ -124,6 +125,8 @@ export default function EntryCard({
   values: Value[];
   /** Published protocols this entry's words looked related to — a suggestion, never applied. */
   matchedProtocols?: { id: string; title: string }[];
+  /** Inside the single Case history disclosure, show the main points without another card. */
+  embedded?: boolean;
 }) {
   const [showEvidence, setShowEvidence] = useState(false);
   const [editingWords, setEditingWords] = useState(false);
@@ -194,14 +197,24 @@ export default function EntryCard({
         : "Nothing structured";
 
   return (
-    <details open className="ios-group [&[open]_.chev]:rotate-90">
-      <summary className="flex cursor-pointer list-none items-baseline gap-2 px-4 py-2.5 active:bg-chip [&::-webkit-details-marker]:hidden">
+    <details
+      open
+      className={embedded ? "border-b border-line last:border-b-0" : "ios-group [&[open]_.chev]:rotate-90"}
+    >
+      <summary
+        className={
+          embedded
+            ? "hidden"
+            : "flex cursor-pointer list-none items-baseline gap-2 px-4 py-2.5 active:bg-chip [&::-webkit-details-marker]:hidden"
+        }
+      >
         <span className="chev shrink-0 text-[11px] text-muted transition-transform">▶</span>
         <span className="shrink-0 text-[13px] tabular-nums text-muted">{time}</span>
         <span className="min-w-0 flex-1 truncate text-[13px] text-muted">{gist}</span>
       </summary>
 
-      <div className="px-4 pb-3">
+      <div className={embedded ? "px-4 pb-3 pt-3" : "px-4 pb-3"}>
+        {embedded && <p className="mb-1 text-[11px] uppercase tracking-wide text-muted">{time}</p>}
         {values.length === 0 ? (
           <p className="text-[15px] text-muted">
             {extractionError

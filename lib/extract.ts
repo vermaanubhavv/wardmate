@@ -4,6 +4,7 @@ import { isIdentifierLabel } from "@/lib/patients";
 export const OBSERVATION_KINDS = [
   "diagnosis",
   "day_number",
+  "planned_procedure",
   "vital",
   "exam",
   "drain",
@@ -56,7 +57,10 @@ Guidance on fields:
 - value_text: always populated, exactly as said.
 - value_num and unit: populate ONLY when the resident actually stated a number and (where relevant) a unit. Otherwise null.
 - day_number: use when a post-operative or admission day is spoken, with value_num as the integer.
+- planned_procedure: When the transcript names the operation a patient is intended to have — "pt for radical hysterectomy", "posted for lap chole", "planned for TAH + BSO", "case posted for appendicectomy", "listed for" — record kind "planned_procedure", label "planned procedure", and value_text as the named operation exactly as said, including every part joined by "+" or "and" ("TAH + BSO + frozen" stays together, it is one planned operation, not three). This is only for a genuinely FUTURE, not-yet-done operation — an operation already performed is a diagnosis/note/exam update instead, never this kind. Do not use this for a procedure already described as done ("underwent lap chole", "post lap chole day 2").
 - plan: unfinished future actions only — "remove drain tomorrow", "repeat haemoglobin", "discharge if afebrile". Do NOT use plan for treatment updates: "Telma Amlo given stat", "CST", "continue same treatment", "antibiotics started", or "drain removed" are medication/exam/note updates, never jobs.
+
+- comorbidities: When the transcript explicitly says a patient is a known case of a condition — for example "K/C/O asthma", "H/O HTN and DM", "known to have HIV", or "previous TB" — record it as kind "note", label "comorbidities", and value_text containing only the stated condition or conditions. This includes explicitly stated chronic/background illness in every system, not only diabetes or hypertension: respiratory (asthma, COPD, OSA); cardiac/vascular (IHD/CAD, prior MI, heart failure, atrial fibrillation, stroke/TIA); renal (CKD, dialysis); liver (cirrhosis, hepatitis B/C); endocrine (thyroid disease); neurological (epilepsy); inflammatory disease (rheumatoid arthritis, ankylosing spondylitis, SLE); cancer, transplant/immunosuppression, and mental-health conditions. Previous TB is included. Never infer a co-morbidity from the current diagnosis, symptoms, medication, or procedure. If multiple conditions are stated together, keep them together in one value. If they are stated separately, record each separately.
 
 ONE ACTION PER PLAN. A sentence naming several things to be done becomes several plans, not one. "Drain out and discharge tomorrow" is two plans — "drain out tomorrow" and "discharge tomorrow" — because they are ticked off at different moments and one may happen without the other. A shared timeframe belongs to each of them: both are "tomorrow".
 
