@@ -24,6 +24,19 @@ export type WardPatient = {
   open_task_count: number;
   /** Recordings and photographs on this patient's record. */
   entry_count: number;
+  /** The patient's most recent vitals reading, all of it — see ward_screen() in
+   *  supabase/patches/0044_ward_screen_vitals_labs.sql. Optional: the pre-RPC fallback path
+   *  does not fetch these, and an empty ward list is a correct answer, not a missing one. */
+  vitals?: { label: string; value_text: string | null; recorded_at: string }[];
+  /** One row per test, the most recent result for it. */
+  labs?: {
+    label: string;
+    value_text: string | null;
+    ref_low: number | null;
+    ref_high: number | null;
+    ref_text: string | null;
+    recorded_at: string;
+  }[];
 };
 
 /**
@@ -44,6 +57,20 @@ const IDENTIFIER_LABELS =
 /** True for a label naming who or where the patient is — never a clinical finding. */
 export function isIdentifierLabel(label: string | null | undefined): boolean {
   return IDENTIFIER_LABELS.test((label ?? "").trim());
+}
+
+/**
+ * Hospital papers commonly prefix names with social titles. They do not help identify a
+ * patient on a ward list, and make the most important part of a compact header harder to scan.
+ * Applied both when saving and when displaying so older records are cleaned immediately too.
+ */
+export function stripPatientHonorific(name: string): string {
+  const original = name.trim();
+  const stripped = original.replace(
+    /^(?:(?:mr|mrs|ms|miss|shri|sri|smt)\.?\s+)+/i,
+    ""
+  ).trim();
+  return stripped || original;
 }
 
 /**
@@ -161,7 +188,8 @@ export function patientName(p: {
   const sex = p.sex === "other" ? null : p.sex;
 
   const detail = [age, sex].filter(Boolean).join("/");
-  return detail ? `${p.display_name}, ${detail}` : p.display_name;
+  const name = stripPatientHonorific(p.display_name);
+  return detail ? `${name}, ${detail}` : name;
 }
 
 /**

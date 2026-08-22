@@ -21,11 +21,13 @@ import BottomBar from "../bottom-bar";
 import Wordmark from "../wordmark";
 import Mark from "../mark";
 import { createClient } from "@/lib/supabase/server";
+import { getWardLabRanges } from "@/lib/ward-lab-ranges";
+import { worstFlag, type WardFlag } from "@/lib/ward-flags";
 
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ delete_failed?: string }>;
+  searchParams: Promise<{ delete_failed?: string; filter?: string }>;
 }) {
   const supabase = await createClient();
   // One round trip for the whole screen. See lib/ward-screen.ts — it was six. The greeting
@@ -42,12 +44,23 @@ export default async function Home({
     supabase.rpc("is_protocol_publisher"),
     supabase.from("profiles").select("department, designation").maybeSingle(),
   ]);
-  const deleteFailed = (await searchParams).delete_failed;
+  const params = await searchParams;
+  const deleteFailed = params.delete_failed;
+  const showCriticalOnly = params.filter === "critical";
   const department = profile?.department?.trim() || null;
   const designation = profile?.designation?.trim() || null;
   const departmentLabel = department === "General Surgery" ? "Gen. Surgery" : department;
 
   if (!wardError && !ward) redirect("/onboarding");
+
+  // Only once the ward resolved: this is one more round trip, worth it only when there is a
+  // ward to flag patients against.
+  const wardRanges = ward ? await getWardLabRanges(ward.id) : new Map();
+  const flags = new Map<string, WardFlag | null>(
+    patients.map((p) => [p.id, worstFlag(p, wardRanges)])
+  );
+  const criticalCount = [...flags.values()].filter(Boolean).length;
+  const visiblePatients = showCriticalOnly ? patients.filter((p) => flags.get(p.id)) : patients;
 
   if (wardError || !ward) {
     return (
@@ -136,6 +149,32 @@ export default async function Home({
         </div>
       </header>
 
+      {/* Only shown once there is something to filter — an "All / Critical" toggle over one
+          patient, none of them flagged, is a control with nothing to do. */}
+      {criticalCount > 0 && (
+        <div className="px-4 pb-2">
+          <div className="inline-flex rounded-full bg-card p-0.5 text-[14px] font-medium">
+            <Link
+              href="/ward"
+              className={
+                "rounded-full px-3 py-1 " + (!showCriticalOnly ? "bg-chip" : "text-muted")
+              }
+            >
+              All {patients.length}
+            </Link>
+            <Link
+              href="/ward?filter=critical"
+              className={
+                "rounded-full px-3 py-1 " +
+                (showCriticalOnly ? "bg-red-100 text-red-700" : "text-muted")
+              }
+            >
+              Critical {criticalCount}
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Bottom padding clears the floating bar so the last patient stays readable. The bar is
           a row of circles now rather than three stacked buttons, so this is much less. */}
       <div className="flex-1 px-4 pb-32">
@@ -157,12 +196,17 @@ export default async function Home({
               Add the first one below.
             </p>
           </div>
+        ) : visiblePatients.length === 0 ? (
+          <p className="ios-group px-4 py-6 text-center text-[15px] text-muted">
+            Nothing currently flagged.
+          </p>
         ) : (
           <ul className="ios-group">
-            {patients.map((p) => (
+            {visiblePatients.map((p) => (
               <PatientRow
                 key={p.id}
                 patient={p}
+                flag={flags.get(p.id) ?? null}
                 procedures={procedures}
                 templateChoices={templateChoices}
               />
@@ -219,10 +263,13 @@ function Capsule({
 
 function PatientRow({
   patient,
+  flag,
   procedures,
   templateChoices,
 }: {
   patient: WardPatient;
+  /** The single worst flagged vital or lab on this patient, if any — see lib/ward-flags.ts. */
+  flag: WardFlag | null;
   procedures: Map<string, string>;
   templateChoices: { family: string; variant: string | null; label: string }[];
 }) {
@@ -267,9 +314,13 @@ function PatientRow({
             // Management is deliberately NOT here. "POST OP" only repeats the POD count already
             // on the line above, and a management label is a standing fact about the patient
             // rather than something the ward list needs to shout — it lives on their own page.
-            // What is left is only ever a number of things waiting to be done.
-            const chip =
-              patient.unconfirmed_count > 0
+            // A flagged vital or lab now leads this chain: on a round, a critical reading
+            // outranks an unconfirmed transcription every time. It carries the actual value,
+            // not a count, because "SpO2 77" tells a resident something a bare "1 critical"
+            // does not — and it is exactly the reading recorded, never a diagnosis about it.
+            const chip = flag
+              ? { text: `${flag.label} ${flag.value}`, tone: "critical" as const }
+              : patient.unconfirmed_count > 0
                 ? { text: `${patient.unconfirmed_count} to confirm`, tone: "warn" as const }
                 : patient.open_task_count > 0
                   ? { text: `${patient.open_task_count} to do`, tone: "plain" as const }
@@ -298,13 +349,17 @@ function Badge({
   tone = "plain",
 }: {
   children: React.ReactNode;
-  tone?: "plain" | "warn";
+  tone?: "plain" | "warn" | "critical";
 }) {
   return (
     <span
       className={
         "inline-flex items-center rounded-md px-1.5 py-0.5 text-[12px] font-medium " +
-        (tone === "warn" ? "bg-orange-100 text-orange-700" : "bg-chip text-muted")
+        (tone === "critical"
+          ? "bg-red-100 text-red-700"
+          : tone === "warn"
+            ? "bg-orange-100 text-orange-700"
+            : "bg-chip text-muted")
       }
     >
       {children}
