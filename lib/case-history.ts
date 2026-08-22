@@ -78,21 +78,57 @@ const SECTIONS: {
 
 const norm = (s: string) => s.toLowerCase().replace(/[.:]+\s*$/g, "").replace(/\s+/g, " ").trim();
 
+/** What a denial is commonly written to lead with — stripped before reading the list behind it. */
+const DENIAL_PREFIX =
+  /^(no|not a|nil|denies|negative for|non)\s+(h\/o\s+|k\/c\/o\s+|history of\s+|known\s+)?/i;
+
+/** Words that turn a bare condition name into something worth reading, so a token carrying one
+ *  of these is never folded away even inside an otherwise-denied list. */
+const CARRIES_INFORMATION =
+  /\d|\b(but|however|except|since|for|ago|year|month|day|ongoing|started|starting|given|on\s|diagnosed|controlled|uncontrolled|currently|present|positive|elevated|raised)\b/i;
+
 /**
  * Does this read as "looked, nothing there"?
  *
- * Same one-way safety as the examination summary: only a short, single-clause negation counts.
- * "No diabetes, but hypertension since 2019" carries a clause and is treated as positive, so it
- * gets shown rather than collapsed to NAD — which is the direction a mistake must fall.
+ * Two shapes count as normal, and both stop at the first sign of an actual clinical detail:
+ *
+ *   A short bare negation — "nil", "no significant past history".
+ *
+ *   A denial followed by a comma-separated list of condition names and nothing else — "no h/o
+ *   DM, HTN, anemia, seizure" is exactly how a negative past history is written, and every
+ *   entry in that list is still a plain absence. It stops being this shape the moment any
+ *   token carries an actual detail: a duration, a treatment, a value, or a contradiction like
+ *   "but" — "no diabetes, but hypertension since 2019" keeps its comma and stays shown, because
+ *   the second half is a real finding, not part of the denial.
+ *
+ * Same one-way safety as the examination summary: the default is to show, and only these two
+ * narrow, checked shapes are allowed to collapse to NAD.
  */
 export function historyReadsNormal(value: string | null | undefined): boolean {
   if (!value) return false;
   const v = norm(value);
   if (!v) return false;
-  if (/[,;]| but | however | except /.test(v)) return false;
-  return /^(nil|none|nad|nr|negative|unremarkable|insignificant|not significant|nothing significant|no|not known|(no|nil|not)\s[a-z\s-]{0,40})$/.test(
-    v
-  );
+
+  if (!/[,;/]/.test(v)) {
+    if (/ but | however | except /.test(v)) return false;
+    return /^(nil|none|nad|nr|negative|unremarkable|insignificant|not significant|nothing significant|no|not known|(no|nil|not)\s[a-z\s-]{0,40})$/.test(
+      v
+    );
+  }
+
+  // A comma or slash is present, either of which is how a list of denied conditions is
+  // written ("DM, HTN" or "DM/HTN/CAD"). Normal only if the whole thing is a denial prefix
+  // followed by a plain list of short condition names, with no token adding a detail beyond
+  // "this was asked about".
+  const stripped = v.match(DENIAL_PREFIX);
+  if (!stripped) return false;
+  const list = v.slice(stripped[0].length);
+  if (!list.trim()) return false;
+
+  const tokens = list.split(/[,/&]|(?:\band\b)|(?:\bor\b)/).map((t) => t.trim()).filter(Boolean);
+  if (tokens.length === 0) return false;
+
+  return tokens.every((t) => t.split(/\s+/).length <= 4 && !CARRIES_INFORMATION.test(t));
 }
 
 function sectionFor(label: string): HistorySection["key"] | null {
