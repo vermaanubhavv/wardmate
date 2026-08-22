@@ -34,6 +34,7 @@ import { confirmChecked, confirmAll, reopenTask } from "./actions";
 import BottomBar from "../../bottom-bar";
 import { listedComorbidities } from "@/lib/comorbidities";
 import { summariseObjective, type WardRanges } from "@/lib/exam-summary";
+import { classifyVital, isKnownVital } from "@/lib/vital-ranges";
 import { summariseCaseHistory } from "@/lib/case-history";
 import { getWardLabRanges } from "@/lib/ward-lab-ranges";
 
@@ -270,6 +271,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           />
         </dl>
       </header>
+
+      <VitalsPanel observations={allObservations} />
 
       {/* Standing context, not a dated round — the clerking note the rest of the admission is
           read against. Pinned here, above even the current progress, because a plan someone
@@ -704,6 +707,97 @@ const PAC_META: Record<
     dot: "bg-orange-400",
   },
 };
+
+/**
+ * Vitals as tiles with the latest reading and how it flags, plus every earlier reading folded
+ * underneath — see lib/vital-ranges.ts for what "flags" means here and the one rule that
+ * governs it: the number shown is exactly the number recorded, the range is printed beside any
+ * flag rather than asserted, and nothing this file cannot confidently parse is guessed at.
+ *
+ * This exists for one reason worth being honest about: a rival app's screenshot showed a heart
+ * rate of 10 read straight into an auto-generated "likely ACS, transfuse platelets" plan with
+ * nothing pointing at the number itself. A tile that turns red the instant a value like that is
+ * recorded, with nothing more claimed about it than "60–100 is where this normally sits", is
+ * the difference between a doctor noticing a bad number in one glance and an app quietly
+ * building a treatment plan on top of it.
+ */
+function VitalsPanel({ observations }: { observations: Observation[] }) {
+  const readings = observations.filter((o) => isKnownVital(o.label) && o.value_text);
+  if (readings.length === 0) return null;
+
+  // Vitals said in the same breath share one recorded_at, because they come from a single
+  // insert with no per-row timestamp — see app/api/entries/voice/route.ts. Grouping on it turns
+  // "BP 90/50, PR 110, SpO2 91" back into the one reading it was, rather than three.
+  const byTime = new Map<string, Observation[]>();
+  for (const o of readings) byTime.set(o.recorded_at, [...(byTime.get(o.recorded_at) ?? []), o]);
+  const sets = [...byTime.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
+
+  const [[latestTime, latestObs], ...earlier] = sets;
+  const tiles = latestObs.flatMap((o) =>
+    classifyVital(o.label, o.value_text).map((c) => ({ ...c, id: `${o.id}-${c.label}` }))
+  );
+
+  return (
+    <section className="px-4 pb-6">
+      <div className="mb-2 flex items-baseline gap-2 px-4">
+        <p className="ios-group-header">Vitals</p>
+        <p className="text-[13px] text-muted">{vitalsWhen(latestTime)}</p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        {tiles.map((t) => (
+          <div key={t.id} className="ios-group px-3 py-2.5">
+            <p className="text-[11px] uppercase tracking-wide text-muted">{t.label}</p>
+            <p
+              className={
+                "text-[20px] font-semibold tabular-nums " +
+                (t.flag ? "text-red-600" : "text-foreground")
+              }
+            >
+              {t.value}
+            </p>
+            {/* The range rides along with the flag rather than the flag standing alone —
+                a colour with no stated reason is exactly the "trust me" the rival app asks
+                for. This one shows its work. */}
+            {t.flag && (
+              <p className="text-[11px] font-medium text-red-600">
+                {t.flag} · {t.range}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {earlier.length > 0 && (
+        <details className="mt-2 [&[open]_.vitals-chev]:rotate-90">
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-1 text-[13px] text-muted active:opacity-60 [&::-webkit-details-marker]:hidden">
+            <span className="vitals-chev text-[11px] transition-transform">▶</span>
+            {earlier.length} earlier {earlier.length === 1 ? "reading" : "readings"}
+          </summary>
+          <ul className="mt-1.5 ios-group divide-y divide-line">
+            {earlier.map(([time, obs]) => (
+              <li key={time} className="px-4 py-2.5 text-[14px]">
+                <span className="text-muted">{vitalsWhen(time)}</span>
+                {"  ·  "}
+                {obs.map((o) => `${o.label} ${o.value_text}`).join("  ·  ")}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </section>
+  );
+}
+
+function vitalsWhen(iso: string): string {
+  return new Date(iso).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 /**
  * Where the pre-anaesthetic checkup stands, for a patient who has not been operated on yet.
