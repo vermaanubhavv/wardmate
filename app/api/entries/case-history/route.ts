@@ -225,6 +225,7 @@ export async function POST(request: Request) {
     source_quote: o.source_quote,
     needs_confirmation: forceConfirm || o.needs_confirmation,
     urgency: o.urgency,
+    pac_verdict: o.pac_verdict,
     conflict_note: dayConflict(o, patient),
   }));
 

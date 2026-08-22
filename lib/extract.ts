@@ -5,6 +5,7 @@ export const OBSERVATION_KINDS = [
   "diagnosis",
   "day_number",
   "planned_procedure",
+  "pac_status",
   "vital",
   "exam",
   "drain",
@@ -17,6 +18,8 @@ export const OBSERVATION_KINDS = [
 
 export const URGENCIES = ["red", "yellow", "green"] as const;
 
+export const PAC_VERDICTS = ["fit", "fit_with_conditions", "unfit", "pending"] as const;
+
 export type ExtractedObservation = {
   kind: (typeof OBSERVATION_KINDS)[number];
   label: string;
@@ -27,6 +30,8 @@ export type ExtractedObservation = {
   needs_confirmation: boolean;
   /** Plans only, and only when the speaker gave a timeframe. Null otherwise. */
   urgency: (typeof URGENCIES)[number] | null;
+  /** PAC rows only — the normalised reading of a stated verdict. Null otherwise. */
+  pac_verdict: (typeof PAC_VERDICTS)[number] | null;
 };
 
 const SYSTEM_PROMPT = `You convert a surgical resident's spoken ward-round note into structured observations.
@@ -58,6 +63,14 @@ Guidance on fields:
 - value_num and unit: populate ONLY when the resident actually stated a number and (where relevant) a unit. Otherwise null.
 - day_number: use when a post-operative or admission day is spoken, with value_num as the integer.
 - planned_procedure: When the transcript names the operation a patient is intended to have — "pt for radical hysterectomy", "posted for lap chole", "planned for TAH + BSO", "case posted for appendicectomy", "listed for" — record kind "planned_procedure", label "planned procedure", and value_text as the named operation exactly as said, including every part joined by "+" or "and" ("TAH + BSO + frozen" stays together, it is one planned operation, not three). This is only for a genuinely FUTURE, not-yet-done operation — an operation already performed is a diagnosis/note/exam update instead, never this kind. Do not use this for a procedure already described as done ("underwent lap chole", "post lap chole day 2").
+- pac_status: When the transcript states the outcome of a pre-anaesthetic checkup — "PAC done, fit for surgery", "PAC clearance given", "declared unfit", "fit subject to control of sugars", "PAC awaited", "anaesthetist has not seen him yet" — record kind "pac_status", label "PAC", and value_text as the verdict exactly as said, INCLUDING any stated conditions. Set pac_verdict to the normalised reading of that sentence:
+  - "fit": cleared outright, with nothing attached. "PAC done, fit", "cleared for surgery", "fit for GA".
+  - "fit_with_conditions": cleared, but the transcript attaches something that must happen or hold — "fit subject to control of blood sugar", "fit provided BP is controlled", "fit for spinal but not GA", "clearance given, needs cardiology review first".
+  - "unfit": explicitly not cleared. "declared unfit", "not fit for surgery", "PAC refused clearance".
+  - "pending": the transcript says the checkup has not happened or the answer is not back yet — "PAC awaited", "PAC pending", "anaesthetist yet to review", "sent for PAC".
+  Set pac_verdict to null for every observation that is not a pac_status. NEVER infer a verdict the transcript did not state: a resident mentioning "PAC" with no outcome ("PAC file is on the trolley") is not a verdict, and a patient simply being scheduled for theatre is not a clearance. If no PAC outcome was stated, emit no pac_status at all — silence is the correct answer.
+
+  WHEN A PAC VERDICT CARRIES CONDITIONS, EMIT THE CONDITIONS AS PLANS TOO. "Fit subject to control of blood sugar and a cardiology opinion" is THREE observations: the pac_status carrying the whole verdict, plus a plan "control of blood sugar" and a plan "cardiology opinion". They are separate because the verdict is a finding to read and the conditions are jobs someone has to do, ticked off one at a time. Both carry a source_quote from the same sentence, which is correct and expected.
 - plan: unfinished future actions only — "remove drain tomorrow", "repeat haemoglobin", "discharge if afebrile". Do NOT use plan for treatment updates: "Telma Amlo given stat", "CST", "continue same treatment", "antibiotics started", or "drain removed" are medication/exam/note updates, never jobs.
 
 - comorbidities: When the transcript explicitly says a patient is a known case of a condition — for example "K/C/O asthma", "H/O HTN and DM", "known to have HIV", or "previous TB" — record it as kind "note", label "comorbidities", and value_text containing only the stated condition or conditions. This includes explicitly stated chronic/background illness in every system, not only diabetes or hypertension: respiratory (asthma, COPD, OSA); cardiac/vascular (IHD/CAD, prior MI, heart failure, atrial fibrillation, stroke/TIA); renal (CKD, dialysis); liver (cirrhosis, hepatitis B/C); endocrine (thyroid disease); neurological (epilepsy); inflammatory disease (rheumatoid arthritis, ankylosing spondylitis, SLE); cancer, transplant/immunosuppression, and mental-health conditions. Previous TB is included. Never infer a co-morbidity from the current diagnosis, symptoms, medication, or procedure. If multiple conditions are stated together, keep them together in one value. If they are stated separately, record each separately.
@@ -102,6 +115,14 @@ const SCHEMA = {
             description:
               "Plans only, and only when the transcript states a timeframe. Null otherwise.",
           },
+          pac_verdict: {
+            anyOf: [
+              { type: "string", enum: PAC_VERDICTS as unknown as string[] },
+              { type: "null" },
+            ],
+            description:
+              "pac_status rows only, and only when the transcript states an outcome. Null otherwise.",
+          },
         },
         required: [
           "kind",
@@ -112,6 +133,7 @@ const SCHEMA = {
           "source_quote",
           "needs_confirmation",
           "urgency",
+          "pac_verdict",
         ],
         additionalProperties: false,
       },
@@ -229,6 +251,17 @@ export async function extractObservations(
       // outside the three colours would be rejected by the database anyway. Dropped here
       // rather than trusted, for the same reason the quote is checked rather than trusted.
       if (obs.kind !== "plan" || !URGENCIES.includes(obs.urgency as never)) obs.urgency = null;
+
+      // Same rule for the PAC verdict, and the database would refuse the row anyway — see the
+      // observations_pac_verdict_kind constraint in 0042_pac_status.sql. A PAC row that arrived
+      // without a recognisable verdict is dropped entirely rather than stored as a verdictless
+      // PAC: the whole point of the section is to say fit or not, and a row that cannot answer
+      // that would sit at the top of a pre-op patient's screen saying nothing.
+      if (obs.kind !== "pac_status") obs.pac_verdict = null;
+      else if (!PAC_VERDICTS.includes(obs.pac_verdict as never)) {
+        rejected.push(obs);
+        continue;
+      } else obs.label = "PAC";
 
       // The prompt asks the model never to let a diagnosis's label repeat its value — "label:
       // diagnosis, value: cholelithiasis", not "label: cholelithiasis, value: cholelithiasis".

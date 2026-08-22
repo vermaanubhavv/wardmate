@@ -20,7 +20,11 @@ export type Observation = {
   urgency: Urgency;
   graded_at: string | null;
   recorded_at: string;
+  /** PAC rows only — see supabase/patches/0042_pac_status.sql. Null on everything else. */
+  pac_verdict?: PacVerdict;
 };
+
+export type PacVerdict = "fit" | "fit_with_conditions" | "unfit" | "pending" | null;
 
 /** An outstanding job, with how many earlier sayings of it are folded underneath. */
 export type OpenTask = Observation & { repeats: number };
@@ -35,6 +39,10 @@ export type PatientState = {
   openTasks: OpenTask[];
   doneTasks: Observation[];
   pending: Observation[];
+  /** Every PAC verdict ever recorded for this patient, newest first. A patient found unfit,
+   *  optimised and then cleared has three of these, and the history is the point — it is how
+   *  you see what had to happen to get them to fit. Empty when nobody has recorded one. */
+  pac: Observation[];
 };
 
 /**
@@ -83,12 +91,21 @@ export function derivePatientState(
   const templateLabels = new Set(
     matched.flatMap((m) => [m.item.label.toLowerCase(), ...m.item.aliases.map((a) => a.toLowerCase())])
   );
+  // "pac_status" is excluded for the same reason "plan" is: it has a section of its own, with
+  // the verdict spelled out and the history under it, so a second bare row here would be the
+  // same fact twice. A templated patient still gets their "fitness" checklist row filled,
+  // because matchTemplate reads every observation rather than this list.
   const extra = [...latest.values()].filter(
     (o) =>
       o.kind !== "note" &&
+      o.kind !== "pac_status" &&
       (o.kind !== "plan" || !isActionableTask(o.value_text ?? o.label)) &&
       !templateLabels.has(o.label.toLowerCase())
   );
+
+  // Newest first, which the caller relies on: the head is where the patient stands now and the
+  // tail is how they got there. Input order is already newest-first.
+  const pac = observations.filter((o) => o.kind === "pac_status");
 
   return {
     matched,
@@ -98,6 +115,7 @@ export function derivePatientState(
     openTasks,
     doneTasks,
     pending,
+    pac,
   };
 }
 

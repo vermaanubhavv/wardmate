@@ -7,6 +7,7 @@ import {
   getProcedureLabels,
   listTemplateChoices,
   procedureFor,
+  phaseFor,
   type MatchedItem,
 } from "@/lib/templates";
 import {
@@ -15,6 +16,7 @@ import {
   groupIntoSittings,
   istDayKey,
   type Observation,
+  type PacVerdict,
 } from "@/lib/patient-state";
 import { isIdentifierLabel, mergeLabelValue, stripPatientHonorific } from "@/lib/patients";
 import { describeWhen, effectiveUrgency } from "@/lib/urgency";
@@ -78,7 +80,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       supabase
         .from("entries")
         .select(
-          "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, is_case_history, matched_protocol_ids, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at)"
+          "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, is_case_history, matched_protocol_ids, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at, pac_verdict)"
         )
         .eq("patient_id", id)
         .order("recorded_at", { ascending: false }),
@@ -148,7 +150,12 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // the to-do list and "where things stand" — a plan is a plan whichever way it was captured.
   const allObservations = allEntries.flatMap((e) => e.observations);
   const patientState = derivePatientState(allObservations, template);
-  const { matched, missing, extra, openTasks, doneTasks, pending } = patientState;
+  const { matched, missing, extra, openTasks, doneTasks, pending, pac } = patientState;
+
+  // Before surgery is exactly what the templates already mean by it — no date of operation on
+  // record yet. The PAC section belongs to that stretch of the admission and nowhere else:
+  // after the operation the question has been answered by events.
+  const beforeSurgery = phaseFor(patient) === "before_surgery";
 
   // Latest progress is its own summary above. The historical list therefore begins with the
   // entry before it rather than making the same update appear twice on one screen.
@@ -314,6 +321,11 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           </div>
         </details>
       </section>
+
+      {/* Only before surgery, and shown even when empty — an unanswered PAC is the single
+          thing most likely to stop a list, so "nobody has recorded one" has to be visible
+          rather than inferred from a section that isn't there. */}
+      {beforeSurgery && <PacSection pac={pac} />}
 
       <section className="px-4 pb-6">
         <p className="ios-group-header mb-2 px-4">Latest progress</p>
@@ -638,6 +650,121 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         </BottomBar>
     </div>
   );
+}
+
+const PAC_META: Record<
+  NonNullable<PacVerdict>,
+  { word: string; card: string; dot: string }
+> = {
+  fit: {
+    word: "Fit for surgery",
+    card: "border-emerald-300 bg-emerald-50 text-emerald-900",
+    dot: "bg-emerald-500",
+  },
+  fit_with_conditions: {
+    word: "Fit, with conditions",
+    card: "border-amber-300 bg-amber-50 text-amber-900",
+    dot: "bg-amber-500",
+  },
+  unfit: {
+    word: "Unfit",
+    card: "border-red-300 bg-red-50 text-red-900",
+    dot: "bg-red-500",
+  },
+  pending: {
+    word: "Awaited",
+    card: "border-orange-300 bg-orange-50 text-orange-900",
+    dot: "bg-orange-400",
+  },
+};
+
+/**
+ * Where the pre-anaesthetic checkup stands, for a patient who has not been operated on yet.
+ *
+ * It has a section of its own rather than a row in the checklist because it is not really a
+ * value — it is a decision, it changes as the patient is optimised, and on the morning of a
+ * list it is the thing most likely to stop everything. The latest verdict is the headline; the
+ * earlier ones stay underneath, because "unfit, sugars uncontrolled" followed a week later by
+ * "fit" is the story of the admission and deleting the first half of it would be a lie.
+ *
+ * Nothing here is worked out by the app. A verdict exists only because somebody said one, the
+ * words are theirs, and the quote behind it is a real span of what they said. When no one has
+ * said anything, this says exactly that instead of guessing from the fact that a patient is on
+ * a list.
+ */
+function PacSection({ pac }: { pac: Observation[] }) {
+  const [latest, ...earlier] = pac;
+  const meta = latest?.pac_verdict ? PAC_META[latest.pac_verdict] : null;
+
+  return (
+    <section className="px-4 pb-6">
+      <p className="ios-group-header mb-2 px-4">Pre-anaesthetic checkup</p>
+
+      {!latest || !meta ? (
+        <p className="ios-group px-4 py-3 text-[15px] text-orange-700">
+          Not recorded. Nobody has said whether this patient is fit for surgery.
+        </p>
+      ) : (
+        <>
+          <div className={"rounded-[10px] border px-4 py-3 " + meta.card}>
+            <div className="flex items-baseline gap-2">
+              <span className={"h-2.5 w-2.5 shrink-0 rounded-full " + meta.dot} aria-hidden />
+              <span className="text-[17px] font-semibold">{meta.word}</span>
+              <span className="ml-auto shrink-0 text-[13px] opacity-70">
+                {pacWhen(latest.recorded_at)}
+              </span>
+            </div>
+
+            {/* The verdict word above is the app's reading of the sentence. This is the
+                sentence — kept beside it, never replaced by it. */}
+            <p className="mt-1.5 text-[15px] leading-snug">{latest.value_text ?? latest.label}</p>
+
+            {!quoteAddsNothing(latest.value_text ?? latest.label, latest.source_quote) && (
+              <p className="mt-1 text-[13px] italic opacity-70">“{latest.source_quote}”</p>
+            )}
+          </div>
+
+          {(latest.pac_verdict === "fit_with_conditions" || latest.pac_verdict === "unfit") && (
+            <p className="mt-1.5 px-1 text-[13px] text-muted">
+              Anything the anaesthetist asked for is on the to-do list above, one job at a time.
+            </p>
+          )}
+
+          {earlier.length > 0 && (
+            <details className="mt-2 [&[open]_.chev]:rotate-90">
+              <summary className="flex cursor-pointer list-none items-baseline gap-2 px-1 text-[13px] text-muted active:opacity-60 [&::-webkit-details-marker]:hidden">
+                <span className="chev shrink-0 text-[11px] transition-transform">▶</span>
+                {earlier.length} earlier {earlier.length === 1 ? "verdict" : "verdicts"}
+              </summary>
+              <ul className="mt-1.5 ios-group divide-y divide-line">
+                {earlier.map((o) => (
+                  <li key={o.id} className="px-4 py-2.5">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[15px]">
+                        {o.pac_verdict ? PAC_META[o.pac_verdict].word : "Recorded"}
+                      </span>
+                      <span className="ml-auto shrink-0 text-[13px] text-muted">
+                        {pacWhen(o.recorded_at)}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-[13px] text-muted">{o.value_text ?? o.label}</p>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+function pacWhen(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "numeric",
+    month: "short",
+  });
 }
 
 const SOAP_ORDER = ["subjective", "objective", "assessment", "plan", "checks"] as const;
