@@ -57,7 +57,17 @@ export async function POST(request: Request) {
   }
 
   const template = await getTemplateForPatient(patient);
-  const expectedLabels = template?.items.map((i) => i.label) ?? [];
+  // The sections a clerking note is written in, so that when the resident dictates one it is
+  // stored under the name the case-history card looks for — see lib/case-history.ts. This
+  // constrains NAMING only, exactly as the template labels do: a section nobody mentioned must
+  // simply be absent, and the card then says NR for it rather than the extractor inventing one.
+  const HISTORY_SECTIONS = [
+    "chief complaints",
+    "history of presenting illness",
+    "past history",
+    "family history",
+  ];
+  const expectedLabels = [...(template?.items.map((i) => i.label) ?? []), ...HISTORY_SECTIONS];
 
   // Everything from here shares one shape regardless of how the transcript was obtained, so
   // the two branches below only have to produce { transcript, insertFields, forceConfirm } and

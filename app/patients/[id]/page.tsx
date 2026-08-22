@@ -18,7 +18,7 @@ import {
   type Observation,
   type PacVerdict,
 } from "@/lib/patient-state";
-import { isIdentifierLabel, mergeLabelValue, stripPatientHonorific } from "@/lib/patients";
+import { isIdentifierLabel, stripPatientHonorific } from "@/lib/patients";
 import { describeWhen, effectiveUrgency } from "@/lib/urgency";
 import BedsideBar from "./bedside-bar";
 import EditIdentity from "../edit-identity";
@@ -34,6 +34,7 @@ import { confirmChecked, confirmAll, reopenTask } from "./actions";
 import BottomBar from "../../bottom-bar";
 import { listedComorbidities } from "@/lib/comorbidities";
 import { summariseObjective, type WardRanges } from "@/lib/exam-summary";
+import { summariseCaseHistory } from "@/lib/case-history";
 import { getWardLabRanges } from "@/lib/ward-lab-ranges";
 
 type Entry = {
@@ -162,11 +163,12 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // after the operation the question has been answered by events.
   const beforeSurgery = phaseFor(patient) === "before_surgery";
 
-  // Latest progress is its own summary above. The historical list therefore begins with the
-  // entry before it rather than making the same update appear twice on one screen.
-  const latestEntry = entries[0] ?? null;
-  const previousEntries = entries.slice(1);
-  const sittings = groupIntoSittings(previousEntries);
+  // Every entry belongs to the dated record. There is no "latest progress" box above it any
+  // more — Current progress is the standing answer to "how is this patient", rebuilt from
+  // everything ever recorded, so a box repeating only the newest entry was a second, staler
+  // answer to the same question. Dropping entries[0] here, as this used to, would now make
+  // today's round vanish from the page altogether.
+  const sittings = groupIntoSittings(entries);
   const days = groupByDay(sittings);
   const todayKey = istDayKey(new Date().toISOString());
 
@@ -273,7 +275,10 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           read against. Pinned here, above even the latest progress, because a plan someone
           decides today is decided in light of this, not the other way round. */}
       <section className="px-4 pb-6">
-        <details open className="ios-group [&[open]_.case-history-chev]:rotate-90">
+        <details
+          open={patient.admission_day <= 1}
+          className="ios-group [&[open]_.case-history-chev]:rotate-90"
+        >
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[15px] font-semibold active:bg-chip [&::-webkit-details-marker]:hidden">
             <span>Case history</span>
             <span className="flex items-center gap-2">
@@ -285,7 +290,22 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           </summary>
 
           <div className="border-t border-line">
-            {caseHistoryEntries.length > 0 ? caseHistoryEntries.map((entry) => (
+            {caseHistoryEntries.length > 0 && (
+              <CaseHistoryCard
+                observations={caseHistoryEntries.flatMap((e) => e.observations)}
+              />
+            )}
+
+            {/* The note exactly as recorded, one tap away. A tidier summary above must not
+                cost the resident the transcript, the photograph, or the ability to correct a
+                mis-heard word — those all live on the entry card. */}
+            {caseHistoryEntries.length > 0 ? (
+              <details className="border-t border-line [&[open]_.raw-chev]:rotate-90">
+                <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-[13px] text-muted active:bg-chip [&::-webkit-details-marker]:hidden">
+                  <span className="raw-chev shrink-0 text-[11px] transition-transform">&#9654;</span>
+                  As recorded &mdash; evidence and corrections
+                </summary>
+                {caseHistoryEntries.map((entry) => (
               <EntryCard
                 key={entry.id}
                 embedded
@@ -316,7 +336,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                   .filter((id) => protocolTitles.has(id))
                   .map((id) => ({ id, title: protocolTitles.get(id)! }))}
               />
-            )) : (
+                ))}
+              </details>
+            ) : (
               <p className="px-4 py-3 text-[14px] text-muted">No case history recorded yet.</p>
             )}
             <CaseHistoryCapture
@@ -331,15 +353,6 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           thing most likely to stop a list, so "nobody has recorded one" has to be visible
           rather than inferred from a section that isn't there. */}
       {beforeSurgery && <PacSection pac={pac} />}
-
-      <section className="px-4 pb-6">
-        <p className="ios-group-header mb-2 px-4">Latest progress</p>
-        {latestEntry ? (
-          <LatestProgress entry={latestEntry} protocolTitles={protocolTitles} />
-        ) : (
-          <p className="ios-group px-4 py-3 text-[15px] text-muted">Nothing recorded yet.</p>
-        )}
-      </section>
 
       {(openTasks.length > 0 || doneTasks.length > 0) && (
         <section className="px-4 pb-6">
@@ -498,7 +511,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
               for. What is ACTIONABLE about it survives the fold: the count of things never
               recorded stays on the summary line, in orange, so nothing is hidden that somebody
               needs to act on. */}
-          <details className="[&[open]_.chev]:rotate-90">
+          <details open className="[&[open]_.chev]:rotate-90">
             <summary className="mb-2 flex cursor-pointer list-none items-baseline gap-2 active:opacity-60 [&::-webkit-details-marker]:hidden">
               <span className="chev shrink-0 text-[11px] text-muted transition-transform">▶</span>
               <span className="ios-group-header">Current progress</span>
@@ -566,7 +579,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       {/* Bottom padding clears the fixed speak bar so the oldest entry stays reachable. */}
       <section className="px-4 pb-6">
         <p className="ios-group-header mb-2 px-4">Previous records</p>
-        {previousEntries.length === 0 ? (
+        {entries.length === 0 ? (
           <p className="ios-group p-5 text-[15px] text-muted">
             No earlier records yet.
           </p>
@@ -668,26 +681,26 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
 const PAC_META: Record<
   NonNullable<PacVerdict>,
-  { word: string; card: string; dot: string }
+  { word: string; chip: string; dot: string }
 > = {
   fit: {
-    word: "Fit for surgery",
-    card: "border-emerald-300 bg-emerald-50 text-emerald-900",
+    word: "Fit",
+    chip: "border-emerald-300 bg-emerald-50 text-emerald-800",
     dot: "bg-emerald-500",
   },
   fit_with_conditions: {
-    word: "Fit, with conditions",
-    card: "border-amber-300 bg-amber-50 text-amber-900",
+    word: "Fit \u2014 conditions",
+    chip: "border-amber-300 bg-amber-50 text-amber-900",
     dot: "bg-amber-500",
   },
   unfit: {
     word: "Unfit",
-    card: "border-red-300 bg-red-50 text-red-900",
+    chip: "border-red-300 bg-red-50 text-red-800",
     dot: "bg-red-500",
   },
   pending: {
-    word: "Awaited",
-    card: "border-orange-300 bg-orange-50 text-orange-900",
+    word: "Pending",
+    chip: "border-orange-300 bg-orange-50 text-orange-800",
     dot: "bg-orange-400",
   },
 };
@@ -712,64 +725,127 @@ function PacSection({ pac }: { pac: Observation[] }) {
 
   return (
     <section className="px-4 pb-6">
-      <p className="ios-group-header mb-2 px-4">Pre-anaesthetic checkup</p>
+      <details className="ios-group [&[open]_.pac-chev]:rotate-90">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[15px] font-semibold active:bg-chip [&::-webkit-details-marker]:hidden">
+          <span>Pre-anaesthetic checkup</span>
+          <span className="flex items-center gap-2">
+            {/* The verdict rides on the closed card, because on the morning of a list this one
+                word is the entire reason anyone opens this patient. */}
+            <span
+              className={
+                "rounded-full border px-2 py-0.5 text-[12px] font-semibold " +
+                (meta ? meta.chip : "border-orange-300 bg-orange-50 text-orange-800")
+              }
+            >
+              {meta ? meta.word : "Not recorded"}
+            </span>
+            <span className="pac-chev text-xl font-normal text-muted transition-transform">
+              &#8250;
+            </span>
+          </span>
+        </summary>
 
-      {!latest || !meta ? (
-        <p className="ios-group px-4 py-3 text-[15px] text-orange-700">
-          Not recorded. Nobody has said whether this patient is fit for surgery.
-        </p>
-      ) : (
-        <>
-          <div className={"rounded-[10px] border px-4 py-3 " + meta.card}>
-            <div className="flex items-baseline gap-2">
-              <span className={"h-2.5 w-2.5 shrink-0 rounded-full " + meta.dot} aria-hidden />
-              <span className="text-[17px] font-semibold">{meta.word}</span>
-              <span className="ml-auto shrink-0 text-[13px] opacity-70">
-                {pacWhen(latest.recorded_at)}
-              </span>
-            </div>
-
-            {/* The verdict word above is the app's reading of the sentence. This is the
-                sentence — kept beside it, never replaced by it. */}
-            <p className="mt-1.5 text-[15px] leading-snug">{latest.value_text ?? latest.label}</p>
-
-            {!quoteAddsNothing(latest.value_text ?? latest.label, latest.source_quote) && (
-              <p className="mt-1 text-[13px] italic opacity-70">“{latest.source_quote}”</p>
-            )}
-          </div>
-
-          {(latest.pac_verdict === "fit_with_conditions" || latest.pac_verdict === "unfit") && (
-            <p className="mt-1.5 px-1 text-[13px] text-muted">
-              Anything the anaesthetist asked for is on the to-do list above, one job at a time.
+        <div className="border-t border-line px-4 py-3">
+          {!latest || !meta ? (
+            <p className="text-[15px] text-orange-700">
+              Nobody has said whether this patient is fit for surgery.
             </p>
-          )}
+          ) : (
+            <>
+              {/* The chip above is the app's reading of the sentence. This is the sentence,
+                  kept beside it and never replaced by it. */}
+              <p className="text-[15px] leading-snug">{latest.value_text ?? latest.label}</p>
+              <p className="mt-0.5 text-[13px] text-muted">{pacWhen(latest.recorded_at)}</p>
 
-          {earlier.length > 0 && (
-            <details className="mt-2 [&[open]_.chev]:rotate-90">
-              <summary className="flex cursor-pointer list-none items-baseline gap-2 px-1 text-[13px] text-muted active:opacity-60 [&::-webkit-details-marker]:hidden">
-                <span className="chev shrink-0 text-[11px] transition-transform">▶</span>
-                {earlier.length} earlier {earlier.length === 1 ? "verdict" : "verdicts"}
-              </summary>
-              <ul className="mt-1.5 ios-group divide-y divide-line">
-                {earlier.map((o) => (
-                  <li key={o.id} className="px-4 py-2.5">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-[15px]">
+              {!quoteAddsNothing(latest.value_text ?? latest.label, latest.source_quote) && (
+                <p className="mt-1 text-[13px] italic text-muted">
+                  &ldquo;{latest.source_quote}&rdquo;
+                </p>
+              )}
+
+              {(latest.pac_verdict === "fit_with_conditions" ||
+                latest.pac_verdict === "unfit") && (
+                <p className="mt-2 text-[13px] text-muted">
+                  Anything the anaesthetist asked for is on the to-do list, one job at a time.
+                </p>
+              )}
+
+              {/* "Unfit, sugars uncontrolled" followed a week later by "fit" is the story of
+                  the admission. Deleting the first half of it would be a lie. */}
+              {earlier.length > 0 && (
+                <ul className="mt-3 border-t border-line pt-2">
+                  {earlier.map((o) => (
+                    <li key={o.id} className="mt-1.5 first:mt-0 text-[13px] text-muted">
+                      <span className="font-medium">
                         {o.pac_verdict ? PAC_META[o.pac_verdict].word : "Recorded"}
                       </span>
-                      <span className="ml-auto shrink-0 text-[13px] text-muted">
-                        {pacWhen(o.recorded_at)}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 text-[13px] text-muted">{o.value_text ?? o.label}</p>
-                  </li>
-                ))}
-              </ul>
-            </details>
+                      {" \u00b7 "}
+                      {pacWhen(o.recorded_at)}
+                      {" \u2014 "}
+                      {o.value_text ?? o.label}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
-        </>
-      )}
+        </div>
+      </details>
     </section>
+  );
+}
+
+/**
+ * The clerking note, ordered the way a case sheet is written — see lib/case-history.ts for the
+ * two opposite conventions it follows: past history is always shown because silence there is
+ * itself information, family history only when positive because a negative one is the default
+ * and printing it on every patient is noise.
+ */
+function CaseHistoryCard({ observations }: { observations: Observation[] }) {
+  const { sections, other } = summariseCaseHistory(observations);
+
+  return (
+    <div className="px-4 py-3 text-[15px] leading-relaxed">
+      {sections
+        .filter((section) => !section.hidden)
+        .map((section) => (
+          <div key={section.key} className="mb-2.5 last:mb-0">
+            <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
+              {section.label}
+            </p>
+            {section.lines.length > 0 ? (
+              section.lines.map((line) => (
+                <p key={line.id} className="mt-0.5">
+                  {line.text}
+                </p>
+              ))
+            ) : (
+              // NR and NAD are different facts: nobody asked, versus somebody looked and there
+              // was nothing. Only the first is a gap, so only the first is coloured as one.
+              <p
+                className={
+                  "mt-0.5 " + (section.note === "NR" ? "text-orange-700" : "text-muted")
+                }
+              >
+                {section.note}
+              </p>
+            )}
+          </div>
+        ))}
+
+      {other.length > 0 && (
+        <div className="mt-3 border-t border-line pt-2.5">
+          <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
+            Examination &amp; other
+          </p>
+          {other.map((line) => (
+            <p key={line.id} className="mt-0.5">
+              {line.text}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -825,7 +901,10 @@ function ObjectiveBlock({
     ],
     { sex, wardRanges }
   );
-  const outstanding = matchedItems.filter((m) => m.missing).map((m) => m.item.label);
+  // Only things with nothing recorded at all. A core item carrying yesterday's value is
+  // flagged stale by matchTemplate, but it is NOT missing — listing it here while the summary
+  // above prints its value would have the same line saying both at once.
+  const outstanding = matchedItems.filter((m) => m.missing && !m.value).map((m) => m.item.label);
 
   const empty =
     summary.vitals.length === 0 &&
@@ -1001,83 +1080,3 @@ function SummaryRow({
   );
 }
 
-/**
- * The most recent entry, shown without imposing SOAP labels. The extraction schema does not
- * reliably classify every spoken value as subjective, objective, or assessment, and the screen
- * must not make that clinical judgement on the resident's behalf.
- */
-function LatestProgress({
-  entry,
-  protocolTitles,
-}: {
-  entry: Entry;
-  protocolTitles: Map<string, string>;
-}) {
-  const values = entry.observations;
-  const update = values.filter((o) => o.kind !== "plan" && !isIdentifierLabel(o.label));
-  const plans = values.filter((o) => o.kind === "plan");
-  const time = new Date(entry.recorded_at).toLocaleString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-
-  const matched = (entry.matched_protocol_ids ?? [])
-    .filter((id) => protocolTitles.has(id))
-    .map((id) => ({ id, title: protocolTitles.get(id)! }));
-
-  return (
-    <div className="ios-group">
-      <div className="border-b border-line px-4 py-2.5 text-[13px] text-muted">{time}</div>
-      <ProgressGroup label="Latest update" values={update} />
-      {plans.length > 0 && <ProgressGroup label="Advice / plan" values={plans} timeAware />}
-
-      {matched.length > 0 && (
-        <div className="ios-row flex flex-wrap gap-1.5 px-4 py-3">
-          {matched.map((p) => (
-            <Link
-              key={p.id}
-              href={`/protocols#${p.id}`}
-              className="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-1 text-[12px] font-medium text-accent"
-            >
-              Protocol: {p.title} ›
-            </Link>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ProgressGroup({
-  label,
-  values,
-  timeAware = false,
-}: {
-  label: string;
-  values: Observation[];
-  /** Plans read words like "tomorrow" that go stale the day after they are said — see
-   *  lib/urgency.ts describeWhen. Findings ("abdomen soft") carry no such word, so this stays
-   *  off for them rather than running a check that can never match anything. */
-  timeAware?: boolean;
-}) {
-  return (
-    <div className="ios-row px-4 py-3">
-      <h2 className="text-[13px] font-medium text-muted">{label}</h2>
-      {values.length > 0 ? (
-        <ul className="mt-1 space-y-1 text-[15px]">
-          {values.map((value) => {
-            const text = timeAware
-              ? describeWhen(mergeLabelValue(value.label, value.value_text), value.recorded_at)
-              : mergeLabelValue(value.label, value.value_text);
-            return <li key={value.id}>{text}</li>;
-          })}
-        </ul>
-      ) : (
-        <p className="mt-1 text-[15px] text-muted">Not recorded</p>
-      )}
-    </div>
-  );
-}
