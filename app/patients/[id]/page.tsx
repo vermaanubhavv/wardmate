@@ -33,7 +33,8 @@ import { buildDischargeBrief } from "@/lib/discharge";
 import { confirmChecked, confirmAll, reopenTask } from "./actions";
 import BottomBar from "../../bottom-bar";
 import { listedComorbidities } from "@/lib/comorbidities";
-import { summariseObjective } from "@/lib/exam-summary";
+import { summariseObjective, type WardRanges } from "@/lib/exam-summary";
+import { getWardLabRanges } from "@/lib/ward-lab-ranges";
 
 type Entry = {
   id: string;
@@ -81,7 +82,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       supabase
         .from("entries")
         .select(
-          "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, is_case_history, matched_protocol_ids, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at, pac_verdict)"
+          "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, is_case_history, matched_protocol_ids, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at, pac_verdict, ref_low, ref_high, ref_text)"
         )
         .eq("patient_id", id)
         .order("recorded_at", { ascending: false }),
@@ -120,6 +121,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const matchedIds = Array.from(
     new Set(allEntries.flatMap((e) => e.matched_protocol_ids ?? []))
   );
+  // This ward's own laboratory ranges, for results that arrived without a report to read.
+  const wardRanges = await getWardLabRanges(patient.ward_id);
+
   const protocolTitles = new Map<string, string>();
   if (matchedIds.length > 0) {
     const { data: matchedProtocols } = await supabase
@@ -520,6 +524,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                     matchedItems={matchedItems}
                     extraItems={extraItems}
                     sex={patient.sex}
+                    wardRanges={wardRanges}
                   />
                 ) : (
                 <ul className="ios-group divide-y divide-line">
@@ -790,10 +795,12 @@ function ObjectiveBlock({
   matchedItems,
   extraItems,
   sex,
+  wardRanges,
 }: {
   matchedItems: MatchedItem[];
   extraItems: Observation[];
   sex: string | null;
+  wardRanges: WardRanges;
 }) {
   const summary = summariseObjective(
     [
@@ -802,15 +809,21 @@ function ObjectiveBlock({
         label: m.item.label,
         value: m.value,
         recordedAt: m.recordedAt,
+        refLow: m.refLow,
+        refHigh: m.refHigh,
+        refText: m.refText,
       })),
       ...extraItems.map((o) => ({
         id: o.id,
         label: o.label,
         value: o.value_text,
         recordedAt: o.recorded_at,
+        refLow: o.ref_low,
+        refHigh: o.ref_high,
+        refText: o.ref_text,
       })),
     ],
-    { sex }
+    { sex, wardRanges }
   );
   const outstanding = matchedItems.filter((m) => m.missing).map((m) => m.item.label);
 
@@ -857,7 +870,16 @@ function ObjectiveBlock({
           <span className="font-medium tabular-nums">{l.value}</span>
           {l.flag === "high" && <span className="ml-0.5 font-medium text-red-700">↑</span>}
           {l.flag === "low" && <span className="ml-0.5 font-medium text-red-700">↓</span>}
-          {l.range && <span className="ml-1 text-[13px] text-muted">({l.range})</span>}
+          {/* A range off the report, or one this ward's lab is known to use, needs no
+              qualifier. The built-in fallback says so, because a generic adult range is a
+              weaker thing to have judged a result by and the reader should know which they
+              are looking at. */}
+          {l.range && (
+            <span className="ml-1 text-[13px] text-muted">
+              ({l.range}
+              {l.source === "builtin" ? " typical" : ""})
+            </span>
+          )}
           {l.when && <span className="ml-1 text-[13px] text-muted">· {l.when}</span>}
         </p>
       ))}

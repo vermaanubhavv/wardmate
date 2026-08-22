@@ -218,6 +218,22 @@ export type MatchedItem = {
   recordedAt: string | null;
   /** Core item with nothing to show — the thing worth surfacing as a gap. */
   missing: boolean;
+  /** The reference range printed beside this result on the report it came from, when it came
+   *  from one — see supabase/patches/0043_lab_reference_ranges.sql. */
+  refLow: number | null;
+  refHigh: number | null;
+  refText: string | null;
+};
+
+/** Only the fields matchTemplate reads. Widened so a matched lab keeps the range that was
+ *  printed next to it, which is the most authoritative one there is. */
+type MatchableObservation = {
+  label: string;
+  value_text: string | null;
+  recorded_at: string;
+  ref_low?: number | null;
+  ref_high?: number | null;
+  ref_text?: string | null;
 };
 
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
@@ -232,9 +248,9 @@ const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
  */
 export function matchTemplate(
   template: CareTemplate,
-  observations: { label: string; value_text: string | null; recorded_at: string }[]
+  observations: MatchableObservation[]
 ): MatchedItem[] {
-  const byLabel = new Map<string, { value_text: string | null; recorded_at: string }>();
+  const byLabel = new Map<string, MatchableObservation>();
   for (const obs of observations) {
     const key = norm(obs.label);
     const existing = byLabel.get(key);
@@ -246,7 +262,7 @@ export function matchTemplate(
 
   return template.items.map((item) => {
     const keys = [norm(item.label), ...(item.aliases ?? []).map(norm)];
-    let hit: { value_text: string | null; recorded_at: string } | undefined;
+    let hit: MatchableObservation | undefined;
     for (const k of keys) {
       const found = byLabel.get(k);
       if (found && (!hit || found.recorded_at > hit.recorded_at)) hit = found;
@@ -259,6 +275,9 @@ export function matchTemplate(
       value: hit?.value_text ?? null,
       recordedAt: hit?.recorded_at ?? null,
       missing: item.importance === "core" && !fresh,
+      refLow: hit?.ref_low ?? null,
+      refHigh: hit?.ref_high ?? null,
+      refText: hit?.ref_text ?? null,
     };
   });
 }

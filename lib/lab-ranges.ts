@@ -83,6 +83,9 @@ const SAID_ABNORMAL = /\b(deranged|derangement|abnormal|grossly)\b/i;
 
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 
+/** Where the range that judged a result came from, weakest last. */
+export type RangeSource = "report" | "ward" | "builtin";
+
 export type LabReading = {
   label: string;
   /** The value exactly as recorded. Never rewritten, never rounded, never unit-converted. */
@@ -90,6 +93,17 @@ export type LabReading = {
   flag: LabFlag | null;
   /** "13–17" — the range the flag was judged against, so the judgement can be checked. */
   range: string | null;
+  /** Which authority that range came from. Null when the resident's own wording decided it. */
+  source: RangeSource | null;
+};
+
+/** An externally supplied range: printed on the report, or accumulated for this ward. */
+export type SuppliedRange = {
+  low: number | null;
+  high: number | null;
+  /** As printed, preferred for display over anything reconstructed from the numbers. */
+  text?: string | null;
+  source: RangeSource;
 };
 
 /** Is this label a blood result this file knows a range for? */
@@ -145,32 +159,74 @@ const trim = (n: number) => String(Number(n.toFixed(2)));
 export function classifyLab(
   label: string,
   value: string | null,
-  sex: string | null
+  sex: string | null,
+  supplied?: SuppliedRange | null
 ): LabReading | null {
   const def = findLab(label);
-  if (!def || !value || !value.trim()) return null;
+  // A supplied range makes any analyte judgeable, including ones this file has never heard of —
+  // which is the point of reading ranges off the report. With neither a definition nor a
+  // supplied range there is nothing to judge against, so the caller shows it as an ordinary
+  // finding rather than this function pretending to an opinion.
+  if ((!def && !supplied) || !value || !value.trim()) return null;
 
+  const name = def?.label ?? label;
   const v = value.trim();
 
   // What the resident said outranks any range: they were looking at the patient.
-  if (SAID_ABNORMAL.test(v)) return { label: def.label, value: v, flag: "abnormal", range: null };
-  if (SAID_HIGH.test(v)) return { label: def.label, value: v, flag: "high", range: null };
-  if (SAID_LOW.test(v)) return { label: def.label, value: v, flag: "low", range: null };
+  const said = (flag: LabFlag): LabReading => ({ label: name, value: v, flag, range: null, source: null });
+  if (SAID_ABNORMAL.test(v)) return said("abnormal");
+  if (SAID_HIGH.test(v)) return said("high");
+  if (SAID_LOW.test(v)) return said("low");
 
   const n = firstNumber(v);
-  // A known lab with an unreadable value is shown, not judged — flag null with no range means
-  // "we could not tell", and the caller must display it rather than fold it away.
-  if (n === null) return { label: def.label, value: v, flag: null, range: null };
+  // An unreadable value is shown, not judged — flag null with no range means "we could not
+  // tell", and the caller must display it rather than fold it away.
+  if (n === null) return { label: name, value: v, flag: null, range: null, source: null };
 
-  const range = pickRange(n, pickRanges(def, sex));
-  const printed = `${trim(range.low)}–${trim(range.high)}`;
+  // The report's own printed range beats the ward's accumulated one, which beats the built-in
+  // table. The one printed beside this very number is the closest thing to ground truth there is.
+  let low: number | null;
+  let high: number | null;
+  let printed: string;
+  let source: RangeSource;
 
-  if (n < range.low) return { label: def.label, value: v, flag: "low", range: printed };
-  if (n > range.high) return { label: def.label, value: v, flag: "high", range: printed };
-  return { label: def.label, value: v, flag: null, range: printed };
+  if (supplied && (supplied.low !== null || supplied.high !== null)) {
+    low = supplied.low;
+    high = supplied.high;
+    source = supplied.source;
+    printed =
+      supplied.text?.trim() ||
+      (low !== null && high !== null
+        ? `${trim(low)}–${trim(high)}`
+        : low !== null
+          ? `> ${trim(low)}`
+          : `< ${trim(high as number)}`);
+  } else if (def) {
+    const r = pickRange(n, pickRanges(def, sex));
+    low = r.low;
+    high = r.high;
+    printed = `${trim(r.low)}–${trim(r.high)}`;
+    source = "builtin";
+  } else {
+    return { label: name, value: v, flag: null, range: null, source: null };
+  }
+
+  if (low !== null && n < low) return { label: name, value: v, flag: "low", range: printed, source };
+  if (high !== null && n > high) return { label: name, value: v, flag: "high", range: printed, source };
+  return { label: name, value: v, flag: null, range: printed, source };
 }
 
 /** True when this label is a blood result at all — normal or not. */
 export function isKnownLab(label: string): boolean {
   return findLab(label) !== null;
+}
+
+/**
+ * The name an analyte accumulates under, so "Haemoglobin", "HAEMOGLOBIN" and "Hb" all land on
+ * one row of the ward's reference table instead of three. Unknown analytes keep their own
+ * normalised name — the ward table is allowed to learn tests this file has never heard of, and
+ * that is most of the value in reading ranges off real reports.
+ */
+export function canonicalLabName(label: string): string {
+  return findLab(label)?.label ?? norm(label);
 }

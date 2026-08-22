@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { readLabPhoto } from "@/lib/read-lab-photo";
+import { canonicalLabName } from "@/lib/lab-ranges";
 
 const ALLOWED = ["image/jpeg", "image/png", "image/webp"] as const;
 const MAX_BYTES = 12 * 1024 * 1024;
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
 
   const { data: patient } = await supabase
     .from("current_patients")
-    .select("id")
+    .select("id, ward_id")
     .eq("id", patientId)
     .maybeSingle();
   if (!patient) return NextResponse.json({ error: "Patient not found." }, { status: 404 });
@@ -116,6 +117,11 @@ export async function POST(request: Request) {
     // Every lab value off a photo needs confirming: these are numbers, and unlike speech
     // there is no automatic check behind them. Unclear ones say so explicitly.
     needs_confirmation: true,
+    // The range as printed beside this very result. More authoritative than any table this app
+    // could ship — it is this laboratory, this assay, the same page as the number.
+    ref_low: v.ref_low,
+    ref_high: v.ref_high,
+    ref_text: v.ref_text,
     conflict_note: v.uncertain ? "Printing was unclear — check against the photo." : null,
   }));
 
@@ -127,6 +133,32 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+  }
+
+  // Teach the ward its own laboratory's ranges, so a result dictated on a round — with no
+  // report to read — can still be judged against what this lab actually uses. Each sighting is
+  // a vote rather than an overwrite; see supabase/patches/0043_lab_reference_ranges.sql.
+  //
+  // Deliberately excludes anything the model flagged as unclear: a range misread off a blurred
+  // photograph must not be allowed to teach the ward something wrong. Failures here are
+  // swallowed on purpose — the values are already saved, and a lost vote is not worth failing
+  // an upload the resident is standing at a bedside waiting for.
+  const teachable = result.values.filter(
+    (v) => !v.uncertain && v.ref_low !== null && v.ref_high !== null
+  );
+  if (teachable.length > 0 && patient.ward_id) {
+    await Promise.allSettled(
+      teachable.map((v) =>
+        supabase.rpc("record_lab_range", {
+          _ward: patient.ward_id,
+          _analyte: canonicalLabName(v.label),
+          _unit: v.unit ?? "",
+          _low: v.ref_low,
+          _high: v.ref_high,
+          _text: v.ref_text,
+        })
+      )
+    );
   }
 
   return NextResponse.json({

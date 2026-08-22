@@ -16,7 +16,13 @@
  * it to be shown — the acronym is never allowed to stand in for an examination nobody did.
  */
 
-import { classifyLab, type LabFlag } from "@/lib/lab-ranges";
+import {
+  canonicalLabName,
+  classifyLab,
+  type LabFlag,
+  type RangeSource,
+  type SuppliedRange,
+} from "@/lib/lab-ranges";
 
 export type ExamValue = {
   id: string;
@@ -24,7 +30,14 @@ export type ExamValue = {
   value: string | null;
   /** When it was recorded, so a result from three days ago does not read as this morning's. */
   recordedAt?: string | null;
+  /** The range printed beside this very result on the report it was read from. */
+  refLow?: number | null;
+  refHigh?: number | null;
+  refText?: string | null;
 };
+
+/** The ward's own accumulated ranges, keyed by canonicalLabName. */
+export type WardRanges = Map<string, { low: number | null; high: number | null; text: string | null }>;
 
 export type ObjectiveSummary = {
   /** "BP 110/80 · PR 86/min" — recorded vitals only, BP and PR leading. Null when none. */
@@ -40,7 +53,16 @@ export type ObjectiveSummary = {
   findings: { id: string; label: string; value: string }[];
   /** Blood results outside their reference range, each carrying the range it was judged
    *  against. A known result whose value could not be read lands here too, unflagged. */
-  labs: { id: string; label: string; value: string; flag: LabFlag | null; range: string | null; when: string | null }[];
+  labs: {
+    id: string;
+    label: string;
+    value: string;
+    flag: LabFlag | null;
+    range: string | null;
+    /** Which authority supplied that range — the report itself, this ward, or the fallback. */
+    source: RangeSource | null;
+    when: string | null;
+  }[];
   /** Blood results that were in range. Counted, not listed. */
   normalLabCount: number;
   /** How many systems were recorded and read as plainly normal. Drives "Rest — NAD". */
@@ -167,7 +189,7 @@ function displayLabel(label: string): string {
  */
 export function summariseObjective(
   values: ExamValue[],
-  opts: { sex?: string | null; now?: Date } = {}
+  opts: { sex?: string | null; now?: Date; wardRanges?: WardRanges } = {}
 ): ObjectiveSummary {
   const recorded = values.filter((v) => v.value !== null && v.value.trim() !== "");
   const now = opts.now ?? new Date();
@@ -206,7 +228,19 @@ export function summariseObjective(
 
     // Blood results are judged against a range rather than against phrasing — see
     // lib/lab-ranges.ts, including why an unrecognised one is never called normal.
-    const lab = classifyLab(v.label, value, opts.sex ?? null);
+    // The range printed on this very report first; then whatever this ward's lab has been seen
+    // to use for the same analyte; then nothing, which leaves classifyLab on its built-in table.
+    let supplied: SuppliedRange | null = null;
+    if (v.refLow != null || v.refHigh != null) {
+      supplied = { low: v.refLow ?? null, high: v.refHigh ?? null, text: v.refText, source: "report" };
+    } else {
+      const ward = opts.wardRanges?.get(canonicalLabName(v.label));
+      if (ward && (ward.low !== null || ward.high !== null)) {
+        supplied = { ...ward, source: "ward" };
+      }
+    }
+
+    const lab = classifyLab(v.label, value, opts.sex ?? null, supplied);
     if (lab) {
       if (lab.flag) {
         labs.push({ id: v.id, ...lab, when: agoLabel(v.recordedAt ?? null, now) });

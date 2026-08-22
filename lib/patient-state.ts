@@ -22,6 +22,11 @@ export type Observation = {
   recorded_at: string;
   /** PAC rows only — see supabase/patches/0042_pac_status.sql. Null on everything else. */
   pac_verdict?: PacVerdict;
+  /** The reference range printed beside this result on the report it was read from — see
+   *  supabase/patches/0043_lab_reference_ranges.sql. Null for anything not off a report. */
+  ref_low?: number | null;
+  ref_high?: number | null;
+  ref_text?: string | null;
 };
 
 export type PacVerdict = "fit" | "fit_with_conditions" | "unfit" | "pending" | null;
