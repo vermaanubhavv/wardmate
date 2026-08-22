@@ -109,23 +109,23 @@ export function historyReadsNormal(value: string | null | undefined): boolean {
   const v = norm(value);
   if (!v) return false;
 
-  if (!/[,;/]/.test(v)) {
+  if (!/[,;/|]/.test(v)) {
     if (/ but | however | except /.test(v)) return false;
     return /^(nil|none|nad|nr|negative|unremarkable|insignificant|not significant|nothing significant|no|not known|(no|nil|not)\s[a-z\s-]{0,40})$/.test(
       v
     );
   }
 
-  // A comma or slash is present, either of which is how a list of denied conditions is
-  // written ("DM, HTN" or "DM/HTN/CAD"). Normal only if the whole thing is a denial prefix
-  // followed by a plain list of short condition names, with no token adding a detail beyond
-  // "this was asked about".
+  // A comma, slash or pipe is present — all three are how this ward writes a list ("DM, HTN",
+  // "DM/HTN/CAD", "DM | HTN | anaemia | seizure", the same pipe style the diagnosis line uses).
+  // Normal only if the whole thing is a denial prefix followed by a plain list of short
+  // condition names, with no token adding a detail beyond "this was asked about".
   const stripped = v.match(DENIAL_PREFIX);
   if (!stripped) return false;
   const list = v.slice(stripped[0].length);
   if (!list.trim()) return false;
 
-  const tokens = list.split(/[,/&]|(?:\band\b)|(?:\bor\b)/).map((t) => t.trim()).filter(Boolean);
+  const tokens = list.split(/[,/&|]|(?:\band\b)|(?:\bor\b)/).map((t) => t.trim()).filter(Boolean);
   if (tokens.length === 0) return false;
 
   return tokens.every((t) => t.split(/\s+/).length <= 4 && !CARRIES_INFORMATION.test(t));

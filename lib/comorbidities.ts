@@ -1,3 +1,5 @@
+import { historyReadsNormal } from "@/lib/case-history";
+
 type ComorbiditySource = {
   label: string;
   value_text: string | null;
@@ -32,7 +34,11 @@ export function listedComorbidities(observations: ComorbiditySource[]): string[]
     // The structured value normally holds just the illness. Older entries may hold the whole
     // phrase ("K/C/O asthma"), in which case remove only the declaration, never the condition.
     const value = cleanComorbidity(observation.value_text || observation.source_quote);
-    if (value) found.push(value);
+    // A denial recorded under the "comorbidities" label — "no h/o DM | HTN | anaemia |
+    // seizure" — is not itself a co-morbidity. Nothing upstream filters this: the extractor
+    // stores whatever was said under that label whether the sentence affirms or denies, so the
+    // same "plain denied list, nothing more" check the case history card uses applies here too.
+    if (value && !historyReadsNormal(value)) found.push(value);
   }
 
   const seen = new Set<string>();
