@@ -516,7 +516,11 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                   {label}
                 </p>
                 {section === "objective" ? (
-                  <ObjectiveBlock matchedItems={matchedItems} extraItems={extraItems} />
+                  <ObjectiveBlock
+                    matchedItems={matchedItems}
+                    extraItems={extraItems}
+                    sex={patient.sex}
+                  />
                 ) : (
                 <ul className="ios-group divide-y divide-line">
                   {matchedItems.map((m) => (
@@ -785,20 +789,37 @@ function pacWhen(iso: string): string {
 function ObjectiveBlock({
   matchedItems,
   extraItems,
+  sex,
 }: {
   matchedItems: MatchedItem[];
   extraItems: Observation[];
+  sex: string | null;
 }) {
-  const summary = summariseObjective([
-    ...matchedItems.map((m) => ({ id: m.item.id, label: m.item.label, value: m.value })),
-    ...extraItems.map((o) => ({ id: o.id, label: o.label, value: o.value_text })),
-  ]);
+  const summary = summariseObjective(
+    [
+      ...matchedItems.map((m) => ({
+        id: m.item.id,
+        label: m.item.label,
+        value: m.value,
+        recordedAt: m.recordedAt,
+      })),
+      ...extraItems.map((o) => ({
+        id: o.id,
+        label: o.label,
+        value: o.value_text,
+        recordedAt: o.recorded_at,
+      })),
+    ],
+    { sex }
+  );
   const outstanding = matchedItems.filter((m) => m.missing).map((m) => m.item.label);
 
   const empty =
     summary.vitals.length === 0 &&
     !summary.piccle &&
     summary.findings.length === 0 &&
+    summary.labs.length === 0 &&
+    summary.normalLabCount === 0 &&
     summary.normalCount === 0;
 
   return (
@@ -827,6 +848,26 @@ function ObjectiveBlock({
           <span className="text-muted">{f.label}</span> <span className="font-medium">{f.value}</span>
         </p>
       ))}
+
+      {/* Deranged bloods, each with the range it was judged against so the judgement is
+          checkable at a glance rather than taken on trust — see lib/lab-ranges.ts. */}
+      {summary.labs.map((l) => (
+        <p key={l.id} className="mt-1">
+          <span className="text-muted">{l.label}</span>{" "}
+          <span className="font-medium tabular-nums">{l.value}</span>
+          {l.flag === "high" && <span className="ml-0.5 font-medium text-red-700">↑</span>}
+          {l.flag === "low" && <span className="ml-0.5 font-medium text-red-700">↓</span>}
+          {l.range && <span className="ml-1 text-[13px] text-muted">({l.range})</span>}
+          {l.when && <span className="ml-1 text-[13px] text-muted">· {l.when}</span>}
+        </p>
+      ))}
+
+      {summary.normalLabCount > 0 && (
+        <p className="mt-1 text-[13px] text-muted">
+          {summary.normalLabCount} other blood{" "}
+          {summary.normalLabCount === 1 ? "result" : "results"} within range
+        </p>
+      )}
 
       {summary.normalCount > 0 && <p className="mt-1 text-muted">Rest — NAD</p>}
 

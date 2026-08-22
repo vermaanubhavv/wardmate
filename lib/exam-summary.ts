@@ -16,7 +16,15 @@
  * it to be shown — the acronym is never allowed to stand in for an examination nobody did.
  */
 
-export type ExamValue = { id: string; label: string; value: string | null };
+import { classifyLab, type LabFlag } from "@/lib/lab-ranges";
+
+export type ExamValue = {
+  id: string;
+  label: string;
+  value: string | null;
+  /** When it was recorded, so a result from three days ago does not read as this morning's. */
+  recordedAt?: string | null;
+};
 
 export type ObjectiveSummary = {
   /** "BP 110/80 · PR 86/min" — recorded vitals only, BP and PR leading. Null when none. */
@@ -30,6 +38,11 @@ export type ObjectiveSummary = {
   } | null;
   /** Abnormal, or not confidently normal — named in full, in the order recorded. */
   findings: { id: string; label: string; value: string }[];
+  /** Blood results outside their reference range, each carrying the range it was judged
+   *  against. A known result whose value could not be read lands here too, unflagged. */
+  labs: { id: string; label: string; value: string; flag: LabFlag | null; range: string | null; when: string | null }[];
+  /** Blood results that were in range. Counted, not listed. */
+  normalLabCount: number;
   /** How many systems were recorded and read as plainly normal. Drives "Rest — NAD". */
   normalCount: number;
 };
@@ -152,12 +165,18 @@ function displayLabel(label: string): string {
  * when the thing was expected but never recorded. Nulls take no part in the summary; what is
  * missing is the caller's to report, and it reports it separately rather than as a fake row.
  */
-export function summariseObjective(values: ExamValue[]): ObjectiveSummary {
+export function summariseObjective(
+  values: ExamValue[],
+  opts: { sex?: string | null; now?: Date } = {}
+): ObjectiveSummary {
   const recorded = values.filter((v) => v.value !== null && v.value.trim() !== "");
+  const now = opts.now ?? new Date();
 
   const vitals: { label: string; value: string }[] = [];
   const piccleHits = new Map<string, { label: string; value: string; normal: boolean }>();
   const findings: { id: string; label: string; value: string }[] = [];
+  const labs: ObjectiveSummary["labs"] = [];
+  let normalLabCount = 0;
   let normalCount = 0;
   // "PICCLE negative", said as one phrase. The speaker is asserting all seven at once, which
   // they are entitled to do — so nothing is outstanding when they have.
@@ -182,6 +201,24 @@ export function summariseObjective(values: ExamValue[]): ObjectiveSummary {
       // Presence is the abnormal answer for every one of the seven, so anything that does not
       // plainly read as absent counts as a positive worth naming.
       piccleHits.set(sign.key, { label: sign.label, value, normal: readsNormal(v.label, value) });
+      continue;
+    }
+
+    // Blood results are judged against a range rather than against phrasing — see
+    // lib/lab-ranges.ts, including why an unrecognised one is never called normal.
+    const lab = classifyLab(v.label, value, opts.sex ?? null);
+    if (lab) {
+      if (lab.flag) {
+        labs.push({ id: v.id, ...lab, when: agoLabel(v.recordedAt ?? null, now) });
+        continue;
+      }
+      if (lab.range) {
+        // Known result, read as a number, inside its range. The one case worth folding away.
+        normalLabCount += 1;
+        continue;
+      }
+      // Known result whose value could not be read as a number — shown, never assumed normal.
+      labs.push({ id: v.id, ...lab, when: agoLabel(v.recordedAt ?? null, now) });
       continue;
     }
 
@@ -227,5 +264,28 @@ export function summariseObjective(values: ExamValue[]): ObjectiveSummary {
     piccle = { text, notRecorded };
   }
 
-  return { vitals, piccle, findings, normalCount };
+  return { vitals, piccle, findings, labs, normalLabCount, normalCount };
+}
+
+/** The calendar day an instant falls on in IST — the day the round actually happened. */
+const istDay = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+
+/**
+ * "3 d ago", or null for anything recorded today.
+ *
+ * A haemoglobin of 7 means something different depending on whether it was this morning or last
+ * Tuesday, and a screen headed "Current progress" would otherwise imply the former. Only shown
+ * once it is no longer today, so the common case stays uncluttered.
+ */
+function agoLabel(recordedAt: string | null, now: Date): string | null {
+  if (!recordedAt) return null;
+  const then = istDay(recordedAt);
+  const today = istDay(now.toISOString());
+  if (then === today) return null;
+  const days = Math.round(
+    (Date.parse(`${today}T00:00:00Z`) - Date.parse(`${then}T00:00:00Z`)) / 86400000
+  );
+  if (!Number.isFinite(days) || days <= 0) return null;
+  return days === 1 ? "yesterday" : `${days} d ago`;
 }
