@@ -1,234 +1,44 @@
--- Backfills soap_section on every checklist protocol item filed so far (Lap Chole plus the
--- eighteen from 0038), classified by the item's original care_template kind plus a short list
--- of label overrides for things that read as history/complaint regardless of kind (pain,
--- bleeding, duration...) or as pure administrative checks (consent, fitness, fasting status...).
--- Matched by protocol title + item prompt rather than position, so it is safe to run whether or
--- not any of these have been published yet.
+-- Backfills soap_section on every checklist protocol filed so far (Lap Chole from 0037 plus the
+-- eighteen from 0038), so "Current progress" can group them as SOAP.
+--
+-- Scoped to titles ending in "Checklist", which is exactly the set of protocols that stand in
+-- for a procedure's care_template. The clinical Quick Mode cards (IV Fluids and anything filed
+-- like it) are deliberately left null: they are reference guidance, not a per-patient checklist,
+-- and have nothing to group.
+--
+-- The classification is the item's own filed kind plus two short label lists — things that are
+-- the patient's account rather than a measurement (pain, bleeding, duration...), and things that
+-- are administrative rather than clinical (consent, fitness, fasting status...). Verified to
+-- reproduce, statement for statement, the per-item version this replaced.
+--
+-- Idempotent: re-running sets the same values again.
 
 begin;
 
-update company_protocol_items set soap_section = 'objective' where prompt = 'imaging' and protocol_id = (select id from company_protocols where title = 'Lap Chole — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'liver function' and protocol_id = (select id from company_protocols where title = 'Lap Chole — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'jaundice' and protocol_id = (select id from company_protocols where title = 'Lap Chole — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'comorbidities' and protocol_id = (select id from company_protocols where title = 'Lap Chole — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'blood thinners' and protocol_id = (select id from company_protocols where title = 'Lap Chole — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'fitness' and protocol_id = (select id from company_protocols where title = 'Lap Chole — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'consent' and protocol_id = (select id from company_protocols where title = 'Lap Chole — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'fasting status' and protocol_id = (select id from company_protocols where title = 'Lap Chole — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'previous episodes' and protocol_id = (select id from company_protocols where title = 'Lap Chole — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'plan' and protocol_id = (select id from company_protocols where title = 'Lap Chole — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'post-operative day' and protocol_id = (select id from company_protocols where title = 'Lap Chole — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'fever' and protocol_id = (select id from company_protocols where title = 'Lap Chole — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'pain' and protocol_id = (select id from company_protocols where title = 'Lap Chole — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'abdomen' and protocol_id = (select id from company_protocols where title = 'Lap Chole — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'port sites' and protocol_id = (select id from company_protocols where title = 'Lap Chole — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'drain' and protocol_id = (select id from company_protocols where title = 'Lap Chole — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'oral intake' and protocol_id = (select id from company_protocols where title = 'Lap Chole — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'flatus' and protocol_id = (select id from company_protocols where title = 'Lap Chole — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'plan' and protocol_id = (select id from company_protocols where title = 'Lap Chole — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'shoulder tip pain' and protocol_id = (select id from company_protocols where title = 'Lap Chole — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'bile in drain' and protocol_id = (select id from company_protocols where title = 'Lap Chole — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'vitals' and protocol_id = (select id from company_protocols where title = 'Lap Chole — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'pain' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'duration of symptoms' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'fever' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'vitals' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'abdomen' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'total count' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'imaging' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'antibiotics' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'fasting status' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'consent' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'fitness' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'vomiting' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'urine examination' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'post-operative day' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'fever' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'pain' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'abdomen' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'wound' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'drain' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'oral intake' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'flatus' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'ambulation' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'plan' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'vitals' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'histopathology' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Acute — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'index episode' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'interval since episode' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'conservative treatment' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'current symptoms' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'imaging' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'fitness' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'consent' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'fasting status' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'colonoscopy' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'comorbidities' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'post-operative day' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'fever' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'pain' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'abdomen' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'wound' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'oral intake' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'flatus' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'plan' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'drain' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'ambulation' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'histopathology' and protocol_id = (select id from company_protocols where title = 'Appendicectomy, Interval — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'side' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'reducibility' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'cough impulse' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'obstruction signs' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'raised intra-abdominal pressure' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'testis and scrotum' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'repair planned' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'fitness' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'consent' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'fasting status' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'duration' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'comorbidities' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'post-operative day' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'pain' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'wound' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'scrotal swelling' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'urinary retention' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'oral intake' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'ambulation' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'plan' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'seroma' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'fever' and protocol_id = (select id from company_protocols where title = 'Inguinal Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'defect size' and protocol_id = (select id from company_protocols where title = 'Umbilical Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'reducibility' and protocol_id = (select id from company_protocols where title = 'Umbilical Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'cough impulse' and protocol_id = (select id from company_protocols where title = 'Umbilical Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'obstruction signs' and protocol_id = (select id from company_protocols where title = 'Umbilical Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'skin over swelling' and protocol_id = (select id from company_protocols where title = 'Umbilical Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'raised intra-abdominal pressure' and protocol_id = (select id from company_protocols where title = 'Umbilical Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'repair planned' and protocol_id = (select id from company_protocols where title = 'Umbilical Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'fitness' and protocol_id = (select id from company_protocols where title = 'Umbilical Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'consent' and protocol_id = (select id from company_protocols where title = 'Umbilical Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'fasting status' and protocol_id = (select id from company_protocols where title = 'Umbilical Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'comorbidities' and protocol_id = (select id from company_protocols where title = 'Umbilical Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'post-operative day' and protocol_id = (select id from company_protocols where title = 'Umbilical Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'pain' and protocol_id = (select id from company_protocols where title = 'Umbilical Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'wound' and protocol_id = (select id from company_protocols where title = 'Umbilical Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'oral intake' and protocol_id = (select id from company_protocols where title = 'Umbilical Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'ambulation' and protocol_id = (select id from company_protocols where title = 'Umbilical Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'plan' and protocol_id = (select id from company_protocols where title = 'Umbilical Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'seroma' and protocol_id = (select id from company_protocols where title = 'Umbilical Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'fever' and protocol_id = (select id from company_protocols where title = 'Umbilical Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'defect size' and protocol_id = (select id from company_protocols where title = 'Epigastric Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'reducibility' and protocol_id = (select id from company_protocols where title = 'Epigastric Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'cough impulse' and protocol_id = (select id from company_protocols where title = 'Epigastric Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'obstruction signs' and protocol_id = (select id from company_protocols where title = 'Epigastric Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'raised intra-abdominal pressure' and protocol_id = (select id from company_protocols where title = 'Epigastric Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'repair planned' and protocol_id = (select id from company_protocols where title = 'Epigastric Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'fitness' and protocol_id = (select id from company_protocols where title = 'Epigastric Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'consent' and protocol_id = (select id from company_protocols where title = 'Epigastric Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'fasting status' and protocol_id = (select id from company_protocols where title = 'Epigastric Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'comorbidities' and protocol_id = (select id from company_protocols where title = 'Epigastric Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'post-operative day' and protocol_id = (select id from company_protocols where title = 'Epigastric Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'pain' and protocol_id = (select id from company_protocols where title = 'Epigastric Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'wound' and protocol_id = (select id from company_protocols where title = 'Epigastric Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'oral intake' and protocol_id = (select id from company_protocols where title = 'Epigastric Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'ambulation' and protocol_id = (select id from company_protocols where title = 'Epigastric Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'plan' and protocol_id = (select id from company_protocols where title = 'Epigastric Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'seroma' and protocol_id = (select id from company_protocols where title = 'Epigastric Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'fever' and protocol_id = (select id from company_protocols where title = 'Epigastric Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'previous surgery' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'defect size' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'reducibility' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'obstruction signs' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'skin condition' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'raised intra-abdominal pressure' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'repair planned' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'fitness' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'consent' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'fasting status' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'imaging' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'comorbidities' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'post-operative day' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'pain' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'wound' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'drain' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'abdomen' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'oral intake' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'flatus' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'ambulation' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'plan' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'seroma' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'fever' and protocol_id = (select id from company_protocols where title = 'Incisional Hernia — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'pain' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'bleeding' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'duration' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'chronicity' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'bowel habit' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'local examination' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'sphincter spasm' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'continence' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'fitness' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'consent' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'bowel preparation' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'previous treatment' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'post-operative day' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'pain' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'bleeding' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'first bowel motion' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'urinary retention' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'dressing' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'sitz bath' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'stool softener' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'plan' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'continence' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'fever' and protocol_id = (select id from company_protocols where title = 'Anal Fissure — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'discharge' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'pain' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'duration' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'external opening' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'internal opening' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'imaging' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'continence' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'previous surgery' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'bowel habit' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'fitness' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'consent' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'bowel preparation' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'post-operative day' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'pain' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'bleeding' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'discharge' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'seton' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'first bowel motion' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'urinary retention' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'dressing' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'sitz bath' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'stool softener' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'continence' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'plan' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'fever' and protocol_id = (select id from company_protocols where title = 'Anal Fistula — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'bleeding' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'prolapse' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'grade' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'position' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'pain' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'duration' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'bowel habit' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'haemoglobin' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'local examination' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'fitness' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'consent' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'bowel preparation' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'previous treatment' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — Before Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'post-operative day' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'pain' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'bleeding' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'first bowel motion' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'urinary retention' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'dressing' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'sitz bath' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'stool softener' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'plan' where prompt = 'plan' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'subjective' where prompt = 'prolapse' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'checks' where prompt = 'continence' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — After Surgery Checklist' and version = 'v1');
-update company_protocol_items set soap_section = 'objective' where prompt = 'fever' and protocol_id = (select id from company_protocols where title = 'Haemorrhoids — After Surgery Checklist' and version = 'v1');
+update company_protocol_items i
+set soap_section = case
+  -- Filed as a pathway step, i.e. something to be done rather than found.
+  when i.kind = 'pathway_step' then 'plan'
+  -- Drugs to start, stop or continue: a job, not a finding.
+  when i.prompt in ('stool softener', 'blood thinners', 'antibiotics') then 'plan'
+  -- Administrative or background-history items. These are the reason there is a fifth bucket
+  -- at all: "consent taken" is not subjective, objective, an assessment or a plan.
+  when i.prompt in (
+    'consent', 'fitness', 'fasting status', 'bowel preparation', 'previous treatment',
+    'previous episodes', 'index episode', 'interval since episode', 'conservative treatment',
+    'previous surgery', 'comorbidities', 'raised intra-abdominal pressure', 'continence'
+  ) then 'checks'
+  -- What the patient reports, as opposed to what was measured or seen.
+  when i.prompt in (
+    'pain', 'bleeding', 'discharge', 'prolapse', 'duration', 'duration of symptoms',
+    'current symptoms', 'vomiting', 'chronicity', 'bowel habit'
+  ) then 'subjective'
+  -- Everything else is examined, measured or resulted.
+  else 'objective'
+end
+from company_protocols p
+where p.id = i.protocol_id
+  and p.version = 'v1'
+  and p.title like '%Checklist';
 
 commit;
