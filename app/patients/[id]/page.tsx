@@ -33,6 +33,7 @@ import { buildDischargeBrief } from "@/lib/discharge";
 import { confirmChecked, confirmAll, reopenTask } from "./actions";
 import BottomBar from "../../bottom-bar";
 import { listedComorbidities } from "@/lib/comorbidities";
+import { summariseObjective } from "@/lib/exam-summary";
 
 type Entry = {
   id: string;
@@ -514,6 +515,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 <p className="mb-1 px-1 text-[12px] font-semibold uppercase tracking-wide text-muted">
                   {label}
                 </p>
+                {section === "objective" ? (
+                  <ObjectiveBlock matchedItems={matchedItems} extraItems={extraItems} />
+                ) : (
                 <ul className="ios-group divide-y divide-line">
                   {matchedItems.map((m) => (
                     <li
@@ -543,6 +547,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                     </li>
                   ))}
                 </ul>
+                )}
               </div>
             ))}
           </details>
@@ -765,6 +770,75 @@ function pacWhen(iso: string): string {
     day: "numeric",
     month: "short",
   });
+}
+
+/**
+ * The objective examination as a chart line rather than a table — see lib/exam-summary.ts for
+ * the reading of it, and for why nothing is folded away unless it plainly says so.
+ *
+ * Two absences are reported here, and they are different absences. The PICCLE line carries any
+ * of the seven signs nobody examined, because printing the acronym over an incomplete
+ * examination would assert findings that were never made. The orange line underneath carries
+ * the checklist items still outstanding, which is the same thing the table used to say with a
+ * row each.
+ */
+function ObjectiveBlock({
+  matchedItems,
+  extraItems,
+}: {
+  matchedItems: MatchedItem[];
+  extraItems: Observation[];
+}) {
+  const summary = summariseObjective([
+    ...matchedItems.map((m) => ({ id: m.item.id, label: m.item.label, value: m.value })),
+    ...extraItems.map((o) => ({ id: o.id, label: o.label, value: o.value_text })),
+  ]);
+  const outstanding = matchedItems.filter((m) => m.missing).map((m) => m.item.label);
+
+  const empty =
+    summary.vitals.length === 0 &&
+    !summary.piccle &&
+    summary.findings.length === 0 &&
+    summary.normalCount === 0;
+
+  return (
+    <div className="ios-group px-4 py-3 text-[15px] leading-relaxed">
+      {summary.vitals.length > 0 && (
+        <p className="tabular-nums">
+          {summary.vitals.map((v) => `${v.label} ${v.value}`).join("  ·  ")}
+        </p>
+      )}
+
+      {summary.piccle && (
+        <p className={summary.vitals.length > 0 ? "mt-1" : ""}>
+          {summary.piccle.text}
+          {summary.piccle.notRecorded.length > 0 && (
+            <span className="text-[13px] text-muted">
+              {"  ·  "}
+              {summary.piccle.notRecorded.join(", ").toLowerCase()} not recorded
+            </span>
+          )}
+        </p>
+      )}
+
+      {/* The abnormalities, which are the reason anyone reads this section. */}
+      {summary.findings.map((f) => (
+        <p key={f.id} className="mt-1">
+          <span className="text-muted">{f.label}</span> <span className="font-medium">{f.value}</span>
+        </p>
+      ))}
+
+      {summary.normalCount > 0 && <p className="mt-1 text-muted">Rest — NAD</p>}
+
+      {empty && <p className="text-muted">Nothing examined yet.</p>}
+
+      {outstanding.length > 0 && (
+        <p className="mt-2 text-[13px] text-orange-700">
+          Not recorded: {outstanding.join(", ")}
+        </p>
+      )}
+    </div>
+  );
 }
 
 const SOAP_ORDER = ["subjective", "objective", "assessment", "plan", "checks"] as const;
