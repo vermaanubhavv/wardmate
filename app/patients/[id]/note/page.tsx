@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { istDayKey, type Observation } from "@/lib/patient-state";
 import { buildProgressNote, formatProgressNoteText } from "@/lib/progress-note";
 import { getWardFormats } from "@/lib/formats";
+import { getWardLabRanges } from "@/lib/ward-lab-ranges";
 import { dayLabel } from "@/lib/patients";
 import { getProcedureLabels, procedureFor } from "@/lib/templates";
 import CopyNoteButton from "./copy-button";
@@ -35,7 +36,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
 
   if (!patient) notFound();
 
-  const [{ data: wardRow }, { data: entriesData }, wardFormats, { data: profile }, procedures] =
+  const [{ data: wardRow }, { data: entriesData }, wardFormats, { data: profile }, procedures, wardRanges] =
     await Promise.all([
       supabase.from("wards").select("name").eq("id", patient.ward_id).maybeSingle(),
       supabase
@@ -52,6 +53,9 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
       // this to the caller's own profile, so no id needs asking for.
       supabase.from("profiles").select("department").maybeSingle(),
       getProcedureLabels(),
+      // This ward's own learned lab ranges, for judging a deranged result that has no printed
+      // range of its own — see lib/ward-lab-ranges.ts, same source Current progress reads.
+      getWardLabRanges(patient.ward_id),
     ]);
 
   // The unit's own uploaded progress-note form, with its fields detected — see
@@ -90,6 +94,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
     department: profile?.department?.trim() || null,
     dayLabel: dayLabel(patient),
     procedure: procedureFor(patient, procedures),
+    wardRanges,
   });
   const noteText = formatProgressNoteText(note);
 

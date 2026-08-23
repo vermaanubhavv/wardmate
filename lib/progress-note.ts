@@ -1,5 +1,8 @@
 import { stripPatientHonorific } from "@/lib/patients";
 import { classifyVital } from "@/lib/vital-ranges";
+import { classifyLab, canonicalLabName, type SuppliedRange } from "@/lib/lab-ranges";
+import { flagRadiology } from "@/lib/radiology-flags";
+import type { WardRanges } from "@/lib/exam-summary";
 import type { Observation } from "@/lib/patient-state";
 
 /** What the app cannot know and must not invent: a label and a blank to write on — the same
@@ -90,6 +93,9 @@ export function buildProgressNote(
     dayLabel?: string | null;
     /** The recorded operation, via lib/templates.ts procedureFor() — same reasoning. */
     procedure?: string | null;
+    /** This ward's own accumulated lab ranges — see lib/lab-ranges.ts. Absent falls back to the
+     *  built-in table for anything without a report range of its own. */
+    wardRanges?: WardRanges;
   }
 ): ProgressNote {
   const now = new Date();
@@ -147,9 +153,44 @@ export function buildProgressNote(
     todaysObservations.find((o) => o.kind === "note" && ASSESSMENT_PATTERN.test(o.value_text ?? ""));
   const line8 = `Assessment - ${assessmentObs ? (assessmentObs.value_text ?? assessmentObs.label) : BLANK}`;
 
-  const observation = [line1, line2, line3, line4, line5, line6, line7, line8];
+  // 10. Issues — deranged blood investigations and flagged radiology, said today. Two different
+  // kinds of "deranged" and neither is invented here:
+  //
+  // Bloods are judged against a range — the report's own printed one, then this ward's learned
+  // one, then a built-in fallback — exactly as lib/lab-ranges.ts does everywhere else in the
+  // app. A number is either outside that range or it is not; that is a fact, not a judgement.
+  //
+  // Radiology has no such number to check, so lib/radiology-flags.ts only surfaces a report
+  // when the resident's OWN word for it says abnormal ("USG deranged", "CT abnormal"). A report
+  // that only describes what was seen, however concerning it might read, stays out of this line
+  // — reading clinical significance into a description is exactly the judgement this app has
+  // refused to make anywhere else, and Issues is not the place to start.
+  const derangedLabs = todaysObservations
+    .filter((o) => o.kind === "lab")
+    .map((o) => {
+      const supplied: SuppliedRange | null =
+        o.ref_low != null || o.ref_high != null
+          ? { low: o.ref_low ?? null, high: o.ref_high ?? null, text: o.ref_text, source: "report" }
+          : (() => {
+              const w = options?.wardRanges?.get(canonicalLabName(o.label));
+              return w && (w.low !== null || w.high !== null) ? { ...w, source: "ward" as const } : null;
+            })();
+      return classifyLab(o.label, o.value_text, patient.sex, supplied);
+    })
+    .filter((r): r is NonNullable<typeof r> => Boolean(r?.flag))
+    .map((r) => `${r.label} ${r.value}${r.range ? ` (${r.range})` : ""}`);
 
-  // 10. Advice and medications — the CURRENT list, not just today's. A drug chart photographed
+  const radiologyIssues = todaysObservations
+    .map((o) => flagRadiology(o.label, o.value_text))
+    .filter((r): r is NonNullable<typeof r> => r !== null)
+    .map((r) => `${r.label}: ${r.value}`);
+
+  const issues = [...derangedLabs, ...radiologyIssues];
+  const line9 = `Issues - ${issues.length > 0 ? issues.join("; ") : BLANK}`;
+
+  const observation = [line1, line2, line3, line4, line5, line6, line7, line8, line9];
+
+  // 11. Advice and medications — the CURRENT list, not just today's. A drug chart photographed
   // once at clerking is still the patient's medications a week later; scoping this to today
   // would make it vanish the day after it was recorded. Newest first in, so the first sighting
   // of each drug name kept here is the latest one.
@@ -163,7 +204,7 @@ export function buildProgressNote(
   });
   const medLines = currentMeds.map((m) => m.value_text ?? m.label);
 
-  // 11. Plan — today's jobs and orders, one each. Investigations to send, medication changes,
+  // 12. Plan — today's jobs and orders, one each. Investigations to send, medication changes,
   // and an interdepartmental referral are all just "plan" observations the same way any other
   // job is; a referral is flagged distinctly below (see referralHint) so it does not slip past
   // as an ordinary line item, without this file generating a second document for it.
