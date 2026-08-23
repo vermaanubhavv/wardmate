@@ -67,7 +67,9 @@ function contentByRole(note: ProgressNote): Partial<Record<FormZoneRole, string>
     bed: note.header.bed,
     ipd: note.header.ipd ?? undefined,
     date_time: note.dateTime,
-    diagnosis: note.diagnosis ?? undefined,
+    // Deliberately not mapped: diagnosis is now the second of the two fixed opening lines
+    // inside "observation" itself (see lib/progress-note.ts), so a form with its own separate
+    // diagnosis box would otherwise print it twice.
     observation: note.observation.length > 0 ? note.observation.join("\n") : undefined,
     plan: note.plan.length > 0 ? note.plan.join("\n") : undefined,
     // Deliberately no signature text — that box exists so a human signs it, and printing

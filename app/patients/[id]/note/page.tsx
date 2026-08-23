@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { istDayKey, type Observation } from "@/lib/patient-state";
 import { buildProgressNote, formatProgressNoteText } from "@/lib/progress-note";
 import { getWardFormats } from "@/lib/formats";
+import { dayLabel } from "@/lib/patients";
+import { getProcedureLabels, procedureFor } from "@/lib/templates";
 import CopyNoteButton from "./copy-button";
 import PrintButton from "./print-button";
 import OverlayNote from "./overlay-note";
@@ -26,23 +28,28 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
   const { data: patient } = await supabase
     .from("current_patients")
     .select(
-      "id, ward_id, display_name, age_years, sex, bed, uhid_ip_no, mrd_no, primary_diagnosis, admitted_on"
+      "id, ward_id, display_name, age_years, sex, bed, uhid_ip_no, mrd_no, primary_diagnosis, admitted_on, post_op_day, admission_day, procedure_text, template_family, template_variant"
     )
     .eq("id", id)
     .maybeSingle();
 
   if (!patient) notFound();
 
-  const [{ data: wardRow }, { data: entriesData }, wardFormats] = await Promise.all([
-    supabase.from("wards").select("name").eq("id", patient.ward_id).maybeSingle(),
-    supabase
-      .from("entries")
-      .select(
-        "recorded_at, is_case_history, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at, pac_verdict, ref_low, ref_high, ref_text)"
-      )
-      .eq("patient_id", id),
-    getWardFormats(patient.ward_id),
-  ]);
+  const [{ data: wardRow }, { data: entriesData }, wardFormats, { data: profile }, procedures] =
+    await Promise.all([
+      supabase.from("wards").select("name").eq("id", patient.ward_id).maybeSingle(),
+      supabase
+        .from("entries")
+        .select(
+          "recorded_at, is_case_history, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at, pac_verdict, ref_low, ref_high, ref_text)"
+        )
+        .eq("patient_id", id),
+      getWardFormats(patient.ward_id),
+      // The rounding doctor's own department, for "Case seen by" — row security already limits
+      // this to the caller's own profile, so no id needs asking for.
+      supabase.from("profiles").select("department").maybeSingle(),
+      getProcedureLabels(),
+    ]);
 
   // The unit's own uploaded progress-note form, with its fields detected — see
   // lib/read-form-layout.ts. Used only when there is both an image to overlay onto AND at
@@ -75,6 +82,9 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
 
   const note = buildProgressNote(patient, todaysObservations, diagnosis, {
     wardName: wardRow?.name ?? null,
+    department: profile?.department?.trim() || null,
+    dayLabel: dayLabel(patient),
+    procedure: procedureFor(patient, procedures),
   });
   const noteText = formatProgressNoteText(note);
 
@@ -128,8 +138,6 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
             </div>
 
             <p className="mt-3 font-semibold tabular-nums">{note.dateTime}</p>
-
-            {note.diagnosis && <p className="mt-1">Dx: {note.diagnosis}</p>}
 
             <div className="mt-3">
               <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">

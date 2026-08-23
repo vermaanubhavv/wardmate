@@ -64,9 +64,31 @@ export function buildProgressNote(
   patient: ProgressNotePatient,
   todaysObservations: Observation[],
   diagnosis: string | null,
-  options?: { wardName?: string | null; sex?: string | null }
+  options?: {
+    wardName?: string | null;
+    sex?: string | null;
+    /** The signed-in doctor's department, for the "Case seen by" line. Blank, never guessed,
+     *  when nobody has set one on their profile. */
+    department?: string | null;
+    /** "POD 3" / "Day 2" — computed by the caller via lib/patients.ts dayLabel(), so this file
+     *  never re-derives a rule that already exists once, app-wide. */
+    dayLabel?: string | null;
+    /** The recorded operation, via lib/templates.ts procedureFor() — same reasoning. */
+    procedure?: string | null;
+  }
 ): ProgressNote {
   const now = new Date();
+
+  // Two fixed lines every morning note starts with, at the same level as the Date & Time —
+  // who is rounding and on what day of what illness/operation. Standing facts, not something
+  // dictated fresh each day, so unlike everything below they are not scoped to today's entries
+  // and are never absent just because nobody has spoken yet this morning.
+  const openingLines = [
+    `Case seen by ${options?.department || BLANK} ${options?.wardName || BLANK} team`,
+    [diagnosis || BLANK, options?.dayLabel, options?.procedure ? `- ${options.procedure}` : null]
+      .filter(Boolean)
+      .join(" "),
+  ];
 
   const subjective = todaysObservations.filter(
     (o) => o.kind === "note" && !/comorbid/i.test(o.label)
@@ -89,7 +111,7 @@ export function buildProgressNote(
     { sex: options?.sex ?? patient.sex }
   );
 
-  const observation: string[] = [];
+  const observation: string[] = [...openingLines];
   for (const o of subjective) observation.push(o.value_text ?? o.label);
   if (exam.vitals.length > 0) {
     observation.push(exam.vitals.map((v) => `${v.label} ${v.value}`).join("  "));
@@ -150,7 +172,6 @@ export function formatProgressNoteText(note: ProgressNote): string {
   if (note.header.uhid) out.push(`UHID: ${note.header.uhid}`);
   out.push(`${note.dateTime}`);
   out.push("");
-  if (note.diagnosis) out.push(`Dx: ${note.diagnosis}`);
   if (note.observation.length > 0) {
     out.push(...note.observation);
   } else {
