@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { FORMAT_KINDS } from "@/lib/formats";
+import { readFormLayout } from "@/lib/read-form-layout";
 
 const KINDS = FORMAT_KINDS.map((k) => k.kind) as readonly string[];
 
@@ -62,12 +63,33 @@ export async function uploadFormat(
 
   const ext = file.name.includes(".") ? file.name.split(".").pop() : "bin";
   const path = `formats/${wardId}/${kind}-${crypto.randomUUID()}.${ext}`;
+  const bytes = Buffer.from(await file.arrayBuffer());
 
   const { error: uploadError } = await supabase.storage
     .from("evidence")
-    .upload(path, file, { contentType: file.type });
+    .upload(path, bytes, { contentType: file.type });
 
   if (uploadError) return { error: `Could not upload: ${uploadError.message}` };
+
+  // Where the fields sit on this page, read once here rather than on every print. Only for the
+  // "notes" format, and only for an image — a photographed PDF page would need converting to an
+  // image first, which this does not currently do, so a PDF format simply prints on the app's
+  // own generic layout rather than an overlay.
+  let layout: unknown = null;
+  let layoutModel: string | null = null;
+  let layoutError: string | null = null;
+  if (kind === "notes" && file.type.startsWith("image/") && file.type !== "image/heic" && file.type !== "image/heif") {
+    try {
+      const result = await readFormLayout(
+        bytes.toString("base64"),
+        file.type as "image/jpeg" | "image/png" | "image/webp"
+      );
+      layout = result.zones;
+      layoutModel = result.model;
+    } catch (e) {
+      layoutError = e instanceof Error ? e.message : "Could not read this form's layout.";
+    }
+  }
 
   const { error } = await supabase.from("ward_formats").upsert(
     {
@@ -78,6 +100,9 @@ export async function uploadFormat(
       mime_type: file.type,
       uploaded_at: new Date().toISOString(),
       uploaded_by: user.id,
+      layout: layout as never,
+      layout_model: layoutModel,
+      layout_error: layoutError,
     },
     { onConflict: "ward_id,kind" }
   );

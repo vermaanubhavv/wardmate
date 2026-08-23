@@ -1,0 +1,72 @@
+import type { FormZone, FormZoneRole } from "@/lib/read-form-layout";
+import type { ProgressNote } from "@/lib/progress-note";
+
+/**
+ * The generated note printed onto a photograph of the unit's own form, in the boxes
+ * lib/read-form-layout.ts found on it. Best-effort by nature — see that file's own comment
+ * about why a tilted phone photo cannot give pixel-perfect boxes, and lib/formats.ts, where a
+ * straighter photo replaces this one with no code change needed.
+ *
+ * Positioning is percentage-based against the image's own box, not the print page's, so it
+ * holds together at any paper size or zoom level — the numbers from read-form-layout.ts are
+ * themselves fractions of the image for exactly this reason.
+ */
+export default function OverlayNote({
+  note,
+  formatUrl,
+  zones,
+}: {
+  note: ProgressNote;
+  formatUrl: string;
+  zones: FormZone[];
+}) {
+  const byRole = new Map<FormZoneRole, FormZone>(zones.map((z) => [z.role, z]));
+  const content = contentByRole(note);
+
+  return (
+    <div className="relative w-full">
+      {/* eslint-disable-next-line @next/next/no-img-element -- a private, ward-scoped signed
+          URL; next/image's remote-pattern config has no reason to know about it. */}
+      <img src={formatUrl} alt="Unit's progress note form" className="block w-full" />
+      {[...byRole.entries()].map(([role, z]) => {
+        const text = content[role];
+        if (!text) return null;
+        return (
+          <div
+            key={role}
+            className="absolute overflow-visible whitespace-pre-line text-black"
+            style={{
+              left: `${z.x * 100}%`,
+              top: `${z.y * 100}%`,
+              width: `${z.width * 100}%`,
+              height: `${z.height * 100}%`,
+              fontSize: role === "observation" || role === "plan" ? "0.62rem" : "0.7rem",
+              lineHeight: 1.25,
+            }}
+          >
+            {text}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function contentByRole(note: ProgressNote): Partial<Record<FormZoneRole, string>> {
+  return {
+    name: note.header.name,
+    uhid: note.header.uhid ?? undefined,
+    age: note.header.age || undefined,
+    sex: note.header.sex || undefined,
+    doa: note.header.doa,
+    unit: note.header.unit ?? undefined,
+    bed: note.header.bed,
+    ipd: note.header.ipd ?? undefined,
+    date_time: note.dateTime,
+    diagnosis: note.diagnosis ?? undefined,
+    observation: note.observation.length > 0 ? note.observation.join("\n") : undefined,
+    plan: note.plan.length > 0 ? note.plan.join("\n") : undefined,
+    // Deliberately no signature text — that box exists so a human signs it, and printing
+    // anything into it would defeat the one thing the disclaimer insists on.
+  };
+}

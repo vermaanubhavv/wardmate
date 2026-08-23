@@ -21,6 +21,9 @@ export type ProgressNote = {
   header: {
     name: string;
     ageSex: string;
+    /** Split out from ageSex, for a form whose "Age" and "Sex" are separate boxes. */
+    age: string;
+    sex: string;
     uhid: string | null;
     doa: string;
     unit: string | null;
@@ -112,6 +115,8 @@ export function buildProgressNote(
         [patient.age_years !== null ? `${patient.age_years}` : null, sexWord(patient.sex)]
           .filter(Boolean)
           .join(" / ") || "",
+      age: patient.age_years !== null ? `${patient.age_years}` : "",
+      sex: sexWord(patient.sex),
       uhid: patient.uhid_ip_no,
       doa: istDay(patient.admitted_on),
       unit: options?.wardName ?? null,

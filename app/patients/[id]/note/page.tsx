@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { istDayKey, type Observation } from "@/lib/patient-state";
 import { buildProgressNote, formatProgressNoteText } from "@/lib/progress-note";
+import { getWardFormats } from "@/lib/formats";
 import CopyNoteButton from "./copy-button";
 import PrintButton from "./print-button";
+import OverlayNote from "./overlay-note";
 
 /**
  * Today's progress sheet, laid out the way the unit's own paper form is — see the ESIC form the
@@ -31,7 +33,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
 
   if (!patient) notFound();
 
-  const [{ data: wardRow }, { data: entriesData }] = await Promise.all([
+  const [{ data: wardRow }, { data: entriesData }, wardFormats] = await Promise.all([
     supabase.from("wards").select("name").eq("id", patient.ward_id).maybeSingle(),
     supabase
       .from("entries")
@@ -39,7 +41,16 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
         "recorded_at, is_case_history, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at, pac_verdict, ref_low, ref_high, ref_text)"
       )
       .eq("patient_id", id),
+    getWardFormats(patient.ward_id),
   ]);
+
+  // The unit's own uploaded progress-note form, with its fields detected — see
+  // lib/read-form-layout.ts. Used only when there is both an image to overlay onto AND at
+  // least one box found on it; anything less falls back to the plain layout below rather than
+  // printing text against a blank page with nothing found on it.
+  const notesFormat = wardFormats.get("notes");
+  const overlayZones = (notesFormat?.layout ?? []).filter((z) => z.role !== "signature");
+  const canOverlay = Boolean(notesFormat?.url) && overlayZones.length > 0;
 
   const entries = (entriesData ?? []) as unknown as {
     recorded_at: string;
@@ -80,78 +91,94 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
         </p>
       </header>
 
+      {canOverlay && (
+        <p className="px-4 pb-2 text-[13px] text-muted print:hidden">
+          Printed onto your unit&rsquo;s own uploaded form. Best effort from a photograph — check
+          the fields land where you expect before you print for real.
+        </p>
+      )}
+
       {/* The printable sheet itself. On screen it sits in a bordered card; in print the border
           and screen chrome disappear and this becomes the whole page. */}
       <section className="px-4 pb-4 print:px-0">
-        <div className="ios-group px-5 py-5 text-[14px] leading-relaxed text-black print:rounded-none print:border-0 print:p-0 print:shadow-none">
-          <div className="text-center">
-            <p className="text-[16px] font-bold uppercase">Progress Sheet</p>
+        {canOverlay && notesFormat?.url ? (
+          <div className="ios-group overflow-hidden print:rounded-none print:border-0 print:shadow-none">
+            <OverlayNote note={note} formatUrl={notesFormat.url} zones={overlayZones} />
           </div>
+        ) : (
+          <div className="ios-group px-5 py-5 text-[14px] leading-relaxed text-black print:rounded-none print:border-0 print:p-0 print:shadow-none">
+            <div className="text-center">
+              <p className="text-[16px] font-bold uppercase">Progress Sheet</p>
+            </div>
 
-          <div className="mt-3 border-y border-dashed border-line py-2">
-            <p>
-              <span className="font-semibold">Name:</span> {note.header.name}
-              {note.header.ageSex && <span> &nbsp;({note.header.ageSex})</span>}
-            </p>
-            <p>
-              <span className="font-semibold">UHID:</span> {note.header.uhid || "________________"}
-            </p>
-            <p>
-              <span className="font-semibold">DOA:</span> {note.header.doa}
-              <span className="ml-4 font-semibold">Unit:</span> {note.header.unit || "____________"}
-              <span className="ml-4 font-semibold">Bed:</span> {note.header.bed}
-            </p>
-          </div>
+            <div className="mt-3 border-y border-dashed border-line py-2">
+              <p>
+                <span className="font-semibold">Name:</span> {note.header.name}
+                {note.header.ageSex && <span> &nbsp;({note.header.ageSex})</span>}
+              </p>
+              <p>
+                <span className="font-semibold">UHID:</span>{" "}
+                {note.header.uhid || "________________"}
+              </p>
+              <p>
+                <span className="font-semibold">DOA:</span> {note.header.doa}
+                <span className="ml-4 font-semibold">Unit:</span> {note.header.unit || "____________"}
+                <span className="ml-4 font-semibold">Bed:</span> {note.header.bed}
+              </p>
+            </div>
 
-          <p className="mt-3 font-semibold tabular-nums">{note.dateTime}</p>
+            <p className="mt-3 font-semibold tabular-nums">{note.dateTime}</p>
 
-          {note.diagnosis && <p className="mt-1">Dx: {note.diagnosis}</p>}
+            {note.diagnosis && <p className="mt-1">Dx: {note.diagnosis}</p>}
 
-          <div className="mt-3">
-            <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
-              Observation
-            </p>
-            {note.observation.length > 0 ? (
-              note.observation.map((line, i) => <p key={i}>{line}</p>)
-            ) : (
-              <p className="text-muted">Nothing recorded yet today.</p>
-            )}
-          </div>
+            <div className="mt-3">
+              <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
+                Observation
+              </p>
+              {note.observation.length > 0 ? (
+                note.observation.map((line, i) => <p key={i}>{line}</p>)
+              ) : (
+                <p className="text-muted">Nothing recorded yet today.</p>
+              )}
+            </div>
 
-          <div className="mt-3">
-            <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
-              Investigation / Treatment / Management
-            </p>
-            {note.plan.length > 0 ? (
-              note.plan.map((line, i) => <p key={i}>{line}</p>)
-            ) : (
-              <p className="text-muted">Nothing ordered yet today.</p>
-            )}
-          </div>
+            <div className="mt-3">
+              <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
+                Investigation / Treatment / Management
+              </p>
+              {note.plan.length > 0 ? (
+                note.plan.map((line, i) => <p key={i}>{line}</p>)
+              ) : (
+                <p className="text-muted">Nothing ordered yet today.</p>
+              )}
+            </div>
 
-          {/* Ruled space to fill by hand — the physical form is mostly this, and a note that
-              only shows what the app already knows is not a substitute for the round itself. */}
-          <div className="mt-4">
-            <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
-              Additional notes
-            </p>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="mt-3 border-b border-line" />
-            ))}
-          </div>
+            {/* Ruled space to fill by hand — the physical form is mostly this, and a note that
+                only shows what the app already knows is not a substitute for the round itself. */}
+            <div className="mt-4">
+              <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
+                Additional notes
+              </p>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="mt-3 border-b border-line" />
+              ))}
+            </div>
 
-          <div className="mt-6 flex items-end justify-end">
-            <div className="w-40 border-b border-line pb-1 text-right text-[13px] text-muted">
-              Signature
+            <div className="mt-6 flex items-end justify-end">
+              <div className="w-40 border-b border-line pb-1 text-right text-[13px] text-muted">
+                Signature
+              </div>
             </div>
           </div>
+        )}
 
-          <p className="mt-6 text-[11px] leading-snug text-muted">
-            * This sheet is generated from what was recorded in WardMate. It is a draft, not a
-            medical record, until signed above by the treating doctor — do not accept or file it
-            unsigned.
-          </p>
-        </div>
+        {/* Shown every time, whichever layout rendered above it — the one line the whole page
+            exists under. */}
+        <p className="mt-3 text-[11px] leading-snug text-muted">
+          * This sheet is generated from what was recorded in WardMate. It is a draft, not a
+          medical record, until signed by the treating doctor — do not accept or file it
+          unsigned.
+        </p>
       </section>
 
       <section className="flex flex-col gap-2 px-4 pb-10 print:hidden">

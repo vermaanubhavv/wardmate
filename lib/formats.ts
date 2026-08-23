@@ -38,6 +38,10 @@ export type WardFormat = {
   uploaded_at: string;
   /** Short-lived link to view it. The bucket is private; this is the only way in. */
   url: string | null;
+  /** Where the fields sit on this page — see lib/read-form-layout.ts. Null when detection was
+   *  never attempted (a PDF format) or found nothing usable (layout_error explains which). */
+  layout: import("@/lib/read-form-layout").FormZone[] | null;
+  layout_error: string | null;
 };
 
 /**
@@ -51,7 +55,7 @@ export async function getWardFormats(wardId: string): Promise<Map<string, WardFo
 
   const { data } = await supabase
     .from("ward_formats")
-    .select("kind, file_path, file_name, mime_type, uploaded_at")
+    .select("kind, file_path, file_name, mime_type, uploaded_at, layout, layout_error")
     .eq("ward_id", wardId);
 
   const rows = data ?? [];
