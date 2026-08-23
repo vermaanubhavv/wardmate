@@ -43,7 +43,10 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
         .select(
           "recorded_at, is_case_history, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at, pac_verdict, ref_low, ref_high, ref_text)"
         )
-        .eq("patient_id", id),
+        .eq("patient_id", id)
+        // Newest first — buildProgressNote's "latest medication per drug" dedup relies on this
+        // exact order, the same way derivePatientState does on the main patient page.
+        .order("recorded_at", { ascending: false }),
       getWardFormats(patient.ward_id),
       // The rounding doctor's own department, for "Case seen by" — row security already limits
       // this to the caller's own profile, so no id needs asking for.
@@ -75,12 +78,14 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
   const diagnosis = patient.primary_diagnosis ?? caseHistoryDiagnosis?.value_text ?? null;
 
   // Only today's round — see lib/progress-note.ts for why a day nobody rounded on this patient
-  // must print empty rather than reaching backward for older values.
+  // must print empty against most of the fixed lines, rather than reaching backward for an
+  // older value. Medications are the deliberate exception, drawn from allObservations instead.
   const todaysObservations = entries
     .filter((e) => !e.is_case_history && istDayKey(e.recorded_at) === todayKey)
     .flatMap((e) => e.observations);
+  const allObservations = entries.flatMap((e) => e.observations);
 
-  const note = buildProgressNote(patient, todaysObservations, diagnosis, {
+  const note = buildProgressNote(patient, allObservations, todaysObservations, diagnosis, {
     wardName: wardRow?.name ?? null,
     department: profile?.department?.trim() || null,
     dayLabel: dayLabel(patient),

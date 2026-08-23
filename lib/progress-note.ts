@@ -1,5 +1,5 @@
-import { dayLabel, managementLabel, stripPatientHonorific } from "@/lib/patients";
-import { summariseObjective, type ObjectiveSummary } from "@/lib/exam-summary";
+import { stripPatientHonorific } from "@/lib/patients";
+import { classifyVital } from "@/lib/vital-ranges";
 import type { Observation } from "@/lib/patient-state";
 
 /** What the app cannot know and must not invent: a label and a blank to write on — the same
@@ -32,9 +32,9 @@ export type ProgressNote = {
   };
   dateTime: string;
   diagnosis: string | null;
-  /** The Observation column, one line each. Empty array means nothing was said today. */
+  /** The Observation column — items 1 through 8 of the fixed structure below. */
   observation: string[];
-  /** The Investigation/Treatment/Management column. */
+  /** The Investigation/Treatment/Management column — items 9 and 10. */
   plan: string[];
 };
 
@@ -46,29 +46,44 @@ const istDay = (iso: string) =>
     year: "2-digit",
   });
 
+const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+
+function findLabel(observations: Observation[], aliases: string[]): Observation | undefined {
+  return observations.find((o) => aliases.includes(norm(o.label)));
+}
+
+const CNS_ALIASES = ["cns", "central nervous system", "neurological examination", "neuro", "sensorium"];
+const CONSCIOUS_PATTERN = /conscious|oriented|drowsy|confused|altered sensorium|unresponsive|gcs/i;
+const BP_ALIASES = ["bp", "blood pressure"];
+const PR_ALIASES = ["pr", "pulse", "pulse rate", "heart rate", "hr"];
+const ABDOMEN_ALIASES = ["abdomen", "per abdomen", "p/a", "pa", "abdominal examination"];
+const CHEST_ALIASES = ["chest", "respiratory system", "rs", "lungs", "air entry"];
+const ASSESSMENT_ALIASES = ["assessment"];
+const ASSESSMENT_PATTERN =
+  /\b(satisfactory|stable|unstable|improving|improved|better|worsening|worsened|worse|deteriorat|same as|unchanged|no change)\b/i;
+
 /**
- * Today's entry in the paper form's own shape: Observation on one side, what was
- * decided/ordered on the other.
+ * The morning progress sheet, in a fixed 11-line structure — non-negotiable, the resident's own
+ * words. EVERY line prints its heading whether or not there is anything recorded against it:
+ * a heading with a blank after it is filled by hand; a heading is never omitted because nobody
+ * has spoken yet this morning. That is the one rule this file exists to keep — see the blank
+ * lines below rather than a shorter list whenever something was not said.
  *
- * Scoped deliberately to observations recorded TODAY, not the patient's running state — a
- * progress sheet is a record of one day's round, and pulling in a value from three days ago
- * because nothing newer exists would misdate it. A day nobody rounded on this patient prints an
- * empty note rather than yesterday's, which is the honest answer: nobody wrote anything today.
- *
- * Nothing here is composed into a sentence the resident did not say. Every line is either the
- * exam summary this app already shows on Current progress (same function, same rules) or one
- * finding/plan per line, in the words recorded. The blank lines under each section are for the
- * resident to fill by hand — this is a form, not a finished note.
+ * The two exceptions to "today only": lines 1–2 (who is rounding, and the standing
+ * diagnosis/day/operation) and line 9 (current medications) are standing facts about the
+ * admission, not something dictated fresh each round — medications especially, since a
+ * photographed drug chart taken once at clerking should keep appearing every day until the
+ * resident records a change, not vanish the day after it was photographed.
  */
 export function buildProgressNote(
   patient: ProgressNotePatient,
+  allObservations: Observation[],
   todaysObservations: Observation[],
   diagnosis: string | null,
   options?: {
     wardName?: string | null;
-    sex?: string | null;
-    /** The signed-in doctor's department, for the "Case seen by" line. Blank, never guessed,
-     *  when nobody has set one on their profile. */
+    /** The signed-in doctor's own department, for line 1. Blank, never guessed, when nobody
+     *  has set one on their profile. */
     department?: string | null;
     /** "POD 3" / "Day 2" — computed by the caller via lib/patients.ts dayLabel(), so this file
      *  never re-derives a rule that already exists once, app-wide. */
@@ -79,56 +94,87 @@ export function buildProgressNote(
 ): ProgressNote {
   const now = new Date();
 
-  // Two fixed lines every morning note starts with, at the same level as the Date & Time —
-  // who is rounding and on what day of what illness/operation. Standing facts, not something
-  // dictated fresh each day, so unlike everything below they are not scoped to today's entries
-  // and are never absent just because nobody has spoken yet this morning.
-  const openingLines = [
-    `Case seen by ${options?.department || BLANK} ${options?.wardName || BLANK} team`,
-    [diagnosis || BLANK, options?.dayLabel, options?.procedure ? `- ${options.procedure}` : null]
-      .filter(Boolean)
-      .join(" "),
-  ];
+  // 1. Case seen by (department)(unit) team.
+  const line1 = `Case seen by ${options?.department || BLANK} ${options?.wardName || BLANK} team`;
 
-  const subjective = todaysObservations.filter(
-    (o) => o.kind === "note" && !/comorbid/i.test(o.label)
-  );
-  const examLike = todaysObservations.filter((o) =>
-    ["vital", "exam", "drain", "intake_output", "lab"].includes(o.kind)
-  );
-  const plans = todaysObservations.filter((o) => o.kind === "plan");
-  const meds = todaysObservations.filter((o) => o.kind === "medication");
+  // 2. Diagnosis and/or post-operative day, and the operation.
+  const line2 = [diagnosis || BLANK, options?.dayLabel, options?.procedure ? `- ${options.procedure}` : null]
+    .filter(Boolean)
+    .join(" ");
 
-  const exam: ObjectiveSummary = summariseObjective(
-    examLike.map((o) => ({
-      id: o.id,
-      label: o.label,
-      value: o.value_text,
-      refLow: o.ref_low,
-      refHigh: o.ref_high,
-      refText: o.ref_text,
-    })),
-    { sex: options?.sex ?? patient.sex }
-  );
+  // 3. Complaints — whatever was said fresh today, verbatim. Excludes the labels that belong to
+  // the admission clerking note (comorbidities, assessment handled on its own line below) rather
+  // than to today's round.
+  const complaintLines = todaysObservations
+    .filter((o) => o.kind === "note" && !/comorbid|assessment/i.test(o.label))
+    .map((o) => o.value_text ?? o.label);
+  const line3 = `Complaints - ${complaintLines.join("; ") || BLANK}`;
 
-  const observation: string[] = [...openingLines];
-  for (const o of subjective) observation.push(o.value_text ?? o.label);
-  if (exam.vitals.length > 0) {
-    observation.push(exam.vitals.map((v) => `${v.label} ${v.value}`).join("  "));
-  }
-  if (exam.piccle) observation.push(exam.piccle.text);
-  for (const f of exam.findings) observation.push(`${f.label}: ${f.value}`);
-  for (const l of exam.labs) {
-    observation.push(`${l.label} ${l.value}${l.flag ? ` (${l.flag})` : ""}`);
-  }
-  // Examined and plainly normal — "P/Abd: Soft, Non tender, NAD" on the physical form this
-  // follows. Without this line a clean exam prints as though it was never done at all, which
-  // is a worse gap than the line itself being terse.
-  if (exam.normalCount > 0) observation.push("Rest — NAD");
+  // 4–5. On examination — consciousness/sensorium, said today.
+  const cns =
+    findLabel(todaysObservations, CNS_ALIASES) ??
+    todaysObservations.find((o) => CONSCIOUS_PATTERN.test(o.value_text ?? ""));
+  const line4 = `On Examination - ${cns ? (cns.value_text ?? cns.label) : BLANK}`;
 
-  const planLines: string[] = [];
-  for (const m of meds) planLines.push(m.value_text ?? m.label);
-  for (const p of plans) planLines.push(p.value_text ?? p.label);
+  // 6. Vitals — BP and PR only, each its own blank if not recorded. Still flagged when
+  // deranged, the same classifyVital every other vitals display in the app uses — a printed
+  // sheet is not a lesser-safety context than the screen it came from.
+  const bpObs = findLabel(todaysObservations, BP_ALIASES);
+  const prObs = findLabel(todaysObservations, PR_ALIASES);
+  const bpText = bpObs
+    ? renderVital(classifyVital(bpObs.label, bpObs.value_text))
+    : BLANK;
+  const prText = prObs
+    ? renderVital(classifyVital(prObs.label, prObs.value_text))
+    : BLANK;
+  const line5 = `Vitals - BP: ${bpText}   PR: ${prText}`;
+
+  // 7. P/Abdomen, said today — printed exactly as recorded, never normalised to "NAD" wording
+  // that was not actually said.
+  const abdomen = findLabel(todaysObservations, ABDOMEN_ALIASES);
+  const line6 = `P/Abdomen - ${abdomen ? (abdomen.value_text ?? abdomen.label) : BLANK}`;
+
+  // 8. Chest findings, said today.
+  const chest = findLabel(todaysObservations, CHEST_ALIASES);
+  const line7 = `Chest findings - ${chest ? (chest.value_text ?? chest.label) : BLANK}`;
+
+  // 9. Assessment — only the resident's own stated judgement (labelled "assessment", or a
+  // sentence using a plain stable/worse/same word). Never computed by the app: there is no
+  // formula here that decides "satisfactory" from a set of vitals, because that is exactly the
+  // kind of invented clinical judgement this app has refused to make everywhere else.
+  const assessmentObs =
+    findLabel(todaysObservations, ASSESSMENT_ALIASES) ??
+    todaysObservations.find((o) => o.kind === "note" && ASSESSMENT_PATTERN.test(o.value_text ?? ""));
+  const line8 = `Assessment - ${assessmentObs ? (assessmentObs.value_text ?? assessmentObs.label) : BLANK}`;
+
+  const observation = [line1, line2, line3, line4, line5, line6, line7, line8];
+
+  // 10. Advice and medications — the CURRENT list, not just today's. A drug chart photographed
+  // once at clerking is still the patient's medications a week later; scoping this to today
+  // would make it vanish the day after it was recorded. Newest first in, so the first sighting
+  // of each drug name kept here is the latest one.
+  const seenDrugs = new Set<string>();
+  const currentMeds = allObservations.filter((o) => {
+    if (o.kind !== "medication") return false;
+    const key = norm(o.label);
+    if (seenDrugs.has(key)) return false;
+    seenDrugs.add(key);
+    return true;
+  });
+  const medLines = currentMeds.map((m) => m.value_text ?? m.label);
+
+  // 11. Plan — today's jobs and orders, one each. Investigations to send, medication changes,
+  // and an interdepartmental referral are all just "plan" observations the same way any other
+  // job is; a referral is flagged distinctly below (see referralHint) so it does not slip past
+  // as an ordinary line item, without this file generating a second document for it.
+  const planLines = todaysObservations.filter((o) => o.kind === "plan").map((o) => o.value_text ?? o.label);
+
+  const plan: string[] = [];
+  plan.push("Advice and medications:");
+  plan.push(...(medLines.length > 0 ? medLines : [BLANK]));
+  plan.push("");
+  plan.push("Plan:");
+  plan.push(...(planLines.length > 0 ? planLines : [BLANK]));
 
   return {
     header: {
@@ -155,8 +201,15 @@ export function buildProgressNote(
     }),
     diagnosis,
     observation,
-    plan: planLines,
+    plan,
   };
+}
+
+function renderVital(components: ReturnType<typeof classifyVital>): string {
+  if (components.length === 0) return BLANK;
+  return components
+    .map((c) => `${c.value}${c.flag === "high" ? " ↑" : c.flag === "low" ? " ↓" : ""}`)
+    .join("/");
 }
 
 function sexWord(sex: string | null): string {
@@ -172,18 +225,9 @@ export function formatProgressNoteText(note: ProgressNote): string {
   if (note.header.uhid) out.push(`UHID: ${note.header.uhid}`);
   out.push(`${note.dateTime}`);
   out.push("");
-  if (note.observation.length > 0) {
-    out.push(...note.observation);
-  } else {
-    out.push(BLANK);
-  }
+  out.push(...note.observation);
   out.push("");
-  out.push("Plan:");
-  if (note.plan.length > 0) {
-    out.push(...note.plan.map((l) => `- ${l}`));
-  } else {
-    out.push(`- ${BLANK}`);
-  }
+  out.push(...note.plan);
   out.push("");
   out.push("Signature: " + BLANK);
   out.push("");
