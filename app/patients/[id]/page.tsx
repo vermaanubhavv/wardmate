@@ -274,6 +274,16 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
       <VitalsPanel observations={allObservations} />
 
+      <section className="px-4 pb-6">
+        <Link
+          href={`/patients/${patient.id}/note`}
+          className="flex items-center justify-between rounded-[10px] bg-card px-4 py-3 text-[15px]"
+        >
+          <span>Today&rsquo;s note</span>
+          <span className="text-muted">Print or copy ›</span>
+        </Link>
+      </section>
+
       {/* Standing context, not a dated round — the clerking note the rest of the admission is
           read against. Pinned here, above even the current progress, because a plan someone
           decides today is decided in light of this, not the other way round. Always collapsed:

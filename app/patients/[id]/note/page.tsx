@@ -1,0 +1,163 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { istDayKey, type Observation } from "@/lib/patient-state";
+import { buildProgressNote, formatProgressNoteText } from "@/lib/progress-note";
+import CopyNoteButton from "./copy-button";
+import PrintButton from "./print-button";
+
+/**
+ * Today's progress sheet, laid out the way the unit's own paper form is — see the ESIC form the
+ * user photographed: letterhead, Name/UHID/Age/Sex, DOA/Unit/Bed/IPD, then Date & Time /
+ * Observation / Investigation-Treatment-Management.
+ *
+ * Everything printed on it is either recorded fact or a blank line — the same rule
+ * lib/discharge.ts follows, for the same reason. This is meant to be signed by hand and filed
+ * as the day's real progress note, so the one thing worse than a blank field is a filled-in one
+ * that was never actually said. The asterisk at the bottom exists because of that: an unsigned
+ * printout is a draft, not a record, and it says so on the page itself.
+ */
+export default async function ProgressNotePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createClient();
+
+  const { data: patient } = await supabase
+    .from("current_patients")
+    .select(
+      "id, ward_id, display_name, age_years, sex, bed, uhid_ip_no, mrd_no, primary_diagnosis, admitted_on"
+    )
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!patient) notFound();
+
+  const [{ data: wardRow }, { data: entriesData }] = await Promise.all([
+    supabase.from("wards").select("name").eq("id", patient.ward_id).maybeSingle(),
+    supabase
+      .from("entries")
+      .select(
+        "recorded_at, is_case_history, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at, pac_verdict, ref_low, ref_high, ref_text)"
+      )
+      .eq("patient_id", id),
+  ]);
+
+  const entries = (entriesData ?? []) as unknown as {
+    recorded_at: string;
+    is_case_history: boolean;
+    observations: Observation[];
+  }[];
+  const todayKey = istDayKey(new Date().toISOString());
+
+  // Diagnosis fallback the same way the patient page does: the structured field first, then
+  // whatever the case history itself named.
+  const caseHistoryDiagnosis = entries
+    .filter((e) => e.is_case_history)
+    .flatMap((e) => e.observations)
+    .find((o) => o.kind === "diagnosis");
+  const diagnosis = patient.primary_diagnosis ?? caseHistoryDiagnosis?.value_text ?? null;
+
+  // Only today's round — see lib/progress-note.ts for why a day nobody rounded on this patient
+  // must print empty rather than reaching backward for older values.
+  const todaysObservations = entries
+    .filter((e) => !e.is_case_history && istDayKey(e.recorded_at) === todayKey)
+    .flatMap((e) => e.observations);
+
+  const note = buildProgressNote(patient, todaysObservations, diagnosis, {
+    wardName: wardRow?.name ?? null,
+  });
+  const noteText = formatProgressNoteText(note);
+
+  return (
+    <div className="mx-auto flex w-full max-w-md flex-1 flex-col bg-background print:max-w-none print:bg-white">
+      <header className="px-4 pb-3 pt-6 print:hidden">
+        <Link href={`/patients/${id}`} className="text-[17px] text-accent">
+          ‹ Patient
+        </Link>
+        <h1 className="mt-3 ios-large-title">Today&rsquo;s note</h1>
+        <p className="mt-1 text-[15px] text-muted">
+          Everything below is what was actually recorded today. Blank lines are for what
+          wasn&rsquo;t.
+        </p>
+      </header>
+
+      {/* The printable sheet itself. On screen it sits in a bordered card; in print the border
+          and screen chrome disappear and this becomes the whole page. */}
+      <section className="px-4 pb-4 print:px-0">
+        <div className="ios-group px-5 py-5 text-[14px] leading-relaxed text-black print:rounded-none print:border-0 print:p-0 print:shadow-none">
+          <div className="text-center">
+            <p className="text-[16px] font-bold uppercase">Progress Sheet</p>
+          </div>
+
+          <div className="mt-3 border-y border-dashed border-line py-2">
+            <p>
+              <span className="font-semibold">Name:</span> {note.header.name}
+              {note.header.ageSex && <span> &nbsp;({note.header.ageSex})</span>}
+            </p>
+            <p>
+              <span className="font-semibold">UHID:</span> {note.header.uhid || "________________"}
+            </p>
+            <p>
+              <span className="font-semibold">DOA:</span> {note.header.doa}
+              <span className="ml-4 font-semibold">Unit:</span> {note.header.unit || "____________"}
+              <span className="ml-4 font-semibold">Bed:</span> {note.header.bed}
+            </p>
+          </div>
+
+          <p className="mt-3 font-semibold tabular-nums">{note.dateTime}</p>
+
+          {note.diagnosis && <p className="mt-1">Dx: {note.diagnosis}</p>}
+
+          <div className="mt-3">
+            <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
+              Observation
+            </p>
+            {note.observation.length > 0 ? (
+              note.observation.map((line, i) => <p key={i}>{line}</p>)
+            ) : (
+              <p className="text-muted">Nothing recorded yet today.</p>
+            )}
+          </div>
+
+          <div className="mt-3">
+            <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
+              Investigation / Treatment / Management
+            </p>
+            {note.plan.length > 0 ? (
+              note.plan.map((line, i) => <p key={i}>{line}</p>)
+            ) : (
+              <p className="text-muted">Nothing ordered yet today.</p>
+            )}
+          </div>
+
+          {/* Ruled space to fill by hand — the physical form is mostly this, and a note that
+              only shows what the app already knows is not a substitute for the round itself. */}
+          <div className="mt-4">
+            <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
+              Additional notes
+            </p>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="mt-3 border-b border-line" />
+            ))}
+          </div>
+
+          <div className="mt-6 flex items-end justify-end">
+            <div className="w-40 border-b border-line pb-1 text-right text-[13px] text-muted">
+              Signature
+            </div>
+          </div>
+
+          <p className="mt-6 text-[11px] leading-snug text-muted">
+            * This sheet is generated from what was recorded in WardMate. It is a draft, not a
+            medical record, until signed above by the treating doctor — do not accept or file it
+            unsigned.
+          </p>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-2 px-4 pb-10 print:hidden">
+        <PrintButton />
+        <CopyNoteButton text={noteText} />
+      </section>
+    </div>
+  );
+}
