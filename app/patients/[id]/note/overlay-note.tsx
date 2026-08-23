@@ -36,9 +36,13 @@ export default function OverlayNote({
             key={role}
             className="absolute overflow-visible whitespace-pre-line text-black"
             style={{
-              left: `${z.x * 100}%`,
-              top: `${z.y * 100}%`,
-              width: `${z.width * 100}%`,
+              // A small inset rather than the box's own edge — insurance against a box that
+              // starts a hair early and lands the first character on the printed label. Costs
+              // a little writable width; worth it, since text touching a label is illegible
+              // and a slightly narrower line wrapping is not.
+              left: `calc(${z.x * 100}% + 2px)`,
+              top: `calc(${z.y * 100}% + 1px)`,
+              width: `calc(${z.width * 100}% - 4px)`,
               height: `${z.height * 100}%`,
               fontSize: role === "observation" || role === "plan" ? "0.62rem" : "0.7rem",
               lineHeight: 1.25,

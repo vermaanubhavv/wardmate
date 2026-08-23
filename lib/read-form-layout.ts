@@ -62,7 +62,7 @@ For each of the following roles, if — and only if — you can actually see tha
 - unit: unit / ward / department field
 - bed: bed number field
 - ipd: IPD number / MRD number field (a second identifier, if the form has one distinct from uhid)
-- date_time: the "Date & Time" column or field where each entry's date/time is written
+- date_time: the "Date & Time" COLUMN's blank writing area for one table row, well below the column heading itself — not the heading
 - diagnosis: a diagnosis field, if the form has one as its own line (not every form does)
 - observation: the main column/box where clinical findings/progress are written (on a two-column form like "Observation" vs "Investigation/Treatment/Management", this is the LEFT/first one)
 - plan: the column/box for orders, treatment, advice, investigations (on a two-column form, the RIGHT/second one; on a single-column form, leave this out and use "observation" for the whole writing area)
@@ -72,7 +72,8 @@ Rules:
 1. Only report a role you can actually see a field or box for. A role not visible on this form must be OMITTED entirely — never guess where it might be if the form does not show it.
 2. Coordinates are fractions of the FULL IMAGE, 0 at the left/top edge and 1 at the right/bottom edge, regardless of how the paper itself is rotated or tilted in the photo. Give the smallest axis-aligned box (x, y, width, height, all 0–1) that contains the field as it appears in this photograph.
 3. For a wide ruled writing area (like the Observation or Investigation/Treatment columns), give the box for the whole blank writing space under that column's header — not just the header text itself.
-4. Do not invent a form structure. If this is not a recognisable medical form, or nothing is legible, return an empty zones array — that is a correct answer.`;
+4. THE MOST IMPORTANT RULE, because getting it wrong makes the printed text illegible: for every labelled field (name, uhid, age, sex, doa, unit, bed, ipd, diagnosis), the box is ONLY the blank space where someone would actually write the answer — dots, a ruled line, or empty space. It EXCLUDES the printed label itself ("Name:", "UHID No.", "DOA", etc.) and excludes any text/underline that is part of the label. If "Name:" ends at 15% across the image and the blank line runs from there to 45%, the box starts at 15%, not 0%. When the blank space clearly continues further than what is visible before the next field starts, extend the box to use that available room — do not make it artificially narrow.
+5. Do not invent a form structure. If this is not a recognisable medical form, or nothing is legible, return an empty zones array — that is a correct answer.`;
 
 const SCHEMA = {
   type: "object",
