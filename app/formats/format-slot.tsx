@@ -21,7 +21,14 @@ export default function FormatSlot({
   kind: string;
   label: string;
   hint: string;
-  current: { file_name: string | null; uploaded_at: string; url: string | null } | null;
+  current: {
+    file_name: string | null;
+    uploaded_at: string;
+    url: string | null;
+    /** Only meaningful for kind "notes" — see lib/read-form-layout.ts. */
+    layout?: { role: string }[] | null;
+    layout_error?: string | null;
+  } | null;
 }) {
   const [state, formAction, pending] = useActionState<FormatState, FormData>(uploadFormat, {
     error: null,
@@ -62,6 +69,30 @@ export default function FormatSlot({
             month: "short",
             year: "numeric",
           })}
+        </p>
+      )}
+
+      {/* Whether the print overlay actually has anything to work with — read once at upload,
+          not guessable from the outside otherwise. Only shown for "notes", the one kind that
+          feeds the progress-note print page. */}
+      {current && kind === "notes" && (
+        <p className="mt-1 text-[13px]">
+          {current.layout && current.layout.length > 0 ? (
+            <span className="text-emerald-600">
+              {current.layout.length} field{current.layout.length === 1 ? "" : "s"} found —
+              printing will overlay onto this form.
+            </span>
+          ) : current.layout_error ? (
+            <span className="text-orange-700">
+              Could not read this form&rsquo;s layout ({current.layout_error}). Printing falls
+              back to the plain layout — try a straighter, flatter photo.
+            </span>
+          ) : (
+            <span className="text-orange-700">
+              No fields found on this photo. Printing falls back to the plain layout — try a
+              straighter, flatter photo with the whole form visible.
+            </span>
+          )}
         </p>
       )}
 
