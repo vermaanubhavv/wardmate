@@ -136,13 +136,16 @@ export function buildProgressNote(
   const line5 = `Vitals - BP: ${bpText}   PR: ${prText}`;
 
   // 7. P/Abdomen, said today — printed exactly as recorded, never normalised to "NAD" wording
-  // that was not actually said.
+  // that was not actually said. No trailing BLANK when empty: unlike a single-word field (a
+  // name, a date), an exam finding is written as a sentence, and a row of underscores after
+  // the heading reads as clutter rather than an invitation to fill it in. The heading alone,
+  // with room left under it, does that job better — see the page rendering for the room.
   const abdomen = findLabel(todaysObservations, ABDOMEN_ALIASES);
-  const line6 = `P/Abdomen - ${abdomen ? (abdomen.value_text ?? abdomen.label) : BLANK}`;
+  const line6 = `P/Abdomen -${abdomen ? ` ${abdomen.value_text ?? abdomen.label}` : ""}`;
 
-  // 8. Chest findings, said today.
+  // 8. Chest findings, said today. Same reasoning as P/Abdomen above.
   const chest = findLabel(todaysObservations, CHEST_ALIASES);
-  const line7 = `Chest findings - ${chest ? (chest.value_text ?? chest.label) : BLANK}`;
+  const line7 = `Chest findings -${chest ? ` ${chest.value_text ?? chest.label}` : ""}`;
 
   // 9. Assessment — only the resident's own stated judgement (labelled "assessment", or a
   // sentence using a plain stable/worse/same word). Never computed by the app: there is no

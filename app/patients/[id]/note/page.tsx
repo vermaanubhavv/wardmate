@@ -154,7 +154,18 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
                 Observation
               </p>
               {note.observation.length > 0 ? (
-                note.observation.map((line, i) => <p key={i}>{line}</p>)
+                note.observation.map((line, i) => {
+                  // P/Abdomen and Chest findings are written as a sentence, not a word — a row
+                  // of underscores after the heading read as clutter rather than an invitation
+                  // to fill it in (see lib/progress-note.ts). Left empty here, they get a ruled
+                  // line to write on instead, the same room the physical form gives them.
+                  const emptyExam = /^(P\/Abdomen|Chest findings) -$/.test(line.trim());
+                  return (
+                    <p key={i} className={emptyExam ? "border-b border-line pb-3" : undefined}>
+                      {line}
+                    </p>
+                  );
+                })
               ) : (
                 <p className="text-muted">Nothing recorded yet today.</p>
               )}
