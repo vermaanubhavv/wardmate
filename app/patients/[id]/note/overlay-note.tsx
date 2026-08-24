@@ -23,11 +23,32 @@ export default function OverlayNote({
   const byRole = new Map<FormZoneRole, FormZone>(zones.map((z) => [z.role, z]));
   const content = contentByRole(note);
 
+  // Who is rounding applies to the whole sheet below it, not to whichever column it happened to
+  // land in — so it is not one of the detected boxes at all. It sits directly above wherever
+  // the table body (Date & Time / Observation / Investigation) actually starts on THIS form,
+  // running the full width and crossing column boundaries on purpose. Anchored to the topmost
+  // of the three body zones, whichever the layout actually found.
+  const bodyTop = Math.min(
+    ...(["date_time", "observation", "plan"] as const)
+      .map((r) => byRole.get(r)?.y)
+      .filter((y): y is number => y !== undefined)
+  );
+
   return (
     <div className="relative w-full">
       {/* eslint-disable-next-line @next/next/no-img-element -- a private, ward-scoped signed
           URL; next/image's remote-pattern config has no reason to know about it. */}
       <img src={formatUrl} alt="Unit's progress note form" className="block w-full" />
+
+      {Number.isFinite(bodyTop) && (
+        <p
+          className="absolute left-0 w-full -translate-y-full whitespace-pre-line border-b-2 border-black pb-0.5 text-center font-bold text-black underline"
+          style={{ top: `${bodyTop * 100}%`, fontSize: "0.72rem" }}
+        >
+          {note.caseSeenBy}
+        </p>
+      )}
+
       {[...byRole.entries()].map(([role, z]) => {
         const text = content[role];
         if (!text) return null;

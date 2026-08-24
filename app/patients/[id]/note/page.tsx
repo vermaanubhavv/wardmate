@@ -131,6 +131,14 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
               <p className="text-[16px] font-bold uppercase">Progress Sheet</p>
             </div>
 
+            {/* The note's own heading, not a line inside either column — it names who is
+                rounding, which applies to the whole sheet below it, so it runs the full width
+                on its own line rather than being confined to Observation or the Investigation
+                column. */}
+            <p className="mt-2 border-b-2 border-black pb-1 text-center text-[15px] font-bold underline">
+              {note.caseSeenBy}
+            </p>
+
             <div className="mt-3 border-y border-dashed border-line py-2">
               <p>
                 <span className="font-semibold">Name:</span> {note.header.name}

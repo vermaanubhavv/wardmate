@@ -33,6 +33,9 @@ export type ProgressNote = {
     bed: string;
     ipd: string | null;
   };
+  /** "Case seen by {department} {unit} team" — the note's own heading, spanning the full page
+   *  above the Observation/Investigation split rather than sitting inside either column. */
+  caseSeenBy: string;
   dateTime: string;
   diagnosis: string | null;
   /** The Observation column — items 1 through 8 of the fixed structure below. */
@@ -72,11 +75,12 @@ const ASSESSMENT_PATTERN =
  * has spoken yet this morning. That is the one rule this file exists to keep — see the blank
  * lines below rather than a shorter list whenever something was not said.
  *
- * The two exceptions to "today only": lines 1–2 (who is rounding, and the standing
- * diagnosis/day/operation) and line 9 (current medications) are standing facts about the
- * admission, not something dictated fresh each round — medications especially, since a
- * photographed drug chart taken once at clerking should keep appearing every day until the
- * resident records a change, not vanish the day after it was photographed.
+ * The exceptions to "today only": caseSeenBy (who is rounding — now the note's own heading, not
+ * a numbered line, see ProgressNote.caseSeenBy), the standing diagnosis/day/operation line, and
+ * current medications are standing facts about the admission, not something dictated fresh each
+ * round — medications especially, since a photographed drug chart taken once at clerking should
+ * keep appearing every day until the resident records a change, not vanish the day after it was
+ * photographed.
  */
 export function buildProgressNote(
   patient: ProgressNotePatient,
@@ -100,10 +104,13 @@ export function buildProgressNote(
 ): ProgressNote {
   const now = new Date();
 
-  // 1. Case seen by (department)(unit) team.
-  const line1 = `Case seen by ${options?.department || BLANK} ${options?.wardName || BLANK} team`;
+  // Case seen by (department)(unit) team — the note's own heading, not a line inside it. It
+  // names who is rounding, which applies to everything below it rather than to any one column,
+  // so it sits above the Observation/Investigation split as a full-width banner rather than
+  // being confined to whichever column it happened to be written in. See note.caseSeenBy below.
+  const caseSeenBy = `Case seen by ${options?.department || BLANK} ${options?.wardName || BLANK} team`;
 
-  // 2. Diagnosis and/or post-operative day, and the operation.
+  // 1. Diagnosis and/or post-operative day, and the operation.
   const line2 = [diagnosis || BLANK, options?.dayLabel, options?.procedure ? `- ${options.procedure}` : null]
     .filter(Boolean)
     .join(" ");
@@ -203,7 +210,7 @@ export function buildProgressNote(
   const issueBlankLines = Array.from({ length: Math.max(0, ISSUE_ROOM - issues.length) }, () => "");
 
   const observation = [
-    line1, line2, line3, line4, line5, line6, line7,
+    line2, line3, line4, line5, line6, line7,
     line8,
     line9, ...issueBlankLines,
   ];
@@ -250,6 +257,7 @@ export function buildProgressNote(
       bed: patient.bed,
       ipd: patient.mrd_no,
     },
+    caseSeenBy,
     dateTime: now.toLocaleString("en-IN", {
       timeZone: "Asia/Kolkata",
       day: "2-digit",
@@ -282,6 +290,11 @@ export function formatProgressNoteText(note: ProgressNote): string {
   const out: string[] = [];
   out.push(`${note.header.name}  ${note.header.ageSex}${note.header.bed ? `  Bed ${note.header.bed}` : ""}`);
   if (note.header.uhid) out.push(`UHID: ${note.header.uhid}`);
+  // Plain text has no bold or underline, so it gets the closest a monospace medium has: its
+  // own line, in caps, set off by blank lines either side — still unmistakably the heading.
+  out.push("");
+  out.push(note.caseSeenBy.toUpperCase());
+  out.push("");
   out.push(`${note.dateTime}`);
   out.push("");
   out.push(...note.observation);
