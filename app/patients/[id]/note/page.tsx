@@ -137,7 +137,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
             <OverlayNote note={note} formatUrl={notesFormat.url} zones={overlayZones} />
           </div>
         ) : (
-          <div className="ios-group px-5 py-5 text-[14px] leading-relaxed text-black print:rounded-none print:border-0 print:p-0 print:shadow-none">
+          <div className="ios-group px-5 py-5 text-[16px] leading-relaxed text-black print:rounded-none print:border-0 print:p-0 print:shadow-none">
             <div className="text-center">
               <p className="text-[16px] font-bold uppercase">Progress Sheet</p>
             </div>

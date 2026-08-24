@@ -70,7 +70,7 @@ export default function OverlayNote({
             left: `${banner.left * 100}%`,
             width: `${(banner.right - banner.left) * 100}%`,
             height: `${bannerHeightPx}px`,
-            fontSize: "0.62rem",
+            fontSize: "0.68rem",
             lineHeight: `${bannerHeightPx}px`,
           }}
         >
@@ -107,7 +107,7 @@ export default function OverlayNote({
                 : `calc(${z.y * 100}% + 1px)`,
               width: `calc(${z.width * 100}% - 4px)`,
               height: `${z.height * 100}%`,
-              fontSize: isMultiLine ? "0.5rem" : "0.7rem",
+              fontSize: isMultiLine ? "0.58rem" : "0.78rem",
               lineHeight: isMultiLine ? 1.15 : 1.25,
             }}
           >
