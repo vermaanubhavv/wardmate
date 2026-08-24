@@ -109,6 +109,15 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
   });
   const noteText = formatProgressNoteText(note);
 
+  // Assessment and Issues are the round's wrap-up, printed last in note.observation — split
+  // here purely for layout, so the plain page can pin that closing pair to the bottom of the
+  // Observation block (see the flex column below) instead of leaving them stranded right under
+  // Chest with a page's worth of blank space beneath. Falls back to no split (everything in
+  // "top") if that heading is ever missing, so a schema change here never throws.
+  const assessmentIndex = note.observation.findIndex((line) => line.startsWith("Assessment -"));
+  const observationTop = assessmentIndex === -1 ? note.observation : note.observation.slice(0, assessmentIndex);
+  const observationTail = assessmentIndex === -1 ? [] : note.observation.slice(assessmentIndex);
+
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col bg-background print:max-w-none print:bg-white">
       <header className="px-4 pb-3 pt-6 print:hidden">
@@ -168,12 +177,21 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
 
             <p className="mt-3 font-semibold tabular-nums">{note.dateTime}</p>
 
-            <div className="mt-3">
+            <div className="mt-3 flex min-h-[520px] flex-col print:min-h-[560px]">
               <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
                 Observation
               </p>
               {note.observation.length > 0 ? (
-                note.observation.map((line, i) => renderNoteLine(line, i))
+                <>
+                  {/* Assessment and Issues are the wrap-up of the round — pinned to the bottom
+                      of this block (mt-auto) rather than sitting bunched right under Chest, so
+                      the page's own free space spreads out instead of piling up unused below
+                      everything. */}
+                  <div>{observationTop.map((line, i) => renderNoteLine(line, i))}</div>
+                  <div className="mt-auto">
+                    {observationTail.map((line, i) => renderNoteLine(line, `tail-${i}`))}
+                  </div>
+                </>
               ) : (
                 <p className="text-muted">Nothing recorded yet today.</p>
               )}
