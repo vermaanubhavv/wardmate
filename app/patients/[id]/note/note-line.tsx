@@ -10,7 +10,7 @@
 const BOLD_HEADINGS = /^(Complaints|On Examination|Assessment|Plan|Advice)([:-])(.*)$/;
 
 /** P/Abdomen, Chest, Assessment and Flatus/Stool are written as a sentence, not a word — a row
- *  of underscores after the heading read as clutter. Left empty, they get a ruled line instead. */
+ *  of underscores after the heading read as clutter. Left empty, they get open space instead. */
 const EMPTY_EXAM = /^(P\/Abdomen|Chest|Assessment|Flatus \/ Stool) -$/;
 
 export function renderNoteLine(
@@ -21,15 +21,13 @@ export function renderNoteLine(
    *  layout room to breathe, since that room does not exist inside a detected box. */
   opts: { compact?: boolean } = {}
 ) {
-  // A blank string is reserved room to write more by hand — a ruled line with nothing on it,
-  // not an empty paragraph that would collapse to no height at all.
+  // A blank string is reserved room to write more by hand — genuinely blank space, no drawn
+  // line. Both surfaces already have their own lines to write on: the physical form is
+  // printed with them, and a plain sheet of paper does not need this app to draw them either.
+  // A drawn line here would be a second, redundant one on top of whichever the resident is
+  // actually going to write against.
   if (line === "") {
-    return (
-      <div
-        key={key}
-        className={opts.compact ? "mt-1 border-b border-black/60" : "mt-3 border-b border-line"}
-      />
-    );
+    return <div key={key} className={opts.compact ? "h-3" : "h-6"} />;
   }
 
   const emptyExam = EMPTY_EXAM.test(line.trim());
@@ -46,12 +44,12 @@ export function renderNoteLine(
     line
   );
 
-  // A little breathing room above a heading line — Advice in particular has no blank spacer
-  // line before it (that would silently eat one of Plan's reserved lines), so the gap comes
-  // from margin instead.
+  // Open space under a bare heading, and a little breathing room above a heading line — Advice
+  // in particular has no blank spacer line before it (that would silently eat one of Plan's
+  // reserved lines), so the gap comes from margin/padding, never a drawn line.
   const className =
     [
-      emptyExam && (opts.compact ? "border-b border-black/60 pb-1" : "border-b border-line pb-3"),
+      emptyExam && (opts.compact ? "pb-3" : "pb-5"),
       heading && (opts.compact ? "mt-1" : "mt-2"),
     ]
       .filter(Boolean)
