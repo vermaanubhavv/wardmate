@@ -5,7 +5,7 @@ import { istDayKey, type Observation } from "@/lib/patient-state";
 import { buildProgressNote, formatProgressNoteText } from "@/lib/progress-note";
 import { getWardFormats } from "@/lib/formats";
 import { getWardLabRanges } from "@/lib/ward-lab-ranges";
-import { dayLabel } from "@/lib/patients";
+import { MANAGEMENT_CHOICES } from "@/lib/patients";
 import { getProcedureLabels, procedureFor } from "@/lib/templates";
 import CopyNoteButton from "./copy-button";
 import PrintButton from "./print-button";
@@ -29,7 +29,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
   const { data: patient } = await supabase
     .from("current_patients")
     .select(
-      "id, ward_id, display_name, age_years, sex, bed, uhid_ip_no, mrd_no, primary_diagnosis, admitted_on, post_op_day, admission_day, procedure_text, template_family, template_variant"
+      "id, ward_id, display_name, age_years, sex, bed, uhid_ip_no, mrd_no, primary_diagnosis, admitted_on, surgery_date, post_op_day, admission_day, management, procedure_text, template_family, template_variant"
     )
     .eq("id", id)
     .maybeSingle();
@@ -89,10 +89,20 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
     .flatMap((e) => e.observations);
   const allObservations = entries.flatMap((e) => e.observations);
 
+  // Pre-op / Post Op Day (N) / Conservative / Workup — the same rule
+  // lib/patients.ts managementLabel() uses, kept in sync deliberately rather than reused
+  // outright: managementLabel prints "POST OP" alone, and this line needs the day number
+  // folded in too. The resident's own choice (patient.management) is what shows before an
+  // operative date exists; the moment one does, it is superseded automatically — a Pre-op
+  // patient who has since gone to theatre is never still shown as Pre-op.
+  const status = patient.surgery_date
+    ? `Post Op Day (${patient.post_op_day ?? "—"})`
+    : (MANAGEMENT_CHOICES.find((c) => c.value === patient.management)?.label ?? null);
+
   const note = buildProgressNote(patient, allObservations, todaysObservations, diagnosis, {
     wardName: wardRow?.name ?? null,
     department: profile?.department?.trim() || null,
-    dayLabel: dayLabel(patient),
+    status,
     procedure: procedureFor(patient, procedures),
     wardRanges,
   });
@@ -162,26 +172,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
                 Observation
               </p>
               {note.observation.length > 0 ? (
-                note.observation.map((line, i) => {
-                  // A blank string is Issues' reserved room to write more by hand (see
-                  // lib/progress-note.ts) — a ruled line with nothing on it, not an empty
-                  // paragraph that would collapse to no height at all.
-                  if (line === "") {
-                    return <div key={i} className="mt-3 border-b border-line" />;
-                  }
-                  // P/Abdomen, Chest, Assessment and Flatus/Stool are written as a sentence, not a
-                  // word — a row of underscores after the heading read as clutter rather than
-                  // an invitation to fill it in. Left empty here, they get a ruled line to
-                  // write on instead, the same room the physical form gives them.
-                  const emptyExam = /^(P\/Abdomen|Chest|Assessment|Flatus \/ Stool) -$/.test(
-                    line.trim()
-                  );
-                  return (
-                    <p key={i} className={emptyExam ? "border-b border-line pb-3" : undefined}>
-                      {line}
-                    </p>
-                  );
-                })
+                note.observation.map((line, i) => renderNoteLine(line, i))
               ) : (
                 <p className="text-muted">Nothing recorded yet today.</p>
               )}
@@ -192,7 +183,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
                 Investigation / Treatment / Management
               </p>
               {note.plan.length > 0 ? (
-                note.plan.map((line, i) => <p key={i}>{line}</p>)
+                note.plan.map((line, i) => renderNoteLine(line, i))
               ) : (
                 <p className="text-muted">Nothing ordered yet today.</p>
               )}
@@ -220,5 +211,48 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
         <CopyNoteButton text={noteText} />
       </section>
     </div>
+  );
+}
+
+/** The headings this file bolds and underlines, wherever they appear — Observation and the
+ *  Investigation/Treatment/Management column both use this, so "Plan" and "Advice" get the
+ *  same treatment on the right as "Complaints"/"On Examination"/"Assessment" do on the left. */
+const BOLD_HEADINGS = /^(Complaints|On Examination|Assessment|Plan|Advice)([:-])(.*)$/;
+
+function renderNoteLine(line: string, key: number) {
+  // A blank string is reserved room to write more by hand (see lib/progress-note.ts) — a ruled
+  // line with nothing on it, not an empty paragraph that would collapse to no height at all.
+  if (line === "") return <div key={key} className="mt-3 border-b border-line" />;
+
+  // P/Abdomen, Chest, Assessment and Flatus/Stool are written as a sentence, not a word — a row
+  // of underscores after the heading read as clutter rather than an invitation to fill it in.
+  // Left empty here, they get a ruled line to write on instead, the same room the physical form
+  // gives them.
+  const emptyExam = /^(P\/Abdomen|Chest|Assessment|Flatus \/ Stool) -$/.test(line.trim());
+
+  const heading = line.match(BOLD_HEADINGS);
+  const content = heading ? (
+    <>
+      <strong className="underline">
+        {heading[1]}
+        {heading[2]}
+      </strong>
+      {heading[3]}
+    </>
+  ) : (
+    line
+  );
+
+  // A little breathing room above a heading line — Advice in particular no longer has a blank
+  // spacer line before it (that would have silently eaten one of Plan's reserved lines), so the
+  // gap has to come from margin instead.
+  const className = [emptyExam && "border-b border-line pb-3", heading && "mt-2"]
+    .filter(Boolean)
+    .join(" ") || undefined;
+
+  return (
+    <p key={key} className={className}>
+      {content}
+    </p>
   );
 }

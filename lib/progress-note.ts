@@ -41,7 +41,7 @@ export type ProgressNote = {
   diagnosis: string | null;
   /** The Observation column — items 1 through 8 of the fixed structure below. */
   observation: string[];
-  /** The Investigation/Treatment/Management column — items 9 and 10. */
+  /** The Investigation/Treatment/Management column: Plan first, then Advice. */
   plan: string[];
 };
 
@@ -95,9 +95,11 @@ export function buildProgressNote(
     /** The signed-in doctor's own department, for line 1. Blank, never guessed, when nobody
      *  has set one on their profile. */
     department?: string | null;
-    /** "POD 3" / "Day 2" — computed by the caller via lib/patients.ts dayLabel(), so this file
-     *  never re-derives a rule that already exists once, app-wide. */
-    dayLabel?: string | null;
+    /** "Pre-op" / "Post Op Day (3)" / "Conservative" / "Workup" — computed by the caller from
+     *  the resident's own choice (patient.management) and the operative date, exactly the rule
+     *  lib/patients.ts managementLabel() already uses (post-op the moment surgery_date exists,
+     *  overriding whatever was chosen before), so this file never re-derives it. */
+    status?: string | null;
     /** The recorded operation, via lib/templates.ts procedureFor() — same reasoning. */
     procedure?: string | null;
     /** This ward's own accumulated lab ranges — see lib/lab-ranges.ts. Absent falls back to the
@@ -113,10 +115,14 @@ export function buildProgressNote(
   // being confined to whichever column it happened to be written in. See note.caseSeenBy below.
   const caseSeenBy = `Case seen by ${options?.department || BLANK} ${options?.wardName || BLANK} team`;
 
-  // 1. Diagnosis and/or post-operative day, and the operation.
-  const line2 = [diagnosis || BLANK, options?.dayLabel, options?.procedure ? `- ${options.procedure}` : null]
-    .filter(Boolean)
-    .join(" ");
+  // 1. Diagnosis, marked with Δ, then the phase of care and the operation. "Δ" rather than
+  // "Dx" — the resident's own shorthand for it, the same reason PICCLE and P/A are written the
+  // way they are elsewhere in this app rather than spelled out. The operation sits right after
+  // the phase (Pre-op / Post Op Day) rather than after the diagnosis, because it answers "what
+  // operation, at what stage" — one thought, not two separate facts glued together.
+  const line2 = `Δ - ${diagnosis || BLANK}    ${options?.status || BLANK}${
+    options?.procedure ? ` - ${options.procedure}` : ""
+  }`;
 
   // 3. Complaints — whatever was said fresh today, verbatim. Excludes labels that have their
   // own line elsewhere on the sheet (comorbidities and assessment belong to the admission
@@ -280,12 +286,27 @@ export function buildProgressNote(
   // as an ordinary line item, without this file generating a second document for it.
   const planLines = todaysObservations.filter((o) => o.kind === "plan").map((o) => o.value_text ?? o.label);
 
+  // Right column, in the order the physical sheet wants it: Plan at the top with room for 3–4
+  // lines whether or not today filled all of them (the same "floor, not ceiling" reasoning
+  // Issues already uses), then Advice below it as a numbered list of whatever the patient is
+  // CURRENTLY on — everything the resident has recorded or uploaded on this patient's own page,
+  // not only what was said today. A drug chart photographed once at clerking is still the
+  // patient's medication a week later.
+  const PLAN_ROOM = 4;
+  const planBlankLines = Array.from(
+    { length: Math.max(0, PLAN_ROOM - Math.max(planLines.length, 1)) },
+    () => ""
+  );
+
   const plan: string[] = [];
-  plan.push("Advice and medications:");
-  plan.push(...(medLines.length > 0 ? medLines : [BLANK]));
-  plan.push("");
   plan.push("Plan:");
   plan.push(...(planLines.length > 0 ? planLines : [BLANK]));
+  // No separate spacer line before Advice: the ruled-line rendering treats every blank string
+  // as its own writable line, so a spacer here would silently add a fifth line to what is meant
+  // to be a 3–4 line reservation. The visual gap comes from CSS margin on the heading instead.
+  plan.push(...planBlankLines);
+  plan.push("Advice:");
+  plan.push(...(medLines.length > 0 ? medLines.map((m, i) => `${i + 1}. ${m}`) : [BLANK]));
 
   return {
     header: {
