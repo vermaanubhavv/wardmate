@@ -27,7 +27,7 @@ export function renderNoteLine(
   // A drawn line here would be a second, redundant one on top of whichever the resident is
   // actually going to write against.
   if (line === "") {
-    return <div key={key} className={opts.compact ? "h-3" : "h-8"} />;
+    return <div key={key} className={opts.compact ? "h-4" : "h-8"} />;
   }
 
   const emptyExam = EMPTY_EXAM.test(line.trim());
@@ -51,8 +51,8 @@ export function renderNoteLine(
   // silently eat one of Plan's lines), so the gap comes from this margin, never a drawn line.
   const className =
     [
-      emptyExam && (opts.compact ? "pb-3" : "pb-6"),
-      heading && (opts.compact ? "mt-1" : "mt-6"),
+      emptyExam && (opts.compact ? "pb-4" : "pb-6"),
+      heading && (opts.compact ? "mt-2" : "mt-6"),
     ]
       .filter(Boolean)
       .join(" ") || undefined;

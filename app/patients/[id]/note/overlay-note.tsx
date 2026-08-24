@@ -72,6 +72,7 @@ export default function OverlayNote({
             height: `${bannerHeightPx}px`,
             fontSize: "0.68rem",
             lineHeight: `${bannerHeightPx}px`,
+            WebkitTextSizeAdjust: "100%",
           }}
         >
           {note.caseSeenBy}
@@ -88,6 +89,14 @@ export default function OverlayNote({
         // that much further down — everything else (name, uhid, the header fields) is
         // unaffected, since the banner never reaches up that far.
         const pushedDown = banner && (BODY_ROLES as readonly string[]).includes(role);
+        // Date & Time sits in the narrowest column on the form (it wraps to 2-3 short lines:
+        // "25/08/26", "02:03", "am") — mobile browsers auto-boost font size in narrow, tall
+        // columns like that one more aggressively than in the wide header row, which is why it
+        // was printing noticeably larger than Name/UHID next to it even though both used the
+        // same fontSize here. WebkitTextSizeAdjust below stops that auto-boost; this explicit
+        // smaller size on top of it brings Date & Time in line with the rest rather than just
+        // matching them by accident.
+        const fontSize = isMultiLine ? "0.58rem" : role === "date_time" ? "0.68rem" : "0.78rem";
         return (
           <div
             key={role}
@@ -107,8 +116,12 @@ export default function OverlayNote({
                 : `calc(${z.y * 100}% + 1px)`,
               width: `calc(${z.width * 100}% - 4px)`,
               height: `${z.height * 100}%`,
-              fontSize: isMultiLine ? "0.58rem" : "0.78rem",
-              lineHeight: isMultiLine ? 1.15 : 1.25,
+              fontSize,
+              lineHeight: isMultiLine ? 1.3 : 1.35,
+              // Stops mobile Safari/Chrome from silently inflating text past the size set above
+              // when a box is narrow relative to the viewport — without this, the same fontSize
+              // renders at different visual sizes depending on how wide the zone happens to be.
+              WebkitTextSizeAdjust: "100%",
             }}
           >
             {/* Observation and Plan render as real stacked lines now, not one joined string —
