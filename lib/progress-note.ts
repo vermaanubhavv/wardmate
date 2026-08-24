@@ -150,11 +150,13 @@ export function buildProgressNote(
   // 9. Assessment — only the resident's own stated judgement (labelled "assessment", or a
   // sentence using a plain stable/worse/same word). Never computed by the app: there is no
   // formula here that decides "satisfactory" from a set of vitals, because that is exactly the
-  // kind of invented clinical judgement this app has refused to make everywhere else.
+  // kind of invented clinical judgement this app has refused to make everywhere else. Bare
+  // heading when empty, same reasoning as P/Abdomen and Chest findings above — one line of
+  // room to write, not a row of underscores.
   const assessmentObs =
     findLabel(todaysObservations, ASSESSMENT_ALIASES) ??
     todaysObservations.find((o) => o.kind === "note" && ASSESSMENT_PATTERN.test(o.value_text ?? ""));
-  const line8 = `Assessment - ${assessmentObs ? (assessmentObs.value_text ?? assessmentObs.label) : BLANK}`;
+  const line8 = `Assessment -${assessmentObs ? ` ${assessmentObs.value_text ?? assessmentObs.label}` : ""}`;
 
   // 10. Issues — deranged blood investigations and flagged radiology, said today. Two different
   // kinds of "deranged" and neither is invented here:
@@ -189,9 +191,22 @@ export function buildProgressNote(
     .map((r) => `${r.label}: ${r.value}`);
 
   const issues = [...derangedLabs, ...radiologyIssues];
-  const line9 = `Issues - ${issues.length > 0 ? issues.join("; ") : BLANK}`;
+  const line9 = `Issues -${issues.length > 0 ? ` ${issues.join("; ")}` : ""}`;
 
-  const observation = [line1, line2, line3, line4, line5, line6, line7, line8, line9];
+  // Genuinely last: Assessment and Issues are the wrap-up of the round, and everything else on
+  // the sheet is written before the resident gets to them, never after. Issues gets more room
+  // than a single line on purpose — an app that only ever surfaces exactly what it found would
+  // read as complete when it is a floor, not a ceiling, so blank ruled space follows for the
+  // resident to add to it by hand. Up to three lines of issues, total: however many this file
+  // found, topped up with blank room rather than trimmed down to fit.
+  const ISSUE_ROOM = 3;
+  const issueBlankLines = Array.from({ length: Math.max(0, ISSUE_ROOM - issues.length) }, () => "");
+
+  const observation = [
+    line1, line2, line3, line4, line5, line6, line7,
+    line8,
+    line9, ...issueBlankLines,
+  ];
 
   // 11. Advice and medications — the CURRENT list, not just today's. A drug chart photographed
   // once at clerking is still the patient's medications a week later; scoping this to today

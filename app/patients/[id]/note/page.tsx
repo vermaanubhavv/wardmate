@@ -155,11 +155,17 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
               </p>
               {note.observation.length > 0 ? (
                 note.observation.map((line, i) => {
-                  // P/Abdomen and Chest findings are written as a sentence, not a word — a row
-                  // of underscores after the heading read as clutter rather than an invitation
-                  // to fill it in (see lib/progress-note.ts). Left empty here, they get a ruled
-                  // line to write on instead, the same room the physical form gives them.
-                  const emptyExam = /^(P\/Abdomen|Chest findings) -$/.test(line.trim());
+                  // A blank string is Issues' reserved room to write more by hand (see
+                  // lib/progress-note.ts) — a ruled line with nothing on it, not an empty
+                  // paragraph that would collapse to no height at all.
+                  if (line === "") {
+                    return <div key={i} className="mt-3 border-b border-line" />;
+                  }
+                  // P/Abdomen, Chest findings and Assessment are written as a sentence, not a
+                  // word — a row of underscores after the heading read as clutter rather than
+                  // an invitation to fill it in. Left empty here, they get a ruled line to
+                  // write on instead, the same room the physical form gives them.
+                  const emptyExam = /^(P\/Abdomen|Chest findings|Assessment) -$/.test(line.trim());
                   return (
                     <p key={i} className={emptyExam ? "border-b border-line pb-3" : undefined}>
                       {line}
@@ -180,17 +186,6 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
               ) : (
                 <p className="text-muted">Nothing ordered yet today.</p>
               )}
-            </div>
-
-            {/* Ruled space to fill by hand — the physical form is mostly this, and a note that
-                only shows what the app already knows is not a substitute for the round itself. */}
-            <div className="mt-4">
-              <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
-                Additional notes
-              </p>
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="mt-3 border-b border-line" />
-              ))}
             </div>
 
             <div className="mt-6 flex items-end justify-end">
