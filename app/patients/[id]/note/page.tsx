@@ -10,6 +10,7 @@ import { getProcedureLabels, procedureFor } from "@/lib/templates";
 import CopyNoteButton from "./copy-button";
 import PrintButton from "./print-button";
 import OverlayNote from "./overlay-note";
+import { renderNoteLine } from "./note-line";
 
 /**
  * Today's progress sheet, laid out the way the unit's own paper form is — see the ESIC form the
@@ -211,48 +212,5 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
         <CopyNoteButton text={noteText} />
       </section>
     </div>
-  );
-}
-
-/** The headings this file bolds and underlines, wherever they appear — Observation and the
- *  Investigation/Treatment/Management column both use this, so "Plan" and "Advice" get the
- *  same treatment on the right as "Complaints"/"On Examination"/"Assessment" do on the left. */
-const BOLD_HEADINGS = /^(Complaints|On Examination|Assessment|Plan|Advice)([:-])(.*)$/;
-
-function renderNoteLine(line: string, key: number) {
-  // A blank string is reserved room to write more by hand (see lib/progress-note.ts) — a ruled
-  // line with nothing on it, not an empty paragraph that would collapse to no height at all.
-  if (line === "") return <div key={key} className="mt-3 border-b border-line" />;
-
-  // P/Abdomen, Chest, Assessment and Flatus/Stool are written as a sentence, not a word — a row
-  // of underscores after the heading read as clutter rather than an invitation to fill it in.
-  // Left empty here, they get a ruled line to write on instead, the same room the physical form
-  // gives them.
-  const emptyExam = /^(P\/Abdomen|Chest|Assessment|Flatus \/ Stool) -$/.test(line.trim());
-
-  const heading = line.match(BOLD_HEADINGS);
-  const content = heading ? (
-    <>
-      <strong className="underline">
-        {heading[1]}
-        {heading[2]}
-      </strong>
-      {heading[3]}
-    </>
-  ) : (
-    line
-  );
-
-  // A little breathing room above a heading line — Advice in particular no longer has a blank
-  // spacer line before it (that would have silently eaten one of Plan's reserved lines), so the
-  // gap has to come from margin instead.
-  const className = [emptyExam && "border-b border-line pb-3", heading && "mt-2"]
-    .filter(Boolean)
-    .join(" ") || undefined;
-
-  return (
-    <p key={key} className={className}>
-      {content}
-    </p>
   );
 }

@@ -1,5 +1,10 @@
 import type { FormZone, FormZoneRole } from "@/lib/read-form-layout";
 import type { ProgressNote } from "@/lib/progress-note";
+import { renderNoteLine } from "./note-line";
+
+/** The two roles whose content is a list of lines, not one piece of text — everything else in
+ *  contentByRole is a single value (a name, a date) and renders as plain text in one box. */
+const MULTI_LINE_ROLES = new Set<FormZoneRole>(["observation", "plan"]);
 
 /**
  * The generated note printed onto a photograph of the unit's own form, in the boxes
@@ -74,8 +79,11 @@ export default function OverlayNote({
       )}
 
       {[...byRole.entries()].map(([role, z]) => {
+        const isMultiLine = MULTI_LINE_ROLES.has(role);
         const text = content[role];
-        if (!text) return null;
+        const lines = role === "observation" ? note.observation : role === "plan" ? note.plan : null;
+        if (isMultiLine ? !lines || lines.length === 0 : !text) return null;
+
         // Body zones give up their top strip to the banner above, so their own content starts
         // that much further down — everything else (name, uhid, the header fields) is
         // unaffected, since the banner never reaches up that far.
@@ -83,7 +91,7 @@ export default function OverlayNote({
         return (
           <div
             key={role}
-            className="absolute overflow-visible whitespace-pre-line text-black"
+            className="absolute overflow-visible text-black"
             style={{
               // A small inset rather than the box's own edge — insurance against a box that
               // starts a hair early and lands the first character on the printed label. Costs
@@ -99,11 +107,24 @@ export default function OverlayNote({
                 : `calc(${z.y * 100}% + 1px)`,
               width: `calc(${z.width * 100}% - 4px)`,
               height: `${z.height * 100}%`,
-              fontSize: role === "observation" || role === "plan" ? "0.62rem" : "0.7rem",
-              lineHeight: 1.25,
+              fontSize: isMultiLine ? "0.5rem" : "0.7rem",
+              lineHeight: isMultiLine ? 1.15 : 1.25,
             }}
           >
-            {text}
+            {/* Observation and Plan render as real stacked lines now, not one joined string —
+                that is what lets a heading bold only itself rather than the whole block. This
+                box does not grow: it is the size read-form-layout.ts measured off the actual
+                photo, so packing genuine per-line spacing into it (rather than one dense block
+                of text) risks running past the bottom of that box on a long day's note. Left
+                overflow-visible on purpose — spilling past the edge, visibly, is the honest
+                failure here, not text silently clipped out of view. */}
+            {isMultiLine ? (
+              <div className="whitespace-normal">
+                {lines!.map((line, i) => renderNoteLine(line, i, { compact: true }))}
+              </div>
+            ) : (
+              <span className="whitespace-pre-line">{text}</span>
+            )}
           </div>
         );
       })}
@@ -122,11 +143,13 @@ function contentByRole(note: ProgressNote): Partial<Record<FormZoneRole, string>
     bed: note.header.bed,
     ipd: note.header.ipd ?? undefined,
     date_time: note.dateTime,
-    // Deliberately not mapped: diagnosis is now the second of the two fixed opening lines
-    // inside "observation" itself (see lib/progress-note.ts), so a form with its own separate
-    // diagnosis box would otherwise print it twice.
-    observation: note.observation.length > 0 ? note.observation.join("\n") : undefined,
-    plan: note.plan.length > 0 ? note.plan.join("\n") : undefined,
+    // observation and plan are read straight from note.observation/note.plan in the render
+    // loop above, line by line, rather than joined here — that per-line structure is what lets
+    // a heading bold only itself. diagnosis is deliberately not mapped at all: it is now the
+    // second of the two fixed opening lines inside "observation" itself (see
+    // lib/progress-note.ts), so a form with its own separate diagnosis box would otherwise
+    // print it twice.
+    //
     // Deliberately no signature text — that box exists so a human signs it, and printing
     // anything into it would defeat the one thing the disclaimer insists on.
   };
