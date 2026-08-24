@@ -35,10 +35,17 @@ export default function OverlayNote({
   const bodyZones = BODY_ROLES.map((r) => byRole.get(r)).filter((z): z is FormZone => Boolean(z));
   const bannerHeightPx = 15;
 
+  // The banner's vertical position follows Date & Time specifically, not the topmost of the
+  // three — observation and plan sometimes get detected a hair higher than the row they are
+  // actually in, which pulled the banner up past the row it belongs on. Falls back to the
+  // topmost of whatever body zones exist when a form has no separate date_time box of its own
+  // (a single-column form, or detection that missed it).
+  const bannerTop = byRole.get("date_time")?.y ?? Math.min(...bodyZones.map((z) => z.y));
+
   const banner =
     bodyZones.length > 0
       ? {
-          top: Math.min(...bodyZones.map((z) => z.y)),
+          top: bannerTop,
           left: Math.min(...bodyZones.map((z) => z.x)),
           right: Math.max(...bodyZones.map((z) => z.x + z.width)),
         }
@@ -83,8 +90,12 @@ export default function OverlayNote({
               // a little writable width; worth it, since text touching a label is illegible
               // and a slightly narrower line wrapping is not.
               left: `calc(${z.x * 100}% + 2px)`,
+              // Never above the banner's own bottom edge, regardless of this zone's raw y —
+              // observation/plan sometimes detect a hair higher than date_time, and content
+              // pushed down from ITS OWN top rather than the banner's bottom could still land
+              // under the banner instead of below it.
               top: pushedDown
-                ? `calc(${z.y * 100}% + ${bannerHeightPx + 2}px)`
+                ? `calc(${Math.max(z.y, banner!.top) * 100}% + ${bannerHeightPx + 2}px)`
                 : `calc(${z.y * 100}% + 1px)`,
               width: `calc(${z.width * 100}% - 4px)`,
               height: `${z.height * 100}%`,
