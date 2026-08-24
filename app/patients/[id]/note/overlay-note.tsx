@@ -24,15 +24,25 @@ export default function OverlayNote({
   const content = contentByRole(note);
 
   // Who is rounding applies to the whole sheet below it, not to whichever column it happened to
-  // land in — so it is not one of the detected boxes at all. It sits directly above wherever
-  // the table body (Date & Time / Observation / Investigation) actually starts on THIS form,
-  // running the full width and crossing column boundaries on purpose. Anchored to the topmost
-  // of the three body zones, whichever the layout actually found.
-  const bodyTop = Math.min(
-    ...(["date_time", "observation", "plan"] as const)
-      .map((r) => byRole.get(r)?.y)
-      .filter((y): y is number => y !== undefined)
-  );
+  // land in — so it is not one of the detected boxes at all. On the printed form the table's
+  // own header row ("Date & Time / Observation / Investigation…") sits immediately above where
+  // the writable body zones start, with no blank margin between them — so this cannot float
+  // ABOVE the body without landing on top of that printed row, which is exactly the bug this
+  // replaced. Instead it takes a fixed strip out of the TOP of the writable body itself,
+  // spanning every body zone's combined width, and the body content below is pushed down by
+  // that same strip's height so nothing overlaps.
+  const BODY_ROLES = ["date_time", "observation", "plan"] as const;
+  const bodyZones = BODY_ROLES.map((r) => byRole.get(r)).filter((z): z is FormZone => Boolean(z));
+  const bannerHeightPx = 15;
+
+  const banner =
+    bodyZones.length > 0
+      ? {
+          top: Math.min(...bodyZones.map((z) => z.y)),
+          left: Math.min(...bodyZones.map((z) => z.x)),
+          right: Math.max(...bodyZones.map((z) => z.x + z.width)),
+        }
+      : null;
 
   return (
     <div className="relative w-full">
@@ -40,10 +50,17 @@ export default function OverlayNote({
           URL; next/image's remote-pattern config has no reason to know about it. */}
       <img src={formatUrl} alt="Unit's progress note form" className="block w-full" />
 
-      {Number.isFinite(bodyTop) && (
+      {banner && (
         <p
-          className="absolute left-0 w-full -translate-y-full whitespace-pre-line border-b-2 border-black pb-0.5 text-center font-bold text-black underline"
-          style={{ top: `${bodyTop * 100}%`, fontSize: "0.72rem" }}
+          className="absolute overflow-visible whitespace-nowrap border-b border-black text-center font-bold text-black underline"
+          style={{
+            top: `${banner.top * 100}%`,
+            left: `${banner.left * 100}%`,
+            width: `${(banner.right - banner.left) * 100}%`,
+            height: `${bannerHeightPx}px`,
+            fontSize: "0.62rem",
+            lineHeight: `${bannerHeightPx}px`,
+          }}
         >
           {note.caseSeenBy}
         </p>
@@ -52,6 +69,10 @@ export default function OverlayNote({
       {[...byRole.entries()].map(([role, z]) => {
         const text = content[role];
         if (!text) return null;
+        // Body zones give up their top strip to the banner above, so their own content starts
+        // that much further down — everything else (name, uhid, the header fields) is
+        // unaffected, since the banner never reaches up that far.
+        const pushedDown = banner && (BODY_ROLES as readonly string[]).includes(role);
         return (
           <div
             key={role}
@@ -62,7 +83,9 @@ export default function OverlayNote({
               // a little writable width; worth it, since text touching a label is illegible
               // and a slightly narrower line wrapping is not.
               left: `calc(${z.x * 100}% + 2px)`,
-              top: `calc(${z.y * 100}% + 1px)`,
+              top: pushedDown
+                ? `calc(${z.y * 100}% + ${bannerHeightPx + 2}px)`
+                : `calc(${z.y * 100}% + 1px)`,
               width: `calc(${z.width * 100}% - 4px)`,
               height: `${z.height * 100}%`,
               fontSize: role === "observation" || role === "plan" ? "0.62rem" : "0.7rem",
