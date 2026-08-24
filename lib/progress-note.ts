@@ -64,6 +64,8 @@ const BP_ALIASES = ["bp", "blood pressure"];
 const PR_ALIASES = ["pr", "pulse", "pulse rate", "heart rate", "hr"];
 const ABDOMEN_ALIASES = ["abdomen", "per abdomen", "p/a", "pa", "abdominal examination"];
 const CHEST_ALIASES = ["chest", "respiratory system", "rs", "lungs", "air entry"];
+const FLATUS_ALIASES = ["flatus", "passed flatus", "wind"];
+const STOOL_ALIASES = ["stool", "motion", "bowels", "bowel movement", "passed stool"];
 const ASSESSMENT_ALIASES = ["assessment"];
 const ASSESSMENT_PATTERN =
   /\b(satisfactory|stable|unstable|improving|improved|better|worsening|worsened|worse|deteriorat|same as|unchanged|no change)\b/i;
@@ -115,44 +117,70 @@ export function buildProgressNote(
     .filter(Boolean)
     .join(" ");
 
-  // 3. Complaints — whatever was said fresh today, verbatim. Excludes the labels that belong to
-  // the admission clerking note (comorbidities, assessment handled on its own line below) rather
-  // than to today's round.
+  // 3. Complaints — whatever was said fresh today, verbatim. Excludes labels that have their
+  // own line elsewhere on the sheet (comorbidities and assessment belong to the admission
+  // clerking note or the assessment line, and CNS/sensorium is On Examination's) — a finding
+  // occasionally extracted with kind "note" instead of "exam" must not print twice just
+  // because it matches two lines' filters at once.
   const complaintLines = todaysObservations
-    .filter((o) => o.kind === "note" && !/comorbid|assessment/i.test(o.label))
+    .filter(
+      (o) =>
+        o.kind === "note" &&
+        !/comorbid|assessment/i.test(o.label) &&
+        !CNS_ALIASES.includes(norm(o.label))
+    )
     .map((o) => o.value_text ?? o.label);
   const line3 = `Complaints - ${complaintLines.join("; ") || BLANK}`;
+  // One ruled line under Complaints, reserved for the relevant-negative-symptoms checklist
+  // this feature is drafting separately for clinical sign-off before it prints anything — see
+  // the conversation this shipped from. Blank room, not a guess, until that draft is approved.
+  const line3b = "";
 
-  // 4–5. On examination — consciousness/sensorium, said today.
+  // 4. On examination — consciousness/sensorium. "Conscious Oriented" prints as the DEFAULT
+  // starting value when nothing was said today — the one deliberate exception to this file's
+  // usual "never invent" rule, and only because the resident explicitly asked for it as an
+  // editable starting point on a form they review and correct before signing, not a value
+  // written into the patient's record. Whatever was actually said today, if anything,
+  // overrides the default rather than sitting alongside it.
   const cns =
     findLabel(todaysObservations, CNS_ALIASES) ??
     todaysObservations.find((o) => CONSCIOUS_PATTERN.test(o.value_text ?? ""));
-  const line4 = `On Examination - ${cns ? (cns.value_text ?? cns.label) : BLANK}`;
+  const line4 = `On Examination - ${cns ? (cns.value_text ?? cns.label) : "Conscious Oriented"}`;
 
-  // 6. Vitals — BP and PR only, each its own blank if not recorded. Still flagged when
-  // deranged, the same classifyVital every other vitals display in the app uses — a printed
-  // sheet is not a lesser-safety context than the screen it came from.
+  // 5. Vitals — BP and PR, bare. No "Vitals -" label and no underscore placeholder when
+  // unrecorded: a blank after two short abbreviations already reads as "not yet taken" without
+  // a run of dashes to make the point. Still flagged when deranged, the same classifyVital
+  // every other vitals display in the app uses.
   const bpObs = findLabel(todaysObservations, BP_ALIASES);
   const prObs = findLabel(todaysObservations, PR_ALIASES);
-  const bpText = bpObs
-    ? renderVital(classifyVital(bpObs.label, bpObs.value_text))
-    : BLANK;
-  const prText = prObs
-    ? renderVital(classifyVital(prObs.label, prObs.value_text))
-    : BLANK;
-  const line5 = `Vitals - BP: ${bpText}   PR: ${prText}`;
+  const bpText = bpObs ? renderVital(classifyVital(bpObs.label, bpObs.value_text)) : "";
+  const prText = prObs ? renderVital(classifyVital(prObs.label, prObs.value_text)) : "";
+  const line5 = `BP: ${bpText}   PR: ${prText}`;
 
-  // 7. P/Abdomen, said today — printed exactly as recorded, never normalised to "NAD" wording
+  // 6. P/Abdomen, said today — printed exactly as recorded, never normalised to "NAD" wording
   // that was not actually said. No trailing BLANK when empty: unlike a single-word field (a
   // name, a date), an exam finding is written as a sentence, and a row of underscores after
-  // the heading reads as clutter rather than an invitation to fill it in. The heading alone,
-  // with room left under it, does that job better — see the page rendering for the room.
+  // the heading reads as clutter rather than an invitation to fill it in. Always followed by
+  // one ruled line of extra room, whether or not something was said — the same "floor, not a
+  // ceiling" reasoning Issues already uses.
   const abdomen = findLabel(todaysObservations, ABDOMEN_ALIASES);
   const line6 = `P/Abdomen -${abdomen ? ` ${abdomen.value_text ?? abdomen.label}` : ""}`;
+  const line6b = "";
 
-  // 8. Chest findings, said today. Same reasoning as P/Abdomen above.
+  // 7. Chest, said today. Same reasoning as P/Abdomen above, including the extra ruled line.
   const chest = findLabel(todaysObservations, CHEST_ALIASES);
-  const line7 = `Chest findings -${chest ? ` ${chest.value_text ?? chest.label}` : ""}`;
+  const line7 = `Chest -${chest ? ` ${chest.value_text ?? chest.label}` : ""}`;
+  const line7b = "";
+
+  // 7b. Flatus / Stool, said today — a tick-or-write line either way. If today's round already
+  // said whether flatus or stool passed, that wording prints; where it did not, the heading
+  // alone is a bare checklist the resident ticks or fills by hand on the printed sheet, the
+  // same as any other empty heading on this file, not the app deciding either happened.
+  const flatusObs = findLabel(todaysObservations, FLATUS_ALIASES);
+  const stoolObs = findLabel(todaysObservations, STOOL_ALIASES);
+  const flatusText = flatusObs ? (flatusObs.value_text ?? flatusObs.label) : "";
+  const stoolText = stoolObs ? (stoolObs.value_text ?? stoolObs.label) : "";
+  const line7c = `Flatus / Stool -${flatusText || stoolText ? ` Flatus: ${flatusText || "—"}   Stool: ${stoolText || "—"}` : ""}`;
 
   // 9. Assessment — only the resident's own stated judgement (labelled "assessment", or a
   // sentence using a plain stable/worse/same word). Never computed by the app: there is no
@@ -210,7 +238,7 @@ export function buildProgressNote(
   const issueBlankLines = Array.from({ length: Math.max(0, ISSUE_ROOM - issues.length) }, () => "");
 
   const observation = [
-    line2, line3, line4, line5, line6, line7,
+    line2, line3, line3b, line4, line5, line6, line6b, line7, line7b, line7c,
     line8,
     line9, ...issueBlankLines,
   ];
@@ -273,7 +301,7 @@ export function buildProgressNote(
 }
 
 function renderVital(components: ReturnType<typeof classifyVital>): string {
-  if (components.length === 0) return BLANK;
+  if (components.length === 0) return "";
   return components
     .map((c) => `${c.value}${c.flag === "high" ? " ↑" : c.flag === "low" ? " ↓" : ""}`)
     .join("/");

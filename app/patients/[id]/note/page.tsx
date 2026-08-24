@@ -169,11 +169,13 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
                   if (line === "") {
                     return <div key={i} className="mt-3 border-b border-line" />;
                   }
-                  // P/Abdomen, Chest findings and Assessment are written as a sentence, not a
+                  // P/Abdomen, Chest, Assessment and Flatus/Stool are written as a sentence, not a
                   // word — a row of underscores after the heading read as clutter rather than
                   // an invitation to fill it in. Left empty here, they get a ruled line to
                   // write on instead, the same room the physical form gives them.
-                  const emptyExam = /^(P\/Abdomen|Chest findings|Assessment) -$/.test(line.trim());
+                  const emptyExam = /^(P\/Abdomen|Chest|Assessment|Flatus \/ Stool) -$/.test(
+                    line.trim()
+                  );
                   return (
                     <p key={i} className={emptyExam ? "border-b border-line pb-3" : undefined}>
                       {line}
