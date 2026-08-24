@@ -6,8 +6,8 @@
 
 /** The headings this file bolds and underlines, wherever they appear — Observation and the
  *  Investigation/Treatment/Management column both use this, so "Plan" and "Advice" get the
- *  same treatment as "Complaints"/"On Examination"/"Assessment" do. */
-const BOLD_HEADINGS = /^(Complaints|On Examination|Assessment|Plan|Advice)([:-])(.*)$/;
+ *  same treatment as "C/O"/"OE"/"Assessment"/"Issues" do. */
+const BOLD_HEADINGS = /^(C\/O|OE|Assessment|Issues|Plan|Advice)([:-])(.*)$/;
 
 /** P/Abdomen, Chest, Assessment and Flatus/Stool are written as a sentence, not a word — a row
  *  of underscores after the heading read as clutter. Left empty, they get open space instead. */

@@ -124,7 +124,7 @@ export function buildProgressNote(
     options?.procedure ? ` - ${options.procedure}` : ""
   }`;
 
-  // 3. Complaints — whatever was said fresh today, verbatim. Excludes labels that have their
+  // 3. C/O (complaints) — whatever was said fresh today, verbatim. Excludes labels that have their
   // own line elsewhere on the sheet (comorbidities and assessment belong to the admission
   // clerking note or the assessment line, and CNS/sensorium is On Examination's) — a finding
   // occasionally extracted with kind "note" instead of "exam" must not print twice just
@@ -137,7 +137,7 @@ export function buildProgressNote(
         !CNS_ALIASES.includes(norm(o.label))
     )
     .map((o) => o.value_text ?? o.label);
-  const line3 = `Complaints - ${complaintLines.join("; ") || BLANK}`;
+  const line3 = `C/O - ${complaintLines.join("; ") || BLANK}`;
 
   // 3b. Relevant negative symptoms for the diagnosis's category — see
   // lib/symptom-checklists.ts, drafted and approved category by category rather than guessed.
@@ -159,7 +159,7 @@ export function buildProgressNote(
       }`
     : "";
 
-  // 4. On examination — consciousness/sensorium. "Conscious Oriented" prints as the DEFAULT
+  // 4. OE (on examination) — consciousness/sensorium. "Conscious Oriented" prints as the DEFAULT
   // starting value when nothing was said today — the one deliberate exception to this file's
   // usual "never invent" rule, and only because the resident explicitly asked for it as an
   // editable starting point on a form they review and correct before signing, not a value
@@ -168,7 +168,7 @@ export function buildProgressNote(
   const cns =
     findLabel(todaysObservations, CNS_ALIASES) ??
     todaysObservations.find((o) => CONSCIOUS_PATTERN.test(o.value_text ?? ""));
-  const line4 = `On Examination - ${cns ? (cns.value_text ?? cns.label) : "Conscious Oriented"}`;
+  const line4 = `OE - ${cns ? (cns.value_text ?? cns.label) : "Conscious Oriented"}`;
 
   // 5. Vitals — BP and PR, bare, each its own line. No "Vitals -" label and no underscore
   // placeholder when unrecorded: a blank after two short abbreviations already reads as "not
@@ -287,25 +287,15 @@ export function buildProgressNote(
   // as an ordinary line item, without this file generating a second document for it.
   const planLines = todaysObservations.filter((o) => o.kind === "plan").map((o) => o.value_text ?? o.label);
 
-  // Right column, in the order the physical sheet wants it: Plan at the top with room for 3–4
-  // lines whether or not today filled all of them (the same "floor, not ceiling" reasoning
-  // Issues already uses), then Advice below it as a numbered list of whatever the patient is
-  // CURRENTLY on — everything the resident has recorded or uploaded on this patient's own page,
-  // not only what was said today. A drug chart photographed once at clerking is still the
-  // patient's medication a week later.
-  const PLAN_ROOM = 4;
-  const planBlankLines = Array.from(
-    { length: Math.max(0, PLAN_ROOM - Math.max(planLines.length, 1)) },
-    () => ""
-  );
-
+  // Right column, in the order the physical sheet wants it: Plan at the top, then Advice below
+  // it as a numbered list of whatever the patient is CURRENTLY on — everything the resident has
+  // recorded or uploaded on this patient's own page, not only what was said today. A drug chart
+  // photographed once at clerking is still the patient's medication a week later. No reserved
+  // blank room under either heading — just what was actually said, with the CSS margin on the
+  // heading line giving the visual gap instead of a run of empty lines.
   const plan: string[] = [];
   plan.push("Plan:");
   plan.push(...(planLines.length > 0 ? planLines : [BLANK]));
-  // No separate spacer line before Advice: the ruled-line rendering treats every blank string
-  // as its own writable line, so a spacer here would silently add a fifth line to what is meant
-  // to be a 3–4 line reservation. The visual gap comes from CSS margin on the heading instead.
-  plan.push(...planBlankLines);
   plan.push("Advice:");
   plan.push(...(medLines.length > 0 ? medLines.map((m, i) => `${i + 1}. ${m}`) : [BLANK]));
 
