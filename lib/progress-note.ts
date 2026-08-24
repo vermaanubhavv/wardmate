@@ -2,6 +2,7 @@ import { stripPatientHonorific } from "@/lib/patients";
 import { classifyVital } from "@/lib/vital-ranges";
 import { classifyLab, canonicalLabName, type SuppliedRange } from "@/lib/lab-ranges";
 import { flagRadiology } from "@/lib/radiology-flags";
+import { categoryForDiagnosis } from "@/lib/symptom-checklists";
 import type { WardRanges } from "@/lib/exam-summary";
 import type { Observation } from "@/lib/patient-state";
 
@@ -131,10 +132,26 @@ export function buildProgressNote(
     )
     .map((o) => o.value_text ?? o.label);
   const line3 = `Complaints - ${complaintLines.join("; ") || BLANK}`;
-  // One ruled line under Complaints, reserved for the relevant-negative-symptoms checklist
-  // this feature is drafting separately for clinical sign-off before it prints anything — see
-  // the conversation this shipped from. Blank room, not a guess, until that draft is approved.
-  const line3b = "";
+
+  // 3b. Relevant negative symptoms for the diagnosis's category — see
+  // lib/symptom-checklists.ts, drafted and approved category by category rather than guessed.
+  // "No episodes" is the same deliberate default On Examination's "Conscious Oriented" is: an
+  // editable starting point, never written to the record, replaced wholesale — not merged
+  // word by word — the moment today's round actually mentions one of the listed symptoms. A
+  // diagnosis matching no category leaves this as a blank ruled line, same as before.
+  const symptomCategory = categoryForDiagnosis(diagnosis);
+  const symptomMention = symptomCategory
+    ? todaysObservations.find(
+        (o) =>
+          (o.kind === "note" || o.kind === "exam") &&
+          symptomCategory.mentionPattern.test(o.value_text ?? o.label)
+      )
+    : undefined;
+  const line3b = symptomCategory
+    ? `${symptomCategory.symptoms.join(" / ")} -${
+        symptomMention ? ` ${symptomMention.value_text ?? symptomMention.label}` : " No episodes"
+      }`
+    : "";
 
   // 4. On examination — consciousness/sensorium. "Conscious Oriented" prints as the DEFAULT
   // starting value when nothing was said today — the one deliberate exception to this file's
