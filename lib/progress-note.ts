@@ -170,15 +170,16 @@ export function buildProgressNote(
     todaysObservations.find((o) => CONSCIOUS_PATTERN.test(o.value_text ?? ""));
   const line4 = `On Examination - ${cns ? (cns.value_text ?? cns.label) : "Conscious Oriented"}`;
 
-  // 5. Vitals — BP and PR, bare. No "Vitals -" label and no underscore placeholder when
-  // unrecorded: a blank after two short abbreviations already reads as "not yet taken" without
-  // a run of dashes to make the point. Still flagged when deranged, the same classifyVital
-  // every other vitals display in the app uses.
+  // 5. Vitals — BP and PR, bare, each its own line. No "Vitals -" label and no underscore
+  // placeholder when unrecorded: a blank after two short abbreviations already reads as "not
+  // yet taken" without a run of dashes to make the point. Still flagged when deranged, the same
+  // classifyVital every other vitals display in the app uses.
   const bpObs = findLabel(todaysObservations, BP_ALIASES);
   const prObs = findLabel(todaysObservations, PR_ALIASES);
   const bpText = bpObs ? renderVital(classifyVital(bpObs.label, bpObs.value_text)) : "";
   const prText = prObs ? renderVital(classifyVital(prObs.label, prObs.value_text)) : "";
-  const line5 = `BP: ${bpText}   PR: ${prText}`;
+  const line5 = `BP: ${bpText}`;
+  const line5b = `PR: ${prText}`;
 
   // 6. P/Abdomen, said today — printed exactly as recorded, never normalised to "NAD" wording
   // that was not actually said. No trailing BLANK when empty: unlike a single-word field (a
@@ -261,7 +262,7 @@ export function buildProgressNote(
   const issueBlankLines = Array.from({ length: Math.max(0, ISSUE_ROOM - issues.length) }, () => "");
 
   const observation = [
-    line2, line3, line3b, line4, line5, line6, line6b, line7, line7b, line7c,
+    line2, line3, line3b, line4, line5, line5b, line6, line6b, line7, line7b, line7c,
     line8,
     line9, ...issueBlankLines,
   ];
