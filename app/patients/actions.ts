@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { listTemplateChoices, resolveProcedure } from "@/lib/templates";
+import { stripPatientHonorific } from "@/lib/patients";
 
 export type AddPatientState = { error: string | null };
 
@@ -20,7 +21,12 @@ export async function addPatient(
 
   const wardId = String(formData.get("ward_id") ?? "");
   const bed = String(formData.get("bed") ?? "").trim();
-  const name = String(formData.get("display_name") ?? "").trim();
+  // The one place a typed value is changed before storage, and it is deliberate — see
+  // CONTEXT.md §2. A name is an identifier, not a clinical observation: no meaning can change,
+  // and "Mr Sharma" vs "Sharma" stored as two strings is a real source of duplicate patients.
+  // stripPatientHonorific only removes a leading title and falls back to the original, so it
+  // cannot empty a name. Do NOT copy this to any clinical field.
+  const name = stripPatientHonorific(String(formData.get("display_name") ?? ""));
   const uhidIpNo = String(formData.get("uhid_ip_no") ?? "").trim();
   const mrdNo = String(formData.get("mrd_no") ?? "").trim();
   const ageRaw = String(formData.get("age_years") ?? "").trim();
@@ -274,7 +280,8 @@ export async function updatePatientIdentity(
   if (!user) return { error: "You are signed out. Sign in again." };
 
   const id = String(formData.get("patient_id") ?? "");
-  const name = String(formData.get("display_name") ?? "").trim();
+  // Stripped on the way in, same as addPatient above — see the note there and CONTEXT.md §2.
+  const name = stripPatientHonorific(String(formData.get("display_name") ?? ""));
   const uhidIpNo = String(formData.get("uhid_ip_no") ?? "").trim();
   const mrdNo = String(formData.get("mrd_no") ?? "").trim();
   const bed = String(formData.get("bed") ?? "").trim();

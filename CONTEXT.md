@@ -40,6 +40,15 @@ Corollaries that have repeatedly decided design arguments:
   fine. Changing what is stored is not, unless the raw is kept alongside.
 - **Correct the machine, never the doctor.** Speech-to-text mishearings are corrected
   automatically. Anything a human typed is left exactly as typed.
+
+  **The patient's name is the one exception, and it is deliberate.** A leading honorific
+  ("Mr", "Smt", "Shri" …) is stripped by `stripPatientHonorific()` on the way *in* as well as on
+  the way out — see `addPatient` and `updatePatientIdentity` in `app/patients/actions.ts`. The
+  reasoning: a name is an identifier here, not a clinical observation. Nothing is inferred and no
+  meaning can change, whereas "Mr Sharma" and "Sharma" stored as two different strings is a real
+  source of duplicate patients on a ward that types the name differently each admission. The
+  function only ever removes a leading title and returns the original if that would leave nothing,
+  so it cannot empty a name. Do not extend this to any clinical field.
 - **It stores almost nothing identifying.** A name and a bed. No hospital number, no phone, no
   address. If this database leaked it would be close to useless.
 
