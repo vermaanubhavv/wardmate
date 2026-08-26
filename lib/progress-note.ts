@@ -243,12 +243,11 @@ export function buildProgressNote(
   const ISSUE_ROOM = 3;
   const issueBlankLines = Array.from({ length: Math.max(0, ISSUE_ROOM - issues.length) }, () => "");
 
-  // Assessment and Issues now sit right after Complaints — in the room the symptom checklist
-  // used to occupy — rather than at the very end of the sheet, by request.
+  // Genuinely last: Assessment and Issues are the wrap-up of the round, and everything else on
+  // the sheet is written before the resident gets to them, never after.
   const observation = [
-    line2, line3, line3b,
+    line2, line3, line3b, line4, line5, line5b, line6, line6b, line7, line7b, line7c,
     line8, line9, ...issueBlankLines,
-    line4, line5, line5b, line6, line6b, line7, line7b, line7c,
   ];
 
   // 11. Advice and medications — the CURRENT list, not just today's. A drug chart photographed
