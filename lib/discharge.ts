@@ -1,4 +1,4 @@
-import { dayLabel, managementLabel } from "@/lib/patients";
+import { dayLabel, managementLabel, stripPatientHonorific } from "@/lib/patients";
 import type { Observation, PatientState } from "@/lib/patient-state";
 
 export type DischargePatient = {
@@ -62,7 +62,7 @@ export function buildDischargeBrief(
 
   out.push("DISCHARGE SUMMARY", "");
 
-  out.push(`NAME – ${patient.display_name.toUpperCase()}`);
+  out.push(`NAME – ${stripPatientHonorific(patient.display_name).toUpperCase()}`);
   out.push(`AGE – ${patient.age_years !== null ? `${patient.age_years} YEARS` : BLANK}`);
   out.push(`SEX – ${sexWord(patient.sex)}`);
   out.push(`INS. NO./EMP ID – ${BLANK}`);

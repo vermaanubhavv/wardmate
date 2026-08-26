@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { stripPatientHonorific } from "@/lib/patients";
 import { getCurrentWard, getActivePatients } from "@/lib/ward";
 import { matchRegisterRows } from "@/lib/match-register";
 import type { RegisterRow } from "@/lib/read-register";
@@ -130,7 +131,7 @@ export default async function RegisterReviewPage({
                       <option value="new">+ Add as a new patient</option>
                       {(m.candidates.length > 0 ? m.candidates : patients).map((p) => (
                         <option key={p.id} value={p.id}>
-                          {p.bed} · {p.display_name}
+                          {p.bed} · {stripPatientHonorific(p.display_name)}
                         </option>
                       ))}
                       {m.status === "bed_mismatch" && m.patientId && (

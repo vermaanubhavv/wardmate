@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { stripPatientHonorific } from "@/lib/patients";
 import EditIdentity from "./edit-identity";
 import { deletePatientForever, dischargePatient } from "./actions";
 
@@ -39,6 +40,7 @@ export default function PatientMenu({
   patient: Patient;
   templateChoices: TemplateChoice[];
 }) {
+  const patientName = stripPatientHonorific(patient.display_name);
   const [open, setOpen] = useState(false);
   const [editSignal, setEditSignal] = useState(0);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -63,7 +65,7 @@ export default function PatientMenu({
     <div ref={rootRef} className="relative">
       <button
         type="button"
-        aria-label={`More for ${patient.display_name}`}
+        aria-label={`More for ${patientName}`}
         onClick={(e) => {
           // The card is a link to the patient; without this the menu also walks you in.
           e.preventDefault();
@@ -107,7 +109,7 @@ export default function PatientMenu({
               onClick={(e) => {
                 if (
                   !confirm(
-                    `Discharge ${patient.display_name} from the ward?\n\nTheir record will move to the Discharged list and can be restored if needed.`
+                    `Discharge ${patientName} from the ward?\n\nTheir record will move to the Discharged list and can be restored if needed.`
                   )
                 ) {
                   e.preventDefault();
@@ -126,7 +128,7 @@ export default function PatientMenu({
               onClick={(e) => {
                 if (
                   !confirm(
-                    `Delete ${patient.display_name}?\n\nThey will move to the trash bin now, remain recoverable for 7 days, and then be permanently deleted automatically.`
+                    `Delete ${patientName}?\n\nThey will move to the trash bin now, remain recoverable for 7 days, and then be permanently deleted automatically.`
                   )
                 ) {
                   e.preventDefault();

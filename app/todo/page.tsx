@@ -5,6 +5,7 @@ import { URGENCY_META, type Urgency } from "@/lib/urgency";
 import UrgencyDot from "../patients/[id]/urgency-dot";
 import Tick from "../patients/[id]/tick";
 import { quoteAddsNothing } from "@/lib/dedupe-tasks";
+import { stripPatientHonorific } from "@/lib/patients";
 
 /** The four groups, in the order they are worked through. */
 const GROUPS: { key: Urgency; title: string; note: string }[] = [
@@ -126,7 +127,7 @@ function TaskRow({ task }: { task: WardTask }) {
           <span className="rounded bg-chip px-1 font-mono tabular-nums text-muted">
             {task.patient.bed}
           </span>
-          {task.patient.display_name}
+          {stripPatientHonorific(task.patient.display_name)}
         </Link>
         {/* Only when it says something the job does not. */}
         {!quoteAddsNothing(task.value_text ?? task.label, task.source_quote) && (

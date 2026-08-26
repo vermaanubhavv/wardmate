@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { stripPatientHonorific } from "@/lib/patients";
 import { getActivePatients } from "@/lib/ward";
 import { patientName } from "@/lib/patients";
 import { matchBed, matchFreeBed } from "@/lib/match-bed";
@@ -183,7 +184,7 @@ function UpdateCard({
           <option value="">Do not save this one</option>
           {patients.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.bed} · {p.display_name}
+              {p.bed} · {stripPatientHonorific(p.display_name)}
             </option>
           ))}
         </select>

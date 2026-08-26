@@ -1,4 +1,5 @@
 import type { RegisterRow } from "@/lib/read-register";
+import { stripPatientHonorific } from "@/lib/patients";
 
 export type MatchStatus = "matched" | "bed_mismatch" | "no_match" | "ambiguous";
 
@@ -14,7 +15,7 @@ export type MatchedRow = {
 type WardPatient = { id: string; display_name: string; bed: string };
 
 const norm = (s: string) =>
-  s
+  stripPatientHonorific(s)
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")

@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Mark from "@/app/mark";
 import { ImageIcon, MicIcon, StopIcon } from "@/app/icons";
+import { prepareImageForUpload } from "@/lib/image-for-upload";
 
 type Status = "idle" | "starting" | "recording" | "working";
 
@@ -25,13 +26,15 @@ export default function CaseHistoryCapture({
   hasExisting?: boolean;
 }) {
   const router = useRouter();
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState<string | null>(null);
-  const [dismissed, setDismissed] = useState(false);
+  const [showPhotoChoices, setShowPhotoChoices] = useState(false);
+  const detailsRef = useRef<HTMLDetailsElement | null>(null);
 
   async function submit(body: FormData) {
     setStatus("working");
@@ -60,10 +63,13 @@ export default function CaseHistoryCapture({
     }
   }
 
-  function uploadPhoto(file: File) {
+  async function uploadPhoto(file: File) {
+    // A library image can be HEIC or too large for the request. The camera and library paths
+    // meet here so they receive the same conversion and the server always sees a supported file.
+    const photo = await prepareImageForUpload(file);
     const form = new FormData();
     form.append("patient_id", patientId);
-    form.append("photo", file);
+    form.append("photo", photo);
     void submit(form);
   }
 
@@ -99,26 +105,30 @@ export default function CaseHistoryCapture({
     mediaRef.current?.stop();
   }
 
-  if (dismissed) return null;
-
   return (
-    <div className="ios-group px-4 py-4">
-      <p className="text-[15px] font-semibold">
-        {hasExisting ? "Add to case history" : "Case history"}
-      </p>
-      <p className="mt-1 text-[13px] leading-relaxed text-muted">
-        {hasExisting
-          ? "An addendum — a further page, or something said since. It joins what is already recorded."
-          : "Photograph the clerking sheet, or dictate it. Anything it plans — an operation, a workup, advice — goes straight onto the to-do list, the same as a spoken round."}
-      </p>
+    <details
+      ref={detailsRef}
+      className="mt-2 border-t border-line [&[open]_.add-chev]:rotate-90"
+    >
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[15px] font-semibold active:bg-chip [&::-webkit-details-marker]:hidden">
+        <span>{hasExisting ? "Add to case history" : "Add case history"}</span>
+        <span className="add-chev text-xl font-normal text-muted transition-transform">›</span>
+      </summary>
 
-      <div className="mt-3 flex gap-3">
+      <div className="border-t border-line px-4 pb-4 pt-3">
+        <p className="text-[13px] leading-relaxed text-muted">
+          {hasExisting
+            ? "Add a further page or dictate an addendum."
+            : "Photograph, upload, or dictate the clerking sheet."}
+        </p>
+
+      <div className="mt-3 grid grid-cols-2 gap-2.5">
         <button
           type="button"
           onClick={status === "recording" ? stopRecording : startRecording}
           disabled={status === "working" || status === "starting"}
           className={
-            "flex flex-1 items-center justify-center gap-1.5 rounded-[10px] px-3 py-2.5 text-[15px] font-medium disabled:opacity-50 " +
+            "flex items-center justify-center gap-1.5 rounded-[10px] px-3 py-3 text-[15px] font-medium disabled:opacity-50 " +
             (status === "recording" ? "bg-red-500 text-white" : "bg-accent text-accent-ink")
           }
         >
@@ -135,27 +145,64 @@ export default function CaseHistoryCapture({
               ? "Starting…"
               : status === "working"
                 ? "Working…"
-                : "Dictate"}
+                : "Speak"}
         </button>
 
         <button
           type="button"
-          onClick={() => inputRef.current?.click()}
+          onClick={() => setShowPhotoChoices((shown) => !shown)}
           disabled={status !== "idle"}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-line bg-card px-3 py-2.5 text-[15px] font-medium disabled:opacity-50"
+          aria-expanded={showPhotoChoices}
+          className="flex items-center justify-center gap-1.5 rounded-[10px] border border-line bg-card px-3 py-3 text-[15px] font-medium disabled:opacity-50"
         >
           <ImageIcon className="h-[18px] w-[18px]" />
-          Photograph
+          Add photo
         </button>
+
+        {showPhotoChoices && (
+          <div className="col-span-2 grid grid-cols-2 gap-2.5 rounded-[10px] bg-chip/50 p-2.5">
+            <button
+              type="button"
+              onClick={() => cameraInputRef.current?.click()}
+              disabled={status !== "idle"}
+              className="rounded-lg bg-card px-3 py-2.5 text-[14px] font-medium disabled:opacity-50"
+            >
+              Take picture
+            </button>
+            <button
+              type="button"
+              onClick={() => uploadInputRef.current?.click()}
+              disabled={status !== "idle"}
+              className="rounded-lg bg-card px-3 py-2.5 text-[14px] font-medium disabled:opacity-50"
+            >
+              Upload photo
+            </button>
+          </div>
+        )}
+
         <input
-          ref={inputRef}
+          ref={cameraInputRef}
           type="file"
           accept="image/*"
           capture="environment"
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file) uploadPhoto(file);
+            if (file) void uploadPhoto(file);
+            e.target.value = "";
+          }}
+        />
+
+        <input
+          ref={uploadInputRef}
+          type="file"
+          // No capture attribute: on a phone this opens the system chooser, including the
+          // photo library, while the Photograph button above deliberately opens the camera.
+          accept="image/*,image/heic,image/heif"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) void uploadPhoto(file);
             e.target.value = "";
           }}
         />
@@ -168,12 +215,15 @@ export default function CaseHistoryCapture({
       {!message && !hasExisting && status === "idle" && (
         <button
           type="button"
-          onClick={() => setDismissed(true)}
+          onClick={() => {
+            if (detailsRef.current) detailsRef.current.open = false;
+          }}
           className="mt-3 text-[13px] text-muted underline underline-offset-4"
         >
           Add later
         </button>
       )}
-    </div>
+      </div>
+    </details>
   );
 }
