@@ -346,7 +346,7 @@ function sexWord(sex: string | null): string {
 export function formatProgressNoteText(note: ProgressNote): string {
   const out: string[] = [];
   out.push(`${note.header.name}  ${note.header.ageSex}${note.header.bed ? `  Bed ${note.header.bed}` : ""}`);
-  if (note.header.uhid) out.push(`UHID: ${note.header.uhid}`);
+  if (note.header.uhid) out.push(`IP No: ${note.header.uhid}`);
   // Plain text has no bold or underline, so it gets the closest a monospace medium has: its
   // own line, in caps, set off by blank lines either side — still unmistakably the heading.
   out.push("");

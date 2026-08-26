@@ -18,7 +18,7 @@ import {
   type Observation,
   type PacVerdict,
 } from "@/lib/patient-state";
-import { isIdentifierLabel, stripPatientHonorific } from "@/lib/patients";
+import { isIdentifierLabel, stripPatientHonorific, MANAGEMENT_CHOICES } from "@/lib/patients";
 import { describeWhen, effectiveUrgency } from "@/lib/urgency";
 import BedsideBar from "./bedside-bar";
 import EditIdentity from "../edit-identity";
@@ -244,7 +244,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             </h1>
             {patient.uhid_ip_no && (
               <p className="mt-2 truncate pl-0.5 text-[12px] text-muted">
-                <span className="uppercase tracking-wide">UHID / IP</span>
+                <span className="uppercase tracking-wide">IP no.</span>
                 <span className="mx-1.5">·</span>
                 <span className="font-mono text-foreground/80">{patient.uhid_ip_no}</span>
               </p>
@@ -256,20 +256,42 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         </div>
 
         {/* Only the clinical facts needed to identify the admission live here. Bed and hospital
-            number have moved into the header above; the rest of the record follows below. */}
-        <dl className="ios-group mt-5 text-[15px]">
-          <SummaryRow label="Diagnosis" value={diagnosis ?? "Not recorded"} />
-          {patient.post_op_day !== null && (
-            <SummaryRow
-              label="Operation"
-              value={`POD ${patient.post_op_day}${procedure ? ` (${procedure})` : ""}`}
-            />
-          )}
+            number have moved into the header above; the rest of the record follows below.
+
+            The banner leads with whichever fact matters most right now: once operated, that IS
+            the headline (POD 0 Lap chole) with the diagnosis dropped to a parenthetical below
+            it — nobody rounding on a post-op patient reads "diagnosis" first. Before that, there
+            is no operation to lead with, so the diagnosis takes the same top spot instead, with
+            the phase of care (Pre-op / Conservative / Workup) as its own parenthetical. */}
+        <div className="ios-group mt-5">
+          <div className="px-4 py-3">
+            {patient.post_op_day !== null ? (
+              <>
+                <p className="text-[19px] font-bold uppercase leading-snug">
+                  POD {patient.post_op_day}
+                  {procedure ? ` ${procedure}` : ""}
+                </p>
+                <p className="mt-0.5 text-[13px] text-muted">({diagnosis ?? "diagnosis not recorded"})</p>
+              </>
+            ) : (
+              <>
+                <p className="text-[19px] font-bold uppercase leading-snug">
+                  {diagnosis ?? "Diagnosis not recorded"}
+                </p>
+                {(() => {
+                  const managementChoice = MANAGEMENT_CHOICES.find((c) => c.value === patient.management);
+                  return managementChoice ? (
+                    <p className="mt-0.5 text-[13px] text-muted">({managementChoice.label})</p>
+                  ) : null;
+                })()}
+              </>
+            )}
+          </div>
           <SummaryRow
             label="Co-morbidities"
             value={comorbidities.length > 0 ? comorbidities.join(" · ") : "Not recorded"}
           />
-        </dl>
+        </div>
       </header>
 
       <VitalsPanel observations={allObservations} />

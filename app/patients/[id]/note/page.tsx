@@ -165,7 +165,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
                 {note.header.ageSex && <span> &nbsp;({note.header.ageSex})</span>}
               </p>
               <p>
-                <span className="font-semibold">UHID:</span>{" "}
+                <span className="font-semibold">IP No:</span>{" "}
                 {note.header.uhid || "________________"}
               </p>
               <p>

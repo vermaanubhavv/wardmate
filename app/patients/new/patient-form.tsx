@@ -6,6 +6,8 @@ import { addPatient, type AddPatientState } from "../actions";
 import { LOCATION_CHOICES, MANAGEMENT_CHOICES } from "@/lib/patients";
 import SpeakPatient from "./speak-patient";
 import type { SpokenPatient } from "@/lib/read-new-patient";
+import AdmissionPaper from "./admission-paper";
+import type { AdmissionPaperPatient } from "@/lib/read-admission-paper";
 
 /**
  * The one screen in the app where typing is allowed, because it happens once per admission
@@ -40,6 +42,7 @@ export default function PatientForm({
     sex: "",
     primary_diagnosis: "",
     procedure: "",
+    uhid_ip_no: "",
   });
 
   const set = (k: keyof typeof fields) => (v: string) =>
@@ -60,6 +63,19 @@ export default function PatientForm({
       sex: p.sex ?? f.sex,
       primary_diagnosis: p.diagnosis ?? f.primary_diagnosis,
       procedure: p.procedure ?? f.procedure,
+      uhid_ip_no: f.uhid_ip_no,
+    }));
+  }
+
+  /** A paper and speech behave the same way: fill only what was actually found. */
+  function fillFromPaper(p: AdmissionPaperPatient) {
+    setFields((f) => ({
+      ...f,
+      display_name: p.name ?? f.display_name,
+      age_years: p.age_years !== null ? String(p.age_years) : f.age_years,
+      sex: p.sex ?? f.sex,
+      uhid_ip_no: p.uhid_ip_no ?? f.uhid_ip_no,
+      primary_diagnosis: p.diagnosis ?? f.primary_diagnosis,
     }));
   }
 
@@ -69,6 +85,7 @@ export default function PatientForm({
 
       {/* Above the boxes it fills, so the order on screen is the order of the work. */}
       <SpeakPatient onParsed={fillFromSpeech} />
+      <AdmissionPaper onParsed={fillFromPaper} />
 
       {/* Bed and location together: the bed label often already says ICU, but the label is
           free text and the landing page counts real rows, so where a patient is gets asked
@@ -117,9 +134,11 @@ export default function PatientForm({
 
       <div className="flex gap-3">
         <div className="flex-1">
-          <Field label="UHID / IP no.">
+          <Field label="IP no.">
             <input
               name="uhid_ip_no"
+              value={fields.uhid_ip_no}
+              onChange={(e) => set("uhid_ip_no")(e.target.value)}
               className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
             />
           </Field>

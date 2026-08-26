@@ -2,7 +2,12 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { updatePatientIdentity, type EditPatientState } from "./actions";
-import { COMMON_DIAGNOSES, LOCATION_CHOICES, MANAGEMENT_CHOICES } from "@/lib/patients";
+import {
+  COMMON_DIAGNOSES,
+  LOCATION_CHOICES,
+  MANAGEMENT_CHOICES,
+  stripPatientHonorific,
+} from "@/lib/patients";
 
 type Patient = {
   id: string;
@@ -131,7 +136,7 @@ export default function EditIdentity({
             <input
               name="display_name"
               required
-              defaultValue={patient.display_name}
+              defaultValue={stripPatientHonorific(patient.display_name)}
               autoCapitalize="words"
               className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
             />
@@ -152,7 +157,7 @@ export default function EditIdentity({
 
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-2">
-              <span className="text-[15px] text-muted">UHID / IP no.</span>
+              <span className="text-[15px] text-muted">IP no.</span>
               <input
                 name="uhid_ip_no"
                 defaultValue={patient.uhid_ip_no ?? ""}
