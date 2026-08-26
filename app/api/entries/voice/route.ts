@@ -5,6 +5,7 @@ import { extractObservations } from "@/lib/extract";
 import { correctTranscript } from "@/lib/glossary";
 import { getTemplateForPatient } from "@/lib/templates";
 import { getPublishedProtocolContext } from "@/lib/protocols";
+import { applyProcedureDone } from "@/lib/apply-procedure-done";
 
 /**
  * The whole voice round-trip, on the server: audio in, stored observations out.
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
   const { data: patient, error: patientError } = await supabase
     .from("current_patients")
     .select(
-      "id, surgery_date, post_op_day, admission_day, template_family, template_variant"
+      "id, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text"
     )
     .eq("id", patientId)
     .maybeSingle();
@@ -160,6 +161,8 @@ export async function POST(request: Request) {
       );
     }
   }
+
+  await applyProcedureDone(supabase, patientId, patient, extraction.observations);
 
   return NextResponse.json({
     entry_id: entry.id,

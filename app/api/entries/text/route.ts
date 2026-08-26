@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { extractObservations } from "@/lib/extract";
 import { getTemplateForPatient } from "@/lib/templates";
 import { getPublishedProtocolContext } from "@/lib/protocols";
+import { applyProcedureDone } from "@/lib/apply-procedure-done";
 
 /**
  * Typed note in, stored observations out — the voice route with the speech step removed.
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
   const { data: patient } = await supabase
     .from("current_patients")
     .select(
-      "id, surgery_date, post_op_day, admission_day, template_family, template_variant"
+      "id, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text"
     )
     .eq("id", patientId)
     .maybeSingle();
@@ -113,6 +114,8 @@ export async function POST(request: Request) {
       );
     }
   }
+
+  await applyProcedureDone(supabase, patientId, patient, extraction.observations);
 
   return NextResponse.json({
     entry_id: entry.id,

@@ -6,6 +6,7 @@ export const OBSERVATION_KINDS = [
   "diagnosis",
   "day_number",
   "planned_procedure",
+  "procedure_done",
   "pac_status",
   "vital",
   "exam",
@@ -47,7 +48,7 @@ Absolute rules:
 
 3. Do not expand abbreviations inside value_text, and do not convert units. If the resident said "30 ml serous", value_text is "30 ml serous" — not "30 millilitres of serous fluid". Store what was said.
 
-4. Set needs_confirmation to true for anything where a mis-hearing would be dangerous: any number, any drug name, any dose, any route or frequency, and any bed number. These get surfaced to the resident for a one-tap check. Soft findings ("abdomen soft", "tolerating orals") do not need confirmation.
+4. Set needs_confirmation to true for anything where a mis-hearing would be dangerous: any number, any drug name, any dose, any route or frequency, any bed number, and every procedure_done observation (see below — it silently flips the patient's post-op status). These get surfaced to the resident for a one-tap check. Soft findings ("abdomen soft", "tolerating orals") do not need confirmation.
 
 5. If the transcript is empty, inaudible, or contains nothing clinical, return an empty list. Returning nothing is correct and expected — never manufacture an observation to avoid an empty result.
 
@@ -63,7 +64,9 @@ Guidance on fields:
 - value_text: always populated, exactly as said.
 - value_num and unit: populate ONLY when the resident actually stated a number and (where relevant) a unit. Otherwise null.
 - day_number: use when a post-operative or admission day is spoken, with value_num as the integer.
-- planned_procedure: When the transcript names the operation a patient is intended to have — "pt for radical hysterectomy", "posted for lap chole", "planned for TAH + BSO", "case posted for appendicectomy", "listed for" — record kind "planned_procedure", label "planned procedure", and value_text as the named operation exactly as said, including every part joined by "+" or "and" ("TAH + BSO + frozen" stays together, it is one planned operation, not three). This is only for a genuinely FUTURE, not-yet-done operation — an operation already performed is a diagnosis/note/exam update instead, never this kind. Do not use this for a procedure already described as done ("underwent lap chole", "post lap chole day 2").
+- planned_procedure: When the transcript names the operation a patient is intended to have — "pt for radical hysterectomy", "posted for lap chole", "planned for TAH + BSO", "case posted for appendicectomy", "listed for" — record kind "planned_procedure", label "planned procedure", and value_text as the named operation exactly as said, including every part joined by "+" or "and" ("TAH + BSO + frozen" stays together, it is one planned operation, not three). This is only for a genuinely FUTURE, not-yet-done operation — an operation already performed is procedure_done instead, never this kind.
+
+- procedure_done: When the transcript states that an operation has ALREADY been carried out — not planned, not upcoming — for example "patient underwent lap chole", "taken up for surgery, cholecystectomy done", "operated today", "s/p appendicectomy". Record kind "procedure_done", label "procedure done", and value_text as the operation named exactly as said. This is a significant fact: the app flips the patient to post-operative the moment this is recorded, which changes their post-op day count and their checklist. Use it ONLY for an operation reported as freshly performed — someone naming a distant, unrelated PAST surgery as background history ("K/C/O appendicectomy 10 years back", "prior C-section") is a comorbidities/history note, never this kind. Because a mis-heard "planned for" versus "underwent" would wrongly flip a patient to post-op, set needs_confirmation to true on every procedure_done observation without exception.
 - pac_status: When the transcript states the outcome of a pre-anaesthetic checkup — "PAC done, fit for surgery", "PAC clearance given", "declared unfit", "fit subject to control of sugars", "PAC awaited", "anaesthetist has not seen him yet" — record kind "pac_status", label "PAC", and value_text as the verdict exactly as said, INCLUDING any stated conditions. Set pac_verdict to the normalised reading of that sentence:
   - "fit": cleared outright, with nothing attached. "PAC done, fit", "cleared for surgery", "fit for GA".
   - "fit_with_conditions": cleared, but the transcript attaches something that must happen or hold — "fit subject to control of blood sugar", "fit provided BP is controlled", "fit for spinal but not GA", "clearance given, needs cardiology review first".

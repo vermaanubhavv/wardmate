@@ -5,6 +5,7 @@ import { correctTranscript } from "@/lib/glossary";
 import { readCaseSheet } from "@/lib/read-case-sheet";
 import { extractObservations } from "@/lib/extract";
 import { getTemplateForPatient } from "@/lib/templates";
+import { applyProcedureDone } from "@/lib/apply-procedure-done";
 
 const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp"] as const;
 const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
   const { data: patient, error: patientError } = await supabase
     .from("current_patients")
     .select(
-      "id, surgery_date, post_op_day, admission_day, template_family, template_variant"
+      "id, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text"
     )
     .eq("id", patientId)
     .maybeSingle();
@@ -248,6 +249,8 @@ export async function POST(request: Request) {
       );
     }
   }
+
+  await applyProcedureDone(supabase, patientId, patient, extraction.observations);
 
   return NextResponse.json({
     entry_id: entry.id,

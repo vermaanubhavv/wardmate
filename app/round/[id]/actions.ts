@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { DraftSegment } from "@/lib/round-draft";
+import { applyProcedureDone } from "@/lib/apply-procedure-done";
 
 /**
  * Writes the segments the resident approved, and only those.
@@ -79,6 +80,13 @@ export async function applyRound(formData: FormData) {
     }));
 
     if (rows.length > 0) await supabase.from("observations").insert(rows);
+
+    const { data: patient } = await supabase
+      .from("patients")
+      .select("surgery_date, template_family, template_variant, procedure_text")
+      .eq("id", patientId)
+      .maybeSingle();
+    if (patient) await applyProcedureDone(supabase, patientId, patient, segment.observations);
 
     revalidatePath(`/patients/${patientId}`);
   }
