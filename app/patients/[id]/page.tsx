@@ -305,10 +305,6 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         </div>
       </header>
 
-      {/* Only before surgery, and shown even when empty — an unanswered PAC is the single
-          thing most likely to stop a list, so "nobody has recorded one" has to be visible
-          rather than inferred from a section that isn't there. */}
-      {beforeSurgery && <PacSection pac={pac} />}
 
       {(openTasks.length > 0 || doneTasks.length > 0) && (
         <section className="px-4 pb-6">
@@ -547,6 +543,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           </details>
         </section>
       )}
+
+      {/* Only before surgery, and shown even when empty — an unanswered PAC is the single
+          thing most likely to stop a list, so "nobody has recorded one" has to be visible
+          rather than inferred from a section that isn't there. It sits below Today rather
+          than above it: the verdict is a standing fact about the admission, and the question
+          asked first at a bedside is still how the patient is this morning. */}
+      {beforeSurgery && <PacSection pac={pac} />}
 
       {/* The drugs currently on record, in their own block rather than buried in the Plan
           section of the SOAP above. At a drug round this is the one list being scanned, and
