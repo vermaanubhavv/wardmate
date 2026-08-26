@@ -264,28 +264,39 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             is no operation to lead with, so the diagnosis takes the same top spot instead, with
             the phase of care (Pre-op / Conservative / Workup) as its own parenthetical. */}
         <div className="ios-group mt-5">
-          <div className="px-4 py-3">
-            {patient.post_op_day !== null ? (
-              <>
-                <p className="text-[19px] font-bold uppercase leading-snug">
-                  POD {patient.post_op_day}
-                  {procedure ? ` ${procedure}` : ""}
-                </p>
-                <p className="mt-0.5 text-[13px] text-muted">({diagnosis ?? "diagnosis not recorded"})</p>
-              </>
-            ) : (
-              <>
-                <p className="text-[19px] font-bold uppercase leading-snug">
-                  {diagnosis ?? "Diagnosis not recorded"}
-                </p>
-                {(() => {
-                  const managementChoice = MANAGEMENT_CHOICES.find((c) => c.value === patient.management);
-                  return managementChoice ? (
-                    <p className="mt-0.5 text-[13px] text-muted">({managementChoice.label})</p>
-                  ) : null;
-                })()}
-              </>
-            )}
+          {/* The day count and what it counts from, with the note one tap away — read together,
+              because the banner is where the eye lands and "what did we write today" is the
+              question most often asked from it. */}
+          <div className="flex items-start justify-between gap-3 px-4 py-3">
+            <div className="min-w-0">
+              {patient.post_op_day !== null ? (
+                <>
+                  <p className="text-[19px] font-bold uppercase leading-snug">
+                    POD {patient.post_op_day}
+                    {procedure ? ` ${procedure}` : ""}
+                  </p>
+                  <p className="mt-0.5 text-[13px] text-muted">({diagnosis ?? "diagnosis not recorded"})</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-[19px] font-bold uppercase leading-snug">
+                    {diagnosis ?? "Diagnosis not recorded"}
+                  </p>
+                  {(() => {
+                    const managementChoice = MANAGEMENT_CHOICES.find((c) => c.value === patient.management);
+                    return managementChoice ? (
+                      <p className="mt-0.5 text-[13px] text-muted">({managementChoice.label})</p>
+                    ) : null;
+                  })()}
+                </>
+              )}
+            </div>
+            <Link
+              href={`/patients/${patient.id}/note`}
+              className="shrink-0 pt-0.5 text-[13px] font-semibold text-accent active:opacity-60"
+            >
+              View note ›
+            </Link>
           </div>
           <SummaryRow
             label="Co-morbidities"
@@ -293,96 +304,6 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           />
         </div>
       </header>
-
-      <VitalsPanel observations={allObservations} />
-
-      <section className="px-4 pb-6">
-        <Link
-          href={`/patients/${patient.id}/note`}
-          className="flex items-center justify-between rounded-[10px] bg-card px-4 py-3 text-[15px]"
-        >
-          <span>Today&rsquo;s note</span>
-          <span className="text-muted">Print or copy ›</span>
-        </Link>
-      </section>
-
-      {/* Standing context, not a dated round — the clerking note the rest of the admission is
-          read against. Pinned here, above even the current progress, because a plan someone
-          decides today is decided in light of this, not the other way round. Always collapsed:
-          it is background you consult, not what you came to the page to read. */}
-      <section className="px-4 pb-6">
-        <details className="ios-group [&[open]_.case-history-chev]:rotate-90">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[15px] font-semibold active:bg-chip [&::-webkit-details-marker]:hidden">
-            <span>Case history</span>
-            <span className="flex items-center gap-2">
-              <span className="text-[12px] font-normal text-muted">
-                {caseHistoryEntries.length > 0 ? "Recorded" : "Not recorded"}
-              </span>
-              <span className="case-history-chev text-xl font-normal text-muted transition-transform">›</span>
-            </span>
-          </summary>
-
-          <div className="border-t border-line">
-            {caseHistoryEntries.length > 0 && (
-              <CaseHistoryCard
-                observations={caseHistoryEntries.flatMap((e) => e.observations)}
-                sex={patient.sex}
-                wardRanges={wardRanges}
-              />
-            )}
-
-            {/* The note exactly as recorded, one tap away. A tidier summary above must not
-                cost the resident the transcript, the photograph, or the ability to correct a
-                mis-heard word — those all live on the entry card. */}
-            {caseHistoryEntries.length > 0 ? (
-              <details className="border-t border-line [&[open]_.raw-chev]:rotate-90">
-                <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-[13px] text-muted active:bg-chip [&::-webkit-details-marker]:hidden">
-                  <span className="raw-chev shrink-0 text-[11px] transition-transform">&#9654;</span>
-                  As recorded &mdash; evidence and corrections
-                </summary>
-                {caseHistoryEntries.map((entry) => (
-              <EntryCard
-                key={entry.id}
-                embedded
-                entryId={entry.id}
-                patientId={patient.id}
-                time={new Date(entry.recorded_at).toLocaleDateString("en-IN", {
-                  timeZone: "Asia/Kolkata",
-                  day: "numeric",
-                  month: "short",
-                })}
-                transcript={entry.transcript}
-                heard={entry.original_transcript}
-                photoUrl={entry.photo_path ? (photoUrls.get(entry.photo_path) ?? null) : null}
-                accepted={Boolean(entry.accepted_at)}
-                edited={Boolean(entry.edited_at)}
-                extractionError={entry.extraction_error}
-                values={entry.observations.map((o) => ({
-                  id: o.id,
-                  kind: o.kind,
-                  label: o.label,
-                  value_text: o.value_text,
-                  value_num: o.value_num,
-                  source_quote: o.source_quote,
-                  needs_confirmation: o.needs_confirmation,
-                  confirmed_at: o.confirmed_at,
-                }))}
-                matchedProtocols={(entry.matched_protocol_ids ?? [])
-                  .filter((id) => protocolTitles.has(id))
-                  .map((id) => ({ id, title: protocolTitles.get(id)! }))}
-              />
-                ))}
-              </details>
-            ) : (
-              <p className="px-4 py-3 text-[14px] text-muted">No case history recorded yet.</p>
-            )}
-            <CaseHistoryCapture
-              patientId={patient.id}
-              hasExisting={caseHistoryEntries.length > 0}
-            />
-          </div>
-        </details>
-      </section>
 
       {/* Only before surgery, and shown even when empty — an unanswered PAC is the single
           thing most likely to stop a list, so "nobody has recorded one" has to be visible
@@ -538,23 +459,34 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         </section>
       )}
 
+      <VitalsPanel observations={allObservations} />
+
       {(matched.length > 0 || extra.length > 0) && (
         <section className="px-4 pb-6">
-          {/* Folded by default. This is the reference table — every value currently on record —
-              and it is the longest block on the page, sitting between the jobs at the top and
-              the round at the bottom, which are the two things a patient is actually opened
-              for. What is ACTIONABLE about it survives the fold: the count of things never
-              recorded stays on the summary line, in orange, so nothing is hidden that somebody
-              needs to act on. */}
-          <details open className="[&[open]_.chev]:rotate-90">
-            <summary className="mb-2 flex cursor-pointer list-none items-baseline gap-2 active:opacity-60 [&::-webkit-details-marker]:hidden">
+          {/* Today: where the patient stands right now, with the note one tap away. The whole
+              SOAP sits behind a single fold rather than four headed blocks running down the
+              page — it is the longest thing here, and on a round the question is usually
+              answered by the vitals above it. What is ACTIONABLE survives the fold: the count
+              of things never recorded stays on the line above, in orange. */}
+          <div className="mb-2 flex items-baseline gap-2 px-4">
+            <span className="ios-group-header">Today</span>
+            {missing.length > 0 && (
+              <span className="shrink-0 text-[13px] text-orange-700 tabular-nums">
+                {missing.length} not recorded
+              </span>
+            )}
+            <Link
+              href={`/patients/${patient.id}/note`}
+              className="ml-auto shrink-0 text-[13px] font-semibold text-accent active:opacity-60"
+            >
+              View note ›
+            </Link>
+          </div>
+
+          <details open className="ios-group [&[open]_.chev]:rotate-90">
+            <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 active:bg-chip [&::-webkit-details-marker]:hidden">
               <span className="chev shrink-0 text-[11px] text-muted transition-transform">▶</span>
-              <span className="ios-group-header">Current progress</span>
-              {missing.length > 0 && (
-                <span className="shrink-0 text-[13px] text-orange-700 tabular-nums">
-                  {missing.length} not recorded
-                </span>
-              )}
+              <span className="text-[15px] font-semibold">SOAP</span>
               {template && (
                 <span className="ml-auto min-w-0 truncate text-[13px] text-muted">
                   {template.name}
@@ -562,9 +494,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
               )}
             </summary>
 
+            {/* Inside the Today card, so the SOAP sections are plain headed blocks rather than
+                cards of their own — nesting one ios-group inside another draws white on white
+                and reads as a box in a box. */}
+            <div className="border-t border-line px-4 py-3">
             {soapGroups(matched, extra).map(({ section, label, matchedItems, extraItems }) => (
               <div key={section} className="mb-3 last:mb-0">
-                <p className="mb-1 px-1 text-[12px] font-semibold uppercase tracking-wide text-muted">
+                <p className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-muted">
                   {label}
                 </p>
                 {section === "objective" ? (
@@ -575,11 +511,11 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                     wardRanges={wardRanges}
                   />
                 ) : (
-                <ul className="ios-group divide-y divide-line">
+                <ul className="divide-y divide-line">
                   {matchedItems.map((m) => (
                     <li
                       key={m.item.id}
-                      className="flex items-baseline justify-between gap-3 px-4 py-2.5"
+                      className="flex items-baseline justify-between gap-3 py-2"
                     >
                       <span className="text-[15px] text-muted">{m.item.label}</span>
                       {m.value ? (
@@ -598,7 +534,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                     </li>
                   ))}
                   {extraItems.map((o) => (
-                    <li key={o.id} className="flex items-baseline justify-between gap-3 px-4 py-2.5">
+                    <li key={o.id} className="flex items-baseline justify-between gap-3 py-2">
                       <span className="text-[15px] text-muted">{o.label}</span>
                       <span className="text-sm text-right">{o.value_text}</span>
                     </li>
@@ -607,13 +543,44 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 )}
               </div>
             ))}
+            </div>
           </details>
         </section>
       )}
 
+      {/* The drugs currently on record, in their own block rather than buried in the Plan
+          section of the SOAP above. At a drug round this is the one list being scanned, and
+          each row keeps the words it came from, so it is never only the app's paraphrase. */}
+      {medications.length > 0 && (
+        <section className="px-4 pb-6">
+          <p className="ios-group-header mb-2 px-4">Treatment</p>
+          <ul className="ios-group divide-y divide-line">
+            {medications.map((m) => (
+              <li key={m.id} className="px-4 py-2.5">
+                <p className="text-[15px]">{m.value_text ?? m.label}</p>
+                {!quoteAddsNothing(m.value_text ?? m.label, m.source_quote) && (
+                  <p className="mt-0.5 truncate text-[13px] italic text-muted">
+                    “{m.source_quote}”
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <CaseHistorySection
+        entries={caseHistoryEntries}
+        patientId={patient.id}
+        sex={patient.sex}
+        wardRanges={wardRanges}
+        photoUrls={photoUrls}
+        protocolTitles={protocolTitles}
+      />
+
       {/* Bottom padding clears the fixed speak bar so the oldest entry stays reachable. */}
       <section className="px-4 pb-6">
-        <p className="ios-group-header mb-2 px-4">Previous records</p>
+        <p className="ios-group-header mb-2 px-4">Record by date</p>
         {entries.length === 0 ? (
           <p className="ios-group p-5 text-[15px] text-muted">
             No earlier records yet.
@@ -623,59 +590,88 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             {days.map((day, i) => {
               const count = day.sittings.reduce((n, s) => n + s.entries.length, 0);
 
+              // That day's own observations, read as the SOAP written on that day rather than
+              // as the standing answer for the patient. derivePatientState is deliberately NOT
+              // used here: it picks the latest value for each thing across the whole admission,
+              // which is the right answer for "Today" above and the wrong one for a dated page
+              // in the record, where what was written on 24 Aug must keep saying what it said.
+              const dayObservations = day.sittings.flatMap((s) =>
+                s.entries.flatMap((e) => e.observations)
+              );
+
               return (
                 <li key={day.day}>
                   {/* Today open, the rest folded. A week-long admission is mostly history you
                       are not looking for, and the one day you are is nearly always this one. */}
-                  <details open={i === 0} className="[&[open]_.chev]:rotate-90">
-                    <summary className="flex cursor-pointer list-none items-baseline gap-2 px-4 py-1.5 active:opacity-60 [&::-webkit-details-marker]:hidden">
+                  <details open={i === 0} className="ios-group [&[open]_.chev]:rotate-90">
+                    <summary className="flex cursor-pointer list-none items-baseline gap-2 px-4 py-3 active:bg-chip [&::-webkit-details-marker]:hidden">
                       <span className="chev shrink-0 text-[11px] text-muted transition-transform">
                         ▶
                       </span>
                       <span className="text-[15px] font-semibold">
                         {dayHeading(day.recorded_at, todayKey)}
                       </span>
-                      <span className="text-[13px] text-muted tabular-nums">
+                      <span className="ml-auto shrink-0 text-[13px] text-muted tabular-nums">
                         {count} {count === 1 ? "record" : "records"}
                       </span>
                     </summary>
 
-                    <div className="mt-1.5 flex flex-col gap-2">
-                      {day.sittings.flatMap((sitting) =>
-                        sitting.entries.map((entry) => (
-                          <EntryCard
-                            key={entry.id}
-                            entryId={entry.id}
-                            patientId={patient.id}
-                            time={new Date(entry.recorded_at).toLocaleTimeString("en-IN", {
-                              timeZone: "Asia/Kolkata",
-                              hour: "numeric",
-                              minute: "2-digit",
-                            })}
-                            transcript={entry.transcript}
-                            heard={entry.original_transcript}
-                            photoUrl={
-                              entry.photo_path ? (photoUrls.get(entry.photo_path) ?? null) : null
-                            }
-                            accepted={Boolean(entry.accepted_at)}
-                            edited={Boolean(entry.edited_at)}
-                            extractionError={entry.extraction_error}
-                            values={entry.observations.map((o) => ({
-                              id: o.id,
-                              kind: o.kind,
-                              label: o.label,
-                              value_text: o.value_text,
-                              value_num: o.value_num,
-                              source_quote: o.source_quote,
-                              needs_confirmation: o.needs_confirmation,
-                              confirmed_at: o.confirmed_at,
-                            }))}
-                            matchedProtocols={(entry.matched_protocol_ids ?? [])
-                              .filter((id) => protocolTitles.has(id))
-                              .map((id) => ({ id, title: protocolTitles.get(id)! }))}
-                          />
-                        ))
-                      )}
+                    <div className="border-t border-line">
+                      {/* The day read as a note. */}
+                      <DaySoap
+                        observations={dayObservations}
+                        sex={patient.sex}
+                        wardRanges={wardRanges}
+                      />
+
+                      {/* And the day exactly as recorded, one tap further in. A tidier summary
+                          must never cost the resident the transcript, the photograph, or the
+                          ability to correct a mis-heard word. */}
+                      <details className="border-t border-line [&[open]_.raw-chev]:rotate-90">
+                        <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-[13px] text-muted active:bg-chip [&::-webkit-details-marker]:hidden">
+                          <span className="raw-chev shrink-0 text-[11px] transition-transform">
+                            &#9654;
+                          </span>
+                          As recorded &mdash; evidence and corrections
+                        </summary>
+                        <div className="flex flex-col gap-2 px-2 pb-2">
+                          {day.sittings.flatMap((sitting) =>
+                            sitting.entries.map((entry) => (
+                              <EntryCard
+                                key={entry.id}
+                                entryId={entry.id}
+                                patientId={patient.id}
+                                time={new Date(entry.recorded_at).toLocaleTimeString("en-IN", {
+                                  timeZone: "Asia/Kolkata",
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                })}
+                                transcript={entry.transcript}
+                                heard={entry.original_transcript}
+                                photoUrl={
+                                  entry.photo_path ? (photoUrls.get(entry.photo_path) ?? null) : null
+                                }
+                                accepted={Boolean(entry.accepted_at)}
+                                edited={Boolean(entry.edited_at)}
+                                extractionError={entry.extraction_error}
+                                values={entry.observations.map((o) => ({
+                                  id: o.id,
+                                  kind: o.kind,
+                                  label: o.label,
+                                  value_text: o.value_text,
+                                  value_num: o.value_num,
+                                  source_quote: o.source_quote,
+                                  needs_confirmation: o.needs_confirmation,
+                                  confirmed_at: o.confirmed_at,
+                                }))}
+                                matchedProtocols={(entry.matched_protocol_ids ?? [])
+                                  .filter((id) => protocolTitles.has(id))
+                                  .map((id) => ({ id, title: protocolTitles.get(id)! }))}
+                              />
+                            ))
+                          )}
+                        </div>
+                      </details>
                     </div>
                   </details>
                 </li>
@@ -710,6 +706,162 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           )}
           <BedsideBar patientId={patient.id} />
         </BottomBar>
+    </div>
+  );
+}
+
+/**
+ * The clerking note, folded. It sits low on the page on purpose — see the comment at its call
+ * site — but nothing about it changed when it moved: the tidied summary, the raw entries behind
+ * "As recorded", and the way to capture one if none exists are all still here.
+ */
+function CaseHistorySection({
+  entries,
+  patientId,
+  sex,
+  wardRanges,
+  photoUrls,
+  protocolTitles,
+}: {
+  entries: Entry[];
+  patientId: string;
+  sex: string | null;
+  wardRanges: WardRanges;
+  photoUrls: Map<string, string>;
+  protocolTitles: Map<string, string>;
+}) {
+  return (
+    <section className="px-4 pb-6">
+      <details className="ios-group [&[open]_.case-history-chev]:rotate-90">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[15px] font-semibold active:bg-chip [&::-webkit-details-marker]:hidden">
+          <span>Case history</span>
+          <span className="flex items-center gap-2">
+            <span className="text-[12px] font-normal text-muted">
+              {entries.length > 0 ? "Recorded" : "Not recorded"}
+            </span>
+            <span className="case-history-chev text-xl font-normal text-muted transition-transform">
+              ›
+            </span>
+          </span>
+        </summary>
+
+        <div className="border-t border-line">
+          {entries.length > 0 && (
+            <CaseHistoryCard
+              observations={entries.flatMap((e) => e.observations)}
+              sex={sex}
+              wardRanges={wardRanges}
+            />
+          )}
+
+          {/* The note exactly as recorded, one tap away. A tidier summary above must not
+              cost the resident the transcript, the photograph, or the ability to correct a
+              mis-heard word — those all live on the entry card. */}
+          {entries.length > 0 ? (
+            <details className="border-t border-line [&[open]_.raw-chev]:rotate-90">
+              <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-[13px] text-muted active:bg-chip [&::-webkit-details-marker]:hidden">
+                <span className="raw-chev shrink-0 text-[11px] transition-transform">&#9654;</span>
+                As recorded &mdash; evidence and corrections
+              </summary>
+              {entries.map((entry) => (
+                <EntryCard
+                  key={entry.id}
+                  embedded
+                  entryId={entry.id}
+                  patientId={patientId}
+                  time={new Date(entry.recorded_at).toLocaleDateString("en-IN", {
+                    timeZone: "Asia/Kolkata",
+                    day: "numeric",
+                    month: "short",
+                  })}
+                  transcript={entry.transcript}
+                  heard={entry.original_transcript}
+                  photoUrl={entry.photo_path ? (photoUrls.get(entry.photo_path) ?? null) : null}
+                  accepted={Boolean(entry.accepted_at)}
+                  edited={Boolean(entry.edited_at)}
+                  extractionError={entry.extraction_error}
+                  values={entry.observations.map((o) => ({
+                    id: o.id,
+                    kind: o.kind,
+                    label: o.label,
+                    value_text: o.value_text,
+                    value_num: o.value_num,
+                    source_quote: o.source_quote,
+                    needs_confirmation: o.needs_confirmation,
+                    confirmed_at: o.confirmed_at,
+                  }))}
+                  matchedProtocols={(entry.matched_protocol_ids ?? [])
+                    .filter((id) => protocolTitles.has(id))
+                    .map((id) => ({ id, title: protocolTitles.get(id)! }))}
+                />
+              ))}
+            </details>
+          ) : (
+            <p className="px-4 py-3 text-[14px] text-muted">No case history recorded yet.</p>
+          )}
+          <CaseHistoryCapture patientId={patientId} hasExisting={entries.length > 0} />
+        </div>
+      </details>
+    </section>
+  );
+}
+
+/**
+ * One day of the record, read as the note that day was. Built only from that day's own
+ * observations — nothing is carried forward from a later round and nothing is filled in from
+ * the template, so a day with only a drain reading says only that, rather than borrowing
+ * today's answers to look complete.
+ */
+function DaySoap({
+  observations,
+  sex,
+  wardRanges,
+}: {
+  observations: Observation[];
+  sex: string | null;
+  wardRanges: WardRanges;
+}) {
+  const groups = SOAP_ORDER.map((section) => ({
+    section,
+    label: SOAP_LABELS[section],
+    items: observations.filter((o) => kindToSoapSection(o.kind) === section),
+  })).filter((g) => g.items.length > 0);
+
+  if (groups.length === 0) {
+    return <p className="px-4 py-3 text-[14px] text-muted">Nothing structured from this day.</p>;
+  }
+
+  return (
+    <div className="px-4 py-3">
+      {groups.map(({ section, label, items }) => (
+        <div key={section} className="mb-3 last:mb-0">
+          <p className="mb-0.5 text-[12px] font-semibold uppercase tracking-wide text-muted">
+            {label}
+          </p>
+          {section === "objective" ? (
+            <ObjectiveSummaryView
+              summary={summariseObjective(
+                items.map((o) => ({
+                  id: o.id,
+                  label: o.label,
+                  value: o.value_text,
+                  recordedAt: o.recorded_at,
+                  refLow: o.ref_low,
+                  refHigh: o.ref_high,
+                  refText: o.ref_text,
+                })),
+                { sex, wardRanges }
+              )}
+            />
+          ) : (
+            items.map((o) => (
+              <p key={o.id} className="text-[15px] leading-relaxed">
+                {o.value_text ?? o.label}
+              </p>
+            ))
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -1053,8 +1205,9 @@ function ObjectiveBlock({
   // above prints its value would have the same line saying both at once.
   const outstanding = matchedItems.filter((m) => m.missing && !m.value).map((m) => m.item.label);
 
+  // Not bordered: this now renders inside the Today card, which draws the only surface here.
   return (
-    <ObjectiveSummaryView summary={summary} outstanding={outstanding} bordered emptyText="Nothing examined yet." />
+    <ObjectiveSummaryView summary={summary} outstanding={outstanding} emptyText="Nothing examined yet." />
   );
 }
 
@@ -1068,14 +1221,10 @@ function ObjectiveBlock({
 function ObjectiveSummaryView({
   summary,
   outstanding = [],
-  bordered = false,
   emptyText,
 }: {
   summary: ReturnType<typeof summariseObjective>;
   outstanding?: string[];
-  /** ios-group styling — used standalone (Current progress) but not inside another card
-   *  (the case history sheet, which already has its own border). */
-  bordered?: boolean;
   /** Shown when there is genuinely nothing to report. Omit to render nothing in that case. */
   emptyText?: string;
 }) {
@@ -1088,7 +1237,7 @@ function ObjectiveSummaryView({
     summary.normalCount === 0;
 
   return (
-    <div className={(bordered ? "ios-group px-4 py-3 " : "") + "text-[15px] leading-relaxed"}>
+    <div className="text-[15px] leading-relaxed">
       {summary.vitals.length > 0 && (
         <p className="tabular-nums">
           {summary.vitals.map((v) => `${v.label} ${v.value}`).join("  ·  ")}
