@@ -2,7 +2,6 @@ import { stripPatientHonorific } from "@/lib/patients";
 import { classifyVital } from "@/lib/vital-ranges";
 import { classifyLab, canonicalLabName, type SuppliedRange } from "@/lib/lab-ranges";
 import { flagRadiology } from "@/lib/radiology-flags";
-import { categoryForDiagnosis } from "@/lib/symptom-checklists";
 import type { WardRanges } from "@/lib/exam-summary";
 import type { Observation } from "@/lib/patient-state";
 
@@ -139,25 +138,10 @@ export function buildProgressNote(
     .map((o) => o.value_text ?? o.label);
   const line3 = `C/O - ${complaintLines.join("; ") || BLANK}`;
 
-  // 3b. Relevant negative symptoms for the diagnosis's category — see
-  // lib/symptom-checklists.ts, drafted and approved category by category rather than guessed.
-  // "No episodes" is the same deliberate default On Examination's "Conscious Oriented" is: an
-  // editable starting point, never written to the record, replaced wholesale — not merged
-  // word by word — the moment today's round actually mentions one of the listed symptoms. A
-  // diagnosis matching no category leaves this as a blank ruled line, same as before.
-  const symptomCategory = categoryForDiagnosis(diagnosis);
-  const symptomMention = symptomCategory
-    ? todaysObservations.find(
-        (o) =>
-          (o.kind === "note" || o.kind === "exam") &&
-          symptomCategory.mentionPattern.test(o.value_text ?? o.label)
-      )
-    : undefined;
-  const line3b = symptomCategory
-    ? `${symptomCategory.symptoms.join(" / ")} -${
-        symptomMention ? ` ${symptomMention.value_text ?? symptomMention.label}` : " No episodes"
-      }`
-    : "";
+  // 3b. Pure blank space — the diagnosis-driven symptom checklist that used to print here
+  // ("Pain / Vomiting / Fever - No episodes") is gone by request; this room stays reserved so
+  // the resident still has a line to write on right after Complaints, same position as before.
+  const line3b = "";
 
   // 4. OE (on examination) — consciousness/sensorium. "Conscious Oriented" prints as the DEFAULT
   // starting value when nothing was said today — the one deliberate exception to this file's
@@ -252,19 +236,19 @@ export function buildProgressNote(
   const issues = [...derangedLabs, ...radiologyIssues];
   const line9 = `Issues -${issues.length > 0 ? ` ${issues.join("; ")}` : ""}`;
 
-  // Genuinely last: Assessment and Issues are the wrap-up of the round, and everything else on
-  // the sheet is written before the resident gets to them, never after. Issues gets more room
-  // than a single line on purpose — an app that only ever surfaces exactly what it found would
-  // read as complete when it is a floor, not a ceiling, so blank ruled space follows for the
-  // resident to add to it by hand. Up to three lines of issues, total: however many this file
-  // found, topped up with blank room rather than trimmed down to fit.
+  // Issues gets more room than a single line on purpose — an app that only ever surfaces
+  // exactly what it found would read as complete when it is a floor, not a ceiling, so blank
+  // ruled space follows for the resident to add to it by hand. Up to three lines of issues,
+  // total: however many this file found, topped up with blank room rather than trimmed down.
   const ISSUE_ROOM = 3;
   const issueBlankLines = Array.from({ length: Math.max(0, ISSUE_ROOM - issues.length) }, () => "");
 
+  // Assessment and Issues now sit right after Complaints — in the room the symptom checklist
+  // used to occupy — rather than at the very end of the sheet, by request.
   const observation = [
-    line2, line3, line3b, line4, line5, line5b, line6, line6b, line7, line7b, line7c,
-    line8,
-    line9, ...issueBlankLines,
+    line2, line3, line3b,
+    line8, line9, ...issueBlankLines,
+    line4, line5, line5b, line6, line6b, line7, line7b, line7c,
   ];
 
   // 11. Advice and medications — the CURRENT list, not just today's. A drug chart photographed
