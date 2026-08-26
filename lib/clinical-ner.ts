@@ -58,14 +58,25 @@ async function runNerModel(
       }),
       signal: controller.signal,
     });
-    if (!res.ok) return [];
+    // TEMP DIAGNOSTIC — remove once the Hugging Face token is confirmed working end-to-end.
+    // Logs status/counts only, never the transcript or the token.
+    if (!res.ok) {
+      console.log(`[clinical-ner] ${model.id} -> HTTP ${res.status}: ${await res.text()}`);
+      return [];
+    }
     const spans: HfNerSpan[] = await res.json();
-    if (!Array.isArray(spans)) return [];
-    return spans
+    if (!Array.isArray(spans)) {
+      console.log(`[clinical-ner] ${model.id} -> non-array response`);
+      return [];
+    }
+    const entities = spans
       .map((s) => (s.word ?? "").trim())
       .filter((text) => text.length > 1)
       .map((text) => ({ text, label: model.label }));
-  } catch {
+    console.log(`[clinical-ner] ${model.id} -> ${entities.length} entities`);
+    return entities;
+  } catch (err) {
+    console.log(`[clinical-ner] ${model.id} -> threw: ${err instanceof Error ? err.message : String(err)}`);
     return [];
   } finally {
     clearTimeout(timeout);
