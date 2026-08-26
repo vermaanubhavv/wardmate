@@ -9,9 +9,9 @@
  *  same treatment as "C/O"/"OE"/"Assessment"/"Issues" do. */
 const BOLD_HEADINGS = /^(C\/O|OE|Assessment|Issues|Plan|Advice)([:-])(.*)$/;
 
-/** P/Abdomen, Chest, Assessment and Flatus/Stool are written as a sentence, not a word — a row
- *  of underscores after the heading read as clutter. Left empty, they get open space instead. */
-const EMPTY_EXAM = /^(P\/Abdomen|Chest|Assessment|Flatus \/ Stool) -$/;
+/** C/O, P/Abdomen, Chest, Assessment and Flatus/Stool are written as a sentence, not a word — a
+ *  row of underscores after the heading read as clutter. Left empty, they get open space instead. */
+const EMPTY_EXAM = /^(C\/O|P\/Abdomen|Chest|Assessment|Flatus \/ Stool) -$/;
 
 export function renderNoteLine(
   line: string,

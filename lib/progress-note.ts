@@ -136,7 +136,7 @@ export function buildProgressNote(
         !CNS_ALIASES.includes(norm(o.label))
     )
     .map((o) => o.value_text ?? o.label);
-  const line3 = `C/O - ${complaintLines.join("; ") || BLANK}`;
+  const line3 = `C/O -${complaintLines.length > 0 ? ` ${complaintLines.join("; ")}` : ""}`;
 
   // 3b. Pure blank space — the diagnosis-driven symptom checklist that used to print here
   // ("Pain / Vomiting / Fever - No episodes") is gone by request; this room stays reserved so
@@ -278,9 +278,9 @@ export function buildProgressNote(
   // heading line giving the visual gap instead of a run of empty lines.
   const plan: string[] = [];
   plan.push("Plan:");
-  plan.push(...(planLines.length > 0 ? planLines : [BLANK]));
+  plan.push(...(planLines.length > 0 ? planLines : [""]));
   plan.push("Advice:");
-  plan.push(...(medLines.length > 0 ? medLines.map((m, i) => `${i + 1}. ${m}`) : [BLANK]));
+  plan.push(...(medLines.length > 0 ? medLines.map((m, i) => `${i + 1}. ${m}`) : [""]));
 
   return {
     header: {
