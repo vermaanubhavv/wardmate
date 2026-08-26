@@ -46,7 +46,9 @@ async function runNerModel(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 4000);
   try {
-    const res = await fetch(`https://api-inference.huggingface.co/models/${model.id}`, {
+    // Hugging Face retired api-inference.huggingface.co in favour of this router address —
+    // same free serverless inference behind it, just a moved address.
+    const res = await fetch(`https://router.huggingface.co/hf-inference/models/${model.id}`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({
