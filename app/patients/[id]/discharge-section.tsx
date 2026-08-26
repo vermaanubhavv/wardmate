@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 /**
  * The discharge brief, folded away until it is wanted.
@@ -11,9 +12,11 @@ import { useState } from "react";
 export default function DischargeSection({
   brief,
   patientName,
+  patientId,
 }: {
   brief: string;
   patientName: string;
+  patientId: string;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -40,6 +43,13 @@ export default function DischargeSection({
         <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-lg bg-background p-3 text-xs leading-relaxed">
           {brief}
         </pre>
+
+        <Link
+          href={`/patients/${patientId}/discharge`}
+          className="mt-3 flex w-full items-center justify-center rounded-[10px] border border-line px-4 py-3 text-[17px] font-semibold text-foreground"
+        >
+          Print discharge summary
+        </Link>
 
         <button
           type="button"

@@ -29,7 +29,7 @@ import Tick from "./tick";
 import EntryCard from "./entry-card";
 import CaseHistoryCapture from "./case-history-capture";
 import DischargeSection from "./discharge-section";
-import { buildDischargeBrief } from "@/lib/discharge";
+import { buildDischargeNote, formatDischargeText } from "@/lib/discharge";
 import { confirmChecked, confirmAll, reopenTask } from "./actions";
 import BottomBar from "../../bottom-bar";
 import { listedComorbidities } from "@/lib/comorbidities";
@@ -195,10 +195,11 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       return true;
     });
 
-  const dischargeBrief = buildDischargeBrief(patient, patientState, medications, procedure, {
+  const dischargeNote = buildDischargeNote(patient, patientState, medications, procedure, {
     letterhead: wardRow?.letterhead ?? null,
     wardName: wardRow?.name ?? null,
   });
+  const dischargeBrief = formatDischargeText(dischargeNote);
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
@@ -690,6 +691,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         <DischargeSection
           brief={dischargeBrief}
           patientName={stripPatientHonorific(patient.display_name)}
+          patientId={patient.id}
         />
       </section>
 

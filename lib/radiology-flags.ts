@@ -13,7 +13,9 @@
  * that reading is the doctor's, not the app's.
  */
 
-const RADIOLOGY_LABEL =
+/** Exported for lib/discharge.ts, which lists every radiology report on file — not just the
+ *  ones the resident called abnormal, the way flagRadiology below does. */
+export const RADIOLOGY_LABEL =
   /\b(usg|ultrasound|ultrasonography|sonography|ct|ct scan|hrct|mri|x-?ray|doppler|echo|echocardiography|angiography|mammograph\w*|barium)\b/i;
 
 /** The same "the resident said so" rule lib/lab-ranges.ts applies to a number — here applied
