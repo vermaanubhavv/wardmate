@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { isIdentifierLabel } from "@/lib/patients";
+import { extractClinicalEntities } from "@/lib/clinical-ner";
 
 export const OBSERVATION_KINDS = [
   "diagnosis",
@@ -181,6 +182,16 @@ export async function extractObservations(
       ? `\n\nThe unit has these approved protocols on file. Each has a line describing when it applies — where that line gives a concrete threshold (a number, a count, a named sign), treat it as a rule to check the transcript's own stated values against, not a vibe to judge by. Where the transcript states a value crossing that threshold, list the protocol's exact title in related_protocol_titles. Where the description is looser, use it only when the transcript's actual clinical content genuinely matches, not on a passing shared word. This is a suggestion for the resident to go read, not a diagnosis and not something that changes anything on its own. Leave it empty rather than guess; a wrong suggestion is read and dismissed, a missing one is merely not offered, and the second is the safer failure.\n\n${protocols.map((p) => `- "${p.title}"${p.summary ? `: ${p.summary}` : ""}`).join("\n")}`
       : "";
 
+  // A specialised medical term-spotter's read of the transcript — see lib/clinical-ner.ts. Not
+  // this app's judgement and not proof of anything: it exists purely so a term the LLM might
+  // otherwise mishear or skip in a noisy dictation gets a second look. Rule 2 above still
+  // applies in full — a listed term with no verbatim quote in the transcript is not real.
+  const detectedEntities = await extractClinicalEntities(transcript);
+  const detectedBlock =
+    detectedEntities.length > 0
+      ? `\n\nA specialised medical term-spotter (not this app's judgement, and not proof anything was actually said) flagged these terms as possibly present in the transcript below. Use this only to catch a term you might otherwise mishear or skip over in a noisy dictation — every rule above still applies in full, especially rule 2: an observation is only valid if you can copy its own verbatim source_quote from the transcript. A term listed here that you cannot actually find quoted in the transcript is not real and must not be emitted just because it is on this list.\n${detectedEntities.map((e) => `- ${e.text} (${e.label})`).join("\n")}`
+      : "";
+
   const schema =
     protocols.length > 0
       ? {
@@ -200,7 +211,7 @@ export async function extractObservations(
   const response = await client.messages.create({
     model,
     max_tokens: 4000,
-    system: SYSTEM_PROMPT + expected + protocolBlock,
+    system: SYSTEM_PROMPT + expected + protocolBlock + detectedBlock,
     // Low effort: this is constrained extraction from a short transcript, and the resident
     // is standing at a bedside. Raise it if extraction quality turns out to need it.
     output_config: {
