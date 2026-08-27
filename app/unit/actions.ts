@@ -209,18 +209,28 @@ export async function saveProfile(formData: FormData) {
  * they are clinical judgements, and a re-import is a stock update, not a reason to make a
  * resident choose everything again.
  */
-export async function importFormulary(formData: FormData) {
+export type ImportFormularyState = { message: string; ok: boolean } | null;
+
+export async function importFormulary(
+  _prev: ImportFormularyState,
+  formData: FormData
+): Promise<ImportFormularyState> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return;
+  if (!user) return { ok: false, message: "You are signed out. Sign in again." };
 
   const wardId = String(formData.get("ward_id") ?? "");
   const file = formData.get("formulary");
-  if (!wardId || !(file instanceof File) || file.size === 0) return;
+  if (!wardId) return { ok: false, message: "No unit selected." };
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, message: "Choose the file first, then press Import." };
+  }
   // The capture is a few hundred kilobytes of text; anything far past that is not this file.
-  if (file.size > 5_000_000) return;
+  if (file.size > 4_000_000) {
+    return { ok: false, message: "That file is too large to be the formulary capture." };
+  }
 
   let texts: string[];
   try {
@@ -234,21 +244,35 @@ export async function importFormulary(formData: FormData) {
         return true;
       });
   } catch {
-    return;
+    return { ok: false, message: "That file is not the JSON the capture produces." };
   }
 
-  if (texts.length === 0) return;
+  if (texts.length === 0) {
+    return { ok: false, message: "No medicines found in that file. Was the drug list open when you captured it?" };
+  }
 
   // Row security already limits this to a ward this doctor owns; the delete is what makes the
   // import a replacement rather than an append.
-  await supabase.from("ward_formulary_items").delete().eq("ward_id", wardId);
+  const { error: clearError } = await supabase.from("ward_formulary_items").delete().eq("ward_id", wardId);
+  if (clearError) return { ok: false, message: databaseHint(clearError.message) };
 
   // Chunked because a single insert of a thousand-plus rows is refused by the API's body limit.
   for (let i = 0; i < texts.length; i += 500) {
-    await supabase
+    const { error } = await supabase
       .from("ward_formulary_items")
       .insert(texts.slice(i, i + 500).map((item_text) => ({ ward_id: wardId, item_text })));
+    if (error) return { ok: false, message: databaseHint(error.message) };
   }
 
   revalidatePath("/unit");
+  return { ok: true, message: `Imported ${texts.length} medicines.` };
+}
+
+/** A missing table means the schema patch has not been run yet, which is a specific and
+ *  fixable thing — worth saying so rather than showing the raw Postgres wording. */
+function databaseHint(message: string): string {
+  if (/does not exist|schema cache/i.test(message)) {
+    return "The formulary tables are not in the database yet — run patch 0047 in Supabase first.";
+  }
+  return `Could not save: ${message}`;
 }

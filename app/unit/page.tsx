@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentWard, getMyWards } from "@/lib/ward";
 import CodeBox from "./code-box";
 import JoinForm from "./join-form";
-import { switchWard, leaveWard, renameWard, saveLetterhead, saveProfile, importFormulary } from "./actions";
+import { switchWard, leaveWard, renameWard, saveLetterhead, saveProfile } from "./actions";
+import FormularyImport from "./formulary-import";
 import { getFormularySize } from "@/lib/formulary";
 import { DESIGNATION_CHOICES } from "@/lib/patients";
 import { ChecklistIcon, DocumentIcon } from "../icons";
@@ -273,18 +274,7 @@ export default async function UnitPage() {
               </ol>
             </details>
 
-            <form action={importFormulary} className="mt-3">
-              <input type="hidden" name="ward_id" value={ward.id} />
-              <input
-                type="file"
-                name="formulary"
-                accept="application/json,.json"
-                className="w-full text-[13px]"
-              />
-              <button className="mt-2 w-full rounded-[10px] bg-card px-4 py-3 text-[17px] font-medium text-accent">
-                {formularySize > 0 ? "Replace formulary" : "Import formulary"}
-              </button>
-            </form>
+            <FormularyImport wardId={ward.id} formularySize={formularySize} />
             {formularySize > 0 && (
               <p className="mt-2 text-[13px] text-muted">
                 Re-importing refreshes the drug list. Drugs you have already linked stay linked.
