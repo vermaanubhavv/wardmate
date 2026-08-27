@@ -12,7 +12,6 @@ import {
   DocumentIcon,
   PlusIcon,
   TrayIcon,
-  UsersIcon,
 } from "../icons";
 import RoundRecorder from "../round-recorder";
 import PatientMenu from "../patients/patient-menu";
@@ -103,48 +102,49 @@ export default async function Home({
           </p>
         )}
 
-        {/* The name of the actual working unit is its own line; department and designation
-            identify the clinician, not the team. */}
-        <div className="mt-1 flex items-center justify-between gap-3">
-          <h1 className="ios-large-title min-w-0 truncate text-[28px]">
-            {ward.name}
-            <span className="ml-2 align-middle text-[15px] font-normal text-muted tabular-nums">
-              {patients.length}
-            </span>
-          </h1>
-          <Link
-            href="/unit"
-            className="flex shrink-0 items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-[14px] font-medium text-accent active:opacity-70"
-          >
-            <UsersIcon className="h-3.5 w-3.5" />
-            Unit
-          </Link>
-        </div>
+        {/* The name of the actual working unit gets its own card, with the patient count as a
+            real caption rather than a bare number jammed against the name — "Unit Alpha 8"
+            read as one run-on word. Switching units is a chevron affordance on the same card,
+            not a separate pill competing with it for attention. */}
+        <Link
+          href="/unit"
+          className="mt-1 flex items-center justify-between gap-3 rounded-[12px] bg-card px-4 py-3 active:opacity-70"
+        >
+          <div className="min-w-0">
+            <h1 className="ios-large-title truncate text-[22px]">{ward.name}</h1>
+            <p className="mt-0.5 text-[13px] text-muted">
+              {patients.length} {patients.length === 1 ? "patient" : "patients"}
+            </p>
+          </div>
+          <span className="flex shrink-0 items-center gap-1 text-[14px] font-medium text-accent">
+            Switch
+            <ChevronIcon className="h-3.5 w-3.5 rotate-90" />
+          </span>
+        </Link>
 
-        {/* Capsules rather than a row of underlined links: a bigger target, and the shape
-            iOS has used for secondary navigation since 17. Each carries a small icon — not
-            decoration, a faster-than-reading way to find "Ward round" among four capsules
-            while walking. */}
-        <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
-          <Capsule href="/todo" icon={<ChecklistIcon className="h-3.5 w-3.5" />}>
+        {/* A grid rather than a horizontal-scroll row: nothing here should be able to slide
+            off the edge of the screen unseen, which is exactly what was happening to the
+            fourth capsule before. Wraps to a second row once there are more than three. */}
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <NavTile href="/todo" icon={<ChecklistIcon className="h-[19px] w-[19px]" />}>
             To do
-          </Capsule>
-          <Capsule href="/handover" icon={<ClipboardIcon className="h-3.5 w-3.5" />}>
+          </NavTile>
+          <NavTile href="/handover" icon={<ClipboardIcon className="h-[19px] w-[19px]" />}>
             Ward round
-          </Capsule>
-          <Capsule href="/formats" icon={<DocumentIcon className="h-3.5 w-3.5" />}>
+          </NavTile>
+          <NavTile href="/formats" icon={<DocumentIcon className="h-[19px] w-[19px]" />}>
             Formats
-          </Capsule>
+          </NavTile>
           {isProtocolPublisher && (
-            <Capsule href="/protocols" icon={<ChecklistIcon className="h-3.5 w-3.5" />}>
+            <NavTile href="/protocols" icon={<ChecklistIcon className="h-[19px] w-[19px]" />}>
               Protocols
-            </Capsule>
+            </NavTile>
           )}
-          {/* Only once there is something to undo — an empty list is not worth a capsule. */}
+          {/* Only once there is something to undo — an empty list is not worth a tile. */}
           {removedCount > 0 && (
-            <Capsule href="/removed" icon={<TrayIcon className="h-3.5 w-3.5" />}>
+            <NavTile href="/removed" icon={<TrayIcon className="h-[19px] w-[19px]" />}>
               Discharged · {removedCount}
-            </Capsule>
+            </NavTile>
           )}
         </div>
       </header>
@@ -241,7 +241,9 @@ export default async function Home({
 }
 
 
-function Capsule({
+/** One tile in the header's nav grid — icon above label, sized to read at a glance without
+ *  reading, the same reasoning the capsules' icons used before. */
+function NavTile({
   href,
   icon,
   children,
@@ -253,10 +255,10 @@ function Capsule({
   return (
     <Link
       href={href}
-      className="flex shrink-0 items-center gap-1.5 rounded-full bg-card px-3.5 py-1.5 text-[15px] font-medium text-accent active:opacity-70"
+      className="flex flex-col items-center gap-1.5 rounded-[10px] bg-card px-2 py-3 text-center text-accent active:opacity-70"
     >
       {icon}
-      {children}
+      <span className="text-[12px] font-medium leading-tight">{children}</span>
     </Link>
   );
 }
