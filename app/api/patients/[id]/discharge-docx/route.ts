@@ -19,7 +19,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { getDischargeNote } from "@/lib/discharge-data";
 import type { DischargeNote } from "@/lib/discharge";
-import { HOSPITAL_LINES, LETTERHEAD_ROWS } from "@/lib/discharge-letterhead";
+import { HOSPITAL_LINES } from "@/lib/discharge-letterhead";
 
 /**
  * The discharge summary as an actual Word file, matching the unit's own blank template —
@@ -119,29 +119,6 @@ async function buildBody(note: DischargeNote, logoBytes: Buffer): Promise<(Parag
           ],
         }),
       ],
-    })
-  );
-
-  // Doctor roster / OPD-OT rows — same borderless-table trick for the two-column layout.
-  body.push(
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      borders: { top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, bottom: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, insideHorizontal: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, insideVertical: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" } },
-      rows: LETTERHEAD_ROWS.map(
-        (row) =>
-          new TableRow({
-            children: [
-              new TableCell({
-                width: { size: 50, type: WidthType.PERCENTAGE },
-                children: [new Paragraph({ children: [bold(row.left)] })],
-              }),
-              new TableCell({
-                width: { size: 50, type: WidthType.PERCENTAGE },
-                children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [bold(row.right)] })],
-              }),
-            ],
-          })
-      ),
     })
   );
 

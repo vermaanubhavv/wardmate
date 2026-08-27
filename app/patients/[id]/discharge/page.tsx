@@ -2,17 +2,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDischargeNote } from "@/lib/discharge-data";
 import { formatDischargeText } from "@/lib/discharge";
-import { HOSPITAL_LINES, LETTERHEAD_ROWS, LOGO_PUBLIC_PATH } from "@/lib/discharge-letterhead";
+import { HOSPITAL_LINES, LOGO_PUBLIC_PATH } from "@/lib/discharge-letterhead";
 import PrintButton from "../note/print-button";
 import CopyNoteButton from "../note/copy-button";
 import DownloadWordButton from "./download-word-button";
 
 /**
- * The discharge summary, laid out exactly the way the unit's own blank template is — logo,
- * doctor roster, the 3x3 identity table, one bordered box carrying diagnosis/history/condition
- * at discharge together, then page 2's investigation and advice tables. See lib/discharge.ts
- * for what is assembled from the record versus the two editable defaults (no-comorbidities,
- * standard advice) the resident asked for explicitly.
+ * The discharge summary, laid out exactly the way the unit's own blank template is — logo, the
+ * 3x3 identity table, one bordered box carrying diagnosis/history/condition at discharge
+ * together, then page 2's investigation and advice tables. No doctor roster or OPD/OT schedule
+ * — that varies ward to ward, so it is left off rather than guessed at or hardcoded to one
+ * ward's own doctors. See lib/discharge.ts for what is assembled from the record versus the
+ * two editable defaults (no-comorbidities, standard advice) the resident asked for explicitly.
  */
 export default async function DischargeSummaryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -54,18 +55,7 @@ export default async function DischargeSummaryPage({ params }: { params: Promise
               </div>
             </div>
 
-            <table className="mt-2 w-full text-[12px]">
-              <tbody>
-                {LETTERHEAD_ROWS.map((row, i) => (
-                  <tr key={i}>
-                    <td className="text-left font-bold">{row.left}</td>
-                    <td className="text-right font-bold">{row.right}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <p className="mt-2 border border-black py-1 text-center text-[15px] font-bold uppercase">
+            <p className="mt-3 border border-black py-1 text-center text-[15px] font-bold uppercase">
               Discharge summary
             </p>
 
