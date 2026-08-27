@@ -35,7 +35,7 @@ export default async function Home() {
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
-      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line/60 bg-background/80 px-4 py-2.5 backdrop-blur-xl">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line/60 bg-background/80 px-4 pb-2.5 top-bar backdrop-blur-xl">
         <Wordmark />
         <form action={signOut}>
           <button className="text-[15px] text-accent">Sign out</button>

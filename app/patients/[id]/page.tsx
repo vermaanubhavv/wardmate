@@ -206,7 +206,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
       {/* A real navigation bar: back on the left, where the eye and thumb both go for it, and
           the walk to the next bed on the right. Both at iOS's size. */}
-      <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-line/60 bg-background/80 px-2 py-2.5 backdrop-blur-xl">
+      <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-line/60 bg-background/80 px-2 pb-2.5 top-bar backdrop-blur-xl">
         <Link href="/ward" className="flex items-center text-[17px] text-accent active:opacity-60">
           <ChevronIcon className="h-[18px] w-[18px] rotate-180" />
           Ward

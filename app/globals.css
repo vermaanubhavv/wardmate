@@ -101,6 +101,14 @@ button {
   padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
 }
 
+/* The same `viewport-fit=cover` trick that lets the bottom bar reach the home indicator also
+   lets a sticky top bar reach the status bar — literally under it, on an installed PWA with a
+   notch or a Dynamic Island. Every `sticky top-0` header uses this so its own padding, not the
+   bar's edge, sits flush with the safe area rather than the true top of the screen. */
+.top-bar {
+  padding-top: calc(0.625rem + env(safe-area-inset-top));
+}
+
 /* The mark, working.
  *
  * The mark already looks like a listening indicator standing still — an open ring with three

@@ -29,7 +29,7 @@ export default function ScreenHeader({
 }) {
   return (
     <>
-      <div className="sticky top-0 z-10 flex items-center gap-1 border-b border-line/60 bg-background/80 px-2 py-2.5 backdrop-blur-xl">
+      <div className="sticky top-0 z-10 flex items-center gap-1 border-b border-line/60 bg-background/80 px-2 pb-2.5 top-bar backdrop-blur-xl">
         <Link
           href={back}
           className="flex items-center text-[17px] text-accent active:opacity-60"
