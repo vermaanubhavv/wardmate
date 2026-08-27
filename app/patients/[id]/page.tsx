@@ -313,8 +313,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             Advices, plans &amp; to do{openTasks.length > 0 ? ` · ${openTasks.length}` : ""}
           </p>
 
+          <div className="ios-group">
           {openTasks.length > 0 ? (
-            <ul className="ios-group divide-y divide-line">
+            <ul className="divide-y divide-line">
               {openTasks.map((o) => {
                 // "Tomorrow" is only true on the day it was said. Rewritten fresh on every
                 // read, the same way effectiveUrgency below re-reads the colour — neither is
@@ -362,13 +363,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
               })}
             </ul>
           ) : (
-            <p className="ios-group px-4 py-3 text-[15px] text-muted">
+            <p className="px-4 py-3 text-[15px] text-muted">
               Nothing outstanding.
             </p>
           )}
 
           {doneTasks.length > 0 && (
-            <details className="mt-2">
+            <details className="border-t border-line px-4 py-3">
               <summary className="text-[13px] text-muted cursor-pointer">
                 {doneTasks.length} done
               </summary>
@@ -390,6 +391,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
               </ul>
             </details>
           )}
+          </div>
         </section>
       )}
 
