@@ -6,6 +6,7 @@ import CodeBox from "./code-box";
 import JoinForm from "./join-form";
 import { switchWard, leaveWard, renameWard, saveLetterhead, saveProfile } from "./actions";
 import { DESIGNATION_CHOICES } from "@/lib/patients";
+import { ChecklistIcon, DocumentIcon } from "../icons";
 
 /**
  * The unit: who is on it, how to join it, and which one the app is showing.
@@ -35,21 +36,23 @@ export default async function UnitPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: members }, myWards, { data: me }, { count: trashCount }] = await Promise.all([
-    supabase
-      .from("ward_members")
-      .select("user_id, role, added_at, profiles(display_name)")
-      .eq("ward_id", ward.id)
-      .order("added_at"),
-    getMyWards(),
-    // Row security restricts profiles to the caller's own row, so this needs no where clause.
-    supabase.from("profiles").select("display_name, designation, department").maybeSingle(),
-    supabase
-      .from("patients")
-      .select("id", { count: "exact", head: true })
-      .eq("ward_id", ward.id)
-      .eq("status", "trashed"),
-  ]);
+  const [{ data: members }, myWards, { data: me }, { count: trashCount }, { data: isProtocolPublisher }] =
+    await Promise.all([
+      supabase
+        .from("ward_members")
+        .select("user_id, role, added_at, profiles(display_name)")
+        .eq("ward_id", ward.id)
+        .order("added_at"),
+      getMyWards(),
+      // Row security restricts profiles to the caller's own row, so this needs no where clause.
+      supabase.from("profiles").select("display_name, designation, department").maybeSingle(),
+      supabase
+        .from("patients")
+        .select("id", { count: "exact", head: true })
+        .eq("ward_id", ward.id)
+        .eq("status", "trashed"),
+      supabase.rpc("is_protocol_publisher"),
+    ]);
 
   const isOwner = ward.owner_id === user?.id;
 
@@ -97,6 +100,29 @@ export default async function UnitPage() {
         </p>
 
       </header>
+
+      {/* Formats and Protocols moved here from the ward header's nav row — they're
+          unit-wide settings, not something reached for on every round, so they belong beside
+          the rest of this screen's setup rather than competing for space with To do and Ward
+          round on the page opened most. */}
+      <section className="px-6 pb-6">
+        <ul className="ios-group divide-y divide-line">
+          <li>
+            <Link href="/formats" className="flex items-center gap-3 px-4 py-3 active:bg-chip">
+              <DocumentIcon className="h-4 w-4 shrink-0 text-accent" />
+              <span className="flex-1 text-[15px]">Formats</span>
+            </Link>
+          </li>
+          {isProtocolPublisher && (
+            <li>
+              <Link href="/protocols" className="flex items-center gap-3 px-4 py-3 active:bg-chip">
+                <ChecklistIcon className="h-4 w-4 shrink-0 text-accent" />
+                <span className="flex-1 text-[15px]">Protocols</span>
+              </Link>
+            </li>
+          )}
+        </ul>
+      </section>
 
       {/* First, because it is the only section on this screen about the person reading it.
           What is set here is what the landing page greets you with. */}

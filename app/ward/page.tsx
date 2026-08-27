@@ -9,7 +9,6 @@ import {
   ChecklistIcon,
   ChevronIcon,
   ClipboardIcon,
-  DocumentIcon,
   PlusIcon,
   TrayIcon,
 } from "../icons";
@@ -35,12 +34,10 @@ export default async function Home({
   const [
     { ward, patients, procedures, templateChoices, removedCount, error: wardError },
     doctor,
-    { data: isProtocolPublisher },
     { data: profile },
   ] = await Promise.all([
     getWardScreen(),
     getDoctorName(),
-    supabase.rpc("is_protocol_publisher"),
     supabase.from("profiles").select("department, designation").maybeSingle(),
   ]);
   const params = await searchParams;
@@ -123,8 +120,10 @@ export default async function Home({
         </Link>
 
         {/* A grid rather than a horizontal-scroll row: nothing here should be able to slide
-            off the edge of the screen unseen, which is exactly what was happening to the
-            fourth capsule before. Wraps to a second row once there are more than three. */}
+            off the edge of the screen unseen, which is exactly what was happening to a
+            capsule before. Formats and Protocols moved to the Unit page — unit-wide settings
+            reached far less often than these two, not something to compete for space with on
+            the page opened most. Wraps to a second row if there is ever a fourth tile. */}
         <div className="mt-3 grid grid-cols-3 gap-2">
           <NavTile href="/todo" icon={<ChecklistIcon className="h-[19px] w-[19px]" />}>
             To do
@@ -132,14 +131,6 @@ export default async function Home({
           <NavTile href="/handover" icon={<ClipboardIcon className="h-[19px] w-[19px]" />}>
             Ward round
           </NavTile>
-          <NavTile href="/formats" icon={<DocumentIcon className="h-[19px] w-[19px]" />}>
-            Formats
-          </NavTile>
-          {isProtocolPublisher && (
-            <NavTile href="/protocols" icon={<ChecklistIcon className="h-[19px] w-[19px]" />}>
-              Protocols
-            </NavTile>
-          )}
           {/* Only once there is something to undo — an empty list is not worth a tile. */}
           {removedCount > 0 && (
             <NavTile href="/removed" icon={<TrayIcon className="h-[19px] w-[19px]" />}>
