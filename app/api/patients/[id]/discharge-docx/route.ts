@@ -290,21 +290,34 @@ function investigationsTable(note: DischargeNote): Table {
   return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows });
 }
 
+/** The six columns the hospital's own prescribing screen asks for, in its order — so a
+ *  resident transcribing into it reads one row left to right. Blank where nothing was said. */
 function adviceTable(note: DischargeNote): Table {
-  const rowCount = Math.max(4, note.advice.lines.length);
-  return new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    rows: Array.from({ length: rowCount }, (_, i) => {
-      const line = note.advice.lines[i] ?? "";
-      const parts = line.split("—").map((p) => p.trim());
+  const widths = [5, 33, 12, 18, 12, 10, 10];
+  const header = ["#", "Medication", "Dose", "Frequency", "Duration", "Qty", "Route"];
+
+  const rows = [
+    new TableRow({
+      children: header.map((h, i) => cell([new Paragraph({ children: [bold(h)] })], widths[i])),
+    }),
+    ...Array.from({ length: Math.max(4, note.advice.rows.length) }, (_, i) => {
+      const row = note.advice.rows[i];
+      const values = [
+        String(i + 1),
+        row?.drug ?? "",
+        row?.dose ?? "",
+        row?.frequency ?? "",
+        row?.duration ?? "",
+        row?.quantity ?? "",
+        row?.route ?? "",
+      ];
       return new TableRow({
-        children: [
-          cell([new Paragraph({ children: [bold(String(i + 1))] })], 8),
-          cell([new Paragraph({ children: [plain(parts[0] ?? "")] })], 34),
-          cell([new Paragraph({ children: [plain(parts[1] ?? "")] })], 29),
-          cell([new Paragraph({ children: [plain(parts[2] ?? "")] })], 29),
-        ],
+        children: values.map((v, c) =>
+          cell([new Paragraph({ children: [c === 0 ? bold(v) : plain(v)] })], widths[c])
+        ),
       });
     }),
-  });
+  ];
+
+  return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows });
 }

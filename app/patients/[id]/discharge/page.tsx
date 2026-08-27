@@ -177,17 +177,34 @@ export default async function DischargeSummaryPage({ params }: { params: Promise
             </div>
 
             <p className="mt-4 font-bold underline">ADVICE ON DISCHARGE</p>
-            <table className="mt-1 w-full border-collapse text-[12px]">
+            {/* The six columns the hospital's own prescribing screen asks for, in its order,
+                so transcribing across is reading one row left to right rather than working
+                out which part of a sentence belongs in which box. A field the resident never
+                stated prints blank — see lib/medication-fields.ts, which fills nothing in. */}
+            <table className="mt-1 w-full border-collapse text-[11px]">
+              <thead>
+                <tr>
+                  <th className={cell + " w-5 text-left"}>#</th>
+                  <th className={cell + " text-left"}>Medication</th>
+                  <th className={cell + " text-left"}>Dose</th>
+                  <th className={cell + " text-left"}>Frequency</th>
+                  <th className={cell + " text-left"}>Duration</th>
+                  <th className={cell + " text-left"}>Qty</th>
+                  <th className={cell + " text-left"}>Route</th>
+                </tr>
+              </thead>
               <tbody>
-                {Array.from({ length: Math.max(4, note.advice.lines.length) }, (_, i) => {
-                  const line = note.advice.lines[i] ?? "";
-                  const parts = line.split("—").map((p) => p.trim());
+                {Array.from({ length: Math.max(4, note.advice.rows.length) }, (_, i) => {
+                  const row = note.advice.rows[i];
                   return (
                     <tr key={i}>
-                      <td className={cell + " w-6 font-bold"}>{i + 1}</td>
-                      <td className={cell}>{parts[0] ?? ""}</td>
-                      <td className={cell}>{parts[1] ?? ""}</td>
-                      <td className={cell}>{parts[2] ?? ""}</td>
+                      <td className={cell + " w-5 font-bold"}>{i + 1}</td>
+                      <td className={cell}>{row?.drug ?? ""}</td>
+                      <td className={cell}>{row?.dose ?? ""}</td>
+                      <td className={cell}>{row?.frequency ?? ""}</td>
+                      <td className={cell}>{row?.duration ?? ""}</td>
+                      <td className={cell}>{row?.quantity ?? ""}</td>
+                      <td className={cell}>{row?.route ?? ""}</td>
                     </tr>
                   );
                 })}

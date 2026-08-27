@@ -2,6 +2,7 @@ import { dayLabel, managementLabel, stripPatientHonorific } from "@/lib/patients
 import { canonicalLabName } from "@/lib/lab-ranges";
 import { RADIOLOGY_LABEL } from "@/lib/radiology-flags";
 import { listedComorbidities } from "@/lib/comorbidities";
+import { medicationFields, type MedicationFields } from "@/lib/medication-fields";
 import type { Observation, PatientState } from "@/lib/patient-state";
 
 export type DischargePatient = {
@@ -52,13 +53,17 @@ const VITAL_LOOKING_LABEL = /^(bp|blood pressure|pr|pulse|pulse rate|heart rate|
  *  was actually charted as a discharge medication, and — the same rule "Conscious Oriented"
  *  and every other default in this app follows — is replaced wholesale by the real list the
  *  moment one exists, never merged with it. An editable starting point on a form a doctor signs,
- *  not a value written into the record. */
+ *  not a value written into the record.
+ *
+ *  Written as the phrases a resident would actually say, then read apart by the same
+ *  medicationFields() every recorded drug goes through — so the default and the real thing
+ *  land in identical columns rather than one being hand-shaped to fit. */
 const STANDARD_ADVICE = [
-  "T. PAN 40MG — OD — 7 DAYS",
-  "T. EMSET 4MG — OD — 7 DAYS",
-  "SYP DIGENE 2 TSF — TDS — 7 DAYS",
-  "T. CHYMORAL FORTE 1 TAB — TDS — 7 DAYS",
-  "T. VOVERAN 75MG — SOS — 7 DAYS",
+  "T. PAN 40mg 1 tablet OD PO for 7 days",
+  "T. EMSET 4mg 1 tablet OD PO for 7 days",
+  "SYP DIGENE 2 tsf TDS PO for 7 days",
+  "T. CHYMORAL FORTE 1 tablet TDS PO for 7 days",
+  "T. VOVERAN 75mg SOS PO for 7 days",
 ];
 
 /** Same deliberate default: the exact wording the unit's own examples use for "nothing
@@ -112,7 +117,9 @@ export type DischargeNote = {
   radiology: string[];
   /** Every HPE/biopsy report on file, verbatim. Empty means leave the space blank. */
   pathology: string[];
-  advice: { lines: string[]; isDefault: boolean };
+  /** Discharge medications as the six fields a prescription actually needs — see
+   *  lib/medication-fields.ts. Any field the resident never stated is null, printed blank. */
+  advice: { rows: MedicationFields[]; isDefault: boolean };
   followUp: string[];
   pendingCount: number;
   missingLabels: string[];
@@ -188,8 +195,8 @@ export function buildDischargeNote(
 
   const advice =
     medications.length > 0
-      ? { lines: medications.map((m) => `${m.label.toUpperCase()} — ${m.value_text ?? ""}`.trimEnd()), isDefault: false }
-      : { lines: STANDARD_ADVICE, isDefault: true };
+      ? { rows: medications.map((m) => medicationFields(m.label, m.value_text)), isDefault: false }
+      : { rows: STANDARD_ADVICE.map((line) => medicationFields(line, line)), isDefault: true };
 
   const followUp = state.openTasks.map((t) => t.value_text ?? t.label);
 
@@ -294,7 +301,14 @@ export function formatDischargeText(note: DischargeNote): string {
   out.push("");
 
   out.push("ADVICE ON DISCHARGE");
-  for (const line of note.advice.lines) out.push(`  ${line}`);
+  note.advice.rows.forEach((row, i) => {
+    // Only the fields that were actually stated — a blank column is not written out as an
+    // empty dash in a block somebody may paste into a prescription.
+    const parts = [row.dose, row.frequency, row.duration, row.route, row.quantity ? `Qty ${row.quantity}` : null]
+      .filter(Boolean)
+      .join(" · ");
+    out.push(`  ${i + 1}. ${row.drug}${parts ? ` — ${parts}` : ""}`);
+  });
   out.push("");
 
   if (note.followUp.length > 0) {
