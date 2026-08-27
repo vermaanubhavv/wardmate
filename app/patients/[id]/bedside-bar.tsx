@@ -5,13 +5,21 @@ import { useRouter } from "next/navigation";
 import Recorder from "./recorder";
 import PhotoButton from "./photo-button";
 
+type MissingItem = { item: { label: string; hint: string | null } };
+
 /**
  * The two things you do at a bedside, and a quiet way in to typing.
  *
  * At rest this is exactly two buttons — speak and photograph. Typing replaces them while it
  * is open rather than sitting alongside them, so the bar never grows a third control.
  */
-export default function BedsideBar({ patientId }: { patientId: string }) {
+export default function BedsideBar({
+  patientId,
+  missing,
+}: {
+  patientId: string;
+  missing: MissingItem[];
+}) {
   const router = useRouter();
   const [typing, setTyping] = useState(false);
   const [text, setText] = useState("");
@@ -105,6 +113,22 @@ export default function BedsideBar({ patientId }: { patientId: string }) {
         >
           Type instead
         </button>
+      )}
+      {/* What is left to cover — from whichever checklist/protocol the patient is currently
+          on, see lib/templates.ts getTemplateForPatient(). Not truncated, and bolder while the
+          mic is actually live: this is exactly the moment it needs to be read, not the moment
+          before tapping the button. */}
+      {missing.length > 0 && (
+        <p
+          className={
+            recording
+              ? "text-[14px] font-medium text-orange-700"
+              : "text-[13px] text-muted"
+          }
+        >
+          <span className={recording ? undefined : "text-orange-700"}>Still to cover:</span>{" "}
+          {missing.map((m) => m.item.hint ?? m.item.label).join(" · ")}
+        </p>
       )}
       <Recorder patientId={patientId} onBusyChange={onBusyChange} />
       <PhotoButton patientId={patientId} />

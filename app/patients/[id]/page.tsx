@@ -699,20 +699,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
       {/* Fixed, so the button is under your thumb no matter how long the record has grown. */}
       <BottomBar>
-        {/* Visible while you hold the button, so you know what is left to cover without
-              having to remember the set for this operation. */}
-          {missing.length > 0 && (
-            <p className="truncate text-[13px] text-muted">
-              <span className="text-orange-700">Still to cover:</span>{" "}
-              {missing
-                .slice(0, 3)
-                .map((m) => m.item.hint ?? m.item.label)
-                .join(" · ")}
-              {missing.length > 3 && ` · +${missing.length - 3} more`}
-            </p>
-          )}
-          <BedsideBar patientId={patient.id} />
-        </BottomBar>
+        <BedsideBar patientId={patient.id} missing={missing} />
+      </BottomBar>
     </div>
   );
 }
