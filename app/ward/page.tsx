@@ -84,18 +84,23 @@ export default async function Home({
       </div>
 
       <header className="px-4 pb-3 pt-4">
-        {/* A quiet line above the title, not a heading of its own: it is the one thing on this
-            screen that is not work, and it should not take space from the ward. Absent
-            entirely when there is no real name to use — see getDoctorName. */}
-        {doctor && (
-          <p className="text-[15px] text-muted">
-            Hello Dr. <span className="text-foreground">{doctor}</span>
-          </p>
-        )}
-
-        {(designation || departmentLabel) && (
-          <p className="mt-1 text-[15px] text-muted">
-            {[designation, departmentLabel].filter(Boolean).join(" · ")}
+        {/* One quiet line, not two — this is the one thing on this screen that is not work,
+            and reading your own name and role back to yourself does not need a heading's
+            worth of space. Absent entirely when there is no real name to use — see
+            getDoctorName. */}
+        {(doctor || designation || departmentLabel) && (
+          <p className="text-[14px] text-muted">
+            {doctor && (
+              <>
+                Hello, Dr. <span className="text-foreground">{doctor}</span>
+              </>
+            )}
+            {(designation || departmentLabel) && (
+              <>
+                {doctor ? " · " : ""}
+                {[designation, departmentLabel].filter(Boolean).join(" · ")}
+              </>
+            )}
           </p>
         )}
 
