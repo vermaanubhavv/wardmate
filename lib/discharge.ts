@@ -21,11 +21,19 @@ export type DischargePatient = {
 /** What the app cannot know and must not invent: a label and a blank to write on. */
 const BLANK = "____________________";
 
-/** The fixed panel every discharge summary in the unit's own examples prints, in this order —
- *  "the box" on the real form, not an open-ended list of every lab ever sent. A test never
+/** The fixed panel the unit's own blank discharge template prints, in this order and with
+ *  these units — "the box" on the real form, not an open-ended list of every lab ever sent.
+ *  canonical is the name lib/lab-ranges.ts's canonicalLabName() resolves to, so "S. Creatinine"
+ *  and "Creatinine" land in the same row regardless of how the resident said it. A test never
  *  recorded prints its row with a blank value rather than being dropped, so what still needs
  *  filling in by hand is visible rather than silently absent. */
-const INVESTIGATION_PANEL = ["Hb", "TLC", "Urea", "Creatinine", "T. bilirubin", "D. bilirubin", "ALP"];
+const INVESTIGATION_PANEL: { label: string; canonical: string; unit: string }[] = [
+  { label: "Hb", canonical: "Hb", unit: "g/dl" },
+  { label: "TLC", canonical: "TLC", unit: "Ug/dl" },
+  { label: "S. Creatinine", canonical: "Creatinine", unit: "mg/dl" },
+  { label: "T. Bilirubin", canonical: "T. bilirubin", unit: "mg/dl" },
+  { label: "Platelets", canonical: "Platelets", unit: "" },
+];
 
 /** The pathology/HPE report is never in the same "lab" shape a blood value is — it is prose,
  *  not a number — so it is matched by label the same way radiology is, rather than folded into
@@ -75,6 +83,11 @@ export type DischargeNote = {
     name: string;
     age: string;
     sex: string;
+    /** Not tracked by this app — the template has boxes for them, so they print blank for the
+     *  resident to fill by hand, same as the real form does for anyone whose insurance number
+     *  or family/self status was never entered anywhere in WardMate. */
+    insNo: string;
+    ipFamily: string;
     mrdNo: string | null;
     ward: string;
     doa: string;
@@ -90,7 +103,10 @@ export type DischargeNote = {
   pastMedicalHistory: string;
   conditionAtDischarge: { vitals: string; exam: string[] };
   /** Page 2's fixed panel, in INVESTIGATION_PANEL's order — value is "" when never recorded. */
-  investigations: { label: string; value: string }[];
+  investigations: { label: string; unit: string; value: string }[];
+  /** Na / K / Cl as one combined row, matching the template — each part blank independently
+   *  rather than the whole row disappearing if only one of the three was recorded. */
+  naKCl: { na: string; k: string; cl: string };
   /** Every radiology report on file, verbatim — not just the ones flagged abnormal, unlike
    *  lib/radiology-flags.ts's own use elsewhere. Empty means leave the space blank to write in. */
   radiology: string[];
@@ -151,10 +167,16 @@ export function buildDischargeNote(
     const existing = byCanonicalName.get(key);
     if (!existing || o.recorded_at > existing.recorded_at) byCanonicalName.set(key, o);
   }
-  const investigations = INVESTIGATION_PANEL.map((label) => ({
-    label,
-    value: byCanonicalName.get(label)?.value_text ?? "",
+  const investigations = INVESTIGATION_PANEL.map((row) => ({
+    label: row.label,
+    unit: row.unit,
+    value: byCanonicalName.get(row.canonical)?.value_text ?? "",
   }));
+  const naKCl = {
+    na: byCanonicalName.get("Na")?.value_text ?? "",
+    k: byCanonicalName.get("K")?.value_text ?? "",
+    cl: byCanonicalName.get("Cl")?.value_text ?? "",
+  };
 
   const radiology = kinds(state, ["lab"])
     .filter((o) => RADIOLOGY_LABEL.test(o.label) || RADIOLOGY_LABEL.test(o.value_text ?? ""))
@@ -182,6 +204,8 @@ export function buildDischargeNote(
       name: stripPatientHonorific(patient.display_name).toUpperCase(),
       age: patient.age_years !== null ? `${patient.age_years} YEARS` : "",
       sex: sexWord(patient.sex),
+      insNo: "",
+      ipFamily: "",
       mrdNo: patient.mrd_no,
       ward: (options?.wardName ?? "GENERAL SURGERY").toUpperCase(),
       doa: istDay(patient.admitted_on),
@@ -195,6 +219,7 @@ export function buildDischargeNote(
     pastMedicalHistory,
     conditionAtDischarge,
     investigations,
+    naKCl,
     radiology,
     pathology,
     advice,
@@ -214,7 +239,9 @@ export function formatDischargeText(note: DischargeNote): string {
   out.push(`NAME – ${note.header.name}`);
   out.push(`AGE – ${note.header.age || BLANK}`);
   out.push(`SEX – ${note.header.sex || BLANK}`);
+  out.push(`INS. NO./EMP ID – ${note.header.insNo || BLANK}`);
   out.push(`MRD NO. ${note.header.mrdNo || BLANK}`);
+  out.push(`IP/FAMILY – ${note.header.ipFamily || BLANK}`);
   out.push(`WARD – ${note.header.ward}`);
   out.push(`D.O.A – ${note.header.doa}`);
   out.push(`D.O.D – ${note.header.dod}`);
@@ -247,7 +274,10 @@ export function formatDischargeText(note: DischargeNote): string {
   out.push("");
 
   out.push("INVESTIGATIONS DONE DURING STAY");
-  for (const row of note.investigations) out.push(`  ${row.label} – ${row.value || BLANK}`);
+  for (const row of note.investigations) {
+    out.push(`  ${row.label} – ${row.value || BLANK}${row.unit ? ` ${row.unit}` : ""}`);
+  }
+  out.push(`  Na/K/Cl – ${note.naKCl.na || BLANK} / ${note.naKCl.k || BLANK} / ${note.naKCl.cl || BLANK}`);
   out.push("");
   out.push("  RADIOLOGY:");
   if (note.radiology.length > 0) {
