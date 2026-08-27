@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { derivePatientState } from "@/lib/patient-state";
 import { getTemplateForPatient, getProcedureLabels, procedureFor } from "@/lib/templates";
+import { isIdentifierLabel } from "@/lib/patients";
 import { buildDischargeNote, formatDischargeText } from "@/lib/discharge";
 import PrintButton from "../note/print-button";
 import CopyNoteButton from "../note/copy-button";
@@ -40,7 +41,13 @@ export default async function DischargeSummaryPage({ params }: { params: Promise
     getTemplateForPatient(patient),
   ]);
 
-  const allObservations = (entriesData ?? []).flatMap((e) => e.observations);
+  // Bed number and the patient's own name are properties of the patient, not clinical findings
+  // — the same filter the main patient page applies before deriving anything from an
+  // observation. Without it, "Bed number 1" and the patient's own name printed straight into
+  // "History and course in hospital" as if they were part of the narrative.
+  const allObservations = (entriesData ?? [])
+    .flatMap((e) => e.observations)
+    .filter((o) => !isIdentifierLabel(o.label));
   const patientState = derivePatientState(allObservations, template);
   const procedure = procedureFor(patient, procedures);
 

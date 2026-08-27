@@ -32,6 +32,12 @@ const INVESTIGATION_PANEL = ["Hb", "TLC", "Urea", "Creatinine", "T. bilirubin", 
  *  the fixed panel above. */
 const PATHOLOGY_LABEL = /\b(hpe|histopath\w*|biopsy)\b/i;
 
+/** Guards "History and course in hospital" against a vital that landed under kind "note" —
+ *  seen from a messy case-history extraction, a BP or PR reading printed as narrative rather
+ *  than in Condition at discharge where it belongs. Genuine history prose never carries one of
+ *  these labels on its own, so excluding the label is safe rather than guessing at content. */
+const VITAL_LOOKING_LABEL = /^(bp|blood pressure|pr|pulse|pulse rate|heart rate|hr|spo2|rr|respiratory rate|temp|temperature)$/i;
+
 /** The unit's own standard discharge set for an uncomplicated general-surgery stay, read off
  *  the actual examples this was built from — T. Pan, T. Emset, Syp Digene, T. Chymoral Forte,
  *  T. Voveran, each with the unit's own usual dose/frequency/duration. Prints ONLY when nothing
@@ -122,7 +128,7 @@ export function buildDischargeNote(
 ): DischargeNote {
   const today = new Date().toISOString();
 
-  const notes = kinds(state, ["note", "diagnosis"]);
+  const notes = kinds(state, ["note", "diagnosis"]).filter((o) => !VITAL_LOOKING_LABEL.test(o.label.trim()));
   const history = notes.map((o) => o.value_text ?? o.label);
 
   const comorbidities = listedComorbidities(state.latest);
