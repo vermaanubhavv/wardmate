@@ -30,7 +30,8 @@ import EntryCard from "./entry-card";
 import CaseHistoryCapture from "./case-history-capture";
 import DischargeSection from "./discharge-section";
 import { buildDischargeNote, formatDischargeText } from "@/lib/discharge";
-import { confirmChecked, confirmAll, reopenTask } from "./actions";
+import { reopenTask } from "./actions";
+import ConfirmDictation from "./confirm-dictation";
 import BottomBar from "../../bottom-bar";
 import { listedComorbidities } from "@/lib/comorbidities";
 import { summariseObjective, type WardRanges } from "@/lib/exam-summary";
@@ -400,61 +401,12 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           <p className="ios-group-header mb-2 px-4 text-orange-700">
             Confirm dictation
           </p>
-          {/* One form around the whole list: the two buttons below are the same submit with
-              different actions, so ticking and accepting is one gesture rather than one tap
-              per value. */}
-          <form action={confirmChecked}>
-            <input type="hidden" name="patient_id" value={patient.id} />
-
-            <ul className="flex flex-col gap-2">
-              {pending.map((o) => (
-                <li
-                  key={o.id}
-                  className="rounded-[10px] border border-orange-200 bg-orange-50 p-3"
-                >
-                  <label className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      name="observation_ids"
-                      value={o.id}
-                      // Unticked by default. Confirming is the resident vouching for a
-                      // value, so it has to be something they did, not something they
-                      // failed to undo.
-                      className="mt-0.5 h-5 w-5 shrink-0 accent-accent"
-                    />
-                    <span className="min-w-0 flex-1 text-sm">
-                      <span className="text-muted">{o.label}</span>{" "}
-                      <span className="font-medium">{o.value_text}</span>
-                    </span>
-                  </label>
-                  <p className="mt-1.5 pl-8 text-[13px] text-orange-700/70 italic">
-                    “{o.source_quote}”
-                  </p>
-                  {o.conflict_note && (
-                    <p className="mt-1 pl-8 text-xs text-orange-800">{o.conflict_note}</p>
-                  )}
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-3 flex gap-3">
-              <button
-                type="submit"
-                className="flex-1 rounded-[10px] border border-orange-300 px-4 py-3 text-[15px] font-semibold text-orange-700"
-              >
-                Accept ticked
-              </button>
-              {/* Same form, different action — this one ignores the ticks and takes
-                  everything still outstanding. */}
-              <button
-                type="submit"
-                formAction={confirmAll}
-                className="flex-1 rounded-xl bg-orange-500 px-4 py-3 text-[15px] font-semibold text-accent-ink"
-              >
-                Accept all {pending.length}
-              </button>
-            </div>
-          </form>
+          <ConfirmDictation
+            pending={pending}
+            patientId={patient.id}
+            computedDay={patient.post_op_day ?? patient.admission_day}
+            procedureChoices={templateChoices.map((c) => c.label)}
+          />
         </section>
       )}
 
