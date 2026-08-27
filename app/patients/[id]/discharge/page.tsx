@@ -214,7 +214,7 @@ export default async function DischargeSummaryPage({ params }: { params: Promise
                               wardId={wardId}
                               patientId={id}
                               drugKey={row.drugKey}
-                              drugLabel={row.drug}
+                              drugLabel={row.drugName}
                               mapped={row.formularyName}
                             />
                           </span>

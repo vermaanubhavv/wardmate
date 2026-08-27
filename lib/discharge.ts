@@ -59,12 +59,12 @@ const VITAL_LOOKING_LABEL = /^(bp|blood pressure|pr|pulse|pulse rate|heart rate|
  *  Written as the phrases a resident would actually say, then read apart by the same
  *  medicationFields() every recorded drug goes through — so the default and the real thing
  *  land in identical columns rather than one being hand-shaped to fit. */
-const STANDARD_ADVICE = [
-  "T. PAN 40mg 1 tablet OD PO for 7 days",
-  "T. EMSET 4mg 1 tablet OD PO for 7 days",
-  "SYP DIGENE 2 tsf TDS PO for 7 days",
-  "T. CHYMORAL FORTE 1 tablet TDS PO for 7 days",
-  "T. VOVERAN 75mg SOS PO for 7 days",
+const STANDARD_ADVICE: { name: string; phrase: string }[] = [
+  { name: "T. Pan 40mg", phrase: "T. Pan 40mg 1 tablet OD PO for 7 days" },
+  { name: "T. Emset 4mg", phrase: "T. Emset 4mg 1 tablet OD PO for 7 days" },
+  { name: "Syp Digene", phrase: "Syp Digene 2 tsf TDS PO for 7 days" },
+  { name: "T. Chymoral Forte", phrase: "T. Chymoral Forte 1 tablet TDS PO for 7 days" },
+  { name: "T. Voveran 75mg", phrase: "T. Voveran 75mg SOS PO for 7 days" },
 ];
 
 /** Same deliberate default: the exact wording the unit's own examples use for "nothing
@@ -122,7 +122,17 @@ export type DischargeNote = {
    *  lib/medication-fields.ts. Any field the resident never stated is null, printed blank.
    *  formularyName is the hospital's own catalogue wording where a clinician has confirmed
    *  which entry this drug is (see lib/formulary.ts), null until then — never guessed. */
-  advice: { rows: (MedicationFields & { drugKey: string; formularyName: string | null })[]; isDefault: boolean };
+  advice: {
+    rows: (MedicationFields & {
+      drugKey: string;
+      /** The drug's own short name as extraction recorded it ("piperacillin"), separate from
+       *  the full dictated phrase in `drug` ("4.5 grams IV TDS"). This is what a formulary
+       *  search must start from — the phrase often contains no drug name at all. */
+      drugName: string;
+      formularyName: string | null;
+    })[];
+    isDefault: boolean;
+  };
   followUp: string[];
   pendingCount: number;
   missingLabels: string[];
@@ -209,6 +219,7 @@ export function buildDischargeNote(
     return {
       ...medicationFields(label, valueText),
       drugKey: key,
+      drugName: label.trim(),
       formularyName: options?.formularyMappings?.get(key) ?? null,
     };
   };
@@ -216,7 +227,7 @@ export function buildDischargeNote(
   const advice =
     medications.length > 0
       ? { rows: medications.map((m) => withFormulary(m.label, m.value_text)), isDefault: false }
-      : { rows: STANDARD_ADVICE.map((line) => withFormulary(line, line)), isDefault: true };
+      : { rows: STANDARD_ADVICE.map((d) => withFormulary(d.name, d.phrase)), isDefault: true };
 
   const followUp = state.openTasks.map((t) => t.value_text ?? t.label);
 

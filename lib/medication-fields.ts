@@ -105,9 +105,11 @@ export function medicationFields(label: string, valueText: string | null): Medic
     : null;
 
   return {
-    // The drug keeps the resident's own wording. value_text is preferred when it says more
-    // than the bare label does, which is the usual case.
-    drug: (valueText ?? "").trim().length > label.trim().length ? (valueText ?? "").trim() : label.trim(),
+    // The drug's own name, not the whole dictated phrase. Everything else the phrase carried —
+    // dose, frequency, route, duration — now has its own column, so repeating the phrase here
+    // left rows reading "4.5 grams IV TDS" in a column headed Medication, with the drug name
+    // nowhere on the line.
+    drug: label.trim() || (valueText ?? "").trim(),
     dose,
     duration,
     frequency: frequency?.label ?? null,
