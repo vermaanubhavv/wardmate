@@ -398,7 +398,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       {pending.length > 0 && (
         <section className="px-4 pb-6">
           <p className="ios-group-header mb-2 px-4 text-orange-700">
-            {pending.length} to confirm before handover
+            Confirm dictation
           </p>
           {/* One form around the whole list: the two buttons below are the same submit with
               different actions, so ticking and accepting is one gesture rather than one tap
