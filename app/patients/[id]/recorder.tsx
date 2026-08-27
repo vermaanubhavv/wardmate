@@ -31,6 +31,10 @@ export default function Recorder({
   const [status, setStatus] = useState<Status>("idle");
   const [seconds, setSeconds] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
+  // What was actually heard, shown the moment it comes back rather than left one tap away
+  // behind "Correct the words" on the entry below — the fastest way to catch a bad recording
+  // is seeing the words right after stopping, while re-saying it is still cheap.
+  const [transcript, setTranscript] = useState<string | null>(null);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -63,6 +67,7 @@ export default function Recorder({
     if (status !== "idle") return;
     setStatus("starting");
     setMessage(null);
+    setTranscript(null);
     setSeconds(0);
     autoStoppedRef.current = false;
 
@@ -131,6 +136,7 @@ export default function Recorder({
       const res = await fetch("/api/entries/voice", { method: "POST", body: form });
       const data = await res.json();
       setStatus("idle");
+      setTranscript(data.transcript || null);
 
       if (!res.ok) {
         setMessage(data.error ?? "Something went wrong.");
@@ -221,6 +227,9 @@ export default function Recorder({
         )}
       </button>
 
+      {transcript && (
+        <p className="text-center text-[13px] italic text-muted">“{transcript}”</p>
+      )}
       {message && <p className="text-center text-[15px] text-muted">{message}</p>}
     </div>
   );

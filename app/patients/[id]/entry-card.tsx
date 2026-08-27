@@ -5,6 +5,7 @@ import { useState } from "react";
 import { mergeLabelValue } from "@/lib/patients";
 import { acceptEntry, editEntry, deleteEntry, updateObservation } from "./actions";
 import { isActionableTask } from "@/lib/task-classification";
+import { flagMisheard } from "./flag-misheard";
 
 type Value = {
   id: string;
@@ -131,7 +132,6 @@ export default function EntryCard({
   const [showEvidence, setShowEvidence] = useState(false);
   const [editingWords, setEditingWords] = useState(false);
   const [editingValue, setEditingValue] = useState<string | null>(null);
-  const [flagged, setFlagged] = useState<string | null>(null);
   // Reading is the default and correcting is a mode. A record is read twenty times for every
   // once it is corrected, so the marks that make values tappable are off until asked for.
   const [correcting, setCorrecting] = useState(false);
@@ -145,47 +145,10 @@ export default function EntryCard({
 
   const editing = values.find((v) => v.id === editingValue) ?? null;
 
-  /** Opening a different value must not leave the last one's flag message under it. */
   const openEditor = (id: string) => {
     setEditingValue(id);
     setDraft(values.find((v) => v.id === id)?.value_text ?? "");
-    setFlagged(null);
   };
-
-  /**
-   * Tell the app it misheard this word.
-   *
-   * Offered here, inside the edit box, because this is the one moment the resident has both
-   * halves in front of them: what was recorded, and what it should have said. Anywhere else it
-   * would mean typing the pair out again, and a flag that costs typing mid-round is a flag
-   * nobody uses.
-   */
-  async function flagMisheard(observation: Value) {
-    const correctTerm = draft.trim();
-    const wrongTerm = (observation.value_text ?? "").trim();
-    if (!correctTerm || correctTerm === wrongTerm) return;
-
-    setFlagged("Sending…");
-    try {
-      const res = await fetch("/api/glossary/flag", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          wrongTerm,
-          correctTerm,
-          // Guessed only where it is not a guess. Everything else goes uncategorised rather
-          // than sorted into a bucket the app made up.
-          category: observation.kind === "medication" ? "drug" : null,
-        }),
-      });
-      const data = await res.json();
-      setFlagged(
-        res.ok ? "Noted. The app will correct this next time." : (data.error ?? "Could not save that.")
-      );
-    } catch {
-      setFlagged("No connection — not saved.");
-    }
-  }
 
   // What the record says when it is folded shut. The heading if there is one, otherwise the
   // start of the progress — enough to know whether this is the day worth opening.
@@ -269,7 +232,18 @@ export default function EntryCard({
         {editing && (
           <form
             action={updateObservation}
-            onSubmit={() => setEditingValue(null)}
+            onSubmit={() => {
+              // Saving a correction teaches it too — no separate "the app misheard this"
+              // tap needed any more. See flag-misheard.ts: it takes three sightings of the
+              // same correction before the glossary actually starts applying it, so one odd
+              // edit here cannot mis-teach anything on its own.
+              flagMisheard(
+                editing.value_text ?? "",
+                draft,
+                editing.kind === "medication" ? "drug" : null
+              );
+              setEditingValue(null);
+            }}
             className="mt-3 rounded-[10px] bg-chip/50 p-3"
           >
             <input type="hidden" name="observation_id" value={editing.id} />
@@ -292,20 +266,6 @@ export default function EntryCard({
                 Cancel
               </button>
             </div>
-
-            {/* Only once there is a correction to teach. Before that the button could do
-                nothing, so it was one more control to read past mid-round.
-                type="button", so flagging never submits the correction by accident. */}
-            {draft.trim() && draft.trim() !== (editing.value_text ?? "").trim() && (
-              <button
-                type="button"
-                onClick={() => void flagMisheard(editing)}
-                className="mt-2 text-[13px] font-medium text-accent"
-              >
-                The app misheard this word
-              </button>
-            )}
-            {flagged && <p className="mt-1 text-[13px] text-muted">{flagged}</p>}
           </form>
         )}
       </div>
@@ -335,7 +295,6 @@ export default function EntryCard({
               setCorrecting(next);
               if (!next) {
                 setEditingValue(null);
-                setFlagged(null);
               }
             }}
             aria-pressed={correcting}

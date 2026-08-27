@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { updateObservation, confirmChecked, confirmAll } from "./actions";
+import { flagMisheard } from "./flag-misheard";
 
 export type PendingObservation = {
   id: string;
@@ -106,6 +107,8 @@ export default function ConfirmDictation({
                         fd.set("patient_id", patientId);
                         fd.set("value_text", draft);
                         await updateObservation(fd);
+                        // Saving a correction teaches it too — see flag-misheard.ts.
+                        flagMisheard(o.value_text ?? "", draft, o.kind === "medication" ? "drug" : null);
                         setEditingId(null);
                       }}
                       className="shrink-0 text-[14px] font-semibold text-accent"
