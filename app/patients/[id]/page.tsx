@@ -584,6 +584,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
       {/* Bottom padding clears the fixed speak bar so the oldest entry stays reachable. */}
       <section className="px-4 pb-6">
+        <p className="ios-group-header mb-2 px-4">Record by date</p>
         {entries.length === 0 ? (
           <p className="ios-group p-5 text-[15px] text-muted">
             No earlier records yet.
