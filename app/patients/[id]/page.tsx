@@ -616,7 +616,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                         {dayHeading(day.recorded_at, todayKey)}
                       </span>
                       <span className="ml-auto shrink-0 text-[13px] text-muted tabular-nums">
-                        {count} {count === 1 ? "record" : "records"}
+                        {count}
                       </span>
                     </summary>
 
