@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getDischargeNote } from "@/lib/discharge-data";
+import { getDischargeContext } from "@/lib/discharge-data";
 import { formatDischargeText } from "@/lib/discharge";
 import { HOSPITAL_LINES, LOGO_PUBLIC_PATH } from "@/lib/discharge-letterhead";
 import PrintButton from "../note/print-button";
 import CopyNoteButton from "../note/copy-button";
 import DownloadWordButton from "./download-word-button";
+import FormularyLink from "./formulary-link";
 
 /**
  * The discharge summary, laid out exactly the way the unit's own blank template is — logo, the
@@ -17,8 +18,9 @@ import DownloadWordButton from "./download-word-button";
  */
 export default async function DischargeSummaryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const note = await getDischargeNote(id);
-  if (!note) notFound();
+  const context = await getDischargeContext(id);
+  if (!context) notFound();
+  const { note, wardId, formularySize } = context;
 
   const noteText = formatDischargeText(note);
   const cell = "border border-black px-2 py-1 align-top";
@@ -199,7 +201,25 @@ export default async function DischargeSummaryPage({ params }: { params: Promise
                   return (
                     <tr key={i}>
                       <td className={cell + " w-5 font-bold"}>{i + 1}</td>
-                      <td className={cell}>{row?.drug ?? ""}</td>
+                      <td className={cell}>
+                        {row?.drug ?? ""}
+                        {/* The hospital formulary's own wording for this drug, once a clinician
+                            has said which entry it is — that is what gets typed into the
+                            prescribing system, so it prints here beside the resident's own
+                            words rather than replacing them. Only offered when this ward has
+                            actually imported a formulary. */}
+                        {row && formularySize > 0 && (
+                          <span className="mt-0.5 block text-muted">
+                            <FormularyLink
+                              wardId={wardId}
+                              patientId={id}
+                              drugKey={row.drugKey}
+                              drugLabel={row.drug}
+                              mapped={row.formularyName}
+                            />
+                          </span>
+                        )}
+                      </td>
                       <td className={cell}>{row?.dose ?? ""}</td>
                       <td className={cell}>{row?.frequency ?? ""}</td>
                       <td className={cell}>{row?.duration ?? ""}</td>

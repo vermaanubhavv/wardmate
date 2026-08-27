@@ -3,6 +3,7 @@ import { canonicalLabName } from "@/lib/lab-ranges";
 import { RADIOLOGY_LABEL } from "@/lib/radiology-flags";
 import { listedComorbidities } from "@/lib/comorbidities";
 import { medicationFields, type MedicationFields } from "@/lib/medication-fields";
+import { drugKey } from "@/lib/formulary";
 import type { Observation, PatientState } from "@/lib/patient-state";
 
 export type DischargePatient = {
@@ -118,8 +119,10 @@ export type DischargeNote = {
   /** Every HPE/biopsy report on file, verbatim. Empty means leave the space blank. */
   pathology: string[];
   /** Discharge medications as the six fields a prescription actually needs — see
-   *  lib/medication-fields.ts. Any field the resident never stated is null, printed blank. */
-  advice: { rows: MedicationFields[]; isDefault: boolean };
+   *  lib/medication-fields.ts. Any field the resident never stated is null, printed blank.
+   *  formularyName is the hospital's own catalogue wording where a clinician has confirmed
+   *  which entry this drug is (see lib/formulary.ts), null until then — never guessed. */
+  advice: { rows: (MedicationFields & { drugKey: string; formularyName: string | null })[]; isDefault: boolean };
   followUp: string[];
   pendingCount: number;
   missingLabels: string[];
@@ -147,7 +150,13 @@ export function buildDischargeNote(
   state: PatientState,
   medications: Observation[],
   procedure: string | null,
-  options?: { wardName?: string | null; letterhead?: string | null }
+  options?: {
+    wardName?: string | null;
+    letterhead?: string | null;
+    /** Confirmed drug-key -> formulary-entry mappings for this ward. Absent means the ward has
+     *  not imported a formulary; every row simply carries no formulary name. */
+    formularyMappings?: Map<string, string>;
+  }
 ): DischargeNote {
   const today = new Date().toISOString();
 
@@ -193,10 +202,21 @@ export function buildDischargeNote(
     .filter((o) => PATHOLOGY_LABEL.test(o.label) || PATHOLOGY_LABEL.test(o.value_text ?? ""))
     .map((o) => `${o.label.toUpperCase()}: ${o.value_text}`);
 
+  // The formulary name is attached where a clinician has confirmed one for this drug, and left
+  // null otherwise. Nothing here searches or matches — see lib/formulary.ts.
+  const withFormulary = (label: string, valueText: string | null) => {
+    const key = drugKey(label);
+    return {
+      ...medicationFields(label, valueText),
+      drugKey: key,
+      formularyName: options?.formularyMappings?.get(key) ?? null,
+    };
+  };
+
   const advice =
     medications.length > 0
-      ? { rows: medications.map((m) => medicationFields(m.label, m.value_text)), isDefault: false }
-      : { rows: STANDARD_ADVICE.map((line) => medicationFields(line, line)), isDefault: true };
+      ? { rows: medications.map((m) => withFormulary(m.label, m.value_text)), isDefault: false }
+      : { rows: STANDARD_ADVICE.map((line) => withFormulary(line, line)), isDefault: true };
 
   const followUp = state.openTasks.map((t) => t.value_text ?? t.label);
 

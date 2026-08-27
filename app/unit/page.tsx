@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentWard, getMyWards } from "@/lib/ward";
 import CodeBox from "./code-box";
 import JoinForm from "./join-form";
-import { switchWard, leaveWard, renameWard, saveLetterhead, saveProfile } from "./actions";
+import { switchWard, leaveWard, renameWard, saveLetterhead, saveProfile, importFormulary } from "./actions";
+import { getFormularySize } from "@/lib/formulary";
 import { DESIGNATION_CHOICES } from "@/lib/patients";
 import { ChecklistIcon, DocumentIcon } from "../icons";
 
@@ -53,6 +54,8 @@ export default async function UnitPage() {
         .eq("status", "trashed"),
       supabase.rpc("is_protocol_publisher"),
     ]);
+
+  const formularySize = await getFormularySize(ward.id);
 
   const isOwner = ward.owner_id === user?.id;
 
@@ -230,6 +233,64 @@ export default async function UnitPage() {
             </button>
           </form>
           <p className="mt-2 text-[13px] text-muted">Everyone on the unit sees this name.</p>
+        </section>
+      )}
+
+      {/* The hospital's own drug list, so a discharge summary can print each medicine under the
+          exact wording the prescribing system lists it as. Owner-only: importing replaces the
+          whole list for everyone on the unit. */}
+      {isOwner && (
+        <section className="px-6 pb-6">
+          <p className="mb-2 text-[15px] text-muted">Hospital formulary</p>
+          <div className="ios-group p-4">
+            <p className="text-[15px]">
+              {formularySize > 0 ? (
+                <>
+                  <span className="font-semibold tabular-nums">{formularySize}</span> medicines
+                  imported.
+                </>
+              ) : (
+                "Not imported yet."
+              )}
+            </p>
+            <p className="mt-2 text-[13px] leading-relaxed text-muted">
+              Lets the discharge summary print each drug under the hospital system&rsquo;s own
+              name for it, so it can be typed across exactly. Nothing is matched automatically —
+              you confirm which entry each drug is, once, and it is remembered.
+            </p>
+
+            <details className="mt-3">
+              <summary className="cursor-pointer text-[13px] text-accent">
+                How to get the list
+              </summary>
+              <ol className="mt-2 list-decimal space-y-1 pl-5 text-[13px] leading-relaxed text-muted">
+                <li>Open a patient&rsquo;s prescription page in the hospital system.</li>
+                <li>Click <span className="font-medium">Add</span> under Medications so the drug list opens.</li>
+                <li>In that window press <span className="font-mono">⌥⌘I</span>, open the Console tab.</li>
+                <li>Type <span className="font-mono">allow pasting</span> and press Enter.</li>
+                <li>Paste the snippet your WardMate contact gave you, press Enter.</li>
+                <li>Upload the file it saves, below.</li>
+              </ol>
+            </details>
+
+            <form action={importFormulary} className="mt-3">
+              <input type="hidden" name="ward_id" value={ward.id} />
+              <input
+                type="file"
+                name="formulary"
+                accept="application/json,.json"
+                className="w-full text-[13px]"
+              />
+              <button className="mt-2 w-full rounded-[10px] bg-card px-4 py-3 text-[17px] font-medium text-accent">
+                {formularySize > 0 ? "Replace formulary" : "Import formulary"}
+              </button>
+            </form>
+            {formularySize > 0 && (
+              <p className="mt-2 text-[13px] text-muted">
+                Re-importing refreshes the drug list. Drugs you have already linked stay linked.
+              </p>
+            )}
+          </div>
         </section>
       )}
 

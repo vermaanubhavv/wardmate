@@ -193,3 +193,62 @@ export async function saveProfile(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/unit");
 }
+
+/**
+ * Import this ward's hospital formulary, replacing whatever was there.
+ *
+ * The list is captured from the hospital's own prescribing screen (see the Unit page for the
+ * snippet) and arrives as the raw rows that page renders — including its duplicates, since the
+ * same drug is held as several stock batches. Those collapse to distinct text here: they are
+ * interchangeable to the patient, and keeping 1,557 rows where 1,057 differ would only make
+ * the picker longer to read.
+ *
+ * Replacing rather than merging, deliberately. A formulary is a snapshot of what the hospital
+ * stocks; merging an old list into a new one would keep offering drugs that have since been
+ * withdrawn, with nothing to indicate which were which. Confirmed mappings are NOT touched —
+ * they are clinical judgements, and a re-import is a stock update, not a reason to make a
+ * resident choose everything again.
+ */
+export async function importFormulary(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const wardId = String(formData.get("ward_id") ?? "");
+  const file = formData.get("formulary");
+  if (!wardId || !(file instanceof File) || file.size === 0) return;
+  // The capture is a few hundred kilobytes of text; anything far past that is not this file.
+  if (file.size > 5_000_000) return;
+
+  let texts: string[];
+  try {
+    const parsed = JSON.parse(await file.text()) as { rows?: { text?: unknown }[] };
+    const seen = new Set<string>();
+    texts = (parsed.rows ?? [])
+      .map((r) => (typeof r.text === "string" ? r.text.trim() : ""))
+      .filter((t) => {
+        if (t.length < 2 || t.length > 400 || seen.has(t)) return false;
+        seen.add(t);
+        return true;
+      });
+  } catch {
+    return;
+  }
+
+  if (texts.length === 0) return;
+
+  // Row security already limits this to a ward this doctor owns; the delete is what makes the
+  // import a replacement rather than an append.
+  await supabase.from("ward_formulary_items").delete().eq("ward_id", wardId);
+
+  // Chunked because a single insert of a thousand-plus rows is refused by the API's body limit.
+  for (let i = 0; i < texts.length; i += 500) {
+    await supabase
+      .from("ward_formulary_items")
+      .insert(texts.slice(i, i + 500).map((item_text) => ({ ward_id: wardId, item_text })));
+  }
+
+  revalidatePath("/unit");
+}

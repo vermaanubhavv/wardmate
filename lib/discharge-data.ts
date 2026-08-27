@@ -3,13 +3,22 @@ import { derivePatientState } from "@/lib/patient-state";
 import { getTemplateForPatient, getProcedureLabels, procedureFor } from "@/lib/templates";
 import { isIdentifierLabel } from "@/lib/patients";
 import { buildDischargeNote, type DischargeNote } from "@/lib/discharge";
+import { getFormularyMappings, getFormularySize } from "@/lib/formulary";
+
+export type DischargeContext = {
+  note: DischargeNote;
+  wardId: string;
+  /** 0 when this ward has never imported its hospital formulary — the screen then says nothing
+   *  about formulary linking at all, rather than offering a picker with nothing in it. */
+  formularySize: number;
+};
 
 /**
  * Everything the discharge summary needs, fetched once and shared by both places it renders —
  * the print page and the Word-document download. Kept in one place so the two can never drift:
  * a fix to one (like the isIdentifierLabel filter below) automatically applies to the other.
  */
-export async function getDischargeNote(patientId: string): Promise<DischargeNote | null> {
+export async function getDischargeContext(patientId: string): Promise<DischargeContext | null> {
   const supabase = await createClient();
 
   const { data: patient } = await supabase
@@ -22,7 +31,8 @@ export async function getDischargeNote(patientId: string): Promise<DischargeNote
 
   if (!patient) return null;
 
-  const [{ data: entriesData }, procedures, { data: wardRow }, template] = await Promise.all([
+  const [{ data: entriesData }, procedures, { data: wardRow }, template, formularyMappings, formularySize] =
+    await Promise.all([
     supabase
       .from("entries")
       .select(
@@ -30,10 +40,12 @@ export async function getDischargeNote(patientId: string): Promise<DischargeNote
       )
       .eq("patient_id", patientId)
       .order("recorded_at", { ascending: false }),
-    getProcedureLabels(),
-    supabase.from("wards").select("name, letterhead").eq("id", patient.ward_id).maybeSingle(),
-    getTemplateForPatient(patient),
-  ]);
+      getProcedureLabels(),
+      supabase.from("wards").select("name, letterhead").eq("id", patient.ward_id).maybeSingle(),
+      getTemplateForPatient(patient),
+      getFormularyMappings(patient.ward_id),
+      getFormularySize(patient.ward_id),
+    ]);
 
   // Bed number and the patient's own name are properties of the patient, not clinical findings
   // — the same filter the main patient page applies before deriving anything from an
@@ -53,8 +65,11 @@ export async function getDischargeNote(patientId: string): Promise<DischargeNote
     return true;
   });
 
-  return buildDischargeNote(patient, patientState, medications, procedure, {
+  const note = buildDischargeNote(patient, patientState, medications, procedure, {
     letterhead: wardRow?.letterhead ?? null,
     wardName: wardRow?.name ?? null,
+    formularyMappings,
   });
+
+  return { note, wardId: patient.ward_id as string, formularySize };
 }

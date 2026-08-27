@@ -17,7 +17,7 @@ import {
   VerticalAlign,
 } from "docx";
 import { createClient } from "@/lib/supabase/server";
-import { getDischargeNote } from "@/lib/discharge-data";
+import { getDischargeContext } from "@/lib/discharge-data";
 import type { DischargeNote } from "@/lib/discharge";
 import { HOSPITAL_LINES } from "@/lib/discharge-letterhead";
 
@@ -37,8 +37,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
-  const note = await getDischargeNote(id);
-  if (!note) return NextResponse.json({ error: "Patient not found." }, { status: 404 });
+  const context = await getDischargeContext(id);
+  if (!context) return NextResponse.json({ error: "Patient not found." }, { status: 404 });
+  const note = context.note;
 
   const logoBytes = await readFile(path.join(process.cwd(), "public", "discharge", "esic-logo.png"));
 
@@ -304,7 +305,9 @@ function adviceTable(note: DischargeNote): Table {
       const row = note.advice.rows[i];
       const values = [
         String(i + 1),
-        row?.drug ?? "",
+        // The formulary's own wording underneath, where a clinician confirmed which entry this
+        // drug is — that is what gets typed into the prescribing system.
+        row?.formularyName ? `${row.drug}\n${row.formularyName}` : (row?.drug ?? ""),
         row?.dose ?? "",
         row?.frequency ?? "",
         row?.duration ?? "",
