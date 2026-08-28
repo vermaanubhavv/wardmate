@@ -4,6 +4,12 @@ import { RADIOLOGY_LABEL } from "@/lib/radiology-flags";
 import { listedComorbidities } from "@/lib/comorbidities";
 import { medicationFields, type MedicationFields } from "@/lib/medication-fields";
 import { drugKey } from "@/lib/formulary";
+import {
+  esicFrequency,
+  esicRoute,
+  esicDoseUnit,
+  esicDurationUnit,
+} from "@/lib/esic-prescription-codes";
 import type { Observation, PatientState } from "@/lib/patient-state";
 
 export type DischargePatient = {
@@ -130,6 +136,13 @@ export type DischargeNote = {
        *  search must start from — the phrase often contains no drug name at all. */
       drugName: string;
       formularyName: string | null;
+      /** The hospital prescribing system's own wording, so the printed summary reads exactly
+       *  as that screen does and can be copied across without translation. Null wherever the
+       *  resident never said the thing, or the hospital's list has no equivalent for it. */
+      esicFrequency: string | null;
+      esicRoute: string | null;
+      esicDose: string | null;
+      esicDuration: string | null;
     })[];
     isDefault: boolean;
   };
@@ -216,11 +229,23 @@ export function buildDischargeNote(
   // null otherwise. Nothing here searches or matches — see lib/formulary.ts.
   const withFormulary = (label: string, valueText: string | null) => {
     const key = drugKey(label);
+    const fields = medicationFields(label, valueText);
+    const doseUnit = esicDoseUnit(fields.doseUnitCode);
+    const durUnit = esicDurationUnit(fields.durationUnitCode);
+    // The dose number is the resident's own; only the unit is translated into the hospital's
+    // wording. A unit their list has no entry for (an inhaler puff) leaves this blank rather
+    // than being mapped to something adjacent.
+    const doseNumber = fields.dose?.match(/^[\d.]+/)?.[0] ?? null;
     return {
-      ...medicationFields(label, valueText),
+      ...fields,
       drugKey: key,
       drugName: label.trim(),
       formularyName: options?.formularyMappings?.get(key) ?? null,
+      esicFrequency: esicFrequency(fields.frequencyCode)?.text ?? null,
+      esicRoute: esicRoute(fields.routeCode)?.text ?? null,
+      esicDose: doseNumber && doseUnit ? `${doseNumber} ${doseUnit.text}` : null,
+      esicDuration:
+        fields.durationValue !== null && durUnit ? `${fields.durationValue} ${durUnit.text}` : null,
     };
   };
 
@@ -335,7 +360,13 @@ export function formatDischargeText(note: DischargeNote): string {
   note.advice.rows.forEach((row, i) => {
     // Only the fields that were actually stated — a blank column is not written out as an
     // empty dash in a block somebody may paste into a prescription.
-    const parts = [row.dose, row.frequency, row.duration, row.route, row.quantity ? `Qty ${row.quantity}` : null]
+    const parts = [
+      row.esicDose ?? row.dose,
+      row.esicFrequency,
+      row.esicDuration ?? row.duration,
+      row.esicRoute,
+      row.quantity ? `Qty ${row.quantity}` : null,
+    ]
       .filter(Boolean)
       .join(" · ");
     out.push(`  ${i + 1}. ${row.drug}${parts ? ` — ${parts}` : ""}`);

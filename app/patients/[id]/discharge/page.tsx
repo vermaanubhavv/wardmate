@@ -220,11 +220,11 @@ export default async function DischargeSummaryPage({ params }: { params: Promise
                           </span>
                         )}
                       </td>
-                      <td className={cell}>{row?.dose ?? ""}</td>
-                      <td className={cell}>{row?.frequency ?? ""}</td>
-                      <td className={cell}>{row?.duration ?? ""}</td>
+                      <td className={cell}>{row?.esicDose ?? row?.dose ?? ""}</td>
+                      <td className={cell}>{row?.esicFrequency ?? ""}</td>
+                      <td className={cell}>{row?.esicDuration ?? row?.duration ?? ""}</td>
                       <td className={cell}>{row?.quantity ?? ""}</td>
-                      <td className={cell}>{row?.route ?? ""}</td>
+                      <td className={cell}>{row?.esicRoute ?? ""}</td>
                     </tr>
                   );
                 })}

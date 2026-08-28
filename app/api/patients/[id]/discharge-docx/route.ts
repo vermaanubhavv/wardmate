@@ -308,11 +308,11 @@ function adviceTable(note: DischargeNote): Table {
         // The formulary's own wording underneath, where a clinician confirmed which entry this
         // drug is — that is what gets typed into the prescribing system.
         row?.formularyName ? `${row.drug}\n${row.formularyName}` : (row?.drug ?? ""),
-        row?.dose ?? "",
-        row?.frequency ?? "",
-        row?.duration ?? "",
+        row?.esicDose ?? row?.dose ?? "",
+        row?.esicFrequency ?? "",
+        row?.esicDuration ?? row?.duration ?? "",
         row?.quantity ?? "",
-        row?.route ?? "",
+        row?.esicRoute ?? "",
       ];
       return new TableRow({
         children: values.map((v, c) =>
