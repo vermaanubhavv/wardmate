@@ -505,19 +505,30 @@ export async function copySetupFromWard(
 
   // 3. The hospital's drug list. Same hospital, same stock; a unit importing it separately is
   // the same capture done again. Replaced rather than merged, for the reason 0047 gives.
-  const { data: items } = await supabase
-    .from("ward_formulary_items")
-    .select("item_text")
-    .eq("ward_id", sourceId);
+  // Read in pages of 1000. PostgREST caps a single response at 1000 rows and says nothing about
+  // it, so a straight select of a 1057-drug formulary silently copies 1000 and looks like it
+  // worked — which is exactly what happened the first time this ran.
+  const items: { item_text: string }[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data: page } = await supabase
+      .from("ward_formulary_items")
+      .select("item_text")
+      .eq("ward_id", sourceId)
+      .range(from, from + 999);
+    if (!page || page.length === 0) break;
+    items.push(...page);
+    if (page.length < 1000) break;
+  }
 
   if (items && items.length > 0) {
     await supabase.from("ward_formulary_items").delete().eq("ward_id", targetId);
     let inserted = 0;
     for (let i = 0; i < items.length; i += 500) {
+      const chunk = items.slice(i, i + 500);
       const { error } = await supabase
         .from("ward_formulary_items")
-        .insert(items.slice(i, i + 500).map((r) => ({ ward_id: targetId, item_text: r.item_text })));
-      if (!error) inserted += Math.min(500, items.length - i);
+        .insert(chunk.map((r) => ({ ward_id: targetId, item_text: r.item_text })));
+      if (!error) inserted += chunk.length;
     }
     if (inserted > 0) done.push(`${inserted} medicines`);
   }
