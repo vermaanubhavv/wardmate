@@ -8,8 +8,7 @@
   "content_scripts": [
     {
       "matches": [
-        "https://gateway.esic.gov.in/Hospital/ClinicalRecords/ClientSide_Prescriptions.aspx*",
-        "https://gateway.esic.gov.in/Hospital/ClinicalRecords/FUP.aspx*"
+        "https://gateway.esic.gov.in/Hospital/ClinicalRecords/*"
       ],
       "js": ["content.js"],
       "css": ["panel.css"],

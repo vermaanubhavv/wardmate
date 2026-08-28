@@ -30,3 +30,4 @@
 .wm-inline-note.wm-bad { color: #a3400f; }
 .wm-strong { font-weight: 600; }
 .wm-bad { color: #a3400f; }
+.wm-confirm { margin: 4px 0 0; padding: 6px 8px; background: #fff6e8; border-radius: 6px; color: #6b4a12; }

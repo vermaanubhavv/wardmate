@@ -91,41 +91,72 @@ function tickAll(medications) {
 
 /* --------------------------------------------------------------------- who is on screen */
 
-/**
- * The IP number of the patient whose record the hospital system currently has open.
- *
- * The prescription page's URL carries only an encrypted PID token, so nothing here can
- * navigate to a patient or work out who they are from the address — this reads the page's own
- * displayed identifier instead.
- */
-function openPatientIp() {
-  const el = document.getElementById("lblIP");
-  const text = norm(el?.innerText);
-  // Digits only, so "IP No: 11111111" and "11111111" compare the same. If the label ever holds
-  // something without digits, this yields null and the guard below refuses — which is the
-  // right way to fail.
-  const digits = text.replace(/\D+/g, "");
-  return digits.length > 0 ? digits : null;
-}
+/** The Case Sheet's own fields. The prescription page is a popup opened from it and shows no
+ *  patient identity of its own, so identity is read from the parent window — live, not a copy
+ *  taken earlier that could have gone stale against a different patient. */
+const CASE_SHEET = {
+  ip: "ctl00_cphpage_lblIPNO_IP",
+  name: "ctl00_cphpage_lblPatientName_IP",
+  admission: "ctl00_cphpage_lblAdmissionNo_IP",
+};
 
 /**
- * Whether it is safe to enter anything on this page.
+ * The document showing the Case Sheet — this page if it is the Case Sheet, otherwise the
+ * window that opened this one. Null when neither can be read, which must stop the automation
+ * rather than let it proceed unsure of who it is looking at.
+ */
+function caseSheetDocument() {
+  if (document.getElementById(CASE_SHEET.ip)) return document;
+  try {
+    const parent = window.opener?.document;
+    if (parent?.getElementById(CASE_SHEET.ip)) return parent;
+  } catch {
+    // Cross-origin or a closed opener. Treated the same as not found.
+  }
+  return null;
+}
+
+const fieldText = (doc, id) => norm(doc.getElementById(id)?.innerText);
+
+/**
+ * Whether it is safe to enter anything for this patient.
  *
- * Exact digits, or refuse. Deliberately no fall-back to matching the patient's NAME: WardMate
- * holds "SHYAMLAL" where the hospital record may say "Shyam Lal", and a near-match accepted
- * here is a prescription written onto somebody else. Refusing costs a moment; the other
- * failure is not one anybody would notice happening.
+ * The number is compared digit for digit, and there is deliberately NO fall-back to matching
+ * the name: WardMate holds "SHYAMLAL" where the record may say "Shyam Lal", and a near-match
+ * accepted here writes a prescription onto somebody else.
+ *
+ * The number alone is not proof of identity either, and this is the important part — an
+ * insured worker and their dependants SHARE one IP number (the record carries a separate
+ * SELF/FAMILY field precisely because of that). So a husband and wife admitted together both
+ * match. The number is therefore checked by machine and the NAME is put on screen beside
+ * WardMate's for a human to read: "SANDY" next to "Mrs.INDU DEVI" is impossible to miss.
  */
 function identityCheck(payload) {
   const want = (payload.ipNumber || "").replace(/\D+/g, "");
-  const have = openPatientIp();
-
   if (!want) return { ok: false, reason: "WardMate has no IP number for this patient." };
-  if (!have) return { ok: false, reason: "Cannot read an IP number from this page." };
-  if (want !== have) {
-    return { ok: false, reason: `Different patient: this page is IP ${have}, WardMate has IP ${want}.` };
+
+  const doc = caseSheetDocument();
+  if (!doc) {
+    return {
+      ok: false,
+      reason: "Cannot see the Case Sheet. Open this prescription page from the patient's Case Sheet.",
+    };
   }
-  return { ok: true, ip: have };
+
+  const have = fieldText(doc, CASE_SHEET.ip).replace(/\D+/g, "");
+  if (!have) return { ok: false, reason: "No IP number on the Case Sheet." };
+
+  if (want !== have) {
+    return { ok: false, reason: `Different patient: Case Sheet is IP ${have}, WardMate has IP ${want}.` };
+  }
+
+  return {
+    ok: true,
+    ip: have,
+    // Shown, never matched on — see above.
+    recordName: fieldText(doc, CASE_SHEET.name) || "(no name on record)",
+    admission: fieldText(doc, CASE_SHEET.admission) || null,
+  };
 }
 
 /* ------------------------------------------------------------------------------ the panel */
@@ -179,7 +210,9 @@ function render(panel, payload) {
     ${
       check
         ? check.ok
-          ? `<p class="wm-ok">Matches this page — IP ${escapeHtml(check.ip)}.</p>`
+          ? `<p class="wm-ok">IP ${escapeHtml(check.ip)} matches.</p>
+             <p class="wm-confirm">Record says: <b>${escapeHtml(check.recordName)}</b><br>
+             Check this is the same person — one IP number covers a whole family.</p>`
           : `<p class="wm-bad wm-strong">${escapeHtml(check.reason)}</p>`
         : ""
     }

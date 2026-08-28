@@ -146,7 +146,7 @@ async function buildBody(note: DischargeNote, logoBytes: Buffer): Promise<(Parag
         }),
         new TableRow({
           children: [
-            cell([new Paragraph({ children: [bold("INS. NO./EMP ID – "), plain(note.header.insNo)] })], 40),
+            cell([new Paragraph({ children: [bold("INS. NO./EMP ID – "), plain(note.header.ipNo ?? "")] })], 40),
             cell([new Paragraph({ children: [bold("MRD NO. "), plain(note.header.mrdNo ?? "")] })], 30),
             cell([new Paragraph({ children: [bold("IP/FAMILY- "), plain(note.header.ipFamily)] })], 30),
           ],

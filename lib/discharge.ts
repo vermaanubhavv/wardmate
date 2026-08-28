@@ -104,13 +104,15 @@ export type DischargeNote = {
     name: string;
     age: string;
     sex: string;
-    /** Not tracked by this app — the template has boxes for them, so they print blank for the
-     *  resident to fill by hand, same as the real form does for anyone whose insurance number
-     *  or family/self status was never entered anywhere in WardMate. */
-    insNo: string;
+    /** The insured-person number, photographed off the admission sheet. One number under three
+     *  names: the Case Sheet shows it as "IP NO.", the discharge template as "INS. NO./EMP ID",
+     *  WardMate as "IP no.". Kept as one field so those cannot drift apart. */
+    ipNo: string | null;
+    /** SELF or FAMILY — genuinely not tracked by this app, so it prints blank to be written in.
+     *  Note it is NOT derivable from ipNo: an insured worker and their dependants share one
+     *  number, which is exactly why that number alone cannot identify a patient. */
     ipFamily: string;
     mrdNo: string | null;
-    ipNo: string | null;
     ward: string;
     doa: string;
     dod: string;
@@ -279,10 +281,9 @@ export function buildDischargeNote(
       name: stripPatientHonorific(patient.display_name).toUpperCase(),
       age: patient.age_years !== null ? `${patient.age_years} YEARS` : "",
       sex: sexWord(patient.sex),
-      insNo: "",
+      ipNo: patient.uhid_ip_no,
       ipFamily: "",
       mrdNo: patient.mrd_no,
-      ipNo: patient.uhid_ip_no,
       ward: (options?.wardName ?? "GENERAL SURGERY").toUpperCase(),
       doa: istDay(patient.admitted_on),
       dod: istDay(today),
@@ -315,8 +316,7 @@ export function formatDischargeText(note: DischargeNote): string {
   out.push(`NAME – ${note.header.name}`);
   out.push(`AGE – ${note.header.age || BLANK}`);
   out.push(`SEX – ${note.header.sex || BLANK}`);
-  out.push(`INS. NO./EMP ID – ${note.header.insNo || BLANK}`);
-  out.push(`IP NO. ${note.header.ipNo || BLANK}`);
+  out.push(`INS. NO./EMP ID – ${note.header.ipNo || BLANK}`);
   out.push(`MRD NO. ${note.header.mrdNo || BLANK}`);
   out.push(`IP/FAMILY – ${note.header.ipFamily || BLANK}`);
   out.push(`WARD – ${note.header.ward}`);

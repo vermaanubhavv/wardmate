@@ -79,7 +79,7 @@ export default async function DischargeSummaryPage({ params }: { params: Promise
                 </tr>
                 <tr>
                   <td className={cell}>
-                    <span className="font-bold">INS. NO./EMP ID –</span> {note.header.insNo}
+                    <span className="font-bold">INS. NO./EMP ID –</span> {note.header.ipNo || ""}
                   </td>
                   <td className={cell}>
                     <span className="font-bold">MRD NO.</span> {note.header.mrdNo || ""}
