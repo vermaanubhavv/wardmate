@@ -5,7 +5,9 @@ import { createWard, type CreateWardState } from "../unit/actions";
 
 const initialState: CreateWardState = { error: null };
 
-export default function CreateUnitForm() {
+/** autoFocus only where this form is the whole point of the screen — on the Unit page it sits
+ *  well down a long page, and focusing it there would scroll the page out from under a thumb. */
+export default function CreateUnitForm({ autoFocus = false }: { autoFocus?: boolean }) {
   const [state, formAction, pending] = useActionState(createWard, initialState);
 
   return (
@@ -16,7 +18,7 @@ export default function CreateUnitForm() {
           name="name"
           required
           maxLength={60}
-          autoFocus
+          autoFocus={autoFocus}
           autoCapitalize="words"
           placeholder="e.g. Unit Alpha"
           className="h-12 w-full rounded-[10px] border border-line bg-card px-3 text-[17px] outline-none focus:border-accent"

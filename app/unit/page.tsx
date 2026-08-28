@@ -4,8 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentWard, getMyWards } from "@/lib/ward";
 import CodeBox from "./code-box";
 import JoinForm from "./join-form";
-import { switchWard, leaveWard, renameWard, saveLetterhead, saveProfile } from "./actions";
+import { switchWard, leaveWard, renameWard, saveLetterhead, saveProfile, removeExpectedMember } from "./actions";
 import FormularyImport from "./formulary-import";
+import InviteShare from "./invite-share";
+import AddExpected from "./add-expected";
+import ClaimName from "./claim-name";
+import { getExpectedMembers } from "@/lib/expected-members";
+import CreateUnitForm from "../onboarding/create-unit-form";
 import { getFormularySize } from "@/lib/formulary";
 import { DESIGNATION_CHOICES } from "@/lib/patients";
 import { ChecklistIcon, DocumentIcon } from "../icons";
@@ -57,6 +62,7 @@ export default async function UnitPage() {
     ]);
 
   const formularySize = await getFormularySize(ward.id);
+  const { rows: expected, missing: rosterMissing } = await getExpectedMembers(ward.id);
 
   const isOwner = ward.owner_id === user?.id;
 
@@ -84,6 +90,10 @@ export default async function UnitPage() {
     designation?: string | null;
     department?: string | null;
   };
+
+  // Names nobody has taken yet — what a new joiner chooses from, and what tells the owner
+  // who has still not signed in.
+  const unclaimed = expected.filter((e) => !e.claimed_by);
 
   const roster = (members ?? []) as unknown as {
     user_id: string;
@@ -127,6 +137,21 @@ export default async function UnitPage() {
           )}
         </ul>
       </section>
+
+      {/* Ahead of everything, and only ever once: somebody who has just entered the unit code
+          has no name on them yet, and every screen after this one shows them as "Doctor" until
+          they set one. Picking it off the unit's own list is one tap instead of typing. It
+          stops rendering the moment a name exists. */}
+      {!profile.display_name && unclaimed.length > 0 && (
+        <section className="px-6 pb-6">
+          <p className="mb-2 text-[15px] text-muted">Which one are you?</p>
+          <ClaimName options={unclaimed} />
+          <p className="mt-2 text-[13px] leading-relaxed text-muted">
+            Tap your name and the unit sees it against everything you record. Not on the list?
+            Type your name below instead.
+          </p>
+        </section>
+      )}
 
       {/* First, because it is the only section on this screen about the person reading it.
           What is set here is what the landing page greets you with. */}
@@ -180,6 +205,7 @@ export default async function UnitPage() {
       <section className="px-6 pb-6">
         <p className="mb-2 text-[15px] text-muted">Code for this unit</p>
         <CodeBox code={ward.join_code} />
+        <InviteShare unitName={ward.name} code={ward.join_code} />
         <p className="mt-2 text-[13px] text-muted leading-relaxed">
           Anyone entering this code joins this unit and sees the same patient list. Everything
           they record is theirs by name. Give it only to the team.
@@ -214,6 +240,46 @@ export default async function UnitPage() {
           })}
         </ul>
       </section>
+
+      {/* Who this unit expects, written before any of them has an account. The roster above is
+          who has actually arrived; this is the list they arrive against. Owner only, because
+          the table's policies allow nobody else to write it. */}
+      {isOwner && (
+        <section className="px-6 pb-6">
+          <p className="mb-2 text-[15px] text-muted">Expected on this unit</p>
+          {rosterMissing ? (
+            <p className="ios-group px-4 py-3 text-[15px] leading-relaxed text-orange-700">
+              Run patch 0048 in Supabase to use the unit roster.
+            </p>
+          ) : (
+            <>
+              {expected.length > 0 && (
+                <ul className="ios-group mb-3 divide-y divide-line">
+                  {expected.map((person) => (
+                    <li key={person.id} className="flex items-baseline gap-3 px-4 py-3">
+                      <span className="flex-1 truncate text-[15px]">
+                        {person.full_name}
+                        {person.designation && (
+                          <span className="text-muted"> · {person.designation}</span>
+                        )}
+                      </span>
+                      {person.claimed_by ? (
+                        <span className="shrink-0 text-[13px] text-muted">joined</span>
+                      ) : (
+                        <form action={removeExpectedMember} className="shrink-0">
+                          <input type="hidden" name="id" value={person.id} />
+                          <button className="text-[13px] text-red-600">Remove</button>
+                        </form>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <AddExpected wardId={ward.id} />
+            </>
+          )}
+        </section>
+      )}
 
       {/* Only the owner may rename — the policy on wards says so, and offering the box to
           everyone else would be a control that silently does nothing. */}
@@ -321,7 +387,22 @@ export default async function UnitPage() {
         <JoinForm />
       </section>
 
-      {myWards.length > 1 && (
+      {/* Creating a unit used to exist only on the first-run screen, which redirects away the
+          moment you have one — so a doctor covering a second unit, or moving to one at the end
+          of a rotation, had no way to start it. The database never restricted this to one; only
+          the way in was missing. Creating switches you to the new unit, as it does at first run. */}
+      <section className="px-6 pb-6">
+        <p className="mb-2 text-[15px] text-muted">Create another unit</p>
+        <CreateUnitForm />
+        <p className="mt-2 text-[13px] text-muted leading-relaxed">
+          A new unit starts empty, with its own code and its own patients. You will be its owner.
+        </p>
+      </section>
+
+      {/* Shown even with one unit, now that a second can be made from this screen: the list is
+          where you find out which unit you are looking at, and it appearing only after there
+          are two hid the very thing the create box above changes. */}
+      {myWards.length > 0 && (
         <section className="px-6 pb-6">
           <p className="mb-2 text-[15px] text-muted">Your units</p>
           <ul className="flex flex-col gap-2">

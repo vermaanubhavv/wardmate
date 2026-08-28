@@ -46,7 +46,7 @@ export default async function OnboardingPage() {
           <p className="mb-3 text-[13px] leading-relaxed text-muted">
             You will be its owner and can share its code with your team.
           </p>
-          <CreateUnitForm />
+          <CreateUnitForm autoFocus />
         </section>
 
         <p className="mt-8 text-center text-[13px] text-muted">

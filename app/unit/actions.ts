@@ -56,6 +56,22 @@ export async function joinWard(_prev: JoinState, formData: FormData): Promise<Jo
   revalidatePath("/");
   revalidatePath("/ward");
   revalidatePath("/unit");
+
+  // A joiner with no name yet goes to the Unit page, where the unit's roster is waiting to be
+  // tapped; everybody else goes straight to the ward as before. One extra query, and only on
+  // the once-per-unit path — worth it, because a resident who lands on the ward and starts
+  // recording is "Doctor" against every entry they make that morning.
+  const { data: mine } = await supabase.from("profiles").select("display_name").maybeSingle();
+  if (!mine?.display_name) {
+    const { data: waiting } = await supabase
+      .from("ward_expected_members")
+      .select("id")
+      .eq("ward_id", data)
+      .is("claimed_by", null)
+      .limit(1);
+    if (waiting && waiting.length > 0) redirect("/unit");
+  }
+
   redirect("/ward");
 }
 
@@ -275,4 +291,94 @@ function databaseHint(message: string): string {
     return "The formulary tables are not in the database yet — run patch 0047 in Supabase first.";
   }
   return `Could not save: ${message}`;
+}
+
+/**
+ * Write the people a unit expects, before any of them has an account.
+ *
+ * One per line, designation after a comma — "Dr Sharma, SR". Pasted in bulk because a unit
+ * list arrives as a unit list, on paper or in a WhatsApp message, and adding eleven people
+ * one form at a time is eleven chances to give up halfway.
+ *
+ * A name is stored exactly as typed. The honorific stripping that applies to patients is
+ * deliberately not applied here: that rule exists because a patient name is an identifier
+ * that must match across admissions, whereas this is how a colleague is addressed on the
+ * ward, and "Dr" is part of it. See CONTEXT.md §2.
+ */
+export type ExpectedState = { message: string; ok: boolean } | null;
+
+export async function addExpectedMembers(
+  _prev: ExpectedState,
+  formData: FormData
+): Promise<ExpectedState> {
+  const wardId = String(formData.get("ward_id") ?? "");
+  if (!wardId) return { ok: false, message: "No unit selected." };
+
+  const designations = ["Intern", "JR-1", "JR-2", "JR-3", "SR", "AP", "Medical Officer", "Consultant"];
+
+  const rows = String(formData.get("names") ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [namePart, ...rest] = line.split(",");
+      const typed = rest.join(",").trim();
+      // Case-insensitively, because "sr" typed at 7am is the same person as "SR", and the
+      // column's check constraint would refuse the lowercase one with a database error.
+      const designation =
+        designations.find((d) => d.toLowerCase() === typed.toLowerCase()) ?? null;
+      return { ward_id: wardId, full_name: namePart.trim().slice(0, 80), designation };
+    })
+    .filter((r) => r.full_name.length > 0);
+
+  if (rows.length === 0) return { ok: false, message: "Type at least one name." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("ward_expected_members").insert(rows);
+  if (error) return { ok: false, message: expectedHint(error.message) };
+
+  revalidatePath("/unit");
+  return { ok: true, message: `Added ${rows.length} ${rows.length === 1 ? "person" : "people"}.` };
+}
+
+/** Take a name off the list. Owner only — the delete policy on the table says so. */
+export async function removeExpectedMember(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const supabase = await createClient();
+  await supabase.from("ward_expected_members").delete().eq("id", id);
+  revalidatePath("/unit");
+}
+
+/**
+ * "Which one are you?" — the second half of joining.
+ *
+ * The database does the work in claim_expected_member (0048), because this writes the
+ * caller's profile and no policy should let a member rewrite a roster name while doing it.
+ */
+export type ClaimState = { error: string | null };
+
+export async function claimExpectedMember(
+  _prev: ClaimState,
+  formData: FormData
+): Promise<ClaimState> {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: null };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("claim_expected_member", { member_id: id });
+  if (error) return { error: expectedHint(error.message) };
+
+  revalidatePath("/");
+  revalidatePath("/ward");
+  revalidatePath("/unit");
+  return { error: null };
+}
+
+function expectedHint(message: string): string {
+  if (/does not exist|schema cache/i.test(message)) {
+    return "The unit roster is not in the database yet — run patch 0048 in Supabase first.";
+  }
+  return message;
 }
