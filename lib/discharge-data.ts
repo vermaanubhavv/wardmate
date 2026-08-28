@@ -24,7 +24,7 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
   const { data: patient } = await supabase
     .from("current_patients")
     .select(
-      "id, ward_id, display_name, age_years, sex, bed, mrd_no, primary_diagnosis, admitted_on, surgery_date, post_op_day, admission_day, management, template_family, template_variant, procedure_text"
+      "id, ward_id, display_name, age_years, sex, bed, mrd_no, uhid_ip_no, primary_diagnosis, admitted_on, surgery_date, post_op_day, admission_day, management, template_family, template_variant, procedure_text"
     )
     .eq("id", patientId)
     .maybeSingle();

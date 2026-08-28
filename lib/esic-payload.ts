@@ -40,6 +40,11 @@ export type EsicPayload = {
    *  about to fill the patient they think they are. The extension never matches on it — it
    *  cannot know which patient the ESIC page has open — it only displays it. */
   patient: string;
+  /** Checked against the record open in the hospital system before anything is entered. Null
+   *  when WardMate never recorded one — which must stop the automation, not soften into a
+   *  match on the name: "SHYAMLAL" against "Shyam Lal" is how a prescription reaches the
+   *  wrong person. */
+  ipNumber: string | null;
   generatedAt: string;
   medications: EsicMedication[];
 };
@@ -50,6 +55,7 @@ const numberOf = (text: string | null): string | null => text?.match(/^[\d.]+/)?
 export function buildEsicPayload(note: DischargeNote): EsicPayload {
   return {
     patient: note.header.name,
+    ipNumber: note.header.ipNo,
     generatedAt: new Date().toISOString(),
     medications: note.advice.rows.map((row) => {
       const doseUnit = esicDoseUnit(row.doseUnitCode);

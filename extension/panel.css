@@ -28,3 +28,5 @@
 .wm-miss li { margin-bottom: 3px; }
 .wm-inline-note { margin: 6px 0 0; color: #555; }
 .wm-inline-note.wm-bad { color: #a3400f; }
+.wm-strong { font-weight: 600; }
+.wm-bad { color: #a3400f; }

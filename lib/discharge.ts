@@ -18,6 +18,10 @@ export type DischargePatient = {
   sex: string | null;
   bed: string;
   mrd_no: string | null;
+  /** The IP number, photographed off the admission sheet. The one identifier stable enough to
+   *  check a WardMate patient against a record open in the hospital system — see
+   *  lib/esic-payload.ts. */
+  uhid_ip_no: string | null;
   primary_diagnosis: string | null;
   admitted_on: string;
   surgery_date: string | null;
@@ -106,6 +110,7 @@ export type DischargeNote = {
     insNo: string;
     ipFamily: string;
     mrdNo: string | null;
+    ipNo: string | null;
     ward: string;
     doa: string;
     dod: string;
@@ -277,6 +282,7 @@ export function buildDischargeNote(
       insNo: "",
       ipFamily: "",
       mrdNo: patient.mrd_no,
+      ipNo: patient.uhid_ip_no,
       ward: (options?.wardName ?? "GENERAL SURGERY").toUpperCase(),
       doa: istDay(patient.admitted_on),
       dod: istDay(today),
@@ -310,6 +316,7 @@ export function formatDischargeText(note: DischargeNote): string {
   out.push(`AGE – ${note.header.age || BLANK}`);
   out.push(`SEX – ${note.header.sex || BLANK}`);
   out.push(`INS. NO./EMP ID – ${note.header.insNo || BLANK}`);
+  out.push(`IP NO. ${note.header.ipNo || BLANK}`);
   out.push(`MRD NO. ${note.header.mrdNo || BLANK}`);
   out.push(`IP/FAMILY – ${note.header.ipFamily || BLANK}`);
   out.push(`WARD – ${note.header.ward}`);

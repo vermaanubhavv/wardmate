@@ -89,6 +89,45 @@ function tickAll(medications) {
   return results;
 }
 
+/* --------------------------------------------------------------------- who is on screen */
+
+/**
+ * The IP number of the patient whose record the hospital system currently has open.
+ *
+ * The prescription page's URL carries only an encrypted PID token, so nothing here can
+ * navigate to a patient or work out who they are from the address — this reads the page's own
+ * displayed identifier instead.
+ */
+function openPatientIp() {
+  const el = document.getElementById("lblIP");
+  const text = norm(el?.innerText);
+  // Digits only, so "IP No: 11111111" and "11111111" compare the same. If the label ever holds
+  // something without digits, this yields null and the guard below refuses — which is the
+  // right way to fail.
+  const digits = text.replace(/\D+/g, "");
+  return digits.length > 0 ? digits : null;
+}
+
+/**
+ * Whether it is safe to enter anything on this page.
+ *
+ * Exact digits, or refuse. Deliberately no fall-back to matching the patient's NAME: WardMate
+ * holds "SHYAMLAL" where the hospital record may say "Shyam Lal", and a near-match accepted
+ * here is a prescription written onto somebody else. Refusing costs a moment; the other
+ * failure is not one anybody would notice happening.
+ */
+function identityCheck(payload) {
+  const want = (payload.ipNumber || "").replace(/\D+/g, "");
+  const have = openPatientIp();
+
+  if (!want) return { ok: false, reason: "WardMate has no IP number for this patient." };
+  if (!have) return { ok: false, reason: "Cannot read an IP number from this page." };
+  if (want !== have) {
+    return { ok: false, reason: `Different patient: this page is IP ${have}, WardMate has IP ${want}.` };
+  }
+  return { ok: true, ip: have };
+}
+
 /* ------------------------------------------------------------------------------ the panel */
 
 function buildPanel() {
@@ -132,8 +171,18 @@ function render(panel, payload) {
   }
 
   const linked = payload.medications.filter((m) => m.formulary).length;
+  // Only meaningful on the prescription page; the drug list shows no patient.
+  const check = isDrugListPage() ? null : identityCheck(payload);
+
   body.innerHTML = `
     <p class="wm-patient">${escapeHtml(payload.patient || "—")}</p>
+    ${
+      check
+        ? check.ok
+          ? `<p class="wm-ok">Matches this page — IP ${escapeHtml(check.ip)}.</p>`
+          : `<p class="wm-bad wm-strong">${escapeHtml(check.reason)}</p>`
+        : ""
+    }
     <p class="wm-note">${linked} of ${payload.medications.length} linked to the formulary.</p>
     <button class="wm-btn wm-tick">Tick ${linked} drug${linked === 1 ? "" : "s"}</button>
     <button class="wm-btn wm-ghost wm-clear">Clear</button>
@@ -148,6 +197,8 @@ function render(panel, payload) {
     if (!isDrugListPage()) {
       return note(body, "Open the drug list first (Add, under Medications).", true);
     }
+    // The drug list is a separate page and carries no patient identity of its own, so the
+    // check runs where it can — see the banner rendered on the prescription page.
     const results = tickAll(payload.medications);
     showResults(body.querySelector(".wm-results"), results);
   });
