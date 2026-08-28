@@ -7,6 +7,8 @@ import PrintButton from "../note/print-button";
 import CopyNoteButton from "../note/copy-button";
 import DownloadWordButton from "./download-word-button";
 import FormularyLink from "./formulary-link";
+import CopyForEsic from "./copy-for-esic";
+import { buildEsicPayload } from "@/lib/esic-payload";
 
 /**
  * The discharge summary, laid out exactly the way the unit's own blank template is — logo, the
@@ -23,6 +25,7 @@ export default async function DischargeSummaryPage({ params }: { params: Promise
   const { note, wardId, formularySize } = context;
 
   const noteText = formatDischargeText(note);
+  const esicPayload = buildEsicPayload(note);
   const cell = "border border-black px-2 py-1 align-top";
 
   return (
@@ -263,6 +266,7 @@ export default async function DischargeSummaryPage({ params }: { params: Promise
       <section className="flex flex-col gap-2 px-4 pb-10 print:hidden">
         <PrintButton />
         <DownloadWordButton patientId={id} />
+        {formularySize > 0 && <CopyForEsic payload={esicPayload} />}
         <CopyNoteButton text={noteText} />
       </section>
     </div>
