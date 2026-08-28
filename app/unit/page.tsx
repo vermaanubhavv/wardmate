@@ -8,6 +8,7 @@ import { switchWard, leaveWard, renameWard, saveLetterhead, saveProfile, removeE
 import FormularyImport from "./formulary-import";
 import InviteShare from "./invite-share";
 import AddExpected from "./add-expected";
+import CopySetup from "./copy-setup";
 import ClaimName from "./claim-name";
 import { getExpectedMembers } from "@/lib/expected-members";
 import CreateUnitForm from "../onboarding/create-unit-form";
@@ -313,6 +314,18 @@ export default async function UnitPage() {
             </button>
           </form>
           <p className="mt-2 text-[13px] text-muted">Everyone on the unit sees this name.</p>
+        </section>
+      )}
+
+      {/* A second, third and fourth unit of the same department write the same documents on the
+          same hospital's paper. Only offered when there IS another unit to copy from. */}
+      {isOwner && myWards.length > 1 && (
+        <section className="px-6 pb-6">
+          <p className="mb-2 text-[15px] text-muted">Copy setup from another unit</p>
+          <CopySetup
+            wardId={ward.id}
+            options={myWards.filter((w) => w.id !== ward.id).map((w) => ({ id: w.id, name: w.name }))}
+          />
         </section>
       )}
 

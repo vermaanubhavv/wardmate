@@ -382,3 +382,150 @@ function expectedHint(message: string): string {
   }
   return message;
 }
+
+/**
+ * Copy another unit's setup onto this one: its paperwork, its discharge heading, its formulary.
+ *
+ * Four units of the same department write the same documents on the same hospital's paper. The
+ * only thing that genuinely differs is which unit it is — so that is the only thing changed
+ * here, and everything else is copied byte for byte rather than re-uploaded four times.
+ *
+ * The heading is copied verbatim EXCEPT for a line that is exactly the source unit's name,
+ * which becomes this unit's name — "UNIT-II" written as its own line becomes "UNIT-III". Only
+ * a whole line is matched, never a substring: "Department of General Surgery, Unit 3" is left
+ * alone rather than half-rewritten, because a heading is reproduced exactly on a document that
+ * leaves with a patient and a clever substitution that is wrong is worse than an obvious one
+ * the owner can see and fix. The result says which happened.
+ *
+ * What is NOT copied, deliberately: medication_formulary_map. Those are one resident's
+ * confirmed judgements about which formulary entry a drug is, and 0047 already treats them as
+ * clinical rather than as settings. The drug list they draw on is copied; the judgements are
+ * made again by the unit that will rely on them.
+ */
+export type CopySetupState = { message: string; ok: boolean } | null;
+
+export async function copySetupFromWard(
+  _prev: CopySetupState,
+  formData: FormData
+): Promise<CopySetupState> {
+  const targetId = String(formData.get("ward_id") ?? "");
+  const sourceId = String(formData.get("source_ward_id") ?? "");
+  if (!targetId || !sourceId) return { ok: false, message: "Choose a unit to copy from." };
+  if (targetId === sourceId) return { ok: false, message: "That is this unit." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, message: "You are signed out. Sign in again." };
+
+  // Both reads are limited by row security to units this doctor belongs to, so a ward id typed
+  // into the form cannot reach a unit they are not on.
+  const { data: wards } = await supabase
+    .from("wards")
+    .select("id, name, owner_id, letterhead")
+    .in("id", [sourceId, targetId]);
+
+  const source = wards?.find((w) => w.id === sourceId);
+  const target = wards?.find((w) => w.id === targetId);
+  if (!source || !target) return { ok: false, message: "Could not read both units." };
+  if (target.owner_id !== user.id) {
+    return { ok: false, message: "Only the owner of this unit can change its setup." };
+  }
+
+  const done: string[] = [];
+
+  // 1. The discharge heading, with the unit's own name on it.
+  if (source.letterhead) {
+    const sourceName = source.name.trim().toLowerCase();
+    let replaced = false;
+    const letterhead = (source.letterhead as string)
+      .split("\n")
+      .map((line: string) => {
+        if (line.trim().toLowerCase() === sourceName) {
+          replaced = true;
+          return line.replace(line.trim(), target.name.trim());
+        }
+        return line;
+      })
+      .join("\n");
+
+    const { error } = await supabase.from("wards").update({ letterhead }).eq("id", targetId);
+    if (error) return { ok: false, message: `Could not copy the heading: ${error.message}` };
+    done.push(
+      replaced
+        ? `heading (unit line now “${target.name}”)`
+        : "heading (copied exactly — no line matched the other unit’s name, so check it)"
+    );
+  }
+
+  // 2. The uploaded paperwork — progress notes, discharge layout, logo and the rest. The file
+  // itself is copied in storage; re-uploading the same photograph four times would produce four
+  // files that are supposed to be identical and, sooner or later, are not.
+  const { data: formats } = await supabase
+    .from("ward_formats")
+    .select("kind, file_path, file_name, mime_type, layout, layout_model, layout_error")
+    .eq("ward_id", sourceId);
+
+  const copiedKinds: string[] = [];
+  for (const format of formats ?? []) {
+    const { data: blob, error: downloadError } = await supabase.storage
+      .from("evidence")
+      .download(format.file_path);
+    if (downloadError || !blob) continue;
+
+    const ext = format.file_path.includes(".") ? format.file_path.split(".").pop() : "bin";
+    const path = `formats/${targetId}/${format.kind}-${crypto.randomUUID()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from("evidence")
+      .upload(path, Buffer.from(await blob.arrayBuffer()), {
+        contentType: format.mime_type ?? undefined,
+      });
+    if (uploadError) continue;
+
+    // The layout is carried across rather than detected again: it describes where the boxes sit
+    // on this exact page, and the page is the same page. Re-reading it would cost a model call
+    // to answer a question already answered.
+    const { error: rowError } = await supabase.from("ward_formats").upsert(
+      {
+        ward_id: targetId,
+        kind: format.kind,
+        file_path: path,
+        file_name: format.file_name,
+        mime_type: format.mime_type,
+        layout: format.layout,
+        layout_model: format.layout_model,
+        layout_error: format.layout_error,
+      },
+      { onConflict: "ward_id,kind" }
+    );
+    if (!rowError) copiedKinds.push(format.kind);
+  }
+  if (copiedKinds.length > 0) done.push(`${copiedKinds.length} formats`);
+
+  // 3. The hospital's drug list. Same hospital, same stock; a unit importing it separately is
+  // the same capture done again. Replaced rather than merged, for the reason 0047 gives.
+  const { data: items } = await supabase
+    .from("ward_formulary_items")
+    .select("item_text")
+    .eq("ward_id", sourceId);
+
+  if (items && items.length > 0) {
+    await supabase.from("ward_formulary_items").delete().eq("ward_id", targetId);
+    let inserted = 0;
+    for (let i = 0; i < items.length; i += 500) {
+      const { error } = await supabase
+        .from("ward_formulary_items")
+        .insert(items.slice(i, i + 500).map((r) => ({ ward_id: targetId, item_text: r.item_text })));
+      if (!error) inserted += Math.min(500, items.length - i);
+    }
+    if (inserted > 0) done.push(`${inserted} medicines`);
+  }
+
+  revalidatePath("/unit");
+  revalidatePath("/formats");
+  revalidatePath("/");
+
+  if (done.length === 0) return { ok: false, message: "That unit has nothing set up to copy." };
+  return { ok: true, message: `Copied from ${source.name}: ${done.join(", ")}.` };
+}
