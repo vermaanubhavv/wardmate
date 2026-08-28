@@ -45,9 +45,14 @@ export default async function UnitPage() {
 
   const [{ data: members }, myWards, { data: me }, { count: trashCount }, { data: isProtocolPublisher }] =
     await Promise.all([
+      // No embedded profiles(display_name) here, deliberately. PostgREST can only embed
+      // across a declared foreign key, and there is none between these two: ward_members.user_id
+      // and profiles.id both reference auth.users, which is not a link it can follow. Asking for
+      // the embed failed the WHOLE query, so the roster came back empty and the unit read
+      // "0 people" even to its own owner. The names are fetched separately below.
       supabase
         .from("ward_members")
-        .select("user_id, role, added_at, profiles(display_name)")
+        .select("user_id, role, added_at")
         .eq("ward_id", ward.id)
         .order("added_at"),
       getMyWards(),
@@ -95,12 +100,20 @@ export default async function UnitPage() {
   // who has still not signed in.
   const unclaimed = expected.filter((e) => !e.claimed_by);
 
-  const roster = (members ?? []) as unknown as {
-    user_id: string;
-    role: string;
-    added_at: string;
-    profiles: { display_name: string | null } | null;
-  }[];
+  const membership = (members ?? []) as { user_id: string; role: string; added_at: string }[];
+
+  // The names, in one more round trip. profiles_ward_read (0018) already limits this to people
+  // sharing a unit with the caller, so the id list cannot be used to read a stranger's name.
+  const names = new Map<string, string | null>();
+  if (membership.length > 0) {
+    const { data: peopleRows } = await supabase
+      .from("profiles")
+      .select("id, display_name")
+      .in("id", membership.map((m) => m.user_id));
+    for (const row of peopleRows ?? []) names.set(row.id, row.display_name);
+  }
+
+  const roster = membership.map((m) => ({ ...m, display_name: names.get(m.user_id) ?? null }));
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
@@ -221,7 +234,7 @@ export default async function UnitPage() {
               <li key={m.user_id} className="px-4 py-3">
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="truncate text-sm">
-                    {m.profiles?.display_name || "Doctor"}
+                    {m.display_name || "Doctor"}
                     {m.user_id === user?.id && <span className="text-muted"> · you</span>}
                   </span>
                   <span className="shrink-0 text-[13px] text-muted">{m.role}</span>
