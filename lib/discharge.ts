@@ -76,6 +76,11 @@ const STANDARD_ADVICE: { name: string; phrase: string }[] = [
 /** Same deliberate default: the exact wording the unit's own examples use for "nothing
  *  significant", printed only when no comorbidity was ever actually recorded for this patient,
  *  replaced wholesale the moment one is. */
+/** The unit's standard discharge course. Every one of the nine real discharge summaries this
+ *  was built from prescribes 7 days, so a drug dictated without a duration gets 7 rather than a
+ *  blank column. A duration that WAS dictated always wins — see medicationFields. */
+const DEFAULT_DISCHARGE_DAYS = 7;
+
 const NO_COMORBIDITY_DEFAULT =
   "NO COMORBIDITIES PRESENT. AND NO SIGNIFICANT PAST HISTORY. NO PREVIOUS HISTORY OF TB/ CONTACT OF TB.";
 
@@ -229,7 +234,9 @@ export function buildDischargeNote(
   // null otherwise. Nothing here searches or matches — see lib/formulary.ts.
   const withFormulary = (label: string, valueText: string | null) => {
     const key = drugKey(label);
-    const fields = medicationFields(label, valueText);
+    const fields = medicationFields(label, valueText, {
+      defaultDurationDays: DEFAULT_DISCHARGE_DAYS,
+    });
     const doseUnit = esicDoseUnit(fields.doseUnitCode);
     const durUnit = esicDurationUnit(fields.durationUnitCode);
     // The dose number is the resident's own; only the unit is translated into the hospital's

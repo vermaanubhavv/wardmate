@@ -95,14 +95,27 @@ export type MedicationFields = {
   durationUnitCode: string | null;
   frequency: string | null;
   frequencyCode: string | null;
-  /** Total to dispense. Only ever set when dose count, per-day frequency AND duration in days
-   *  were all three actually stated — see quantityFor below. */
+  /** Total to dispense. Needs a dose count, a per-day frequency and a duration in days — see
+   *  quantityFor below. */
   quantity: string | null;
+  /** True when the duration was not dictated and the ward's standard discharge course was
+   *  used instead. Lets a screen mark it as a default a doctor should look at, rather than
+   *  passing it off as something that was said. */
+  durationIsDefault: boolean;
   route: string | null;
   routeCode: string | null;
 };
 
-export function medicationFields(label: string, valueText: string | null): MedicationFields {
+export function medicationFields(
+  label: string,
+  valueText: string | null,
+  options?: {
+    /** The ward's standard discharge course, used ONLY where the resident stated no duration.
+     *  A duration they did state always wins — printing 7 days over a dictated "for 14 days"
+     *  would be this file overruling a doctor on the length of a course. */
+    defaultDurationDays?: number;
+  }
+): MedicationFields {
   const said = [valueText ?? "", label].filter(Boolean).join(" ");
 
   const freq = FREQUENCIES.find((f) => f.pattern.test(said)) ?? null;
@@ -125,8 +138,15 @@ export function medicationFields(label: string, valueText: string | null): Medic
       : null;
 
   const durationMatch = said.match(DURATION);
-  const durationValue = durationMatch ? Number(durationMatch[1]) : null;
-  const durationUnitCode = durationMatch ? durationMatch[2].toLowerCase().replace(/s$/, "") : null;
+  const fallbackDays = options?.defaultDurationDays ?? null;
+  const durationIsDefault = !durationMatch && fallbackDays !== null;
+
+  const durationValue = durationMatch ? Number(durationMatch[1]) : fallbackDays;
+  const durationUnitCode = durationMatch
+    ? durationMatch[2].toLowerCase().replace(/s$/, "")
+    : durationIsDefault
+      ? "day"
+      : null;
 
   return {
     // The drug's own name, not the whole dictated phrase — everything else the phrase carried
@@ -136,14 +156,15 @@ export function medicationFields(label: string, valueText: string | null): Medic
     dose,
     doseUnitCode: countUnit?.code ?? strengthUnit?.code ?? null,
     duration:
-      durationMatch && durationValue !== null
-        ? `${durationValue} ${durationUnit(durationMatch[2], durationValue)}`
+      durationValue !== null && durationUnitCode
+        ? `${durationValue} ${durationUnit(durationUnitCode, durationValue)}`
         : null,
     durationValue,
     durationUnitCode,
+    durationIsDefault,
     frequency: freq?.code ?? null,
     frequencyCode: freq?.code ?? null,
-    quantity: quantityFor(countMatch, countUnit, freq?.perDay ?? null, durationMatch),
+    quantity: quantityFor(countMatch, countUnit, freq?.perDay ?? null, durationValue, durationUnitCode),
     route: route?.code ?? null,
     routeCode: route?.code ?? null,
   };
@@ -165,12 +186,13 @@ function quantityFor(
   countMatch: RegExpMatchArray | null,
   countUnit: { display: string } | null,
   perDay: number | null,
-  durationMatch: RegExpMatchArray | null
+  durationValue: number | null,
+  durationUnitCode: string | null
 ): string | null {
-  if (!countMatch || !perDay || !durationMatch) return null;
+  if (!countMatch || !perDay || durationValue === null || !durationUnitCode) return null;
 
   const perDose = Number(countMatch[1]);
-  const days = daysFrom(Number(durationMatch[1]), durationMatch[2]);
+  const days = daysFrom(durationValue, durationUnitCode);
   if (!Number.isFinite(perDose) || perDose <= 0 || days === null) return null;
 
   const total = perDose * perDay * days;
