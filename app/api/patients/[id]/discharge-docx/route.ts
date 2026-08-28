@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { readFile } from "fs/promises";
-import path from "path";
 import {
   Document,
   Packer,
@@ -19,7 +17,6 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { getDischargeContext } from "@/lib/discharge-data";
 import type { DischargeNote } from "@/lib/discharge";
-import { HOSPITAL_LINES } from "@/lib/discharge-letterhead";
 
 /**
  * The discharge summary as an actual Word file, matching the unit's own blank template —
@@ -41,7 +38,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (!context) return NextResponse.json({ error: "Patient not found." }, { status: 404 });
   const note = context.note;
 
-  const logoBytes = await readFile(path.join(process.cwd(), "public", "discharge", "esic-logo.png"));
+  // The ward's own uploaded logo, fetched through its short-lived signed link. Null when the
+  // ward has not uploaded one — the heading then prints without a logo rather than with
+  // another hospital's.
+  const logoBytes = await fetchLogo(note.logoUrl);
 
   const doc = new Document({ sections: [{ children: await buildBody(note, logoBytes) }] });
   const buffer = await Packer.toBuffer(doc);
@@ -54,6 +54,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       "Content-Disposition": `attachment; filename="${filename}"`,
     },
   });
+}
+
+async function fetchLogo(url: string | null): Promise<Buffer | null> {
+  if (!url) return null;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return Buffer.from(await res.arrayBuffer());
+  } catch {
+    // A logo that will not load is not a reason to fail the whole document.
+    return null;
+  }
 }
 
 const bold = (text: string) => new TextRun({ text, bold: true });
@@ -77,7 +89,7 @@ function cell(children: Paragraph[], widthPct: number): TableCell {
   });
 }
 
-async function buildBody(note: DischargeNote, logoBytes: Buffer): Promise<(Paragraph | Table)[]> {
+async function buildBody(note: DischargeNote, logoBytes: Buffer | null): Promise<(Paragraph | Table)[]> {
   const body: (Paragraph | Table)[] = [];
 
   // Logo + hospital block, side by side — a borderless 2-column table, since Word has no plain
@@ -90,21 +102,21 @@ async function buildBody(note: DischargeNote, logoBytes: Buffer): Promise<(Parag
         new TableRow({
           children: [
             new TableCell({
-              width: { size: 15, type: WidthType.PERCENTAGE },
+              width: { size: logoBytes ? 15 : 1, type: WidthType.PERCENTAGE },
               verticalAlign: VerticalAlign.CENTER,
               children: [
                 new Paragraph({
-                  children: [
-                    new ImageRun({ data: logoBytes, transformation: { width: 70, height: 70 }, type: "png" }),
-                  ],
+                  children: logoBytes
+                    ? [new ImageRun({ data: logoBytes, transformation: { width: 70, height: 70 }, type: "png" })]
+                    : [],
                 }),
               ],
             }),
             new TableCell({
-              width: { size: 85, type: WidthType.PERCENTAGE },
+              width: { size: logoBytes ? 85 : 99, type: WidthType.PERCENTAGE },
               verticalAlign: VerticalAlign.CENTER,
               children: [
-                ...HOSPITAL_LINES.map(
+                ...note.letterheadLines.map(
                   (line, i) =>
                     new Paragraph({
                       alignment: AlignmentType.CENTER,

@@ -100,6 +100,14 @@ export type DischargeNote = {
   /** The unit's own letterhead text, set once per ward in /unit — see
    *  supabase/patches/0019_letterhead.sql. Null when nobody has set one yet. */
   letterhead: string | null;
+  /** The same, split for printing: one line per line typed. Empty when the ward has not set
+   *  one, in which case the summary prints no hospital heading at all rather than another
+   *  hospital's — this used to be hardcoded to the pilot ward's, which would have put ESIC's
+   *  name and seal on every other unit's discharge summaries. */
+  letterheadLines: string[];
+  /** Short-lived link to the ward's uploaded logo — see lib/formats.ts, kind "logo". Null when
+   *  none is uploaded, and the heading simply prints without one. */
+  logoUrl: string | null;
   header: {
     name: string;
     age: string;
@@ -188,6 +196,7 @@ export function buildDischargeNote(
   options?: {
     wardName?: string | null;
     letterhead?: string | null;
+    logoUrl?: string | null;
     /** Confirmed drug-key -> formulary-entry mappings for this ward. Absent means the ward has
      *  not imported a formulary; every row simply carries no formulary name. */
     formularyMappings?: Map<string, string>;
@@ -277,6 +286,11 @@ export function buildDischargeNote(
 
   return {
     letterhead: options?.letterhead?.trim() || null,
+    letterheadLines: (options?.letterhead ?? "")
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean),
+    logoUrl: options?.logoUrl ?? null,
     header: {
       name: stripPatientHonorific(patient.display_name).toUpperCase(),
       age: patient.age_years !== null ? `${patient.age_years} YEARS` : "",

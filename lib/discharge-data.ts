@@ -4,6 +4,7 @@ import { getTemplateForPatient, getProcedureLabels, procedureFor } from "@/lib/t
 import { isIdentifierLabel } from "@/lib/patients";
 import { buildDischargeNote, type DischargeNote } from "@/lib/discharge";
 import { getFormularyMappings, getFormularySize } from "@/lib/formulary";
+import { getWardFormats } from "@/lib/formats";
 
 export type DischargeContext = {
   note: DischargeNote;
@@ -31,7 +32,7 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
 
   if (!patient) return null;
 
-  const [{ data: entriesData }, procedures, { data: wardRow }, template, formularyMappings, formularySize] =
+  const [{ data: entriesData }, procedures, { data: wardRow }, template, formularyMappings, formularySize, wardFormats] =
     await Promise.all([
     supabase
       .from("entries")
@@ -45,6 +46,7 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
       getTemplateForPatient(patient),
       getFormularyMappings(patient.ward_id),
       getFormularySize(patient.ward_id),
+      getWardFormats(patient.ward_id),
     ]);
 
   // Bed number and the patient's own name are properties of the patient, not clinical findings
@@ -69,6 +71,7 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
     letterhead: wardRow?.letterhead ?? null,
     wardName: wardRow?.name ?? null,
     formularyMappings,
+    logoUrl: wardFormats.get("logo")?.url ?? null,
   });
 
   return { note, wardId: patient.ward_id as string, formularySize };

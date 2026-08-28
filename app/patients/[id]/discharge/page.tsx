@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDischargeContext } from "@/lib/discharge-data";
 import { formatDischargeText } from "@/lib/discharge";
-import { HOSPITAL_LINES, LOGO_PUBLIC_PATH } from "@/lib/discharge-letterhead";
 import PrintButton from "../note/print-button";
 import CopyNoteButton from "../note/copy-button";
 import DownloadWordButton from "./download-word-button";
@@ -48,10 +47,15 @@ export default async function DischargeSummaryPage({ params }: { params: Promise
           <div className="print:break-after-page">
             {/* eslint-disable-next-line @next/next/no-img-element -- a small static asset
                 bundled with the app, not a remote or user-uploaded image. */}
+            {/* The unit's OWN heading and logo, both set per ward — see /unit and /formats.
+                Nothing is hardcoded to any one hospital: a unit that has set neither prints
+                just its name, rather than another hospital's name and seal. */}
             <div className="flex items-start gap-3">
-              <img src={LOGO_PUBLIC_PATH} alt="" className="h-16 w-16 shrink-0" />
+              {note.logoUrl && (
+                <img src={note.logoUrl} alt="" className="h-16 w-16 shrink-0 object-contain" />
+              )}
               <div className="flex-1 text-center">
-                {HOSPITAL_LINES.map((line, i) => (
+                {note.letterheadLines.map((line, i) => (
                   <p key={i} className={i < 2 ? "text-[14px] font-bold" : "text-[13px]"}>
                     {line}
                   </p>

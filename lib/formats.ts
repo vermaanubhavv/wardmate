@@ -26,6 +26,11 @@ export const FORMAT_KINDS = [
     label: "OT notes",
     hint: "Your unit's operation note",
   },
+  {
+    kind: "logo",
+    label: "Hospital logo",
+    hint: "Printed at the top of your discharge summaries",
+  },
 ] as const;
 
 export type FormatKind = (typeof FORMAT_KINDS)[number]["kind"];
