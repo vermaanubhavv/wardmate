@@ -397,10 +397,13 @@ function expectedHint(message: string): string {
  * leaves with a patient and a clever substitution that is wrong is worse than an obvious one
  * the owner can see and fix. The result says which happened.
  *
- * What is NOT copied, deliberately: medication_formulary_map. Those are one resident's
- * confirmed judgements about which formulary entry a drug is, and 0047 already treats them as
- * clinical rather than as settings. The drug list they draw on is copied; the judgements are
- * made again by the unit that will rely on them.
+ * The confirmed drug mappings come across too. They were held back at first as clinical
+ * judgements rather than settings — but it is one hospital's formulary and one department's
+ * drugs, and making four units confirm "pan" against the same entry four times produces the
+ * same answer four times with four chances of a different one. The mapping is recorded as
+ * confirmed by whoever ran the copy, not by whoever confirmed it first: 0047's insert policy
+ * requires confirmed_by = auth.uid(), and that is the truthful record anyway — the person
+ * putting these on a new unit is the one vouching that they hold there.
  */
 export type CopySetupState = { message: string; ok: boolean } | null;
 
@@ -531,6 +534,40 @@ export async function copySetupFromWard(
       if (!error) inserted += chunk.length;
     }
     if (inserted > 0) done.push(`${inserted} medicines`);
+  }
+
+  // 4. The confirmed drug mappings that sit on top of that list.
+  const mappings: { drug_key: string; item_text: string }[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data: page } = await supabase
+      .from("medication_formulary_map")
+      .select("drug_key, item_text")
+      .eq("ward_id", sourceId)
+      .range(from, from + 999);
+    if (!page || page.length === 0) break;
+    mappings.push(...page);
+    if (page.length < 1000) break;
+  }
+
+  if (mappings.length > 0) {
+    let mapped = 0;
+    for (let i = 0; i < mappings.length; i += 500) {
+      const chunk = mappings.slice(i, i + 500);
+      // Upsert rather than insert: a unit that has already confirmed a drug for itself gets
+      // the copy, which is what "make them the same" asks for, instead of the whole chunk
+      // failing on one row that was already there.
+      const { error } = await supabase.from("medication_formulary_map").upsert(
+        chunk.map((m) => ({
+          ward_id: targetId,
+          drug_key: m.drug_key,
+          item_text: m.item_text,
+          confirmed_by: user.id,
+        })),
+        { onConflict: "ward_id,drug_key" }
+      );
+      if (!error) mapped += chunk.length;
+    }
+    if (mapped > 0) done.push(`${mapped} confirmed drugs`);
   }
 
   revalidatePath("/unit");

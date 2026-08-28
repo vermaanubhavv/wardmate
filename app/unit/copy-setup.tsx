@@ -52,7 +52,7 @@ export default function CopySetup({
       )}
       <p className="text-[13px] leading-relaxed text-muted">
         Brings across the other unit&rsquo;s formats — progress notes, discharge layout, OT
-        notes, investigation slip, logo — its discharge heading, and its hospital formulary.
+        notes, investigation slip, logo — its discharge heading, its hospital formulary and the drugs already confirmed against it.
         The heading&rsquo;s unit line is changed to this unit&rsquo;s name; everything else is
         copied exactly. Whatever this unit has now is replaced. Patients are never touched.
       </p>
