@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { correctTranscript } from "@/lib/glossary";
 import { extractObservations } from "@/lib/extract";
 import { getTemplateForPatient } from "@/lib/templates";
+import { resolveProcedure, listTemplateChoices } from "@/lib/templates";
 import type { PaperKind } from "@/lib/read-paper";
 import type { ReadLabValue } from "@/lib/read-lab-photo";
 
@@ -32,6 +33,10 @@ type IncomingPage = {
   photoPath: string | null;
   labValues: ReadLabValue[] | null;
   model: string | null;
+  /** Set only when the resident ticked the operation note's "mark this patient as operated"
+   *  box. Absent otherwise — an operation note read off a photograph does not flip a patient
+   *  to post-operative on its own. */
+  markOperated: { procedure: string; surgeryDate: string } | null;
 };
 
 /** What each kind of paper is called in the record, so the entry says where it came from. */
@@ -95,6 +100,33 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   ];
 
   const stored: { kind: PaperKind; entryId: string | null; observations: number; error: string | null }[] = [];
+
+  /**
+   * The operation note's own answer to "has this patient been operated on, and when".
+   *
+   * surgery_date is the single fact the post-op day count, the summary's operative date, the
+   * progress note's status line and which checklist applies all hang off — see
+   * lib/apply-procedure-done.ts, which does this when a ROUND says the operation was done.
+   * A photographed note is not a round: a heading reading "PROCEDURE : Laparoscopic
+   * cholecystectomy" is a description of a page, and pages of old notes get photographed too.
+   * So this only runs when the resident ticked the box on the review screen, and it still
+   * refuses to overwrite a surgery date the patient already has.
+   */
+  const operated = pages.find((p) => p.kind === "ot_note" && p.markOperated)?.markOperated ?? null;
+  if (operated && !patient.surgery_date) {
+    const resolved = resolveProcedure(operated.procedure, await listTemplateChoices());
+    await supabase
+      .from("patients")
+      .update({
+        surgery_date: operated.surgeryDate,
+        planned_surgery_date: null,
+        procedure_text: patient.procedure_text ?? resolved.procedure_text,
+        // Never overwrite a template chosen at admission; only fill an empty one.
+        template_family: patient.template_family ?? resolved.template_family,
+        template_variant: patient.template_family ? patient.template_variant : resolved.template_variant,
+      })
+      .eq("id", patientId);
+  }
 
   for (const page of pages) {
     // A lab report goes in as the values its own reader read, each with the range printed

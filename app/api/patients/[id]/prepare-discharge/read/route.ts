@@ -98,6 +98,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     kindConfidence: read.kindConfidence,
     transcript: read.transcript,
     unreadable: read.unreadable,
+    procedure: read.procedure,
+    surgeryDate: read.surgeryDate,
     model: read.model,
     labValues,
     // Null when the upload failed. The page can still be stored; it simply has no photograph

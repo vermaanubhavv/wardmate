@@ -28,6 +28,12 @@ type Page = {
   labValues: LabValue[] | null;
   photoPath: string | null;
   model: string | null;
+  /** Operation notes only: what the note names as the operation and its date. */
+  procedure: string | null;
+  surgeryDate: string | null;
+  /** Whether the resident has agreed that this note means THIS patient was operated on, on
+   *  that date. Off until they say so — an old note gets photographed too. */
+  markOperated: boolean;
   /** Unticked pages are left out of the record entirely. */
   include: boolean;
 };
@@ -62,6 +68,9 @@ export default function Prepare({ patientId }: { patientId: string }) {
       labValues: null,
       photoPath: null,
       model: null,
+      procedure: null,
+      surgeryDate: null,
+      markOperated: false,
       include: true,
     }));
     setPages((p) => [...p, ...fresh]);
@@ -92,6 +101,8 @@ export default function Prepare({ patientId }: { patientId: string }) {
                       labValues: data.labValues ?? null,
                       photoPath: data.photoPath ?? null,
                       model: data.model ?? null,
+                      procedure: data.procedure ?? null,
+                      surgeryDate: data.surgeryDate ?? null,
                     }
                   : { ...p, status: "failed", error: data.error ?? "Could not read that photo." }
             )
@@ -125,6 +136,10 @@ export default function Prepare({ patientId }: { patientId: string }) {
             photoPath: p.photoPath,
             labValues: p.kind === "lab_report" ? p.labValues : null,
             model: p.model,
+            markOperated:
+              p.kind === "ot_note" && p.markOperated && p.procedure && p.surgeryDate
+                ? { procedure: p.procedure, surgeryDate: p.surgeryDate }
+                : null,
           })),
         }),
       });
@@ -215,6 +230,31 @@ export default function Prepare({ patientId }: { patientId: string }) {
                 <p className="mt-2 text-[13px] leading-relaxed text-orange-700">
                   Not read on this page: {page.unreadable}
                 </p>
+              )}
+
+              {/* The one thing on this screen that changes the patient rather than adding to
+                  the record, so it is the one thing that asks. Only offered when the note
+                  printed both an operation and an unambiguous date. */}
+              {page.kind === "ot_note" && page.procedure && page.surgeryDate && (
+                <label className="mt-3 flex items-start gap-2 rounded-[10px] border border-line p-3 text-[13px] leading-relaxed">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={page.markOperated}
+                    onChange={(e) =>
+                      setPages((prev) =>
+                        prev.map((p) =>
+                          p.id === page.id ? { ...p, markOperated: e.target.checked } : p
+                        )
+                      )
+                    }
+                  />
+                  <span>
+                    This note is <span className="font-medium">{page.procedure}</span> on{" "}
+                    <span className="font-medium">{page.surgeryDate}</span>. Mark the patient
+                    post-operative from that date.
+                  </span>
+                </label>
               )}
 
               {page.kind === "lab_report" && page.labValues && (

@@ -34,6 +34,12 @@ export type ReadPaperResult = {
   /** What could not be read — glare, a cut-off edge, handwriting. Shown to the resident so a
    *  half-read page is obvious before it is stored, rather than looking complete. */
   unreadable: string | null;
+  /** Operation notes only. The operation as the note names it, and the date it gives, copied
+   *  not interpreted. Offered to the resident to confirm — see the store route for why this is
+   *  a question rather than something applied on its own. Null on every other kind of page,
+   *  and null on an operation note that does not print them. */
+  procedure: string | null;
+  surgeryDate: string | null;
   model: string;
 };
 
@@ -63,8 +69,13 @@ The kinds:
 
 Set kindConfidence to "low" whenever the page could reasonably be two of these, or when you are reading it mostly from the layout rather than from what it says.
 
+For an operation note ONLY, also pull out two things, copied and not interpreted:
+- "procedure": the operation as the note names it, in the note's own words ("Laparoscopic cholecystectomy"). Null if the note does not name one.
+- "surgeryDate": the date of surgery the note prints, as YYYY-MM-DD. Null if it prints no date, and null if the date is ambiguous about which number is the day and which the month — a date you had to choose between two readings of is not a date.
+Both are null for every other kind of page.
+
 Reply with a single JSON object and nothing else:
-{"kind": "...", "kindConfidence": "high" | "low", "transcript": "...", "unreadable": null or "..."}`;
+{"kind": "...", "kindConfidence": "high" | "low", "transcript": "...", "unreadable": null or "...", "procedure": null or "...", "surgeryDate": null or "YYYY-MM-DD"}`;
 
 export async function readPaper(
   base64Image: string,
@@ -104,6 +115,18 @@ export async function readPaper(
     unreadable:
       typeof parsed.unreadable === "string" && parsed.unreadable.trim()
         ? parsed.unreadable.trim()
+        : null,
+    procedure:
+      kind === "ot_note" && typeof parsed.procedure === "string" && parsed.procedure.trim()
+        ? parsed.procedure.trim()
+        : null,
+    // Only a date this app can act on. Anything else is left for the resident to type, rather
+    // than stored as a guess about which number was the month.
+    surgeryDate:
+      kind === "ot_note" &&
+      typeof parsed.surgeryDate === "string" &&
+      /^\d{4}-\d{2}-\d{2}$/.test(parsed.surgeryDate.trim())
+        ? parsed.surgeryDate.trim()
         : null,
     model,
   };
