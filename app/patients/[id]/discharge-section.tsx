@@ -44,6 +44,16 @@ export default function DischargeSection({
           {brief}
         </pre>
 
+        {/* First of the three, because it is the one that changes what the summary SAYS. The
+            other two act on the record as it already stands. */}
+        <Link
+          href={`/patients/${patientId}/prepare-discharge`}
+          className="mt-3 flex w-full flex-col items-center rounded-[10px] bg-accent px-4 py-3 text-accent-ink"
+        >
+          <span className="text-[17px] font-semibold">Prepare discharge</span>
+          <span className="text-[13px] opacity-90">Photograph the papers and read them in</span>
+        </Link>
+
         <Link
           href={`/patients/${patientId}/discharge`}
           className="mt-3 flex w-full items-center justify-center rounded-[10px] border border-line px-4 py-3 text-[17px] font-semibold text-foreground"
@@ -54,7 +64,7 @@ export default function DischargeSection({
         <button
           type="button"
           onClick={copy}
-          className="mt-3 w-full rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink"
+          className="mt-3 w-full rounded-[10px] border border-line px-4 py-3 text-[17px] font-semibold text-foreground"
         >
           {copied ? "Copied" : "Copy discharge brief"}
         </button>
