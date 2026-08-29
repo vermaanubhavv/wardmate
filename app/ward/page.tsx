@@ -9,6 +9,7 @@ import {
   ChecklistIcon,
   ChevronIcon,
   ClipboardIcon,
+  DocumentIcon,
   PlusIcon,
   TrayIcon,
 } from "../icons";
@@ -135,6 +136,12 @@ export default async function Home({
           </NavTile>
           <NavTile href="/handover" icon={<ClipboardIcon className="h-[19px] w-[19px]" />}>
             Ward round
+          </NavTile>
+          {/* Reached from here as well as from a patient, because a discharge is often decided
+              before anybody opens that patient's record — and because it is the way in for a
+              one-off summary, which has no patient to open. */}
+          <NavTile href="/prepare-discharge" icon={<DocumentIcon className="h-[19px] w-[19px]" />}>
+            Prepare discharge
           </NavTile>
           {/* Only once there is something to undo — an empty list is not worth a tile. */}
           {removedCount > 0 && (

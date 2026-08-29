@@ -1,4 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
+import { drugKey } from "@/lib/drug-key";
+
+// Re-exported so the many call sites that reach for it alongside the formulary itself do not
+// all have to change; the function lives in its own file for the reason given there.
+export { drugKey };
 
 /**
  * The ward's hospital formulary, and what each drug WardMate records corresponds to in it.
@@ -12,18 +17,6 @@ import { createClient } from "@/lib/supabase/server";
  *
  * See supabase/patches/0047_ward_formulary.sql.
  */
-
-/** The lookup key for a drug: short, lowercased, punctuation-free, so "T. Pan" and "pan" and
- *  "Pan." all reach the same confirmed mapping. Deliberately built from extraction's own drug
- *  LABEL rather than the whole dictated phrase, which carries dose and route too. */
-export function drugKey(label: string): string {
-  return label
-    .toLowerCase()
-    .replace(/\b(tab|tabs|t|cap|caps|c|syp|syrup|inj|injection|mdi|oint|ointment)\b\.?/g, " ")
-    .replace(/[^a-z0-9 ]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 export type FormularyMapping = { drugKey: string; itemText: string };
 

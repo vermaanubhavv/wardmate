@@ -3,7 +3,7 @@ import { canonicalLabName } from "@/lib/lab-ranges";
 import { RADIOLOGY_LABEL } from "@/lib/radiology-flags";
 import { listedComorbidities } from "@/lib/comorbidities";
 import { medicationFields, type MedicationFields } from "@/lib/medication-fields";
-import { drugKey } from "@/lib/formulary";
+import { drugKey } from "@/lib/drug-key";
 import {
   esicFrequency,
   esicRoute,
