@@ -214,7 +214,15 @@ export async function extractObservations(
   const response = await client.messages.create({
     model,
     max_tokens: 4000,
-    system: SYSTEM_PROMPT + expected + protocolBlock + detectedBlock,
+    // Two blocks, not one concatenated string. The first is identical on every call and is
+    // the expensive part (~2,400 tokens, sent again for every bed on the round); the rest
+    // varies by patient — expected labels, this unit's protocols — and would invalidate the
+    // cache on every request if it sat inside the same block. Caching is a prefix match, so
+    // the stable half has to physically come first.
+    system: [
+      { type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
+      { type: "text", text: expected + protocolBlock + detectedBlock },
+    ],
     // Low effort: this is constrained extraction from a short transcript, and the resident
     // is standing at a bedside. Raise it if extraction quality turns out to need it.
     output_config: {

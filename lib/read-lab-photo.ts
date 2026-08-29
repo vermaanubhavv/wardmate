@@ -105,7 +105,8 @@ export async function readLabPhoto(
   const response = await client.messages.create({
     model,
     max_tokens: 8000,
-    system: SYSTEM_PROMPT,
+    // Cached: fixed prompt, and lab reports arrive several at a time.
+    system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
     // Higher effort than the voice path: reading small print off a phone photo taken at an
     // angle under ward lighting is genuinely harder than parsing a clean sentence, and a
     // misread digit here is a wrong lab value.

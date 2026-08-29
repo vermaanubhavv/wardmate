@@ -87,7 +87,15 @@ export async function readPaper(
   const response = await client.messages.create({
     model,
     max_tokens: 4000,
-    system: SYSTEM_PROMPT,
+    // Cached: this prompt is identical for every page, and a pile of papers is read within
+    // seconds of itself, well inside the five-minute window. The first page pays to write the
+    // cache; every page after it reads the prompt back at about a tenth of the price.
+    system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
+    // Low effort, matching lib/extract.ts and for the same reason: this is transcription and
+    // one classification, not reasoning. Thinking is ON BY DEFAULT on Opus 5 and bills as
+    // output at the output rate — left at the default "high", every photographed page was
+    // paying for deep deliberation to do what is essentially careful typing.
+    output_config: { effort: "low" },
     messages: [
       {
         role: "user",
@@ -98,6 +106,15 @@ export async function readPaper(
       },
     ],
   });
+
+  // One line per page in the server log, so a cache that has silently stopped hitting is
+  // visible rather than inferred from a bill weeks later. cache_read_input_tokens of 0 across
+  // repeated pages means something invalidated the prefix — see shared/prompt-caching.md.
+  const u = response.usage;
+  console.log(
+    `[read-paper] in=${u.input_tokens} cache_write=${u.cache_creation_input_tokens ?? 0} ` +
+      `cache_read=${u.cache_read_input_tokens ?? 0} out=${u.output_tokens}`
+  );
 
   const text = response.content
     .filter((b): b is Anthropic.TextBlock => b.type === "text")
