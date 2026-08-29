@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
 import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
 import { correctTranscript } from "@/lib/glossary";
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
     transcript = (await correctTranscript(result.text)).text;
   } catch (e) {
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Transcription failed." },
+      { error: plainAiError(e) },
       { status: 502 }
     );
   }
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ patient, transcript });
   } catch (e) {
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Could not read that." },
+      { error: plainAiError(e) },
       { status: 502 }
     );
   }

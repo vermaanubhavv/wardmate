@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWard } from "@/lib/ward";
 import { readRegister } from "@/lib/read-register";
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
   } catch (e) {
     await supabase.from("register_reads").update({ status: "discarded" }).eq("id", read.id);
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Could not read that register page." },
+      { error: plainAiError(e) },
       { status: 502 }
     );
   }

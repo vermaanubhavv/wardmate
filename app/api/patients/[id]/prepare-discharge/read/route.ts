@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
 import { readPaper } from "@/lib/read-paper";
 import { readLabPhoto } from "@/lib/read-lab-photo";
@@ -67,7 +68,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     read = await readPaper(base64, mediaType);
   } catch (e) {
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Could not read that photo." },
+      { error: plainAiError(e) },
       { status: 502 }
     );
   }
