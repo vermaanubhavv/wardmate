@@ -96,6 +96,30 @@ const istDay = (iso: string) =>
     year: "2-digit",
   });
 
+/**
+ * Does the unit's own heading already say which unit this is?
+ *
+ * Both the printed page and the Word export follow the heading with a bold "UNIT – X" line.
+ * That line exists for a unit whose heading is only the hospital and the department. Once the
+ * heading itself carries a line naming the unit — which is the house style here, and what
+ * "the heading names the unit making the discharge" produces — printing both gives
+ *
+ *     Unit Alpha
+ *     UNIT – UNIT ALPHA
+ *
+ * one under the other on a document that leaves with the patient.
+ *
+ * Whole lines only, matched case-insensitively, and nothing is rewritten: this only decides
+ * whether to print a second line the heading has already covered. A heading that mentions the
+ * unit inside a longer line ("Department of General Surgery, Unit 3") is not treated as
+ * covering it, because a reader scanning for the unit would not find it there either.
+ */
+export function letterheadNamesUnit(letterheadLines: string[], wardName: string): boolean {
+  const ward = wardName.trim().toLowerCase();
+  if (!ward) return false;
+  return letterheadLines.some((line) => line.trim().toLowerCase() === ward);
+}
+
 export type DischargeNote = {
   /** The unit's own letterhead text, set once per ward in /unit — see
    *  supabase/patches/0019_letterhead.sql. Null when nobody has set one yet. */

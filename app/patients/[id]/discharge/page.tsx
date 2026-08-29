@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDischargeContext } from "@/lib/discharge-data";
-import { formatDischargeText } from "@/lib/discharge";
+import { formatDischargeText, letterheadNamesUnit } from "@/lib/discharge";
 import PrintButton from "../note/print-button";
 import CopyNoteButton from "../note/copy-button";
 import DownloadWordButton from "./download-word-button";
@@ -50,7 +50,7 @@ export default async function DischargeSummaryPage({ params }: { params: Promise
             {/* The unit's OWN heading and logo, both set per ward — see /unit and /formats.
                 Nothing is hardcoded to any one hospital: a unit that has set neither prints
                 just its name, rather than another hospital's name and seal. */}
-            <div className="flex items-start gap-3">
+            <div className="flex items-center gap-3">
               {note.logoUrl && (
                 <img src={note.logoUrl} alt="" className="h-16 w-16 shrink-0 object-contain" />
               )}
@@ -60,8 +60,17 @@ export default async function DischargeSummaryPage({ params }: { params: Promise
                     {line}
                   </p>
                 ))}
-                <p className="mt-1 text-[13px] font-bold">UNIT – {note.header.ward}</p>
+                {/* Only when the heading has not already named the unit — see
+                    letterheadNamesUnit. Printing both stacks the unit's name on itself. */}
+                {!letterheadNamesUnit(note.letterheadLines, note.header.ward) && (
+                  <p className="mt-1 text-[13px] font-bold">UNIT – {note.header.ward}</p>
+                )}
               </div>
+              {/* The heading is centred on the PAGE, not in what is left of it. Without a
+                  spacer the width of the logo, a 16-unit seal on the left pushes the hospital's
+                  name visibly right of centre — which is exactly the kind of thing that looks
+                  wrong on a printed document without the reader being able to say why. */}
+              {note.logoUrl && <div className="h-16 w-16 shrink-0" aria-hidden />}
             </div>
 
             <p className="mt-3 border border-black py-1 text-center text-[15px] font-bold uppercase">

@@ -16,6 +16,7 @@ import {
 } from "docx";
 import { createClient } from "@/lib/supabase/server";
 import { getDischargeContext } from "@/lib/discharge-data";
+import { letterheadNamesUnit } from "@/lib/discharge";
 import type { DischargeNote } from "@/lib/discharge";
 
 /**
@@ -113,7 +114,7 @@ async function buildBody(note: DischargeNote, logoBytes: Buffer | null): Promise
               ],
             }),
             new TableCell({
-              width: { size: logoBytes ? 85 : 99, type: WidthType.PERCENTAGE },
+              width: { size: logoBytes ? 70 : 99, type: WidthType.PERCENTAGE },
               verticalAlign: VerticalAlign.CENTER,
               children: [
                 ...note.letterheadLines.map(
@@ -123,12 +124,29 @@ async function buildBody(note: DischargeNote, logoBytes: Buffer | null): Promise
                       children: [new TextRun({ text: line, bold: true, size: i < 2 ? 26 : 22 })],
                     })
                 ),
-                new Paragraph({
-                  alignment: AlignmentType.CENTER,
-                  children: [new TextRun({ text: `UNIT – ${note.header.ward}`, bold: true, size: 22 })],
-                }),
+                // Skipped when the heading already names the unit, so the name is not stacked
+                // on itself — same rule as the printed page, see letterheadNamesUnit.
+                ...(letterheadNamesUnit(note.letterheadLines, note.header.ward)
+                  ? []
+                  : [
+                      new Paragraph({
+                        alignment: AlignmentType.CENTER,
+                        children: [new TextRun({ text: `UNIT – ${note.header.ward}`, bold: true, size: 22 })],
+                      }),
+                    ]),
               ],
             }),
+            // An empty cell the width of the logo's, so the centred heading sits on the middle
+            // of the page rather than the middle of the space the logo left over.
+            ...(logoBytes
+              ? [
+                  new TableCell({
+                    width: { size: 15, type: WidthType.PERCENTAGE },
+                    verticalAlign: VerticalAlign.CENTER,
+                    children: [new Paragraph({ children: [] })],
+                  }),
+                ]
+              : []),
           ],
         }),
       ],
