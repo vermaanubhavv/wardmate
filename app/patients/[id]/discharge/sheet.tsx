@@ -112,17 +112,22 @@ export default function DischargeSheet({
                 behind it shows a rule to write on, which is the paper the resident already
                 fills in by hand. Nothing is composed to fill a gap. */}
             <div className="mt-1 min-h-[280px] border border-black p-2 print:min-h-[560px]">
-              <Section title="History on Admission" lines={note.sections.historyOnAdmission} />
+              <Section title="History on Admission" lines={note.sections.historyOnAdmission}>
+                {/* Past medical history belongs to the admission, not to a heading of its own
+                    after the operation: what a patient came in with is part of the history
+                    taken on the day they arrived. Indented under it rather than beside it, so
+                    the box reads as five sections and not six. */}
+                <p className="mt-1 pl-4">
+                  <span className="font-bold">PAST MEDICAL HISTORY – </span>
+                  {note.pastMedicalHistory}
+                </p>
+              </Section>
               {/* Never filled by the app — see the note on DischargeNote.sections. Summarising
                   a fortnight of rounds into a paragraph is writing, not reporting. */}
               <Section title="Course in Hospital" lines={note.sections.courseInHospital} />
               <Section title="Procedures done" lines={note.sections.proceduresDone} />
               <Section title="Operative Notes" lines={note.sections.operativeNotes} />
               <Section title="Post Op" lines={note.sections.postOp} />
-
-              <p className="mt-2">
-                <span className="font-bold">PAST MEDICAL HISTORY –</span> {note.pastMedicalHistory}
-              </p>
 
               {/* "Satisfactory" is printed because the unit's own blank form prints it — the
                   same reason the letterhead is reproduced verbatim. It is struck out on the
@@ -280,7 +285,17 @@ export default function DischargeSheet({
  * a tidy page that quietly dropped it — the same reasoning as the blanks everywhere else in
  * this document.
  */
-function Section({ title, lines }: { title: string; lines: string[] }) {
+function Section({
+  title,
+  lines,
+  children,
+}: {
+  title: string;
+  lines: string[];
+  /** Anything that belongs UNDER this heading rather than after it — see past medical
+   *  history, which is part of the admission history and not a section of its own. */
+  children?: React.ReactNode;
+}) {
   return (
     <div className="mt-2 first:mt-0">
       <p className="font-bold">{title} -</p>
@@ -291,8 +306,11 @@ function Section({ title, lines }: { title: string; lines: string[] }) {
           ))}
         </ul>
       ) : (
-        <p className="mt-3 border-b border-black/40">&nbsp;</p>
+        // Only when there is nothing under the heading AT ALL — a section carrying past
+        // medical history is not empty, and a rule under it would say it was.
+        !children && <p className="mt-3 border-b border-black/40">&nbsp;</p>
       )}
+      {children}
     </div>
   );
 }

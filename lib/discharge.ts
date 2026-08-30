@@ -425,7 +425,7 @@ export function formatDischargeText(note: DischargeNote): string {
   // The same five headings the printed page and the Word document use, so the brief a
   // resident pastes into WhatsApp is the same document in plain text.
   for (const [title, lines] of [
-    ["HISTORY ON ADMISSION", note.sections.historyOnAdmission],
+    ["HISTORY ON ADMISSION", [...note.sections.historyOnAdmission, `PAST MEDICAL HISTORY – ${note.pastMedicalHistory}`]],
     ["COURSE IN HOSPITAL", note.sections.courseInHospital],
     ["PROCEDURES DONE", note.sections.proceduresDone],
     ["OPERATIVE NOTES", note.sections.operativeNotes],
@@ -439,10 +439,6 @@ export function formatDischargeText(note: DischargeNote): string {
     }
     out.push("");
   }
-
-  out.push("PAST MEDICAL HISTORY");
-  out.push(`  ${note.pastMedicalHistory}`);
-  out.push("");
 
   out.push("CONDITION AT DISCHARGE –");
   out.push(`  ${note.conditionAtDischarge.vitals || `BP – ${BLANK}   PR – ${BLANK}`}`);

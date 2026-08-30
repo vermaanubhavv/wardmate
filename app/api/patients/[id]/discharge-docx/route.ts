@@ -223,14 +223,19 @@ async function buildBody(note: DischargeNote, logoBytes: Buffer | null): Promise
   };
 
   section("History on Admission", note.sections.historyOnAdmission);
+  // Under the admission history, not a heading of its own after the operation — what the
+  // patient came in with was taken on the day they arrived. Same on the printed page.
+  boxParagraphs.push(
+    new Paragraph({
+      indent: { left: 360 },
+      children: [bold("PAST MEDICAL HISTORY – "), plain(note.pastMedicalHistory)],
+    })
+  );
   section("Course in Hospital", note.sections.courseInHospital);
   section("Procedures done", note.sections.proceduresDone);
   section("Operative Notes", note.sections.operativeNotes);
   section("Post Op", note.sections.postOp);
 
-  boxParagraphs.push(
-    new Paragraph({ spacing: { before: 120 }, children: [bold("PAST MEDICAL HISTORY – "), plain(note.pastMedicalHistory)] })
-  );
   // "Satisfactory" is the unit's own form wording, reproduced like the letterhead.
   boxParagraphs.push(
     new Paragraph({ spacing: { before: 240 }, children: [bold("CONDITION AT DISCHARGE- Satisfactory")] })
