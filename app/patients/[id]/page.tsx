@@ -30,6 +30,7 @@ import EntryCard from "./entry-card";
 import CaseHistoryCapture from "./case-history-capture";
 import DischargeSection from "./discharge-section";
 import { buildDischargeNote, formatDischargeText } from "@/lib/discharge";
+import { diagnosisFromProcedure } from "@/lib/diagnosis-from-procedure";
 import { reopenTask } from "./actions";
 import ConfirmDictation from "./confirm-dictation";
 import BottomBar from "../../bottom-bar";
@@ -179,6 +180,17 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     .flatMap((entry) => entry.observations)
     .find((observation) => observation.kind === "diagnosis");
   const diagnosis = patient.primary_diagnosis ?? caseHistoryDiagnosis?.value_text ?? null;
+  // When nobody has said what was being treated, the operation itself says it — see
+  // lib/diagnosis-from-procedure.ts. Shown as derived, never stored, and never over a
+  // diagnosis somebody recorded.
+  const derivedDiagnosis = diagnosis
+    ? null
+    : diagnosisFromProcedure({
+        primary_diagnosis: null,
+        procedure_text: patient.procedure_text,
+        template_family: patient.template_family,
+        template_variant: patient.template_variant,
+      });
   // Background illness is cumulative, not a latest-wins vital: "K/C/O asthma" from the
   // admission sheet must remain visible when diabetes is mentioned on a later round. The
   // helper also recognises older entries captured before the extractor used this label.
@@ -277,7 +289,17 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                     POD {patient.post_op_day}
                     {procedure ? ` ${procedure}` : ""}
                   </p>
-                  <p className="mt-0.5 text-[13px] text-muted">({diagnosis ?? "diagnosis not recorded"})</p>
+                  <p className="mt-0.5 text-[13px] text-muted">
+                    {diagnosis ? (
+                      `(${diagnosis})`
+                    ) : derivedDiagnosis ? (
+                      <>
+                        ({derivedDiagnosis.text}) <span className="italic">from the procedure</span>
+                      </>
+                    ) : (
+                      "(diagnosis not recorded)"
+                    )}
+                  </p>
                 </>
               ) : (
                 <>

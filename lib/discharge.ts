@@ -4,6 +4,7 @@ import { RADIOLOGY_LABEL } from "@/lib/radiology-flags";
 import { listedComorbidities } from "@/lib/comorbidities";
 import { medicationFields, type MedicationFields } from "@/lib/medication-fields";
 import { drugKey } from "@/lib/drug-key";
+import { diagnosisFromProcedure } from "@/lib/diagnosis-from-procedure";
 import {
   esicFrequency,
   esicRoute,
@@ -351,7 +352,12 @@ export function buildDischargeNote(
 
   const followUp = state.openTasks.map((t) => t.value_text ?? t.label);
 
+  const derivedDiagnosis = diagnosisFromProcedure(patient);
+
   const management = managementLabel(patient);
+  const derivedNote = derivedDiagnosis
+    ? ` The diagnosis was not recorded and reads here from the operation performed (${derivedDiagnosis.from}) — check it before signing.`
+    : "";
   const assembledNote = `Assembled from what was recorded on the round (${dayLabel(patient)}${
     management ? `, ${management}` : ""
   }). Blanks are things the app was never told; the comorbidities line and the discharge medications are editable defaults, not what was necessarily said — check both before signing.`;
@@ -374,7 +380,11 @@ export function buildDischargeNote(
       doa: istDay(patient.admitted_on),
       dod: istDay(today),
     },
-    finalDiagnosis: patient.primary_diagnosis,
+    // A summary whose procedure line names a cholecystectomy and whose diagnosis line is blank
+    // is not being careful, it is being unhelpful — the operation carries its indication. Only
+    // ever when nothing was recorded, and only from the fixed table in
+    // lib/diagnosis-from-procedure.ts. The footnote below says it was derived.
+    finalDiagnosis: patient.primary_diagnosis ?? derivedDiagnosis?.text ?? null,
     procedure: procedure
       ? `${procedure.toUpperCase()}${patient.surgery_date ? ` ON ${istDay(patient.surgery_date)}` : ""}`
       : null,
