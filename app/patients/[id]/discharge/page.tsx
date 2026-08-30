@@ -33,7 +33,7 @@ export default async function DischargeWorkspacePage({ params }: { params: Promi
         <p className="mt-1 text-[15px] text-muted">
           {stripPatientHonorific(context.patient.display_name)}
           {context.patient.bed ? ` · bed ${context.patient.bed}` : ""}. Compiled from the record —
-          check every section, generate and approve the AI parts, then finalise.
+          one card per section: confirm or edit, then Next. Approve the AI parts, then finalise.
         </p>
       </header>
 

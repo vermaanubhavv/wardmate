@@ -26,9 +26,9 @@ export default function DischargeSection({
 
       <div className="border-t border-line px-4 py-4">
         <p className="text-[13px] text-muted">
-          Compiled from {patientName}&rsquo;s record. Check every section, generate and approve
-          the Clinical Course and investigations, then finalise — the AI parts cannot be
-          finalised without your approval.
+          Compiled from {patientName}&rsquo;s record. Walk the cards one section at a time,
+          generate and approve the Clinical Course and investigations, then finalise — the AI
+          parts cannot be finalised without your approval.
         </p>
 
         <Link
