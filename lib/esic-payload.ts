@@ -1,4 +1,5 @@
-import type { DischargeNote } from "@/lib/discharge";
+import type { DischargeMedication } from "@/lib/discharge-entities";
+import { medicationFields } from "@/lib/medication-fields";
 import {
   esicFrequency,
   esicRoute,
@@ -7,23 +8,21 @@ import {
 } from "@/lib/esic-prescription-codes";
 
 /**
- * The discharge medications as the hospital prescribing form's own field values, for the
- * browser extension that fills that form.
+ * The discharge medications as the ESIC prescribing form's own field VALUES, for the browser
+ * extension that fills that form.
  *
- * Every value here is an OPTION VALUE, not display text — "53:1:3" for OD, "26" for oral,
- * "213" for tablets. That is the whole point: the route list holds five separate entries whose
- * text mentions "intravenous", and the formulary holds 871 rows whose text repeats. Selecting
- * by value is the only way to mean one specific thing.
+ * The discharge summary body no longer carries ESIC codes (protocol v1.0 — generic layout),
+ * but the pilot unit still prescribes on the ESIC system, so this hand-off stays. Every value
+ * here is an option VALUE, not display text — "53:1:3" for OD, "26" for oral — because the ESIC
+ * lists hold many rows whose text repeats and selecting by value is the only way to mean one
+ * specific entry.
  *
  * A drug with no confirmed formulary mapping is included with formulary: null rather than
- * dropped, so the extension can say "3 of 5 filled, these 2 need linking" instead of silently
+ * dropped, so the extension can say "3 of 5 filled, 2 need linking" instead of silently
  * entering a shorter prescription than the doctor wrote.
  */
 export type EsicMedication = {
-  /** WardMate's own name for the drug, shown to the resident so they can follow along. */
   drug: string;
-  /** The hospital formulary's exact wording. Null until a clinician has confirmed which entry
-   *  this drug is — the extension must skip these, never guess. */
   formulary: string | null;
   doseValue: string | null;
   doseUnit: string | null;
@@ -36,44 +35,49 @@ export type EsicMedication = {
 };
 
 export type EsicPayload = {
-  /** Stamped so the extension can show it and the resident can see at a glance that they are
-   *  about to fill the patient they think they are. The extension never matches on it — it
-   *  cannot know which patient the ESIC page has open — it only displays it. */
   patient: string;
   /** Checked against the record open in the hospital system before anything is entered. Null
-   *  when WardMate never recorded one — which must stop the automation, not soften into a
-   *  match on the name: "SHYAMLAL" against "Shyam Lal" is how a prescription reaches the
-   *  wrong person. */
-  ipNumber: string | null;
+   *  when WardMate never recorded one — which must stop the automation, not soften into a name
+   *  match. */
+  uhid: string | null;
   generatedAt: string;
   medications: EsicMedication[];
 };
 
-/** Splits "7 Tablet(s)" into the number, which is all the form's text box wants. */
 const numberOf = (text: string | null): string | null => text?.match(/^[\d.]+/)?.[0] ?? null;
 
-export function buildEsicPayload(note: DischargeNote): EsicPayload {
+/** Re-derive the neutral prescription codes for a discharge medication row by feeding its
+ *  fields back through the same parser a dictated drug goes through. */
+function codesFor(m: DischargeMedication) {
+  const phrase = [m.strength, m.dose, m.route, m.frequency, m.duration].filter(Boolean).join(" ");
+  return medicationFields(m.generic, phrase);
+}
+
+export function buildEsicPayload(
+  medications: DischargeMedication[],
+  patientName: string,
+  uhid: string | null,
+  formularyMappings: Map<string, string>
+): EsicPayload {
   return {
-    patient: note.header.name,
-    ipNumber: note.header.ipNo,
+    patient: patientName,
+    uhid,
     generatedAt: new Date().toISOString(),
-    medications: note.advice.rows.map((row) => {
-      const doseUnit = esicDoseUnit(row.doseUnitCode);
-      const durationUnit = esicDurationUnit(row.durationUnitCode);
+    medications: medications.map((m) => {
+      const fields = codesFor(m);
+      const doseUnit = esicDoseUnit(fields.doseUnitCode);
+      const durationUnit = esicDurationUnit(fields.durationUnitCode);
       return {
-        drug: row.drugName || row.drug,
-        formulary: row.formularyName,
-        doseValue: numberOf(row.dose),
+        drug: m.generic,
+        formulary: formularyMappings.get(m.drugKey) ?? null,
+        doseValue: numberOf(fields.dose),
         doseUnit: doseUnit?.value ?? null,
-        durationValue: row.durationValue !== null ? String(row.durationValue) : null,
+        durationValue: fields.durationValue !== null ? String(fields.durationValue) : null,
         durationUnit: durationUnit?.value ?? null,
-        frequency: esicFrequency(row.frequencyCode)?.value ?? null,
-        // Quantity uses the same unit list as dose, and the same unit — a course of tablets is
-        // dispensed in tablets. Left null with the number when the unit has no entry in the
-        // hospital's list (an inhaler puff), so a human chooses rather than this file guessing.
-        quantityValue: numberOf(row.quantity),
+        frequency: esicFrequency(fields.frequencyCode)?.value ?? null,
+        quantityValue: numberOf(fields.quantity),
         quantityUnit: doseUnit?.value ?? null,
-        route: esicRoute(row.routeCode)?.value ?? null,
+        route: esicRoute(fields.routeCode)?.value ?? null,
       };
     }),
   };

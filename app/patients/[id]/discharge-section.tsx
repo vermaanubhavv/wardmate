@@ -1,77 +1,59 @@
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
 
 /**
- * The discharge brief, folded away until it is wanted.
- *
- * Closed by default because it is the last thing on a screen used many times a day for
- * something else, and it should not push the record further from the thumb on every round.
+ * The discharge, folded away until wanted — the last thing on a screen used many times a day
+ * for something else. It no longer carries a pre-formatted brief: the discharge summary is a
+ * structured record now (protocol v1.0), reviewed and approved in its own workspace.
  */
 export default function DischargeSection({
-  brief,
+  status,
   patientName,
   patientId,
 }: {
-  brief: string;
+  status: "draft" | "finalised" | null;
   patientName: string;
   patientId: string;
 }) {
-  const [copied, setCopied] = useState(false);
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(brief);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-    }
-  }
+  const statusLabel =
+    status === "finalised" ? "Finalised" : status === "draft" ? "Draft in progress" : "Not started";
 
   return (
     <details className="ios-group">
-      <summary className="cursor-pointer px-4 py-3 text-[17px] font-medium">Discharge</summary>
+      <summary className="flex cursor-pointer items-center justify-between px-4 py-3 text-[17px] font-medium">
+        <span>Discharge</span>
+        <span className="text-[13px] font-normal text-muted">{statusLabel}</span>
+      </summary>
 
       <div className="border-t border-line px-4 py-4">
         <p className="text-[13px] text-muted">
-          Assembled from what is on {patientName}&rsquo;s record — nothing here is written by
-          the app. Anything never recorded says so, rather than being filled in.
+          Compiled from {patientName}&rsquo;s record. Check every section, generate and approve
+          the Clinical Course and investigations, then finalise — the AI parts cannot be
+          finalised without your approval.
         </p>
 
-        <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-lg bg-background p-3 text-xs leading-relaxed">
-          {brief}
-        </pre>
-
-        {/* First of the three, because it is the one that changes what the summary SAYS. The
-            other two act on the record as it already stands. */}
         <Link
           href={`/patients/${patientId}/prepare-discharge`}
-          className="mt-3 flex w-full flex-col items-center rounded-[10px] bg-accent px-4 py-3 text-accent-ink"
+          className="mt-3 flex w-full flex-col items-center rounded-[10px] border border-line px-4 py-3"
         >
-          <span className="text-[17px] font-semibold">Prepare discharge</span>
-          <span className="text-[13px] opacity-90">Photograph the papers and read them in</span>
+          <span className="text-[15px] font-semibold">Prepare discharge</span>
+          <span className="text-[13px] text-muted">Photograph the papers and read them in first</span>
         </Link>
 
         <Link
           href={`/patients/${patientId}/discharge`}
-          className="mt-3 flex w-full items-center justify-center rounded-[10px] border border-line px-4 py-3 text-[17px] font-semibold text-foreground"
+          className="mt-3 flex w-full items-center justify-center rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink"
         >
-          Print discharge summary
+          {status ? "Open discharge summary" : "Start discharge summary"}
         </Link>
 
-        <button
-          type="button"
-          onClick={copy}
-          className="mt-3 w-full rounded-[10px] border border-line px-4 py-3 text-[17px] font-semibold text-foreground"
-        >
-          {copied ? "Copied" : "Copy discharge brief"}
-        </button>
-
-        <p className="mt-2 text-center text-[13px] text-muted">
-          A starting point to correct — not a signed summary.
-        </p>
+        {status === "finalised" && (
+          <Link
+            href={`/patients/${patientId}/discharge/print`}
+            className="mt-3 flex w-full items-center justify-center rounded-[10px] border border-line px-4 py-3 text-[17px] font-semibold"
+          >
+            Print / download
+          </Link>
+        )}
       </div>
     </details>
   );

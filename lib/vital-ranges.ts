@@ -58,9 +58,9 @@ const VITALS: {
   unit?: string;
 }[] = [
   { key: "hr", label: "PR", aliases: ["pr", "pulse", "pulse rate", "heart rate", "hr"], low: 60, high: 100 },
-  { key: "spo2", label: "SpO₂", aliases: ["spo2", "saturation", "oxygen saturation", "sats", "spo₂"], low: 94, high: 100 },
+  { key: "spo2", label: "SpO₂", aliases: ["spo2", "saturation", "oxygen saturation", "sats", "spo₂", "sat", "o2 saturation"], low: 94, high: 100 },
   { key: "rr", label: "RR", aliases: ["rr", "respiratory rate", "resp rate"], low: 12, high: 20 },
-  { key: "temp", label: "Temp", aliases: ["temperature", "temp"], low: 97, high: 99.5, unit: "°F" },
+  { key: "temp", label: "Temp", aliases: ["temperature", "temp", "temp f", "fever"], low: 97, high: 99.5, unit: "°F" },
 ];
 
 function findVital(label: string): (typeof VITALS)[number] | null {

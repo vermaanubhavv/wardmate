@@ -16,20 +16,24 @@ import {
 } from "docx";
 import { createClient } from "@/lib/supabase/server";
 import { getDischargeContext } from "@/lib/discharge-data";
-import { letterheadNamesUnit } from "@/lib/discharge";
-import type { DischargeNote } from "@/lib/discharge";
+import { mergeDischargeDraft } from "@/lib/discharge-store";
+import {
+  buildDischargeDocument,
+  letterheadNamesUnit,
+  procedureLines,
+  medLine,
+  BLANK,
+  type DischargeDocument,
+} from "@/lib/discharge-render";
 
 /**
- * The discharge summary as an actual Word file, matching the unit's own blank template —
- * logo, doctor roster, the 3x3 identity table, the single bordered box carrying diagnosis
- * through condition at discharge, then the investigation and advice tables on page 2.
- * Everything in it is plain, ordinary Word text and table cells — no locked field, no form
- * control — so all of it is editable the moment it opens.
+ * The discharge summary as a Word file, in the protocol's section order (v1.0). Rendered from
+ * the same DischargeDocument the printed page uses, so the two cannot drift. Plain Word text
+ * and tables — every part editable the moment it opens.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -37,17 +41,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const context = await getDischargeContext(id);
   if (!context) return NextResponse.json({ error: "Patient not found." }, { status: 404 });
-  const note = context.note;
 
-  // The ward's own uploaded logo, fetched through its short-lived signed link. Null when the
-  // ward has not uploaded one — the heading then prints without a logo rather than with
-  // another hospital's.
-  const logoBytes = await fetchLogo(note.logoUrl);
+  const doc = buildDischargeDocument(mergeDischargeDraft(context), context);
+  const logoBytes = await fetchLogo(doc.logoUrl);
 
-  const doc = new Document({ sections: [{ children: await buildBody(note, logoBytes) }] });
-  const buffer = await Packer.toBuffer(doc);
-
-  const filename = `${note.header.name.replace(/[^A-Za-z0-9]+/g, "_")}_discharge_summary.docx`;
+  const file = new Document({ sections: [{ children: buildBody(doc, logoBytes) }] });
+  const buffer = await Packer.toBuffer(file);
+  const filename = `${doc.patient.name.replace(/[^A-Za-z0-9]+/g, "_")}_discharge_summary.docx`;
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
@@ -64,14 +64,15 @@ async function fetchLogo(url: string | null): Promise<Buffer | null> {
     if (!res.ok) return null;
     return Buffer.from(await res.arrayBuffer());
   } catch {
-    // A logo that will not load is not a reason to fail the whole document.
     return null;
   }
 }
 
 const bold = (text: string) => new TextRun({ text, bold: true });
 const plain = (text: string) => new TextRun({ text });
-const boldUnderline = (text: string) => new TextRun({ text, bold: true, underline: {} });
+const heading = (text: string) =>
+  new Paragraph({ spacing: { before: 220, after: 60 }, children: [new TextRun({ text: text.toUpperCase(), bold: true, underline: {} })] });
+const body = (text: string) => new Paragraph({ children: [plain(text)] });
 
 const BORDER = {
   top: { style: BorderStyle.SINGLE, size: 4, color: "000000" },
@@ -90,15 +91,21 @@ function cell(children: Paragraph[], widthPct: number): TableCell {
   });
 }
 
-async function buildBody(note: DischargeNote, logoBytes: Buffer | null): Promise<(Paragraph | Table)[]> {
-  const body: (Paragraph | Table)[] = [];
+function buildBody(doc: DischargeDocument, logoBytes: Buffer | null): (Paragraph | Table)[] {
+  const out: (Paragraph | Table)[] = [];
 
-  // Logo + hospital block, side by side — a borderless 2-column table, since Word has no plain
-  // "float an image beside centered text" primitive outside a table.
-  body.push(
+  // Heading + logo
+  out.push(
     new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
-      borders: { top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, bottom: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, insideHorizontal: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, insideVertical: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" } },
+      borders: {
+        top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+        bottom: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+        left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+        right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+        insideHorizontal: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+        insideVertical: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+      },
       rows: [
         new TableRow({
           children: [
@@ -117,27 +124,23 @@ async function buildBody(note: DischargeNote, logoBytes: Buffer | null): Promise
               width: { size: logoBytes ? 70 : 99, type: WidthType.PERCENTAGE },
               verticalAlign: VerticalAlign.CENTER,
               children: [
-                ...note.letterheadLines.map(
+                ...doc.letterheadLines.map(
                   (line, i) =>
                     new Paragraph({
                       alignment: AlignmentType.CENTER,
                       children: [new TextRun({ text: line, bold: true, size: i < 2 ? 26 : 22 })],
                     })
                 ),
-                // Skipped when the heading already names the unit, so the name is not stacked
-                // on itself — same rule as the printed page, see letterheadNamesUnit.
-                ...(letterheadNamesUnit(note.letterheadLines, note.header.ward)
-                  ? []
-                  : [
+                ...(doc.unitName && !letterheadNamesUnit(doc.letterheadLines, doc.unitName)
+                  ? [
                       new Paragraph({
                         alignment: AlignmentType.CENTER,
-                        children: [new TextRun({ text: `UNIT – ${note.header.ward}`, bold: true, size: 22 })],
+                        children: [new TextRun({ text: `UNIT – ${doc.unitName}`, bold: true, size: 22 })],
                       }),
-                    ]),
+                    ]
+                  : []),
               ],
             }),
-            // An empty cell the width of the logo's, so the centred heading sits on the middle
-            // of the page rather than the middle of the space the logo left over.
             ...(logoBytes
               ? [
                   new TableCell({
@@ -153,231 +156,136 @@ async function buildBody(note: DischargeNote, logoBytes: Buffer | null): Promise
     })
   );
 
-  body.push(
+  out.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { before: 160, after: 160 },
-      border: { top: { style: BorderStyle.SINGLE, size: 4, color: "000000" }, bottom: { style: BorderStyle.SINGLE, size: 4, color: "000000" }, left: { style: BorderStyle.SINGLE, size: 4, color: "000000" }, right: { style: BorderStyle.SINGLE, size: 4, color: "000000" } },
+      border: BORDER,
       children: [new TextRun({ text: "DISCHARGE SUMMARY", bold: true, size: 26 })],
     })
   );
+  if (doc.status !== "finalised")
+    out.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Draft — not yet finalised", italics: true, size: 18 })] }));
 
-  // Identity — the same 3x3 table the template uses.
-  body.push(
+  // 1. Patient Details
+  out.push(
     new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
       rows: [
         new TableRow({
           children: [
-            cell([new Paragraph({ children: [bold("NAME – "), plain(note.header.name)] })], 40),
-            cell([new Paragraph({ children: [bold("AGE- "), plain(note.header.age)] })], 30),
-            cell([new Paragraph({ children: [bold("SEX- "), plain(note.header.sex)] })], 30),
+            cell([new Paragraph({ children: [bold("Name – "), plain(doc.patient.name)] })], 40),
+            cell([new Paragraph({ children: [bold("Age – "), plain(doc.patient.age || BLANK)] })], 30),
+            cell([new Paragraph({ children: [bold("Sex – "), plain(doc.patient.sex || BLANK)] })], 30),
           ],
         }),
         new TableRow({
           children: [
-            cell([new Paragraph({ children: [bold("INS. NO./EMP ID – "), plain(note.header.ipNo ?? "")] })], 40),
-            cell([new Paragraph({ children: [bold("MRD NO. "), plain(note.header.mrdNo ?? "")] })], 30),
-            cell([new Paragraph({ children: [bold("IP/FAMILY- "), plain(note.header.ipFamily)] })], 30),
-          ],
-        }),
-        new TableRow({
-          children: [
-            cell([new Paragraph({ children: [bold("WARD - "), plain(note.header.ward)] })], 40),
-            cell([new Paragraph({ children: [bold("D.O.A – "), plain(note.header.doa)] })], 30),
-            cell([new Paragraph({ children: [bold("D.O.D- "), plain(note.header.dod)] })], 30),
+            cell([new Paragraph({ children: [bold("UHID – "), plain(doc.patient.uhid || BLANK)] })], 40),
+            cell([new Paragraph({ children: [bold("ABHA – "), plain(doc.patient.abha || BLANK)] })], 30),
+            cell([new Paragraph({ children: [bold("Contact – "), plain(doc.patient.contact || BLANK)] })], 30),
           ],
         }),
       ],
     })
   );
 
-  body.push(
-    new Paragraph({
-      spacing: { before: 200 },
-      children: [
-        bold(`FINAL DIAGNOSIS: ${(note.finalDiagnosis || "").toUpperCase()}`),
-        ...(note.procedure ? [plain(` — ${note.procedure}`)] : []),
-      ],
-    })
-  );
+  // 2. Encounter Details
+  out.push(heading("Encounter Details"));
+  for (const row of doc.encounter) out.push(new Paragraph({ children: [bold(`${row.label}: `), plain(row.value || BLANK)] }));
 
-  // One bordered box, sectioned exactly as the printed page is — same five headings from the
-  // unit's own blank form, same rule that an empty section still prints its heading. The two
-  // surfaces render from note.sections so they cannot drift apart; a heading added to one and
-  // forgotten in the other is the failure this shares a source with lib/discharge.ts to avoid.
-  const boxParagraphs: Paragraph[] = [];
+  // 3. Indication for Admission
+  out.push(heading("Indication for Admission"));
+  out.push(body(doc.indication || BLANK));
 
-  const section = (title: string, lines: string[]) => {
-    boxParagraphs.push(
-      new Paragraph({ spacing: { before: 120 }, children: [bold(`${title} -`)] })
-    );
-    if (lines.length > 0) {
-      for (const line of lines) {
-        boxParagraphs.push(new Paragraph({ bullet: { level: 0 }, children: [plain(line)] }));
-      }
-    } else {
-      // The blank line the resident writes on, as on the paper form.
-      boxParagraphs.push(new Paragraph({ children: [plain("")] }));
+  // 4. Diagnoses
+  out.push(heading("Diagnoses"));
+  const dxBlock = (title: string, items: string[], blankIfEmpty = false) => {
+    if (items.length === 0) {
+      if (blankIfEmpty) out.push(new Paragraph({ children: [bold(`${title}: `), plain(BLANK)] }));
+      return;
     }
+    out.push(new Paragraph({ children: [bold(`${title}:`)] }));
+    for (const i of items) out.push(new Paragraph({ bullet: { level: 0 }, children: [plain(i)] }));
   };
+  dxBlock("Primary Diagnosis", doc.diagnoses.primary, true);
+  dxBlock("Secondary Diagnosis", doc.diagnoses.secondary);
+  dxBlock("Relevant Comorbidities", doc.diagnoses.comorbidities);
+  dxBlock("Complications", doc.diagnoses.complications);
 
-  section("History on Admission", note.sections.historyOnAdmission);
-  // Under the admission history, not a heading of its own after the operation — what the
-  // patient came in with was taken on the day they arrived. Same on the printed page.
-  boxParagraphs.push(
-    new Paragraph({
-      indent: { left: 360 },
-      children: [bold("PAST MEDICAL HISTORY – "), plain(note.pastMedicalHistory)],
-    })
-  );
-  section("Course in Hospital", note.sections.courseInHospital);
-  section("Procedures done", note.sections.proceduresDone);
-  section("Operative Notes", note.sections.operativeNotes);
-  section("Post Op", note.sections.postOp);
-
-  // "Satisfactory" is the unit's own form wording, reproduced like the letterhead.
-  boxParagraphs.push(
-    new Paragraph({ spacing: { before: 240 }, children: [bold("CONDITION AT DISCHARGE- Satisfactory")] })
-  );
-  boxParagraphs.push(
-    new Paragraph({ children: [bold(note.conditionAtDischarge.vitals || "BP -             PR -")] })
-  );
-  boxParagraphs.push(
-    new Paragraph({ children: [bold("EXAMINATION – "), plain(note.conditionAtDischarge.exam.join("; "))] })
-  );
-
-  body.push(
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [new TableRow({ children: [cell(boxParagraphs, 100)] })],
-    })
-  );
-
-  // Page 2, matching the print layout's own break.
-  body.push(new Paragraph({ children: [new PageBreak()] }));
-
-  body.push(new Paragraph({ children: [boldUnderline("INVESTIGATIONS DONE DURING STAY")] }));
-  body.push(investigationsTable(note));
-
-  const extras = [...note.radiology, ...note.pathology];
-  const nextNum = note.investigations.length + 2;
-  body.push(
-    ...(extras.length > 0
-      ? extras.map((line, i) => new Paragraph({ children: [plain(`${nextNum + i}. ${line}`)] }))
-      : [new Paragraph({ children: [plain(`${nextNum}. USG W/ABD – Date -`)] })])
-  );
-
-  body.push(new Paragraph({ spacing: { before: 240 }, children: [boldUnderline("ADVICE ON DISCHARGE")] }));
-  body.push(adviceTable(note));
-
-  if (note.followUp.length > 0) {
-    body.push(
-      new Paragraph({ spacing: { before: 200 }, children: [bold("Follow up — still outstanding on the round")] })
-    );
-    for (const line of note.followUp) {
-      body.push(new Paragraph({ bullet: { level: 0 }, children: [plain(line)] }));
+  // 5. Operation / Procedures
+  if (doc.procedures.length > 0) {
+    out.push(heading("Operation / Procedures"));
+    for (const p of doc.procedures) {
+      procedureLines(p).forEach((l, i) =>
+        out.push(new Paragraph({ indent: i === 0 ? undefined : { left: 300 }, children: [i === 0 ? bold(l) : plain(l)] }))
+      );
     }
   }
 
-  body.push(
-    new Paragraph({
-      spacing: { before: 200 },
-      children: [bold("Review in OPD on "), plain("________________")],
-    })
-  );
+  // 6. Clinical Course
+  out.push(heading("Clinical Course"));
+  out.push(body(doc.clinicalCourse || BLANK));
+  if (doc.clinicalCourse && !doc.clinicalCourseApproved)
+    out.push(new Paragraph({ children: [new TextRun({ text: "Not yet approved by the resident.", italics: true, size: 18 })] }));
 
-  body.push(
-    new Paragraph({
-      spacing: { before: 400 },
-      alignment: AlignmentType.RIGHT,
-      children: [bold("NAME AND SIGNATURE OF DOCTOR")],
-    })
-  );
+  // 7. Relevant Investigations
+  if (doc.investigations.length > 0) {
+    out.push(heading("Relevant Investigations and Results"));
+    for (const i of doc.investigations)
+      out.push(new Paragraph({ children: [bold(`${i.group}: `), plain(`${i.text}${i.interpretation ? ` — ${i.interpretation}` : ""}`)] }));
+  }
 
-  body.push(
-    new Paragraph({
-      spacing: { before: 200 },
-      children: [new TextRun({ text: `* ${note.assembledNote}`, italics: true, size: 18 })],
-    })
-  );
+  // 8. Histopathology
+  if (doc.histopathology.length > 0) {
+    out.push(heading("Histopathology"));
+    for (const h of doc.histopathology) {
+      out.push(new Paragraph({ children: [bold(`Specimen: ${h.specimen}`)] }));
+      out.push(new Paragraph({ indent: { left: 300 }, children: [plain(`Status: ${h.status}`)] }));
+      if (h.result) out.push(new Paragraph({ indent: { left: 300 }, children: [plain(`Result: ${h.result}`)] }));
+      if (h.reviewPlan) out.push(new Paragraph({ indent: { left: 300 }, children: [plain(`Review plan: ${h.reviewPlan}`)] }));
+    }
+  }
 
-  return body;
-}
+  // 9. Medications
+  out.push(heading("Medications on Discharge"));
+  if (doc.medications.length === 0) out.push(body(BLANK));
+  doc.medications.forEach((m, i) => out.push(new Paragraph({ children: [plain(`${i + 1}. ${medLine(m)}`)] })));
 
-function investigationsTable(note: DischargeNote): Table {
-  const rows = [
-    new TableRow({
-      children: [
-        cell([new Paragraph({ children: [bold("DATE")] })], 60),
-        cell([new Paragraph({ children: [plain("")] })], 20),
-        cell([new Paragraph({ children: [plain("")] })], 20),
-      ],
-    }),
-    ...note.investigations.map(
-      (row, i) =>
-        new TableRow({
-          children: [
-            cell([new Paragraph({ children: [bold(`${i + 1}. ${row.label}`)] })], 60),
-            cell([new Paragraph({ children: [plain(row.unit)] })], 20),
-            cell([new Paragraph({ children: [plain(row.value)] })], 20),
-          ],
-        })
-    ),
-    new TableRow({
-      children: [
-        cell([new Paragraph({ children: [bold(`${note.investigations.length + 1}. Na/K/Cl`)] })], 60),
-        cell([new Paragraph({ children: [plain("")] })], 20),
-        cell(
-          [
-            new Paragraph({
-              children: [
-                plain(
-                  note.naKCl.na || note.naKCl.k || note.naKCl.cl
-                    ? `${note.naKCl.na || "—"} / ${note.naKCl.k || "—"} / ${note.naKCl.cl || "—"}`
-                    : ""
-                ),
-              ],
-            }),
-          ],
-          20
-        ),
-      ],
-    }),
-  ];
-  return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows });
-}
+  // 10. Condition at Discharge
+  out.push(heading("Condition at Discharge"));
+  out.push(body(doc.condition || BLANK));
 
-/** The six columns the hospital's own prescribing screen asks for, in its order — so a
- *  resident transcribing into it reads one row left to right. Blank where nothing was said. */
-function adviceTable(note: DischargeNote): Table {
-  const widths = [5, 33, 12, 18, 12, 10, 10];
-  const header = ["#", "Medication", "Dose", "Frequency", "Duration", "Qty", "Route"];
+  // 11. Primary Care Actions
+  out.push(heading("Primary Care Actions"));
+  if (doc.primaryCareActions.length === 0) out.push(body("None."));
+  for (const a of doc.primaryCareActions) out.push(new Paragraph({ bullet: { level: 0 }, children: [plain(a)] }));
 
-  const rows = [
-    new TableRow({
-      children: header.map((h, i) => cell([new Paragraph({ children: [bold(h)] })], widths[i])),
-    }),
-    ...Array.from({ length: Math.max(4, note.advice.rows.length) }, (_, i) => {
-      const row = note.advice.rows[i];
-      const values = [
-        String(i + 1),
-        // The formulary's own wording underneath, where a clinician confirmed which entry this
-        // drug is — that is what gets typed into the prescribing system.
-        row?.formularyName ? `${row.drug}\n${row.formularyName}` : (row?.drug ?? ""),
-        row?.esicDose ?? row?.dose ?? "",
-        row?.esicFrequency ?? "",
-        row?.esicDuration ?? row?.duration ?? "",
-        row?.quantity ?? "",
-        row?.esicRoute ?? "",
-      ];
-      return new TableRow({
-        children: values.map((v, c) =>
-          cell([new Paragraph({ children: [c === 0 ? bold(v) : plain(v)] })], widths[c])
-        ),
-      });
-    }),
-  ];
+  // 12. Patient Actions
+  out.push(heading("Patient Actions"));
+  if (doc.patientActions.length === 0) out.push(body("None."));
+  for (const a of doc.patientActions) out.push(new Paragraph({ bullet: { level: 0 }, children: [plain(a)] }));
 
-  return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows });
+  // 13. Advice
+  if (doc.advice && doc.advice.length > 0) {
+    out.push(heading("Advice"));
+    for (const a of doc.advice) out.push(new Paragraph({ children: [bold(`${a.module}: `), plain(a.text)] }));
+  }
+
+  // 14. Red Flags
+  if (doc.redFlags && doc.redFlags.length > 0) {
+    out.push(heading("When to Seek Medical Attention"));
+    for (const r of doc.redFlags) out.push(new Paragraph({ bullet: { level: 0 }, children: [plain(r)] }));
+  }
+
+  // 15. Authentication
+  out.push(new Paragraph({ children: [new PageBreak()] }));
+  out.push(heading("Authentication"));
+  out.push(new Paragraph({ children: [bold(doc.authentication.name || BLANK)] }));
+  if (doc.authentication.designation) out.push(body(doc.authentication.designation));
+  if (doc.authentication.department) out.push(body(doc.authentication.department));
+  out.push(body(`Discharge summary completed: ${doc.authentication.completedAt || BLANK}`));
+  if (doc.authentication.seniorReviewer) out.push(body(`Senior reviewer: ${doc.authentication.seniorReviewer}`));
+
+  return out;
 }

@@ -1,316 +1,276 @@
 import FormularyLink from "./formulary-link";
-import { letterheadNamesUnit, type DischargeNote } from "@/lib/discharge";
+import {
+  letterheadNamesUnit,
+  procedureLines,
+  medLine,
+  BLANK,
+  type DischargeDocument,
+} from "@/lib/discharge-render";
 
 /**
- * The discharge summary itself, laid out the way the unit's own blank template is.
- *
- * Lives on its own because there are now two ways to reach one: a patient on the ward, and a
- * one-off for somebody who is not in WardMate at all (see app/prepare-discharge). Both print
- * the same document. Keeping the layout in one file is the same reason getDischargeContext
- * exists — a fix to a printed document must not have to be made twice and then found, months
- * later, to have been made once.
- *
- * formularySize of 0 turns off the formulary link under each drug, which is how the one-off
- * renders: there is no patient to hang a confirmed mapping on.
+ * The discharge summary itself, in the protocol's section order (v1.0). One layout, rendered
+ * both for a patient on the ward and for a one-off — see app/prepare-discharge. Generic
+ * NABH/ABDM headings; a field the record never held prints a ruled blank, never a guess.
  */
 export default function DischargeSheet({
-  note,
+  doc,
   wardId,
   patientId,
-  formularySize,
+  formularyAvailable,
 }: {
-  note: DischargeNote;
+  doc: DischargeDocument;
   wardId: string;
   patientId: string;
-  formularySize: number;
+  formularyAvailable: boolean;
 }) {
-  const cell = "border border-black px-2 py-1 align-top";
-
   return (
-      <section className="px-4 pb-4 print:px-0">
-        <div className="ios-group px-5 py-5 text-[13px] leading-snug text-black print:rounded-none print:border-0 print:p-0 print:shadow-none">
-          {/* Page 1 */}
-          <div className="print:break-after-page">
-            {/* eslint-disable-next-line @next/next/no-img-element -- a small static asset
-                bundled with the app, not a remote or user-uploaded image. */}
-            {/* The unit's OWN heading and logo, both set per ward — see /unit and /formats.
-                Nothing is hardcoded to any one hospital: a unit that has set neither prints
-                just its name, rather than another hospital's name and seal. */}
-            <div className="flex items-center gap-3">
-              {note.logoUrl && (
-                <img src={note.logoUrl} alt="" className="h-16 w-16 shrink-0 object-contain" />
-              )}
-              <div className="flex-1 text-center">
-                {note.letterheadLines.map((line, i) => (
-                  <p key={i} className={i < 2 ? "text-[14px] font-bold" : "text-[13px]"}>
-                    {line}
-                  </p>
-                ))}
-                {/* Only when the heading has not already named the unit — see
-                    letterheadNamesUnit. Printing both stacks the unit's name on itself. */}
-                {!letterheadNamesUnit(note.letterheadLines, note.header.ward) && (
-                  <p className="mt-1 text-[13px] font-bold">UNIT – {note.header.ward}</p>
-                )}
-              </div>
-              {/* The heading is centred on the PAGE, not in what is left of it. Without a
-                  spacer the width of the logo, a 16-unit seal on the left pushes the hospital's
-                  name visibly right of centre — which is exactly the kind of thing that looks
-                  wrong on a printed document without the reader being able to say why. */}
-              {note.logoUrl && <div className="h-16 w-16 shrink-0" aria-hidden />}
-            </div>
-
-            <p className="mt-3 border border-black py-1 text-center text-[15px] font-bold uppercase">
-              Discharge summary
-            </p>
-
-            <table className="mt-2 w-full border-collapse text-[12px]">
-              <tbody>
-                <tr>
-                  <td className={cell}>
-                    <span className="font-bold">NAME –</span> {note.header.name}
-                  </td>
-                  <td className={cell}>
-                    <span className="font-bold">AGE-</span> {note.header.age}
-                  </td>
-                  <td className={cell}>
-                    <span className="font-bold">SEX-</span> {note.header.sex}
-                  </td>
-                </tr>
-                <tr>
-                  <td className={cell}>
-                    <span className="font-bold">INS. NO./EMP ID –</span> {note.header.ipNo || ""}
-                  </td>
-                  <td className={cell}>
-                    <span className="font-bold">MRD NO.</span> {note.header.mrdNo || ""}
-                  </td>
-                  <td className={cell}>
-                    <span className="font-bold">IP/FAMILY-</span> {note.header.ipFamily}
-                  </td>
-                </tr>
-                <tr>
-                  <td className={cell}>
-                    <span className="font-bold">WARD -</span> {note.header.ward}
-                  </td>
-                  <td className={cell}>
-                    <span className="font-bold">D.O.A –</span> {note.header.doa}
-                  </td>
-                  <td className={cell}>
-                    <span className="font-bold">D.O.D-</span> {note.header.dod}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-            <p className="mt-3 font-bold">
-              FINAL DIAGNOSIS: {(note.finalDiagnosis || "").toUpperCase()}
-              {note.procedure ? ` — ${note.procedure}` : ""}
-            </p>
-
-            {/* One bordered box, sectioned the way the unit's own blank form is: the five
-                headings in its order, then Condition at discharge at the foot. Each heading
-                prints whether or not anything was recorded under it — a section with nothing
-                behind it shows a rule to write on, which is the paper the resident already
-                fills in by hand. Nothing is composed to fill a gap. */}
-            <div className="mt-1 min-h-[280px] border border-black p-2 print:min-h-[560px]">
-              <Section title="History on Admission" lines={note.sections.historyOnAdmission}>
-                {/* Past medical history belongs to the admission, not to a heading of its own
-                    after the operation: what a patient came in with is part of the history
-                    taken on the day they arrived. Indented under it rather than beside it, so
-                    the box reads as five sections and not six. */}
-                <p className="mt-1 pl-4">
-                  <span className="font-bold">PAST MEDICAL HISTORY – </span>
-                  {note.pastMedicalHistory}
-                </p>
-              </Section>
-              {/* Never filled by the app — see the note on DischargeNote.sections. Summarising
-                  a fortnight of rounds into a paragraph is writing, not reporting. */}
-              <Section title="Course in Hospital" lines={note.sections.courseInHospital} />
-              <Section title="Procedures done" lines={note.sections.proceduresDone} />
-              <Section title="Operative Notes" lines={note.sections.operativeNotes} />
-              <Section title="Post Op" lines={note.sections.postOp} />
-
-              {/* "Satisfactory" is printed because the unit's own blank form prints it — the
-                  same reason the letterhead is reproduced verbatim. It is struck out on the
-                  patient it is not true of, exactly as on paper. */}
-              <p className="mt-3 font-bold">CONDITION AT DISCHARGE- Satisfactory</p>
-              {/* Printed exactly as recorded rather than parsed apart to fit "BP- __ PR- __":
-                  splitting a vital string the app did not measure the shape of is the kind of
-                  guessing this app avoids everywhere else. */}
-              <p className="font-bold">
-                {note.conditionAtDischarge.vitals || "BP -             PR -"}
+    <section className="px-4 pb-4 print:px-0">
+      <div className="ios-group px-5 py-5 text-[13px] leading-snug text-black print:rounded-none print:border-0 print:p-0 print:shadow-none">
+        {/* Heading */}
+        <div className="flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element -- ward-uploaded logo via a
+              short-lived signed link, not a remote asset. */}
+          {doc.logoUrl && <img src={doc.logoUrl} alt="" className="h-16 w-16 shrink-0 object-contain" />}
+          <div className="flex-1 text-center">
+            {doc.letterheadLines.map((line, i) => (
+              <p key={i} className={i < 2 ? "text-[14px] font-bold" : "text-[13px]"}>
+                {line}
               </p>
-              <p className="font-bold">
-                EXAMINATION –{" "}
-                <span className="font-normal">{note.conditionAtDischarge.exam.join("; ")}</span>
-              </p>
-            </div>
-          </div>
-
-          {/* Page 2 */}
-          <div>
-            <p className="font-bold underline">INVESTIGATIONS DONE DURING STAY</p>
-            <table className="mt-1 w-full border-collapse text-[12px]">
-              <tbody>
-                <tr>
-                  <td className={cell + " font-bold"}>DATE</td>
-                  <td className={cell}></td>
-                  <td className={cell}></td>
-                </tr>
-                {note.investigations.map((row, i) => (
-                  <tr key={row.label}>
-                    <td className={cell + " font-bold"}>
-                      {i + 1}. {row.label}
-                    </td>
-                    <td className={cell}>{row.unit}</td>
-                    <td className={cell}>{row.value}</td>
-                  </tr>
-                ))}
-                <tr>
-                  <td className={cell + " font-bold"}>{note.investigations.length + 1}. Na/K/Cl</td>
-                  <td className={cell}></td>
-                  <td className={cell}>
-                    {note.naKCl.na || note.naKCl.k || note.naKCl.cl
-                      ? `${note.naKCl.na || "—"} / ${note.naKCl.k || "—"} / ${note.naKCl.cl || "—"}`
-                      : ""}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-            {/* Radiology and pathology continue the same numbering, outside the bordered
-                table — matching the template's own "7. USG W/ABD – Date -" line, which sits
-                below the table rather than inside it. Every report on file prints, not just
-                the first — the template shows one line because a blank form only needs one. */}
-            <div className="mt-1 text-[12px]">
-              {note.radiology.length === 0 && note.pathology.length === 0 ? (
-                <p>{note.investigations.length + 2}. USG W/ABD – Date -</p>
-              ) : (
-                [...note.radiology, ...note.pathology].map((line, i) => (
-                  <p key={i}>
-                    {note.investigations.length + 2 + i}. {line}
-                  </p>
-                ))
-              )}
-            </div>
-
-            <p className="mt-4 font-bold underline">ADVICE ON DISCHARGE</p>
-            {/* The six columns the hospital's own prescribing screen asks for, in its order,
-                so transcribing across is reading one row left to right rather than working
-                out which part of a sentence belongs in which box. A field the resident never
-                stated prints blank — see lib/medication-fields.ts, which fills nothing in. */}
-            <table className="mt-1 w-full border-collapse text-[11px]">
-              <thead>
-                <tr>
-                  <th className={cell + " w-5 text-left"}>#</th>
-                  <th className={cell + " text-left"}>Medication</th>
-                  <th className={cell + " text-left"}>Dose</th>
-                  <th className={cell + " text-left"}>Frequency</th>
-                  <th className={cell + " text-left"}>Duration</th>
-                  <th className={cell + " text-left"}>Qty</th>
-                  <th className={cell + " text-left"}>Route</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Array.from({ length: Math.max(4, note.advice.rows.length) }, (_, i) => {
-                  const row = note.advice.rows[i];
-                  return (
-                    <tr key={i}>
-                      <td className={cell + " w-5 font-bold"}>{i + 1}</td>
-                      <td className={cell}>
-                        {row?.drug ?? ""}
-                        {/* The hospital formulary's own wording for this drug, once a clinician
-                            has said which entry it is — that is what gets typed into the
-                            prescribing system, so it prints here beside the resident's own
-                            words rather than replacing them. Only offered when this ward has
-                            actually imported a formulary. */}
-                        {row && formularySize > 0 && (
-                          <span className="mt-0.5 block text-muted">
-                            <FormularyLink
-                              wardId={wardId}
-                              patientId={patientId}
-                              drugKey={row.drugKey}
-                              drugLabel={row.drugName}
-                              mapped={row.formularyName}
-                            />
-                          </span>
-                        )}
-                      </td>
-                      <td className={cell}>{row?.esicDose ?? row?.dose ?? ""}</td>
-                      <td className={cell}>{row?.esicFrequency ?? ""}</td>
-                      <td className={cell}>{row?.esicDuration ?? row?.duration ?? ""}</td>
-                      <td className={cell}>{row?.quantity ?? ""}</td>
-                      <td className={cell}>{row?.esicRoute ?? ""}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-
-            {note.followUp.length > 0 && (
-              <>
-                <p className="mt-3 font-semibold">Follow up — still outstanding on the round</p>
-                <ul className="list-disc pl-5 text-[12px]">
-                  {note.followUp.map((line, i) => (
-                    <li key={i}>{line}</li>
-                  ))}
-                </ul>
-              </>
+            ))}
+            {doc.unitName && !letterheadNamesUnit(doc.letterheadLines, doc.unitName) && (
+              <p className="mt-1 text-[13px] font-bold">UNIT – {doc.unitName}</p>
             )}
-
-            <p className="mt-3 text-[12px]">
-              <span className="font-semibold">Review in OPD on</span> ________________
-            </p>
-
-            {(note.pendingCount > 0 || note.missingLabels.length > 0) && (
-              <div className="mt-3 rounded-md bg-orange-50 p-2 text-[12px] text-orange-800 print:hidden">
-                {note.pendingCount > 0 && <p>{note.pendingCount} value(s) never confirmed — check first.</p>}
-                {note.missingLabels.length > 0 && <p>Never recorded: {note.missingLabels.join(", ")}</p>}
-              </div>
-            )}
-
-            <p className="mt-10 text-right text-[13px] font-bold">NAME AND SIGNATURE OF DOCTOR</p>
-
-            <p className="mt-3 text-[11px] leading-snug text-muted">* {note.assembledNote}</p>
           </div>
+          {doc.logoUrl && <div className="h-16 w-16 shrink-0" aria-hidden />}
         </div>
-      </section>
+
+        <p className="mt-3 border border-black py-1 text-center text-[15px] font-bold uppercase">
+          Discharge Summary
+        </p>
+        {doc.status !== "finalised" && (
+          <p className="mt-1 text-center text-[11px] text-black print:hidden">Draft — not yet finalised</p>
+        )}
+
+        {/* 1. Patient Details */}
+        <table className="mt-2 w-full border-collapse text-[12px]">
+          <tbody>
+            <tr>
+              <Cell b="Name">{doc.patient.name}</Cell>
+              <Cell b="Age">{doc.patient.age || BLANK}</Cell>
+              <Cell b="Sex">{doc.patient.sex || BLANK}</Cell>
+            </tr>
+            <tr>
+              <Cell b="UHID">{doc.patient.uhid || BLANK}</Cell>
+              <Cell b="ABHA">{doc.patient.abha || BLANK}</Cell>
+              <Cell b="Contact">{doc.patient.contact || BLANK}</Cell>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* 2. Encounter Details */}
+        <Heading>Encounter Details</Heading>
+        <div className="grid grid-cols-2 gap-x-4 text-[12px]">
+          {doc.encounter.map((row) => (
+            <p key={row.label}>
+              <span className="font-bold">{row.label}: </span>
+              {row.value || BLANK}
+            </p>
+          ))}
+        </div>
+
+        {/* 3. Indication for Admission */}
+        <Heading>Indication for Admission</Heading>
+        <p className="text-[12px]">{doc.indication || BLANK}</p>
+
+        {/* 4. Diagnoses */}
+        <Heading>Diagnoses</Heading>
+        <DxBlock title="Primary Diagnosis" items={doc.diagnoses.primary} blankIfEmpty />
+        <DxBlock title="Secondary Diagnosis" items={doc.diagnoses.secondary} />
+        <DxBlock title="Relevant Comorbidities" items={doc.diagnoses.comorbidities} />
+        <DxBlock title="Complications" items={doc.diagnoses.complications} />
+
+        {/* 5. Operation / Procedures */}
+        {doc.procedures.length > 0 && (
+          <>
+            <Heading>Operation / Procedures</Heading>
+            {doc.procedures.map((p) => (
+              <div key={p.id} className="mb-1 text-[12px]">
+                {procedureLines(p).map((l, i) => (
+                  <p key={i} className={i === 0 ? "font-bold" : "pl-3"}>
+                    {l}
+                  </p>
+                ))}
+              </div>
+            ))}
+          </>
+        )}
+
+        {/* 6. Clinical Course */}
+        <Heading>Clinical Course</Heading>
+        <p className="whitespace-pre-wrap text-[12px] leading-relaxed">{doc.clinicalCourse || BLANK}</p>
+        {doc.clinicalCourse && !doc.clinicalCourseApproved && (
+          <p className="text-[11px] italic text-black print:hidden">Not yet approved by the resident.</p>
+        )}
+
+        {/* 7. Relevant Investigations */}
+        {doc.investigations.length > 0 && (
+          <>
+            <Heading>Relevant Investigations and Results</Heading>
+            {doc.investigations.map((i, k) => (
+              <p key={k} className="text-[12px]">
+                <span className="font-bold">{i.group}: </span>
+                {i.text}
+                {i.interpretation ? ` — ${i.interpretation}` : ""}
+              </p>
+            ))}
+          </>
+        )}
+
+        {/* 8. Histopathology */}
+        {doc.histopathology.length > 0 && (
+          <>
+            <Heading>Histopathology</Heading>
+            {doc.histopathology.map((h) => (
+              <div key={h.id} className="mb-1 text-[12px]">
+                <p className="font-bold">Specimen: {h.specimen}</p>
+                <p className="pl-3">Status: {h.status}</p>
+                {h.result && <p className="pl-3">Result: {h.result}</p>}
+                {h.reviewPlan && <p className="pl-3">Review plan: {h.reviewPlan}</p>}
+              </div>
+            ))}
+          </>
+        )}
+
+        {/* 9. Medications on Discharge */}
+        <Heading>Medications on Discharge</Heading>
+        {doc.medications.length === 0 ? (
+          <p className="text-[12px]">{BLANK}</p>
+        ) : (
+          <ol className="list-decimal pl-5 text-[12px]">
+            {doc.medications.map((m) => (
+              <li key={m.id} className="mb-0.5">
+                {medLine(m)}
+                {formularyAvailable && (
+                  <span className="ml-2 text-[11px] text-muted">
+                    <FormularyLink
+                      wardId={wardId}
+                      patientId={patientId}
+                      drugKey={m.drugKey}
+                      drugLabel={m.generic}
+                      mapped={doc.medicationFormulary[m.drugKey] ?? null}
+                    />
+                  </span>
+                )}
+              </li>
+            ))}
+          </ol>
+        )}
+
+        {/* 10. Condition at Discharge */}
+        <Heading>Condition at Discharge</Heading>
+        <p className="text-[12px]">{doc.condition || BLANK}</p>
+
+        {/* 11. Primary Care Actions */}
+        <Heading>Primary Care Actions</Heading>
+        {doc.primaryCareActions.length === 0 ? (
+          <p className="text-[12px]">None.</p>
+        ) : (
+          <ul className="list-disc pl-5 text-[12px]">
+            {doc.primaryCareActions.map((a, i) => (
+              <li key={i}>{a}</li>
+            ))}
+          </ul>
+        )}
+
+        {/* 12. Patient Actions */}
+        <Heading>Patient Actions</Heading>
+        {doc.patientActions.length === 0 ? (
+          <p className="text-[12px]">None.</p>
+        ) : (
+          <ul className="list-disc pl-5 text-[12px]">
+            {doc.patientActions.map((a, i) => (
+              <li key={i}>{a}</li>
+            ))}
+          </ul>
+        )}
+
+        {/* 13. Advice */}
+        {doc.advice && doc.advice.length > 0 && (
+          <>
+            <Heading>Advice</Heading>
+            {doc.advice.map((a) => (
+              <p key={a.id} className="text-[12px]">
+                <span className="font-bold">{a.module}: </span>
+                {a.text}
+              </p>
+            ))}
+          </>
+        )}
+
+        {/* 14. Red Flags */}
+        {doc.redFlags && doc.redFlags.length > 0 && (
+          <>
+            <Heading>When to Seek Medical Attention</Heading>
+            <ul className="list-disc pl-5 text-[12px]">
+              {doc.redFlags.map((r, i) => (
+                <li key={i}>{r}</li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        {/* 15. Authentication */}
+        <Heading>Authentication</Heading>
+        <div className="text-[12px]">
+          <p className="font-bold">{doc.authentication.name || BLANK}</p>
+          {doc.authentication.designation && <p>{doc.authentication.designation}</p>}
+          {doc.authentication.department && <p>{doc.authentication.department}</p>}
+          <p>Discharge summary completed: {doc.authentication.completedAt || BLANK}</p>
+          {doc.authentication.seniorReviewer && <p>Senior reviewer: {doc.authentication.seniorReviewer}</p>}
+        </div>
+      </div>
+    </section>
   );
 }
 
-/**
- * One heading from the unit's blank form, with what the record holds under it.
- *
- * An empty section is not hidden. The heading prints with a rule beneath it, because that is
- * what the paper form does and because a missing section a resident can see is worth more than
- * a tidy page that quietly dropped it — the same reasoning as the blanks everywhere else in
- * this document.
- */
-function Section({
+function Cell({ b, children }: { b: string; children: React.ReactNode }) {
+  return (
+    <td className="border border-black px-2 py-1 align-top">
+      <span className="font-bold">{b} – </span>
+      {children}
+    </td>
+  );
+}
+
+function Heading({ children }: { children: React.ReactNode }) {
+  return <p className="mt-3 font-bold underline">{children}</p>;
+}
+
+function DxBlock({
   title,
-  lines,
-  children,
+  items,
+  blankIfEmpty,
 }: {
   title: string;
-  lines: string[];
-  /** Anything that belongs UNDER this heading rather than after it — see past medical
-   *  history, which is part of the admission history and not a section of its own. */
-  children?: React.ReactNode;
+  items: string[];
+  blankIfEmpty?: boolean;
 }) {
+  if (items.length === 0) {
+    return blankIfEmpty ? (
+      <p className="text-[12px]">
+        <span className="font-bold">{title}: </span>
+        {BLANK}
+      </p>
+    ) : null;
+  }
   return (
-    <div className="mt-2 first:mt-0">
-      <p className="font-bold">{title} -</p>
-      {lines.length > 0 ? (
-        <ul className="list-disc pl-4">
-          {lines.map((line, i) => (
-            <li key={i}>{line}</li>
-          ))}
-        </ul>
-      ) : (
-        // Only when there is nothing under the heading AT ALL — a section carrying past
-        // medical history is not empty, and a rule under it would say it was.
-        !children && <p className="mt-3 border-b border-black/40">&nbsp;</p>
-      )}
-      {children}
+    <div className="text-[12px]">
+      <span className="font-bold">{title}:</span>
+      <ul className="list-disc pl-5">
+        {items.map((i, k) => (
+          <li key={k}>{i}</li>
+        ))}
+      </ul>
     </div>
   );
 }

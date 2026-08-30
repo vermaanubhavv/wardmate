@@ -5,7 +5,10 @@ import { getFormularyMappings } from "@/lib/formulary";
 import { correctTranscript } from "@/lib/glossary";
 import { extractObservations } from "@/lib/extract";
 import { derivePatientState, type Observation } from "@/lib/patient-state";
-import { buildDischargeNote } from "@/lib/discharge";
+import { compileDischargeDraft } from "@/lib/discharge-compile";
+import { buildDischargeDocument } from "@/lib/discharge-render";
+import { matchDischargeTemplate, getDischargeTemplate, listDischargeTemplates } from "@/lib/discharge-templates";
+import { oneOffContext, type OneOffIdentity } from "@/lib/discharge-oneoff";
 import { createClient } from "@/lib/supabase/server";
 import type { ReadLabValue } from "@/lib/read-lab-photo";
 import type { PaperKind } from "@/lib/read-paper";
@@ -14,15 +17,12 @@ import type { PaperKind } from "@/lib/read-paper";
  * Assemble a one-off discharge summary from pages that belong to nobody in WardMate.
  *
  * Everything here happens in memory and nothing is written: the transcripts are structured by
- * the same extractor, run through the same state derivation, and handed to the same
- * buildDischargeNote the ward's own patients use — so the document is the document, not a
- * lookalike. What it does NOT get is a record: no observation rows, no to-do list, no post-op
- * day counted from tomorrow, and no (i) to tap afterwards. That is the trade the resident
- * makes by using it, and the screen says so before they do.
- *
- * The heading, logo and formulary come from the doctor's OWN current unit. A summary written
- * for another unit's patient still goes out on the paper of the unit writing it, which is what
- * signing it means.
+ * the same extractor, run through the same state derivation, compiled by the same
+ * compileDischargeDraft, and rendered by the same buildDischargeDocument the ward's own
+ * patients use — so the document is the document. What it does NOT get is a record, and — for
+ * the same reason there is no resident approval step here — the AI sections (Clinical Course,
+ * Relevant Investigations) are left blank for the resident to write by hand on the printout.
+ * The heading, logo and formulary come from the doctor's OWN current unit.
  */
 type IncomingPage = {
   kind: PaperKind;
@@ -30,16 +30,7 @@ type IncomingPage = {
   labValues: ReadLabValue[] | null;
 };
 
-type Identity = {
-  name?: string;
-  age?: string;
-  sex?: string;
-  ipNo?: string;
-  mrdNo?: string;
-  admittedOn?: string;
-  procedure?: string;
-  surgeryDate?: string;
-};
+type Identity = OneOffIdentity;
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -48,9 +39,9 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
-  let body: { pages?: IncomingPage[]; identity?: Identity };
+  let body: { pages?: IncomingPage[]; identity?: Identity; templateKey?: string | null };
   try {
-    body = (await request.json()) as { pages?: IncomingPage[]; identity?: Identity };
+    body = (await request.json()) as { pages?: IncomingPage[]; identity?: Identity; templateKey?: string | null };
   } catch {
     return NextResponse.json({ error: "Malformed request." }, { status: 400 });
   }
@@ -69,8 +60,6 @@ export async function POST(request: Request) {
 
   const { ward } = await getCurrentWard();
 
-  // Ids are needed only because the shapes downstream carry them; nothing is stored, so they
-  // exist for the length of this request and are then gone.
   const observations: Observation[] = [];
   const now = new Date().toISOString();
 
@@ -105,8 +94,6 @@ export async function POST(request: Request) {
     try {
       extraction = await extractObservations(corrected.text, []);
     } catch {
-      // One page that will not structure does not lose the others. It simply contributes
-      // nothing, which the screen reports rather than hiding.
       continue;
     }
 
@@ -130,42 +117,52 @@ export async function POST(request: Request) {
     }
   }
 
-  const state = derivePatientState(observations, null);
-  const medications = observations.filter((o) => o.kind === "medication");
+  const patientState = derivePatientState(observations, null);
 
-  const age = Number(identity.age);
-  const admitted = identity.admittedOn?.trim() || now.slice(0, 10);
+  const seenDrugs = new Set<string>();
+  const medications = observations
+    .filter((o) => o.kind === "medication")
+    .filter((o) => {
+      const key = o.label.toLowerCase().trim();
+      if (seenDrugs.has(key)) return false;
+      seenDrugs.add(key);
+      return true;
+    });
 
   const [formats, formularyMappings] = await Promise.all([
     ward ? getWardFormats(ward.id) : Promise.resolve(new Map()),
     ward ? getFormularyMappings(ward.id) : Promise.resolve(new Map<string, string>()),
   ]);
 
-  const note = buildDischargeNote(
-    {
-      display_name: identity.name.trim(),
-      age_years: Number.isFinite(age) && age > 0 ? age : null,
-      sex: identity.sex?.trim() || null,
-      bed: "",
-      mrd_no: identity.mrdNo?.trim() || null,
-      uhid_ip_no: identity.ipNo?.trim() || null,
-      primary_diagnosis: null,
-      admitted_on: admitted,
-      surgery_date: identity.surgeryDate?.trim() || null,
-      post_op_day: null,
-      admission_day: 1,
-      management: null,
-    },
-    state,
-    medications,
-    identity.procedure?.trim() || null,
-    {
-      wardName: ward?.name ?? null,
-      letterhead: ward?.letterhead ?? null,
-      logoUrl: (formats.get("logo") as { url: string | null } | undefined)?.url ?? null,
-      formularyMappings,
-    }
+  const context = oneOffContext(
+    identity,
+    ward ?? null,
+    (formats.get("logo") as { url: string | null } | undefined)?.url ?? null,
+    formularyMappings,
+    observations,
+    patientState,
+    medications
   );
 
-  return NextResponse.json({ note, observations: observations.length });
+  // The diagnosis template: an explicit "no template" wins; then the resident's explicit
+  // choice; otherwise the one the typed procedure / diagnosis points at.
+  const template =
+    body.templateKey === "__none__"
+      ? null
+      : (getDischargeTemplate(body.templateKey) ??
+        matchDischargeTemplate({
+          procedureText: identity.procedure,
+          diagnosisText: identity.diagnosis,
+        }));
+
+  const draft = compileDischargeDraft(context, { template, seedAll: true });
+  const doc = buildDischargeDocument(draft, context);
+
+  return NextResponse.json({
+    doc,
+    draft,
+    observations: observations.length,
+    template: template ? { key: template.key, label: template.label } : null,
+    templates: listDischargeTemplates(),
+  });
 }

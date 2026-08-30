@@ -23,28 +23,41 @@
 /** Doses per day, for working out the quantity to dispense. Null where the frequency implies
  *  no fixed daily count (SOS, STAT), which is exactly when quantity must stay blank. */
 const FREQUENCIES: { pattern: RegExp; code: string; perDay: number | null }[] = [
-  { pattern: /\b(od|once daily|once a day|o\.d\.)\b/i, code: "OD", perDay: 1 },
-  { pattern: /\b(bd|bid|twice daily|twice a day|b\.d\.)\b/i, code: "BD", perDay: 2 },
-  { pattern: /\b(tds|tid|thrice daily|three times a day|t\.d\.s\.)\b/i, code: "TDS", perDay: 3 },
+  // The Indian prescription grid — morning-afternoon-night — written on every case sheet and
+  // said aloud as "one-zero-one". Listed first because it is a pure-digit form that no other
+  // rule below can match; the four-box version is listed before the three-box one so
+  // "1-1-1-1" is not read as "1-1-1" with a stray digit after it.
+  { pattern: /\b1\s*-\s*1\s*-\s*1\s*-\s*1\b/, code: "QID", perDay: 4 },
+  { pattern: /\b1\s*-\s*1\s*-\s*1\b/, code: "TDS", perDay: 3 },
+  { pattern: /\b1\s*-\s*0\s*-\s*1\b/, code: "BD", perDay: 2 },
+  { pattern: /\b1\s*-\s*1\s*-\s*0\b/, code: "BD", perDay: 2 },
+  { pattern: /\b0\s*-\s*1\s*-\s*1\b/, code: "BD", perDay: 2 },
+  // 0-0-1 is the night box, which is HS on an Indian chart, not merely "once a day".
+  { pattern: /\b0\s*-\s*0\s*-\s*1\b/, code: "HS", perDay: 1 },
+  { pattern: /\b(?:1\s*-\s*0\s*-\s*0|0\s*-\s*1\s*-\s*0)\b/, code: "OD", perDay: 1 },
+  { pattern: /\b(od|once daily|once a day|o\.d\.|o\/d)\b/i, code: "OD", perDay: 1 },
+  { pattern: /\b(bd|bid|twice daily|twice a day|b\.d\.|b\/d)\b/i, code: "BD", perDay: 2 },
+  { pattern: /\b(tds|tid|thrice daily|three times a day|t\.d\.s\.|t\/d\/s)\b/i, code: "TDS", perDay: 3 },
   { pattern: /\b(qid|qds|four times a day)\b/i, code: "QID", perDay: 4 },
-  { pattern: /\b(hs|at bedtime|at night|nocte)\b/i, code: "HS", perDay: 1 },
-  { pattern: /\bq4h\b/i, code: "Q4H", perDay: 6 },
-  { pattern: /\bq6h\b/i, code: "Q6H", perDay: 4 },
-  { pattern: /\bq8h\b/i, code: "Q8H", perDay: 3 },
-  { pattern: /\bq12h\b/i, code: "Q12H", perDay: 2 },
-  { pattern: /\b(sos|prn|as needed|if required)\b/i, code: "SOS", perDay: null },
+  { pattern: /\b(hs|h\/s|at bedtime|at night|nocte|raat ko)\b/i, code: "HS", perDay: 1 },
+  // "6th hourly" / "8 hourly" is how an Indian ward says it; q6h is what a textbook says.
+  { pattern: /\b(q4h|4\s*(?:th)?\s*hourly)\b/i, code: "Q4H", perDay: 6 },
+  { pattern: /\b(q6h|6\s*(?:th)?\s*hourly)\b/i, code: "Q6H", perDay: 4 },
+  { pattern: /\b(q8h|8\s*(?:th)?\s*hourly)\b/i, code: "Q8H", perDay: 3 },
+  { pattern: /\b(q12h|12\s*(?:th)?\s*hourly)\b/i, code: "Q12H", perDay: 2 },
+  { pattern: /\b(sos|s\/o\/s|prn|as needed|if required|if needed)\b/i, code: "SOS", perDay: null },
   { pattern: /\b(stat|immediately)\b/i, code: "STAT", perDay: null },
 ];
 
 const ROUTES: { pattern: RegExp; code: string }[] = [
-  { pattern: /\b(iv|intravenous)\b/i, code: "IV" },
-  { pattern: /\b(im|intramuscular)\b/i, code: "IM" },
+  { pattern: /\b(iv|i\/v|intravenous)\b/i, code: "IV" },
+  { pattern: /\b(im|i\/m|intramuscular)\b/i, code: "IM" },
   { pattern: /\b(s\/?c|subcut\w*|subcutaneous)\b/i, code: "SC" },
-  { pattern: /\b(po|oral|orally|by mouth)\b/i, code: "PO" },
+  { pattern: /\b(po|p\/o|oral|orally|per oral|by mouth)\b/i, code: "PO" },
   { pattern: /\b(eye ?drops?|ophthalmic|e\/d)\b/i, code: "EYE" },
   { pattern: /\b(ear ?drops?|otic|aural)\b/i, code: "EAR" },
   { pattern: /\b(nasal|nose ?drops?|intranasal)\b/i, code: "NASAL" },
-  { pattern: /\b(pr|per rectum|rectal|suppository)\b/i, code: "PR" },
+  { pattern: /\b(pr|p\/r|per rectum|rectal|suppository)\b/i, code: "PR" },
   { pattern: /\b(sl|sublingual)\b/i, code: "SL" },
   { pattern: /\b(neb|nebulis\w*|nebuliz\w*|inhal\w*|mdi|puffs?)\b/i, code: "INH" },
   { pattern: /\b(local|topical|apply|ointment|cream)\b/i, code: "TOP" },

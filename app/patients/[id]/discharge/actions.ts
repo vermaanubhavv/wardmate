@@ -3,6 +3,63 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { searchFormulary } from "@/lib/formulary";
+import type { DischargeSectionId } from "@/lib/discharge-entities";
+import {
+  writeDischargeSection,
+  approveDischargeSection,
+  finaliseDischargeSummary,
+  reopenDischargeSummary,
+  resetDischargeSummary,
+} from "@/lib/discharge-store";
+import type { DischargeCheck } from "@/lib/discharge-checks";
+
+/**
+ * Save one reviewed section of the discharge summary.
+ *
+ * The value is already in the section's own shape (see lib/discharge-entities.ts) — the client
+ * holds the whole draft and sends back the section the resident just changed. Nothing here
+ * interprets it; storage is exactly what the workspace showed.
+ */
+export async function saveDischargeSection(
+  patientId: string,
+  sectionId: DischargeSectionId,
+  value: unknown
+): Promise<{ ok: boolean; error?: string }> {
+  const result = await writeDischargeSection(patientId, sectionId, value);
+  if (result.ok) revalidatePath(`/patients/${patientId}/discharge`);
+  return result;
+}
+
+/** Approve an AI-written section — it cannot be part of a finalised summary until this happens. */
+export async function approveDischargeSectionAction(
+  patientId: string,
+  sectionId: "clinicalCourse" | "indication" | "relevantInvestigations"
+): Promise<{ ok: boolean; error?: string }> {
+  const result = await approveDischargeSection(patientId, sectionId);
+  if (result.ok) revalidatePath(`/patients/${patientId}/discharge`);
+  return result;
+}
+
+/** Finalise. Refuses — with the blocking list — while any high-priority check is unmet. */
+export async function finaliseDischargeAction(
+  patientId: string
+): Promise<{ ok: boolean; blocking?: DischargeCheck[]; error?: string }> {
+  const result = await finaliseDischargeSummary(patientId);
+  if (result.ok) revalidatePath(`/patients/${patientId}/discharge`);
+  return result;
+}
+
+export async function reopenDischargeAction(patientId: string): Promise<{ ok: boolean; error?: string }> {
+  const result = await reopenDischargeSummary(patientId);
+  if (result.ok) revalidatePath(`/patients/${patientId}/discharge`);
+  return result;
+}
+
+export async function resetDischargeAction(patientId: string): Promise<{ ok: boolean; error?: string }> {
+  const result = await resetDischargeSummary(patientId);
+  if (result.ok) revalidatePath(`/patients/${patientId}/discharge`);
+  return result;
+}
 
 /**
  * Look up candidate formulary entries for a drug, for a clinician to choose between.

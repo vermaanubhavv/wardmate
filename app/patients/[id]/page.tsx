@@ -29,7 +29,6 @@ import Tick from "./tick";
 import EntryCard from "./entry-card";
 import CaseHistoryCapture from "./case-history-capture";
 import DischargeSection from "./discharge-section";
-import { buildDischargeNote, formatDischargeText } from "@/lib/discharge";
 import { diagnosisFromProcedure } from "@/lib/diagnosis-from-procedure";
 import { reopenTask } from "./actions";
 import ConfirmDictation from "./confirm-dictation";
@@ -79,8 +78,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     { data: entriesData },
     procedures,
     templateChoices,
-    { data: wardRow },
     template,
+    { data: dischargeRow },
   ] = await Promise.all([
       getActivePatients(patient.ward_id),
       supabase
@@ -92,13 +91,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         .order("recorded_at", { ascending: false }),
       getProcedureLabels(),
       listTemplateChoices(),
-      // Joins the batch rather than following it: two strings are not worth a round trip of
-      // their own on the screen opened most.
-      supabase.from("wards").select("name, letterhead").eq("id", patient.ward_id).maybeSingle(),
       // Needs only fields already in hand from the patient row, so it was queueing behind the
       // batch for nothing.
       getTemplateForPatient(patient),
+      // Just the status line for the discharge fold — the workspace itself fetches the rest.
+      supabase.from("discharge_summaries").select("status").eq("patient_id", id).maybeSingle(),
     ]);
+  const dischargeStatus = (dischargeRow?.status as "draft" | "finalised" | undefined) ?? null;
   const here = ward.findIndex((p) => p.id === patient.id);
   const next = here >= 0 ? ward[here + 1] : undefined;
   const position = here >= 0 ? `${here + 1} of ${ward.length}` : null;
@@ -208,11 +207,6 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       return true;
     });
 
-  const dischargeNote = buildDischargeNote(patient, patientState, medications, procedure, {
-    letterhead: wardRow?.letterhead ?? null,
-    wardName: wardRow?.name ?? null,
-  });
-  const dischargeBrief = formatDischargeText(dischargeNote);
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
@@ -661,7 +655,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           Bottom padding clears the fixed speak bar so it stays openable. */}
       <section className="px-6 pb-72">
         <DischargeSection
-          brief={dischargeBrief}
+          status={dischargeStatus}
           patientName={stripPatientHonorific(patient.display_name)}
           patientId={patient.id}
         />

@@ -50,7 +50,7 @@ export function listedComorbidities(observations: ComorbiditySource[]): string[]
   });
 }
 
-const COMMON_COMORBIDITY = /\b(?:htn|hypertension|dm|diabetes|asthma|copd|bronchiectasis|osa|obstructive sleep apno?ea|ihd|cad|coronary artery disease|ischaemic heart disease|mi|myocardial infarction|heart failure|af|atrial fibrillation|ckd|esrd|dialysis|cld|cirrhosis|hepatitis\s*[bc]|hep\s*[bc]|hiv|hypo\s*thyroid|hyper\s*thyroid|epilepsy|seizure disorder|cva|stroke|tia|parkinson(?:'s)?|dementia|rheumatoid arthritis|ankylosing spondylitis|sle|lupus|connective tissue disease|malignan(?:cy|t)|cancer|transplant|immunosuppressed?)\b/i;
+const COMMON_COMORBIDITY = /\b(?:htn|hypertension|dm|diabetes|asthma|copd|bronchiectasis|osa|obstructive sleep apno?ea|ihd|cad|coronary artery disease|ischaemic heart disease|mi|myocardial infarction|heart failure|af|atrial fibrillation|ckd|esrd|dialysis|cld|cirrhosis|hepatitis\s*[bc]|hep\s*[bc]|hiv|hypo\s*thyroid|hyper\s*thyroid|epilepsy|seizure disorder|cva|stroke|tia|parkinson(?:'s)?|dementia|rheumatoid arthritis|ankylosing spondylitis|sle|lupus|connective tissue disease|malignan(?:cy|t)|cancer|transplant|immunosuppressed?|koch'?s|pulmonary koch'?s|tuberculosis|old pt|rhd|rheumatic heart disease|valvular heart disease|bronchial asthma|hypothyroidism|hyperthyroidism|sickle cell|thalassaemia|thalassemia|g6pd|anaemia|anemia|old cva|bph|benign prostatic hyperplasia)\b/i;
 
 function cleanComorbidity(value: string): string {
   return value
