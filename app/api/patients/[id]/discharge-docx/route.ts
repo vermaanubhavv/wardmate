@@ -202,22 +202,44 @@ async function buildBody(note: DischargeNote, logoBytes: Buffer | null): Promise
     })
   );
 
-  // One bordered box for diagnosis detail / history / past medical history / condition at
-  // discharge together — a single-cell table draws the border, matching the template's own
-  // tall rectangle rather than separate headed sections.
-  const boxParagraphs: Paragraph[] =
-    note.history.length > 0
-      ? note.history.map((line) => new Paragraph({ bullet: { level: 0 }, children: [plain(line)] }))
-      : [new Paragraph({ children: [plain("")] })];
+  // One bordered box, sectioned exactly as the printed page is — same five headings from the
+  // unit's own blank form, same rule that an empty section still prints its heading. The two
+  // surfaces render from note.sections so they cannot drift apart; a heading added to one and
+  // forgotten in the other is the failure this shares a source with lib/discharge.ts to avoid.
+  const boxParagraphs: Paragraph[] = [];
+
+  const section = (title: string, lines: string[]) => {
+    boxParagraphs.push(
+      new Paragraph({ spacing: { before: 120 }, children: [bold(`${title} -`)] })
+    );
+    if (lines.length > 0) {
+      for (const line of lines) {
+        boxParagraphs.push(new Paragraph({ bullet: { level: 0 }, children: [plain(line)] }));
+      }
+    } else {
+      // The blank line the resident writes on, as on the paper form.
+      boxParagraphs.push(new Paragraph({ children: [plain("")] }));
+    }
+  };
+
+  section("History on Admission", note.sections.historyOnAdmission);
+  section("Course in Hospital", note.sections.courseInHospital);
+  section("Procedures done", note.sections.proceduresDone);
+  section("Operative Notes", note.sections.operativeNotes);
+  section("Post Op", note.sections.postOp);
+
   boxParagraphs.push(
     new Paragraph({ spacing: { before: 120 }, children: [bold("PAST MEDICAL HISTORY – "), plain(note.pastMedicalHistory)] })
   );
-  boxParagraphs.push(new Paragraph({ spacing: { before: 240 }, children: [bold("CONDITION AT DISCHARGE-")] }));
+  // "Satisfactory" is the unit's own form wording, reproduced like the letterhead.
   boxParagraphs.push(
-    new Paragraph({ children: [plain(note.conditionAtDischarge.vitals || "BP-    mm of Hg   PR-    bpm")] })
+    new Paragraph({ spacing: { before: 240 }, children: [bold("CONDITION AT DISCHARGE- Satisfactory")] })
   );
   boxParagraphs.push(
-    new Paragraph({ children: [plain(`Examination - ${note.conditionAtDischarge.exam.join("; ")}`)] })
+    new Paragraph({ children: [bold(note.conditionAtDischarge.vitals || "BP -             PR -")] })
+  );
+  boxParagraphs.push(
+    new Paragraph({ children: [bold("EXAMINATION – "), plain(note.conditionAtDischarge.exam.join("; "))] })
   );
 
   body.push(

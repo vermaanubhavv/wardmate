@@ -154,6 +154,23 @@ export type DischargeNote = {
   /** Recorded notes to be written up into prose by the doctor — never synthesised by this app.
    *  Empty means nothing was ever said on a round to build a history from. */
   history: string[];
+  /**
+   * The five headings the unit's own blank discharge form prints inside the box, in its order.
+   * Each is filled from what the record actually holds and left EMPTY when it holds nothing —
+   * the heading still prints, with a line to write on. A section the app cannot honestly fill
+   * is a blank on the page, never a sentence assembled to look complete.
+   *
+   * courseInHospital is the one the app never fills on its own. Summarising a fortnight of
+   * daily notes into a paragraph is writing, not reporting, and this app does not write
+   * clinical prose — so the heading prints and the resident writes it.
+   */
+  sections: {
+    historyOnAdmission: string[];
+    courseInHospital: string[];
+    proceduresDone: string[];
+    operativeNotes: string[];
+    postOp: string[];
+  };
   /** The editable "nothing significant" default, or the patient's own recorded comorbidities,
    *  whichever applies — see NO_COMORBIDITY_DEFAULT above. */
   pastMedicalHistory: string;
@@ -230,6 +247,37 @@ export function buildDischargeNote(
 
   const notes = kinds(state, ["note", "diagnosis"]).filter((o) => !VITAL_LOOKING_LABEL.test(o.label.trim()));
   const history = notes.map((o) => o.value_text ?? o.label);
+
+  // Operative and post-operative wording is matched on the LABEL the extractor gave it, which
+  // for a photographed OT note comes from the headings on the page itself — see the
+  // OPERATION_SECTIONS list in the prepare-discharge store route.
+  const OPERATIVE_LABEL = /\b(operative|operation|finding|procedure|intra[- ]?op)\b/i;
+  const POST_OP_LABEL = /\bpost[- ]?op(erative)?\b/i;
+
+  const operativeNotes = notes
+    .filter((o) => OPERATIVE_LABEL.test(o.label) && !POST_OP_LABEL.test(o.label))
+    .map((o) => o.value_text ?? o.label);
+  const postOp = notes.filter((o) => POST_OP_LABEL.test(o.label)).map((o) => o.value_text ?? o.label);
+
+  // What is left is the admission history: everything recorded that is not an operative note.
+  const operativeSet = new Set([...operativeNotes, ...postOp]);
+  const historyOnAdmission = history.filter((line) => !operativeSet.has(line));
+
+  const proceduresDone: string[] = [];
+  if (procedure) {
+    proceduresDone.push(
+      patient.surgery_date ? `${procedure} — ${istDay(patient.surgery_date)}` : procedure
+    );
+  }
+
+  const sections = {
+    historyOnAdmission,
+    // Deliberately empty: see the note on the type. The app reports; it does not compose.
+    courseInHospital: [] as string[],
+    proceduresDone,
+    operativeNotes,
+    postOp,
+  };
 
   const comorbidities = listedComorbidities(state.latest);
   const pastMedicalHistory =
@@ -331,6 +379,7 @@ export function buildDischargeNote(
       ? `${procedure.toUpperCase()}${patient.surgery_date ? ` ON ${istDay(patient.surgery_date)}` : ""}`
       : null,
     history,
+    sections,
     pastMedicalHistory,
     conditionAtDischarge,
     investigations,
@@ -366,14 +415,23 @@ export function formatDischargeText(note: DischargeNote): string {
   if (note.procedure) out.push(`PROCEDURE: ${note.procedure}`);
   out.push("");
 
-  out.push("HISTORY AND COURSE IN HOSPITAL");
-  if (note.history.length > 0) {
-    out.push("  Recorded on the round — to be written up:");
-    for (const line of note.history) out.push(`  · ${line}`);
-  } else {
-    out.push(`  ${BLANK}`);
+  // The same five headings the printed page and the Word document use, so the brief a
+  // resident pastes into WhatsApp is the same document in plain text.
+  for (const [title, lines] of [
+    ["HISTORY ON ADMISSION", note.sections.historyOnAdmission],
+    ["COURSE IN HOSPITAL", note.sections.courseInHospital],
+    ["PROCEDURES DONE", note.sections.proceduresDone],
+    ["OPERATIVE NOTES", note.sections.operativeNotes],
+    ["POST OP", note.sections.postOp],
+  ] as [string, string[]][]) {
+    out.push(title);
+    if (lines.length > 0) {
+      for (const line of lines) out.push(`  · ${line}`);
+    } else {
+      out.push(`  ${BLANK}`);
+    }
+    out.push("");
   }
-  out.push("");
 
   out.push("PAST MEDICAL HISTORY");
   out.push(`  ${note.pastMedicalHistory}`);

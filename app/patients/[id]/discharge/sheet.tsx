@@ -106,30 +106,38 @@ export default function DischargeSheet({
               {note.procedure ? ` — ${note.procedure}` : ""}
             </p>
 
-            {/* One bordered box for everything the doctor reviews and signs off on together —
-                diagnosis detail, the round's own notes to write up, past medical history, then
-                Condition at discharge at the bottom of the same box — matching the template's
-                single tall rectangle rather than separate headed sections. */}
+            {/* One bordered box, sectioned the way the unit's own blank form is: the five
+                headings in its order, then Condition at discharge at the foot. Each heading
+                prints whether or not anything was recorded under it — a section with nothing
+                behind it shows a rule to write on, which is the paper the resident already
+                fills in by hand. Nothing is composed to fill a gap. */}
             <div className="mt-1 min-h-[280px] border border-black p-2 print:min-h-[560px]">
-              {note.history.length > 0 ? (
-                <ul className="list-disc pl-4">
-                  {note.history.map((line, i) => (
-                    <li key={i}>{line}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-muted">&nbsp;</p>
-              )}
+              <Section title="History on Admission" lines={note.sections.historyOnAdmission} />
+              {/* Never filled by the app — see the note on DischargeNote.sections. Summarising
+                  a fortnight of rounds into a paragraph is writing, not reporting. */}
+              <Section title="Course in Hospital" lines={note.sections.courseInHospital} />
+              <Section title="Procedures done" lines={note.sections.proceduresDone} />
+              <Section title="Operative Notes" lines={note.sections.operativeNotes} />
+              <Section title="Post Op" lines={note.sections.postOp} />
+
               <p className="mt-2">
                 <span className="font-bold">PAST MEDICAL HISTORY –</span> {note.pastMedicalHistory}
               </p>
 
-              <p className="mt-4 font-bold">CONDITION AT DISCHARGE-</p>
-              {/* Printed exactly as recorded rather than parsed apart to fit "BP- __ mm of
-                  Hg PR- __ bpm" — splitting a vital string the app did not measure the shape
-                  of is exactly the kind of guessing this app avoids everywhere else. */}
-              <p>{note.conditionAtDischarge.vitals || "BP-    mm of Hg   PR-    bpm"}</p>
-              <p>Examination - {note.conditionAtDischarge.exam.join("; ")}</p>
+              {/* "Satisfactory" is printed because the unit's own blank form prints it — the
+                  same reason the letterhead is reproduced verbatim. It is struck out on the
+                  patient it is not true of, exactly as on paper. */}
+              <p className="mt-3 font-bold">CONDITION AT DISCHARGE- Satisfactory</p>
+              {/* Printed exactly as recorded rather than parsed apart to fit "BP- __ PR- __":
+                  splitting a vital string the app did not measure the shape of is the kind of
+                  guessing this app avoids everywhere else. */}
+              <p className="font-bold">
+                {note.conditionAtDischarge.vitals || "BP -             PR -"}
+              </p>
+              <p className="font-bold">
+                EXAMINATION –{" "}
+                <span className="font-normal">{note.conditionAtDischarge.exam.join("; ")}</span>
+              </p>
             </div>
           </div>
 
@@ -261,5 +269,30 @@ export default function DischargeSheet({
           </div>
         </div>
       </section>
+  );
+}
+
+/**
+ * One heading from the unit's blank form, with what the record holds under it.
+ *
+ * An empty section is not hidden. The heading prints with a rule beneath it, because that is
+ * what the paper form does and because a missing section a resident can see is worth more than
+ * a tidy page that quietly dropped it — the same reasoning as the blanks everywhere else in
+ * this document.
+ */
+function Section({ title, lines }: { title: string; lines: string[] }) {
+  return (
+    <div className="mt-2 first:mt-0">
+      <p className="font-bold">{title} -</p>
+      {lines.length > 0 ? (
+        <ul className="list-disc pl-4">
+          {lines.map((line, i) => (
+            <li key={i}>{line}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-3 border-b border-black/40">&nbsp;</p>
+      )}
+    </div>
   );
 }
