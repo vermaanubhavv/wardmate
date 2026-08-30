@@ -67,7 +67,18 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
     return true;
   });
 
+  // What was written the day the patient came in, kept separate from the rest of the record.
+  // "History on Admission" is the clerking — complaints, history of presenting illness, past
+  // history, examination on arrival — and today's exam findings are not that. Without this,
+  // the section filled with whatever notes happened to be lying around, which on a post-op
+  // patient meant the anaesthetic line off a photographed OT note printing as their history.
+  const admissionObservations = (entriesData ?? [])
+    .filter((e) => e.is_case_history)
+    .flatMap((e) => e.observations)
+    .filter((o) => !isIdentifierLabel(o.label));
+
   const note = buildDischargeNote(patient, patientState, medications, procedure, {
+    admissionObservations,
     letterhead: wardRow?.letterhead ?? null,
     wardName: wardRow?.name ?? null,
     formularyMappings,

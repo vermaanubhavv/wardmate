@@ -242,6 +242,9 @@ export function buildDischargeNote(
     /** Confirmed drug-key -> formulary-entry mappings for this ward. Absent means the ward has
      *  not imported a formulary; every row simply carries no formulary name. */
     formularyMappings?: Map<string, string>;
+    /** Everything recorded on the admission clerking, in its own right — see the History on
+     *  Admission section below. Absent for a patient whose clerking was never captured. */
+    admissionObservations?: Observation[];
   }
 ): DischargeNote {
   const today = new Date().toISOString();
@@ -271,8 +274,37 @@ export function buildDischargeNote(
     );
   }
 
+  /**
+   * History on Admission, in the four parts a clerking sheet is written in.
+   *
+   * Built from the admission note itself, not from the record at large: today's abdomen is not
+   * the abdomen the patient arrived with, and a line off a photographed operation note is not
+   * their history at all. Each part prints only if something was written under it — the
+   * headings of an empty clerking are not worth printing four times.
+   */
+  const admission = options?.admissionObservations ?? [];
+  const admissionPart = (match: RegExp) =>
+    admission
+      .filter((o) => match.test(o.label))
+      .map((o) => (o.value_text ?? "").trim())
+      .filter(Boolean);
+
+  const clerking: string[] = [];
+  const addPart = (title: string, values: string[]) => {
+    if (values.length > 0) clerking.push(`${title} – ${values.join("; ")}`);
+  };
+  addPart("Complaints", admissionPart(/\bchief complaint|\bcomplaint/i));
+  addPart("HOPI", admissionPart(/presenting illness|\bhopi\b|present illness/i));
+  addPart("Past History", admissionPart(/\bpast history|\bfamily history/i));
+  addPart(
+    "Examination",
+    admission.filter((o) => o.kind === "exam").map((o) => `${o.label} ${o.value_text ?? ""}`.trim())
+  );
+
   const sections = {
-    historyOnAdmission,
+    // The clerking when there is one; otherwise what the record holds, minus the operative
+    // notes, which is what this section carried before an admission note existed to read.
+    historyOnAdmission: clerking.length > 0 ? clerking : historyOnAdmission,
     // Deliberately empty: see the note on the type. The app reports; it does not compose.
     courseInHospital: [] as string[],
     proceduresDone,
