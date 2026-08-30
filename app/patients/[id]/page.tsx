@@ -290,15 +290,11 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                     {procedure ? ` ${procedure}` : ""}
                   </p>
                   <p className="mt-0.5 text-[13px] text-muted">
-                    {diagnosis ? (
-                      `(${diagnosis})`
-                    ) : derivedDiagnosis ? (
-                      <>
-                        ({derivedDiagnosis.text}) <span className="italic">from the procedure</span>
-                      </>
-                    ) : (
-                      "(diagnosis not recorded)"
-                    )}
+                    {/* A derived diagnosis reads exactly like a recorded one. It is a fixed
+                        mapping from the operation — see lib/diagnosis-from-procedure.ts — and
+                        the unit reads "lap chole" as gall stone disease without being told so
+                        every time it opens a patient. Nothing is stored either way. */}
+                    ({diagnosis ?? derivedDiagnosis?.text ?? "diagnosis not recorded"})
                   </p>
                 </>
               ) : (
