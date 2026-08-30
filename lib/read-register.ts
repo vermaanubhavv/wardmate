@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { AI_MODEL } from "@/lib/model";
 
 export type RegisterRow = {
   /** Patient name as written in the register. Empty if the row has none. */
@@ -88,7 +89,7 @@ export async function readRegister(
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
 
-  const model = "claude-opus-5";
+  const model = AI_MODEL;
   const client = new Anthropic({ apiKey: key });
 
   const response = await client.messages.create({

@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { AI_MODEL } from "@/lib/model";
 
 /** Details printed on an OPD paper or admission sheet that can safely prefill a new record. */
 export type AdmissionPaperPatient = {
@@ -55,7 +56,7 @@ export async function readAdmissionPaper(
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
 
-  const model = "claude-opus-5";
+  const model = AI_MODEL;
   const client = new Anthropic({ apiKey: key });
   const response = await client.messages.create({
     model,

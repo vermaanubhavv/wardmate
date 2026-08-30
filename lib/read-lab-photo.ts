@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { AI_MODEL } from "@/lib/model";
 
 export type ReadLabValue = {
   label: string;
@@ -99,13 +100,14 @@ export async function readLabPhoto(
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
 
-  const model = "claude-opus-5";
+  const model = AI_MODEL;
   const client = new Anthropic({ apiKey: key });
 
   const response = await client.messages.create({
     model,
     max_tokens: 8000,
-    // Cached: fixed prompt, and lab reports arrive several at a time.
+    // Marked for caching; inert on Sonnet 5 for the same reason as lib/read-paper.ts — ~700
+    // tokens against a 1024-token minimum. Harmless, and live again on a model with a lower one.
     system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
     // Higher effort than the voice path: reading small print off a phone photo taken at an
     // angle under ward lighting is genuinely harder than parsing a clean sentence, and a

@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { AI_MODEL } from "@/lib/model";
 
 /**
  * One page out of a patient's file: what kind of paper it is, and what it says.
@@ -82,14 +83,16 @@ export async function readPaper(
   mediaType: "image/jpeg" | "image/png" | "image/webp"
 ): Promise<ReadPaperResult> {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const model = "claude-opus-5";
+  const model = AI_MODEL;
 
   const response = await client.messages.create({
     model,
     max_tokens: 4000,
-    // Cached: this prompt is identical for every page, and a pile of papers is read within
-    // seconds of itself, well inside the five-minute window. The first page pays to write the
-    // cache; every page after it reads the prompt back at about a tenth of the price.
+    // Marked for caching, but INERT ON SONNET 5: this prompt is ~620 tokens and Sonnet 5's
+    // minimum cacheable prefix is 1024 (Opus 5's is 512, where it did cache — measured at
+    // cache_read=843 on the third page of a batch). Below the minimum nothing is cached and
+    // nothing is charged for trying, so the marker is left in place: it costs nothing, and it
+    // starts working again the day this prompt grows or lib/model.ts goes back to Opus.
     system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
     // Low effort, matching lib/extract.ts and for the same reason: this is transcription and
     // one classification, not reasoning. Thinking is ON BY DEFAULT on Opus 5 and bills as

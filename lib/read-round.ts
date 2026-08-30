@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { AI_MODEL } from "@/lib/model";
 
 export type RoundSegment = {
   /** The bed as spoken — "1", "SW-12", "ICU-3". Empty if none was said. */
@@ -107,7 +108,7 @@ export async function readRoundDictation(
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
 
-  const model = "claude-opus-5";
+  const model = AI_MODEL;
   const client = new Anthropic({ apiKey: key });
 
   const beds =

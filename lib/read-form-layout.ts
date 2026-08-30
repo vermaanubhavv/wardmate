@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { AI_MODEL } from "@/lib/model";
 
 /**
  * Reads WHERE things are on a blank form photo, not what is written on it. Runs once, when a
@@ -105,7 +106,7 @@ export async function readFormLayout(
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
 
-  const model = "claude-opus-5";
+  const model = AI_MODEL;
   const client = new Anthropic({ apiKey: key });
 
   const response = await client.messages.create({

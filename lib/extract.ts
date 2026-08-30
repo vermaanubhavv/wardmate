@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { AI_MODEL } from "@/lib/model";
 import { isIdentifierLabel } from "@/lib/patients";
 import { extractClinicalEntities } from "@/lib/clinical-ner";
 
@@ -172,7 +173,7 @@ export async function extractObservations(
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
 
-  const model = "claude-opus-5";
+  const model = AI_MODEL;
   const client = new Anthropic({ apiKey: key });
 
   const expected =
@@ -214,6 +215,7 @@ export async function extractObservations(
   const response = await client.messages.create({
     model,
     max_tokens: 4000,
+    // Still caches on Sonnet 5: ~2,400 tokens against its 1024-token minimum.
     // Two blocks, not one concatenated string. The first is identical on every call and is
     // the expensive part (~2,400 tokens, sent again for every bed on the round); the rest
     // varies by patient — expected labels, this unit's protocols — and would invalidate the
