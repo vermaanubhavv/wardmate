@@ -355,9 +355,6 @@ export function buildDischargeNote(
   const derivedDiagnosis = diagnosisFromProcedure(patient);
 
   const management = managementLabel(patient);
-  const derivedNote = derivedDiagnosis
-    ? ` The diagnosis was not recorded and reads here from the operation performed (${derivedDiagnosis.from}) — check it before signing.`
-    : "";
   const assembledNote = `Assembled from what was recorded on the round (${dayLabel(patient)}${
     management ? `, ${management}` : ""
   }). Blanks are things the app was never told; the comorbidities line and the discharge medications are editable defaults, not what was necessarily said — check both before signing.`;
