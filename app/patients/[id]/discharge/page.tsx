@@ -25,15 +25,15 @@ export default async function DischargeWorkspacePage({ params }: { params: Promi
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
-      <header className="px-4 pb-3 pt-6">
+      {/* Deliberately slim: the workspace card leads with the current section as its own
+          headline, so a big "Discharge summary" title here would just compete with it. */}
+      <header className="flex items-baseline justify-between gap-3 px-4 pb-3 pt-6">
         <Link href={`/patients/${id}`} className="text-[17px] text-accent">
           ‹ Patient
         </Link>
-        <h1 className="mt-3 ios-large-title">Discharge summary</h1>
-        <p className="mt-1 text-[15px] text-muted">
-          {stripPatientHonorific(context.patient.display_name)}
-          {context.patient.bed ? ` · bed ${context.patient.bed}` : ""}. Compiled from the record —
-          one card per section: confirm or edit, then Next. Approve the AI parts, then finalise.
+        <p className="truncate text-[13px] text-muted">
+          Discharge · {stripPatientHonorific(context.patient.display_name)}
+          {context.patient.bed ? ` · bed ${context.patient.bed}` : ""}
         </p>
       </header>
 
