@@ -97,10 +97,13 @@ export async function readRegister(
     // A full register page is many rows of handwriting; give it room.
     max_tokens: 16000,
     system: SYSTEM_PROMPT,
-    // The highest effort of the three AI paths. This is dense handwriting, read once, and
-    // the consequence of getting a row boundary wrong is a value on the wrong patient.
+    // Dense handwriting, read once, and a wrong row boundary puts a value on the wrong
+    // patient — so if any read earns "high" it is this one. It is still set to "medium":
+    // "high" is off across the whole app for now, on cost. If register accuracy proves not
+    // good enough at medium, the fix is "high" again or a stronger model (see lib/model.ts)
+    // once funded — not accepting worse reads.
     output_config: {
-      effort: "high",
+      effort: "medium",
       format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> },
     },
     messages: [

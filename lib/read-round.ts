@@ -120,10 +120,13 @@ export async function readRoundDictation(
     model,
     max_tokens: 8000,
     system: SYSTEM_PROMPT + beds,
-    // High effort, like the register and unlike a single bedside note. Getting a boundary
-    // wrong here puts one patient's instruction onto another patient.
+    // Getting a boundary wrong here puts one patient's instruction onto another patient, so
+    // this is the last read that should be economised on. It is still set to "medium": "high"
+    // is off across the whole app for now, on cost. The escalation path if per-bed accuracy
+    // slips is to put this back to "high" or move to Opus (see lib/model.ts) once there is
+    // funding for it — not to leave it here and hope.
     output_config: {
-      effort: "high",
+      effort: "medium",
       format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> },
     },
     messages: [{ role: "user", content: `Transcript:\n\n${transcript}` }],
