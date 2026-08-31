@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { stripPatientHonorific } from "@/lib/patients";
 import EditIdentity from "./edit-identity";
 import { deletePatientForever, dischargePatient } from "./actions";
@@ -43,17 +44,52 @@ export default function PatientMenu({
   const patientName = stripPatientHonorific(patient.display_name);
   const [open, setOpen] = useState(false);
   const [editSignal, setEditSignal] = useState(0);
-  const rootRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
-  // A tap anywhere else closes it. Without this the menu survives a scroll and sits over
-  // the next patient's card.
+  // The menu is rendered in a portal on <body>, not inside this card. The row list is an
+  // .ios-group, which clips its corners with overflow:hidden — a menu positioned inside it
+  // was cut off at the card's edge (see the "doesn't show fully" report). Fixed positioning
+  // from <body> escapes that; the trade-off is we place it by hand from the button's rect.
+  const [coords, setCoords] = useState<{ top: number; right: number } | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const place = () => {
+      const r = buttonRef.current?.getBoundingClientRect();
+      if (!r) return;
+      setCoords({ top: r.bottom + 4, right: Math.max(8, window.innerWidth - r.right) });
+    };
+    place();
+    // Any scroll or resize would leave the menu stranded where the button used to be, so we
+    // just close it — the same call the old outside-click made, and what a bedside tap on the
+    // list expects anyway.
+    const dismiss = () => setOpen(false);
+    window.addEventListener("resize", dismiss);
+    window.addEventListener("scroll", dismiss, true);
+    return () => {
+      window.removeEventListener("resize", dismiss);
+      window.removeEventListener("scroll", dismiss, true);
+    };
+  }, [open]);
+
+  // A tap anywhere outside the button or the menu closes it.
   useEffect(() => {
     if (!open) return;
     const close = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (buttonRef.current?.contains(t) || menuRef.current?.contains(t)) return;
+      setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
     };
     document.addEventListener("click", close);
-    return () => document.removeEventListener("click", close);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("click", close);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   function openEditor() {
@@ -62,8 +98,9 @@ export default function PatientMenu({
   }
 
   return (
-    <div ref={rootRef} className="relative">
+    <div className="relative">
       <button
+        ref={buttonRef}
         type="button"
         aria-label={`More for ${patientName}`}
         onClick={(e) => {
@@ -77,70 +114,75 @@ export default function PatientMenu({
         ⋯
       </button>
 
-      {open && (
-        <div
-          className="absolute right-0 top-8 z-20 w-56 overflow-hidden ios-group shadow-lg"
-          onClick={(e) => {
-            // This menu is already a sibling of the patient link, so it only needs to stop
-            // propagation. Preventing the default here also cancels the submit on Remove and
-            // Delete, making both menu actions appear to do nothing.
-            e.stopPropagation();
-          }}
-        >
-          <button
-            type="button"
-            onClick={openEditor}
-            className="block w-full px-4 py-3 text-left text-[17px] active:bg-chip"
+      {open &&
+        coords &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{ position: "fixed", top: coords.top, right: coords.right }}
+            className="z-50 w-56 overflow-hidden ios-group shadow-lg"
+            onClick={(e) => {
+              // Stop the tap reaching the card link underneath. Preventing the default here
+              // would also cancel the submit on Discharge and Delete.
+              e.stopPropagation();
+            }}
           >
-            Change bed
-          </button>
-          <button
-            type="button"
-            onClick={openEditor}
-            className="block w-full border-t border-line px-4 py-3 text-left text-[17px] active:bg-chip"
-          >
-            Change name, age, sex
-          </button>
-
-          <form action={dischargePatient} className="border-t border-line">
-            <input type="hidden" name="patient_id" value={patient.id} />
             <button
-              type="submit"
-              onClick={(e) => {
-                if (
-                  !confirm(
-                    `Discharge ${patientName} from the ward?\n\nTheir record will move to the Discharged list and can be restored if needed.`
-                  )
-                ) {
-                  e.preventDefault();
-                }
-              }}
+              type="button"
+              onClick={openEditor}
               className="block w-full px-4 py-3 text-left text-[17px] active:bg-chip"
             >
-              Discharge from ward
+              Change bed
             </button>
-          </form>
-
-          <form action={deletePatientForever} className="border-t border-line">
-            <input type="hidden" name="patient_id" value={patient.id} />
             <button
-              type="submit"
-              onClick={(e) => {
-                if (
-                  !confirm(
-                    `Delete ${patientName}?\n\nThey will move to the trash bin now, remain recoverable for 7 days, and then be permanently deleted automatically.`
-                  )
-                ) {
-                  e.preventDefault();
-                }
-              }}
-              className="block w-full px-4 py-3 text-left text-[17px] text-red-600 active:bg-chip"
+              type="button"
+              onClick={openEditor}
+              className="block w-full border-t border-line px-4 py-3 text-left text-[17px] active:bg-chip"
             >
-              Delete permanently
+              Change name, age, sex
             </button>
-          </form>
-        </div>
-      )}
+
+            <form action={dischargePatient} className="border-t border-line">
+              <input type="hidden" name="patient_id" value={patient.id} />
+              <button
+                type="submit"
+                onClick={(e) => {
+                  if (
+                    !confirm(
+                      `Discharge ${patientName} from the ward?\n\nTheir record will move to the Discharged list and can be restored if needed.`
+                    )
+                  ) {
+                    e.preventDefault();
+                  }
+                }}
+                className="block w-full px-4 py-3 text-left text-[17px] active:bg-chip"
+              >
+                Discharge from ward
+              </button>
+            </form>
+
+            <form action={deletePatientForever} className="border-t border-line">
+              <input type="hidden" name="patient_id" value={patient.id} />
+              <button
+                type="submit"
+                onClick={(e) => {
+                  if (
+                    !confirm(
+                      `Delete ${patientName}?\n\nThey will move to the trash bin now, remain recoverable for 7 days, and then be permanently deleted automatically.`
+                    )
+                  ) {
+                    e.preventDefault();
+                  }
+                }}
+                className="block w-full px-4 py-3 text-left text-[17px] text-red-600 active:bg-chip"
+              >
+                Delete permanently
+              </button>
+            </form>
+          </div>,
+          document.body
+        )}
 
       {/* No pen of its own — the menu above is its only way in. */}
       <EditIdentity
