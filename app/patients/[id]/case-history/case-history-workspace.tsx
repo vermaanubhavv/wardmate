@@ -58,6 +58,167 @@ const PICCLE_SIGNS = [
   { label: "jvp", title: "JVP" },
 ];
 
+// One HOPI card per complaint. Each carries the attributes a resident would ask about that
+// symptom — a row of quick pills each, plus free text for the narrative. Pills are matched
+// against and written into the same one free-text string that gets stored, so the card
+// round-trips: tap "Colicky" and it appears in the sentence; re-open and the pill reads as on.
+type HopiAttr = { label: string; options: string[]; multi?: boolean };
+
+const GENERIC_HOPI: HopiAttr[] = [
+  { label: "Onset", options: ["Sudden", "Gradual"] },
+  { label: "Duration", options: ["<1 day", "1–3 days", "<1 week", "1–4 weeks", ">1 month"] },
+  { label: "Progression", options: ["Improving", "Static", "Worsening"] },
+  { label: "Severity", options: ["Mild", "Moderate", "Severe"] },
+  { label: "Timing", options: ["Constant", "Intermittent", "Worse at night", "After food"] },
+];
+
+const SYMPTOM_TEMPLATES: { match: RegExp; attrs: HopiAttr[] }[] = [
+  {
+    match: /pain|ache/i,
+    attrs: [
+      { label: "Site", options: ["Epigastric", "RUQ", "LUQ", "RIF", "LIF", "Periumbilical", "Suprapubic", "Loin", "Generalised", "Shifting"] },
+      { label: "Onset", options: ["Sudden", "Gradual", "After meals", "At night"] },
+      { label: "Character", options: ["Colicky", "Dull ache", "Burning", "Cramping", "Sharp / stabbing", "Constant"] },
+      { label: "Radiation", options: ["To back", "To right shoulder", "To groin", "To tip of shoulder", "None"] },
+      { label: "Severity", options: ["Mild", "Moderate", "Severe"] },
+      { label: "Duration", options: ["<1 day", "1–3 days", "<1 week", "1–4 weeks", ">1 month"] },
+      { label: "Progression", options: ["Improving", "Static", "Worsening"] },
+      { label: "Aggravated by", options: ["Movement", "Food", "Fatty food", "Coughing", "Deep breath"], multi: true },
+      { label: "Relieved by", options: ["Rest", "Vomiting", "Leaning forward", "Antacids", "Passing stool / flatus"], multi: true },
+      { label: "Associated with", options: ["Vomiting", "Fever", "Distension", "Constipation", "Loose stools", "Anorexia", "Jaundice", "Dysuria", "Haematuria"], multi: true },
+    ],
+  },
+  {
+    match: /vomit|emesis/i,
+    attrs: [
+      { label: "Onset", options: ["Sudden", "Gradual"] },
+      { label: "Duration", options: ["<1 day", "1–3 days", "<1 week", ">1 week"] },
+      { label: "Frequency", options: ["1–2 / day", "3–5 / day", ">5 / day"] },
+      { label: "Content", options: ["Food particles", "Bilious", "Blood / coffee-ground", "Feculent", "Watery"] },
+      { label: "Relation to food", options: ["Soon after eating", "Delayed", "Unrelated"] },
+      { label: "Nature", options: ["Projectile", "Effortless", "Preceded by nausea"] },
+      { label: "Progression", options: ["Improving", "Static", "Worsening"] },
+      { label: "Associated with", options: ["Pain abdomen", "Distension", "Constipation", "Obstipation", "Fever", "Weight loss"], multi: true },
+    ],
+  },
+  {
+    match: /fever|pyrexia/i,
+    attrs: [
+      { label: "Onset", options: ["Sudden", "Gradual"] },
+      { label: "Duration", options: ["<3 days", "<1 week", "1–4 weeks", ">1 month"] },
+      { label: "Grade", options: ["Low-grade", "High-grade", "Documented >101°F"] },
+      { label: "Pattern", options: ["Continuous", "Intermittent", "Remittent", "Evening rise"] },
+      { label: "Chills / rigors", options: ["With rigors", "With chills only", "No chills"] },
+      { label: "Progression", options: ["Improving", "Static", "Worsening"] },
+      { label: "Associated with", options: ["Night sweats", "Weight loss", "Cough", "Dysuria", "Pain abdomen", "Loose stools", "Rash"], multi: true },
+    ],
+  },
+  {
+    match: /jaundice|icterus|yellow/i,
+    attrs: [
+      { label: "Onset", options: ["Sudden", "Gradual"] },
+      { label: "Duration", options: ["<1 week", "1–4 weeks", ">1 month"] },
+      { label: "Progression", options: ["Increasing", "Decreasing", "Fluctuating"] },
+      { label: "Pain", options: ["Painful", "Painless"] },
+      { label: "Urine", options: ["High-coloured", "Normal"] },
+      { label: "Stools", options: ["Clay-coloured", "Pale", "Normal"] },
+      { label: "Pruritus", options: ["Present", "Absent"] },
+      { label: "Associated with", options: ["Fever", "Weight loss", "Anorexia", "Vomiting", "Abdominal lump"], multi: true },
+    ],
+  },
+  {
+    match: /lump|swelling|mass/i,
+    attrs: [
+      { label: "Site", options: ["Groin", "Umbilical", "Epigastric", "Scrotal", "Neck", "Breast", "Abdominal wall", "Other"] },
+      { label: "Duration", options: ["<1 month", "1–6 months", "6–12 months", ">1 year"] },
+      { label: "Onset", options: ["Noticed incidentally", "After straining / lifting"] },
+      { label: "Progression", options: ["Increasing in size", "Static", "Decreasing"] },
+      { label: "Pain", options: ["Painful", "Painless"] },
+      { label: "Reducibility", options: ["Reducible", "Irreducible", "Reducible on lying down"] },
+      { label: "Cough impulse", options: ["Present", "Absent"] },
+      { label: "Associated with", options: ["Pain abdomen", "Vomiting", "Constipation", "Skin changes", "Other lumps", "Weight loss"], multi: true },
+    ],
+  },
+  {
+    match: /distension|distention|bloat/i,
+    attrs: [
+      { label: "Onset", options: ["Sudden", "Gradual"] },
+      { label: "Duration", options: ["<1 day", "1–3 days", "<1 week", ">1 week"] },
+      { label: "Extent", options: ["Localised", "Generalised"] },
+      { label: "Progression", options: ["Increasing", "Static", "Decreasing"] },
+      { label: "Flatus / stool", options: ["Passing normally", "Reduced", "Absent (obstipation)"] },
+      { label: "Associated with", options: ["Pain abdomen", "Vomiting", "Constipation", "Breathlessness", "Visible peristalsis"], multi: true },
+    ],
+  },
+  {
+    match: /constipat/i,
+    attrs: [
+      { label: "Duration", options: ["<1 week", "1–4 weeks", ">1 month", "Long-standing"] },
+      { label: "Bowel frequency", options: ["Once in 2–3 days", "Once in 4–7 days", "<Once a week"] },
+      { label: "Stool", options: ["Hard", "Pellet-like", "Narrow calibre"] },
+      { label: "Pattern", options: ["Progressive", "Alternating with diarrhoea"] },
+      { label: "Blood / mucus", options: ["Blood in stool", "Mucus", "Neither"] },
+      { label: "Associated with", options: ["Pain abdomen", "Distension", "Tenesmus", "Weight loss", "Anorexia"], multi: true },
+    ],
+  },
+  {
+    match: /loose stool|diarrh|motions/i,
+    attrs: [
+      { label: "Onset", options: ["Sudden", "Gradual"] },
+      { label: "Duration", options: ["<3 days", "<1 week", "1–4 weeks", ">1 month"] },
+      { label: "Frequency", options: ["3–5 / day", "6–10 / day", ">10 / day"] },
+      { label: "Consistency", options: ["Watery", "Semi-formed", "Mucoid"] },
+      { label: "Blood / mucus", options: ["Blood present", "Mucus present", "Neither"] },
+      { label: "Timing", options: ["Nocturnal", "Post-prandial", "Tenesmus"] },
+      { label: "Associated with", options: ["Fever", "Pain abdomen", "Vomiting", "Dehydration", "Weight loss"], multi: true },
+    ],
+  },
+  {
+    match: /bleeding per rectum|per rectal bleed|pr bleed|blood in stool|melena|melaena/i,
+    attrs: [
+      { label: "Duration", options: ["<1 week", "1–4 weeks", ">1 month", "Recurrent"] },
+      { label: "Colour", options: ["Bright red", "Dark red", "Altered / maroon", "Melena (black tarry)"] },
+      { label: "Amount", options: ["Streaks on stool", "Mixed with stool", "Splash in the pan", "Dripping after stool"] },
+      { label: "Relation to defecation", options: ["During", "After", "Unrelated"] },
+      { label: "Pain", options: ["Painful", "Painless"] },
+      { label: "Associated with", options: ["Mucus", "Mass / prolapse", "Change in bowel habit", "Weight loss", "Pallor / giddiness"], multi: true },
+    ],
+  },
+  {
+    match: /burning micturition|dysuria|urin/i,
+    attrs: [
+      { label: "Onset", options: ["Sudden", "Gradual"] },
+      { label: "Duration", options: ["<3 days", "<1 week", "1–4 weeks", ">1 month"] },
+      { label: "Voiding", options: ["Increased frequency", "Urgency", "Poor stream", "Incomplete emptying", "Terminal dribbling"], multi: true },
+      { label: "Urine", options: ["Haematuria", "Cloudy / turbid", "Foul-smelling", "Clear"] },
+      { label: "Pain site", options: ["Suprapubic", "Loin", "Urethral"] },
+      { label: "Associated with", options: ["Fever", "Rigors", "Loin pain", "Nausea / vomiting"], multi: true },
+    ],
+  },
+  {
+    match: /appetite/i,
+    attrs: [
+      { label: "Duration", options: ["<1 month", "1–3 months", ">3 months"] },
+      { label: "Severity", options: ["Mild", "Marked", "Aversion to food"] },
+      { label: "Progression", options: ["Improving", "Static", "Worsening"] },
+      { label: "Associated with", options: ["Weight loss", "Nausea", "Early satiety", "Pain abdomen", "Altered taste"], multi: true },
+    ],
+  },
+  {
+    match: /weight/i,
+    attrs: [
+      { label: "Amount", options: ["2–5 kg", "5–10 kg", ">10 kg", "Not quantified"] },
+      { label: "Over", options: ["<1 month", "1–3 months", "3–6 months", ">6 months"] },
+      { label: "Appetite", options: ["Preserved", "Reduced"] },
+      { label: "Associated with", options: ["Fever", "Night sweats", "Cough", "Bowel change", "Lump", "Anorexia"], multi: true },
+    ],
+  },
+];
+
+function hopiAttrsFor(complaint: string): HopiAttr[] {
+  return SYMPTOM_TEMPLATES.find((t) => t.match.test(complaint))?.attrs ?? GENERIC_HOPI;
+}
+
 const ABDOMEN_PILLS = ["Soft", "Non-tender", "Tender", "Guarding", "Distended", "Lump", "Organomegaly"];
 const CHEST_PILLS = ["Clear", "NVBS", "Bilateral air entry equal", "Added sounds", "Decreased air entry"];
 
@@ -442,12 +603,17 @@ export default function CaseHistoryWorkspace({
 
     if (id === "hopi") {
       const c = current._c ?? complaintList[0];
+      const attrs = hopiAttrsFor(c);
+      const set = (v: string) => { setHopi({ ...hopi, [c]: v }); mark("hopi"); };
       return (
         <>
           <p className="text-[12px] leading-[1.45] text-muted">
-            Tell the story of <span className="font-medium">{c}</span> — onset, duration, progression, associated features, what makes it better or worse.
+            Tap what fits <span className="font-medium">{c}</span> — each tap adds to the line below. Then type or speak anything the pills can&rsquo;t say.
           </p>
-          <DictateArea value={hopi[c] ?? ""} onChange={(v) => { setHopi({ ...hopi, [c]: v }); mark("hopi"); }} placeholder={`${c} — in detail`} rows={6} />
+          {attrs.map((a) => (
+            <AttrGroup key={a.label} attr={a} value={hopi[c] ?? ""} onChange={set} />
+          ))}
+          <DictateArea value={hopi[c] ?? ""} onChange={set} placeholder={`${c} — in the patient's own words`} rows={4} />
         </>
       );
     }
@@ -784,6 +950,51 @@ function DictateArea({
       >
         {status === "recording" ? "Stop" : status === "working" ? "Transcribing…" : "🎤 Speak"}
       </button>
+    </div>
+  );
+}
+
+const escRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** One HOPI attribute — a labelled row of quick pills that append their phrase to the
+ *  complaint's free-text line and read as "on" when that phrase is already in it. */
+function AttrGroup({
+  attr,
+  value,
+  onChange,
+}: {
+  attr: HopiAttr;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const has = (p: string) => value.toLowerCase().includes(p.toLowerCase());
+  const drop = (text: string, p: string) =>
+    text
+      .replace(new RegExp(`\\s*,?\\s*${escRe(p)}`, "i"), "")
+      .replace(/^\s*,\s*/, "")
+      .replace(/\s{2,}/g, " ")
+      .replace(/,\s*,/g, ",")
+      .trim();
+  const append = (text: string, p: string) =>
+    text.trim() ? `${text.trim().replace(/[.,;]\s*$/, "")}, ${p}` : p;
+
+  function toggle(p: string) {
+    if (has(p)) return onChange(drop(value, p));
+    let t = value;
+    if (!attr.multi) for (const o of attr.options) if (o !== p && has(o)) t = drop(t, o);
+    onChange(append(t, p));
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-[12px] font-medium text-muted">{attr.label}</span>
+      <div className="flex flex-wrap gap-1.5">
+        {attr.options.map((o) => (
+          <SelChip key={o} selected={has(o)} onClick={() => toggle(o)}>
+            {o}
+          </SelChip>
+        ))}
+      </div>
     </div>
   );
 }
