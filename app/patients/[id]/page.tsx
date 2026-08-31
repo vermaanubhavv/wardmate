@@ -30,6 +30,9 @@ import EntryCard from "./entry-card";
 import CaseHistoryCapture from "./case-history-capture";
 import { CaseHistoryCard, ObjectiveSummaryView } from "./case-history-card";
 import DischargeSection from "./discharge-section";
+import ScoringPanel from "./scoring/scoring-panel";
+import { syncPatientPathways } from "@/lib/scoring/store";
+import { getPatientScoring } from "@/lib/scoring/read";
 import { diagnosisFromProcedure } from "@/lib/diagnosis-from-procedure";
 import { reopenTask } from "./actions";
 import ConfirmDictation from "./confirm-dictation";
@@ -126,6 +129,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   );
   // This ward's own laboratory ranges, for results that arrived without a report to read.
   const wardRanges = await getWardLabRanges(patient.ward_id);
+
+  // Clinical scoring & auto-trigger engine. Both calls are inert unless the ward has opted in
+  // AND NEXT_PUBLIC_SCORING_ENGINE=on (lib/scoring/flag.ts) — with the flag closed this adds
+  // nothing to the page (DOCX test 16). The refresh keeps pathways in step with any new
+  // observation the same "computed fresh on read" way post-op day is.
+  await syncPatientPathways(id);
+  const scoring = await getPatientScoring(id);
 
   const protocolTitles = new Map<string, string>();
   if (matchedIds.length > 0) {
@@ -650,6 +660,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           </ul>
         )}
       </section>
+
+      <ScoringPanel patientId={patient.id} scoring={scoring} />
 
       {/* Last on the page: the admission ending, after everything it is assembled from.
           Bottom padding clears the fixed speak bar so it stays openable. */}
