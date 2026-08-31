@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import type { WardPatient } from "@/lib/patients";
 import { compareBeds } from "@/lib/patients";
 
@@ -14,15 +15,16 @@ export async function getCurrentWard() {
   // count of trips is the whole of the cost. This used to be three in a row — verify the user,
   // read their profile, read the ward — for about 660ms before the page had started.
   //
-  // getUser() is gone from the read path because nothing here needed it. It is a network call
-  // that asks Supabase to verify the token, and the only thing its answer was used for was to
-  // name the doctor's own profile row — which row security already restricts to exactly that
-  // row. Asking "which profiles may I see" returns one: theirs. The token is still verified,
-  // by the database, on every one of these queries.
-  //
+  // The profile row must be pinned to this user by id. Once a doctor joins a shared unit,
+  // profiles_ward_read (patch 0018) lets them read every co-member's profile too, so an
+  // unfiltered .maybeSingle() sees several rows and throws "multiple (or no) rows returned".
+  // getUser() is React-cached for the request, so this is one verify call shared with the
+  // rest of the render, not a new round trip per screen.
+  const user = await getUser();
   const { data: profile, error } = await supabase
     .from("profiles")
     .select("current_ward_id, wards!current_ward_id(id, name, owner_id, join_code, letterhead)")
+    .eq("id", user?.id ?? "")
     .maybeSingle();
 
   // The embedded ward comes back as an object or, depending on how the relationship is

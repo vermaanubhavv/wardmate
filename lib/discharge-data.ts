@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { derivePatientState, type Observation, type PatientState } from "@/lib/patient-state";
 import { getTemplateForPatient, getProcedureLabels, procedureFor } from "@/lib/templates";
 import { isIdentifierLabel } from "@/lib/patients";
@@ -120,7 +121,7 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
       .order("recorded_at", { ascending: false }),
     getProcedureLabels(),
     supabase.from("wards").select("name, letterhead").eq("id", patient.ward_id).maybeSingle(),
-    supabase.from("profiles").select("display_name, designation, department").maybeSingle(),
+    getUser().then((u) => supabase.from("profiles").select("display_name, designation, department").eq("id", u?.id ?? "").maybeSingle()),
     getTemplateForPatient(patient),
     getFormularyMappings(patient.ward_id),
     getFormularySize(patient.ward_id),

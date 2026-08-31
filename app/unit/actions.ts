@@ -61,7 +61,7 @@ export async function joinWard(_prev: JoinState, formData: FormData): Promise<Jo
   // tapped; everybody else goes straight to the ward as before. One extra query, and only on
   // the once-per-unit path — worth it, because a resident who lands on the ward and starts
   // recording is "Doctor" against every entry they make that morning.
-  const { data: mine } = await supabase.from("profiles").select("display_name").maybeSingle();
+  const { data: mine } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
   if (!mine?.display_name) {
     const { data: waiting } = await supabase
       .from("ward_expected_members")

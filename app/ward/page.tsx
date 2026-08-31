@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getWardScreen } from "@/lib/ward-screen";
-import { getDoctorName } from "@/lib/auth";
+import { getDoctorName, getUser } from "@/lib/auth";
 import { dayLabel, patientName, type WardPatient } from "@/lib/patients";
 import { procedureFor } from "@/lib/templates";
 import RegisterButton from "../register-button";
@@ -38,7 +38,11 @@ export default async function Home({
   ] = await Promise.all([
     getWardScreen(),
     getDoctorName(),
-    supabase.from("profiles").select("department, designation").maybeSingle(),
+    // Pinned by id: profiles_ward_read (0018) exposes co-members' profiles, so an unfiltered
+    // .maybeSingle() throws on any shared unit. getUser() is request-cached.
+    getUser().then((u) =>
+      supabase.from("profiles").select("department, designation").eq("id", u?.id ?? "").maybeSingle()
+    ),
   ]);
   const params = await searchParams;
   const deleteFailed = params.delete_failed;

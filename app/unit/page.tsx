@@ -57,8 +57,9 @@ export default async function UnitPage() {
         .eq("ward_id", ward.id)
         .order("added_at"),
       getMyWards(),
-      // Row security restricts profiles to the caller's own row, so this needs no where clause.
-      supabase.from("profiles").select("display_name, designation, department").maybeSingle(),
+      // Pinned to this user by id: profiles_ward_read (0018) makes every co-member's profile
+      // readable too, so an unfiltered .maybeSingle() throws once the unit has more than one.
+      supabase.from("profiles").select("display_name, designation, department").eq("id", user?.id ?? "").maybeSingle(),
       supabase
         .from("patients")
         .select("id", { count: "exact", head: true })

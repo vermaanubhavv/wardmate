@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { istDayKey, type Observation } from "@/lib/patient-state";
 import { buildProgressNote, formatProgressNoteText } from "@/lib/progress-note";
 import { getWardFormats } from "@/lib/formats";
@@ -50,9 +51,10 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
         // exact order, the same way derivePatientState does on the main patient page.
         .order("recorded_at", { ascending: false }),
       getWardFormats(patient.ward_id),
-      // The rounding doctor's own department, for "Case seen by" — row security already limits
-      // this to the caller's own profile, so no id needs asking for.
-      supabase.from("profiles").select("department").maybeSingle(),
+      // The rounding doctor's own department, for "Case seen by". Pinned by id: profiles_ward_read
+      // (0018) makes co-members' profiles readable, so an unfiltered .maybeSingle() throws on a
+      // shared unit. getUser() is request-cached.
+      getUser().then((u) => supabase.from("profiles").select("department").eq("id", u?.id ?? "").maybeSingle()),
       getProcedureLabels(),
       // This ward's own learned lab ranges, for judging a deranged result that has no printed
       // range of its own — see lib/ward-lab-ranges.ts, same source Current progress reads.
