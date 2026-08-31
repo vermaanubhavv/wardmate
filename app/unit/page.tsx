@@ -4,10 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentWard, getMyWards } from "@/lib/ward";
 import CodeBox from "./code-box";
 import JoinForm from "./join-form";
-import { switchWard, leaveWard, renameWard, saveLetterhead, saveProfile, removeExpectedMember } from "./actions";
+import { switchWard, leaveWard, renameWard, saveLetterhead, saveConsultant, saveProfile, removeExpectedMember } from "./actions";
 import FormularyImport from "./formulary-import";
 import InviteShare from "./invite-share";
-import AddExpected from "./add-expected";
 import CopySetup from "./copy-setup";
 import ClaimName from "./claim-name";
 import { getExpectedMembers } from "@/lib/expected-members";
@@ -265,43 +264,31 @@ export default async function UnitPage() {
         </ul>
       </section>
 
-      {/* Who this unit expects, written before any of them has an account. The roster above is
-          who has actually arrived; this is the list they arrive against. Owner only, because
-          the table's policies allow nobody else to write it. */}
-      {isOwner && (
+      {/* Who this unit expects. The roster above is who has actually arrived; this is the list
+          they arrive against, and each unclaimed name is still offered to a new joiner under
+          "Which one are you?". Names are no longer added from here — an existing list can only
+          be pared down. Owner only. */}
+      {isOwner && !rosterMissing && expected.length > 0 && (
         <section className="px-6 pb-6">
           <p className="mb-2 text-[15px] text-muted">Expected on this unit</p>
-          {rosterMissing ? (
-            <p className="ios-group px-4 py-3 text-[15px] leading-relaxed text-orange-700">
-              Run patch 0048 in Supabase to use the unit roster.
-            </p>
-          ) : (
-            <>
-              {expected.length > 0 && (
-                <ul className="ios-group mb-3 divide-y divide-line">
-                  {expected.map((person) => (
-                    <li key={person.id} className="flex items-baseline gap-3 px-4 py-3">
-                      <span className="flex-1 truncate text-[15px]">
-                        {person.full_name}
-                        {person.designation && (
-                          <span className="text-muted"> · {person.designation}</span>
-                        )}
-                      </span>
-                      {person.claimed_by ? (
-                        <span className="shrink-0 text-[13px] text-muted">joined</span>
-                      ) : (
-                        <form action={removeExpectedMember} className="shrink-0">
-                          <input type="hidden" name="id" value={person.id} />
-                          <button className="text-[13px] text-red-600">Remove</button>
-                        </form>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <AddExpected wardId={ward.id} />
-            </>
-          )}
+          <ul className="ios-group divide-y divide-line">
+            {expected.map((person) => (
+              <li key={person.id} className="flex items-baseline gap-3 px-4 py-3">
+                <span className="flex-1 truncate text-[15px]">
+                  {person.full_name}
+                  {person.designation && <span className="text-muted"> · {person.designation}</span>}
+                </span>
+                {person.claimed_by ? (
+                  <span className="shrink-0 text-[13px] text-muted">joined</span>
+                ) : (
+                  <form action={removeExpectedMember} className="shrink-0">
+                    <input type="hidden" name="id" value={person.id} />
+                    <button className="text-[13px] text-red-600">Remove</button>
+                  </form>
+                )}
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 
@@ -383,6 +370,28 @@ export default async function UnitPage() {
               </p>
             )}
           </div>
+        </section>
+      )}
+
+      {isOwner && (
+        <section className="px-6 pb-6">
+          <p className="mb-2 text-[15px] text-muted">Consultant in charge</p>
+          <form action={saveConsultant} className="flex gap-2">
+            <input type="hidden" name="ward_id" value={ward.id} />
+            <input
+              name="consultant_in_charge"
+              defaultValue={ward.consultant_in_charge ?? ""}
+              maxLength={120}
+              autoCapitalize="words"
+              placeholder="e.g. Dr. Neeraj"
+              className="min-w-0 flex-1 ios-group px-4 py-3 text-base outline-none focus:border-accent"
+            />
+            <button className="shrink-0 ios-group px-4 py-3 text-[17px] font-medium">Save</button>
+          </form>
+          <p className="mt-2 text-[13px] text-muted">
+            Fills in the consultant&rsquo;s name on every discharge summary this unit writes. It
+            can still be changed on an individual summary.
+          </p>
         </section>
       )}
 

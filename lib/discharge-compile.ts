@@ -370,7 +370,7 @@ export function compileDischargeDraft(
   context: DischargeContext,
   options?: { template?: DischargeTemplate | null; seedAll?: boolean }
 ): DischargeDraft {
-  const { patient, doctor, wardName } = context;
+  const { patient, doctor, wardName, wardConsultant } = context;
 
   const base: DischargeDraft = {
     patientId: patient.id,
@@ -386,7 +386,7 @@ export function compileDischargeDraft(
       specialty: null,
       ward: null,
       bed: patient.bed || null,
-      consultant: null,
+      consultant: wardConsultant ?? null,
       unit: wardName ?? null,
       admissionType: null,
     },

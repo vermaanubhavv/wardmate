@@ -119,6 +119,31 @@ export async function saveLetterhead(formData: FormData) {
   revalidatePath("/ward");
 }
 
+/**
+ * The consultant in charge of this unit.
+ *
+ * A standing fact about the unit, not re-typed per patient — it seeds "Consultant: …" on every
+ * discharge summary the unit writes (and can still be edited there). Owner only, like renaming
+ * and the heading: the wards update policy permits nobody else. Patch 0052 seeds the four
+ * surgical units; this is how any other unit sets it, or how a name is corrected.
+ */
+export async function saveConsultant(formData: FormData) {
+  const wardId = String(formData.get("ward_id") ?? "");
+  if (!wardId) return;
+
+  const consultant = String(formData.get("consultant_in_charge") ?? "").trim();
+
+  const supabase = await createClient();
+  await supabase
+    .from("wards")
+    .update({ consultant_in_charge: consultant ? consultant.slice(0, 120) : null })
+    .eq("id", wardId);
+
+  revalidatePath("/unit");
+  revalidatePath("/");
+  revalidatePath("/ward");
+}
+
 /** Switch which unit the app is showing. */
 export async function switchWard(formData: FormData) {
   const wardId = String(formData.get("ward_id") ?? "");
@@ -293,55 +318,8 @@ function databaseHint(message: string): string {
   return `Could not save: ${message}`;
 }
 
-/**
- * Write the people a unit expects, before any of them has an account.
- *
- * One per line, designation after a comma — "Dr Sharma, SR". Pasted in bulk because a unit
- * list arrives as a unit list, on paper or in a WhatsApp message, and adding eleven people
- * one form at a time is eleven chances to give up halfway.
- *
- * A name is stored exactly as typed. The honorific stripping that applies to patients is
- * deliberately not applied here: that rule exists because a patient name is an identifier
- * that must match across admissions, whereas this is how a colleague is addressed on the
- * ward, and "Dr" is part of it. See CONTEXT.md §2.
- */
-export type ExpectedState = { message: string; ok: boolean } | null;
-
-export async function addExpectedMembers(
-  _prev: ExpectedState,
-  formData: FormData
-): Promise<ExpectedState> {
-  const wardId = String(formData.get("ward_id") ?? "");
-  if (!wardId) return { ok: false, message: "No unit selected." };
-
-  const designations = ["Intern", "JR-1", "JR-2", "JR-3", "SR", "AP", "Medical Officer", "Consultant"];
-
-  const rows = String(formData.get("names") ?? "")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [namePart, ...rest] = line.split(",");
-      const typed = rest.join(",").trim();
-      // Case-insensitively, because "sr" typed at 7am is the same person as "SR", and the
-      // column's check constraint would refuse the lowercase one with a database error.
-      const designation =
-        designations.find((d) => d.toLowerCase() === typed.toLowerCase()) ?? null;
-      return { ward_id: wardId, full_name: namePart.trim().slice(0, 80), designation };
-    })
-    .filter((r) => r.full_name.length > 0);
-
-  if (rows.length === 0) return { ok: false, message: "Type at least one name." };
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("ward_expected_members").insert(rows);
-  if (error) return { ok: false, message: expectedHint(error.message) };
-
-  revalidatePath("/unit");
-  return { ok: true, message: `Added ${rows.length} ${rows.length === 1 ? "person" : "people"}.` };
-}
-
-/** Take a name off the list. Owner only — the delete policy on the table says so. */
+/** Take a name off the expected list. Owner only — the delete policy on the table says so.
+ *  Names are no longer added from the Unit page; an existing list can only be pared down. */
 export async function removeExpectedMember(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;

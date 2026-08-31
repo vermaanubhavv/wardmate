@@ -1,5 +1,6 @@
 import type { DischargeContext } from "@/lib/discharge-data";
 import type { Observation, PatientState } from "@/lib/patient-state";
+import { consultantForWard } from "@/lib/unit-consultants";
 
 /**
  * The in-memory DischargeContext a one-off discharge summary is compiled and rendered from —
@@ -20,7 +21,7 @@ export type OneOffIdentity = {
 
 export function oneOffContext(
   identity: OneOffIdentity,
-  ward: { id: string; name: string; letterhead: string | null } | null,
+  ward: { id: string; name: string; letterhead: string | null; consultant_in_charge?: string | null } | null,
   logoUrl: string | null,
   formularyMappings: Map<string, string>,
   observations: Observation[],
@@ -51,6 +52,7 @@ export function oneOffContext(
     },
     wardId: ward?.id ?? "",
     wardName: ward?.name ?? null,
+    wardConsultant: consultantForWard(ward?.consultant_in_charge ?? null, ward?.name),
     letterhead: ward?.letterhead ?? null,
     logoUrl,
     doctor: null,

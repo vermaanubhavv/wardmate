@@ -23,7 +23,7 @@ export async function getCurrentWard() {
   const user = await getUser();
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("current_ward_id, wards!current_ward_id(id, name, owner_id, join_code, letterhead)")
+    .select("current_ward_id, wards!current_ward_id(id, name, owner_id, join_code, letterhead, consultant_in_charge)")
     .eq("id", user?.id ?? "")
     .maybeSingle();
 
@@ -31,7 +31,14 @@ export async function getCurrentWard() {
   // resolved, a one-element array. Both shapes are handled rather than assumed.
   const embedded = (profile as { wards?: unknown } | null)?.wards;
   const chosen = (Array.isArray(embedded) ? embedded[0] : embedded) as
-    | { id: string; name: string; owner_id: string; join_code: string; letterhead: string | null }
+    | {
+        id: string;
+        name: string;
+        owner_id: string;
+        join_code: string;
+        letterhead: string | null;
+        consultant_in_charge: string | null;
+      }
     | undefined;
 
   if (chosen) return { ward: chosen, error: null };
