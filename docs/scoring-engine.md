@@ -3,10 +3,17 @@
 Configuration-driven scoring for surgical ward pathways.
 
 **Shipped surface (deliberately minimal — product decision):** the acute-pancreatitis pathway
-computes **one score, BISAP**, from values already recorded. It shows as a line in the progress
-note ("BISAP – 2/5"); the inputs it still needs appear as ordinary items in the to-do list.
-There is **no separate scoring screen and no manual verification step** — the score is
-recalculated automatically whenever the data changes (computed-on-read, like post-op day).
+computes **one score, BISAP**, from values already recorded.
+- A compact **BISAP card** on the patient page: the score, the five criteria (met / not met /
+  unknown), and one-tap entry for the two that need a clinician's eye — mental status and
+  pleural effusion (written as real `observations`, so they land on the record too). Source and
+  mortality bands behind a tap.
+- A line in the **progress note** ("BISAP – 2/5", or "… so far" naming the missing inputs).
+- **One** to-do item — "Send routine investigations — CBC, LFT, KFT, SE" — that clears when the
+  kidney panel is back. No serial-monitoring to-do (that is continuous observation, not a job).
+
+No manual verification step — the score recalculates automatically whenever data changes
+(computed-on-read, like post-op day).
 
 **Engine capability (not shipped, kept for governance + tests):** the generic engine also
 supports staged/legacy scores (Ranson gallstone / non-gallstone, change-from-baseline, 48-hour

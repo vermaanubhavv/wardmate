@@ -31,8 +31,9 @@ import CaseHistoryCapture from "./case-history-capture";
 import { CaseHistoryCard, ObjectiveSummaryView } from "./case-history-card";
 import DischargeSection from "./discharge-section";
 import ScoringTaskRows from "./scoring/task-rows";
+import BisapCard from "./scoring/bisap-card";
 import { syncPatientPathways } from "@/lib/scoring/store";
-import { getPatientScoringTasks } from "@/lib/scoring/read";
+import { getPatientScoringTasks, getBisapCard } from "@/lib/scoring/read";
 import { diagnosisFromProcedure } from "@/lib/diagnosis-from-procedure";
 import { reopenTask } from "./actions";
 import ConfirmDictation from "./confirm-dictation";
@@ -135,7 +136,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // nothing to the page (DOCX test 16). The refresh keeps pathways in step with any new
   // observation the same "computed fresh on read" way post-op day is.
   await syncPatientPathways(id);
-  const scoringTasks = await getPatientScoringTasks(id);
+  const [scoringTasks, bisap] = await Promise.all([getPatientScoringTasks(id), getBisapCard(id)]);
 
   const protocolTitles = new Map<string, string>();
   if (matchedIds.length > 0) {
@@ -420,6 +421,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           </div>
         </section>
       )}
+
+      {bisap && <BisapCard view={bisap} />}
 
       {pending.length > 0 && (
         <section className="px-4 pb-6">

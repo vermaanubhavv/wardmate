@@ -76,6 +76,48 @@ export async function getScoreNoteLines(patientId: string): Promise<string[]> {
   return lines;
 }
 
+// ---------------------------------------------------------------------------
+// Patient-page BISAP card
+// ---------------------------------------------------------------------------
+
+export type BisapCardView = {
+  instanceId: string;
+  patientId: string;
+  result: CardResult;
+  /** "Wu et al, Gut 2008. BISAP ≥ 3 ≈ 15% inpatient mortality vs < 1% at 0–1." */
+  citation: string;
+};
+
+export async function getBisapCard(patientId: string): Promise<BisapCardView | null> {
+  const supabase = await createClient();
+  const { data: patient } = await supabase.from("patients").select("ward_id").eq("id", patientId).maybeSingle();
+  if (!patient || !(await isScoringEngineEnabled(patient.ward_id))) return null;
+
+  const { data: instances } = await supabase
+    .from("pathway_instances")
+    .select("id")
+    .eq("patient_id", patientId)
+    .eq("pathway_id", "acute_pancreatitis")
+    .in("status", ["active", "suggested"]);
+  if (!instances || instances.length === 0) return null;
+
+  const { data: cards } = await supabase
+    .from("pathway_cards")
+    .select("result")
+    .eq("card_id", "bisap")
+    .in("instance_id", instances.map((i) => i.id));
+  const result = cards?.[0]?.result as CardResult | undefined;
+  if (!result) return null;
+
+  return {
+    instanceId: instances[0].id,
+    patientId,
+    result,
+    citation:
+      "BISAP — Wu BU et al., Gut 2008. A score of ≥ 3 carries roughly 15% inpatient mortality, versus under 1% at 0–1. Interpret with clinical assessment; it does not declare severe pancreatitis or mandate ICU.",
+  };
+}
+
 function shortLabel(label: string): string {
   return label
     .replace(/\s*\(.*\)\s*/g, "")

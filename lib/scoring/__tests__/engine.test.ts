@@ -310,6 +310,9 @@ describe("mCTSI does not drive a CT order", () => {
 describe("task deduplication against the world", () => {
   const bisapMissing = () => evaluateCard(card("bisap"), ctx([input("age_years", 70, "years", 0)]));
 
+  const invTask = (decisions: ReturnType<typeof planPathwayTasks>) =>
+    decisions.find((d) => d.task.dedupKey === "acute_pancreatitis:task:bisap_investigations");
+
   it("an existing in-window result links instead of creating", () => {
     const decisions = planPathwayTasks(acutePancreatitisV1, [bisapMissing()], [], clock(12), {
       resolvedInputKeys: new Set(["bun"]),
@@ -317,8 +320,7 @@ describe("task deduplication against the world", () => {
       openTaskKeys: new Set(),
       disabledToggles: new Set(),
     });
-    const bunTask = decisions.find((d) => d.task.componentId === "bisap.bun");
-    expect(bunTask?.outcome).toBe("link_existing_result");
+    expect(invTask(decisions)?.outcome).toBe("link_existing_result");
   });
 
   it("an active matching order suppresses the duplicate", () => {
@@ -328,19 +330,17 @@ describe("task deduplication against the world", () => {
       openTaskKeys: new Set(),
       disabledToggles: new Set(),
     });
-    expect(decisions.find((d) => d.task.componentId === "bisap.bun")?.outcome).toBe("link_existing_order");
+    expect(invTask(decisions)?.outcome).toBe("link_existing_order");
   });
 
   it("an already-present task key is not recreated", () => {
     const decisions = planPathwayTasks(acutePancreatitisV1, [bisapMissing()], [], clock(12), {
       resolvedInputKeys: new Set(),
       activeOrders: new Set(),
-      openTaskKeys: new Set(["acute_pancreatitis:task:blood_urea"]),
+      openTaskKeys: new Set(["acute_pancreatitis:task:bisap_investigations"]),
       disabledToggles: new Set(),
     });
-    expect(decisions.find((d) => d.task.dedupKey === "acute_pancreatitis:task:blood_urea")?.outcome).toBe(
-      "already_present"
-    );
+    expect(invTask(decisions)?.outcome).toBe("already_present");
   });
 
   it("a disabled institutional toggle suppresses its task", () => {
@@ -374,7 +374,7 @@ describe("event idempotency", () => {
     expect(a).toBe(b);
     expect(a).toBe("p1:acute_pancreatitis:1.0.0:new_lab:obs-9:-");
   });
-  it("the shipped pancreatitis pathway proposes exactly its 3 BISAP tasks — no Ranson/glucose/LDH bloat", () => {
+  it("the shipped pancreatitis pathway proposes exactly ONE investigations to-do", () => {
     const r = evaluateCard(card("bisap"), ctx([input("age_years", 70, "years", 0)]));
     const decisions = planPathwayTasks(acutePancreatitisV1, [r], [], clock(12), {
       resolvedInputKeys: new Set(),
@@ -382,15 +382,22 @@ describe("event idempotency", () => {
       openTaskKeys: new Set(),
       disabledToggles: new Set(),
     });
-    const keys = decisions.map((d) => d.task.dedupKey).sort();
-    expect(keys).toEqual([
-      "acute_pancreatitis:task:blood_urea",
-      "acute_pancreatitis:task:cbc",
-      "acute_pancreatitis:task:serial_vitals",
-    ]);
+    expect(decisions.map((d) => d.task.dedupKey)).toEqual(["acute_pancreatitis:task:bisap_investigations"]);
+    expect(decisions[0].task.action).toMatch(/CBC.*LFT.*KFT.*SE/);
     for (const d of decisions) {
-      expect(d.task.action.toLowerCase()).not.toMatch(/ranson|ldh|glucose|ast|atlanta/);
+      expect(d.task.action.toLowerCase()).not.toMatch(/ranson|ldh|atlanta|serial vital/);
     }
+  });
+
+  it("the investigations to-do clears once the kidney panel is back", () => {
+    const r = evaluateCard(card("bisap"), ctx([input("age_years", 70, "years", 0)]));
+    const decisions = planPathwayTasks(acutePancreatitisV1, [r], [], clock(12), {
+      resolvedInputKeys: new Set(["bun", "wbc"]),
+      activeOrders: new Set(),
+      openTaskKeys: new Set(),
+      disabledToggles: new Set(),
+    });
+    expect(decisions[0].outcome).toBe("link_existing_result");
   });
 
   it("planPathwayTasks never returns two decisions with the same dedup key", () => {

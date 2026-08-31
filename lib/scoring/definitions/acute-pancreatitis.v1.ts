@@ -144,37 +144,20 @@ export const acutePancreatitisV1: PathwayDefinition = {
   cards: [bisapCard],
 
   tasks: [
+    // One investigations to-do only. The routine panel (CBC / LFT / KFT / SE) covers both
+    // BISAP inputs that come from bloods — WBC (CBC) and BUN (KFT) — plus the rest of the
+    // routine pancreatitis work-up. Serial vitals are continuous monitoring, not a to-do.
     {
-      key: "blood_urea",
+      key: "bisap_investigations",
       cardId: "bisap",
-      componentId: "bisap.bun",
-      action: "Send blood urea (BUN) with creatinine and electrolytes",
-      reason: "BISAP needs BUN (> 25 mg/dL scores a point). A score component is never assumed normal.",
+      componentId: null,
+      action: "Send routine investigations — CBC, LFT, KFT, SE",
+      reason: "BISAP needs white-cell count (CBC) and BUN (KFT); LFT and electrolytes complete the routine pancreatitis panel.",
       priority: "soon",
       responsibleRole: "resident",
       institutionalToggle: null,
+      // Clears once the kidney panel (BUN/urea) is back — the BISAP-critical result.
       linkKey: "bun",
-    },
-    {
-      key: "cbc",
-      cardId: "bisap",
-      componentId: "bisap.sirs",
-      action: "Send CBC with differential",
-      reason: "White-cell count feeds the SIRS criterion of BISAP.",
-      priority: "soon",
-      responsibleRole: "resident",
-      institutionalToggle: null,
-      linkKey: "wbc",
-    },
-    {
-      key: "serial_vitals",
-      cardId: "bisap",
-      componentId: "bisap.sirs",
-      action: "Chart temperature, pulse and respiratory rate",
-      reason: "Temperature, pulse and respiratory rate feed the SIRS criterion of BISAP.",
-      priority: "soon",
-      responsibleRole: "nursing",
-      institutionalToggle: null,
     },
   ],
 

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { isScoringEngineEnabled } from "@/lib/scoring/flag";
-import { audit } from "@/lib/scoring/store";
+import { audit, syncPatientPathways } from "@/lib/scoring/store";
 
 type Result = { error: string | null };
 const OK: Result = { error: null };
@@ -52,6 +52,56 @@ export async function completeScoringTask(patientId: string, taskId: string): Pr
   });
   revalidatePath(`/patients/${patientId}`);
   revalidatePath("/todo");
+  return OK;
+}
+
+/**
+ * Record one of the two BISAP criteria that need a clinician's eye — impaired mental status,
+ * or a pleural effusion on imaging — straight from the score card.
+ *
+ * Written as a real `observation` on a manual entry, so the finding lives on the patient's
+ * record (case history, discharge, the note) and not only inside the score. The score picks it
+ * up on the recompute that follows.
+ */
+export async function setBisapFinding(
+  patientId: string,
+  field: "mental_status" | "pleural_effusion",
+  value: "alert" | "impaired" | "present" | "absent"
+): Promise<Result> {
+  const a = await authorize(patientId);
+  if (!a.ok) return { error: a.error };
+
+  const text =
+    field === "mental_status"
+      ? value === "alert"
+        ? "Mental status: alert and oriented (GCS 15)"
+        : "Mental status: impaired — disoriented / GCS < 15"
+      : value === "present"
+        ? "Pleural effusion: present on chest imaging"
+        : "Pleural effusion: none on chest imaging";
+  const label = field === "mental_status" ? "Mental status" : "Pleural effusion";
+
+  const { data: entry, error: entryErr } = await a.supabase
+    .from("entries")
+    .insert({ patient_id: patientId, author_id: a.user.id, source: "manual", transcript: text })
+    .select("id")
+    .single();
+  if (entryErr || !entry) return { error: entryErr?.message ?? "Could not save the finding." };
+
+  const { error: obsErr } = await a.supabase.from("observations").insert({
+    entry_id: entry.id,
+    patient_id: patientId,
+    kind: "exam",
+    label,
+    value_text: text.replace(/^[^:]+:\s*/, ""),
+    source_quote: text,
+    needs_confirmation: false,
+  });
+  if (obsErr) return { error: obsErr.message };
+
+  await syncPatientPathways(patientId);
+  revalidatePath(`/patients/${patientId}`);
+  revalidatePath(`/patients/${patientId}/note`);
   return OK;
 }
 
