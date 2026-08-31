@@ -5,7 +5,7 @@
 
 import type { CardDefinition, EngineInput, InstanceClock } from "../types";
 import type { EvaluateContext, EvaluateContext as _EC } from "../engine";
-import { acutePancreatitisV1 } from "../definitions/acute-pancreatitis.v1";
+import { acutePancreatitisV1, PANCREATITIS_EXTENDED_CARDS } from "../definitions/acute-pancreatitis.v1";
 
 export const ADMISSION = "2026-01-10T00:00:00+05:30"; // 10 Jan 2026, midnight IST
 export const H = (n: number) => new Date(Date.parse(ADMISSION) + n * 3_600_000).toISOString();
@@ -57,7 +57,7 @@ export function ctx(inputs: EngineInput[], over: Partial<_EC> = {}): EvaluateCon
 }
 
 export function card(cardId: string): CardDefinition {
-  const c = acutePancreatitisV1.cards.find((x) => x.cardId === cardId);
+  const c = [...acutePancreatitisV1.cards, ...PANCREATITIS_EXTENDED_CARDS].find((x) => x.cardId === cardId);
   if (!c) throw new Error(`no card ${cardId}`);
   return c;
 }

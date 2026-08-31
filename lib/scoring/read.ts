@@ -1,169 +1,164 @@
 /**
- * Read model for the patient-page scoring panel. Server-only. Returns nothing when the
- * feature flag is closed for the ward (test 16: flag-off = unchanged behaviour).
+ * Read model for the scoring engine's two surfaces: a line in the progress note, and items in
+ * the to-do list. There is no separate scoring screen.
+ *
+ * Everything here returns empty when the feature flag is closed for the ward (test 16).
  */
 
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { isScoringEngineEnabled } from "./flag";
-import { getDefinition } from "./definitions/registry";
-import type { CardResult, PathwayInstanceStatus } from "./types";
+import type { CardResult } from "./types";
 
-export const SCORING_DISCLAIMER =
-  "This module supports, but does not replace, clinical judgement and institutional protocols. " +
-  "No score prescribes surgery, ERCP, antibiotics, transfusion, ICU transfer or discharge. " +
-  "Missing data is shown as unknown, never assumed normal.";
+const DISCLAIMER =
+  "BISAP is decision support computed from recorded values — not a substitute for clinical assessment or institutional protocol.";
 
-export type ScoringCardView = {
-  id: string;
-  cardId: string;
-  title: string;
-  result: CardResult;
-  verifiedBy: string | null;
-  verifiedAt: string | null;
-};
+// ---------------------------------------------------------------------------
+// Progress-note line(s)
+// ---------------------------------------------------------------------------
 
-export type ScoringTaskView = {
-  id: string;
-  action: string;
-  reason: string;
-  priority: "routine" | "soon" | "urgent";
-  responsibleRole: string;
-  status: string;
-  dueAt: string | null;
-  cardId: string | null;
-  sourceRule: string;
-  declineReason: string | null;
-};
-
-export type ScoringInstanceView = {
-  id: string;
-  pathwayId: string;
-  pathwayVersion: string;
-  title: string;
-  status: PathwayInstanceStatus;
-  triggerDiagnosis: string;
-  triggeredAt: string;
-  ransonAetiology: "non_gallstone" | "gallstone" | "uncertain" | null;
-  clinicalOwner: string;
-  reviewDueAt: string;
-  nextCheckpointAt: string | null;
-  sourceReferences: { label: string; citation: string }[];
-  cards: ScoringCardView[];
-  tasks: ScoringTaskView[];
-  checkpoints: { key: string; label: string; dueAt: string; executedAt: string | null }[];
-};
-
-export type PatientScoring = {
-  enabled: boolean;
-  disclaimer: string;
-  instances: ScoringInstanceView[];
-};
-
-export async function getPatientScoring(patientId: string): Promise<PatientScoring> {
+/**
+ * The score as it should read in the progress note. Empty array when the engine is off, no
+ * pancreatitis pathway is active, or nothing has been recorded yet.
+ *
+ *   ["BISAP – 2/5",
+ *    "BISAP ≥ 3 — higher-risk screen; review monitoring and escalation needs."   (only if ≥3)
+ *    "(BISAP is decision support …)"]
+ *
+ * or, incomplete:
+ *   ["BISAP – 2 so far (mental status, pleural effusion not recorded)", "(BISAP is …)"]
+ */
+export async function getScoreNoteLines(patientId: string): Promise<string[]> {
   const supabase = await createClient();
   const { data: patient } = await supabase
     .from("patients")
     .select("ward_id")
     .eq("id", patientId)
     .maybeSingle();
-
-  if (!patient || !(await isScoringEngineEnabled(patient.ward_id))) {
-    return { enabled: false, disclaimer: SCORING_DISCLAIMER, instances: [] };
-  }
+  if (!patient || !(await isScoringEngineEnabled(patient.ward_id))) return [];
 
   const { data: instances } = await supabase
     .from("pathway_instances")
-    .select("*")
+    .select("id")
     .eq("patient_id", patientId)
-    .in("status", ["suggested", "active", "resolved"])
-    .order("triggered_at", { ascending: true });
+    .eq("pathway_id", "acute_pancreatitis")
+    .in("status", ["active", "suggested"]);
+  if (!instances || instances.length === 0) return [];
 
-  const views: ScoringInstanceView[] = [];
-  for (const inst of instances ?? []) {
-    const def = getDefinition(inst.pathway_id, inst.pathway_version);
+  const { data: cards } = await supabase
+    .from("pathway_cards")
+    .select("result")
+    .eq("card_id", "bisap")
+    .in(
+      "instance_id",
+      instances.map((i) => i.id)
+    );
 
-    const { data: cards } = await supabase
-      .from("pathway_cards")
-      .select("id, card_id, result, verified_by, verified_at")
-      .eq("instance_id", inst.id);
+  const card = cards?.[0]?.result as CardResult | undefined;
+  if (!card || card.state === "not_started") return [];
 
-    const { data: tasks } = await supabase
-      .from("pathway_tasks")
-      .select("id, action, reason, priority, responsible_role, status, due_at, card_id, source_rule, decline_reason")
-      .eq("instance_id", inst.id)
-      .order("priority", { ascending: false });
+  const known = card.components.filter((c) => c.status === "satisfied" || c.status === "not_satisfied").length;
+  const unknownLabels = card.components
+    .filter((c) => c.status === "unknown")
+    .map((c) => shortLabel(c.label));
 
-    const { data: checkpoints } = await supabase
-      .from("pathway_checkpoints")
-      .select("checkpoint_key, due_at, executed_at")
-      .eq("instance_id", inst.id)
-      .order("due_at", { ascending: true });
-
-    views.push({
-      id: inst.id,
-      pathwayId: inst.pathway_id,
-      pathwayVersion: inst.pathway_version,
-      title: def?.title ?? inst.pathway_id,
-      status: inst.status,
-      triggerDiagnosis: inst.trigger_diagnosis,
-      triggeredAt: inst.triggered_at,
-      ransonAetiology: inst.ranson_aetiology,
-      clinicalOwner: def?.clinicalOwner ?? "PENDING",
-      reviewDueAt: def?.reviewDueAt ?? "PENDING",
-      nextCheckpointAt: inst.next_checkpoint_at,
-      sourceReferences: def?.sourceReferences ?? [],
-      cards: (cards ?? [])
-        .map((c) => ({
-          id: c.id,
-          cardId: c.card_id,
-          title: (c.result as CardResult)?.title ?? c.card_id,
-          result: c.result as CardResult,
-          verifiedBy: c.verified_by,
-          verifiedAt: c.verified_at,
-        }))
-        .sort((a, b) => cardOrder(a.cardId) - cardOrder(b.cardId)),
-      tasks: (tasks ?? []).map((t) => ({
-        id: t.id,
-        action: t.action,
-        reason: t.reason,
-        priority: t.priority,
-        responsibleRole: t.responsible_role,
-        status: t.status,
-        dueAt: t.due_at,
-        cardId: t.card_id,
-        sourceRule: t.source_rule,
-        declineReason: t.decline_reason,
-      })),
-      checkpoints: (checkpoints ?? []).map((c) => ({
-        key: c.checkpoint_key,
-        label: def?.checkpoints.find((d) => d.key === c.checkpoint_key)?.label ?? c.checkpoint_key,
-        dueAt: c.due_at,
-        executedAt: c.executed_at,
-      })),
-    });
+  const lines: string[] = [];
+  if (unknownLabels.length === 0 && card.total != null) {
+    lines.push(`BISAP – ${card.total}/5`);
+    if (card.total >= 3 && card.interpretation) lines.push(card.interpretation.text);
+  } else {
+    const running = card.total ?? 0;
+    lines.push(
+      `BISAP – ${running} so far (of ${known}/5 assessed; ${unknownLabels.join(", ")} not recorded)`
+    );
   }
-
-  return { enabled: true, disclaimer: SCORING_DISCLAIMER, instances: views };
+  lines.push(`(${DISCLAIMER})`);
+  return lines;
 }
 
-function cardOrder(cardId: string): number {
-  const order = ["bisap", "ranson_admission", "ranson_48h", "atlanta", "mctsi"];
-  const idx = order.findIndex((p) => cardId.startsWith(p));
-  return idx === -1 ? 99 : idx;
+function shortLabel(label: string): string {
+  return label
+    .replace(/\s*\(.*\)\s*/g, "")
+    .replace(/^Impaired mental status.*/, "mental status")
+    .replace(/^SIRS present.*/, "SIRS")
+    .replace(/^Pleural effusion.*/, "pleural effusion")
+    .replace(/^BUN.*/, "BUN")
+    .replace(/^Age.*/, "age")
+    .toLowerCase()
+    .trim();
 }
 
-/** History of one card, for the "why did this change" view. */
-export async function getCardHistory(cardRowId: string) {
+// ---------------------------------------------------------------------------
+// To-do-list items
+// ---------------------------------------------------------------------------
+
+export type ScoringTask = {
+  id: string;
+  patientId: string;
+  action: string;
+  reason: string;
+  priority: "routine" | "soon" | "urgent";
+  responsibleRole: string;
+  status: string;
+  dueAt: string | null;
+};
+
+const OPEN = ["suggested", "linked", "accepted"];
+
+export async function getPatientScoringTasks(patientId: string): Promise<ScoringTask[]> {
   const supabase = await createClient();
+  const { data: patient } = await supabase.from("patients").select("ward_id").eq("id", patientId).maybeSingle();
+  if (!patient || !(await isScoringEngineEnabled(patient.ward_id))) return [];
+
   const { data } = await supabase
-    .from("pathway_card_history")
-    .select("state, result, computed_at")
-    .eq("card_id_ref", cardRowId)
-    .order("computed_at", { ascending: false });
-  return (data ?? []).map((r) => ({
-    state: r.state,
-    computedAt: r.computed_at,
-    result: r.result as CardResult,
-  }));
+    .from("pathway_tasks")
+    .select("id, patient_id, action, reason, priority, responsible_role, status, due_at")
+    .eq("patient_id", patientId)
+    .in("status", OPEN)
+    .order("priority", { ascending: false });
+
+  return (data ?? []).map(mapTask);
+}
+
+/** patientId → open scoring tasks, for the ward-wide /todo screen. */
+export async function getWardScoringTasks(wardId: string): Promise<Map<string, ScoringTask[]>> {
+  const supabase = await createClient();
+  if (!(await isScoringEngineEnabled(wardId))) return new Map();
+
+  const { data } = await supabase
+    .from("pathway_tasks")
+    .select("id, patient_id, action, reason, priority, responsible_role, status, due_at")
+    .eq("ward_id", wardId)
+    .in("status", OPEN);
+
+  const out = new Map<string, ScoringTask[]>();
+  for (const row of data ?? []) {
+    const t = mapTask(row);
+    const list = out.get(t.patientId) ?? [];
+    list.push(t);
+    out.set(t.patientId, list);
+  }
+  return out;
+}
+
+function mapTask(row: {
+  id: string;
+  patient_id: string;
+  action: string;
+  reason: string;
+  priority: string;
+  responsible_role: string;
+  status: string;
+  due_at: string | null;
+}): ScoringTask {
+  return {
+    id: row.id,
+    patientId: row.patient_id,
+    action: row.action,
+    reason: row.reason,
+    priority: (row.priority as ScoringTask["priority"]) ?? "routine",
+    responsibleRole: row.responsible_role,
+    status: row.status,
+    dueAt: row.due_at,
+  };
 }

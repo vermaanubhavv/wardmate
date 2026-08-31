@@ -325,6 +325,12 @@ export type GeneratedTaskDefinition = Omit<GeneratedTask, "dedupKey" | "dueAt" |
   key: string;
   dueFromAnchor?: WindowAnchor;
   dueAtHours?: number;
+  /**
+   * The engine input key whose presence means this task is already satisfied — the task is
+   * then linked to the existing result rather than created. Omit for tasks with no single
+   * result to check (e.g. "chart the vitals").
+   */
+  linkKey?: string;
 };
 
 export type PathwayStatus = "active" | "draft" | "unavailable" | "retired";

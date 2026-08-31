@@ -46,7 +46,7 @@ describe("BISAP thresholds", () => {
       ])
     );
     expect(r.total).toBe(5);
-    expect(r.interpretation?.text).toMatch(/Higher-risk screen/);
+    expect(r.interpretation?.text).toMatch(/higher-risk screen/i);
     // Safety: the wording explicitly declines to declare severe pancreatitis or mandate ICU.
     expect(r.interpretation?.text).toMatch(/does not declare severe pancreatitis or mandate ICU/i);
   });
@@ -335,21 +335,34 @@ describe("task deduplication against the world", () => {
     const decisions = planPathwayTasks(acutePancreatitisV1, [bisapMissing()], [], clock(12), {
       resolvedInputKeys: new Set(),
       activeOrders: new Set(),
-      openTaskKeys: new Set(["acute_pancreatitis:bisap:bisap.bun"]),
+      openTaskKeys: new Set(["acute_pancreatitis:task:blood_urea"]),
       disabledToggles: new Set(),
     });
-    expect(decisions.find((d) => d.task.componentId === "bisap.bun")?.outcome).toBe("already_present");
+    expect(decisions.find((d) => d.task.dedupKey === "acute_pancreatitis:task:blood_urea")?.outcome).toBe(
+      "already_present"
+    );
   });
 
   it("a disabled institutional toggle suppresses its task", () => {
-    const decisions = planPathwayTasks(acutePancreatitisV1, [], [], clock(12), {
+    const def = JSON.parse(JSON.stringify(acutePancreatitisV1));
+    def.institutionalToggles = { abg: false };
+    def.tasks.push({
+      key: "abg",
+      cardId: null,
+      componentId: null,
+      action: "Send arterial blood gas",
+      reason: "only if the unit requires it",
+      priority: "routine",
+      responsibleRole: "resident",
+      institutionalToggle: "abg",
+    });
+    const decisions = planPathwayTasks(def, [], [], clock(12), {
       resolvedInputKeys: new Set(),
       activeOrders: new Set(),
       openTaskKeys: new Set(),
-      disabledToggles: new Set(["ranson_extended"]),
+      disabledToggles: new Set(["abg"]),
     });
-    const ldh = decisions.find((d) => d.task.dedupKey.includes("ldh_ast"));
-    expect(ldh?.outcome).toBe("suppressed_toggle");
+    expect(decisions.find((d) => d.task.dedupKey.includes("abg"))?.outcome).toBe("suppressed_toggle");
   });
 });
 

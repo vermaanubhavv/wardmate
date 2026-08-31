@@ -30,9 +30,9 @@ import EntryCard from "./entry-card";
 import CaseHistoryCapture from "./case-history-capture";
 import { CaseHistoryCard, ObjectiveSummaryView } from "./case-history-card";
 import DischargeSection from "./discharge-section";
-import ScoringPanel from "./scoring/scoring-panel";
+import ScoringTaskRows from "./scoring/task-rows";
 import { syncPatientPathways } from "@/lib/scoring/store";
-import { getPatientScoring } from "@/lib/scoring/read";
+import { getPatientScoringTasks } from "@/lib/scoring/read";
 import { diagnosisFromProcedure } from "@/lib/diagnosis-from-procedure";
 import { reopenTask } from "./actions";
 import ConfirmDictation from "./confirm-dictation";
@@ -135,7 +135,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // nothing to the page (DOCX test 16). The refresh keeps pathways in step with any new
   // observation the same "computed fresh on read" way post-op day is.
   await syncPatientPathways(id);
-  const scoring = await getPatientScoring(id);
+  const scoringTasks = await getPatientScoringTasks(id);
 
   const protocolTitles = new Map<string, string>();
   if (matchedIds.length > 0) {
@@ -330,10 +330,11 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       </header>
 
 
-      {(openTasks.length > 0 || doneTasks.length > 0) && (
+      {(openTasks.length > 0 || doneTasks.length > 0 || scoringTasks.length > 0) && (
         <section className="px-4 pb-6">
           <p className="ios-group-header mb-2 px-4">
-            Advices, plans &amp; to do{openTasks.length > 0 ? ` · ${openTasks.length}` : ""}
+            Advices, plans &amp; to do
+            {openTasks.length + scoringTasks.length > 0 ? ` · ${openTasks.length + scoringTasks.length}` : ""}
           </p>
 
           <div className="ios-group">
@@ -385,11 +386,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 );
               })}
             </ul>
-          ) : (
+          ) : scoringTasks.length === 0 ? (
             <p className="px-4 py-3 text-[15px] text-muted">
               Nothing outstanding.
             </p>
-          )}
+          ) : null}
+
+          <ScoringTaskRows patientId={patient.id} tasks={scoringTasks} />
 
           {doneTasks.length > 0 && (
             <details className="border-t border-line px-4 py-3">
@@ -660,8 +663,6 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           </ul>
         )}
       </section>
-
-      <ScoringPanel patientId={patient.id} scoring={scoring} />
 
       {/* Last on the page: the admission ending, after everything it is assembled from.
           Bottom padding clears the fixed speak bar so it stays openable. */}

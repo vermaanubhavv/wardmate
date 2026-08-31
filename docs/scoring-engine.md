@@ -1,9 +1,20 @@
 # Clinical scoring & auto-trigger engine
 
-Configuration-driven scoring for surgical ward pathways. First pathway: **acute pancreatitis**
-(BISAP, Ranson, Revised Atlanta / Modified Marshall, Modified CT Severity Index). The other 19
-pathways in `Wardmate_General_Surgery_Scoring_Engine_v1.docx` are added as *configuration*, not
-new engine code.
+Configuration-driven scoring for surgical ward pathways.
+
+**Shipped surface (deliberately minimal — product decision):** the acute-pancreatitis pathway
+computes **one score, BISAP**, from values already recorded. It shows as a line in the progress
+note ("BISAP – 2/5"); the inputs it still needs appear as ordinary items in the to-do list.
+There is **no separate scoring screen and no manual verification step** — the score is
+recalculated automatically whenever the data changes (computed-on-read, like post-op day).
+
+**Engine capability (not shipped, kept for governance + tests):** the generic engine also
+supports staged/legacy scores (Ranson gallstone / non-gallstone, change-from-baseline, 48-hour
+locked checkpoints), structured classification (Revised Atlanta / Modified Marshall with a
+persistence timer), and documentation-only cards (Modified CTSI). Those card definitions live
+in `definitions/acute-pancreatitis.v1.ts` as `PANCREATITIS_EXTENDED_CARDS`, exercised only by
+`lib/scoring/__tests__/`. Adding them to the shipped pathway is a config + governance change,
+not engine work. The other 19 DOCX pathways are added the same way (`definitions/skeletons.ts`).
 
 Everything here is **behind a feature flag and OFF by default**. With the flag closed, nothing
 in `lib/scoring/` or `supabase/patches/0053` is read or written and WardMate behaves exactly as
