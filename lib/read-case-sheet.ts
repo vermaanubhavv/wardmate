@@ -9,7 +9,7 @@ export type CaseSheetResult = {
   raw: unknown;
 };
 
-const SYSTEM_PROMPT = `You transcribe a photograph of a surgical admission clerking sheet — history, examination findings, provisional diagnosis, plan of management, whatever the page holds.
+const SYSTEM_PROMPT = `You transcribe a photograph of a surgical admission case sheet — history, examination findings, provisional diagnosis, plan of management, whatever the page holds.
 
 You are transcribing, not summarising and not interpreting. Copy out what is written, in the order it is written.
 

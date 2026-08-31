@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { listTemplateChoices, resolveProcedure } from "@/lib/templates";
 import { stripPatientHonorific } from "@/lib/patients";
+import { syncPatientPathways } from "@/lib/scoring/store";
 
 export type AddPatientState = { error: string | null };
 
@@ -91,9 +92,14 @@ export async function addPatient(
 
   if (error || !created) return { error: error?.message ?? "Could not add the patient." };
 
+  // If a diagnosis was typed at admission and it triggers a scoring pathway, open the cards
+  // now — the resident should see them the moment the patient exists, not only after the
+  // first visit to the patient page. Inert unless the scoring engine is enabled for the ward.
+  await syncPatientPathways(created.id);
+
   revalidatePath("/");
   revalidatePath("/ward");
-  // Straight into clerking, not the ward list and not the patient page: the case history is
+  // Straight into the case sheet, not the ward list and not the patient page: the case history is
   // written right after admitting somebody, so the app opens the capture screen for it now
   // rather than leaving it folded low on the patient's page to be found later.
   redirect(`/patients/${created.id}/case-history/new`);
@@ -345,6 +351,10 @@ export async function updatePatientIdentity(
     .eq("id", id);
 
   if (error) return { error: error.message };
+
+  // A changed diagnosis may newly trigger (or no longer fit) a scoring pathway. Inert unless
+  // the scoring engine is enabled for the ward.
+  await syncPatientPathways(id);
 
   revalidatePath("/");
   revalidatePath("/ward");

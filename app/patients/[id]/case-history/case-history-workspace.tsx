@@ -756,7 +756,7 @@ export default function CaseHistoryWorkspace({
     if (id === "diagnosis")
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">The AI drafts a provisional diagnosis from the clerking above. Read it, edit it, then approve — approving writes it to the patient.</p>
+          <p className="text-[12px] leading-[1.45] text-muted">The AI drafts a provisional diagnosis from the case history above. Read it, edit it, then approve — approving writes it to the patient.</p>
           <button type="button" disabled={generating === "diagnosis"} onClick={() => generate("diagnosis")} className={genBtn}>
             {generating === "diagnosis" ? "Generating…" : diagnosis.text ? "Regenerate with AI" : "Generate with AI"}
           </button>

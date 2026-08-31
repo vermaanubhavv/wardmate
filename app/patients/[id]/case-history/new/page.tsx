@@ -57,7 +57,7 @@ export default async function NewCaseHistoryPage({
       <main className="flex-1 px-4 pb-10 pt-2">
         <h1 className="ios-large-title">Case history</h1>
         <p className="mt-2 text-[15px] leading-relaxed text-muted">
-          Photograph, upload, or dictate {name}&rsquo;s clerking sheet now, while it is in hand.
+          Photograph, upload, or dictate {name}&rsquo;s case sheet now, while it is in hand.
           You can also do this later from the patient&rsquo;s page.
         </p>
 

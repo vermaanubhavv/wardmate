@@ -70,7 +70,7 @@ export function buildClerkingDigest(observations: DigestObservation[]): string {
 
 // --- Provisional diagnosis -------------------------------------------------------------
 
-const DIAGNOSIS_SYSTEM = `You propose the PROVISIONAL DIAGNOSIS for a general-surgery admission in an Indian hospital, from a digest of the clerking (history and examination).
+const DIAGNOSIS_SYSTEM = `You propose the PROVISIONAL DIAGNOSIS for a general-surgery admission in an Indian hospital, from a digest of the case sheet (history and examination).
 
 Absolute rules:
 1. Use only what the digest contains — presenting complaints, history, examination findings, any investigation already recorded. Never invent a symptom, a sign or a result.
@@ -117,7 +117,7 @@ export async function generateDiagnosis(
 
 // --- Initial plan --------------------------------------------------------------------
 
-const PLAN_SYSTEM = `You propose the INITIAL PLAN OF MANAGEMENT for a general-surgery admission in an Indian hospital, from a digest of the clerking and any provisional diagnosis.
+const PLAN_SYSTEM = `You propose the INITIAL PLAN OF MANAGEMENT for a general-surgery admission in an Indian hospital, from a digest of the case sheet and any provisional diagnosis.
 
 Absolute rules:
 1. Build the plan only from what the digest supports — the presentation, the examination, the provisional diagnosis. Never order something for a condition the digest does not mention.
@@ -163,7 +163,7 @@ export async function generatePlan(
 
 // --- Compile the whole clerking into prose -------------------------------------------
 
-const COMPILE_SYSTEM = `You turn the rough working notes of a surgical admission clerking — tapped keywords, comma-separated fragments, half-sentences dictated at the bedside — into a clean, flowing case history in standard clinical prose.
+const COMPILE_SYSTEM = `You turn the rough working notes of a surgical admission case sheet — tapped keywords, comma-separated fragments, half-sentences dictated at the bedside — into a clean, flowing case history in standard clinical prose.
 
 You are REWRITING what is given into readable form. You are not adding to it, not completing it, and not interpreting it.
 

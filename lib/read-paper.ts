@@ -16,7 +16,7 @@ import { AI_MODEL } from "@/lib/model";
  * of as a blob of text nothing can check.
  */
 export const PAPER_KINDS = [
-  { kind: "case_sheet", label: "Case sheet", hint: "Admission clerking — history, examination, provisional diagnosis, plan" },
+  { kind: "case_sheet", label: "Case sheet", hint: "Admission case sheet — history, examination, provisional diagnosis, plan" },
   { kind: "ot_note", label: "OT note", hint: "Operation note — procedure, findings, post-op orders" },
   { kind: "lab_report", label: "Lab report", hint: "Printed results with reference ranges" },
   { kind: "prescription", label: "Prescription", hint: "The drug chart or discharge prescription" },
@@ -61,7 +61,7 @@ Absolute rules:
 5. If the photograph is not a page from a patient's file at all, use kind "other" and transcribe whatever text is visible.
 
 The kinds:
-- case_sheet: admission clerking sheet — complaints, history, examination, provisional diagnosis, plan.
+- case_sheet: admission case sheet — complaints, history, examination, provisional diagnosis, plan.
 - ot_note: operation note — date of surgery, procedure performed, findings, steps, post-operative orders.
 - lab_report: printed laboratory results, usually with reference ranges.
 - prescription: a drug chart or discharge prescription — drug names with dose, route, frequency, duration.

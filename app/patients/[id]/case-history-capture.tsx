@@ -142,7 +142,7 @@ export default function CaseHistoryCapture({
         <p className="text-[13px] leading-relaxed text-muted">
           {hasExisting
             ? "Add a further page or dictate an addendum."
-            : "Photograph, upload, or dictate the clerking sheet."}
+            : "Photograph, upload, or dictate the case sheet."}
         </p>
 
       <div className="mt-3 grid grid-cols-2 gap-2.5">
