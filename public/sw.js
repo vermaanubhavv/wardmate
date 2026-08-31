@@ -9,8 +9,12 @@
 // Writes are never cached or replayed here. They queue in IndexedDB, in the page, where the
 // resident can see how many are waiting. A service worker that silently re-sent a POST could
 // double-record a drug, and on iOS it cannot run in the background anyway.
-const SHELL = "wardmate-shell-v1";
-const PAGES = "wardmate-pages-v1";
+// Bump these when the app's shape changes enough that a cached shell or page could render
+// wrong against the new code — the activate handler below deletes every cache not named here,
+// so a version bump wipes the old ones on the next load. (v2: the discharge workspace became
+// a card stack; old cached discharge pages rendered the previous accordion.)
+const SHELL = "wardmate-shell-v2";
+const PAGES = "wardmate-pages-v2";
 
 const ASSETS = ["/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/manifest.webmanifest"];
 
