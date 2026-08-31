@@ -4,12 +4,20 @@ import JoinForm from "../unit/join-form";
 import Wordmark from "../wordmark";
 import { signOut } from "../actions";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import ProfessionalForm from "./professional-form";
 
 /** The only first-run decision: join the team already working, or start a new one. */
 export default async function OnboardingPage() {
   const supabase = await createClient();
-  const { data: access } = await supabase.from("clinician_access").select("verification_status").maybeSingle();
+  // Pinned to this user by id. clinician_access_owner_read (0031) lets a unit owner read their
+  // members' rows too, so an unfiltered .maybeSingle() would throw once they own a staffed unit.
+  const user = await getUser();
+  const { data: access } = await supabase
+    .from("clinician_access")
+    .select("verification_status")
+    .eq("user_id", user?.id ?? "")
+    .maybeSingle();
   const hasProfessionalAccess = access?.verification_status === "self_attested" || access?.verification_status === "verified" || access?.verification_status === "legacy";
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
