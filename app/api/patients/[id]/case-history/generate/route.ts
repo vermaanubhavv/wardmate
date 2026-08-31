@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { plainAiError } from "@/lib/ai-error";
-import { buildClerkingDigest, generateDiagnosis, generatePlan } from "@/lib/case-history-ai";
+import {
+  buildClerkingDigest,
+  compileCaseHistory,
+  generateDiagnosis,
+  generatePlan,
+} from "@/lib/case-history-ai";
 
 /**
- * A first draft of the Diagnosis or the Plan card in the case-history workspace.
+ * A first draft of a case-history AI card: "compile" turns the tapped fragments into prose,
+ * "diagnosis" and "plan" propose those.
  *
- * Produces a PROPOSAL and stores nothing — the resident reviews, edits, and only then approves
- * it through the server action (which is what writes patients.primary_diagnosis or the plan
- * observations). Mirrors app/api/patients/[id]/discharge/generate/route.ts.
+ * Every one produces a PROPOSAL and stores nothing — the resident reviews, edits, and only then
+ * applies it through the server action. Mirrors app/api/patients/[id]/discharge/generate/route.ts.
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: patientId } = await params;
@@ -25,14 +30,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Malformed request." }, { status: 400 });
   }
 
-  const { data: entriesData } = await supabase
-    .from("entries")
-    .select(
-      "recorded_at, observations(kind, label, value_text, needs_confirmation, confirmed_at)"
-    )
-    .eq("patient_id", patientId)
-    .eq("is_case_history", true)
-    .order("recorded_at", { ascending: true });
+  const [{ data: entriesData }, { data: patient }] = await Promise.all([
+    supabase
+      .from("entries")
+      .select("recorded_at, observations(kind, label, value_text, needs_confirmation, confirmed_at)")
+      .eq("patient_id", patientId)
+      .eq("is_case_history", true)
+      .order("recorded_at", { ascending: true }),
+    supabase
+      .from("current_patients")
+      .select("age_years, sex, admitted_on, primary_diagnosis")
+      .eq("id", patientId)
+      .maybeSingle(),
+  ]);
 
   const observations = ((entriesData ?? []) as unknown as {
     observations: {
@@ -52,10 +62,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   const digest = buildClerkingDigest(observations);
+  const ctx = patient
+    ? {
+        age_years: patient.age_years,
+        sex: patient.sex,
+        admitted_on: patient.admitted_on,
+        primary_diagnosis: patient.primary_diagnosis,
+      }
+    : undefined;
+  const withCtx = ctx
+    ? `Patient: ${[ctx.age_years != null ? `${ctx.age_years}y` : null, ctx.sex, ctx.primary_diagnosis ? `diagnosis on record: ${ctx.primary_diagnosis}` : null].filter(Boolean).join(", ")}\n\n${digest}`
+    : digest;
 
   try {
-    if (body.section === "diagnosis") return NextResponse.json(await generateDiagnosis(digest));
-    if (body.section === "plan") return NextResponse.json(await generatePlan(digest));
+    if (body.section === "compile") return NextResponse.json(await compileCaseHistory(digest, ctx));
+    if (body.section === "diagnosis") return NextResponse.json(await generateDiagnosis(withCtx));
+    if (body.section === "plan") return NextResponse.json(await generatePlan(withCtx));
     return NextResponse.json({ error: "Unknown section." }, { status: 400 });
   } catch (e) {
     return NextResponse.json({ error: plainAiError(e) }, { status: 502 });

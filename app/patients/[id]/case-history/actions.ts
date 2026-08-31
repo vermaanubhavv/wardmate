@@ -184,6 +184,66 @@ export async function replaceCaseHistoryExam(
   return { ok: true };
 }
 
+/**
+ * Apply the AI-compiled prose — replace each history section with its rewritten paragraph.
+ * Only the history sections are touched; examination signs stay structured for the PICCLE /
+ * vitals engine.
+ */
+export async function applyCompiledCaseHistory(
+  patientId: string,
+  sections: { label: string; text: string }[]
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient();
+  const user = await currentUser(supabase);
+  if (!user) return { ok: false, error: "Not signed in." };
+
+  const allowed = new Set([
+    "chief complaints",
+    "history of presenting illness",
+    "past history",
+    "family history",
+    "medication history",
+    "surgical history",
+    "menstrual and obstetric history",
+  ]);
+  const clean = sections
+    .map((s) => ({ label: s.label.toLowerCase().trim(), text: s.text.trim() }))
+    .filter((s) => s.text && allowed.has(s.label));
+  if (clean.length === 0) return { ok: true };
+
+  const entryIds = await caseHistoryEntryIds(supabase, patientId);
+  const manualId = await manualEntryId(supabase, patientId, user.id);
+  if (!manualId) return { ok: false, error: "Could not open the case history." };
+  const now = new Date().toISOString();
+
+  for (const s of clean) {
+    if (entryIds.length > 0) {
+      const { error: delErr } = await supabase
+        .from("observations")
+        .delete()
+        .eq("patient_id", patientId)
+        .in("entry_id", entryIds)
+        .ilike("label", s.label);
+      if (delErr) return { ok: false, error: delErr.message };
+    }
+    const { error } = await supabase.from("observations").insert({
+      entry_id: manualId,
+      patient_id: patientId,
+      kind: "note",
+      label: s.label,
+      value_text: s.text,
+      source_quote: s.text,
+      needs_confirmation: false,
+      confirmed_at: now,
+      confirmed_by: user.id,
+    });
+    if (error) return { ok: false, error: error.message };
+  }
+
+  revalidateEverywhere(patientId);
+  return { ok: true };
+}
+
 /** Approve the AI-proposed provisional diagnosis — writes it to the patient record. */
 export async function approveCaseHistoryDiagnosis(
   patientId: string,

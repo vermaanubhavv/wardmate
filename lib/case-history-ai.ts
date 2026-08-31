@@ -26,6 +26,24 @@ export type DigestObservation = {
   confirmed_at?: string | null;
 };
 
+export type PatientContext = {
+  age_years: number | null;
+  sex: string | null;
+  admitted_on?: string | null;
+  primary_diagnosis?: string | null;
+};
+
+function patientLine(p: PatientContext | undefined): string {
+  if (!p) return "";
+  const bits = [
+    p.age_years != null ? `${p.age_years}y` : null,
+    p.sex,
+    p.admitted_on ? `admitted ${p.admitted_on.slice(0, 10)}` : null,
+    p.primary_diagnosis ? `provisional diagnosis on record: ${p.primary_diagnosis}` : null,
+  ].filter(Boolean);
+  return bits.length ? `Patient: ${bits.join(", ")}\n\n` : "";
+}
+
 const KIND_LABEL: Record<string, string> = {
   diagnosis: "Provisional diagnosis",
   note: "History",
@@ -138,6 +156,81 @@ export async function generatePlan(
     block && block.type === "text" ? JSON.parse(block.text) : { items: [], uncertain_points: [] };
   return {
     items: Array.isArray(parsed.items) ? parsed.items.map(String).filter(Boolean) : [],
+    uncertainPoints: Array.isArray(parsed.uncertain_points) ? parsed.uncertain_points.map(String) : [],
+    model: AI_MODEL,
+  };
+}
+
+// --- Compile the whole clerking into prose -------------------------------------------
+
+const COMPILE_SYSTEM = `You turn the rough working notes of a surgical admission clerking — tapped keywords, comma-separated fragments, half-sentences dictated at the bedside — into a clean, flowing case history in standard clinical prose.
+
+You are REWRITING what is given into readable form. You are not adding to it, not completing it, and not interpreting it.
+
+Absolute rules:
+1. Use ONLY the information in the notes and the patient details provided. Never introduce a symptom, sign, duration, negative, diagnosis or history item that is not already there.
+2. Keep every clinical fact that is present. Do not drop a detail because it is awkward to phrase.
+3. Do not resolve a contradiction and do not fill a silence. If the notes say nothing about something, your prose says nothing about it. Put anything genuinely ambiguous or self-contradictory in uncertain_points.
+4. Expand ward shorthand where it is unambiguous — "RIF" to "right iliac fossa", "K/C/O" to "known case of", "H/O" to "history of" — but keep abbreviations a clinician expects to read (BP, PR, USG).
+5. Third person, past tense. One tight paragraph per section — history of presenting illness may run to a few sentences, the rest are usually one or two.
+6. Return one entry per section that actually has content. Omit a section entirely if there is nothing for it. Allowed section labels, exactly: "chief complaints", "history of presenting illness", "past history", "family history", "medication history", "surgical history", "menstrual and obstetric history".
+7. For "chief complaints" keep it to the complaints with their duration, e.g. "Pain in the right iliac fossa for 2 days, vomiting for 1 day."
+
+Return JSON: { "sections": [ { "label": string, "text": string } ], "uncertain_points": string[] }.`;
+
+const COMPILE_SCHEMA = {
+  type: "object",
+  properties: {
+    sections: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { label: { type: "string" }, text: { type: "string" } },
+        required: ["label", "text"],
+        additionalProperties: false,
+      },
+    },
+    uncertain_points: { type: "array", items: { type: "string" } },
+  },
+  required: ["sections", "uncertain_points"],
+  additionalProperties: false,
+} as const;
+
+const COMPILE_LABELS = new Set([
+  "chief complaints",
+  "history of presenting illness",
+  "past history",
+  "family history",
+  "medication history",
+  "surgical history",
+  "menstrual and obstetric history",
+]);
+
+export async function compileCaseHistory(
+  digest: string,
+  patient?: PatientContext
+): Promise<{ sections: { label: string; text: string }[]; uncertainPoints: string[]; model: string }> {
+  const response = await client().messages.create({
+    model: AI_MODEL,
+    max_tokens: 2000,
+    system: [{ type: "text", text: COMPILE_SYSTEM, cache_control: { type: "ephemeral" } }],
+    output_config: {
+      effort: "medium",
+      format: { type: "json_schema", schema: COMPILE_SCHEMA as unknown as Record<string, unknown> },
+    },
+    messages: [{ role: "user", content: `${patientLine(patient)}Working notes:\n\n${digest}` }],
+  });
+  const block = response.content.find((b) => b.type === "text");
+  const parsed =
+    block && block.type === "text" ? JSON.parse(block.text) : { sections: [], uncertain_points: [] };
+  const sections = (Array.isArray(parsed.sections) ? parsed.sections : [])
+    .map((s: { label?: unknown; text?: unknown }) => ({
+      label: String(s.label ?? "").toLowerCase().trim(),
+      text: String(s.text ?? "").trim(),
+    }))
+    .filter((s: { label: string; text: string }) => s.text && COMPILE_LABELS.has(s.label));
+  return {
+    sections,
     uncertainPoints: Array.isArray(parsed.uncertain_points) ? parsed.uncertain_points.map(String) : [],
     model: AI_MODEL,
   };

@@ -12,6 +12,7 @@ import { IconCheck, SelChip, OptionRow, statusChip, genBtn, approveBtn } from ".
 import {
   replaceCaseHistorySection,
   replaceCaseHistoryExam,
+  applyCompiledCaseHistory,
   approveCaseHistoryDiagnosis,
   approveCaseHistoryPlan,
 } from "./actions";
@@ -365,6 +366,7 @@ export default function CaseHistoryWorkspace({
     uncertain: [],
   });
   const [plan, setPlan] = useState<{ items: string[]; uncertain: string[] }>({ items: [], uncertain: [] });
+  const [compiled, setCompiled] = useState<{ sections: { label: string; text: string }[]; uncertain: string[] } | null>(null);
 
   // --- steps -------------------------------------------------------------------------
 
@@ -471,7 +473,7 @@ export default function CaseHistoryWorkspace({
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   }
 
-  async function generate(section: "diagnosis" | "plan") {
+  async function generate(section: "diagnosis" | "plan" | "compile") {
     setGenerating(section);
     setMessage(null);
     try {
@@ -485,13 +487,32 @@ export default function CaseHistoryWorkspace({
         setMessage(data.error ?? "Could not generate.");
       } else if (section === "diagnosis") {
         setDiagnosis({ text: String(data.text ?? ""), uncertain: data.uncertainPoints ?? [] });
-      } else {
+      } else if (section === "plan") {
         setPlan({ items: Array.isArray(data.items) ? data.items : [], uncertain: data.uncertainPoints ?? [] });
+      } else {
+        setCompiled({
+          sections: Array.isArray(data.sections) ? data.sections : [],
+          uncertain: data.uncertainPoints ?? [],
+        });
       }
     } catch {
       setMessage("No signal. Try again.");
     }
     setGenerating(null);
+  }
+
+  function applyCompiled() {
+    if (!compiled) return;
+    startTransition(async () => {
+      const res = await applyCompiledCaseHistory(patientId, compiled.sections);
+      if (!res.ok) {
+        setMessage(res.error ?? "Could not apply.");
+        return;
+      }
+      setCompiled(null);
+      setMessage("Case history rewritten. Any card can still be edited.");
+      router.refresh();
+    });
   }
 
   function approve(section: "diagnosis" | "plan") {
@@ -792,6 +813,44 @@ export default function CaseHistoryWorkspace({
             missing.join(" · ")
           )}
         </span>
+        <div className="flex flex-col gap-2 rounded-[10px] border border-line bg-card p-3">
+          <p className="text-[12px] leading-[1.45] text-muted">
+            Bind the tapped fragments and the dictated bits into a proper written history, using
+            what is already on record for this patient. Read it, edit any paragraph, then apply.
+          </p>
+          <button
+            type="button"
+            disabled={generating === "compile" || pending}
+            onClick={() => generate("compile")}
+            className={genBtn}
+          >
+            {generating === "compile" ? "Writing…" : compiled ? "Rewrite" : "Compile into prose with AI"}
+          </button>
+          {compiled && (
+            <>
+              <UncertainList points={compiled.uncertain} />
+              {compiled.sections.map((s, i) => (
+                <div key={s.label} className="flex flex-col gap-1">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">{s.label}</span>
+                  <Area
+                    value={s.text}
+                    onChange={(v) =>
+                      setCompiled({
+                        ...compiled,
+                        sections: compiled.sections.map((x, j) => (j === i ? { ...x, text: v } : x)),
+                      })
+                    }
+                    rows={s.label === "history of presenting illness" ? 5 : 2}
+                  />
+                </div>
+              ))}
+              <button type="button" onClick={applyCompiled} disabled={pending} className={approveBtn}>
+                Apply to case history
+              </button>
+            </>
+          )}
+        </div>
+
         <div className="rounded-[10px] border border-line bg-card">
           <CaseHistoryCard observations={fullObservations} sex={sex} wardRanges={wardRanges} />
         </div>
