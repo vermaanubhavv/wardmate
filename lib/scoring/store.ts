@@ -304,6 +304,31 @@ async function recomputeInstanceRow(
     await persistTaskDecision(supabase, inst, d);
   }
 
+  // Reconcile: drop any still-open task this recompute did not re-propose (a task from an
+  // earlier pathway version, a component now satisfied, a card now complete). Only untouched
+  // suggestions are removed — anything a clinician accepted, completed or declined is kept for
+  // the audit trail. This is what keeps the to-do list from accumulating stale rows.
+  const liveKeys = new Set(
+    decisions
+      .filter((d) => d.outcome === "create" || d.outcome === "already_present")
+      .map((d) => d.task.dedupKey)
+  );
+  const { data: openRows } = await supabase
+    .from("pathway_tasks")
+    .select("id, dedup_key, status")
+    .eq("instance_id", inst.id)
+    .in("status", ["suggested", "linked"]);
+  const stale = (openRows ?? []).filter((r) => !liveKeys.has(r.dedup_key));
+  if (stale.length > 0) {
+    await supabase
+      .from("pathway_tasks")
+      .delete()
+      .in(
+        "id",
+        stale.map((r) => r.id)
+      );
+  }
+
   // Mark any checkpoints that just ran.
   for (const cp of dueNow) {
     await supabase
@@ -503,10 +528,16 @@ async function persistTaskDecision(
     .eq("dedup_key", t.dedupKey)
     .maybeSingle();
 
-  // Never resurrect a declined task, never duplicate an open one.
+  // Never resurrect a declined/completed task, never duplicate an open one — but DO refresh the
+  // wording/priority of an untouched suggestion so an old pathway version's text is replaced.
   if (existing) {
     if (decision.outcome === "suppressed_toggle" && existing.status === "suggested") {
       await supabase.from("pathway_tasks").update({ status: "declined", decline_reason: "institutional toggle disabled", institutional_override: true }).eq("id", existing.id);
+    } else if (decision.outcome === "create" && existing.status === "suggested") {
+      await supabase
+        .from("pathway_tasks")
+        .update({ action: t.action, reason: t.reason, priority: t.priority, responsible_role: t.responsibleRole, card_id: t.cardId, component_id: t.componentId, source_rule: t.sourceRule })
+        .eq("id", existing.id);
     }
     return;
   }
@@ -523,8 +554,18 @@ async function persistTaskDecision(
     return;
   }
 
-  const linked =
-    decision.outcome === "link_existing_result" || decision.outcome === "link_existing_order";
+  // The input already has a result (or an active order) — nothing to ask for. Record it in the
+  // audit trail but do NOT put a row on the to-do list.
+  if (decision.outcome === "link_existing_result" || decision.outcome === "link_existing_order") {
+    await audit(supabase, {
+      instanceId: inst.id,
+      patientId: inst.patient_id,
+      wardId: inst.ward_id,
+      action: "task_suppressed",
+      detail: { dedup_key: t.dedupKey, reason: decision.outcome, action: t.action },
+    });
+    return;
+  }
 
   await supabase.from("pathway_tasks").insert({
     instance_id: inst.id,
@@ -538,7 +579,7 @@ async function persistTaskDecision(
     responsible_role: t.responsibleRole,
     source_rule: t.sourceRule,
     dedup_key: t.dedupKey,
-    status: linked ? "linked" : "suggested",
+    status: "suggested",
     due_at: t.dueAt,
   });
 

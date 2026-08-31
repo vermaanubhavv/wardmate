@@ -374,6 +374,25 @@ describe("event idempotency", () => {
     expect(a).toBe(b);
     expect(a).toBe("p1:acute_pancreatitis:1.0.0:new_lab:obs-9:-");
   });
+  it("the shipped pancreatitis pathway proposes exactly its 3 BISAP tasks — no Ranson/glucose/LDH bloat", () => {
+    const r = evaluateCard(card("bisap"), ctx([input("age_years", 70, "years", 0)]));
+    const decisions = planPathwayTasks(acutePancreatitisV1, [r], [], clock(12), {
+      resolvedInputKeys: new Set(),
+      activeOrders: new Set(),
+      openTaskKeys: new Set(),
+      disabledToggles: new Set(),
+    });
+    const keys = decisions.map((d) => d.task.dedupKey).sort();
+    expect(keys).toEqual([
+      "acute_pancreatitis:task:blood_urea",
+      "acute_pancreatitis:task:cbc",
+      "acute_pancreatitis:task:serial_vitals",
+    ]);
+    for (const d of decisions) {
+      expect(d.task.action.toLowerCase()).not.toMatch(/ranson|ldh|glucose|ast|atlanta/);
+    }
+  });
+
   it("planPathwayTasks never returns two decisions with the same dedup key", () => {
     const r = evaluateCard(card("bisap"), ctx([input("age_years", 70, "years", 0)]));
     const decisions = planPathwayTasks(acutePancreatitisV1, [r, r], [], clock(12), {

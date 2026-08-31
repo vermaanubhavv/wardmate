@@ -103,7 +103,7 @@ export type ScoringTask = {
   dueAt: string | null;
 };
 
-const OPEN = ["suggested", "linked", "accepted"];
+const OPEN = ["suggested", "accepted"];
 
 export async function getPatientScoringTasks(patientId: string): Promise<ScoringTask[]> {
   const supabase = await createClient();
