@@ -141,6 +141,57 @@ export async function replaceTodayNoteExam(
   return { ok: true };
 }
 
+/**
+ * Replace the patient's active medication list with what the Medications card holds.
+ *
+ * Unlike the other lines, medications are a STANDING list — lib/progress-note.ts carries them
+ * forward until a change is recorded. So the card seeds from the full current list and owns it
+ * outright: every `medication` observation is cleared and the list rewritten fresh, on today's
+ * entry, so the sheet always shows what the patient is actually on right now. The photographed
+ * drug chart stays as evidence under "As recorded".
+ */
+export async function replaceActiveMedications(
+  patientId: string,
+  lines: string[]
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient();
+  const user = await currentUser(supabase);
+  if (!user) return { ok: false, error: "Not signed in." };
+
+  const clean = lines.map((l) => l.trim()).filter(Boolean);
+
+  const { error: delErr } = await supabase
+    .from("observations")
+    .delete()
+    .eq("patient_id", patientId)
+    .eq("kind", "medication");
+  if (delErr) return { ok: false, error: delErr.message };
+
+  if (clean.length) {
+    const entryId = await todayManualEntryId(supabase, patientId, user.id);
+    if (!entryId) return { ok: false, error: "Could not open today's note." };
+    const now = new Date().toISOString();
+    const { error } = await supabase.from("observations").insert(
+      clean.map((text) => ({
+        entry_id: entryId,
+        patient_id: patientId,
+        kind: "medication",
+        // The drug name up to the first digit / comma is enough for the note's per-drug dedup.
+        label: (text.split(/[,0-9]/)[0] || text).trim().slice(0, 60) || text.slice(0, 60),
+        value_text: text,
+        source_quote: text,
+        needs_confirmation: false,
+        confirmed_at: now,
+        confirmed_by: user.id,
+      }))
+    );
+    if (error) return { ok: false, error: error.message };
+  }
+
+  revalidateEverywhere(patientId);
+  return { ok: true };
+}
+
 /** Apply the AI-compiled note — rewrite the prose lines and the plan from the proposal. */
 export async function applyCompiledNote(
   patientId: string,

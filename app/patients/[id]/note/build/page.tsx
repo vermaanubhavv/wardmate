@@ -24,11 +24,32 @@ export default async function BuildNotePage({ params }: { params: Promise<{ id: 
   const cutoff = new Date();
   cutoff.setHours(cutoff.getHours() - 48);
   const since = cutoff.toISOString();
-  const { data: entriesData } = await supabase
-    .from("entries")
-    .select("recorded_at, is_case_history, observations(kind, label, value_text)")
-    .eq("patient_id", id)
-    .gte("recorded_at", since);
+  const [{ data: entriesData }, { data: medRows }] = await Promise.all([
+    supabase
+      .from("entries")
+      .select("recorded_at, is_case_history, observations(kind, label, value_text)")
+      .eq("patient_id", id)
+      .gte("recorded_at", since),
+    // Medications are a standing list — carried forward across the whole admission, newest
+    // reading of each drug wins. Same rule buildProgressNote follows.
+    supabase
+      .from("observations")
+      .select("label, value_text, recorded_at")
+      .eq("patient_id", id)
+      .eq("kind", "medication")
+      .order("recorded_at", { ascending: false }),
+  ]);
+
+  const seenDrug = new Set<string>();
+  const currentMeds = ((medRows ?? []) as { label: string; value_text: string | null }[])
+    .filter((m) => {
+      const k = m.label.toLowerCase().trim();
+      if (seenDrug.has(k)) return false;
+      seenDrug.add(k);
+      return true;
+    })
+    .map((m) => (m.value_text ?? m.label).trim())
+    .filter(Boolean);
 
   const today = istDayKey(new Date().toISOString());
   const observations: NoteObs[] = ((entriesData ?? []) as unknown as {
@@ -58,7 +79,7 @@ export default async function BuildNotePage({ params }: { params: Promise<{ id: 
         </p>
       </header>
 
-      <NoteWorkspace patientId={id} dateLabel={dateLabel} observations={observations} />
+      <NoteWorkspace patientId={id} dateLabel={dateLabel} observations={observations} currentMeds={currentMeds} />
     </div>
   );
 }

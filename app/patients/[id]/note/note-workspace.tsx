@@ -17,10 +17,25 @@ import {
 import {
   replaceTodayNoteSection,
   replaceTodayNoteExam,
+  replaceActiveMedications,
   applyCompiledNote,
 } from "./actions";
 
 export type NoteObs = { kind: string; label: string; value: string | null };
+
+const MED_PRESETS = [
+  "Inj Ceftriaxone 1 g IV BD",
+  "Inj Metronidazole 500 mg IV TDS",
+  "Inj Pantoprazole 40 mg IV OD",
+  "Inj Ondansetron 4 mg IV TDS",
+  "Inj Paracetamol 1 g IV SOS",
+  "Tab Paracetamol 650 mg PO TDS",
+  "Inj Tramadol 50 mg IV SOS",
+  "Inj Enoxaparin 40 mg SC OD",
+  "IV fluids — RL / DNS alternately",
+  "Inj Insulin (sliding scale)",
+  "Nebulisation — Duolin / Budecort",
+];
 
 const COMPLAINT_PILLS = [
   "No fresh complaints",
@@ -82,6 +97,7 @@ type StepId =
   | "bowel"
   | "assessment"
   | "plan"
+  | "meds"
   | "review";
 
 const STEPS: { id: StepId; title: string }[] = [
@@ -93,6 +109,7 @@ const STEPS: { id: StepId; title: string }[] = [
   { id: "bowel", title: "Flatus / stool" },
   { id: "assessment", title: "Assessment" },
   { id: "plan", title: "Plan" },
+  { id: "meds", title: "Medications" },
   { id: "review", title: "Review & print" },
 ];
 
@@ -100,10 +117,12 @@ export default function NoteWorkspace({
   patientId,
   dateLabel,
   observations,
+  currentMeds,
 }: {
   patientId: string;
   dateLabel: string;
   observations: NoteObs[];
+  currentMeds: string[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -136,6 +155,7 @@ export default function NoteWorkspace({
   const [stool, setStool] = useState(() => val(["stool", "motion", "bowels"]));
   const [assessment, setAssessment] = useState(() => val(["assessment"]));
   const [planItems, setPlanItems] = useState<string[]>(planSeed);
+  const [meds, setMeds] = useState<string[]>(currentMeds);
 
   const [compiled, setCompiled] = useState<{
     fields: { complaints: string; sensorium: string; abdomen: string; chest: string; assessment: string };
@@ -167,6 +187,7 @@ export default function NoteWorkspace({
       ]);
     else if (id === "assessment") res = await replaceTodayNoteSection(patientId, "assessment", "note", assessment ? [assessment] : []);
     else if (id === "plan") res = await replaceTodayNoteSection(patientId, "plan", "plan", planItems);
+    else if (id === "meds") res = await replaceActiveMedications(patientId, meds);
 
     if (!res.ok) {
       setMessage(res.error ?? "Could not save — your edits are still here.");
@@ -341,6 +362,42 @@ export default function NoteWorkspace({
                 {generating === "plan" ? "Thinking…" : "Propose with AI"}
               </button>
             </div>
+          </div>
+        </>
+      );
+
+    if (id === "meds")
+      return (
+        <>
+          <p className="text-[12px] leading-[1.45] text-muted">
+            What the patient is on right now — carried over from the last note. Edit doses, drop
+            what was stopped, add what was started. This becomes the drug list on today&rsquo;s sheet.
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {MED_PRESETS.filter((p) => !meds.some((m) => m.toLowerCase().startsWith(p.split(/\s+\d/)[0].toLowerCase()))).map((p) => (
+              <SelChip key={p} selected={false} onClick={() => { setMeds([...meds, p]); mark("meds"); }}>
+                + {p.split(/\s+\d|\s+—/)[0]}
+              </SelChip>
+            ))}
+          </div>
+          <div className="flex flex-col gap-2">
+            {meds.length === 0 && <p className="text-[13px] text-muted">No medications recorded.</p>}
+            {meds.map((it, i) => (
+              <div key={i} className="flex gap-2">
+                <input
+                  value={it}
+                  onChange={(e) => { setMeds(meds.map((x, j) => (j === i ? e.target.value : x))); mark("meds"); }}
+                  placeholder="Drug, dose, route, frequency"
+                  className="h-11 flex-1 rounded-[10px] border border-line bg-card px-3 text-[15px] outline-none focus:border-accent"
+                />
+                <button type="button" onClick={() => { setMeds(meds.filter((_, j) => j !== i)); mark("meds"); }} className="shrink-0 px-2 text-[13px] text-muted">
+                  Stop
+                </button>
+              </div>
+            ))}
+            <button type="button" onClick={() => { setMeds([...meds, ""]); mark("meds"); }} className="self-start text-[13px] font-medium text-accent">
+              + Add a drug
+            </button>
           </div>
         </>
       );
