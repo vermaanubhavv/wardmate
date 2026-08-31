@@ -23,7 +23,7 @@ export async function getCurrentWard() {
   const user = await getUser();
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("current_ward_id, wards!current_ward_id(id, name, owner_id, join_code, letterhead, consultant_in_charge)")
+    .select("current_ward_id, wards!current_ward_id(id, name, owner_id, join_code, letterhead)")
     .eq("id", user?.id ?? "")
     .maybeSingle();
 
@@ -31,18 +31,30 @@ export async function getCurrentWard() {
   // resolved, a one-element array. Both shapes are handled rather than assumed.
   const embedded = (profile as { wards?: unknown } | null)?.wards;
   const chosen = (Array.isArray(embedded) ? embedded[0] : embedded) as
-    | {
-        id: string;
-        name: string;
-        owner_id: string;
-        join_code: string;
-        letterhead: string | null;
-        consultant_in_charge: string | null;
-      }
+    | { id: string; name: string; owner_id: string; join_code: string; letterhead: string | null }
     | undefined;
 
   if (chosen) return { ward: chosen, error: null };
   return { ward: null, error };
+}
+
+/**
+ * The consultant in charge of a unit, as stored on the ward.
+ *
+ * A separate guarded read rather than a column on getCurrentWard's select: patch 0052 adds
+ * `wards.consultant_in_charge`, and until it is run PostgREST rejects the whole select if the
+ * column is named. On that error — and when nothing is stored — this returns null and callers
+ * fall back to the seeded default for the unit number (see lib/unit-consultants.ts).
+ */
+export async function getWardConsultantStored(wardId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("wards")
+    .select("consultant_in_charge")
+    .eq("id", wardId)
+    .maybeSingle();
+  if (error) return null;
+  return ((data as { consultant_in_charge?: string | null } | null)?.consultant_in_charge) ?? null;
 }
 
 /** Every unit this doctor belongs to, for the switcher. */

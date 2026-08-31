@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentWard, getMyWards } from "@/lib/ward";
+import { getCurrentWard, getMyWards, getWardConsultantStored } from "@/lib/ward";
+import { consultantForWard } from "@/lib/unit-consultants";
 import CodeBox from "./code-box";
 import JoinForm from "./join-form";
 import { switchWard, leaveWard, renameWard, saveLetterhead, saveConsultant, saveProfile, removeExpectedMember } from "./actions";
@@ -69,6 +70,9 @@ export default async function UnitPage() {
 
   const formularySize = await getFormularySize(ward.id);
   const { rows: expected, missing: rosterMissing } = await getExpectedMembers(ward.id);
+  // What the field shows: the stored value if the column exists and is set, otherwise the
+  // seeded default for this unit's number — so the box is never blank for units 1–4.
+  const consultantInCharge = consultantForWard(await getWardConsultantStored(ward.id), ward.name);
 
   const isOwner = ward.owner_id === user?.id;
 
@@ -380,7 +384,7 @@ export default async function UnitPage() {
             <input type="hidden" name="ward_id" value={ward.id} />
             <input
               name="consultant_in_charge"
-              defaultValue={ward.consultant_in_charge ?? ""}
+              defaultValue={consultantInCharge ?? ""}
               maxLength={120}
               autoCapitalize="words"
               placeholder="e.g. Dr. Neeraj"

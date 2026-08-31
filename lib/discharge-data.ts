@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
+import { getWardConsultantStored } from "@/lib/ward";
 import { consultantForWard } from "@/lib/unit-consultants";
 import { derivePatientState, type Observation, type PatientState } from "@/lib/patient-state";
 import { getTemplateForPatient, getProcedureLabels, procedureFor } from "@/lib/templates";
@@ -124,7 +125,7 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
       .eq("patient_id", patientId)
       .order("recorded_at", { ascending: false }),
     getProcedureLabels(),
-    supabase.from("wards").select("name, letterhead, consultant_in_charge").eq("id", patient.ward_id).maybeSingle(),
+    supabase.from("wards").select("name, letterhead").eq("id", patient.ward_id).maybeSingle(),
     getUser().then((u) => supabase.from("profiles").select("display_name, designation, department").eq("id", u?.id ?? "").maybeSingle()),
     getTemplateForPatient(patient),
     getFormularyMappings(patient.ward_id),
@@ -161,7 +162,7 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
     patient: patient as DischargePatient,
     wardId: patient.ward_id as string,
     wardName: wardRow?.name ?? null,
-    wardConsultant: consultantForWard(wardRow?.consultant_in_charge as string | null, wardRow?.name),
+    wardConsultant: consultantForWard(await getWardConsultantStored(patient.ward_id), wardRow?.name),
     letterhead: wardRow?.letterhead ?? null,
     logoUrl: wardFormats.get("logo")?.url ?? null,
     doctor: profileRow
