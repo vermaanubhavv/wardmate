@@ -129,6 +129,12 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
           Everything below is what was actually recorded today. Blank lines are for what
           wasn&rsquo;t.
         </p>
+        <Link
+          href={`/patients/${id}/note/build`}
+          className="mt-3 inline-flex items-center gap-1 rounded-[10px] border border-line px-3 py-2 text-[14px] font-semibold text-accent"
+        >
+          Build today&rsquo;s note by card ›
+        </Link>
       </header>
 
       {canOverlay && (
