@@ -79,17 +79,24 @@ export default function CaseHistoryCapture({
     setMessage(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      // Safari/iOS records mp4, Chrome/Android webm — the transcriber picks its decoder from
+      // the file extension, so carry the real type through rather than assuming webm.
+      const mimeType = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/mpeg"].find(
+        (t) => MediaRecorder.isTypeSupported(t)
+      );
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       chunksRef.current = [];
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
       recorder.onstop = () => {
         stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const type = recorder.mimeType || mimeType || "audio/webm";
+        const ext = type.includes("mp4") ? "m4a" : type.includes("mpeg") ? "mp3" : "webm";
+        const blob = new Blob(chunksRef.current, { type });
         const form = new FormData();
         form.append("patient_id", patientId);
-        form.append("audio", blob, "case-history.webm");
+        form.append("audio", blob, `case-history.${ext}`);
         void submit(form);
       };
       mediaRef.current = recorder;
