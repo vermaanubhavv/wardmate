@@ -9,9 +9,7 @@ import ProfessionalForm from "./professional-form";
 /** The only first-run decision: join the team already working, or start a new one. */
 export default async function OnboardingPage() {
   const supabase = await createClient();
-  const { data: whoami } = await supabase.auth.getUser();
-  const { data: access, error: accessErr } = await supabase.from("clinician_access").select("verification_status").maybeSingle();
-  console.log("[onboarding] page render", { uid: whoami.user?.id, access, accessErr: accessErr?.message ?? null });
+  const { data: access } = await supabase.from("clinician_access").select("verification_status").maybeSingle();
   const hasProfessionalAccess = access?.verification_status === "self_attested" || access?.verification_status === "verified" || access?.verification_status === "legacy";
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
