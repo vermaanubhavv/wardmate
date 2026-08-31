@@ -23,7 +23,7 @@
 export type HistoryLine = { id: string; text: string };
 
 export type HistorySection = {
-  key: "chief" | "hopi" | "past" | "family";
+  key: "chief" | "hopi" | "past" | "family" | "medication" | "surgical" | "obstetric";
   label: string;
   lines: HistoryLine[];
   /** Shown in place of lines when there are none. Null means show nothing at all. */
@@ -66,7 +66,7 @@ const SECTIONS: {
     aliases: [
       "past history", "past medical history", "medical history", "comorbidities", "comorbidity",
       "co-morbidities", "co morbidities", "known case of", "k/c/o", "past illness",
-      "previous illness", "past surgical history",
+      "previous illness",
     ],
     alwaysShow: true,
   },
@@ -74,6 +74,35 @@ const SECTIONS: {
     key: "family",
     label: "Family history",
     aliases: ["family history", "f/h", "fh", "familial history"],
+    alwaysShow: false,
+  },
+  {
+    key: "medication",
+    label: "Medication history",
+    aliases: [
+      "medication history", "drug history", "current medications", "current medication",
+      "medications on admission", "home medications",
+    ],
+    alwaysShow: true,
+  },
+  {
+    key: "surgical",
+    label: "Surgical history",
+    aliases: [
+      "surgical history", "past surgical history", "previous surgery", "previous surgeries",
+      "past surgeries", "h/o surgery", "history of surgery",
+    ],
+    alwaysShow: true,
+  },
+  {
+    key: "obstetric",
+    label: "Menstrual & obstetric history",
+    aliases: [
+      "menstrual & obstetric history", "menstrual and obstetric history", "menstrual history",
+      "obstetric history", "o&g history", "gynaecological history", "gynecological history",
+    ],
+    // Shown only when something was recorded — irrelevant for most surgical admissions, and
+    // never prompted for male patients.
     alwaysShow: false,
   },
 ];
@@ -137,6 +166,14 @@ function sectionFor(label: string): HistorySection["key"] | null {
   const l = norm(label);
   return SECTIONS.find((s) => s.aliases.some((a) => a === l))?.key ?? null;
 }
+
+/** Which clerking section an observation label belongs to, or null for the examination and
+ *  everything else. Exposed so the case-history workspace groups lines exactly the way the
+ *  summary does, rather than keeping its own copy of the alias table. */
+export const caseHistorySectionOf = sectionFor;
+
+/** The always-shown sections, in the order a case sheet is written. */
+export const CASE_HISTORY_SECTIONS = SECTIONS.map((s) => ({ key: s.key, label: s.label }));
 
 export function summariseCaseHistory<
   T extends { id: string; kind: string; label: string; value_text: string | null },

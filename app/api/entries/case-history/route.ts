@@ -68,6 +68,9 @@ export async function POST(request: Request) {
     "history of presenting illness",
     "past history",
     "family history",
+    "medication history",
+    "surgical history",
+    "menstrual and obstetric history",
   ];
   const expectedLabels = [...(template?.items.map((i) => i.label) ?? []), ...HISTORY_SECTIONS];
 
