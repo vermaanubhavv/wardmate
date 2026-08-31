@@ -1,6 +1,6 @@
 /**
- * Read model for the scoring engine's two surfaces: a line in the progress note, and items in
- * the to-do list. There is no separate scoring screen.
+ * Read model for the scoring engine's surfaces: the score card(s) on the patient page, a line
+ * in the progress note, and items in the to-do list. There is no separate scoring screen.
  *
  * Everything here returns empty when the feature flag is closed for the ward (test 16).
  */
@@ -8,126 +8,135 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { isScoringEngineEnabled } from "./flag";
-import type { CardResult } from "./types";
+import { getDefinition } from "./definitions/registry";
+import type { CardDefinition, CardResult } from "./types";
 
-const DISCLAIMER =
-  "BISAP is decision support computed from recorded values — not a substitute for clinical assessment or institutional protocol.";
+const OPEN = ["suggested", "accepted"];
+const CARD_TYPES = new Set(["calculator", "structured_classification"]);
+
+async function activeInstances(supabase: Awaited<ReturnType<typeof createClient>>, patientId: string) {
+  const { data } = await supabase
+    .from("pathway_instances")
+    .select("id, pathway_id, pathway_version")
+    .eq("patient_id", patientId)
+    .in("status", ["active", "suggested"]);
+  return data ?? [];
+}
+
+// ---------------------------------------------------------------------------
+// Patient-page score cards
+// ---------------------------------------------------------------------------
+
+export type AssessOption = { label: string; normal: boolean };
+export type ScoreAssess = { componentId: string; question: string; options: AssessOption[] };
+
+export type ScoreCardView = {
+  instanceId: string;
+  patientId: string;
+  cardId: string;
+  pathwayTitle: string;
+  shortName: string;
+  citation: string | null;
+  maxPoints: number | null;
+  result: CardResult;
+  /** Per clinician-assessed component still needing an answer. */
+  assessable: ScoreAssess[];
+};
+
+function cardMeta(def: CardDefinition) {
+  const maxPoints =
+    def.calculation.kind === "sum_points"
+      ? def.inputs.reduce((s, i) => s + Math.max(i.points, ...(i.assess?.options.map((o) => o.points ?? i.points) ?? [i.points])), 0)
+      : null;
+  const assessable: ScoreAssess[] = def.inputs
+    .filter((i) => i.clinicianAssessed && i.assess)
+    .map((i) => ({
+      componentId: i.componentId,
+      question: i.assess!.question,
+      options: i.assess!.options.map((o) => ({ label: o.label, normal: Boolean(o.normal) })),
+    }));
+  return { maxPoints, assessable, shortName: def.shortName ?? def.title, citation: def.citation ?? null };
+}
+
+export async function getScoreCards(patientId: string): Promise<ScoreCardView[]> {
+  const supabase = await createClient();
+  const { data: patient } = await supabase.from("patients").select("ward_id").eq("id", patientId).maybeSingle();
+  if (!patient || !(await isScoringEngineEnabled(patient.ward_id))) return [];
+
+  const instances = await activeInstances(supabase, patientId);
+  if (instances.length === 0) return [];
+
+  const { data: rows } = await supabase
+    .from("pathway_cards")
+    .select("instance_id, card_id, result")
+    .in("instance_id", instances.map((i) => i.id));
+
+  const views: ScoreCardView[] = [];
+  for (const inst of instances) {
+    const def = getDefinition(inst.pathway_id, inst.pathway_version);
+    if (!def) continue;
+    for (const row of (rows ?? []).filter((r) => r.instance_id === inst.id)) {
+      const cardDef = def.cards.find((c) => c.cardId === row.card_id);
+      if (!cardDef || !CARD_TYPES.has(cardDef.type)) continue;
+      const result = row.result as CardResult;
+      if (result.state === "not_started") continue;
+      const meta = cardMeta(cardDef);
+      const stillUnknown = new Set(
+        result.components.filter((c) => c.status === "unknown").map((c) => c.componentId)
+      );
+      views.push({
+        instanceId: inst.id,
+        patientId,
+        cardId: row.card_id,
+        pathwayTitle: def.title,
+        shortName: meta.shortName,
+        citation: meta.citation,
+        maxPoints: meta.maxPoints,
+        result,
+        assessable: meta.assessable.filter((a) => stillUnknown.has(a.componentId)),
+      });
+    }
+  }
+  return views;
+}
 
 // ---------------------------------------------------------------------------
 // Progress-note line(s)
 // ---------------------------------------------------------------------------
 
-/**
- * The score as it should read in the progress note. Empty array when the engine is off, no
- * pancreatitis pathway is active, or nothing has been recorded yet.
- *
- *   ["BISAP – 2/5",
- *    "BISAP ≥ 3 — higher-risk screen; review monitoring and escalation needs."   (only if ≥3)
- *    "(BISAP is decision support …)"]
- *
- * or, incomplete:
- *   ["BISAP – 2 so far (mental status, pleural effusion not recorded)", "(BISAP is …)"]
- */
+const DISCLAIMER =
+  "Scores are decision support computed from recorded values — not a substitute for clinical assessment or institutional protocol.";
+
 export async function getScoreNoteLines(patientId: string): Promise<string[]> {
-  const supabase = await createClient();
-  const { data: patient } = await supabase
-    .from("patients")
-    .select("ward_id")
-    .eq("id", patientId)
-    .maybeSingle();
-  if (!patient || !(await isScoringEngineEnabled(patient.ward_id))) return [];
-
-  const { data: instances } = await supabase
-    .from("pathway_instances")
-    .select("id")
-    .eq("patient_id", patientId)
-    .eq("pathway_id", "acute_pancreatitis")
-    .in("status", ["active", "suggested"]);
-  if (!instances || instances.length === 0) return [];
-
-  const { data: cards } = await supabase
-    .from("pathway_cards")
-    .select("result")
-    .eq("card_id", "bisap")
-    .in(
-      "instance_id",
-      instances.map((i) => i.id)
-    );
-
-  const card = cards?.[0]?.result as CardResult | undefined;
-  if (!card || card.state === "not_started") return [];
-
-  const known = card.components.filter((c) => c.status === "satisfied" || c.status === "not_satisfied").length;
-  const unknownLabels = card.components
-    .filter((c) => c.status === "unknown")
-    .map((c) => shortLabel(c.label));
+  const cards = await getScoreCards(patientId);
+  if (cards.length === 0) return [];
 
   const lines: string[] = [];
-  if (unknownLabels.length === 0 && card.total != null) {
-    lines.push(`BISAP – ${card.total}/5`);
-    if (card.total >= 3 && card.interpretation) lines.push(card.interpretation.text);
-  } else {
-    const running = card.total ?? 0;
-    lines.push(
-      `BISAP – ${running} so far (of ${known}/5 assessed; ${unknownLabels.join(", ")} not recorded)`
-    );
+  for (const v of cards) {
+    const r = v.result;
+    if (r.total != null || r.provisionalTotal != null) {
+      const complete = r.missingRequiredCount === 0 && r.total != null;
+      if (complete) {
+        lines.push(`${v.shortName} – ${r.total}${v.maxPoints != null ? `/${v.maxPoints}` : ""}`);
+        if (r.interpretation?.tone === "attention") lines.push(r.interpretation.text);
+      } else {
+        const running = r.provisionalTotal ?? r.total ?? 0;
+        const provisional = r.provisionalTotal != null;
+        lines.push(
+          `${v.shortName} – ${running}${v.maxPoints != null ? `/${v.maxPoints}` : ""} ` +
+            (provisional
+              ? "(provisional — assuming normal for what is not yet recorded)"
+              : `(so far — ${r.missingRequiredCount} not recorded)`)
+        );
+      }
+    } else if (r.classification && r.classification !== "unknown") {
+      const label = r.classification.replace(/_/g, " ");
+      lines.push(`${v.shortName} – ${label}${r.missingRequiredCount > 0 ? " (provisional)" : ""}`);
+      if (r.interpretation?.tone === "attention") lines.push(r.interpretation.text);
+    }
   }
-  lines.push(`(${DISCLAIMER})`);
+  if (lines.length > 0) lines.push(`(${DISCLAIMER})`);
   return lines;
-}
-
-// ---------------------------------------------------------------------------
-// Patient-page BISAP card
-// ---------------------------------------------------------------------------
-
-export type BisapCardView = {
-  instanceId: string;
-  patientId: string;
-  result: CardResult;
-  /** "Wu et al, Gut 2008. BISAP ≥ 3 ≈ 15% inpatient mortality vs < 1% at 0–1." */
-  citation: string;
-};
-
-export async function getBisapCard(patientId: string): Promise<BisapCardView | null> {
-  const supabase = await createClient();
-  const { data: patient } = await supabase.from("patients").select("ward_id").eq("id", patientId).maybeSingle();
-  if (!patient || !(await isScoringEngineEnabled(patient.ward_id))) return null;
-
-  const { data: instances } = await supabase
-    .from("pathway_instances")
-    .select("id")
-    .eq("patient_id", patientId)
-    .eq("pathway_id", "acute_pancreatitis")
-    .in("status", ["active", "suggested"]);
-  if (!instances || instances.length === 0) return null;
-
-  const { data: cards } = await supabase
-    .from("pathway_cards")
-    .select("result")
-    .eq("card_id", "bisap")
-    .in("instance_id", instances.map((i) => i.id));
-  const result = cards?.[0]?.result as CardResult | undefined;
-  if (!result) return null;
-
-  return {
-    instanceId: instances[0].id,
-    patientId,
-    result,
-    citation:
-      "BISAP — Wu BU et al., Gut 2008. A score of ≥ 3 carries roughly 15% inpatient mortality, versus under 1% at 0–1. Interpret with clinical assessment; it does not declare severe pancreatitis or mandate ICU.",
-  };
-}
-
-function shortLabel(label: string): string {
-  return label
-    .replace(/\s*\(.*\)\s*/g, "")
-    .replace(/^Impaired mental status.*/, "mental status")
-    .replace(/^SIRS present.*/, "SIRS")
-    .replace(/^Pleural effusion.*/, "pleural effusion")
-    .replace(/^BUN.*/, "BUN")
-    .replace(/^Age.*/, "age")
-    .toLowerCase()
-    .trim();
 }
 
 // ---------------------------------------------------------------------------
@@ -144,8 +153,6 @@ export type ScoringTask = {
   status: string;
   dueAt: string | null;
 };
-
-const OPEN = ["suggested", "accepted"];
 
 export async function getPatientScoringTasks(patientId: string): Promise<ScoringTask[]> {
   const supabase = await createClient();

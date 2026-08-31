@@ -284,6 +284,7 @@ async function recomputeInstanceRow(
     overrides: await loadOverrides(supabase, inst.id),
     verification: priorVerification,
     classificationInputs: readClassificationInputs(inst),
+    assessedComponents: (inst.classification_inputs?.assessed as EvaluateContext["assessedComponents"]) ?? {},
     now: clock.now,
   };
 

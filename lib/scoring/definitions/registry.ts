@@ -11,9 +11,19 @@
 import { validatePathwayDefinition } from "../schema";
 import type { PathwayDefinition } from "../types";
 import { acutePancreatitisV1 } from "./acute-pancreatitis.v1";
+import { appendicitisAirV1 } from "./appendicitis-air.v1";
+import { cholecystitisTg18V1 } from "./acute-cholecystitis-tg18.v1";
+import { cholangitisTg18V1 } from "./acute-cholangitis-tg18.v1";
+import { upperGiBleedGbsV1 } from "./upper-gi-bleed-gbs.v1";
 import { PATHWAY_SKELETONS } from "./skeletons";
 
-const BUILT_IN: PathwayDefinition[] = [acutePancreatitisV1];
+const BUILT_IN: PathwayDefinition[] = [
+  acutePancreatitisV1,
+  appendicitisAirV1,
+  cholecystitisTg18V1,
+  cholangitisTg18V1,
+  upperGiBleedGbsV1,
+];
 
 // Fail fast in dev/test if a built-in definition is malformed.
 for (const def of BUILT_IN) {

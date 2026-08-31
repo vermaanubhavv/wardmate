@@ -52,6 +52,7 @@ export function ctx(inputs: EngineInput[], over: Partial<_EC> = {}): EvaluateCon
     overrides: over.overrides ?? {},
     verification: over.verification ?? {},
     classificationInputs: over.classificationInputs,
+    assessedComponents: over.assessedComponents ?? {},
     now: over.now ?? (over.clock ?? clock()).now,
   } as EvaluateContext;
 }

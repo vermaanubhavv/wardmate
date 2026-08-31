@@ -29,6 +29,9 @@ const W_DYNAMIC: TimeWindow = { anchor: "admission", startHours: 0, label: "sinc
 const bisapCard: CardDefinition = {
   cardId: "bisap",
   title: "BISAP",
+  shortName: "BISAP",
+  citation:
+    "BISAP — Wu BU et al., Gut 2008. A score of ≥ 3 carries roughly 15% inpatient mortality, versus under 1% at 0–1. Interpret with clinical assessment; it does not declare severe pancreatitis or mandate ICU.",
   type: "calculator",
   timingLabel: "first 24 hours",
   calculation: { kind: "sum_points" },
@@ -59,8 +62,16 @@ const bisapCard: CardDefinition = {
       points: 1,
       rule: { op: "eq", value: 0 },
       required: true,
-      // Assessed clinically at the bedside — not something to raise a lab/investigation task for.
       noAutoTask: true,
+      clinicianAssessed: true,
+      assess: {
+        question: "Mental status?",
+        recordLabel: "Mental status",
+        options: [
+          { label: "Alert / oriented", record: "alert and oriented (GCS 15)", satisfied: false, normal: true },
+          { label: "Impaired", record: "impaired — disoriented / GCS < 15", satisfied: true },
+        ],
+      },
     },
     {
       componentId: "bisap.sirs",
@@ -97,8 +108,16 @@ const bisapCard: CardDefinition = {
       points: 1,
       rule: { op: "present" },
       required: true,
-      // Never order imaging just to complete the score — stays unknown until imaging exists.
-      noAutoTask: true,
+      noAutoTask: true, // never order imaging just to complete the score
+      clinicianAssessed: true,
+      assess: {
+        question: "Pleural effusion on chest imaging?",
+        recordLabel: "Pleural effusion",
+        options: [
+          { label: "None on imaging", record: "none on chest imaging", satisfied: false, normal: true },
+          { label: "Present on imaging", record: "present on chest imaging", satisfied: true },
+        ],
+      },
     },
   ],
 };

@@ -44,6 +44,7 @@ const VALID_CALC_KINDS = [
   "modified_marshall",
   "revised_atlanta",
   "structured_extraction",
+  "tiered_classification",
 ];
 const VALID_RECOMPUTE = [
   "new_lab",
@@ -153,6 +154,14 @@ function validateCard(
   if (!VALID_CARD_TYPES.includes(card.type)) add(`${p}.type`, "invalid card type");
   if (!card.calculation || !VALID_CALC_KINDS.includes(card.calculation.kind)) {
     add(`${p}.calculation`, `kind must be one of ${VALID_CALC_KINDS.join(", ")}`);
+  } else if (card.calculation.kind === "tiered_classification") {
+    const c = card.calculation as { tiers?: unknown; fallback?: unknown };
+    if (!Array.isArray(c.tiers) || c.tiers.length === 0) add(`${p}.calculation.tiers`, "non-empty array required");
+    if (typeof c.fallback !== "string") add(`${p}.calculation.fallback`, "string required");
+    const tierSet = new Set([...(Array.isArray(c.tiers) ? c.tiers : []), c.fallback]);
+    for (const inp of card.inputs ?? []) {
+      if (inp.tier && !tierSet.has(inp.tier)) add(`${p}.inputs`, `component '${inp.componentId}' has tier '${inp.tier}' not in tiers/fallback`);
+    }
   }
   if (!Array.isArray(card.recomputeOn) || card.recomputeOn.some((r) => !VALID_RECOMPUTE.includes(r))) {
     add(`${p}.recomputeOn`, "invalid recompute event");
@@ -214,6 +223,21 @@ function validateComponent(
   }
   if (typeof inp.points !== "number" || inp.points < 0) add(`${p}.points`, "non-negative number required");
   if (typeof inp.required !== "boolean") add(`${p}.required`, "boolean required");
+
+  if (inp.clinicianAssessed) {
+    if (!inp.assess || !Array.isArray(inp.assess.options) || inp.assess.options.length < 2) {
+      add(`${p}.assess`, "a clinicianAssessed component needs an assess block with ≥ 2 options");
+    } else {
+      if (!inp.assess.recordLabel) add(`${p}.assess.recordLabel`, "required");
+      const normals = inp.assess.options.filter((o) => o.normal).length;
+      if (normals !== 1) add(`${p}.assess.options`, "exactly one option must be marked normal");
+      for (const [i, o] of inp.assess.options.entries()) {
+        if (!o.label || !o.record || typeof o.satisfied !== "boolean") {
+          add(`${p}.assess.options[${i}]`, "label, record and satisfied required");
+        }
+      }
+    }
+  }
 }
 
 function validateWindow(w: TimeWindow | undefined, p: string, add: (path: string, m: string) => void) {

@@ -154,6 +154,14 @@ export type CardResult = {
   components: ComponentResult[];
   /** Numeric total for calculators; null for classification / documentation cards. */
   total: number | null;
+  /**
+   * Provisional total — computed treating still-unknown clinician-assessed criteria as not
+   * satisfied — set only when every objective input is known and ≥ 1 assessment is pending.
+   * The assumption is surfaced (see `assumedComponentIds`), never stored.
+   */
+  provisionalTotal: number | null;
+  /** Clinician-assessed criteria still unknown and assumed normal for `provisionalTotal`. */
+  assumedComponentIds: string[];
   /** Category for classification cards; null otherwise. */
   classification: string | null;
   interpretation: Interpretation | null;
@@ -256,10 +264,16 @@ export type ComponentInput = {
     | "change_from_baseline"
     | "at_checkpoint";
   baselineWindow?: TimeWindow;
-  /** The point(s) this component scores. Single number, or op→points for graded criteria. */
+  /** The point(s) this component scores. Ignored when `bands` is set. */
   points: number;
-  /** The rule that has to hold for the points to be awarded. */
+  /** The rule that has to hold for the points to be awarded (single-threshold criteria). */
   rule: ComponentRule;
+  /**
+   * Graded criteria (Glasgow-Blatchford urea 6.5–7.9 → 2, 8.0–9.9 → 3, …): the FIRST band
+   * whose rule matches awards its points. Bands are evaluated in order. When set, `rule`/`points`
+   * are ignored except `rule` still gates evaluability (use `{op:"present"}`).
+   */
+  bands?: { rule: ComponentRule; points: number; label?: string }[];
   /** Mandatory components keep the card out of `verified` until answered or marked N/A. */
   required: boolean;
   /**
@@ -267,6 +281,33 @@ export type ComponentInput = {
    * BISAP / mCTSI). The engine will not emit a missing-data task for these.
    */
   noAutoTask?: boolean;
+  /**
+   * A criterion that comes from a clinician's eye, not a lab or a device (impaired mental
+   * status, guarding, pleural effusion). When still unknown, a *provisional* score is computed
+   * assuming it is not satisfied — with the assumption shown, never stored. One tap confirms.
+   * Its value is read from the pathway instance's recorded assessments, not from observations.
+   */
+  clinicianAssessed?: boolean;
+  /** UI + write mapping for a clinician-assessed criterion. */
+  assess?: {
+    question: string;
+    /** Observation label written alongside, for visibility in the record. */
+    recordLabel: string;
+    options: {
+      /** Button text. */
+      label: string;
+      /** Observation value_text written when chosen. */
+      record: string;
+      /** Does this option satisfy the criterion (award its points)? */
+      satisfied: boolean;
+      /** Points for graded criteria (AIR guarding 1/2/3). Defaults to the component `points`. */
+      points?: number;
+      /** The "nothing abnormal" option — used by the one-tap "confirm normal". Exactly one. */
+      normal?: boolean;
+    }[];
+  };
+  /** For `tiered_classification` cards: which severity tier this criterion belongs to. */
+  tier?: string;
 };
 
 export type CardCalculation =
@@ -274,12 +315,25 @@ export type CardCalculation =
   | { kind: "sirs" }
   | { kind: "modified_marshall" }
   | { kind: "revised_atlanta" }
-  | { kind: "structured_extraction" };
+  | { kind: "structured_extraction" }
+  /**
+   * Tiered severity classification (Tokyo Guidelines Grade I/II/III): walk `tiers` from most
+   * severe; the class is the first tier with any `satisfied` criterion, else `fallback`.
+   */
+  | {
+      kind: "tiered_classification";
+      tiers: string[];
+      fallback: string;
+      /** tier → how many of its criteria must be satisfied for the tier to apply (default 1). */
+      tierThresholds?: Record<string, number>;
+    };
 
 export type CardInterpretationBand = {
-  /** Inclusive lower bound on the total. */
+  /** Inclusive lower bound on the total (calculators). */
   min: number;
   max?: number;
+  /** The classification this band describes (tiered / structured cards). */
+  class?: string;
   text: string;
   tone: "neutral" | "attention";
 };
@@ -287,6 +341,10 @@ export type CardInterpretationBand = {
 export type CardDefinition = {
   cardId: string;
   title: string;
+  /** Short name shown on the card and in the note, e.g. "BISAP", "AIR", "Tokyo grade". */
+  shortName?: string;
+  /** One-line source + interpretation, shown behind a tap. */
+  citation?: string;
   type: CardType;
   /** Sub-heading shown under the title, e.g. "first 24 hours". */
   timingLabel: string;

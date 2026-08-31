@@ -2,26 +2,38 @@
 
 Configuration-driven scoring for surgical ward pathways.
 
-**Shipped surface (deliberately minimal — product decision):** the acute-pancreatitis pathway
-computes **one score, BISAP**, from values already recorded.
-- A compact **BISAP card** on the patient page: the score, the five criteria (met / not met /
-  unknown), and one-tap entry for the two that need a clinician's eye — mental status and
-  pleural effusion (written as real `observations`, so they land on the record too). Source and
-  mortality bands behind a tap.
-- A line in the **progress note** ("BISAP – 2/5", or "… so far" naming the missing inputs).
-- **One** to-do item — "Send routine investigations — CBC, LFT, KFT, SE" — that clears when the
-  kidney panel is back. No serial-monitoring to-do (that is continuous observation, not a job).
+**Shipped surface (product decision — one grading per disease, ward-side only):**
 
-No manual verification step — the score recalculates automatically whenever data changes
-(computed-on-read, like post-op day).
+| Pathway | Score | Card type |
+|---|---|---|
+| Acute pancreatitis | BISAP | calculator |
+| Acute appendicitis | AIR | calculator (banded criteria) |
+| Acute upper GI bleeding | Glasgow-Blatchford | calculator (banded criteria) |
+| Acute cholecystitis | Tokyo Guidelines 2018 severity | tiered classification (Grade I/II/III) |
+| Acute cholangitis | Tokyo Guidelines 2018 severity | tiered classification (Grade II = any 2) |
 
-**Engine capability (not shipped, kept for governance + tests):** the generic engine also
-supports staged/legacy scores (Ranson gallstone / non-gallstone, change-from-baseline, 48-hour
-locked checkpoints), structured classification (Revised Atlanta / Modified Marshall with a
-persistence timer), and documentation-only cards (Modified CTSI). Those card definitions live
-in `definitions/acute-pancreatitis.v1.ts` as `PANCREATITIS_EXTENDED_CARDS`, exercised only by
-`lib/scoring/__tests__/`. Adding them to the shipped pathway is a config + governance change,
-not engine work. The other 19 DOCX pathways are added the same way (`definitions/skeletons.ts`).
+All ship `status: "draft"` — inert until governance sign-off, then flip to `"active"` (or set
+`SCORING_ENGINE_ALLOW_DRAFTS=on` to pilot).
+
+Each disease shows **one card** on the patient page:
+- the number (or grade), one line, with an **interpretation** band;
+- objective criteria auto-filled from recorded labs/vitals;
+- criteria that need a clinician's eye (mental status, guarding, melaena, organ dysfunction) as
+  **one-tap toggles** — or a single "**Confirm — all normal**" when only they are pending, which
+  shows a **provisional** number until confirmed (the assumption is displayed, never stored);
+- the full breakdown and the **source citation + risk bands** behind a tap;
+- clinician answers are written as real `observations` too, so they land in the note / case
+  history.
+
+Also: a line per score in the **progress note**, and **one investigations to-do** per pathway
+that clears when the relevant panel is back. No manual verification step — scores recalculate
+on read (like post-op day).
+
+**Engine capability (not shipped, kept for governance + tests):** staged/legacy scores (Ranson
+gallstone / non-gallstone, change-from-baseline, 48-hour locked checkpoints), Revised Atlanta /
+Modified Marshall with a persistence timer, documentation-only cards (Modified CTSI). These live
+as `PANCREATITIS_EXTENDED_CARDS` in `definitions/acute-pancreatitis.v1.ts`, exercised only by
+`lib/scoring/__tests__/`. The remaining DOCX pathways are stubs in `definitions/skeletons.ts`.
 
 Everything here is **behind a feature flag and OFF by default**. With the flag closed, nothing
 in `lib/scoring/` or `supabase/patches/0053` is read or written and WardMate behaves exactly as
@@ -181,7 +193,7 @@ local builder functions for the repeated Ranson variants.
 
 ### Skeletons
 
-`definitions/skeletons.ts` holds the other 19 pathways as `status: "unavailable"` records —
+`definitions/skeletons.ts` holds the remaining pathways as `status: "unavailable"` records —
 preferred scoring system(s), trigger concepts, timing, card type, and a `licensingReview` flag
 for AJCC / AIS-ISS / BI-RADS / TI-RADS content. The engine never activates them and the UI
 never shows them to ordinary users.

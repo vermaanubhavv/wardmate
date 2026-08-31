@@ -51,6 +51,14 @@ export type EvaluateContext = {
     organFailureDurationHours?: number | null;
     organFailureResolved?: boolean | null;
   };
+  /**
+   * componentId → the clinician's recorded assessment of a `clinicianAssessed` criterion
+   * (from the pathway instance, not from observations).
+   */
+  assessedComponents?: Record<
+    string,
+    { satisfied: boolean; points?: number; text: string; at: Instant; by: string }
+  >;
   now: Instant;
 };
 
@@ -126,6 +134,31 @@ function evaluateComponent(
   checkpointAt: Instant | null
 ): ComponentResult {
   const rw = resolveWindow(def.window, ctx.clock, checkpointAt);
+
+  // A clinician-assessed criterion: prefer the explicit assessment recorded from the card;
+  // otherwise fall through to the observation path (a finding the resident dictated).
+  if (def.clinicianAssessed) {
+    const a = ctx.assessedComponents?.[def.componentId];
+    if (a) {
+      const pts = a.satisfied ? a.points ?? def.points : 0;
+      return {
+        componentId: def.componentId,
+        label: def.label,
+        status: a.satisfied ? "satisfied" : "not_satisfied",
+        rawValue: a.text,
+        normalizedValue: null,
+        unit: null,
+        sourceId: null,
+        sourceAt: a.at,
+        window: rw.window,
+        points: pts,
+        contribution: null,
+        missingReason: null,
+      };
+    }
+    const fromObs = evaluateComponentRaw(def, ctx, rw, checkpointAt);
+    return fromObs.status === "unknown" ? componentUnknown(def, rw, "requires_verification") : fromObs;
+  }
 
   // Clinician override wins, but the imported result is computed first and kept underneath.
   const imported = evaluateComponentRaw(def, ctx, rw, checkpointAt);
@@ -218,25 +251,35 @@ function evaluateComponentRaw(
     return { ...componentUnknown(def, rw, reason), rawValue: picked.original.value };
   }
 
-  const evalRes = evaluateRule(def.rule, picked.value, picked.text);
-  if (evalRes === "not_evaluable") {
-    return { ...componentUnknown(def, rw, "insufficient_inputs"), rawValue: picked.original.value };
-  }
-  const met = evalRes === "met";
-  return {
+  const rawValue = `${picked.original.value}${picked.original.unit ? " " + picked.original.unit : ""}`;
+  const base = {
     componentId: def.componentId,
     label: def.label,
-    status: met ? "satisfied" : "not_satisfied",
-    rawValue: `${picked.original.value}${picked.original.unit ? " " + picked.original.unit : ""}`,
+    rawValue,
     normalizedValue: picked.value,
     unit: picked.unit ?? def.canonicalUnit,
     sourceId: picked.sourceId,
     sourceAt: picked.at,
     window: rw.window,
-    points: met ? def.points : 0,
     contribution: null,
-    missingReason: null,
+    missingReason: null as MissingReason | null,
   };
+
+  // Graded criterion: first matching band wins.
+  if (def.bands && def.bands.length > 0) {
+    if (evaluateRule(def.rule, picked.value, picked.text) === "not_evaluable") {
+      return { ...componentUnknown(def, rw, "insufficient_inputs"), rawValue: picked.original.value };
+    }
+    const hit = def.bands.find((b) => evaluateRule(b.rule, picked.value, picked.text) === "met");
+    return { ...base, status: hit ? "satisfied" : "not_satisfied", points: hit?.points ?? 0 };
+  }
+
+  const evalRes = evaluateRule(def.rule, picked.value, picked.text);
+  if (evalRes === "not_evaluable") {
+    return { ...componentUnknown(def, rw, "insufficient_inputs"), rawValue: picked.original.value };
+  }
+  const met = evalRes === "met";
+  return { ...base, status: met ? "satisfied" : "not_satisfied", points: met ? def.points : 0 };
 }
 
 // ---------------------------------------------------------------------------
@@ -342,27 +385,77 @@ export function evaluateCard(card: CardDefinition, ctx: EvaluateContext): CardRe
     total = null;
     classification = res.classification;
   } else {
-    // sum_points and structured_extraction
+    // sum_points, tiered_classification and structured_extraction
     components = card.inputs.map((def) =>
       !checkpointDue ? componentUnknown(def, resolveWindow(def.window, ctx.clock, checkpointAt), "checkpoint_not_due") : evaluateComponent(def, ctx, checkpointAt)
     );
-    if (card.calculation.kind === "sum_points") {
-      const anyKnown = components.some((c) => c.status === "satisfied" || c.status === "not_satisfied");
-      total = anyKnown ? components.reduce((s, c) => s + c.points, 0) : null;
+    if (card.calculation.kind === "tiered_classification") {
+      const calc = card.calculation;
+      const defById = new Map(card.inputs.map((i) => [i.componentId, i]));
+      classification = calc.fallback;
+      for (const tier of calc.tiers) {
+        const need = calc.tierThresholds?.[tier] ?? 1;
+        const met = components.filter(
+          (c) => defById.get(c.componentId)?.tier === tier && c.status === "satisfied"
+        ).length;
+        if (met >= need) {
+          classification = tier;
+          break;
+        }
+      }
     }
   }
 
   const requiredIds = new Set(card.inputs.filter((i) => i.required).map((i) => i.componentId));
-  const missingRequiredCount = components.filter(
+  const missingRequired = components.filter(
     (c) => requiredIds.has(c.componentId) && c.status === "unknown"
-  ).length;
+  );
+  const missingRequiredCount = missingRequired.length;
+
+  // Calculator total: the real total only once every required component is known; otherwise a
+  // *provisional* total when the only gaps are clinician assessments (objective data complete).
+  let provisionalTotal: number | null = null;
+  let assumedComponentIds: string[] = [];
+  if (card.calculation.kind === "sum_points") {
+    const anyKnown = components.some((c) => c.status === "satisfied" || c.status === "not_satisfied");
+    total = anyKnown && missingRequired.length === 0 ? components.reduce((s, c) => s + c.points, 0) : null;
+
+    const assessedDefIds = new Set(card.inputs.filter((i) => i.clinicianAssessed).map((i) => i.componentId));
+    const objectiveUnknown = missingRequired.filter((c) => !assessedDefIds.has(c.componentId));
+    const pendingAssessments = missingRequired.filter((c) => assessedDefIds.has(c.componentId));
+    if (objectiveUnknown.length === 0 && pendingAssessments.length > 0) {
+      // Unknown criteria contribute 0 points — the assumption, shown not stored.
+      provisionalTotal = components.reduce((s, c) => s + c.points, 0);
+      assumedComponentIds = pendingAssessments.map((c) => c.componentId);
+    }
+  }
+
+  // For a tiered classification: incomplete only while a tier ABOVE the resolved class still
+  // has an unknown criterion that could push it higher.
+  let tierProvisionalIncomplete = false;
+  if (card.calculation.kind === "tiered_classification") {
+    const calc = card.calculation;
+    const defById = new Map(card.inputs.map((i) => [i.componentId, i]));
+    const resolvedRank = calc.tiers.indexOf(classification ?? calc.fallback);
+    const higherTiers = resolvedRank === -1 ? calc.tiers : calc.tiers.slice(0, resolvedRank);
+    // Only a REQUIRED unknown criterion in a higher tier keeps the grade provisional; optional
+    // labs not yet back are assumed not deranged (the same assumption a provisional total makes).
+    tierProvisionalIncomplete = components.some(
+      (c) =>
+        c.status === "unknown" &&
+        requiredIds.has(c.componentId) &&
+        higherTiers.includes(defById.get(c.componentId)?.tier ?? "")
+    );
+  }
+
   // Composite cards: treat an unknown classification as incomplete.
   const compositeIncomplete =
     (card.calculation.kind === "revised_atlanta" && classification === "unknown") ||
     (card.calculation.kind === "sirs" && classification === "not_evaluable") ||
-    (card.calculation.kind === "modified_marshall" && classification === "unknown");
+    (card.calculation.kind === "modified_marshall" && classification === "unknown") ||
+    tierProvisionalIncomplete;
 
-  const interpretation = interpret(card, total, classification);
+  const interpretation = interpret(card, total ?? provisionalTotal, classification);
 
   const resultHash = hashResult(components, total, classification);
   const priorVerify = ctx.verification[card.cardId];
@@ -385,6 +478,8 @@ export function evaluateCard(card: CardDefinition, ctx: EvaluateContext): CardRe
     state,
     components,
     total,
+    provisionalTotal,
+    assumedComponentIds,
     classification: card.type === "calculator" ? null : classification,
     interpretation,
     formulaVersion: `${card.cardId}@definition`,
@@ -425,7 +520,10 @@ function interpret(
     }
   }
   if (classification && classification !== "unknown" && classification !== "not_evaluable") {
-    const band = card.interpretationBands.find((b) => b.text.toLowerCase().includes(classification.replace(/_/g, " ")));
+    const key = classification.replace(/_/g, " ");
+    const band = card.interpretationBands.find(
+      (b) => b.class === classification || b.text.toLowerCase().includes(key)
+    );
     if (band) return { text: band.text, tone: band.tone };
   }
   return null;

@@ -1,9 +1,9 @@
 /**
- * Configuration skeletons for the remaining 19 pathways in the DOCX top-20 catalogue.
+ * Configuration skeletons for the DOCX top-20 pathways not yet implemented.
  *
  * Each is marked `status: "unavailable"` — the engine will NOT activate it, the trigger
  * detector ignores non-`active` pathways, and the UI does not show it to ordinary users
- * (DOCX "Remaining 19 pathways": "Mark a pathway unavailable rather than implementing a
+ * (DOCX "Remaining pathways": "Mark a pathway unavailable rather than implementing a
  * formula from memory").
  *
  * The skeleton records the *product* decision — preferred scoring system(s), trigger
@@ -29,42 +29,6 @@ export type PathwaySkeleton = {
 
 export const PATHWAY_SKELETONS: PathwaySkeleton[] = [
   {
-    pathwayId: "acute_appendicitis",
-    title: "Acute appendicitis",
-    status: "unavailable",
-    mvpRelease: "MVP1",
-    preferredSystems: ["AIR score (primary)", "Alvarado (secondary display)", "AAST operative grade (post-imaging/op)"],
-    triggerConcepts: ["acute appendicitis", "?appendicitis", "RIF pain for evaluation"],
-    timing: "AIR at presentation; AAST after imaging or operation",
-    cardTypes: ["calculator", "documentation_only"],
-    licensingReview: false,
-    notes: "WSES: do not use Alvarado to positively confirm appendicitis in adults.",
-  },
-  {
-    pathwayId: "acute_cholecystitis",
-    title: "Acute cholecystitis",
-    status: "unavailable",
-    mvpRelease: "MVP1",
-    preferredSystems: ["Tokyo Guidelines 2018 diagnosis + Grade I–III severity"],
-    triggerConcepts: ["acute cholecystitis", "acute calculous cholecystitis", "?cholecystitis"],
-    timing: "Diagnosis at presentation; re-grade on new organ dysfunction or imaging",
-    cardTypes: ["structured_classification"],
-    licensingReview: false,
-    notes: "Suspected vs definite diagnosis; severity re-run on change.",
-  },
-  {
-    pathwayId: "acute_cholangitis",
-    title: "Cholangitis / suspected CBD stone",
-    status: "unavailable",
-    mvpRelease: "MVP1",
-    preferredSystems: ["TG18 cholangitis diagnosis + severity", "2019 ASGE choledocholithiasis risk"],
-    triggerConcepts: ["acute cholangitis", "ascending cholangitis", "choledocholithiasis", "CBD stone", "obstructive jaundice"],
-    timing: "Diagnosis + severity at presentation; ASGE risk drives therapeutic pathway review",
-    cardTypes: ["structured_classification"],
-    licensingReview: false,
-    notes: "Escalate Grade II/III for early senior GI/HPB and source-control planning.",
-  },
-  {
     pathwayId: "adhesive_sbo",
     title: "Adhesive small-bowel obstruction",
     status: "unavailable",
@@ -87,18 +51,6 @@ export const PATHWAY_SKELETONS: PathwaySkeleton[] = [
     cardTypes: ["calculator"],
     licensingReview: false,
     notes: "Display institution-selected MPI threshold; never treat as a surgical-indication score.",
-  },
-  {
-    pathwayId: "upper_gi_bleeding",
-    title: "Acute upper gastrointestinal bleeding",
-    status: "unavailable",
-    mvpRelease: "MVP1",
-    preferredSystems: ["Glasgow-Blatchford (pre-endoscopy)", "AIMS65", "full Rockall (post-endoscopy)"],
-    triggerConcepts: ["upper GI bleed", "haematemesis", "melaena", "UGIB"],
-    timing: "GBS at presentation; Rockall fields after endoscopy",
-    cardTypes: ["calculator"],
-    licensingReview: false,
-    notes: "GBS 0–1 = very low risk; discharge decision needs clinician assessment and local policy.",
   },
   {
     pathwayId: "acute_diverticulitis",

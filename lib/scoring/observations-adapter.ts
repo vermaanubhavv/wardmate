@@ -82,6 +82,12 @@ const ANALYTES: AnalyteSpec[] = [
   { key: "lipase", aliases: /\b(lipase)\b/i, unitAnalyte: null },
   { key: "triglycerides", aliases: /\b(triglycerides?|tg\b)\b/i, unitAnalyte: null },
   { key: "crp", aliases: /\b(crp|c-reactive protein)\b/i, unitAnalyte: null },
+  { key: "inr", aliases: /\b(inr|pt.?inr|international normalised ratio)\b/i, unitAnalyte: null },
+  { key: "platelets", aliases: /\b(platelets?|platelet count|plt)\b/i, unitAnalyte: null },
+  { key: "bilirubin", aliases: /\b(total bilirubin|t\.?\s?bilirubin|serum bilirubin|s\.?\s?bilirubin|bilirubin)\b/i, unitAnalyte: null },
+  { key: "albumin", aliases: /\b(serum albumin|s\.?\s?albumin|albumin)\b/i, unitAnalyte: null },
+  { key: "neutrophil_percent", aliases: /\b(neutrophils?|polymorphs?|neutrophil %|anc %|n%)\b/i, unitAnalyte: null },
+  { key: "hb", aliases: /\b(h(a)?emoglobin|hb%?|hgb)\b/i, unitAnalyte: null },
 ];
 
 const IMAGING = /\b(x-?ray|cxr|chest film|ct\b|ct scan|cect|usg|ultrasound|sonograph|imaging|radiograph)\b/i;
@@ -207,6 +213,14 @@ export function toEngineInputs(rows: ObservationRow[], patient: PatientFacts): E
         value = null;
         unitError = `${n.reason}: ${n.detail}`;
       }
+    }
+
+    // Platelet count is written on Indian reports as "1.5" (lakh), "150" (×10³/µL) or
+    // "150000" (/µL). Bring to /µL by order of magnitude.
+    if (spec.key === "platelets" && value != null) {
+      if (value < 20) value = Math.round(value * 100_000);
+      else if (value < 1000) value = Math.round(value * 1000);
+      unit = "/µL";
     }
 
     const input: EngineInput = {
