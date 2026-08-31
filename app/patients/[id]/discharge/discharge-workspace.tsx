@@ -965,7 +965,7 @@ export default function DischargeWorkspace({
               </Link>
               {!finalised && (
                 <button type="button" onClick={reset} disabled={pending} className="text-[13px] text-muted">
-                  Rebuild from record
+                  Discard edits &amp; rebuild
                 </button>
               )}
             </div>
@@ -1027,6 +1027,17 @@ export default function DischargeWorkspace({
       <button type="button" onClick={() => setMenuOpen((o) => !o)} className="self-center text-[13px] font-medium text-accent">
         {menuOpen ? "Hide sections" : "Jump to a section"}
       </button>
+
+      {/* Reading the paper file in is a step of THIS summary, not a rival to it — so it lives
+          here, quietly, rather than as a button on the patient page. */}
+      {!finalised && (
+        <Link
+          href={`/patients/${patientId}/prepare-discharge`}
+          className="self-center text-[13px] text-muted underline decoration-line underline-offset-2"
+        >
+          Read in the paper file
+        </Link>
+      )}
       {menuOpen && (
         <div className="ios-group flex flex-col p-1.5">
           {STEPS.map((s, i) => {

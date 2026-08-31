@@ -9,7 +9,6 @@ import {
   ChecklistIcon,
   ChevronIcon,
   ClipboardIcon,
-  DocumentIcon,
   PlusIcon,
   TrayIcon,
 } from "../icons";
@@ -129,20 +128,18 @@ export default async function Home({
             off the edge of the screen unseen, which is exactly what was happening to a
             capsule before. Formats and Protocols moved to the Unit page — unit-wide settings
             reached far less often than these two, not something to compete for space with on
-            the page opened most. Wraps to a second row if there is ever a fourth tile. */}
-        <div className="mt-3 grid grid-cols-3 gap-2">
+            the page opened most. Wraps to a second row when the "Discharged" tile appears. */}
+        <div className="mt-3 grid grid-cols-2 gap-2">
           <NavTile href="/todo" icon={<ChecklistIcon className="h-[19px] w-[19px]" />}>
             To do
           </NavTile>
           <NavTile href="/handover" icon={<ClipboardIcon className="h-[19px] w-[19px]" />}>
             Ward round
           </NavTile>
-          {/* Reached from here as well as from a patient, because a discharge is often decided
-              before anybody opens that patient's record — and because it is the way in for a
-              one-off summary, which has no patient to open. */}
-          <NavTile href="/prepare-discharge" icon={<DocumentIcon className="h-[19px] w-[19px]" />}>
-            Prepare discharge
-          </NavTile>
+          {/* No "Prepare discharge" tile: a discharge is one thing, reached one way — open the
+              patient and open their discharge summary. Photographing the paper file is a step
+              inside that summary, not a second door beside it. The one-off summary (no patient
+              to open) moved to the Unit page, beside the other rarely-reached actions. */}
           {/* Only once there is something to undo — an empty list is not worth a tile. */}
           {removedCount > 0 && (
             <NavTile href="/removed" icon={<TrayIcon className="h-[19px] w-[19px]" />}>

@@ -27,33 +27,22 @@ export default function DischargeSection({
       <div className="border-t border-line px-4 py-4">
         <p className="text-[13px] text-muted">
           Compiled from {patientName}&rsquo;s record. Walk the cards one section at a time,
-          generate and approve the Clinical Course and investigations, then finalise — the AI
-          parts cannot be finalised without your approval.
+          generate and approve the Clinical Course and investigations, then finalise. Reading
+          in the paper file is a step inside the summary.
         </p>
 
-        <Link
-          href={`/patients/${patientId}/prepare-discharge`}
-          className="mt-3 flex w-full flex-col items-center rounded-[10px] border border-line px-4 py-3"
-        >
-          <span className="text-[15px] font-semibold">Prepare discharge</span>
-          <span className="text-[13px] text-muted">Photograph the papers and read them in first</span>
-        </Link>
-
+        {/* One action. There is no separate "Prepare discharge" button here — a discharge is
+            one thing, reached one way. */}
         <Link
           href={`/patients/${patientId}/discharge`}
           className="mt-3 flex w-full items-center justify-center rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink"
         >
-          {status ? "Open discharge summary" : "Start discharge summary"}
+          {status === "finalised"
+            ? "Open discharge summary"
+            : status === "draft"
+              ? "Continue discharge summary"
+              : "Start discharge summary"}
         </Link>
-
-        {status === "finalised" && (
-          <Link
-            href={`/patients/${patientId}/discharge/print`}
-            className="mt-3 flex w-full items-center justify-center rounded-[10px] border border-line px-4 py-3 text-[17px] font-semibold"
-          >
-            Print / download
-          </Link>
-        )}
       </div>
     </details>
   );

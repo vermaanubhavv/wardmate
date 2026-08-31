@@ -30,10 +30,10 @@ export default async function PrepareDischargePage({
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-6 pb-16 pt-8">
-      <Link href={`/patients/${id}`} className="text-[17px] text-accent">
-        ‹ Patient
+      <Link href={`/patients/${id}/discharge`} className="text-[17px] text-accent">
+        ‹ Discharge summary
       </Link>
-      <h1 className="mt-3 ios-large-title text-[28px] leading-tight">Prepare discharge</h1>
+      <h1 className="mt-3 ios-large-title text-[28px] leading-tight">Read in the paper file</h1>
       <p className="mt-1 text-[15px] text-muted">
         {patient.display_name}
         {patient.bed ? ` · bed ${patient.bed}` : ""}

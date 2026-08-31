@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { completeProfessionalOnboarding, type ProfessionalState } from "./actions";
 
 const initialState: ProfessionalState = { error: null };
@@ -8,6 +9,14 @@ const designations = ["Intern", "JR-1", "JR-2", "JR-3", "SR", "AP", "Medical Off
 
 export default function ProfessionalForm() {
   const [state, formAction, pending] = useActionState(completeProfessionalOnboarding, initialState);
+  const router = useRouter();
+
+  // Once the attestation is saved, re-run this page so it shows "Choose your unit" with the
+  // unit-code field, instead of leaving the doctor on the form they just submitted.
+  useEffect(() => {
+    if (state.done) router.refresh();
+  }, [state.done, router]);
+
   return (
     <form action={formAction} className="ios-group mt-6 flex flex-col gap-3 p-4">
       <Field label="Full name" name="name" placeholder="Dr. Asha Mehta" autoCapitalize="words" />
@@ -26,8 +35,8 @@ export default function ProfessionalForm() {
         <span>I confirm that I am a doctor or medical intern and these details are accurate.</span>
       </label>
       {state.error && <p className="text-[13px] text-red-700">{state.error}</p>}
-      <button disabled={pending} className="rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink disabled:opacity-60">
-        {pending ? "Continuing…" : "Continue"}
+      <button disabled={pending || state.done} className="rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink disabled:opacity-60">
+        {pending || state.done ? "Continuing…" : "Continue"}
       </button>
     </form>
   );

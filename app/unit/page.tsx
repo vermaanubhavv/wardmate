@@ -149,6 +149,15 @@ export default async function UnitPage() {
               </Link>
             </li>
           )}
+          {/* A discharge summary for somebody who is not on this unit — no patient to open, so
+              it is reached from here rather than from the ward. A unit patient's discharge is
+              always started from that patient. */}
+          <li>
+            <Link href="/prepare-discharge/new" className="flex items-center gap-3 px-4 py-3 active:bg-chip">
+              <DocumentIcon className="h-4 w-4 shrink-0 text-accent" />
+              <span className="flex-1 text-[15px]">One-off discharge summary</span>
+            </Link>
+          </li>
         </ul>
       </section>
 
