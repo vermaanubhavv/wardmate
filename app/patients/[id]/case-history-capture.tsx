@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Mark from "@/app/mark";
 import { ImageIcon, MicIcon, StopIcon } from "@/app/icons";
@@ -19,11 +19,19 @@ type Status = "idle" | "starting" | "recording" | "working";
 export default function CaseHistoryCapture({
   patientId,
   hasExisting = false,
+  defaultOpen = false,
+  savedHref,
 }: {
   patientId: string;
   /** Once a case history exists, this becomes "add an addendum" rather than the first prompt —
    *  no reason to re-explain what it is, or offer to skip something already done. */
   hasExisting?: boolean;
+  /** Start expanded. Used by the dedicated clerking screen a new patient lands on, where the
+   *  whole point of the page is this control. */
+  defaultOpen?: boolean;
+  /** Where to go once something has been saved. On the patient page this is unset — it just
+   *  refreshes in place; on the clerking screen it carries the resident on to the patient. */
+  savedHref?: string;
 }) {
   const router = useRouter();
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
@@ -35,6 +43,10 @@ export default function CaseHistoryCapture({
   const [message, setMessage] = useState<string | null>(null);
   const [showPhotoChoices, setShowPhotoChoices] = useState(false);
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
+
+  useEffect(() => {
+    if (defaultOpen && detailsRef.current) detailsRef.current.open = true;
+  }, [defaultOpen]);
 
   async function submit(body: FormData) {
     setStatus("working");
@@ -56,6 +68,10 @@ export default function CaseHistoryCapture({
             ? "Saved, but nothing structured was found in it."
             : `Saved — ${n} ${n === 1 ? "item" : "items"} recorded, including any plan mentioned.`)
       );
+      if (savedHref) {
+        router.push(savedHref);
+        return;
+      }
       router.refresh();
     } catch {
       setStatus("idle");

@@ -93,10 +93,10 @@ export async function addPatient(
 
   revalidatePath("/");
   revalidatePath("/ward");
-  // The new patient's own page, not the ward list — that page is where the case history
-  // capture prompt lives, and clerking usually happens right after admitting somebody, not
-  // sometime later after a trip back through the whole ward.
-  redirect(`/patients/${created.id}`);
+  // Straight into clerking, not the ward list and not the patient page: the case history is
+  // written right after admitting somebody, so the app opens the capture screen for it now
+  // rather than leaving it folded low on the patient's page to be found later.
+  redirect(`/patients/${created.id}/case-history/new`);
 }
 
 /**
