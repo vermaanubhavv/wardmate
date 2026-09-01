@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -61,12 +61,14 @@ export default function DischargeWorkspace({
   checkContext,
   wardId,
   formularyAvailable,
+  aiReady,
 }: {
   patientId: string;
   initialDraft: DischargeDraft;
   checkContext: DischargeCheckContext;
   wardId: string;
   formularyAvailable: boolean;
+  aiReady: boolean;
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState<DischargeDraft>(initialDraft);
@@ -80,6 +82,56 @@ export default function DischargeWorkspace({
 
   const finalised = draft.status === "finalised";
   const readOnly = finalised;
+
+  // Auto-compile the AI sections the moment the workspace opens, so the resident lands on
+  // content to READ rather than empty fields with a button (protocol section 20:
+  // AI Compilation -> Resident Review). Runs once, only on a fresh draft with enough on the
+  // record; each section is written but stays unapproved, so nothing reaches a finalised
+  // summary without the resident's sign-off. If the AI is unavailable, the manual "Generate"
+  // buttons are still there.
+  const autoGenNeeds = useMemo(() => {
+    if (finalised || !aiReady) return { course: false, indication: false, investigations: false, any: false };
+    const course = !initialDraft.clinicalCourse.text.trim() && !initialDraft.clinicalCourse.generatedAt;
+    const indication = !initialDraft.indicationForAdmission.text.trim() && !initialDraft.indicationForAdmission.generatedAt;
+    const investigations =
+      initialDraft.relevantInvestigations.items.length === 0 && !initialDraft.relevantInvestigations.generatedAt;
+    return { course, indication, investigations, any: course || indication || investigations };
+  }, [finalised, aiReady, initialDraft]);
+
+  const [autoGen, setAutoGen] = useState<"idle" | "running">(autoGenNeeds.any ? "running" : "idle");
+  const autoGenStarted = useRef(false);
+  useEffect(() => {
+    if (autoGen !== "running" || autoGenStarted.current) return;
+    autoGenStarted.current = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/patients/${patientId}/discharge/generate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ section: "all" }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          // Only drop the AI draft in where the resident has not started that section
+          // themselves while it was compiling.
+          setDraft((d) => ({
+            ...d,
+            clinicalCourse:
+              data.clinicalCourse && !d.clinicalCourse.text.trim() ? data.clinicalCourse : d.clinicalCourse,
+            indicationForAdmission:
+              data.indication && !d.indicationForAdmission.text.trim() ? data.indication : d.indicationForAdmission,
+            relevantInvestigations:
+              data.relevantInvestigations && d.relevantInvestigations.items.length === 0
+                ? data.relevantInvestigations
+                : d.relevantInvestigations,
+          }));
+        }
+      } catch {
+        // No signal — the resident falls back to the manual buttons.
+      }
+      setAutoGen("idle");
+    })();
+  }, [autoGen, autoGenNeeds, patientId]);
 
   const checks = useMemo(() => runDischargeChecks(draft, checkContext), [draft, checkContext]);
   const blockingBySection = useMemo(() => {
@@ -275,9 +327,8 @@ export default function DischargeWorkspace({
         );
         return;
       }
-      setMessage("Discharge summary finalised.");
-      router.refresh();
-      setDraft((d) => ({ ...d, status: "finalised" }));
+      // Straight to the finished summary — finalise and print are one motion.
+      router.push(`/patients/${patientId}/discharge/print`);
     });
   }
 
@@ -403,15 +454,20 @@ export default function DischargeWorkspace({
   // --- section bodies -------------------------------------------------------------
   function renderSection(id: StepId): React.ReactNode {
     switch (id) {
-      case "indication":
+      case "indication": {
+        const drafting = autoGen === "running" && !draft.indicationForAdmission.text.trim();
         return (
           <>
             <p className="text-[12px] leading-[1.45] text-muted">
               Why admission was needed — not a repeat of the diagnosis. The AI drafts it from the record; you approve.
             </p>
-            <button type="button" disabled={readOnly || generating === "indication"} onClick={() => generate("indication")} className={genBtn}>
-              {generating === "indication" ? "Generating…" : "Generate with AI"}
-            </button>
+            {drafting ? (
+              <p className="text-[13px] text-accent">Drafting from the record…</p>
+            ) : (
+              <button type="button" disabled={readOnly || generating === "indication"} onClick={() => generate("indication")} className={genBtn}>
+                {generating === "indication" ? "Generating…" : draft.indicationForAdmission.text ? "Redraft with AI" : "Generate with AI"}
+              </button>
+            )}
             <Area value={draft.indicationForAdmission.text} onChange={editIndication} rows={3} placeholder="Patient admitted with … requiring …" />
             {draft.indicationForAdmission.text && !draft.indicationForAdmission.approvedAt && !readOnly && (
               <button type="button" onClick={() => approve("indication")} disabled={pending} className={approveBtn}>
@@ -420,6 +476,7 @@ export default function DischargeWorkspace({
             )}
           </>
         );
+      }
 
       case "encounter":
         return (
@@ -513,20 +570,25 @@ export default function DischargeWorkspace({
           </>
         );
 
-      case "clinicalCourse":
+      case "clinicalCourse": {
+        const drafting = autoGen === "running" && !draft.clinicalCourse.text.trim();
         return (
           <>
             <p className="text-[12px] leading-[1.45] text-muted">
               Mandatory. The AI synthesises it from the whole record; read it against the rounds, edit, then approve.
             </p>
-            <button
-              type="button"
-              disabled={readOnly || generating === "clinical_course"}
-              onClick={() => generate("clinical_course")}
-              className={genBtn}
-            >
-              {generating === "clinical_course" ? "Generating…" : draft.clinicalCourse.text ? "Regenerate with AI" : "Generate with AI"}
-            </button>
+            {drafting ? (
+              <p className="text-[13px] text-accent">Synthesising the admission from the record…</p>
+            ) : (
+              <button
+                type="button"
+                disabled={readOnly || generating === "clinical_course"}
+                onClick={() => generate("clinical_course")}
+                className={genBtn}
+              >
+                {generating === "clinical_course" ? "Generating…" : draft.clinicalCourse.text ? "Regenerate with AI" : "Generate with AI"}
+              </button>
+            )}
             {draft.clinicalCourse.uncertainPoints.length > 0 && (
               <div className="rounded-[10px] bg-orange-50 p-2.5 text-[13px] text-orange-800">
                 <p className="font-medium">The AI could not resolve these — check them:</p>
@@ -545,21 +607,27 @@ export default function DischargeWorkspace({
             )}
           </>
         );
+      }
 
-      case "relevantInvestigations":
+      case "relevantInvestigations": {
+        const drafting = autoGen === "running" && draft.relevantInvestigations.items.length === 0;
         return (
           <>
             <p className="text-[12px] leading-[1.45] text-muted">
               The short, meaningful results — not whole panels. The AI proposes from what was recorded; keep the ones that matter.
             </p>
-            <button
-              type="button"
-              disabled={readOnly || generating === "investigations"}
-              onClick={() => generate("investigations")}
-              className={genBtn}
-            >
-              {generating === "investigations" ? "Analysing…" : "Propose with AI"}
-            </button>
+            {drafting ? (
+              <p className="text-[13px] text-accent">Picking out the results that mattered…</p>
+            ) : (
+              <button
+                type="button"
+                disabled={readOnly || generating === "investigations"}
+                onClick={() => generate("investigations")}
+                className={genBtn}
+              >
+                {generating === "investigations" ? "Analysing…" : draft.relevantInvestigations.items.length ? "Propose again with AI" : "Propose with AI"}
+              </button>
+            )}
             {draft.relevantInvestigations.items.map((it, i) => {
               const setIt = (o: Partial<typeof it>) =>
                 patch("relevantInvestigations", "relevantInvestigations", {
@@ -613,6 +681,7 @@ export default function DischargeWorkspace({
             )}
           </>
         );
+      }
 
       case "histopathology":
         return (
@@ -1097,7 +1166,7 @@ export default function DischargeWorkspace({
               disabled={pending || checks.blocking.length > 0}
               className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-[16px] font-semibold text-accent-ink disabled:opacity-50"
             >
-              {checks.blocking.length > 0 ? `Finalise (${checks.blocking.length} to fix)` : "Finalise"}
+              {pending ? "Finalising…" : checks.blocking.length > 0 ? `Finalise (${checks.blocking.length} to fix)` : "Finalise & print"}
             </button>
           )}
         </div>

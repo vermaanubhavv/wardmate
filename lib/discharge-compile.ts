@@ -16,7 +16,7 @@ import {
   type HistopathologySpecimen,
   type Procedure,
 } from "@/lib/discharge-entities";
-import type { DischargeTemplate } from "@/lib/discharge-templates";
+import { matchDischargeTemplate, type DischargeTemplate } from "@/lib/discharge-templates";
 
 /**
  * Compile a PROPOSED discharge draft from what is already on the record.
@@ -307,10 +307,31 @@ export function applyDischargeTemplate(
     next.redFlags = { items: [...s.redFlags], included: seedAll };
   }
 
+  // A ward patient stops here: the record compiles their diagnosis, operation, course and
+  // medications — the template only OFFERS the advice and red-flag cards above (switched off).
   if (!seedAll) return next;
 
   if (!draft.indicationForAdmission.text.trim()) {
     next.indicationForAdmission = { text: s.indication, source: "resident" };
+  }
+  if (!draft.clinicalCourse.text.trim() && s.clinicalCourse) {
+    next.clinicalCourse = { text: s.clinicalCourse, source: "resident", uncertainPoints: [] };
+  }
+  if (draft.medications.length === 0 && s.medications.length > 0) {
+    next.medications = s.medications.map((m, i) => ({
+      id: compiledRowId("med", i),
+      generic: m.generic,
+      strength: m.strength ?? null,
+      dose: m.dose ?? null,
+      route: m.route ?? null,
+      frequency: m.frequency ?? null,
+      duration: m.duration ?? null,
+      indication: m.indication ?? null,
+      status: m.status,
+      reason: null,
+      drugKey: drugKey(m.generic),
+      source: "resident" as const,
+    }));
   }
   if (!draft.diagnoses.some((d) => d.category === "primary") && s.primaryDiagnosis) {
     next.diagnoses = [
@@ -410,9 +431,19 @@ export function compileDischargeDraft(
     },
   };
 
-  return options?.template
-    ? applyDischargeTemplate(base, options.template, options.seedAll ?? false)
-    : base;
+  // The one-off flow passes an explicit template + seedAll. A ward patient gets the template
+  // its diagnosis / operation points at, applied with seedAll=false — so only the advice and
+  // red-flag cards are offered (switched off), and everything else stays compiled from the
+  // record.
+  const template =
+    options?.template ??
+    matchDischargeTemplate({
+      procedureText: context.procedure ?? patient.procedure_text,
+      diagnosisText: base.diagnoses.find((d) => d.category === "primary")?.text,
+      templateFamily: patient.template_family,
+    });
+
+  return template ? applyDischargeTemplate(base, template, options?.seedAll ?? false) : base;
 }
 
 /** For the console-test script and the compile digest — the human-readable admission date. */
