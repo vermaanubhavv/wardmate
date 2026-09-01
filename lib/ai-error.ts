@@ -19,8 +19,15 @@ export function plainAiError(error: unknown): string {
   if (/credit balance is too low|billing|insufficient_quota/i.test(raw)) {
     return "WardMate's AI credit has run out, so it cannot read or listen right now. Nothing already on the record is affected. Tell whoever looks after the app — everything else keeps working.";
   }
-  if (/authentication_error|invalid x-api-key|401/i.test(raw)) {
+  if (/authentication_error|invalid (?:x-)?api[- ]key|401|403/i.test(raw)) {
     return "WardMate cannot reach its AI service — the key is being refused. Nothing on the record is affected. Tell whoever looks after the app.";
+  }
+
+  if (/sarvam speech-to-text failed \(422\)|audio over 30 seconds/i.test(raw)) {
+    return "Sarvam could not read that audio. During this trial, keep each recording to 30 seconds or less and try again.";
+  }
+  if (/deepgram speech-to-text failed \(4\d\d\)/i.test(raw)) {
+    return "Deepgram could not read that recording. Try again — hold the button while speaking, in a quieter spot if you can.";
   }
 
   // Busy or briefly down: worth trying again in a moment, unlike the two above.

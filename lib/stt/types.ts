@@ -47,3 +47,40 @@ export const MEDICAL_VOCABULARY_HINT = [
   "Monocef, Taxim, Metrogyl, Emeset, Pan 40, Perinorm, Tramazac, Chymoral Forte, Voveran,",
   "Digene, Clexane, Lasix, PCM, Augmentin, Zosyn, Meropenem, Neomol.",
 ].join(" ");
+
+/**
+ * The same vocabulary as MEDICAL_VOCABULARY_HINT, but as a flat list of discrete terms.
+ *
+ * Some engines (Deepgram Nova-3) do not take a free-text prompt — they take a keyterm list,
+ * where each entry is boosted individually. A prose paragraph is the wrong shape for that, so
+ * the terms live here separately. Keep this in step with the hint above; the two are the same
+ * knowledge in the two shapes engines ask for it.
+ *
+ * Deepgram recommends staying under ~100 keyterms, so this is the mishearings that actually
+ * matter — surgical procedures, the ward's own shorthand, and the brand drug names an Indian
+ * chart uses — not every ordinary English word a model already knows.
+ */
+export const MEDICAL_KEYTERMS: string[] = [
+  // Procedures and operative terms
+  "lap chole", "laparoscopic cholecystectomy", "appendicectomy", "laparotomy",
+  "hernioplasty", "herniorrhaphy", "exploratory laparotomy", "Ryle's tube", "Foley's catheter",
+  "suture line", "wound dehiscence", "burst abdomen", "stoma", "colostomy", "ileostomy",
+  "stitch removal", "drain output", "serosanguinous", "bilious", "feculent",
+  // Examination shorthand, said aloud on the round
+  "per abdomen", "P/A soft", "abdomen soft", "NVBS", "normal vesicular breath sounds",
+  "S1 S2 normal", "bowel sounds present", "passing flatus", "tolerating orals",
+  "nil by mouth", "NBM", "afebrile", "febrile", "tachycardia", "post-op day", "POD",
+  // Investigations and abbreviations
+  "PAC", "pre-anaesthetic checkup", "PAC fitness", "OT list", "USG abdomen", "CBC", "LFT",
+  "RFT", "KFT", "PT INR", "GRBS", "RBS", "DLC", "TLC", "HPE", "ECG", "ICD tube",
+  "K/C/O", "H/O", "Koch's", "LAMA", "DAMA", "UHID", "MRD number", "casualty", "OPD", "IPD",
+  // Fluids
+  "Ringer lactate", "RL", "normal saline", "NS", "DNS", "isolyte",
+  // Brand drugs an Indian chart actually lists
+  "Monocef", "Taxim", "Magnex", "Metrogyl", "Emeset", "Pan 40", "Perinorm", "Tramazac",
+  "Chymoral Forte", "Voveran", "Digene", "Clexane", "Lasix", "Augmentin", "Zosyn",
+  "Meropenem", "Neomol", "Optineuron", "Rantac", "Zofer", "Piptaz",
+  // Generic names that get mangled
+  "ceftriaxone", "metronidazole", "ondansetron", "pantoprazole", "enoxaparin", "tramadol",
+  "paracetamol", "piperacillin tazobactam", "amoxicillin clavulanate",
+];

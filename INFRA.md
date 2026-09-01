@@ -20,7 +20,7 @@ repo to Vercel for deploys — everything past this point assumes that has happe
 | Hosting | **Vercel** | Project name `wardmate`. Deployed via `vercel --prod` from the CLI today — see above. |
 | Database | **Supabase** (Postgres) | Project ref `zrisashumxmiiwffhezc` → `https://zrisashumxmiiwffhezc.supabase.co`. Also provides auth and file storage. |
 | AI | **Anthropic API** (`claude-opus-5`) | Structures spoken/typed notes into clinical values; reads photographed lab reports and the ward register. |
-| Speech-to-text | Pluggable — currently **OpenAI** | Behind `lib/stt/`, selected by the `STT_PROVIDER` env var. Swappable without touching anything else; the point of that seam is comparing engines on Indian-accented medical speech. |
+| Speech-to-text | Pluggable — **OpenAI** or **Sarvam** | Behind `lib/stt/`, selected by the `STT_PROVIDER` env var. Swappable without touching anything else; the point of that seam is comparing engines on Indian-accented medical speech. |
 | Outbound email | **Resend**, via Supabase's SMTP integration | Sends the sign-in codes. |
 | Styling | Tailwind, hand-rolled iOS-style components | No component library. |
 | No ORM | Raw `@supabase/supabase-js` queries throughout | |
@@ -35,8 +35,14 @@ NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 ANTHROPIC_API_KEY
 OPENAI_API_KEY
+SARVAM_API_KEY
 STT_PROVIDER
 ```
+
+To trial Sarvam Saaras, set `SARVAM_API_KEY` and `STT_PROVIDER=sarvam` locally and in Vercel.
+Sarvam's synchronous endpoint returns one transcript for recordings up to 30 seconds, so use
+short bedside notes while evaluating it; longer round recordings should stay on OpenAI until a
+Sarvam batch/realtime flow is added.
 
 The Supabase key is the **publishable** (anon) key, not the service role key — deliberately.
 The app never uses a service-role key from application code; every read and write goes through
