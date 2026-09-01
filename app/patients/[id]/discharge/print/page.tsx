@@ -41,12 +41,18 @@ export default async function DischargePrintPage({ params }: { params: Promise<{
         <h1 className="mt-3 ios-large-title">Discharge summary</h1>
         <p className="mt-1 text-[15px] text-muted">
           {doc.status === "finalised"
-            ? "Finalised."
-            : "Draft — the AI sections are marked where they have not been approved."}
+            ? "Finalised. Tap any section heading to reopen it for editing."
+            : "Draft. Tap any section heading to edit that part, then come back."}
         </p>
       </header>
 
-      <DischargeSheet doc={doc} wardId={context.wardId} patientId={id} formularyAvailable={context.formularySize > 0} />
+      <DischargeSheet
+        doc={doc}
+        wardId={context.wardId}
+        patientId={id}
+        formularyAvailable={context.formularySize > 0}
+        editBase={`/patients/${id}/discharge`}
+      />
 
       <section className="flex flex-col gap-2 px-4 pb-10 print:hidden">
         <PrintButton />
