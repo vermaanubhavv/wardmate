@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { addPatient, type AddPatientState } from "../actions";
 import { LOCATION_CHOICES, MANAGEMENT_CHOICES } from "@/lib/patients";
+import DiagnosisCombobox from "../diagnosis-combobox";
 import SpeakPatient from "./speak-patient";
 import type { SpokenPatient } from "@/lib/read-new-patient";
 import AdmissionPaper from "./admission-paper";
@@ -186,20 +187,14 @@ export default function PatientForm({
         </div>
       </div>
 
-      <Field label="Diagnosis" hint="Type freely — past entries are offered as you type">
-        <input
+      <Field label="Diagnosis" hint="The common ones are offered; type freely for anything else">
+        <DiagnosisCombobox
           name="primary_diagnosis"
-          list="diagnosis-suggestions"
-          autoCapitalize="none"
           value={fields.primary_diagnosis}
-          onChange={(e) => set("primary_diagnosis")(e.target.value)}
+          onChange={set("primary_diagnosis")}
+          extraSuggestions={diagnosisSuggestions}
           className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
         />
-        <datalist id="diagnosis-suggestions">
-          {diagnosisSuggestions.map((d) => (
-            <option key={d} value={d} />
-          ))}
-        </datalist>
       </Field>
 
       <Field label="Admitted on">

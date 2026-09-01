@@ -20,6 +20,7 @@ import { runDischargeChecks, type DischargeCheckContext } from "@/lib/discharge-
 import type { DischargeCheck } from "@/lib/discharge-checks";
 import FormularyLink from "./formulary-link";
 import { Field, Area, StringList } from "./discharge-fields";
+import DiagnosisCombobox from "../../diagnosis-combobox";
 import { IconCheck, statusChip, SelChip, OptionRow, Toggle, genBtn, approveBtn } from "../card-kit";
 import {
   saveDischargeSection,
@@ -74,6 +75,7 @@ export default function DischargeWorkspace({
   const [draft, setDraft] = useState<DischargeDraft>(initialDraft);
   const [dirty, setDirty] = useState<Set<DischargeSectionId>>(new Set());
   const [pending, startTransition] = useTransition();
+  const [isFinalising, setIsFinalising] = useState(false);
   const [generating, setGenerating] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [step, setStep] = useState(0);
@@ -312,13 +314,15 @@ export default function DischargeWorkspace({
   }
 
   function finalise() {
+    setIsFinalising(true);
     startTransition(async () => {
       for (const section of Array.from(dirty)) {
         const ok = await saveSection(section);
-        if (!ok) return;
+        if (!ok) return setIsFinalising(false);
       }
       const result = await finaliseDischargeAction(patientId);
       if (!result.ok) {
+        setIsFinalising(false);
         setMessage(
           result.error ??
             (result.blocking
@@ -500,11 +504,11 @@ export default function DischargeWorkspace({
                 patch("diagnoses", "diagnoses", draft.diagnoses.map((x, j) => (j === i ? { ...x, ...o } : x)));
               return (
                 <div key={d.id} className="flex flex-col gap-2 rounded-[10px] border border-line p-2.5">
-                  <input
+                  <DiagnosisCombobox
                     value={d.text}
-                    onChange={(e) => setD({ text: e.target.value })}
+                    onChange={(v) => setD({ text: v })}
                     placeholder="Diagnosis"
-                    className="h-11 rounded-[10px] border border-line bg-card px-3 text-[15px] outline-none focus:border-accent"
+                    className="h-11 w-full rounded-[10px] border border-line bg-card px-3 text-[15px] outline-none focus:border-accent"
                   />
                   <div className="flex flex-wrap gap-1.5">
                     {DX_CATEGORIES.map((c) => (
@@ -1166,7 +1170,7 @@ export default function DischargeWorkspace({
               disabled={pending || checks.blocking.length > 0}
               className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-[16px] font-semibold text-accent-ink disabled:opacity-50"
             >
-              {pending ? "Finalising…" : checks.blocking.length > 0 ? `Finalise (${checks.blocking.length} to fix)` : "Finalise & print"}
+              {isFinalising ? "Finalising…" : checks.blocking.length > 0 ? `Finalise (${checks.blocking.length} to fix)` : "Finalise & print"}
             </button>
           )}
         </div>

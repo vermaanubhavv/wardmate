@@ -545,31 +545,84 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       "POD 0 — orals as tolerated; pain controlled; vitals stable; passed urine. POD 1 — tolerating diet; ambulant; wound clean; afebrile; [drain minimal]. Plan: discharge if drain out and afebrile. POD 2 — for discharge with advice.",
   },
 
-  // ---- 01 Gallstone disease & acute cholecystitis ----
+  // ---- 01a Acute cholecystitis (acute admission) — checked before the elective template ----
+  {
+    key: "acute_cholecystitis",
+    label: "Acute cholecystitis",
+    match: /\bcholecystitis\b|empyema[^.]*gall\s*bladder|gangrenous cholecystitis|mirizzi/i,
+    scaffold: {
+      indication:
+        "Patient was admitted with acute right upper abdominal pain, fever and ultrasound evidence of acute calculous cholecystitis, requiring inpatient management with intravenous fluids, analgesia and antibiotics [and laparoscopic cholecystectomy].",
+      primaryDiagnosis: "Acute calculous cholecystitis",
+      procedure: {
+        name: "Laparoscopic cholecystectomy [emergency / same-admission / interval]",
+        anaesthesia: "General anaesthesia",
+        findings: "[ acutely inflamed, distended, thick-walled gallbladder; pericholecystic fluid; dense adhesions; empyema / mucocele ]",
+        drains: "[ subhepatic drain ]",
+        complications: "Nil",
+        outcome: "Procedure completed successfully; gallbladder sent for histopathology.",
+      },
+      clinicalCourse:
+        "Admitted with acute calculous cholecystitis and managed initially with intravenous fluids, analgesia and intravenous antibiotics, with a good clinical response. [The patient underwent laparoscopic cholecystectomy on [date] during the same admission / settled on conservative management and is planned for an interval laparoscopic cholecystectomy in 6 weeks.] [The subhepatic drain remained non-bilious and was removed on POD __.] The patient is afebrile, ambulant and tolerating a normal diet at discharge.",
+      medications: [
+        M.paracetamol,
+        M.pantoprazole,
+        M.diclofenac,
+        { ...M.amoxClav, indication: "complete the post-operative antibiotic course" },
+      ],
+      advice: adv([
+        { module: "Wound care", text: "Keep the port-site wounds clean and dry. Sponge bath only for the first 48 hours; the dressings may then be removed and the wounds washed gently." },
+        { module: "Diet", text: "Resume a normal diet. A low-fat diet is advised for the first 2–4 weeks." },
+        { module: "Activity restrictions", text: "Avoid heavy lifting and strenuous activity for 2 weeks. Walking is encouraged from day one." },
+        { module: "Drain care", text: "[ If a drain is in situ: keep the bag below the level of the wound, record the daily output, and attend for removal as advised. ]" },
+      ]),
+      redFlags: [
+        ...RF_WOUND,
+        "Return of fever or rigors",
+        "Worsening abdominal pain, or pain in the right shoulder tip",
+        "Persistent vomiting or inability to keep food down",
+        "Yellowing of the eyes or skin, dark urine or pale stools",
+      ],
+      patientActions: [
+        "Attend the Surgery OPD after 7 days for a wound review and suture / clip removal.",
+        ANTIBIOTICS,
+        HPE,
+        "[ If managed conservatively: attend for the planned interval cholecystectomy in 6 weeks. ]",
+      ],
+      primaryCareActions: [],
+      conditionAllSatisfactory: true,
+    },
+    clerkingFocus:
+      "Onset, site and character of pain; radiation to the back or right shoulder; relation to fatty food; fever with rigors; nausea and vomiting; jaundice, pruritus, pale stools, dark urine; number and duration of previous attacks; previous USG / ERCP. Examination: temperature, Murphy's sign, a palpable tender gallbladder or mass, jaundice, guarding. Baseline: CBC with differential, CRP, LFT, amylase / lipase, USG abdomen (wall thickness, pericholecystic fluid, stone size, CBD diameter); MRCP if the CBD is dilated or the LFT is deranged; Tokyo Guidelines grade.",
+    progressNote:
+      "Each day (conservative phase) — temperature trend; pain score; TLC / CRP trend; oral intake and tolerance; abdominal examination. Post-operative — drain output [__ ml] and nature; orals; wound; afebrile. Plan: same-admission or interval cholecystectomy; discharge when afebrile and eating.",
+  },
+
+  // ---- 01b Gallstone disease / cholelithiasis (planned laparoscopic cholecystectomy) ----
   {
     key: "lap_chole",
-    label: "Gallstone disease & acute cholecystitis",
-    match: /chol(e|y)cystectom|lap\s*chole|gall\s*stone|cholelithiasis|calculous cholecystitis|choledocholithiasis|biliary colic/i,
+    label: "Gallstone disease (planned lap cholecystectomy)",
+    match: /\blap\s*chole\b|cholelithiasis|gall\s*stones?\s*disease|gall\s*stones?|chol(e|y)cystectom|choledocholithiasis|biliary colic/i,
     families: ["lap_chole"],
     scaffold: {
       indication:
-        "Patient was admitted with right upper abdominal pain and ultrasound-confirmed gallstones [with features of acute cholecystitis, if present], requiring inpatient management and laparoscopic cholecystectomy.",
-      primaryDiagnosis: "Gallstone disease [/ acute calculous cholecystitis]",
+        "Patient was admitted for an elective laparoscopic cholecystectomy for symptomatic gallstone disease [with a history of recurrent biliary colic].",
+      primaryDiagnosis: "Gallstone disease (cholelithiasis)",
       procedure: {
-        name: "Laparoscopic cholecystectomy",
+        name: "Elective laparoscopic cholecystectomy",
         anaesthesia: "General anaesthesia",
-        findings: "[ distended / thick-walled gallbladder, adhesions, Calot's triangle anatomy, stones ]",
+        findings: "[ gallbladder wall, adhesions, Calot's triangle anatomy, number of stones ]",
         drains: "[ subhepatic drain / nil ]",
         complications: "Nil",
         outcome: "Procedure completed successfully; gallbladder sent for histopathology.",
       },
       clinicalCourse:
-        "Admitted with acute calculous cholecystitis and managed initially with intravenous fluids, analgesia and antibiotics. Following optimisation, laparoscopic cholecystectomy was performed on [date]. The postoperative period was uneventful; oral intake was resumed and the patient remained haemodynamically stable. [The subhepatic drain remained non-bilious and was removed on POD __.] The patient is afebrile, ambulant and tolerating a normal diet at discharge.",
+        "The patient was admitted for an elective laparoscopic cholecystectomy for symptomatic cholelithiasis. Pre-anaesthetic assessment was completed and the patient was cleared for surgery. Laparoscopic cholecystectomy was performed on [date]; the postoperative period was uneventful, oral intake was resumed and the patient remained haemodynamically stable. [The subhepatic drain remained non-bilious and was removed on POD __.] The patient is afebrile, ambulant and tolerating a normal diet at discharge.",
       medications: [
         M.paracetamol,
         M.pantoprazole,
         M.diclofenac,
-        { ...M.amoxClav, indication: "if infective / empyema" },
+        { ...M.amoxClav, indication: "only if the gallbladder was infective / empyema" },
       ],
       advice: adv([
         { module: "Wound care", text: "Keep the port-site wounds clean and dry. Sponge bath only for the first 48 hours; the dressings may then be removed and the wounds washed gently." },
@@ -585,16 +638,15 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       patientActions: [
         "Attend the Surgery OPD after 7 days for a wound review and suture / clip removal.",
-        ANTIBIOTICS,
         HPE,
       ],
       primaryCareActions: [],
       conditionAllSatisfactory: true,
     },
     clerkingFocus:
-      "Onset, site and character of pain; radiation to back or right shoulder; relation to fatty food; nausea and vomiting; fever with rigors; jaundice, pruritus, pale stools, dark urine; previous similar episodes; previous USG / ERCP. Examination: Murphy's sign, palpable gallbladder or mass, jaundice, temperature. Baseline: LFT, amylase / lipase, CBC, USG abdomen (wall thickness, stone size, CBD diameter); MRCP if CBD dilated or LFT deranged.",
+      "Duration and pattern of biliary colic; relation to fatty food; any episodes of fever, jaundice or pancreatitis (these change the plan); previous USG confirming stones; fitness for anaesthesia and comorbidities. Examination: usually unremarkable between attacks; Murphy's sign, scars, herniae. Baseline: USG abdomen, LFT, CBC, pre-anaesthetic workup; MRCP only if the CBD is dilated or the LFT is deranged.",
     progressNote:
-      "POD 0 — nil orally / sips; drain output [__ ml], nature; pain controlled; vitals stable; urine output adequate. POD 1 — orals started and tolerated; drain [< 30 ml serous]; ambulant; port sites clean and dry; afebrile. Plan: normal diet, remove drain if minimal, plan discharge. POD 2 — normal diet tolerated; drain removed; wounds healthy; pain minimal. For discharge with advice.",
+      "POD 0 — nil orally / sips; drain output [__ ml], nature; pain controlled; vitals stable; passed urine. POD 1 — orals started and tolerated; drain [< 30 ml serous]; ambulant; port sites clean and dry; afebrile. Plan: normal diet, remove drain if minimal, plan discharge. POD 2 — normal diet tolerated; drain removed; wounds healthy. For discharge with advice.",
   },
 
   // ---- 10 Benign anorectal disease ----
@@ -714,20 +766,24 @@ export function getDischargeTemplate(key: string | null | undefined): DischargeT
 }
 
 /** The template the typed procedure / diagnosis / care-template family points at, or null.
- *  First match wins, so the array is ordered specific-before-general. */
+ *
+ * The DIAGNOSIS wording is tried first — it is the most specific signal, and it is what tells
+ * "acute cholecystitis" apart from planned "gallstone disease" when both would share the
+ * lap_chole care-template family. The family is only a fallback for a vague diagnosis.
+ * First match wins, so the array is ordered specific-before-general. */
 export function matchDischargeTemplate(input: {
   procedureText?: string | null;
   diagnosisText?: string | null;
   templateFamily?: string | null;
 }): DischargeTemplate | null {
-  if (input.templateFamily) {
-    const byFamily = DISCHARGE_TEMPLATES.find((t) => t.families?.includes(input.templateFamily!));
-    if (byFamily) return byFamily;
-  }
   const haystack = `${input.procedureText ?? ""} ${input.diagnosisText ?? ""}`.trim();
   if (haystack) {
     const byText = DISCHARGE_TEMPLATES.find((t) => t.match.test(haystack));
     if (byText) return byText;
+  }
+  if (input.templateFamily) {
+    const byFamily = DISCHARGE_TEMPLATES.find((t) => t.families?.includes(input.templateFamily!));
+    if (byFamily) return byFamily;
   }
   return null;
 }

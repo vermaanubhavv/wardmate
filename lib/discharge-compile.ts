@@ -180,7 +180,11 @@ function compileHistopathology(context: DischargeContext): HistopathologySpecime
   const out: HistopathologySpecimen[] = [];
   let i = 0;
   for (const o of context.observations) {
-    if (!PATHOLOGY_LABEL.test(`${o.label} ${o.value_text ?? ""}`)) continue;
+    // Match on the LABEL only. An operative note whose text says "specimen retrieved through
+    // the epigastric port" is not a histopathology record, and neither is a procedure_done
+    // observation — matching the value text pulled both in as fake specimens.
+    if (!PATHOLOGY_LABEL.test(o.label)) continue;
+    if (o.kind === "procedure_done" || OPERATIVE_LABEL.test(o.label) || POST_OP_LABEL.test(o.label)) continue;
     const result = (o.value_text ?? "").trim() || null;
     // A line that reads like an actual histopathology report is "final"; a bare "HPE sent" is
     // "pending". The resident sets the truth — this is only the starting point.

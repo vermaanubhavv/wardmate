@@ -2,8 +2,8 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { updatePatientIdentity, type EditPatientState } from "./actions";
+import DiagnosisCombobox from "./diagnosis-combobox";
 import {
-  COMMON_DIAGNOSES,
   LOCATION_CHOICES,
   MANAGEMENT_CHOICES,
   stripPatientHonorific,
@@ -219,18 +219,11 @@ export default function EditIdentity({
 
           <label className="flex flex-col gap-2">
             <span className="text-[15px] text-muted">Diagnosis</span>
-            <input
+            <DiagnosisCombobox
               name="primary_diagnosis"
-              list="diagnosis-suggestions"
               defaultValue={patient.primary_diagnosis ?? ""}
-              autoCapitalize="sentences"
               className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
             />
-            <datalist id="diagnosis-suggestions">
-              {COMMON_DIAGNOSES.map((d) => (
-                <option key={d} value={d} />
-              ))}
-            </datalist>
           </label>
 
           {/* Management follows the diagnosis and decides what else is worth asking, the same

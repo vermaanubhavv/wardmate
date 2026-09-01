@@ -123,8 +123,11 @@ ok("'carcinoma rectum' matches colorectal, not anorectal", matchDischargeTemplat
 ok("'fistula in ano' matches the anorectal template", matchDischargeTemplate({ diagnosisText: "fistula in ano" })?.key === "perianal");
 ok("'perforation peritonitis' matches the perforation template", matchDischargeTemplate({ diagnosisText: "perforation peritonitis" })?.key === "perforation");
 ok("'MRM for carcinoma breast' matches the breast template", matchDischargeTemplate({ procedureText: "MRM", diagnosisText: "carcinoma breast" })?.key === "breast_ca");
+ok("'acute calculous cholecystitis' matches the ACUTE cholecystitis template", matchDischargeTemplate({ diagnosisText: "acute calculous cholecystitis" })?.key === "acute_cholecystitis");
+ok("'cholelithiasis' / 'gallstone disease' matches the PLANNED lap chole template", matchDischargeTemplate({ diagnosisText: "gallstone disease" })?.key === "lap_chole" && matchDischargeTemplate({ diagnosisText: "cholelithiasis" })?.key === "lap_chole");
+ok("the diagnosis wording beats the care-template family (acute vs planned)", matchDischargeTemplate({ diagnosisText: "acute cholecystitis", templateFamily: "lap_chole" })?.key === "acute_cholecystitis");
 ok("an unrecognised diagnosis matches nothing (caller falls back to generic)", matchDischargeTemplate({ diagnosisText: "thyroid nodule" }) === null);
-ok("all ten templates plus generic are listed for the picker", listDischargeTemplates().length === 11);
+ok("all templates plus generic are listed for the picker", listDischargeTemplates().length === 12);
 
 const oneOffCtx = { ...context, patient: { ...context.patient, id: "", primary_diagnosis: null, procedure_text: "laparoscopic cholecystectomy", surgery_date: null, template_family: null }, observations: [], medications: [], patientState: { ...context.patientState, latest: [], openTasks: [] } };
 const seeded = compileDischargeDraft(oneOffCtx, { template: getDischargeTemplate("lap_chole"), seedAll: true });
