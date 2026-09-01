@@ -138,6 +138,10 @@ ok("template seeds the standard discharge medications", seeded.medications.some(
 ok("template seeds red flags and turns the section on for a one-off", seeded.redFlags.included && seeded.redFlags.items.length > 0);
 ok("template seeds standard patient actions", seeded.patientActions.some((a) => /OPD/i.test(a)));
 ok("template seeds condition as all-satisfactory", CONDITION_VARIABLES.every((v) => seeded.conditionAtDischarge.vars[v.key] === true));
+ok("histopathology is auto-derived from the operation, pending, with a review plan", seeded.histopathology[0]?.specimen === "Gallbladder" && seeded.histopathology[0]?.status === "pending" && /review/i.test(seeded.histopathology[0]?.reviewPlan ?? ""));
+
+const herniaSeed = compileDischargeDraft({ ...oneOffCtx, patient: { ...oneOffCtx.patient, procedure_text: "left inguinal hernioplasty (mesh repair)" }, procedure: "left inguinal hernioplasty (mesh repair)" }, { template: getDischargeTemplate("hernia"), seedAll: true });
+ok("a hernia repair seeds NO histopathology row (nothing routinely sent)", herniaSeed.histopathology.length === 0);
 
 // A WARD patient (seedAll = false): the record still drives everything; the template only
 // OFFERS its advice + red-flag cards, switched off.

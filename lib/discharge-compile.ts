@@ -63,6 +63,63 @@ const istDay = (iso: string | null): string | null =>
 /** yyyy-mm-dd from an ISO instant or date, for a date input. */
 const isoDate = (v: string | null): string | null => (v ? v.slice(0, 10) : null);
 
+/** The point of the Histopathology card for a resident is that the report gets TRACED — what
+ *  specimen was sent is secondary. So a compiled row always carries this line. */
+export const HPE_REVIEW_PLAN = "Review the histopathology report at the Surgery OPD follow-up.";
+
+/**
+ * The specimen an operation sends for histopathology, from its name — the same fixed-table
+ * approach as lib/diagnosis-from-procedure.ts. Returns "none" for operations that routinely
+ * send nothing, or null when the operation is not recognised (the caller then seeds a generic
+ * "operative specimen" reminder rather than nothing).
+ */
+const SPECIMEN_RULES: { match: RegExp; specimen: string | "none" }[] = [
+  { match: /chol(e|y)cystectom/i, specimen: "Gallbladder" },
+  { match: /appendic(ectom)/i, specimen: "Appendix" },
+  { match: /modified radical mastectom|\bmrm\b|simple mastectom|\bmastectom/i, specimen: "Breast and axillary contents" },
+  { match: /breast conservation|\bbcs\b|wide local excision|lumpectom/i, specimen: "Wide local excision specimen and sentinel / axillary node(s)" },
+  { match: /hemicolectom|colectom|anterior resection|abdominoperineal|\bapr\b|hartmann|sigmoidectom/i, specimen: "Colorectal resection specimen with regional lymph nodes" },
+  { match: /gastrectom/i, specimen: "Gastrectomy specimen with regional lymph nodes" },
+  { match: /thyroidectom|hemithyroidectom|thyroid lobectom/i, specimen: "Thyroid specimen" },
+  { match: /h(a)?emorrhoidectom/i, specimen: "Haemorrhoidal tissue" },
+  { match: /fistulectom|fistulotom/i, specimen: "Fistula tract" },
+  { match: /pilonidal/i, specimen: "Pilonidal sinus tissue" },
+  { match: /resection anastomosis|bowel resection|small bowel resection|ileal resection|resection[- ]anastomosis/i, specimen: "Resected bowel segment" },
+  { match: /graham patch|omentopexy|duodenal perforation|peptic perforation/i, specimen: "Biopsy from the ulcer edge" },
+  { match: /excision biopsy|wedge biopsy|incision(al)? biopsy|tru-?cut|excision of (a )?(lipoma|sebaceous cyst|cyst|swelling|lump|lesion|sinus|ulcer|mass)|(lipoma|sebaceous cyst|swelling|lump|nodule) excision/i, specimen: "Excised specimen" },
+  // Routinely sends nothing.
+  { match: /hernio(plasty|rrhaphy)|mesh repair|\bhernia\b/i, specimen: "none" },
+  { match: /incision and drainage|\bi\s*&?\s*d\b|drainage of (an? )?abscess/i, specimen: "none" },
+  { match: /sphincterotom/i, specimen: "none" },
+  { match: /varicose vein|\bevlt\b|vein stripping|sclerotherapy/i, specimen: "none" },
+  { match: /hydrocelectom|eversion of (the )?sac|jaboulay|lord'?s (plication|procedure)/i, specimen: "none" },
+];
+
+export function specimenForProcedure(name: string | null | undefined): string | "none" | null {
+  const n = (name ?? "").trim();
+  if (!n) return null;
+  return SPECIMEN_RULES.find((r) => r.match.test(n))?.specimen ?? null;
+}
+
+/** A histopathology row for the specimen an operation sends — pending, with the review plan
+ *  that makes it get traced. Returns null when the operation routinely sends nothing. */
+export function pendingHistopathologyFor(
+  procedureName: string | null | undefined,
+  surgeryDate: string | null
+): HistopathologySpecimen | null {
+  const s = specimenForProcedure(procedureName);
+  if (s === "none") return null;
+  return {
+    id: "hpe-op",
+    specimen: s ?? "Operative specimen",
+    dateSent: isoDate(surgeryDate),
+    status: "pending",
+    result: null,
+    reviewPlan: HPE_REVIEW_PLAN,
+    source: "compiled",
+  };
+}
+
 function latestByKinds(observations: Observation[], kinds: string[]): Observation[] {
   const seen = new Set<string>();
   const out: Observation[] = [];
@@ -195,10 +252,24 @@ function compileHistopathology(context: DischargeContext): HistopathologySpecime
       dateSent: isoDate(o.recorded_at),
       status: looksReported ? "final" : "pending",
       result: looksReported ? result : null,
-      reviewPlan: null,
+      reviewPlan: looksReported ? null : HPE_REVIEW_PLAN,
       source: "compiled",
     });
   }
+
+  // Nothing on the record yet — but an operation was done. The specimen it sends is pending,
+  // and the point of the row is that the report gets traced.
+  if (out.length === 0) {
+    const procedureName =
+      context.procedure ??
+      context.observations.find((o) => o.kind === "procedure_done")?.value_text ??
+      null;
+    if (procedureName) {
+      const row = pendingHistopathologyFor(procedureName, context.patient.surgery_date);
+      if (row) out.push(row);
+    }
+  }
+
   return out;
 }
 
@@ -378,6 +449,13 @@ export function applyDischargeTemplate(
   }
   if (draft.patientActions.length === 0) next.patientActions = [...s.patientActions];
   if (draft.primaryCareActions.length === 0) next.primaryCareActions = [...s.primaryCareActions];
+
+  // The specimen the operation sends, pending, with the line that makes the report get traced —
+  // now that the procedure name is resolved.
+  if (next.histopathology.length === 0) {
+    const row = pendingHistopathologyFor(next.procedures[0]?.name, next.procedures[0]?.date ?? null);
+    if (row) next.histopathology = [row];
+  }
 
   const noVarSet = CONDITION_VARIABLES.every((v) => draft.conditionAtDischarge.vars[v.key] === null);
   if (s.conditionAllSatisfactory && noVarSet) {
