@@ -74,6 +74,12 @@ export async function middleware(request: NextRequest) {
   // it to /login would turn a successful sign-in into a loop back to the sign-in screen.
   if (path.startsWith("/auth/callback")) return NextResponse.next({ request });
 
+  // The public waitlist (linked from the Instagram bio) and its form endpoint. Visitors here
+  // have no session and must not be bounced to /login.
+  if (path.startsWith("/waitlist") || path.startsWith("/api/waitlist")) {
+    return NextResponse.next({ request });
+  }
+
   const isLoginPage = path.startsWith("/login");
   const cookie = readAuthCookie(request);
 
