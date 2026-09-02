@@ -17,6 +17,38 @@
   animation: rise 0.4s ease-out both;
 }
 
+/* Steps slide in the direction of travel — forward from the right, Back from the left — so
+   the three-step form reads as one moving surface rather than three separate screens. */
+@keyframes slideForward {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideBack {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.stepForward {
+  animation: slideForward 0.32s ease-out both;
+}
+
+.stepBack {
+  animation: slideBack 0.32s ease-out both;
+}
+
 @keyframes draw {
   to {
     stroke-dashoffset: 0;
@@ -32,7 +64,9 @@
 /* A resident who has asked their phone to stop moving things loses nothing by it — the step
    still appears, the tick is still drawn, neither just sweeps in. */
 @media (prefers-reduced-motion: reduce) {
-  .rise {
+  .rise,
+  .stepForward,
+  .stepBack {
     animation: none;
   }
 
