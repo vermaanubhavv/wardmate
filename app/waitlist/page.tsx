@@ -130,10 +130,6 @@ export default function WaitlistPage() {
           <p className="ios-row px-4 py-3.5 text-[15px]">
             You&rsquo;ll get an invite link — not a waitlist-forever email.
           </p>
-          <p className="ios-row px-4 py-3.5 text-[15px]">
-            Bringing your firm along? Just reply to that email and we&rsquo;ll set
-            your unit up together.
-          </p>
         </div>
 
         <p
