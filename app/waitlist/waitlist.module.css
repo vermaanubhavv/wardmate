@@ -1,0 +1,43 @@
+/* Motion for the waitlist sign-up only. It is a marketing page reached from an Instagram bio,
+   not the round itself, so it is allowed a little more movement than the app it leads into.
+   Scoped to this route as a CSS module so nothing here touches the app's global sheet. */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rise {
+  animation: rise 0.4s ease-out both;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.check {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: draw 0.45s ease-out 0.12s forwards;
+}
+
+/* A resident who has asked their phone to stop moving things loses nothing by it — the step
+   still appears, the tick is still drawn, neither just sweeps in. */
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
+
+  .check {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+}
