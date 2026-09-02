@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { caseHistorySectionOf } from "@/lib/case-history";
+import DictationOverlay from "./dictation-overlay";
 import type { Observation } from "@/lib/patient-state";
 import type { WardRanges } from "@/lib/exam-summary";
 import { CaseHistoryCard } from "../case-history-card";
@@ -280,8 +281,11 @@ export default function CaseHistoryWorkspace({
   rangeEntries: [string, { low: number | null; high: number | null; text: string | null }][];
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const liveDictationOn = process.env.NEXT_PUBLIC_LIVE_DICTATION === "1";
   const [pending, startTransition] = useTransition();
   const [step, setStep] = useState(0);
+  const [dictating, setDictating] = useState(() => liveDictationOn && searchParams.get("dictate") === "1");
   const [menuOpen, setMenuOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [dirty, setDirty] = useState<Set<StepId>>(new Set());
@@ -874,8 +878,52 @@ export default function CaseHistoryWorkspace({
 
   const pct = Math.round(((step + 1) / STEPS.length) * 100);
 
+  const dictationFilled: Record<string, boolean> = {
+    complaints: complaints.length > 0,
+    hopi: Object.values(hopi).some((t) => (t ?? "").trim()),
+    past: past.mode !== "unset",
+    family: family.mode !== "unset",
+    medication: medication.none || medication.text.trim().length > 0,
+    surgical: surgical.mode !== "unset",
+    obstetric: obstetric.trim().length > 0,
+    examination: PICCLE_SIGNS.some((s) => piccle[s.label].state !== "unset") || VITALS.some((v) => (vitals[v.key] ?? "").trim()),
+    abdomen: abdomen.trim().length > 0,
+    chest: chest.trim().length > 0,
+    local: local.trim().length > 0,
+    diagnosis: diagnosis.text.trim().length > 0,
+    plan: plan.items.length > 0,
+  };
+
   return (
     <div className="flex flex-col gap-3 px-4 pb-40">
+      {dictating && (
+        <DictationOverlay
+          patientId={patientId}
+          initialFilled={dictationFilled}
+          initialComplaints={complaints}
+          onClose={() => {
+            setDictating(false);
+            router.refresh();
+          }}
+        />
+      )}
+
+      {liveDictationOn && !dictating && (
+        <button
+          type="button"
+          onClick={() => setDictating(true)}
+          className="ios-group flex items-center justify-between gap-3 px-4 py-3.5 text-left active:bg-chip"
+        >
+          <span>
+            <span className="block text-[15px] font-semibold text-accent">Dictate the whole clerking</span>
+            <span className="block text-[13px] text-muted">
+              Speak in any order — each part is sorted into its card as you go.
+            </span>
+          </span>
+          <span aria-hidden className="text-xl">🎤</span>
+        </button>
+      )}
+
       <div className="ios-group overflow-hidden">
         <div className="px-4 pt-4 pb-3">
           <p className="text-[11.5px] font-semibold uppercase tracking-[0.03em] text-muted">

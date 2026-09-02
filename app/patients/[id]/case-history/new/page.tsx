@@ -92,6 +92,20 @@ export default async function NewCaseHistoryPage({
           </p>
         </Link>
 
+        {/* Route 3 — dictate the whole thing, sorted into cards live. */}
+        {process.env.NEXT_PUBLIC_LIVE_DICTATION === "1" && (
+          <Link
+            href={`/patients/${id}/case-history?dictate=1`}
+            className="ios-group mt-4 block px-4 py-4 active:bg-chip"
+          >
+            <p className="text-[15px] font-semibold text-accent">Dictate the whole clerking</p>
+            <p className="mt-1 text-[13px] leading-relaxed text-muted">
+              Speak it in any order — complaints, examination, past history — and each part is
+              transcribed and sorted into its card as you go.
+            </p>
+          </Link>
+        )}
+
         <Link
           href={`/patients/${id}`}
           className="mt-5 block rounded-[10px] border border-line px-4 py-3 text-center text-[15px] text-muted"

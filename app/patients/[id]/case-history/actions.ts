@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { HISTORY_SECTION_LABEL, EXAM_SECTION_LABEL } from "@/lib/case-history-sections";
 
 /**
  * Writes from the case-history review workspace.
@@ -242,6 +243,98 @@ export async function applyCompiledCaseHistory(
 
   revalidateEverywhere(patientId);
   return { ok: true };
+}
+
+/**
+ * Append live-dictation segments to the case history.
+ *
+ * The "dictate the whole clerking" overlay sends these as the resident speaks — each segment
+ * is a span of transcript already sorted into a section by lib/case-history-routing.ts. This
+ * only APPENDS; it never rewrites a card the resident has touched. A card is still not final
+ * until the resident reviews it and the workspace saves it.
+ *
+ * `examination`, `diagnosis` and `plan` segments are deliberately NOT written here — they need
+ * the resident to place them (general exam is structured toggles; diagnosis and plan go
+ * through the AI-proposal-and-approve flow). The overlay shows those for review instead.
+ */
+type DictationSegment = { section: string; complaint?: string | null; text: string };
+
+export async function appendCaseHistoryDictation(
+  patientId: string,
+  segments: DictationSegment[]
+): Promise<{ ok: boolean; error?: string; written: number }> {
+  const supabase = await createClient();
+  const user = await currentUser(supabase);
+  if (!user) return { ok: false, error: "Not signed in.", written: 0 };
+
+  const clean = segments
+    .map((s) => ({ section: s.section, complaint: (s.complaint ?? "").trim(), text: s.text.trim() }))
+    .filter((s) => s.text);
+  if (clean.length === 0) return { ok: true, written: 0 };
+
+  const entryId = await manualEntryId(supabase, patientId, user.id);
+  if (!entryId) return { ok: false, error: "Could not open the case history.", written: 0 };
+  const now = new Date().toISOString();
+  const stamp = { needs_confirmation: false, confirmed_at: now, confirmed_by: user.id };
+
+  const rows: Record<string, unknown>[] = [];
+
+  // History sections and HOPI: one appended row per segment — the workspace joins multiple
+  // rows for a section on the way back in, so nothing is lost.
+  for (const s of clean) {
+    if (s.section === "hopi") {
+      const value = `${s.complaint || "Presenting illness"}: ${s.text}`;
+      rows.push({ entry_id: entryId, patient_id: patientId, kind: "note", label: "history of presenting illness", value_text: value, source_quote: value, ...stamp });
+    } else if (HISTORY_SECTION_LABEL[s.section]) {
+      const label = HISTORY_SECTION_LABEL[s.section];
+      rows.push({ entry_id: entryId, patient_id: patientId, kind: "note", label, value_text: s.text, source_quote: s.text, ...stamp });
+    }
+  }
+
+  if (rows.length > 0) {
+    const { error } = await supabase.from("observations").insert(rows);
+    if (error) return { ok: false, error: error.message, written: 0 };
+  }
+
+  // The three free-text examination cards show one value each (the workspace reads the first
+  // observation for the label), so those are read-modify-write: append to what is there.
+  const examSections = Array.from(new Set(clean.filter((s) => EXAM_SECTION_LABEL[s.section]).map((s) => s.section)));
+  if (examSections.length > 0) {
+    const entryIds = await caseHistoryEntryIds(supabase, patientId);
+    for (const section of examSections) {
+      const label = EXAM_SECTION_LABEL[section];
+      const addition = clean.filter((s) => s.section === section).map((s) => s.text).join("; ");
+      let existing: { id: string; value_text: string | null } | null = null;
+      if (entryIds.length > 0) {
+        const { data } = await supabase
+          .from("observations")
+          .select("id, value_text")
+          .eq("patient_id", patientId)
+          .in("entry_id", entryIds)
+          .ilike("label", label)
+          .order("recorded_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        existing = (data as { id: string; value_text: string | null } | null) ?? null;
+      }
+      if (existing) {
+        const merged = [existing.value_text?.trim(), addition].filter(Boolean).join("; ");
+        const { error } = await supabase
+          .from("observations")
+          .update({ value_text: merged, source_quote: merged })
+          .eq("id", existing.id);
+        if (error) return { ok: false, error: error.message, written: 0 };
+      } else {
+        const { error } = await supabase
+          .from("observations")
+          .insert({ entry_id: entryId, patient_id: patientId, kind: "exam", label, value_text: addition, source_quote: addition, ...stamp });
+        if (error) return { ok: false, error: error.message, written: 0 };
+      }
+    }
+  }
+
+  revalidateEverywhere(patientId);
+  return { ok: true, written: rows.length + examSections.length };
 }
 
 /** Approve the AI-proposed provisional diagnosis — writes it to the patient record. */
