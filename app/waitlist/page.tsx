@@ -11,7 +11,7 @@ import WaitlistForm from "./waitlist-form";
  */
 
 const DESCRIPTION =
-  "WardMate turns a spoken surgical ward round into the unit's paperwork — the jobs list, the handover, the discharge summaries. Built for residents in India.";
+  "WardMate turns a spoken ward round into the unit's paperwork — the jobs list, the handover, the discharge summaries. Built for residents in India.";
 
 export const metadata: Metadata = {
   title: "Join the waitlist — WardMate",
@@ -83,7 +83,7 @@ export default function WaitlistPage() {
       </section>
 
       <footer className="border-t border-line pt-6 text-center text-[13px] text-muted">
-        WardMate — built for general-surgery residents in India.
+        WardMate — built for residents in India.
       </footer>
     </main>
   );
