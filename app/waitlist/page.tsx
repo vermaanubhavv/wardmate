@@ -17,7 +17,59 @@ import styles from "./waitlist.module.css";
  */
 
 const YEARS = ["Intern", "PG1", "PG2", "PG3", "Senior Resident", "Other"];
+
+// The NMC broad-specialty list, alphabetical, so the picker is a choice rather than a
+// spelling test. "Other" is the escape hatch and the only path that asks for typing.
+const DEPARTMENTS = [
+  "Anaesthesiology",
+  "Anatomy",
+  "Biochemistry",
+  "Cardiology",
+  "Cardiothoracic & Vascular Surgery",
+  "Community Medicine",
+  "Dermatology, Venereology & Leprosy",
+  "Emergency Medicine",
+  "Endocrinology",
+  "ENT (Otorhinolaryngology)",
+  "Family Medicine",
+  "Forensic Medicine",
+  "Gastroenterology",
+  "General Medicine",
+  "General Surgery",
+  "Geriatric Medicine",
+  "Haematology",
+  "Immunohaematology & Blood Transfusion",
+  "Medical Oncology",
+  "Microbiology",
+  "Nephrology",
+  "Neurology",
+  "Neurosurgery",
+  "Nuclear Medicine",
+  "Obstetrics & Gynaecology",
+  "Ophthalmology",
+  "Orthopaedics",
+  "Paediatrics",
+  "Paediatric Surgery",
+  "Pathology",
+  "Pharmacology",
+  "Physical Medicine & Rehabilitation",
+  "Physiology",
+  "Plastic & Reconstructive Surgery",
+  "Psychiatry",
+  "Pulmonary / Respiratory Medicine",
+  "Radiodiagnosis",
+  "Radiation Oncology",
+  "Rheumatology",
+  "Surgical Oncology",
+  "Urology",
+  "Other",
+];
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Most residents sign up with a personal Gmail, so the address is split into a username box
+// and a domain box that starts on "gmail.com". Someone on a different provider just edits the
+// right-hand box; either way the whole step is one Back tap away.
+const EMAIL_DOMAIN_DEFAULT = "gmail.com";
 const STEPS = 3;
 
 const FIELD_LABEL = "text-[13px] font-medium uppercase tracking-wide text-muted";
@@ -26,22 +78,28 @@ const INPUT =
 
 export default function WaitlistPage() {
   const [step, setStep] = useState(0);
-  const [email, setEmail] = useState("");
+  const [emailUser, setEmailUser] = useState("");
+  const [emailDomain, setEmailDomain] = useState(EMAIL_DOMAIN_DEFAULT);
   const [emailTouched, setEmailTouched] = useState(false);
   const [name, setName] = useState("");
   const [college, setCollege] = useState("");
   const [department, setDepartment] = useState("");
+  const [departmentOther, setDepartmentOther] = useState("");
   const [year, setYear] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  const emailValid = EMAIL_RE.test(email.trim());
+  const resolvedDepartment =
+    department === "Other" ? departmentOther.trim() : department;
+
+  const email = `${emailUser.trim()}@${emailDomain.trim()}`;
+  const emailValid = emailUser.trim().length > 0 && EMAIL_RE.test(email);
   const stepValid =
     step === 0
       ? emailValid
       : step === 1
-        ? college.trim().length > 0 && department.trim().length > 0
+        ? college.trim().length > 0 && resolvedDepartment.length > 0
         : year.length > 0;
 
   function back() {
@@ -60,7 +118,7 @@ export default function WaitlistPage() {
           email,
           name,
           college,
-          department,
+          department: resolvedDepartment,
           year_of_residency: year,
         }),
       });
@@ -192,38 +250,54 @@ export default function WaitlistPage() {
               />
               <label className="flex flex-col gap-2">
                 <span className={FIELD_LABEL}>Email</span>
-                <span style={{ position: "relative", display: "block" }}>
+                <span className="flex items-stretch gap-2">
                   <input
-                    type="email"
+                    type="text"
                     required
                     autoFocus
                     inputMode="email"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    autoComplete="username"
+                    aria-label="Email username"
+                    value={emailUser}
+                    onChange={(e) =>
+                      setEmailUser(e.target.value.replace(/\s/g, ""))
+                    }
                     onBlur={() => setEmailTouched(true)}
-                    placeholder="you@hospital.in"
-                    className={INPUT}
-                    style={{ paddingRight: "2.75rem" }}
+                    placeholder="you"
+                    className="ios-group min-w-0 flex-1 px-4 py-4 text-base outline-none transition-shadow focus:ring-2 focus:ring-accent"
                   />
-                  {emailValid && (
-                    <Check
-                      className="text-accent"
-                      style={{
-                        position: "absolute",
-                        right: "0.875rem",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        width: "1.25rem",
-                        height: "1.25rem",
-                        pointerEvents: "none",
-                      }}
-                    />
-                  )}
+                  <span className="flex items-center text-base text-muted">
+                    @
+                  </span>
+                  <input
+                    type="text"
+                    required
+                    inputMode="email"
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    aria-label="Email provider"
+                    value={emailDomain}
+                    onChange={(e) =>
+                      setEmailDomain(e.target.value.replace(/\s/g, ""))
+                    }
+                    onBlur={() => setEmailTouched(true)}
+                    placeholder="gmail.com"
+                    className="ios-group px-3 py-4 text-base outline-none transition-shadow focus:ring-2 focus:ring-accent"
+                    style={{ width: "9rem" }}
+                  />
                 </span>
-                {emailTouched && email.length > 0 && !emailValid && (
+                {emailTouched && emailUser.length > 0 && !emailValid ? (
                   <span className="text-[13px] text-orange-700">
                     That doesn’t look like an email address.
+                  </span>
+                ) : (
+                  <span className="text-[13px] text-muted">
+                    Defaults to <span className="text-foreground">gmail.com</span>{" "}
+                    — edit the right-hand box if yours is different.
                   </span>
                 )}
               </label>
@@ -264,15 +338,39 @@ export default function WaitlistPage() {
               </label>
               <label className="flex flex-col gap-2">
                 <span className={FIELD_LABEL}>Department</span>
-                <input
-                  type="text"
+                <select
                   required
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
-                  placeholder="e.g. General Surgery"
                   className={INPUT}
-                />
+                  style={{
+                    color: department ? "var(--foreground)" : "var(--muted)",
+                  }}
+                >
+                  <option value="" disabled>
+                    Select your department
+                  </option>
+                  {DEPARTMENTS.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
               </label>
+              {department === "Other" && (
+                <label className="flex flex-col gap-2">
+                  <span className={FIELD_LABEL}>Which department?</span>
+                  <input
+                    type="text"
+                    required
+                    autoFocus
+                    value={departmentOther}
+                    onChange={(e) => setDepartmentOther(e.target.value)}
+                    placeholder="Type your department"
+                    className={INPUT}
+                  />
+                </label>
+              )}
             </>
           )}
 
@@ -332,29 +430,5 @@ function StepHead({ title, hint }: { title: string; hint: string }) {
       <h2 className="text-[20px] font-semibold tracking-tight">{title}</h2>
       <p className="text-[14px] text-muted">{hint}</p>
     </div>
-  );
-}
-
-function Check({
-  className,
-  style,
-}: {
-  className?: string;
-  style?: React.CSSProperties;
-}) {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      style={style}
-      aria-hidden
-    >
-      <path d="M4 10.5 l4 4 l8 -9" />
-    </svg>
   );
 }
