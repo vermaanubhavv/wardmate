@@ -174,7 +174,8 @@ Absolute rules:
 4. Expand ward shorthand where it is unambiguous — "RIF" to "right iliac fossa", "K/C/O" to "known case of", "H/O" to "history of" — but keep abbreviations a clinician expects to read (BP, PR, USG).
 5. Third person, past tense. One tight paragraph per section — history of presenting illness may run to a few sentences, the rest are usually one or two.
 6. Return one entry per section that actually has content. Omit a section entirely if there is nothing for it. Allowed section labels, exactly: "chief complaints", "history of presenting illness", "past history", "family history", "medication history", "surgical history", "menstrual and obstetric history".
-7. For "chief complaints" keep it to the complaints with their duration, e.g. "Pain in the right iliac fossa for 2 days, vomiting for 1 day."
+7. For "chief complaints" keep it to the complaints with their duration, and lead each complaint WITH its duration, longest-standing complaint first, e.g. "3 days - pain in the right iliac fossa, 1 day - vomiting". Do not reorder if the notes give no durations.
+8. For "history of presenting illness" open with the duration of the principal complaint before describing it, e.g. "The patient presented with a 3-day history of pain in the right iliac fossa..." or "She was apparently well 3 days ago, when she developed...". Only use a duration the notes actually give.
 
 Return JSON: { "sections": [ { "label": string, "text": string } ], "uncertain_points": string[] }.`;
 

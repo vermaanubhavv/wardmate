@@ -138,7 +138,7 @@ Absolute rules:
 3. Distinguish documented fact from your own inference. If you must infer to keep the narrative coherent, keep the inference cautious and put anything you are unsure about in uncertain_points instead of asserting it.
 4. If the digest contradicts itself (a drain described as removed and also in situ; two different operation dates; a medication both stopped and continued), do NOT pick one. State both in uncertain_points and leave the course itself non-committal on that point.
 5. Expand no unexplained abbreviations — write "laparoscopic cholecystectomy", not "lap chole"; "nasogastric tube", not "RT". If you cannot expand one safely, keep the digest's exact wording.
-6. Be concise and clinically meaningful. One paragraph, roughly 4–7 sentences. Do NOT reproduce every ward-round note. Cover, in order: initial presentation/diagnosis, important initial management, the major intervention or operation, significant post-operative or inpatient events, relevant recovery milestones, and the clinical condition immediately before discharge.
+6. Be concise and clinically meaningful. One paragraph, roughly 4–7 sentences. Do NOT reproduce every ward-round note. Cover, in order: initial presentation/diagnosis, important initial management, the major intervention or operation, significant post-operative or inpatient events, relevant recovery milestones, and the clinical condition immediately before discharge. When you state the presenting complaint, lead with its duration ("a 3-day history of pain in the right iliac fossa"), using only a duration the digest gives.
 7. Maintain chronological coherence. Use the dates in the digest; do not invent one.
 8. Plain professional prose, third person, past tense ("The patient was admitted with…"). No bullet points, no headings.
 
@@ -189,12 +189,13 @@ const INDICATION_SYSTEM = `You write the INDICATION FOR ADMISSION line of a gene
 
 It states briefly WHY inpatient admission was required. It must NOT simply repeat the final diagnosis.
 
-Preferred form: "Patient admitted with [presentation / clinical problem] requiring [inpatient management / investigation / intervention / surgery]."
+Preferred form: "Patient admitted with a [duration] history of [presentation / clinical problem] requiring [inpatient management / investigation / intervention / surgery]."
 
 Rules:
 1. Use only what the digest contains — presenting complaints, the admission examination, the admitting diagnosis, the initial plan. Never invent a symptom, a sign or a duration.
-2. One or two sentences. No abbreviations that are not expanded.
-3. If the digest holds nothing about the presentation (only a bare diagnosis), say so by returning an empty string rather than padding it.
+2. When the digest gives a duration for the presenting complaint, lead with it ("a 3-day history of..."). Omit the duration only when the digest does not state one.
+3. One or two sentences. No abbreviations that are not expanded.
+4. If the digest holds nothing about the presentation (only a bare diagnosis), say so by returning an empty string rather than padding it.
 
 Return JSON: { "indication": string }.`;
 
