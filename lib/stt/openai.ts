@@ -1,4 +1,4 @@
-import type { SttProvider, Transcription } from "./types";
+import type { SttProvider, Transcription, TranscribeOptions } from "./types";
 
 /**
  * OpenAI's gpt-4o-transcribe. Chosen to start with because it handles Indian-accented
@@ -11,7 +11,14 @@ export class OpenAITranscriber implements SttProvider {
 
   constructor(private readonly apiKey: string) {}
 
-  async transcribe(audio: Blob, hint: string): Promise<Transcription> {
+  async transcribe(
+    audio: Blob,
+    hint: string,
+    options?: TranscribeOptions
+  ): Promise<Transcription> {
+    // gpt-4o-transcribe takes the prose hint, not a keyterm list — the selected keyterms are
+    // for Nova-3. Nothing to do with them here.
+    void options;
     const form = new FormData();
     // The extension matters: the engine picks its decoder from the filename.
     form.append("file", audio, fileNameFor(audio.type));

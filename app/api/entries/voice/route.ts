@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
 import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
+import { getPatientDictationKeyterms } from "@/lib/transcription/patient-context";
 import { extractObservations } from "@/lib/extract";
 import { correctTranscript } from "@/lib/glossary";
 import { getTemplateForPatient } from "@/lib/templates";
@@ -50,12 +51,19 @@ export async function POST(request: Request) {
   // lap chole, "PAS" for PAC. Corrected BEFORE extraction, so a template matches the operation
   // it was meant to and the quote check still holds against the words actually stored. The raw
   // hearing goes into original_transcript below and is never thrown away.
+  // Pick the ~20–50 Deepgram keyterms for THIS patient — their diagnoses, operation, drains
+  // and drugs first — before the session opens. Falls back to the static ward list ([] here)
+  // if anything about the patient cannot be read; the keyterm layer never blocks dictation.
+  const keyterms = await getPatientDictationKeyterms(supabase, patientId);
+
   let transcript: string;
   let heard: string;
   let stt;
   try {
     stt = getTranscriber();
-    const result = await stt.transcribe(audio, MEDICAL_VOCABULARY_HINT);
+    const result = await stt.transcribe(audio, MEDICAL_VOCABULARY_HINT, {
+      keyterms: keyterms.length ? keyterms : undefined,
+    });
     heard = result.text;
     transcript = (await correctTranscript(heard)).text;
   } catch (e) {

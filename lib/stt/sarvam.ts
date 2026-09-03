@@ -1,4 +1,4 @@
-import type { SttProvider, Transcription } from "./types";
+import type { SttProvider, Transcription, TranscribeOptions } from "./types";
 
 /**
  * Sarvam's Saaras speech-to-text API. It is particularly useful for WardMate's Indian-English
@@ -15,10 +15,15 @@ export class SarvamTranscriber implements SttProvider {
 
   constructor(private readonly apiKey: string) {}
 
-  async transcribe(audio: Blob, hint: string): Promise<Transcription> {
-    // Sarvam's REST API has no vocabulary-hint field. Keep the shared provider contract so
-    // switching engines does not alter the application flow.
+  async transcribe(
+    audio: Blob,
+    hint: string,
+    options?: TranscribeOptions
+  ): Promise<Transcription> {
+    // Sarvam's REST API has no vocabulary-hint or keyterm field. Keep the shared provider
+    // contract so switching engines does not alter the application flow.
     void hint;
+    void options;
     const form = new FormData();
     form.append("file", audio, fileNameFor(audio.type));
     form.append("model", this.model);

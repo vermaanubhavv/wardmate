@@ -67,11 +67,14 @@ in the code as warnings not to re-add them:
 - **OpenAI** — `gpt-4o-transcribe` for speech-to-text (`STT_PROVIDER=openai`)
 - **Sarvam** — `saaras:v3` for Indian-English speech-to-text (`STT_PROVIDER=sarvam`); its
   synchronous trial path accepts recordings up to 30 seconds
+- **Deepgram** — `nova-3-medical` in `en-IN` (`STT_PROVIDER=deepgram`), given a per-patient
+  keyterm list built from the patient's diagnoses / operation / drains / drugs — see
+  `docs/medical-dictation-keyterms.md`
 - **Vercel** — production deploys, project `wardmate` (directory still named `coreresident`)
 - **GitHub** — `https://github.com/vermaanubhavv/wardmate` (private), branch `main`, ~74 commits
 
 Server env vars (names only): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
-`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `SARVAM_API_KEY`, `STT_PROVIDER`. **There is no service-role key, on
+`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `SARVAM_API_KEY`, `DEEPGRAM_API_KEY`, `STT_PROVIDER`. **There is no service-role key, on
 purpose.** Controlled writes use `SECURITY DEFINER` Postgres functions instead.
 
 Auth: Google OAuth (primary) + 6-digit email OTP via Resend. Google callback must point at

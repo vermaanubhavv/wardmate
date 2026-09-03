@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DeepgramTranscriber } from "../deepgram";
 import { MEDICAL_KEYTERMS } from "../types";
+import { MAX_KEYTERMS } from "@/lib/transcription/buildDeepgramUrl";
 
 const OK_BODY = JSON.stringify({
   results: { channels: [{ alternatives: [{ transcript: "Bed five is afebrile." }] }] },
@@ -9,7 +10,7 @@ const OK_BODY = JSON.stringify({
 describe("DeepgramTranscriber", () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it("sends audio to Nova-3 Medical with the ward keyterms and returns its transcript", async () => {
+  it("sends audio to Nova-3 Medical in en-IN, falling back to the ward keyterms", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(OK_BODY, { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -27,8 +28,13 @@ describe("DeepgramTranscriber", () => {
     const url = new URL(fetchMock.mock.calls[0][0] as string);
     expect(url.origin + url.pathname).toBe("https://api.deepgram.com/v1/listen");
     expect(url.searchParams.get("model")).toBe("nova-3-medical");
-    expect(url.searchParams.get("language")).toBe("en");
-    expect(url.searchParams.getAll("keyterm")).toEqual(MEDICAL_KEYTERMS);
+    expect(url.searchParams.get("language")).toBe("en-IN");
+    expect(url.searchParams.get("smart_format")).toBe("true");
+
+    // The fallback list, deduped and held to the application safety cap.
+    const sent = url.searchParams.getAll("keyterm");
+    expect(sent.length).toBe(Math.min(MAX_KEYTERMS, MEDICAL_KEYTERMS.length));
+    expect(sent).toEqual(MEDICAL_KEYTERMS.slice(0, sent.length));
 
     const init = fetchMock.mock.calls[0][1] as RequestInit;
     expect(init.method).toBe("POST");
@@ -36,6 +42,22 @@ describe("DeepgramTranscriber", () => {
       Authorization: "Token dg-test-key",
       "Content-Type": "audio/webm",
     });
+  });
+
+  it("uses the patient-selected keyterms when they are passed, as repeated params", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(OK_BODY, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const keyterms = ["acute pancreatitis", "Ranson's criteria", "CECT abdomen"];
+    await new DeepgramTranscriber("k").transcribe(new Blob(["a"], { type: "audio/webm" }), "hint", {
+      keyterms,
+    });
+
+    const url = new URL(fetchMock.mock.calls[0][0] as string);
+    expect(url.searchParams.getAll("keyterm")).toEqual(keyterms);
+    // no comma-joined list, no legacy weights
+    expect(url.search).not.toMatch(/keyterm=[^&]*(%2C|,)[^&]*(%2C|,)/);
+    expect(url.search).not.toMatch(/keyterm=[^&]*%3A\d/);
   });
 
   it("falls back to audio/webm when the blob has no type", async () => {

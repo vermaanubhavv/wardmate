@@ -4,7 +4,7 @@ import { SarvamTranscriber } from "./sarvam";
 import { DeepgramTranscriber } from "./deepgram";
 
 export { MEDICAL_VOCABULARY_HINT, MEDICAL_KEYTERMS } from "./types";
-export type { SttProvider, Transcription } from "./types";
+export type { SttProvider, Transcription, TranscribeOptions } from "./types";
 
 /**
  * The one place that decides which speech engine runs. To try a different one, add its file

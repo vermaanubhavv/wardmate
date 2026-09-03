@@ -1,16 +1,19 @@
-import type { SttProvider, Transcription } from "./types";
+import type { SttProvider, Transcription, TranscribeOptions } from "./types";
 import { MEDICAL_KEYTERMS } from "./types";
+import { buildDeepgramUrl, keytermBudget } from "@/lib/transcription/buildDeepgramUrl";
 
 /**
  * Deepgram's Nova-3 Medical model. The only mainstream engine trained specifically on clinical
- * speech, so anatomy, procedures and generic drug names come back right without help — the open
- * question this trial answers is whether it also handles the Indian-English accent and the ward's
- * brand-name shorthand as well as OpenAI-plus-hint currently does.
+ * speech, so anatomy, procedures and generic drug names come back right without help. What it
+ * still needs told: Indian hospital shorthand, Indian surgical ward terminology, brand drug
+ * names off an Indian chart, uncommon diagnoses and the scoring systems a unit quotes.
  *
- * Nova-3 does not take a free-text prompt the way gpt-4o-transcribe does. It takes a keyterm
- * list instead, one boosted phrase per entry — so this reads MEDICAL_KEYTERMS directly and
- * ignores the prose `hint` the shared interface passes, exactly as the Sarvam provider ignores
- * it for the opposite reason. Keyterm prompting is English-only, which matches nova-3-medical.
+ * Nova-3 does not take a free-text prompt the way gpt-4o-transcribe does. It takes a KEYTERM
+ * list instead — one boosted phrase per repeated `keyterm` parameter, no weights. When the
+ * caller passes a patient-selected list (lib/transcription), that is used; otherwise this
+ * falls back to the static ward list. Either way the terms are chosen BEFORE the request is
+ * made — Nova-3 keyterms cannot be changed mid-session. Language is en-IN, matching the two
+ * other providers and the fact that a WardMate round is Indian English with Hindi loanwords.
  */
 export class DeepgramTranscriber implements SttProvider {
   readonly provider = "deepgram";
@@ -18,21 +21,27 @@ export class DeepgramTranscriber implements SttProvider {
 
   constructor(private readonly apiKey: string) {}
 
-  async transcribe(audio: Blob, hint: string): Promise<Transcription> {
+  async transcribe(
+    audio: Blob,
+    hint: string,
+    options?: TranscribeOptions
+  ): Promise<Transcription> {
     // The shared contract hands every engine the prose hint; Nova-3 has no field for it.
     void hint;
 
-    const params = new URLSearchParams({
-      model: this.model,
-      // Punctuation, capitalisation and spoken-number formatting ("one zero one" -> "101").
-      smart_format: "true",
-      // A ward round is English with Hindi loanwords. Pinning the language stops the detector
-      // switching on a short, noisy clip — the same reason the other two providers pin it.
-      language: "en",
-    });
-    for (const term of MEDICAL_KEYTERMS) params.append("keyterm", term);
+    const keyterms =
+      options?.keyterms && options.keyterms.length > 0 ? options.keyterms : MEDICAL_KEYTERMS;
 
-    const res = await fetch(`https://api.deepgram.com/v1/listen?${params.toString()}`, {
+    const url = buildDeepgramUrl(keyterms, {
+      model: this.model,
+      language: "en-IN",
+      extra: {
+        // Punctuation, capitalisation and spoken-number formatting ("one zero one" -> "101").
+        smart_format: true,
+      },
+    });
+
+    const res = await fetch(url, {
       method: "POST",
       headers: {
         Authorization: `Token ${this.apiKey}`,
@@ -59,3 +68,6 @@ export class DeepgramTranscriber implements SttProvider {
     };
   }
 }
+
+/** Re-exported so callers can log the PHI-safe keyterm budget without importing two modules. */
+export { keytermBudget };

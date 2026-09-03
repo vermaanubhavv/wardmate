@@ -12,10 +12,23 @@ export type Transcription = {
   model: string;
 };
 
+/**
+ * Optional per-call tuning. Today it carries the patient-selected Deepgram keyterm list — see
+ * lib/transcription/selectMedicalKeyterms.ts. An engine that cannot use a field ignores it,
+ * exactly as Sarvam and OpenAI already ignore each other's hint shapes.
+ */
+export type TranscribeOptions = {
+  /**
+   * A pre-selected, budget-checked keyterm list for this recording. When absent, an engine
+   * that boosts keyterms falls back to the static ward list (MEDICAL_KEYTERMS).
+   */
+  keyterms?: string[];
+};
+
 export interface SttProvider {
   readonly provider: string;
   readonly model: string;
-  transcribe(audio: Blob, hint: string): Promise<Transcription>;
+  transcribe(audio: Blob, hint: string, options?: TranscribeOptions): Promise<Transcription>;
 }
 
 /**
@@ -59,6 +72,12 @@ export const MEDICAL_VOCABULARY_HINT = [
  * Deepgram recommends staying under ~100 keyterms, so this is the mishearings that actually
  * matter — surgical procedures, the ward's own shorthand, and the brand drug names an Indian
  * chart uses — not every ordinary English word a model already knows.
+ *
+ * THIS IS THE FALLBACK ONLY. The patient-scoped dictation routes (voice, case-history, round)
+ * now build a ~20–50 term list tailored to the specific patient — their diagnoses, operation,
+ * drains and drugs first — via lib/transcription. See docs/medical-dictation-keyterms.md. This
+ * static list is what Deepgram gets when there is no patient context (the add-patient and
+ * engine-comparison routes), held to the 80-term application cap by buildDeepgramUrl.
  */
 export const MEDICAL_KEYTERMS: string[] = [
   // Procedures and operative terms
