@@ -6,6 +6,10 @@ export type ReadLabValue = {
   value_text: string;
   value_num: number | null;
   unit: string | null;
+  /** "vital" for a bedside sign off an obs chart or monitor (BP, pulse, RR, SpO₂, temperature,
+   *  GRBS, pain score, urine output); "lab" for a value off a laboratory report; "other" for
+   *  anything that is neither. Decides which kind the observation is stored as. */
+  category: "lab" | "vital" | "other";
   /** The line as printed on the report, copied exactly. */
   source_quote: string;
   /** True when the printing is unclear — blurred, cut off, handwritten, glare. */
@@ -26,9 +30,16 @@ export type LabPhotoResult = {
   raw: unknown;
 };
 
-const SYSTEM_PROMPT = `You read a photograph of a laboratory report and transcribe the values printed on it.
+const SYSTEM_PROMPT = `You read a photograph of a laboratory report OR a bedside observation chart / patient monitor, and transcribe the values printed or displayed on it.
 
 You are transcribing, not interpreting. You are not being asked what the values mean, whether they are normal, or what should be done about them.
+
+Set "category" on every value:
+- "vital" — a bedside sign: blood pressure, pulse / heart rate, respiratory rate, SpO₂ / oxygen saturation, temperature, GRBS / capillary blood glucose, pain score, urine output, GCS. These come off an obs chart, a nursing chart, or a monitor screen.
+- "lab" — a value off a laboratory report (haemoglobin, creatinine, electrolytes, LFT, CRP, counts, and so on).
+- "other" — anything that is neither.
+
+For a monitor screen, read the large current numbers. For blood pressure keep it as printed ("124/82") in value_text with value_num null. Reference ranges (ref_low/ref_high/ref_text) apply to lab reports only — for a vital sign leave all three null.
 
 Absolute rules:
 
@@ -48,7 +59,7 @@ Absolute rules:
 
    Where a report prints separate male and female ranges side by side, use ref_text to record what is printed and leave ref_low and ref_high null unless the report itself marks which one applies to this patient. Choosing between them is not transcription.
 
-6. If the image is not a laboratory report, or no values are legible, return an empty list. That is a correct answer.
+6. If the image is neither a laboratory report nor an observation chart / monitor, or no values are legible, return an empty list. That is a correct answer.
 
 For value_num, give the number alone when the result is numeric; otherwise null. For qualitative results ("positive", "nil", "trace"), put the word in value_text and leave value_num null.`;
 
@@ -65,6 +76,7 @@ const SCHEMA = {
           value_text: { type: "string" },
           value_num: { type: ["number", "null"] },
           unit: { type: ["string", "null"] },
+          category: { type: "string", enum: ["lab", "vital", "other"] },
           source_quote: { type: "string" },
           uncertain: { type: "boolean" },
           ref_low: { type: ["number", "null"] },
@@ -79,6 +91,7 @@ const SCHEMA = {
           "value_text",
           "value_num",
           "unit",
+          "category",
           "source_quote",
           "uncertain",
           "ref_low",
@@ -121,7 +134,7 @@ export async function readLabPhoto(
         role: "user",
         content: [
           { type: "image", source: { type: "base64", media_type: mediaType, data: base64Image } },
-          { type: "text", text: "Transcribe the values printed on this report." },
+          { type: "text", text: "Transcribe the values on this report, observation chart, or monitor." },
         ],
       },
     ],
@@ -131,8 +144,13 @@ export async function readLabPhoto(
   const parsed =
     text && text.type === "text" ? JSON.parse(text.text) : { values: [], report_type: "" };
 
+  const values: ReadLabValue[] = (parsed.values ?? []).map((v: ReadLabValue) => ({
+    ...v,
+    category: v.category === "vital" || v.category === "other" ? v.category : "lab",
+  }));
+
   return {
-    values: parsed.values ?? [],
+    values,
     report_type: parsed.report_type ?? "",
     model,
     raw: parsed,

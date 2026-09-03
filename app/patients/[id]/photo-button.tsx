@@ -5,9 +5,10 @@ import { ImageIcon } from "@/app/icons";
 import { useRouter } from "next/navigation";
 
 /**
- * Opens the phone camera directly at a lab report. Deliberately a plain file input with
- * capture set, rather than a custom camera screen — the phone's own camera is faster,
- * focuses better on small print, and is the one the resident already knows how to use.
+ * Opens the phone camera directly at a lab report or a bedside observation chart / monitor.
+ * Deliberately a plain file input with capture set, rather than a custom camera screen — the
+ * phone's own camera is faster, focuses better on small print, and is the one the resident
+ * already knows how to use.
  */
 export default function PhotoButton({ patientId }: { patientId: string }) {
   const router = useRouter();
@@ -70,7 +71,7 @@ export default function PhotoButton({ patientId }: { patientId: string }) {
         className="flex w-full items-center justify-center gap-2 rounded-lg border border-line bg-card px-3 py-2.5 text-[17px] font-medium text-foreground active:opacity-70 disabled:opacity-50"
       >
         <ImageIcon />
-        {busy ? "Reading the report…" : "Photograph a lab report"}
+        {busy ? "Reading the photo…" : "Photograph a report or obs chart"}
       </button>
       {message && <p className="text-center text-[13px] text-muted">{message}</p>}
     </>

@@ -20,6 +20,7 @@ import Wordmark from "../wordmark";
 import Mark from "../mark";
 import { createClient } from "@/lib/supabase/server";
 import { getWardLabRanges } from "@/lib/ward-lab-ranges";
+import { countWardPendingConfirmations } from "@/lib/confirm-queue";
 import { worstFlag, type WardFlag } from "@/lib/ward-flags";
 
 export default async function Home({
@@ -56,6 +57,7 @@ export default async function Home({
   // Only once the ward resolved: this is one more round trip, worth it only when there is a
   // ward to flag patients against.
   const wardRanges = ward ? await getWardLabRanges(ward.id) : new Map();
+  const pendingConfirmCount = ward ? await countWardPendingConfirmations(ward.id) : 0;
   const flags = new Map<string, WardFlag | null>(
     patients.map((p) => [p.id, worstFlag(p, wardRanges)])
   );
@@ -140,6 +142,11 @@ export default async function Home({
           <NavTile href="/handover" icon={<ClipboardIcon className="h-[19px] w-[19px]" />}>
             Ward round
           </NavTile>
+          {pendingConfirmCount > 0 && (
+            <NavTile href="/confirm" icon={<ChecklistIcon className="h-[19px] w-[19px]" />}>
+              Confirm · {pendingConfirmCount}
+            </NavTile>
+          )}
           {/* No "Prepare discharge" tile: a discharge is one thing, reached one way — open the
               patient and open their discharge summary. Photographing the paper file is a step
               inside that summary, not a second door beside it. The one-off summary (no patient

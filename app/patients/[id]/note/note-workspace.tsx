@@ -117,23 +117,40 @@ export default function NoteWorkspace({
   patientId,
   dateLabel,
   observations,
+  yesterday = [],
   currentMeds,
+  suggestedAssessment = "",
 }: {
   patientId: string;
   dateLabel: string;
   observations: NoteObs[];
+  /** Yesterday's round, newest value per label — the source for each card's "Same as
+   *  yesterday" shortcut. */
+  yesterday?: NoteObs[];
   currentMeds: string[];
+  /** A pre-fill for the Assessment card on a routine round — "" when nothing should be
+   *  suggested (no round yet today, or something on it reads as concerning). */
+  suggestedAssessment?: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [step, setStep] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [dirty, setDirty] = useState<Set<StepId>>(new Set());
   const [generating, setGenerating] = useState<string | null>(null);
 
   const val = (aliases: string[]) =>
     observations.find((o) => aliases.includes(o.label.toLowerCase().trim()))?.value ?? "";
+  const yVal = (aliases: string[]) =>
+    yesterday.find((o) => aliases.includes(o.label.toLowerCase().trim()))?.value ?? "";
+
+  // The Assessment card is pre-filled only when nothing was recorded there yet and the round
+  // looked routine. Seed it into `dirty` so "Save & next" commits it if the resident agrees by
+  // simply moving on; touching any chip keeps it dirty anyway.
+  const assessmentPrefilled = !val(["assessment"]) && !!suggestedAssessment;
+  const [dirty, setDirty] = useState<Set<StepId>>(
+    () => new Set(assessmentPrefilled ? (["assessment"] as StepId[]) : [])
+  );
   const planSeed = useMemo(
     () => observations.filter((o) => o.kind === "plan").map((o) => (o.value ?? "").trim()).filter(Boolean),
     [observations]
@@ -153,7 +170,7 @@ export default function NoteWorkspace({
   const [chest, setChest] = useState(() => val(["chest", "respiratory system", "rs"]));
   const [flatus, setFlatus] = useState(() => val(["flatus", "passed flatus"]));
   const [stool, setStool] = useState(() => val(["stool", "motion", "bowels"]));
-  const [assessment, setAssessment] = useState(() => val(["assessment"]));
+  const [assessment, setAssessment] = useState(() => val(["assessment"]) || suggestedAssessment);
   const [planItems, setPlanItems] = useState<string[]>(planSeed);
   const [meds, setMeds] = useState<string[]>(currentMeds);
 
@@ -271,6 +288,7 @@ export default function NoteWorkspace({
         <>
           <p className="text-[12px] leading-[1.45] text-muted">Overnight events and any fresh complaint. Tap what fits, add the rest.</p>
           <PillsAndText pills={COMPLAINT_PILLS} value={complaints} onChange={(v) => { setComplaints(v); mark("complaints"); }} placeholder="Overnight in the patient's words" />
+          <YesterdayButton text={yVal(["complaints", "c/o", "complaint"])} onUse={(v) => { setComplaints(v); mark("complaints"); }} />
         </>
       );
     if (id === "sensorium")
@@ -282,20 +300,48 @@ export default function NoteWorkspace({
             </OptionRow>
           ))}
           <DictateArea value={sensorium} onChange={(v) => { setSensorium(v); mark("sensorium"); }} placeholder="Or describe it" rows={2} />
+          <YesterdayButton text={yVal(["sensorium", "cns", "gcs"])} onUse={(v) => { setSensorium(v); mark("sensorium"); }} />
         </div>
       );
     if (id === "vitals")
       return (
-        <div className="grid grid-cols-2 gap-3">
-          {VITALS.map((v) => (
-            <Field key={v.key} label={v.label} value={vitals[v.key] ?? ""} onChange={(nv) => { setVitals({ ...vitals, [v.key]: nv }); mark("vitals"); }} placeholder={v.ph} />
-          ))}
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-3">
+            {VITALS.map((v) => (
+              <Field key={v.key} label={v.label} value={vitals[v.key] ?? ""} onChange={(nv) => { setVitals({ ...vitals, [v.key]: nv }); mark("vitals"); }} placeholder={v.ph} />
+            ))}
+          </div>
+          <YesterdayButton
+            text={yesterdayVitalsSummary(yVal)}
+            label="Same as yesterday"
+            onUse={() => {
+              setVitals({
+                BP: yVal(["bp", "blood pressure"]),
+                PR: yVal(["pr", "pulse", "pulse rate"]),
+                RR: yVal(["rr", "respiratory rate"]),
+                Temp: yVal(["temp", "temperature"]),
+                SpO2: yVal(["spo2", "saturation", "oxygen saturation"]),
+                GRBS: yVal(["grbs", "rbs", "cbg"]),
+              });
+              mark("vitals");
+            }}
+          />
         </div>
       );
     if (id === "abdomen")
-      return <PillsAndText pills={ABDOMEN_PILLS} value={abdomen} onChange={(v) => { setAbdomen(v); mark("abdomen"); }} placeholder="Anything else on the abdomen" />;
+      return (
+        <>
+          <PillsAndText pills={ABDOMEN_PILLS} value={abdomen} onChange={(v) => { setAbdomen(v); mark("abdomen"); }} placeholder="Anything else on the abdomen" />
+          <YesterdayButton text={yVal(["per abdomen", "abdomen", "p/a", "pa"])} onUse={(v) => { setAbdomen(v); mark("abdomen"); }} />
+        </>
+      );
     if (id === "chest")
-      return <PillsAndText pills={CHEST_PILLS} value={chest} onChange={(v) => { setChest(v); mark("chest"); }} placeholder="Anything else on the chest" />;
+      return (
+        <>
+          <PillsAndText pills={CHEST_PILLS} value={chest} onChange={(v) => { setChest(v); mark("chest"); }} placeholder="Anything else on the chest" />
+          <YesterdayButton text={yVal(["chest", "respiratory system", "rs"])} onUse={(v) => { setChest(v); mark("chest"); }} />
+        </>
+      );
     if (id === "bowel")
       return (
         <div className="flex flex-col gap-3">
@@ -312,11 +358,27 @@ export default function NoteWorkspace({
               ))}
             </div>
           ))}
+          <YesterdayButton
+            text={[yVal(["flatus", "passed flatus"]), yVal(["stool", "motion", "bowels"])].filter(Boolean).join(" · ")}
+            label="Same as yesterday"
+            onUse={() => {
+              const f = yVal(["flatus", "passed flatus"]);
+              const s = yVal(["stool", "motion", "bowels"]);
+              if (f) setFlatus(f);
+              if (s) setStool(s);
+              mark("bowel");
+            }}
+          />
         </div>
       );
     if (id === "assessment")
       return (
         <>
+          {assessmentPrefilled && assessment === suggestedAssessment && (
+            <p className="text-[12px] leading-[1.45] text-muted">
+              Pre-filled from a routine round. Change it if it doesn&rsquo;t fit.
+            </p>
+          )}
           <div className="flex flex-wrap gap-1.5">
             {ASSESSMENT.map((a) => (
               <SelChip key={a} selected={assessment.startsWith(a)} onClick={() => { setAssessment(a); mark("assessment"); }}>
@@ -512,4 +574,38 @@ export default function NoteWorkspace({
       </div>
     </div>
   );
+}
+
+/** The shortcut on each card for a patient whose findings have not changed overnight. Renders
+ *  nothing when yesterday's round has no value for this line. */
+function YesterdayButton({
+  text,
+  label = "Same as yesterday:",
+  onUse,
+}: {
+  text: string;
+  label?: string;
+  onUse: (v: string) => void;
+}) {
+  if (!text.trim()) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => onUse(text)}
+      className="self-start text-left text-[13px] font-medium text-accent"
+    >
+      {label} <span className="font-normal text-muted">{text}</span>
+    </button>
+  );
+}
+
+function yesterdayVitalsSummary(yVal: (a: string[]) => string): string {
+  return [
+    yVal(["bp", "blood pressure"]) && `BP ${yVal(["bp", "blood pressure"])}`,
+    yVal(["pr", "pulse", "pulse rate"]) && `PR ${yVal(["pr", "pulse", "pulse rate"])}`,
+    yVal(["temp", "temperature"]) && yVal(["temp", "temperature"]),
+    yVal(["spo2", "saturation", "oxygen saturation"]) && `SpO₂ ${yVal(["spo2", "saturation", "oxygen saturation"])}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }

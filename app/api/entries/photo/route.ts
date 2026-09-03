@@ -109,7 +109,9 @@ export async function POST(request: Request) {
   const rows = result.values.map((v) => ({
     entry_id: entry.id,
     patient_id: patientId,
-    kind: "lab" as const,
+    // A bedside sign off an obs chart / monitor is stored as a vital, so it lands on the
+    // vitals line of the note and the ward screen rather than under lab results.
+    kind: v.category === "vital" ? ("vital" as const) : ("lab" as const),
     label: v.label,
     value_text: v.value_text,
     value_num: v.value_num,
@@ -145,7 +147,7 @@ export async function POST(request: Request) {
   // swallowed on purpose — the values are already saved, and a lost vote is not worth failing
   // an upload the resident is standing at a bedside waiting for.
   const teachable = result.values.filter(
-    (v) => !v.uncertain && v.ref_low !== null && v.ref_high !== null
+    (v) => v.category === "lab" && !v.uncertain && v.ref_low !== null && v.ref_high !== null
   );
   if (teachable.length > 0 && patient.ward_id) {
     await Promise.allSettled(

@@ -58,7 +58,13 @@ export type PatientState = {
  */
 export function derivePatientState(
   observations: Observation[],
-  template: CareTemplate | null
+  template: CareTemplate | null,
+  /** The post-op / admission day the app computes from recorded dates — passed through so the
+   *  "post-operative day" checklist item is not flagged missing when the number is already known. */
+  knownDay: number | null = null,
+  /** The operative date and admission time, for checklist items whose auto-trigger is time
+   *  based (post-op day, hours since surgery / admission). See lib/checklist-triggers.ts. */
+  clock: { surgeryDate?: string | null; admittedOn?: string | null } = {}
 ): PatientState {
   // Keyed on normalised kind+label so "ALP" and "alp" collapse to the same row instead of
   // sitting side by side because the extraction step phrased one of them differently.
@@ -85,7 +91,13 @@ export function derivePatientState(
     );
   const doneTasks = allPlans.filter((o) => o.done_at);
 
-  const matched = template ? matchTemplate(template, observations) : [];
+  const matched = template
+    ? matchTemplate(template, observations, {
+        knownDay,
+        surgeryDate: clock.surgeryDate ?? null,
+        admittedOn: clock.admittedOn ?? null,
+      })
+    : [];
   const missing = matched.filter((m) => m.missing);
 
   // Jobs already have the To do section above. Without excluding "plan" here, a to-do like

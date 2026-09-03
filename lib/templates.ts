@@ -1,6 +1,13 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { istDate } from "@/lib/urgency";
+import {
+  coerceTrigger,
+  evaluateTrigger,
+  normAnalyte,
+  type ItemTrigger,
+  type TriggerContext,
+} from "@/lib/checklist-triggers";
 
 export type TemplateItem = {
   id: string;
@@ -13,6 +20,14 @@ export type TemplateItem = {
   /** Which part of "Current progress" this belongs under — null for anything not yet
    *  classified (care_templates items, and any protocol item filed before this existed). */
   soap_section: "subjective" | "objective" | "assessment" | "plan" | "checks" | null;
+  /** What this line reads as on a routine round with nothing abnormal — "Afebrile",
+   *  "Tolerating orally". Null for items with no sensible "normal" (day number, plan, a
+   *  diagnosis). See supabase/patches/0056_normal_phrase.sql. */
+  normal_phrase: string | null;
+  /** An auto-trigger rule (schema: lib/checklist-triggers.ts). When set, the item is hidden
+   *  until its conditions are met — history / entry based, time based, or both. Null = always
+   *  shown. See supabase/patches/0058_checklist_item_trigger.sql. */
+  trigger: ItemTrigger | null;
 };
 
 export type CareTemplate = {
@@ -45,14 +60,36 @@ export const getTemplateForPatient = cache(async function getTemplateForPatient(
   // care_templates row — see supabase/patches/0037_lap_chole_checklist_protocol_seed.sql. This
   // is checked first so publishing a checklist protocol is the only step needed to switch a
   // procedure over; nothing else about how a patient page reads its template changes.
-  const { data: protocolRows } = await supabase
+  //
+  // `trigger` (0058) is asked for optionally: until that patch is run PostgREST rejects the
+  // whole select for naming an unknown column, so on that error the query is retried without
+  // it and every item just carries no auto-trigger.
+  const protocolCols = (withTrigger: boolean) =>
+    `id, title, template_family, template_variant, phase, company_protocol_items(id, kind, prompt, importance, aliases, position, soap_section, normal_phrase${withTrigger ? ", trigger" : ""})`;
+  let protocolRes = await supabase
     .from("company_protocols")
-    .select(
-      "id, title, template_family, template_variant, phase, company_protocol_items(id, kind, prompt, importance, aliases, position, soap_section)"
-    )
+    .select(protocolCols(true))
     .eq("template_family", patient.template_family)
     .eq("phase", phase)
     .eq("status", "published");
+  if (protocolRes.error) {
+    protocolRes = await supabase
+      .from("company_protocols")
+      .select(protocolCols(false))
+      .eq("template_family", patient.template_family)
+      .eq("phase", phase)
+      .eq("status", "published");
+  }
+  const protocolRows = protocolRes.data as unknown as
+    | {
+        id: string;
+        title: string;
+        template_family: string;
+        template_variant: string | null;
+        phase: string;
+        company_protocol_items: unknown;
+      }[]
+    | null;
 
   const protocolMatch = (protocolRows ?? []).find(
     (p) => (p.template_variant ?? null) === (patient.template_variant ?? null)
@@ -68,6 +105,8 @@ export const getTemplateForPatient = cache(async function getTemplateForPatient(
         aliases: string[];
         position: number;
         soap_section: TemplateItem["soap_section"];
+        normal_phrase: string | null;
+        trigger: unknown;
       }[]) ?? []
     )
       .slice()
@@ -81,6 +120,8 @@ export const getTemplateForPatient = cache(async function getTemplateForPatient(
         position: i.position,
         hint: null,
         soap_section: i.soap_section,
+        normal_phrase: i.normal_phrase ?? null,
+        trigger: coerceTrigger(i.trigger),
       }));
 
     return {
@@ -93,13 +134,31 @@ export const getTemplateForPatient = cache(async function getTemplateForPatient(
     };
   }
 
-  const { data } = await supabase
+  const careCols = (withTrigger: boolean) =>
+    `id, name, family, variant, phase, ward_id, care_template_items(id, label, aliases, kind, importance, position, hint, normal_phrase${withTrigger ? ", trigger" : ""})`;
+  let careRes = await supabase
     .from("care_templates")
-    .select(
-      "id, name, family, variant, phase, ward_id, care_template_items(id, label, aliases, kind, importance, position, hint)"
-    )
+    .select(careCols(true))
     .eq("family", patient.template_family)
     .eq("phase", phase);
+  if (careRes.error) {
+    careRes = await supabase
+      .from("care_templates")
+      .select(careCols(false))
+      .eq("family", patient.template_family)
+      .eq("phase", phase);
+  }
+  const data = careRes.data as unknown as
+    | {
+        id: string;
+        name: string;
+        family: string;
+        variant: string | null;
+        phase: "before_surgery" | "after_surgery";
+        ward_id: string | null;
+        care_template_items: unknown;
+      }[]
+    | null;
 
   if (!data || data.length === 0) return null;
 
@@ -108,9 +167,10 @@ export const getTemplateForPatient = cache(async function getTemplateForPatient(
 
   // A ward's own corrected copy wins over the shared starter library.
   const chosen = wanted.find((t) => t.ward_id !== null) ?? wanted[0];
-  const items = ((chosen.care_template_items ?? []) as TemplateItem[])
+  const items = ((chosen.care_template_items ?? []) as (TemplateItem & { trigger: unknown })[])
     .slice()
-    .sort((a, b) => a.position - b.position);
+    .sort((a, b) => a.position - b.position)
+    .map((i) => ({ ...i, trigger: coerceTrigger(i.trigger) }));
 
   return {
     id: chosen.id,
@@ -218,6 +278,10 @@ export type MatchedItem = {
   recordedAt: string | null;
   /** Core item with nothing to show — the thing worth surfacing as a gap. */
   missing: boolean;
+  /** A patient-reported symptom (fever, pain, vomiting …) that nobody selected or dictated
+   *  today. On a round, an unmentioned symptom is a pertinent negative — "no complaints of
+   *  fever" — not a hole in the record, so it is written into the note rather than flagged. */
+  pertinentNegative: boolean;
   /** The reference range printed beside this result on the report it came from, when it came
    *  from one — see supabase/patches/0043_lab_reference_ranges.sql. */
   refLow: number | null;
@@ -236,7 +300,39 @@ type MatchableObservation = {
   ref_text?: string | null;
 };
 
-const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+const norm = (s: string) =>
+  s.toLowerCase().replace(/[-‐-―]/g, " ").replace(/\s+/g, " ").trim();
+
+/** Checklist labels that name a symptom the patient either has or does not — the ones where
+ *  "not selected" honestly means "no complaint", not "not asked". Deliberately narrow: only
+ *  clear patient-reported complaints, never a sign someone has to look for (bleeding, a
+ *  wound, retention), which is why those are absent here. Compared after norm(). */
+const SYMPTOM_LABELS = new Set([
+  "fever",
+  "pain",
+  "abdominal pain",
+  "shoulder tip pain",
+  "chest pain",
+  "vomiting",
+  "nausea",
+  "cough",
+  "breathlessness",
+  "shortness of breath",
+  "constipation",
+  "diarrhoea",
+  "diarrhea",
+  "dysuria",
+  "headache",
+  "dizziness",
+  "palpitations",
+]);
+
+/** First number in a string, or null — for turning "Hb 8.2 g/dL" into 8.2. */
+function firstNumber(s: string | null): number | null {
+  if (!s) return null;
+  const m = s.match(/-?\d+(\.\d+)?/);
+  return m ? Number(m[0]) : null;
+}
 
 /**
  * Line up what was actually said against what the template expects.
@@ -248,7 +344,20 @@ const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
  */
 export function matchTemplate(
   template: CareTemplate,
-  observations: MatchableObservation[]
+  observations: MatchableObservation[],
+  opts: {
+    /** The post-op (or admission) day the app already computes from the recorded dates. When
+     *  this is known, the "post-operative day" checklist item is never a gap — the number is
+     *  on the page whether or not anyone said it aloud. */
+    knownDay?: number | null;
+    /** Date of operation (YYYY-MM-DD), when there is one. Drives the post-op-day and
+     *  hours-since-surgery trigger conditions. */
+    surgeryDate?: string | null;
+    /** Admission timestamp, for hours-since-admission trigger conditions. */
+    admittedOn?: string | null;
+    /** Overridable clock, for tests. */
+    now?: string;
+  } = {}
 ): MatchedItem[] {
   const byLabel = new Map<string, MatchableObservation>();
   for (const obs of observations) {
@@ -260,7 +369,48 @@ export function matchTemplate(
   const today = istDate(new Date().toISOString());
   const needsToday = template.phase === "after_surgery";
 
-  return template.items.map((item) => {
+  // The resident said, in so many words, that there is nothing new — "no fresh complaints",
+  // "systemically well", "uneventful night". That is a positive statement about every symptom
+  // at once, so an unmentioned symptom then reads as a confirmed negative rather than a
+  // yesterday value nobody refreshed.
+  const blanketNegative = observations.some((o) =>
+    /\b(no (fresh|new|acute|active)?\s*(complaints?|issues?|events?|concerns?)|systemically well|nil complaints?|asymptomatic|uneventful (night|day))\b/i.test(
+      `${o.label} ${o.value_text ?? ""}`
+    )
+  );
+
+  // The context every item's auto-trigger (0058) is evaluated against. Values only — not the
+  // template's own category labels — so "history of jaundice: none" can't trigger on the word
+  // in its own heading.
+  const nowIso = opts.now ?? new Date().toISOString();
+  const hoursSince = (from: string | null | undefined) =>
+    from ? (Date.parse(nowIso) - Date.parse(from.length <= 10 ? `${from}T00:00:00+05:30` : from)) / 3_600_000 : null;
+  const triggerCtx: TriggerContext = {
+    values: observations
+      .map((o) => o.value_text ?? "")
+      .filter(Boolean)
+      .join(" — "),
+    postOpDay: opts.surgeryDate ? (opts.knownDay ?? null) : null,
+    hoursSinceSurgery: hoursSince(opts.surgeryDate),
+    hoursSinceAdmission: hoursSince(opts.admittedOn),
+    hasValue: (labelOrAlias) => {
+      const o = byLabel.get(norm(labelOrAlias));
+      return Boolean(o && (o.value_text ?? "").trim());
+    },
+    labs: observations
+      .map((o) => ({ name: normAnalyte(o.label), value: firstNumber(o.value_text) }))
+      .filter((l): l is { name: string; value: number } => l.value !== null),
+  };
+
+  const forceCore = new Set<string>();
+
+  return template.items
+    .filter((item) => {
+      const { active, forceCore: fc } = evaluateTrigger(item.trigger, triggerCtx);
+      if (active && fc) forceCore.add(item.id);
+      return active;
+    })
+    .map((item) => {
     const keys = [norm(item.label), ...(item.aliases ?? []).map(norm)];
     let hit: MatchableObservation | undefined;
     for (const k of keys) {
@@ -270,11 +420,33 @@ export function matchTemplate(
 
     const fresh = hit ? !needsToday || istDate(hit.recorded_at) === today : false;
 
+    // A day-number item is answered the moment the app can compute the day itself.
+    const daySatisfied =
+      item.kind === "day_number" && (opts.knownDay ?? null) !== null;
+
+    // A trigger with effect "core" promotes an otherwise-optional item to a gap the moment it
+    // fires (e.g. "assess for drain removal" the moment POD reaches 2).
+    const isCore = item.importance === "core" || forceCore.has(item.id);
+
+    const unrecordedCore = isCore && !fresh && !daySatisfied;
+    const isSymptom = SYMPTOM_LABELS.has(norm(item.label));
+
+    // A symptom counts as denied when it was never raised at all, or when the round carries a
+    // blanket "no fresh complaints" that speaks for all of them. Either way it leaves "missing"
+    // and is written into the note as a pertinent negative.
+    const symptomDenied =
+      isCore &&
+      isSymptom &&
+      !fresh &&
+      !daySatisfied &&
+      (!hit || blanketNegative);
+
     return {
       item,
       value: hit?.value_text ?? null,
       recordedAt: hit?.recorded_at ?? null,
-      missing: item.importance === "core" && !fresh,
+      missing: unrecordedCore && !symptomDenied,
+      pertinentNegative: symptomDenied,
       refLow: hit?.ref_low ?? null,
       refHigh: hit?.ref_high ?? null,
       refText: hit?.ref_text ?? null,

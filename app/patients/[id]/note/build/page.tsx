@@ -27,7 +27,7 @@ export default async function BuildNotePage({ params }: { params: Promise<{ id: 
   const [{ data: entriesData }, { data: medRows }] = await Promise.all([
     supabase
       .from("entries")
-      .select("recorded_at, is_case_history, observations(kind, label, value_text)")
+      .select("recorded_at, is_case_history, observations(kind, label, value_text, urgency)")
       .eq("patient_id", id)
       .gte("recorded_at", since),
     // Medications are a standing list — carried forward across the whole admission, newest
@@ -51,15 +51,49 @@ export default async function BuildNotePage({ params }: { params: Promise<{ id: 
     .map((m) => (m.value_text ?? m.label).trim())
     .filter(Boolean);
 
-  const today = istDayKey(new Date().toISOString());
-  const observations: NoteObs[] = ((entriesData ?? []) as unknown as {
+  const now = new Date();
+  const today = istDayKey(now.toISOString());
+  const yKey = istDayKey(new Date(now.getTime() - 24 * 3600 * 1000).toISOString());
+  const roundEntries = ((entriesData ?? []) as unknown as {
     recorded_at: string;
     is_case_history: boolean;
-    observations: { kind: string; label: string; value_text: string | null }[];
-  }[])
-    .filter((e) => !e.is_case_history && istDayKey(e.recorded_at) === today)
+    observations: { kind: string; label: string; value_text: string | null; urgency: string | null }[];
+  }[]).filter((e) => !e.is_case_history);
+
+  const todaysRaw = roundEntries
+    .filter((e) => istDayKey(e.recorded_at) === today)
+    .flatMap((e) => e.observations);
+  const observations: NoteObs[] = todaysRaw.map((o) => ({ kind: o.kind, label: o.label, value: o.value_text }));
+
+  // Yesterday's round, for the "Same as yesterday" shortcut on each card. Newest-per-label
+  // wins, so a value edited later that day is the one carried forward.
+  const ySeen = new Set<string>();
+  const yesterday: NoteObs[] = roundEntries
+    .filter((e) => istDayKey(e.recorded_at) === yKey)
+    .sort((a, b) => b.recorded_at.localeCompare(a.recorded_at))
     .flatMap((e) => e.observations)
+    .filter((o) => {
+      const k = `${o.kind}:${o.label.toLowerCase().trim()}`;
+      if (ySeen.has(k)) return false;
+      ySeen.add(k);
+      return true;
+    })
     .map((o) => ({ kind: o.kind, label: o.label, value: o.value_text }));
+
+  // A default for the Assessment card, so a routine round is one fewer tap. Only offered when
+  // a round actually happened today (a vital or a sign was recorded) AND nothing on it reads
+  // as concerning — a red-flagged job, or a word like "deteriorating" / "resuture" / "ICU" in
+  // any line. The resident still sees it, edits it, and signs the sheet by hand; a blank is
+  // safer than a wrong "Satisfactory", so anything doubtful falls back to no suggestion.
+  const roundHappened = todaysRaw.some((o) => o.kind === "vital" || o.kind === "exam");
+  const concerning = todaysRaw.some(
+    (o) =>
+      o.urgency === "red" ||
+      /\b(deteriorat|worsen|unwell|septic|sepsis|shock|re-?explor|re-?sutur|resutur|burst|dehisc|icu|hdu|critical|peritonit|collapse|arrest)\b/i.test(
+        `${o.label} ${o.value_text ?? ""}`
+      )
+  );
+  const suggestedAssessment = roundHappened && !concerning ? "Satisfactory" : "";
 
   const dateLabel = new Date().toLocaleDateString("en-IN", {
     timeZone: "Asia/Kolkata",
@@ -79,7 +113,14 @@ export default async function BuildNotePage({ params }: { params: Promise<{ id: 
         </p>
       </header>
 
-      <NoteWorkspace patientId={id} dateLabel={dateLabel} observations={observations} currentMeds={currentMeds} />
+      <NoteWorkspace
+        patientId={id}
+        dateLabel={dateLabel}
+        observations={observations}
+        yesterday={yesterday}
+        currentMeds={currentMeds}
+        suggestedAssessment={suggestedAssessment}
+      />
     </div>
   );
 }

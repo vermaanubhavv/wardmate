@@ -165,12 +165,30 @@ button {
   animation: wm-listen 1.6s ease-out infinite;
 }
 
+/* Each captured finding drops in as it is revealed — a short slide-and-fade, staggered down
+   the list so you see the round being pulled apart line by line rather than all at once. */
+@keyframes wm-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.wm-pop {
+  animation: wm-pop 0.28s ease-out both;
+}
+
 /* Nothing here carries meaning that the words beside it do not also carry, so a resident who
    has asked their phone to stop moving things loses nothing by it. */
 @media (prefers-reduced-motion: reduce) {
   .wm-spin,
   .wm-dot,
-  .wm-listen {
+  .wm-listen,
+  .wm-pop {
     animation: none;
   }
 }
