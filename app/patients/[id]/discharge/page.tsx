@@ -23,6 +23,11 @@ export default async function DischargeWorkspacePage({ params }: { params: Promi
   const draft = mergeDischargeDraft(context);
   const checkContext = buildCheckContext(context);
 
+  // Enough on the record for the AI to write something worth reviewing. Below this, the
+  // workspace shows the manual "Generate" buttons instead of auto-compiling — a near-empty
+  // record would only produce a near-empty draft, and the API call would be wasted.
+  const aiReady = context.observations.length >= 4;
+
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
       {/* Deliberately slim: the workspace card leads with the current section as its own
@@ -43,6 +48,7 @@ export default async function DischargeWorkspacePage({ params }: { params: Promi
         checkContext={checkContext}
         wardId={context.wardId}
         formularyAvailable={context.formularySize > 0}
+        aiReady={aiReady}
       />
     </div>
   );

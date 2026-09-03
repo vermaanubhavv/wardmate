@@ -80,7 +80,12 @@ export async function getWardHandover(ward: { id: string; name: string }): Promi
   const out: HandoverPatient[] = [];
   for (const p of rows) {
     const template = await getTemplateForPatient(p);
-    const state = derivePatientState(byPatient.get(p.id) ?? [], template);
+    const state = derivePatientState(
+      byPatient.get(p.id) ?? [],
+      template,
+      p.post_op_day ?? p.admission_day,
+      { surgeryDate: p.surgery_date }
+    );
     out.push({ ...p, template, procedure: procedureFor(p, procedures), state });
   }
 

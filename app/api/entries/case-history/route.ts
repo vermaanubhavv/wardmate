@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
 import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
+import { getPatientDictationKeyterms } from "@/lib/transcription/patient-context";
 import { correctTranscript } from "@/lib/glossary";
 import { readCaseSheet } from "@/lib/read-case-sheet";
 import { extractObservations } from "@/lib/extract";
@@ -131,11 +132,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No audio was recorded." }, { status: 400 });
     }
 
+    const keyterms = await getPatientDictationKeyterms(supabase, patientId, {
+      noteType: "case-history",
+    });
+
     let heard: string;
     let stt;
     try {
       stt = getTranscriber();
-      const result = await stt.transcribe(audioBlob, MEDICAL_VOCABULARY_HINT);
+      const result = await stt.transcribe(audioBlob, MEDICAL_VOCABULARY_HINT, {
+        keyterms: keyterms.length ? keyterms : undefined,
+      });
       heard = result.text;
     } catch (e) {
       return NextResponse.json(

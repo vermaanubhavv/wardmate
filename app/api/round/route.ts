@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
 import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
+import { deriveWardDictationContext } from "@/lib/transcription/patient-context";
+import { getDeepgramKeyterms } from "@/lib/transcription/selectMedicalKeyterms";
 import { correctTranscript } from "@/lib/glossary";
 import { buildRoundDraft } from "@/lib/round-draft";
 import { getCurrentWard, getActivePatients } from "@/lib/ward";
@@ -33,13 +35,20 @@ export async function POST(request: Request) {
   }
 
   // 1. Speech to text, unless it was typed.
+  // The ward's active patients — needed now for the Deepgram keyterms (every bed's diagnosis
+  // and operation), and again below to split the transcript by bed.
+  const { patients } = await getActivePatients(ward.id);
+
   let transcript = typed;
   let stt: ReturnType<typeof getTranscriber> | null = null;
 
   if (!transcript && audio instanceof Blob) {
     try {
       stt = getTranscriber();
-      const result = await stt.transcribe(audio, MEDICAL_VOCABULARY_HINT);
+      const keyterms = getDeepgramKeyterms(deriveWardDictationContext(patients, ward.name));
+      const result = await stt.transcribe(audio, MEDICAL_VOCABULARY_HINT, {
+        keyterms: keyterms.length ? keyterms : undefined,
+      });
       // Only what the engine heard. `typed` above is the resident's own writing and is left
       // exactly as they wrote it — this fixes mishearings, not people.
       transcript = (await correctTranscript(result.text)).text;
@@ -60,8 +69,6 @@ export async function POST(request: Request) {
 
   // 2. Split it by bed. The ward's own bed labels go along so "bed 1" is recognised the way
   // this unit writes beds — never so a bed nobody mentioned can acquire instructions.
-  const { patients } = await getActivePatients(ward.id);
-
   let read;
   try {
     read = await buildRoundDraft(transcript, patients);

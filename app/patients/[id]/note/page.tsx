@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 import { istDayKey, type Observation } from "@/lib/patient-state";
 import { buildProgressNote, formatProgressNoteText } from "@/lib/progress-note";
+import { syncPatientPathways } from "@/lib/scoring/store";
+import { getScoreNoteLines } from "@/lib/scoring/read";
 import { getWardFormats } from "@/lib/formats";
 import { getWardLabRanges } from "@/lib/ward-lab-ranges";
 import { MANAGEMENT_CHOICES } from "@/lib/patients";
@@ -102,12 +104,19 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
     ? `Post Op Day (${patient.post_op_day ?? "—"})`
     : (MANAGEMENT_CHOICES.find((c) => c.value === patient.management)?.label ?? null);
 
+  // Clinical score line(s), computed by lib/scoring from recorded values only. Kept fresh
+  // first, then read — the same "computed on read" pattern as the patient page. Both calls are
+  // inert unless the scoring engine is enabled for this ward.
+  await syncPatientPathways(id);
+  const scoreLines = await getScoreNoteLines(id);
+
   const note = buildProgressNote(patient, allObservations, todaysObservations, diagnosis, {
     wardName: wardRow?.name ?? null,
     department: profile?.department?.trim() || null,
     status,
     procedure: procedureFor(patient, procedures),
     wardRanges,
+    scoreLines,
   });
   const noteText = formatProgressNoteText(note);
 

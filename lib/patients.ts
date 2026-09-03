@@ -125,36 +125,43 @@ export const MANAGEMENT_CHOICES = [
  * it is never the only option — anything typed is kept as written, so a diagnosis outside this
  * list is never blocked or silently corrected to the nearest match.
  */
+/**
+ * The 30 diagnoses a general-surgery ward admits most often, **ordered by frequency** — so the
+ * combobox can show the top few before the resident has typed anything and narrow as they do.
+ * The order is the ranking; slice(0, 5) is "the common ones". Anything typed that is not on
+ * this list is still kept exactly as written — this only offers, never constrains.
+ */
 export const COMMON_DIAGNOSES = [
-  "Acute appendicitis",
-  "Acute cholecystitis",
   "Cholelithiasis",
-  "Choledocholithiasis",
-  "Acute pancreatitis",
-  "Chronic pancreatitis",
-  "Intestinal obstruction",
-  "Perforation peritonitis",
+  "Acute appendicitis",
+  "Acute calculous cholecystitis",
   "Inguinal hernia",
+  "Fissure in ano",
+  "Haemorrhoids",
+  "Fistula in ano",
+  "Hydrocele",
+  "Acute pancreatitis",
+  "Perforation peritonitis",
+  "Intestinal obstruction",
   "Umbilical hernia",
   "Incisional hernia",
-  "Carcinoma breast",
-  "Carcinoma stomach",
-  "Carcinoma colon",
-  "Carcinoma rectum",
-  "Thyroid swelling",
-  "Anal fistula",
-  "Perianal abscess",
-  "Hemorrhoids",
-  "Pilonidal sinus",
-  "Varicose veins",
   "Diabetic foot",
-  "Cellulitis",
   "Soft tissue abscess",
-  "Blunt abdominal trauma",
-  "Road traffic accident",
-  "Hydrocele",
+  "Cellulitis",
   "Lipoma",
   "Sebaceous cyst",
+  "Perianal abscess",
+  "Pilonidal sinus",
+  "Carcinoma breast",
+  "Carcinoma stomach",
+  "Carcinoma rectum",
+  "Carcinoma colon",
+  "Choledocholithiasis",
+  "Gastric outlet obstruction",
+  "Thyroid swelling",
+  "Varicose veins",
+  "Blunt abdominal trauma",
+  "Chronic pancreatitis",
 ] as const;
 
 /**

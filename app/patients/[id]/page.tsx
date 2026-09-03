@@ -29,7 +29,13 @@ import Tick from "./tick";
 import EntryCard from "./entry-card";
 import CaseHistoryCapture from "./case-history-capture";
 import { CaseHistoryCard, ObjectiveSummaryView } from "./case-history-card";
+import RoutineRoundButton from "./routine-round";
+import SoapRows from "./soap-rows";
 import DischargeSection from "./discharge-section";
+import ScoringTaskRows from "./scoring/task-rows";
+import ScoreCards from "./scoring/score-card";
+import { syncPatientPathways } from "@/lib/scoring/store";
+import { getPatientScoringTasks, getScoreCards } from "@/lib/scoring/read";
 import { diagnosisFromProcedure } from "@/lib/diagnosis-from-procedure";
 import { reopenTask } from "./actions";
 import ConfirmDictation from "./confirm-dictation";
@@ -127,6 +133,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // This ward's own laboratory ranges, for results that arrived without a report to read.
   const wardRanges = await getWardLabRanges(patient.ward_id);
 
+  // Clinical scoring & auto-trigger engine. Both calls are inert unless the ward has opted in
+  // AND NEXT_PUBLIC_SCORING_ENGINE=on (lib/scoring/flag.ts) — with the flag closed this adds
+  // nothing to the page (DOCX test 16). The refresh keeps pathways in step with any new
+  // observation the same "computed fresh on read" way post-op day is.
+  await syncPatientPathways(id);
+  const [scoringTasks, scoreCards] = await Promise.all([getPatientScoringTasks(id), getScoreCards(id)]);
+
   const protocolTitles = new Map<string, string>();
   if (matchedIds.length > 0) {
     const { data: matchedProtocols } = await supabase
@@ -157,8 +170,19 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // entries: the case history is excluded from the day-by-day record but not from what decides
   // the to-do list and "where things stand" — a plan is a plan whichever way it was captured.
   const allObservations = allEntries.flatMap((e) => e.observations);
-  const patientState = derivePatientState(allObservations, template);
+  const patientState = derivePatientState(
+    allObservations,
+    template,
+    patient.post_op_day ?? patient.admission_day,
+    { surgeryDate: patient.surgery_date, admittedOn: patient.admitted_on }
+  );
   const { matched, missing, extra, openTasks, doneTasks, pending, pac } = patientState;
+
+  // Whether the one-tap "Routine round" has anything left to fill: a core checklist item with
+  // a "normal" phrase that nothing fresh has been recorded against today.
+  const routineFillable = matched.some(
+    (m) => m.item.normal_phrase && (m.missing || m.pertinentNegative)
+  );
 
   // Before surgery is exactly what the templates already mean by it — no date of operation on
   // record yet. The PAC section belongs to that stretch of the admission and nowhere else:
@@ -320,10 +344,11 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       </header>
 
 
-      {(openTasks.length > 0 || doneTasks.length > 0) && (
+      {(openTasks.length > 0 || doneTasks.length > 0 || scoringTasks.length > 0) && (
         <section className="px-4 pb-6">
           <p className="ios-group-header mb-2 px-4">
-            Advices, plans &amp; to do{openTasks.length > 0 ? ` · ${openTasks.length}` : ""}
+            Advices, plans &amp; to do
+            {openTasks.length + scoringTasks.length > 0 ? ` · ${openTasks.length + scoringTasks.length}` : ""}
           </p>
 
           <div className="ios-group">
@@ -375,11 +400,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 );
               })}
             </ul>
-          ) : (
+          ) : scoringTasks.length === 0 ? (
             <p className="px-4 py-3 text-[15px] text-muted">
               Nothing outstanding.
             </p>
-          )}
+          ) : null}
+
+          <ScoringTaskRows patientId={patient.id} tasks={scoringTasks} />
 
           {doneTasks.length > 0 && (
             <details className="border-t border-line px-4 py-3">
@@ -407,6 +434,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           </div>
         </section>
       )}
+
+      <ScoreCards cards={scoreCards} />
+
 
       {pending.length > 0 && (
         <section className="px-4 pb-6">
@@ -446,6 +476,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             </Link>
           </div>
 
+          {template && routineFillable && <RoutineRoundButton patientId={patient.id} />}
+
           <details open className="ios-group [&[open]_.chev]:rotate-90">
             <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 active:bg-chip [&::-webkit-details-marker]:hidden">
               <span className="chev shrink-0 text-[11px] text-muted transition-transform">▶</span>
@@ -461,51 +493,43 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 cards of their own — nesting one ios-group inside another draws white on white
                 and reads as a box in a box. */}
             <div className="border-t border-line px-4 py-3">
-            {soapGroups(matched, extra).map(({ section, label, matchedItems, extraItems }) => (
+            {soapGroups(matched, extra).map(({ section, label, matchedItems, extraItems }) => {
+              // A never-mentioned symptom is written into the note as a pertinent negative
+              // ("no complaints of fever"), not shown as a blank row to chase.
+              const negatives = matchedItems
+                .filter((m) => m.pertinentNegative)
+                .map((m) => m.item.label);
+              const rows = matchedItems.filter((m) => !m.pertinentNegative);
+              return (
               <div key={section} className="mb-3 last:mb-0">
                 <p className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-muted">
                   {label}
                 </p>
                 {section === "objective" ? (
                   <ObjectiveBlock
-                    matchedItems={matchedItems}
+                    matchedItems={rows}
                     extraItems={extraItems}
+                    negatives={negatives}
                     sex={patient.sex}
                     wardRanges={wardRanges}
                   />
                 ) : (
-                <ul className="divide-y divide-line">
-                  {matchedItems.map((m) => (
-                    <li
-                      key={m.item.id}
-                      className="flex items-baseline justify-between gap-3 py-2"
-                    >
-                      <span className="text-[15px] text-muted">{m.item.label}</span>
-                      {m.value ? (
-                        <span className="text-sm text-right">{m.value}</span>
-                      ) : (
-                        // Absent is shown as absent. Never a placeholder, never a guess.
-                        <span
-                          className={
-                            "text-sm text-right " +
-                            (m.missing ? "text-orange-700" : "text-muted/50")
-                          }
-                        >
-                          not recorded
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                  {extraItems.map((o) => (
-                    <li key={o.id} className="flex items-baseline justify-between gap-3 py-2">
-                      <span className="text-[15px] text-muted">{o.label}</span>
-                      <span className="text-sm text-right">{o.value_text}</span>
-                    </li>
-                  ))}
-                </ul>
+                <SoapRows
+                  patientId={patient.id}
+                  writeKind={section === "plan" ? "plan" : "note"}
+                  rows={matchedItems.map((m) => ({
+                    id: m.item.id,
+                    label: m.item.label,
+                    value: m.value,
+                    missing: m.missing,
+                    pertinentNegative: m.pertinentNegative,
+                  }))}
+                  extras={extraItems.map((o) => ({ id: o.id, label: o.label, value: o.value_text }))}
+                />
                 )}
               </div>
-            ))}
+              );
+            })}
             </div>
           </details>
         </section>
@@ -1061,11 +1085,14 @@ function pacWhen(iso: string): string {
 function ObjectiveBlock({
   matchedItems,
   extraItems,
+  negatives = [],
   sex,
   wardRanges,
 }: {
   matchedItems: MatchedItem[];
   extraItems: Observation[];
+  /** Symptom checklist items nobody mentioned — written as "no complaints of …". */
+  negatives?: string[];
   sex: string | null;
   wardRanges: WardRanges;
 }) {
@@ -1092,14 +1119,25 @@ function ObjectiveBlock({
     ],
     { sex, wardRanges }
   );
-  // Only things with nothing recorded at all. A core item carrying yesterday's value is
-  // flagged stale by matchTemplate, but it is NOT missing — listing it here while the summary
-  // above prints its value would have the same line saying both at once.
-  const outstanding = matchedItems.filter((m) => m.missing && !m.value).map((m) => m.item.label);
+  // Objective checklist items with nothing recorded today. A core item carrying yesterday's
+  // value is flagged stale by matchTemplate, but it is NOT missing — listing it here while the
+  // summary above prints its value would have the same line saying both at once. Those with a
+  // set "normal" phrase (0056) read as that phrase; the rest fall back to "— NAD".
+  const undictated = matchedItems.filter((m) => m.missing && !m.value);
+  const nadPhrases = undictated
+    .map((m) => m.item.normal_phrase)
+    .filter((p): p is string => Boolean(p));
+  const outstanding = undictated.filter((m) => !m.item.normal_phrase).map((m) => m.item.label);
 
   // Not bordered: this now renders inside the Today card, which draws the only surface here.
   return (
-    <ObjectiveSummaryView summary={summary} outstanding={outstanding} emptyText="Nothing examined yet." />
+    <ObjectiveSummaryView
+      summary={summary}
+      outstanding={outstanding}
+      nadPhrases={nadPhrases}
+      pertinentNegatives={negatives}
+      emptyText="Nothing examined yet."
+    />
   );
 }
 

@@ -16,7 +16,7 @@ import {
   type HistopathologySpecimen,
   type Procedure,
 } from "@/lib/discharge-entities";
-import type { DischargeTemplate } from "@/lib/discharge-templates";
+import { matchDischargeTemplate, type DischargeTemplate } from "@/lib/discharge-templates";
 
 /**
  * Compile a PROPOSED discharge draft from what is already on the record.
@@ -62,6 +62,63 @@ const istDay = (iso: string | null): string | null =>
 
 /** yyyy-mm-dd from an ISO instant or date, for a date input. */
 const isoDate = (v: string | null): string | null => (v ? v.slice(0, 10) : null);
+
+/** The point of the Histopathology card for a resident is that the report gets TRACED — what
+ *  specimen was sent is secondary. So a compiled row always carries this line. */
+export const HPE_REVIEW_PLAN = "Review the histopathology report at the Surgery OPD follow-up.";
+
+/**
+ * The specimen an operation sends for histopathology, from its name — the same fixed-table
+ * approach as lib/diagnosis-from-procedure.ts. Returns "none" for operations that routinely
+ * send nothing, or null when the operation is not recognised (the caller then seeds a generic
+ * "operative specimen" reminder rather than nothing).
+ */
+const SPECIMEN_RULES: { match: RegExp; specimen: string | "none" }[] = [
+  { match: /chol(e|y)cystectom/i, specimen: "Gallbladder" },
+  { match: /appendic(ectom)/i, specimen: "Appendix" },
+  { match: /modified radical mastectom|\bmrm\b|simple mastectom|\bmastectom/i, specimen: "Breast and axillary contents" },
+  { match: /breast conservation|\bbcs\b|wide local excision|lumpectom/i, specimen: "Wide local excision specimen and sentinel / axillary node(s)" },
+  { match: /hemicolectom|colectom|anterior resection|abdominoperineal|\bapr\b|hartmann|sigmoidectom/i, specimen: "Colorectal resection specimen with regional lymph nodes" },
+  { match: /gastrectom/i, specimen: "Gastrectomy specimen with regional lymph nodes" },
+  { match: /thyroidectom|hemithyroidectom|thyroid lobectom/i, specimen: "Thyroid specimen" },
+  { match: /h(a)?emorrhoidectom/i, specimen: "Haemorrhoidal tissue" },
+  { match: /fistulectom|fistulotom/i, specimen: "Fistula tract" },
+  { match: /pilonidal/i, specimen: "Pilonidal sinus tissue" },
+  { match: /resection anastomosis|bowel resection|small bowel resection|ileal resection|resection[- ]anastomosis/i, specimen: "Resected bowel segment" },
+  { match: /graham patch|omentopexy|duodenal perforation|peptic perforation/i, specimen: "Biopsy from the ulcer edge" },
+  { match: /excision biopsy|wedge biopsy|incision(al)? biopsy|tru-?cut|excision of (a )?(lipoma|sebaceous cyst|cyst|swelling|lump|lesion|sinus|ulcer|mass)|(lipoma|sebaceous cyst|swelling|lump|nodule) excision/i, specimen: "Excised specimen" },
+  // Routinely sends nothing.
+  { match: /hernio(plasty|rrhaphy)|mesh repair|\bhernia\b/i, specimen: "none" },
+  { match: /incision and drainage|\bi\s*&?\s*d\b|drainage of (an? )?abscess/i, specimen: "none" },
+  { match: /sphincterotom/i, specimen: "none" },
+  { match: /varicose vein|\bevlt\b|vein stripping|sclerotherapy/i, specimen: "none" },
+  { match: /hydrocelectom|eversion of (the )?sac|jaboulay|lord'?s (plication|procedure)/i, specimen: "none" },
+];
+
+export function specimenForProcedure(name: string | null | undefined): string | "none" | null {
+  const n = (name ?? "").trim();
+  if (!n) return null;
+  return SPECIMEN_RULES.find((r) => r.match.test(n))?.specimen ?? null;
+}
+
+/** A histopathology row for the specimen an operation sends — pending, with the review plan
+ *  that makes it get traced. Returns null when the operation routinely sends nothing. */
+export function pendingHistopathologyFor(
+  procedureName: string | null | undefined,
+  surgeryDate: string | null
+): HistopathologySpecimen | null {
+  const s = specimenForProcedure(procedureName);
+  if (s === "none") return null;
+  return {
+    id: "hpe-op",
+    specimen: s ?? "Operative specimen",
+    dateSent: isoDate(surgeryDate),
+    status: "pending",
+    result: null,
+    reviewPlan: HPE_REVIEW_PLAN,
+    source: "compiled",
+  };
+}
 
 function latestByKinds(observations: Observation[], kinds: string[]): Observation[] {
   const seen = new Set<string>();
@@ -180,7 +237,11 @@ function compileHistopathology(context: DischargeContext): HistopathologySpecime
   const out: HistopathologySpecimen[] = [];
   let i = 0;
   for (const o of context.observations) {
-    if (!PATHOLOGY_LABEL.test(`${o.label} ${o.value_text ?? ""}`)) continue;
+    // Match on the LABEL only. An operative note whose text says "specimen retrieved through
+    // the epigastric port" is not a histopathology record, and neither is a procedure_done
+    // observation — matching the value text pulled both in as fake specimens.
+    if (!PATHOLOGY_LABEL.test(o.label)) continue;
+    if (o.kind === "procedure_done" || OPERATIVE_LABEL.test(o.label) || POST_OP_LABEL.test(o.label)) continue;
     const result = (o.value_text ?? "").trim() || null;
     // A line that reads like an actual histopathology report is "final"; a bare "HPE sent" is
     // "pending". The resident sets the truth — this is only the starting point.
@@ -191,10 +252,24 @@ function compileHistopathology(context: DischargeContext): HistopathologySpecime
       dateSent: isoDate(o.recorded_at),
       status: looksReported ? "final" : "pending",
       result: looksReported ? result : null,
-      reviewPlan: null,
+      reviewPlan: looksReported ? null : HPE_REVIEW_PLAN,
       source: "compiled",
     });
   }
+
+  // Nothing on the record yet — but an operation was done. The specimen it sends is pending,
+  // and the point of the row is that the report gets traced.
+  if (out.length === 0) {
+    const procedureName =
+      context.procedure ??
+      context.observations.find((o) => o.kind === "procedure_done")?.value_text ??
+      null;
+    if (procedureName) {
+      const row = pendingHistopathologyFor(procedureName, context.patient.surgery_date);
+      if (row) out.push(row);
+    }
+  }
+
   return out;
 }
 
@@ -307,10 +382,31 @@ export function applyDischargeTemplate(
     next.redFlags = { items: [...s.redFlags], included: seedAll };
   }
 
+  // A ward patient stops here: the record compiles their diagnosis, operation, course and
+  // medications — the template only OFFERS the advice and red-flag cards above (switched off).
   if (!seedAll) return next;
 
   if (!draft.indicationForAdmission.text.trim()) {
     next.indicationForAdmission = { text: s.indication, source: "resident" };
+  }
+  if (!draft.clinicalCourse.text.trim() && s.clinicalCourse) {
+    next.clinicalCourse = { text: s.clinicalCourse, source: "resident", uncertainPoints: [] };
+  }
+  if (draft.medications.length === 0 && s.medications.length > 0) {
+    next.medications = s.medications.map((m, i) => ({
+      id: compiledRowId("med", i),
+      generic: m.generic,
+      strength: m.strength ?? null,
+      dose: m.dose ?? null,
+      route: m.route ?? null,
+      frequency: m.frequency ?? null,
+      duration: m.duration ?? null,
+      indication: m.indication ?? null,
+      status: m.status,
+      reason: null,
+      drugKey: drugKey(m.generic),
+      source: "resident" as const,
+    }));
   }
   if (!draft.diagnoses.some((d) => d.category === "primary") && s.primaryDiagnosis) {
     next.diagnoses = [
@@ -353,6 +449,13 @@ export function applyDischargeTemplate(
   }
   if (draft.patientActions.length === 0) next.patientActions = [...s.patientActions];
   if (draft.primaryCareActions.length === 0) next.primaryCareActions = [...s.primaryCareActions];
+
+  // The specimen the operation sends, pending, with the line that makes the report get traced —
+  // now that the procedure name is resolved.
+  if (next.histopathology.length === 0) {
+    const row = pendingHistopathologyFor(next.procedures[0]?.name, next.procedures[0]?.date ?? null);
+    if (row) next.histopathology = [row];
+  }
 
   const noVarSet = CONDITION_VARIABLES.every((v) => draft.conditionAtDischarge.vars[v.key] === null);
   if (s.conditionAllSatisfactory && noVarSet) {
@@ -410,9 +513,19 @@ export function compileDischargeDraft(
     },
   };
 
-  return options?.template
-    ? applyDischargeTemplate(base, options.template, options.seedAll ?? false)
-    : base;
+  // The one-off flow passes an explicit template + seedAll. A ward patient gets the template
+  // its diagnosis / operation points at, applied with seedAll=false — so only the advice and
+  // red-flag cards are offered (switched off), and everything else stays compiled from the
+  // record.
+  const template =
+    options?.template ??
+    matchDischargeTemplate({
+      procedureText: context.procedure ?? patient.procedure_text,
+      diagnosisText: base.diagnoses.find((d) => d.category === "primary")?.text,
+      templateFamily: patient.template_family,
+    });
+
+  return template ? applyDischargeTemplate(base, template, options?.seedAll ?? false) : base;
 }
 
 /** For the console-test script and the compile digest — the human-readable admission date. */

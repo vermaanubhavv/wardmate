@@ -1,4 +1,6 @@
+import Link from "next/link";
 import FormularyLink from "./formulary-link";
+import type { DischargeSectionId } from "@/lib/discharge-entities";
 import {
   letterheadNamesUnit,
   procedureLines,
@@ -11,17 +13,43 @@ import {
  * The discharge summary itself, in the protocol's section order (v1.0). One layout, rendered
  * both for a patient on the ward and for a one-off — see app/prepare-discharge. Generic
  * NABH/ABDM headings; a field the record never held prints a ruled blank, never a guess.
+ *
+ * When `editBase` is given (a real patient), each section heading is a link back to that card
+ * in the workspace — tap the line you want to change. It reads as a plain heading on paper.
  */
+function SectionHeading({
+  editBase,
+  section,
+  children,
+}: {
+  editBase?: string;
+  section: DischargeSectionId;
+  children: React.ReactNode;
+}) {
+  if (!editBase) return <p className="mt-3 font-bold underline">{children}</p>;
+  return (
+    <Link
+      href={`${editBase}?section=${section}`}
+      className="mt-3 flex items-baseline justify-between font-bold underline decoration-dotted print:no-underline"
+    >
+      <span>{children}</span>
+      <span className="ml-2 text-[10px] font-normal text-accent no-underline print:hidden">edit</span>
+    </Link>
+  );
+}
+
 export default function DischargeSheet({
   doc,
   wardId,
   patientId,
   formularyAvailable,
+  editBase,
 }: {
   doc: DischargeDocument;
   wardId: string;
   patientId: string;
   formularyAvailable: boolean;
+  editBase?: string;
 }) {
   return (
     <section className="px-4 pb-4 print:px-0">
@@ -68,7 +96,7 @@ export default function DischargeSheet({
         </table>
 
         {/* 2. Encounter Details */}
-        <Heading>Encounter Details</Heading>
+        <SectionHeading editBase={editBase} section="encounter">Encounter Details</SectionHeading>
         <div className="grid grid-cols-2 gap-x-4 text-[12px]">
           {doc.encounter.map((row) => (
             <p key={row.label}>
@@ -79,11 +107,11 @@ export default function DischargeSheet({
         </div>
 
         {/* 3. Indication for Admission */}
-        <Heading>Indication for Admission</Heading>
+        <SectionHeading editBase={editBase} section="indication">Indication for Admission</SectionHeading>
         <p className="text-[12px]">{doc.indication || BLANK}</p>
 
         {/* 4. Diagnoses */}
-        <Heading>Diagnoses</Heading>
+        <SectionHeading editBase={editBase} section="diagnoses">Diagnoses</SectionHeading>
         <DxBlock title="Primary Diagnosis" items={doc.diagnoses.primary} blankIfEmpty />
         <DxBlock title="Secondary Diagnosis" items={doc.diagnoses.secondary} />
         <DxBlock title="Relevant Comorbidities" items={doc.diagnoses.comorbidities} />
@@ -92,7 +120,7 @@ export default function DischargeSheet({
         {/* 5. Operation / Procedures */}
         {doc.procedures.length > 0 && (
           <>
-            <Heading>Operation / Procedures</Heading>
+            <SectionHeading editBase={editBase} section="procedures">Operation / Procedures</SectionHeading>
             {doc.procedures.map((p) => (
               <div key={p.id} className="mb-1 text-[12px]">
                 {procedureLines(p).map((l, i) => (
@@ -106,7 +134,7 @@ export default function DischargeSheet({
         )}
 
         {/* 6. Clinical Course */}
-        <Heading>Clinical Course</Heading>
+        <SectionHeading editBase={editBase} section="clinicalCourse">Clinical Course</SectionHeading>
         <p className="whitespace-pre-wrap text-[12px] leading-relaxed">{doc.clinicalCourse || BLANK}</p>
         {doc.clinicalCourse && !doc.clinicalCourseApproved && (
           <p className="text-[11px] italic text-black print:hidden">Not yet approved by the resident.</p>
@@ -115,7 +143,7 @@ export default function DischargeSheet({
         {/* 7. Relevant Investigations */}
         {doc.investigations.length > 0 && (
           <>
-            <Heading>Relevant Investigations and Results</Heading>
+            <SectionHeading editBase={editBase} section="relevantInvestigations">Relevant Investigations and Results</SectionHeading>
             {doc.investigations.map((i, k) => (
               <p key={k} className="text-[12px]">
                 <span className="font-bold">{i.group}: </span>
@@ -129,7 +157,7 @@ export default function DischargeSheet({
         {/* 8. Histopathology */}
         {doc.histopathology.length > 0 && (
           <>
-            <Heading>Histopathology</Heading>
+            <SectionHeading editBase={editBase} section="histopathology">Histopathology</SectionHeading>
             {doc.histopathology.map((h) => (
               <div key={h.id} className="mb-1 text-[12px]">
                 <p className="font-bold">Specimen: {h.specimen}</p>
@@ -142,7 +170,7 @@ export default function DischargeSheet({
         )}
 
         {/* 9. Medications on Discharge */}
-        <Heading>Medications on Discharge</Heading>
+        <SectionHeading editBase={editBase} section="medications">Medications on Discharge</SectionHeading>
         {doc.medications.length === 0 ? (
           <p className="text-[12px]">{BLANK}</p>
         ) : (
@@ -167,11 +195,11 @@ export default function DischargeSheet({
         )}
 
         {/* 10. Condition at Discharge */}
-        <Heading>Condition at Discharge</Heading>
+        <SectionHeading editBase={editBase} section="conditionAtDischarge">Condition at Discharge</SectionHeading>
         <p className="text-[12px]">{doc.condition || BLANK}</p>
 
         {/* 11. Primary Care Actions */}
-        <Heading>Primary Care Actions</Heading>
+        <SectionHeading editBase={editBase} section="primaryCareActions">Primary Care Actions</SectionHeading>
         {doc.primaryCareActions.length === 0 ? (
           <p className="text-[12px]">None.</p>
         ) : (
@@ -183,7 +211,7 @@ export default function DischargeSheet({
         )}
 
         {/* 12. Patient Actions */}
-        <Heading>Patient Actions</Heading>
+        <SectionHeading editBase={editBase} section="patientActions">Patient Actions</SectionHeading>
         {doc.patientActions.length === 0 ? (
           <p className="text-[12px]">None.</p>
         ) : (
@@ -197,7 +225,7 @@ export default function DischargeSheet({
         {/* 13. Advice */}
         {doc.advice && doc.advice.length > 0 && (
           <>
-            <Heading>Advice</Heading>
+            <SectionHeading editBase={editBase} section="advice">Advice</SectionHeading>
             {doc.advice.map((a) => (
               <p key={a.id} className="text-[12px]">
                 <span className="font-bold">{a.module}: </span>
@@ -210,7 +238,7 @@ export default function DischargeSheet({
         {/* 14. Red Flags */}
         {doc.redFlags && doc.redFlags.length > 0 && (
           <>
-            <Heading>When to Seek Medical Attention</Heading>
+            <SectionHeading editBase={editBase} section="redFlags">When to Seek Medical Attention</SectionHeading>
             <ul className="list-disc pl-5 text-[12px]">
               {doc.redFlags.map((r, i) => (
                 <li key={i}>{r}</li>
@@ -220,7 +248,7 @@ export default function DischargeSheet({
         )}
 
         {/* 15. Authentication */}
-        <Heading>Authentication</Heading>
+        <SectionHeading editBase={editBase} section="authentication">Authentication</SectionHeading>
         <div className="text-[12px]">
           <p className="font-bold">{doc.authentication.name || BLANK}</p>
           {doc.authentication.designation && <p>{doc.authentication.designation}</p>}
@@ -240,10 +268,6 @@ function Cell({ b, children }: { b: string; children: React.ReactNode }) {
       {children}
     </td>
   );
-}
-
-function Heading({ children }: { children: React.ReactNode }) {
-  return <p className="mt-3 font-bold underline">{children}</p>;
 }
 
 function DxBlock({

@@ -104,6 +104,10 @@ export function buildProgressNote(
     /** This ward's own accumulated lab ranges — see lib/lab-ranges.ts. Absent falls back to the
      *  built-in table for anything without a report range of its own. */
     wardRanges?: WardRanges;
+    /** Clinical-score line(s) — e.g. "BISAP – 2/5" — computed by lib/scoring from recorded
+     *  values only. Empty / omitted when no scoring pathway is active. Printed as its own
+     *  item just above Issues; never invented, marked "so far" while inputs are missing. */
+    scoreLines?: string[];
   }
 ): ProgressNote {
   const now = new Date();
@@ -245,9 +249,11 @@ export function buildProgressNote(
 
   // Genuinely last: Assessment and Issues are the wrap-up of the round, and everything else on
   // the sheet is written before the resident gets to them, never after.
+  const scoreLines = options?.scoreLines ?? [];
+
   const observation = [
     line2, line3, line3b, line4, line5, line5b, line6, line6b, line7, line7b, line7c,
-    line8, line9, ...issueBlankLines,
+    line8, ...scoreLines, line9, ...issueBlankLines,
   ];
 
   // 11. Advice and medications — the CURRENT list, not just today's. A drug chart photographed

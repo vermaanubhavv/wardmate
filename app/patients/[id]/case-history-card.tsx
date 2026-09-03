@@ -1,4 +1,10 @@
 import { summariseCaseHistory } from "@/lib/case-history";
+
+/** "a" · "a and b" · "a, b and c" — a plain-English list for a sentence, no Oxford comma. */
+export function formatList(items: string[]): string {
+  if (items.length <= 1) return items.join("");
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
 import { summariseObjective, type WardRanges } from "@/lib/exam-summary";
 import type { Observation } from "@/lib/patient-state";
 
@@ -86,10 +92,20 @@ export function CaseHistoryCard({
 export function ObjectiveSummaryView({
   summary,
   outstanding = [],
+  nadPhrases = [],
+  pertinentNegatives = [],
   emptyText,
 }: {
   summary: ReturnType<typeof summariseObjective>;
+  /** Objective checklist items nobody dictated that have no "normal" phrase of their own —
+   *  shown as "Drain, oral intake — NAD". */
   outstanding?: string[];
+  /** The "normal" wording for objective items nobody dictated — "Afebrile", "Wound healthy,
+   *  dry" (0056_normal_phrase). Printed as the note sentence itself, no "— NAD". */
+  nadPhrases?: string[];
+  /** Symptom checklist items nobody selected or dictated. On a round this reads as a
+   *  pertinent negative — "no complaints of fever" — rather than a gap to chase. */
+  pertinentNegatives?: string[];
   /** Shown when there is genuinely nothing to report. Omit to render nothing in that case. */
   emptyText?: string;
 }) {
@@ -157,9 +173,25 @@ export function ObjectiveSummaryView({
 
       {empty && emptyText && <p className="text-muted">{emptyText}</p>}
 
-      {outstanding.length > 0 && (
-        <p className="mt-2 text-[13px] text-orange-700">
-          Not recorded: {outstanding.join(", ")}
+      {pertinentNegatives.length > 0 && (
+        <p className="mt-1.5 text-[13px] text-muted">
+          No complaints of {formatList(pertinentNegatives)}.
+        </p>
+      )}
+
+      {/* Objective checklist items nobody dictated. On a round the resident examines and
+          speaks only what is abnormal, so an unmentioned item reads as its "normal" wording
+          ("Afebrile", "Wound healthy") — or, for an item with no set phrase, "— NAD". Both
+          only once something else in this section was recorded, so a bedside nobody has
+          examined yet still says so. */}
+      {nadPhrases.length > 0 && !empty && (
+        <p className="mt-1.5 text-[13px] text-muted">
+          {nadPhrases.join(". ").replace(/^./, (c) => c.toUpperCase())}.
+        </p>
+      )}
+      {outstanding.length > 0 && !empty && (
+        <p className="mt-1.5 text-[13px] text-muted">
+          {outstanding.join(", ").replace(/^./, (c) => c.toUpperCase())} — NAD
         </p>
       )}
     </div>

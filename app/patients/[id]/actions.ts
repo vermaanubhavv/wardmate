@@ -3,8 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { nextUrgency, type Urgency } from "@/lib/urgency";
+import { istDayKey } from "@/lib/patient-state";
 import { extractObservations } from "@/lib/extract";
-import { getTemplateForPatient } from "@/lib/templates";
+import { getTemplateForPatient, matchTemplate } from "@/lib/templates";
+
+const CONCERNING_RE =
+  /\b(deteriorat|worsen|unwell|septic|sepsis|shock|re-?explor|re-?sutur|resutur|burst|dehisc|icu|hdu|critical|peritonit|collapse|arrest)\b/i;
 
 /**
  * The resident has read what was heard and stands behind it.
@@ -311,6 +315,147 @@ export async function completeTask(formData: FormData) {
 /** Put it back on the list, for when something was ticked in error. */
 export async function reopenTask(formData: FormData) {
   await setTaskDone(formData, false);
+}
+
+/**
+ * One tap on a routine round.
+ *
+ * Fills every un-covered core checklist item with its "normal" wording (0056_normal_phrase)
+ * as a confirmed observation, and — when nothing on today's record reads as concerning — a
+ * plain "No fresh complaints" and "Satisfactory" assessment. The resident is asserting these
+ * deliberately, the same standing as ticking a box, and the note screen shows exactly what
+ * was written. Anything already recorded today is left untouched; anything with no "normal"
+ * phrase (post-op day, plan, a diagnosis) is skipped.
+ */
+const ROUTINE_OBS_KINDS = new Set(["vital", "exam", "drain", "intake_output", "lab", "note"]);
+const ROUTINE_SKIP_KINDS = new Set([
+  "plan",
+  "diagnosis",
+  "day_number",
+  "medication",
+  "pac_status",
+  "procedure_done",
+  "planned_procedure",
+]);
+
+export async function markRoutineRound(
+  patientId: string
+): Promise<{ ok: boolean; filled: number; error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, filled: 0, error: "Not signed in." };
+
+  const { data: patient } = await supabase
+    .from("current_patients")
+    .select("id, post_op_day, admission_day, surgery_date, admitted_on, template_family, template_variant")
+    .eq("id", patientId)
+    .maybeSingle();
+  if (!patient) return { ok: false, filled: 0, error: "Patient not found." };
+
+  const template = await getTemplateForPatient(patient);
+  if (!template) {
+    return { ok: false, filled: 0, error: "This patient has no checklist to fill from." };
+  }
+
+  const { data: obsRows } = await supabase
+    .from("observations")
+    .select("kind, label, value_text, recorded_at, urgency")
+    .eq("patient_id", patientId)
+    .order("recorded_at", { ascending: false });
+  const observations = (obsRows ?? []) as {
+    kind: string;
+    label: string;
+    value_text: string | null;
+    recorded_at: string;
+    urgency: string | null;
+  }[];
+
+  const knownDay = patient.post_op_day ?? patient.admission_day ?? null;
+  const matched = matchTemplate(template, observations, {
+    knownDay,
+    surgeryDate: patient.surgery_date,
+    admittedOn: patient.admitted_on,
+  });
+
+  const toFill = matched.filter(
+    (m) =>
+      m.item.normal_phrase &&
+      (m.missing || m.pertinentNegative) &&
+      !ROUTINE_SKIP_KINDS.has(m.item.kind)
+  );
+
+  const today = istDayKey(new Date().toISOString());
+  const recordedTodayLabels = new Set(
+    observations
+      .filter((o) => istDayKey(o.recorded_at) === today)
+      .map((o) => o.label.toLowerCase().trim())
+  );
+  const concerning = observations.some(
+    (o) => o.urgency === "red" || CONCERNING_RE.test(`${o.label} ${o.value_text ?? ""}`)
+  );
+
+  const now = new Date().toISOString();
+  const rows: {
+    entry_id: string;
+    patient_id: string;
+    kind: string;
+    label: string;
+    value_text: string;
+    source_quote: string;
+    needs_confirmation: boolean;
+    confirmed_at: string;
+    confirmed_by: string;
+  }[] = [];
+
+  const { data: entry } = await supabase
+    .from("entries")
+    .insert({ patient_id: patientId, author_id: user.id, source: "manual", transcript: "Routine round" })
+    .select("id")
+    .single();
+  if (!entry) return { ok: false, filled: 0, error: "Could not open today's round." };
+
+  const push = (kind: string, label: string, text: string) =>
+    rows.push({
+      entry_id: entry.id,
+      patient_id: patientId,
+      kind,
+      label,
+      value_text: text,
+      source_quote: "Routine round",
+      needs_confirmation: false,
+      confirmed_at: now,
+      confirmed_by: user.id,
+    });
+
+  for (const m of toFill) {
+    const kind = ROUTINE_OBS_KINDS.has(m.item.kind)
+      ? m.item.kind
+      : m.item.soap_section === "subjective"
+        ? "note"
+        : "exam";
+    push(kind, m.item.label, m.item.normal_phrase as string);
+  }
+
+  if (!concerning) {
+    if (!recordedTodayLabels.has("complaints")) push("note", "complaints", "No fresh complaints");
+    if (!recordedTodayLabels.has("assessment")) push("note", "assessment", "Satisfactory");
+  }
+
+  if (rows.length === 0) {
+    await supabase.from("entries").delete().eq("id", entry.id);
+    return { ok: true, filled: 0 };
+  }
+
+  const { error } = await supabase.from("observations").insert(rows);
+  if (error) {
+    await supabase.from("entries").delete().eq("id", entry.id);
+    return { ok: false, filled: 0, error: error.message };
+  }
+
+  revalidateEverywhere(patientId);
+  return { ok: true, filled: rows.length };
 }
 
 async function setTaskDone(formData: FormData, done: boolean) {
