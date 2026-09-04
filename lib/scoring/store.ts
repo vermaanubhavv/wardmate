@@ -13,7 +13,7 @@
 
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { isScoringEngineEnabled } from "./flag";
+import { isScoringEngineEnabled, scoringEngineGloballyEnabled } from "./flag";
 import { definitionsForSpecialty, getDefinition } from "./definitions/registry";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { getWardSpecialtyStored } from "@/lib/ward";
@@ -39,6 +39,11 @@ const nowIso = (): Instant => new Date().toISOString();
 // ---------------------------------------------------------------------------
 
 export async function syncPatientPathways(patientId: string): Promise<void> {
+  // The global kill-switch is a pure env read. Checking it before touching the database
+  // means a patient page with the engine off (every ward, today) does not pay for a
+  // `patients` round trip on every open just to discover there is nothing to do.
+  if (!scoringEngineGloballyEnabled()) return;
+
   const supabase = await createClient();
 
   const { data: patient } = await supabase
@@ -81,6 +86,7 @@ export async function syncPatientPathways(patientId: string): Promise<void> {
 }
 
 export async function recomputeInstance(instanceId: string, trigger = "manual"): Promise<void> {
+  if (!scoringEngineGloballyEnabled()) return;
   const supabase = await createClient();
   const { data: inst } = await supabase
     .from("pathway_instances")

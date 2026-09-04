@@ -7,7 +7,7 @@
 
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { isScoringEngineEnabled } from "./flag";
+import { isScoringEngineEnabled, scoringEngineGloballyEnabled } from "./flag";
 import { getDefinition } from "./definitions/registry";
 import type { CardDefinition, CardResult } from "./types";
 
@@ -63,6 +63,7 @@ function cardMeta(def: CardDefinition) {
 }
 
 export async function getScoreCards(patientId: string): Promise<ScoreCardView[]> {
+  if (!scoringEngineGloballyEnabled()) return [];
   const supabase = await createClient();
   const { data: patient } = await supabase.from("patients").select("ward_id").eq("id", patientId).maybeSingle();
   if (!patient || !(await isScoringEngineEnabled(patient.ward_id))) return [];
@@ -159,6 +160,7 @@ export type ScoringTask = {
 };
 
 export async function getPatientScoringTasks(patientId: string): Promise<ScoringTask[]> {
+  if (!scoringEngineGloballyEnabled()) return [];
   const supabase = await createClient();
   const { data: patient } = await supabase.from("patients").select("ward_id").eq("id", patientId).maybeSingle();
   if (!patient || !(await isScoringEngineEnabled(patient.ward_id))) return [];
@@ -175,6 +177,7 @@ export async function getPatientScoringTasks(patientId: string): Promise<Scoring
 
 /** patientId → open scoring tasks, for the ward-wide /todo screen. */
 export async function getWardScoringTasks(wardId: string): Promise<Map<string, ScoringTask[]>> {
+  if (!scoringEngineGloballyEnabled()) return new Map();
   const supabase = await createClient();
   if (!(await isScoringEngineEnabled(wardId))) return new Map();
 

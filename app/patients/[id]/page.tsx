@@ -95,6 +95,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     templateChoices,
     template,
     { data: dischargeRow },
+    wardRanges,
   ] = await Promise.all([
       getActivePatients(patient.ward_id, pack.key !== "general_surgery"),
       supabase
@@ -111,6 +112,15 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       getTemplateForPatient(patient),
       // Just the status line for the discharge fold — the workspace itself fetches the rest.
       supabase.from("discharge_summaries").select("status").eq("patient_id", id).maybeSingle(),
+      // This ward's own laboratory ranges, for results that arrived without a report to read.
+      // Needs only patient.ward_id, so it belongs in the batch rather than a round trip of its
+      // own after it.
+      getWardLabRanges(patient.ward_id),
+      // Keeps scoring pathways in step with the latest observations. Instant no-op unless
+      // NEXT_PUBLIC_SCORING_ENGINE=on (lib/scoring/store.ts), so it costs nothing here today;
+      // when a pilot ward turns it on, the recompute still finishes before the reads below
+      // because this promise is awaited as part of the batch.
+      syncPatientPathways(id),
     ]);
   const dischargeStatus = (dischargeRow?.status as "draft" | "finalised" | undefined) ?? null;
   const here = ward.findIndex((p) => p.id === patient.id);
@@ -139,38 +149,33 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const matchedIds = Array.from(
     new Set(allEntries.flatMap((e) => e.matched_protocol_ids ?? []))
   );
-  // This ward's own laboratory ranges, for results that arrived without a report to read.
-  const wardRanges = await getWardLabRanges(patient.ward_id);
-
-  // Clinical scoring & auto-trigger engine. Both calls are inert unless the ward has opted in
-  // AND NEXT_PUBLIC_SCORING_ENGINE=on (lib/scoring/flag.ts) — with the flag closed this adds
-  // nothing to the page (DOCX test 16). The refresh keeps pathways in step with any new
-  // observation the same "computed fresh on read" way post-op day is.
-  await syncPatientPathways(id);
+  // Clinical scoring & auto-trigger engine. Inert unless the ward has opted in AND
+  // NEXT_PUBLIC_SCORING_ENGINE=on (lib/scoring/flag.ts) — with the flag closed both calls
+  // return immediately without touching the database (DOCX test 16). syncPatientPathways
+  // already ran in the batch above, so these reads see a fresh set.
   const [scoringTasks, scoreCards] = await Promise.all([getPatientScoringTasks(id), getScoreCards(id)]);
 
-  const protocolTitles = new Map<string, string>();
-  if (matchedIds.length > 0) {
-    const { data: matchedProtocols } = await supabase
-      .from("company_protocols")
-      .select("id, title")
-      .in("id", matchedIds);
-    for (const p of matchedProtocols ?? []) protocolTitles.set(p.id, p.title);
+  // Short-lived links for the stored photographs (private bucket, one-hour expiry, minted only
+  // here for a doctor already confirmed on this patient's ward) and the titles of any matched
+  // protocols. Both need the entry list that just came back, and neither needs the other, so
+  // they go out together rather than one after the next.
+  const photoPaths = allEntries.map((e) => e.photo_path).filter((p): p is string => Boolean(p));
+  const [signedRes, matchedProtocolsRes] = await Promise.all([
+    photoPaths.length > 0
+      ? supabase.storage.from("evidence").createSignedUrls(photoPaths, 3600)
+      : Promise.resolve({ data: [] as { path?: string | null; signedUrl?: string | null }[] }),
+    matchedIds.length > 0
+      ? supabase.from("company_protocols").select("id, title").in("id", matchedIds)
+      : Promise.resolve({ data: [] as { id: string; title: string }[] }),
+  ]);
+
+  const photoUrls = new Map<string, string>();
+  for (const s of signedRes.data ?? []) {
+    if (s.path && s.signedUrl) photoUrls.set(s.path, s.signedUrl);
   }
 
-  // Short-lived links for the stored photographs. The bucket is private, so these are the
-  // only way to see one, they expire in an hour, and they are only ever minted here — for a
-  // doctor the database has already confirmed is a member of this patient's ward.
-  const photoPaths = allEntries.map((e) => e.photo_path).filter((p): p is string => Boolean(p));
-  const photoUrls = new Map<string, string>();
-  if (photoPaths.length > 0) {
-    const { data: signed } = await supabase.storage
-      .from("evidence")
-      .createSignedUrls(photoPaths, 3600);
-    for (const s of signed ?? []) {
-      if (s.path && s.signedUrl) photoUrls.set(s.path, s.signedUrl);
-    }
-  }
+  const protocolTitles = new Map<string, string>();
+  for (const p of matchedProtocolsRes.data ?? []) protocolTitles.set(p.id, p.title);
 
   // The template decides both what to expect and what order to show it in, so the things that
   // matter for this operation lead the screen instead of whatever happened to be said first.
