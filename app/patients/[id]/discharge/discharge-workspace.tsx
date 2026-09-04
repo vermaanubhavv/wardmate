@@ -19,7 +19,8 @@ import { buildConditionProse } from "@/lib/discharge-compile";
 import { runDischargeChecks, type DischargeCheckContext } from "@/lib/discharge-checks";
 import type { DischargeCheck } from "@/lib/discharge-checks";
 import FormularyLink from "./formulary-link";
-import { Field, Area, StringList } from "./discharge-fields";
+import { Field, Area, StringList, SuggestField, SegmentedField } from "./discharge-fields";
+import { DEFAULT_UNIT_CONSULTANTS } from "@/lib/unit-consultants";
 import DiagnosisCombobox from "../../diagnosis-combobox";
 import { IconCheck, statusChip, SelChip, OptionRow, Toggle, genBtn, approveBtn } from "../card-kit";
 import {
@@ -31,6 +32,13 @@ import {
 } from "./actions";
 
 const uid = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `r-${Math.round(Math.random() * 1e9)}`);
+
+// The Encounter card's suggestion lists — real ones, kept short. None of these narrow what can
+// be typed; they only save a tap for the value that is there almost every time.
+const DEPARTMENT_SUGGESTIONS = ["General Surgery", "Surgical Gastroenterology", "Surgical Oncology"];
+const UNIT_SUGGESTIONS = ["Unit Alpha", "Unit 1", "Unit 2", "Unit 3", "Unit 4"];
+const CONSULTANT_SUGGESTIONS = Array.from(new Set(Object.values(DEFAULT_UNIT_CONSULTANTS)));
+const ADMISSION_TYPES = ["Emergency", "Elective"];
 
 // --- the look ------------------------------------------------------------------
 //
@@ -548,13 +556,15 @@ export default function DischargeWorkspace({
       case "encounter":
         return (
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Department" value={draft.encounter.department} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, department: v })} />
-            <Field label="Specialty" value={draft.encounter.specialty} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, specialty: v })} placeholder="General Surgery" />
+            <SuggestField label="Department" value={draft.encounter.department} options={DEPARTMENT_SUGGESTIONS} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, department: v })} />
+            <SuggestField label="Specialty" value={draft.encounter.specialty} options={DEPARTMENT_SUGGESTIONS} placeholder="General Surgery" onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, specialty: v })} />
             <Field label="Ward" value={draft.encounter.ward} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, ward: v })} />
             <Field label="Bed" value={draft.encounter.bed} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, bed: v })} />
-            <Field label="Consultant" value={draft.encounter.consultant} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, consultant: v })} />
-            <Field label="Unit" value={draft.encounter.unit} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, unit: v })} />
-            <Field label="Admission type" value={draft.encounter.admissionType} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, admissionType: v })} placeholder="Emergency / Elective" />
+            <SuggestField label="Consultant" value={draft.encounter.consultant} options={CONSULTANT_SUGGESTIONS} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, consultant: v })} />
+            <SuggestField label="Unit" value={draft.encounter.unit} options={UNIT_SUGGESTIONS} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, unit: v })} />
+            <div className="col-span-2">
+              <SegmentedField label="Admission type" value={draft.encounter.admissionType} options={ADMISSION_TYPES} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, admissionType: v })} />
+            </div>
           </div>
         );
 
