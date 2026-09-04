@@ -19,7 +19,7 @@ import { buildConditionProse } from "@/lib/discharge-compile";
 import { runDischargeChecks, type DischargeCheckContext } from "@/lib/discharge-checks";
 import type { DischargeCheck } from "@/lib/discharge-checks";
 import FormularyLink from "./formulary-link";
-import { Field, Area, StringList, SuggestField, SegmentedField } from "./discharge-fields";
+import { Field, Area, StringList, SuggestField, SelectField, SegmentedField } from "./discharge-fields";
 import { DEFAULT_UNIT_CONSULTANTS } from "@/lib/unit-consultants";
 import DiagnosisCombobox from "../../diagnosis-combobox";
 import { IconCheck, statusChip, SelChip, OptionRow, Toggle, genBtn, approveBtn } from "../card-kit";
@@ -33,12 +33,73 @@ import {
 
 const uid = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `r-${Math.round(Math.random() * 1e9)}`);
 
-// The Encounter card's suggestion lists — real ones, kept short. None of these narrow what can
-// be typed; they only save a tap for the value that is there almost every time.
+// The Encounter card's option lists — real ones, kept short. Department/Specialty/Unit are
+// suggestions only; typing anything else is still fine. Consultant is a closed set on purpose —
+// which unit a discharge is written on already says who the consultant is (compiled in from the
+// ward's own setting, lib/unit-consultants.ts), so this is a dropdown to correct it, not a box
+// to retype it every time and risk a typo on the paper.
 const DEPARTMENT_SUGGESTIONS = ["General Surgery", "Surgical Gastroenterology", "Surgical Oncology"];
 const UNIT_SUGGESTIONS = ["Unit Alpha", "Unit 1", "Unit 2", "Unit 3", "Unit 4"];
 const CONSULTANT_SUGGESTIONS = Array.from(new Set(Object.values(DEFAULT_UNIT_CONSULTANTS)));
 const ADMISSION_TYPES = ["Emergency", "Elective"];
+
+// The ~50 operations a general-surgery ward performs most often, offered under the Procedure
+// box the same way the diagnosis box offers COMMON_DIAGNOSES (lib/patients.ts) — a suggestion,
+// never a constraint. Naming matches the regexes in lib/discharge-templates.ts and
+// lib/discharge-compile.ts (SPECIMEN_RULES) wherever it can, so picking one from here also
+// picks up the right discharge template and histopathology default.
+const PROCEDURE_SUGGESTIONS = [
+  "Laparoscopic cholecystectomy",
+  "Open cholecystectomy",
+  "Laparoscopic appendicectomy",
+  "Appendicectomy (open)",
+  "Inguinal hernioplasty (mesh repair)",
+  "Laparoscopic hernia repair (TEP)",
+  "Umbilical hernia repair",
+  "Incisional hernia repair",
+  "Ventral hernia repair",
+  "Femoral hernia repair",
+  "Exploratory laparotomy",
+  "Graham's patch closure for perforated duodenal ulcer",
+  "Small bowel resection and anastomosis",
+  "Adhesiolysis for intestinal obstruction",
+  "Right hemicolectomy",
+  "Left hemicolectomy",
+  "Sigmoidectomy",
+  "Anterior resection",
+  "Abdominoperineal resection (APR)",
+  "Hartmann's procedure",
+  "Total colectomy",
+  "Loop ileostomy formation",
+  "Colostomy formation",
+  "Stoma closure",
+  "Modified radical mastectomy (MRM)",
+  "Breast conservation surgery with axillary clearance",
+  "Wide local excision with sentinel lymph node biopsy",
+  "Excision biopsy of a breast lump",
+  "Total thyroidectomy",
+  "Hemithyroidectomy",
+  "Haemorrhoidectomy",
+  "Fistulectomy for fistula in ano",
+  "Lateral internal sphincterotomy",
+  "Incision and drainage of abscess",
+  "Pilonidal sinus excision",
+  "Excision of sebaceous cyst",
+  "Excision of lipoma",
+  "Varicose vein stripping / EVLT",
+  "Hydrocelectomy (eversion of sac)",
+  "Orchidectomy",
+  "Circumcision",
+  "Splenectomy",
+  "Whipple's procedure (pancreaticoduodenectomy)",
+  "Distal pancreatectomy",
+  "Subtotal gastrectomy",
+  "Total gastrectomy",
+  "Gastrojejunostomy",
+  "Feeding jejunostomy",
+  "CBD exploration with T-tube drainage",
+  "Drainage of liver abscess",
+];
 
 // --- the look ------------------------------------------------------------------
 //
@@ -560,7 +621,7 @@ export default function DischargeWorkspace({
             <SuggestField label="Specialty" value={draft.encounter.specialty} options={DEPARTMENT_SUGGESTIONS} placeholder="General Surgery" onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, specialty: v })} />
             <Field label="Ward" value={draft.encounter.ward} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, ward: v })} />
             <Field label="Bed" value={draft.encounter.bed} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, bed: v })} />
-            <SuggestField label="Consultant" value={draft.encounter.consultant} options={CONSULTANT_SUGGESTIONS} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, consultant: v })} />
+            <SelectField label="Consultant" value={draft.encounter.consultant} options={CONSULTANT_SUGGESTIONS} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, consultant: v })} />
             <SuggestField label="Unit" value={draft.encounter.unit} options={UNIT_SUGGESTIONS} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, unit: v })} />
             <div className="col-span-2">
               <SegmentedField label="Admission type" value={draft.encounter.admissionType} options={ADMISSION_TYPES} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, admissionType: v })} />
@@ -619,7 +680,7 @@ export default function DischargeWorkspace({
                 patch("procedures", "procedures", draft.procedures.map((x, j) => (j === i ? { ...x, ...patchObj } : x)));
               return (
                 <div key={p.id} className="flex flex-col gap-2 rounded-[10px] border border-line p-2.5">
-                  <Field label="Procedure" value={p.name} onChange={(v) => setP({ name: v })} />
+                  <SuggestField label="Procedure" value={p.name} options={PROCEDURE_SUGGESTIONS} onChange={(v) => setP({ name: v })} />
                   <Field label="Date" type="date" value={p.date} onChange={(v) => setP({ date: v || null })} />
                   <Field label="Indication" value={p.indication} onChange={(v) => setP({ indication: v })} />
                   <Field label="Anaesthesia" value={p.anaesthesia} onChange={(v) => setP({ anaesthesia: v })} />

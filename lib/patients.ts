@@ -126,7 +126,7 @@ export const MANAGEMENT_CHOICES = [
  * list is never blocked or silently corrected to the nearest match.
  */
 /**
- * The 30 diagnoses a general-surgery ward admits most often, **ordered by frequency** — so the
+ * The 50 diagnoses a general-surgery ward admits most often, **ordered by frequency** — so the
  * combobox can show the top few before the resident has typed anything and narrow as they do.
  * The order is the ranking; slice(0, 5) is "the common ones". Anything typed that is not on
  * this list is still kept exactly as written — this only offers, never constrains.
@@ -162,6 +162,26 @@ export const COMMON_DIAGNOSES = [
   "Varicose veins",
   "Blunt abdominal trauma",
   "Chronic pancreatitis",
+  "Acute cholangitis",
+  "Liver abscess",
+  "Perforated peptic ulcer",
+  "Carcinoma gallbladder",
+  "Carcinoma pancreas",
+  "Splenic injury",
+  "Rectal prolapse",
+  "Breast abscess",
+  "Thyroid nodule",
+  "Multinodular goitre",
+  "Femoral hernia",
+  "Ventral hernia",
+  "Necrotising fasciitis",
+  "Mirizzi syndrome",
+  "Ischiorectal abscess",
+  "Volvulus",
+  "Intussusception",
+  "Empyema gallbladder",
+  "Strangulated hernia",
+  "Biliary colic",
 ] as const;
 
 /**

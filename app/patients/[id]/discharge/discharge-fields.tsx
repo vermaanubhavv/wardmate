@@ -151,6 +151,46 @@ export function SegmentedField({
   );
 }
 
+/**
+ * A field that only ever holds one of a fixed set of values — unlike SuggestField, nothing
+ * else can be typed. For something a unit already has one right answer for (its own
+ * consultant), a free-text box only invites a typo a discharge summary then carries.
+ *
+ * `value` is always kept as an option even when it is not in `options`, so a name already on
+ * the record is shown rather than silently swapped for the first option in the list.
+ */
+export function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string | null;
+  onChange: (v: string) => void;
+  options: string[];
+}) {
+  const current = (value ?? "").trim();
+  const withCurrent = current && !options.some((o) => o.toLowerCase() === current.toLowerCase()) ? [current, ...options] : options;
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-[13px] text-muted">{label}</span>
+      <select
+        value={current}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-11 rounded-[10px] border border-line bg-card px-3 text-[15px] outline-none focus:border-accent"
+      >
+        {!current && <option value="">Not set</option>}
+        {withCurrent.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 export function Field({
   label,
   value,
