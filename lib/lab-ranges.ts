@@ -22,6 +22,20 @@ export type LabFlag = "high" | "low" | "abnormal";
 
 type Range = { low: number; high: number };
 
+/**
+ * The report an analyte belongs to. Used to decide how prominently a result is shown — a
+ * deranged MCV on a CBC is not read the way a deranged creatinine on a KFT is — never to
+ * change or interpret the value itself.
+ */
+export type LabPanel =
+  | "cbc"
+  | "kft"
+  | "lft"
+  | "coag"
+  | "abg"
+  | "pancreatic"
+  | "inflammatory";
+
 type LabDef = {
   /** How it prints, in the unit's own shorthand. */
   label: string;
@@ -34,46 +48,105 @@ type LabDef = {
   ranges: Range[];
   /** Where the normal range genuinely differs by sex. Used only when sex is on record. */
   bySex?: { male: Range[]; female: Range[] };
+  /** Which report this analyte sits on. */
+  panel?: LabPanel;
+  /**
+   * A result that is not worth putting in front of anyone even when it is out of range — a
+   * red-cell index, an eosinophil fraction, a urate. It is still recorded and still shown on
+   * request; it is just never flagged or foregrounded. Failing to shout about one of these is
+   * not the dangerous direction — the resident asked for exactly this.
+   */
+  minor?: boolean;
 };
 
 const LABS: LabDef[] = [
+  // --- CBC: the four that a round reads, plus the differential --------------------------------
   {
     label: "Hb",
     aliases: ["hb", "hb%", "haemoglobin", "hemoglobin", "hgb"],
     ranges: [{ low: 13, high: 15 }], // narrower of the two sexes — see pickRanges()
     bySex: { male: [{ low: 13, high: 17 }], female: [{ low: 12, high: 15 }] },
+    panel: "cbc",
   },
   {
     label: "TLC",
     aliases: ["tlc", "total count", "total leucocyte count", "wbc", "white cell count", "counts", "leucocyte count", "tc"],
     ranges: [{ low: 4000, high: 11000 }, { low: 4, high: 11 }],
+    panel: "cbc",
   },
   {
     label: "Platelets",
     aliases: ["platelet", "platelets", "platelet count", "plt"],
     ranges: [{ low: 150000, high: 450000 }, { low: 150, high: 450 }, { low: 1.5, high: 4.5 }],
+    panel: "cbc",
   },
-  { label: "Urea", aliases: ["urea", "blood urea", "b. urea", "s. urea", "serum urea"], ranges: [{ low: 15, high: 40 }] },
-  { label: "Creatinine", aliases: ["creatinine", "s. creatinine", "sr. creatinine", "sr creatinine", "serum creatinine", "cr"], ranges: [{ low: 0.6, high: 1.3 }] },
-  { label: "Na", aliases: ["na", "sodium", "serum sodium"], ranges: [{ low: 135, high: 145 }] },
-  { label: "K", aliases: ["k", "potassium", "serum potassium"], ranges: [{ low: 3.5, high: 5.1 }] },
-  { label: "Cl", aliases: ["cl", "chloride", "serum chloride"], ranges: [{ low: 98, high: 107 }] },
-  { label: "T. bilirubin", aliases: ["bilirubin", "total bilirubin", "t bilirubin", "t. bilirubin", "serum bilirubin", "s. bilirubin", "sr. bilirubin"], ranges: [{ low: 0.2, high: 1.2 }] },
-  { label: "D. bilirubin", aliases: ["direct bilirubin", "d bilirubin", "d. bilirubin", "conjugated bilirubin"], ranges: [{ low: 0, high: 0.3 }] },
-  { label: "SGOT", aliases: ["sgot", "ast", "aspartate transaminase"], ranges: [{ low: 5, high: 40 }] },
-  { label: "SGPT", aliases: ["sgpt", "alt", "alanine transaminase"], ranges: [{ low: 5, high: 40 }] },
-  { label: "ALP", aliases: ["alp", "alkaline phosphatase"], ranges: [{ low: 40, high: 130 }] },
-  { label: "Albumin", aliases: ["albumin", "serum albumin"], ranges: [{ low: 3.5, high: 5.2 }] },
-  { label: "Total protein", aliases: ["total protein", "serum protein"], ranges: [{ low: 6, high: 8.3 }] },
-  { label: "INR", aliases: ["inr", "pt inr", "pt-inr", "pt/inr"], ranges: [{ low: 0.8, high: 1.2 }] },
-  { label: "PT", aliases: ["pt", "prothrombin time"], ranges: [{ low: 11, high: 15 }] },
-  { label: "Amylase", aliases: ["amylase", "serum amylase"], ranges: [{ low: 30, high: 110 }] },
-  { label: "Lipase", aliases: ["lipase", "serum lipase"], ranges: [{ low: 10, high: 140 }] },
-  { label: "CRP", aliases: ["crp", "c reactive protein", "c-reactive protein"], ranges: [{ low: 0, high: 5 }] },
-  { label: "Lactate", aliases: ["lactate", "serum lactate"], ranges: [{ low: 0.5, high: 2 }] },
-  { label: "pH", aliases: ["ph"], ranges: [{ low: 7.35, high: 7.45 }] },
-  { label: "HCO₃", aliases: ["hco3", "bicarbonate", "bicarb"], ranges: [{ low: 22, high: 26 }] },
-  { label: "pCO₂", aliases: ["pco2"], ranges: [{ low: 35, high: 45 }] },
+  {
+    label: "Neutrophils",
+    aliases: ["neutrophils", "neutrophil", "polymorphs", "polymorphonuclear", "anc", "absolute neutrophil count"],
+    ranges: [{ low: 40, high: 75 }, { low: 2000, high: 7500 }, { low: 2, high: 7.5 }],
+    panel: "cbc",
+  },
+  {
+    label: "Lymphocytes",
+    aliases: ["lymphocytes", "lymphocyte", "alc", "absolute lymphocyte count"],
+    ranges: [{ low: 20, high: 45 }, { low: 1000, high: 3000 }, { low: 1, high: 3 }],
+    panel: "cbc",
+  },
+  {
+    label: "Monocytes",
+    aliases: ["monocytes", "monocyte"],
+    ranges: [{ low: 2, high: 10 }, { low: 200, high: 950 }],
+    panel: "cbc",
+  },
+  {
+    label: "Eosinophils",
+    aliases: ["eosinophils", "eosinophil", "aec", "absolute eosinophil count"],
+    ranges: [{ low: 1, high: 6 }, { low: 20, high: 500 }, { low: 0.02, high: 0.5 }],
+    panel: "cbc",
+    minor: true,
+  },
+  { label: "Basophils", aliases: ["basophils", "basophil"], ranges: [{ low: 0, high: 2 }], panel: "cbc", minor: true },
+  { label: "MCV", aliases: ["mcv", "mean corpuscular volume"], ranges: [{ low: 80, high: 100 }], panel: "cbc", minor: true },
+  { label: "MCH", aliases: ["mch", "mean corpuscular haemoglobin", "mean corpuscular hemoglobin"], ranges: [{ low: 27, high: 33 }], panel: "cbc", minor: true },
+  { label: "MCHC", aliases: ["mchc"], ranges: [{ low: 32, high: 36 }], panel: "cbc", minor: true },
+  { label: "RDW", aliases: ["rdw", "rdw-cv", "red cell distribution width"], ranges: [{ low: 11.5, high: 14.5 }], panel: "cbc", minor: true },
+  { label: "RBC count", aliases: ["rbc", "rbc count", "red blood cell count", "red cell count"], ranges: [{ low: 4.2, high: 5.9 }], panel: "cbc", minor: true },
+  { label: "PCV", aliases: ["pcv", "hct", "haematocrit", "hematocrit", "packed cell volume"], ranges: [{ low: 36, high: 50 }], panel: "cbc", minor: true },
+  { label: "MPV", aliases: ["mpv", "mean platelet volume"], ranges: [{ low: 7.5, high: 11.5 }], panel: "cbc", minor: true },
+  { label: "ESR", aliases: ["esr", "erythrocyte sedimentation rate"], ranges: [{ low: 0, high: 20 }], panel: "cbc", minor: true },
+
+  // --- KFT: urea, creatinine, and every electrolyte; potassium leads (see keyLabRank) ---------
+  { label: "Urea", aliases: ["urea", "blood urea", "b. urea", "s. urea", "serum urea"], ranges: [{ low: 15, high: 40 }], panel: "kft" },
+  { label: "Creatinine", aliases: ["creatinine", "s. creatinine", "sr. creatinine", "sr creatinine", "serum creatinine", "cr"], ranges: [{ low: 0.6, high: 1.3 }], panel: "kft" },
+  { label: "Na", aliases: ["na", "sodium", "serum sodium"], ranges: [{ low: 135, high: 145 }], panel: "kft" },
+  { label: "K", aliases: ["k", "potassium", "serum potassium"], ranges: [{ low: 3.5, high: 5.1 }], panel: "kft" },
+  { label: "Cl", aliases: ["cl", "chloride", "serum chloride"], ranges: [{ low: 98, high: 107 }], panel: "kft" },
+  { label: "Ca", aliases: ["ca", "calcium", "serum calcium", "corrected calcium", "total calcium"], ranges: [{ low: 8.5, high: 10.5 }], panel: "kft" },
+  { label: "Mg", aliases: ["mg", "magnesium", "serum magnesium"], ranges: [{ low: 1.7, high: 2.4 }], panel: "kft" },
+  { label: "PO₄", aliases: ["po4", "phosphate", "phosphorus", "serum phosphate", "inorganic phosphorus"], ranges: [{ low: 2.5, high: 4.5 }], panel: "kft" },
+  { label: "Uric acid", aliases: ["uric acid", "ua", "serum uric acid"], ranges: [{ low: 3.5, high: 7.2 }], panel: "kft", minor: true },
+
+  // --- LFT: shown only where deranged; ALP is the one a biliary patient keeps -----------------
+  { label: "T. bilirubin", aliases: ["bilirubin", "total bilirubin", "t bilirubin", "t. bilirubin", "serum bilirubin", "s. bilirubin", "sr. bilirubin"], ranges: [{ low: 0.2, high: 1.2 }], panel: "lft" },
+  { label: "D. bilirubin", aliases: ["direct bilirubin", "d bilirubin", "d. bilirubin", "conjugated bilirubin"], ranges: [{ low: 0, high: 0.3 }], panel: "lft" },
+  { label: "SGOT", aliases: ["sgot", "ast", "aspartate transaminase"], ranges: [{ low: 5, high: 40 }], panel: "lft" },
+  { label: "SGPT", aliases: ["sgpt", "alt", "alanine transaminase"], ranges: [{ low: 5, high: 40 }], panel: "lft" },
+  { label: "ALP", aliases: ["alp", "alkaline phosphatase", "s. alp", "sap"], ranges: [{ low: 40, high: 130 }], panel: "lft" },
+  { label: "GGT", aliases: ["ggt", "gamma gt", "gamma-glutamyl transferase", "ggtp"], ranges: [{ low: 9, high: 48 }], panel: "lft" },
+  { label: "Albumin", aliases: ["albumin", "serum albumin"], ranges: [{ low: 3.5, high: 5.2 }], panel: "lft" },
+  { label: "Total protein", aliases: ["total protein", "serum protein"], ranges: [{ low: 6, high: 8.3 }], panel: "lft" },
+
+  // --- Coagulation, pancreatic, inflammatory, ABG -------------------------------------------
+  { label: "INR", aliases: ["inr", "pt inr", "pt-inr", "pt/inr"], ranges: [{ low: 0.8, high: 1.2 }], panel: "coag" },
+  { label: "PT", aliases: ["pt", "prothrombin time"], ranges: [{ low: 11, high: 15 }], panel: "coag" },
+  { label: "APTT", aliases: ["aptt", "activated partial thromboplastin time", "ptt"], ranges: [{ low: 25, high: 35 }], panel: "coag" },
+  { label: "Amylase", aliases: ["amylase", "serum amylase"], ranges: [{ low: 30, high: 110 }], panel: "pancreatic" },
+  { label: "Lipase", aliases: ["lipase", "serum lipase"], ranges: [{ low: 10, high: 140 }], panel: "pancreatic" },
+  { label: "CRP", aliases: ["crp", "c reactive protein", "c-reactive protein"], ranges: [{ low: 0, high: 5 }], panel: "inflammatory" },
+  { label: "Lactate", aliases: ["lactate", "serum lactate"], ranges: [{ low: 0.5, high: 2 }], panel: "abg" },
+  { label: "pH", aliases: ["ph"], ranges: [{ low: 7.35, high: 7.45 }], panel: "abg" },
+  { label: "HCO₃", aliases: ["hco3", "bicarbonate", "bicarb"], ranges: [{ low: 22, high: 26 }], panel: "abg" },
+  { label: "pCO₂", aliases: ["pco2"], ranges: [{ low: 35, high: 45 }], panel: "abg" },
 ];
 
 /** The resident's own word for it. Their judgement needs no reference range behind it. */
@@ -229,4 +302,27 @@ export function isKnownLab(label: string): boolean {
  */
 export function canonicalLabName(label: string): string {
   return findLab(label)?.label ?? norm(label);
+}
+
+/** The report a known analyte sits on, or null for one this file has no panel for. */
+export function labPanel(label: string): LabPanel | null {
+  return findLab(label)?.panel ?? null;
+}
+
+/**
+ * True for a result that is never worth foregrounding even when it is out of range — a
+ * red-cell index, an eosinophil fraction, a urate. The resident asked for these to stay out
+ * of the way; they are still recorded and still shown when the fold is opened.
+ */
+export function isMinorLab(label: string): boolean {
+  return findLab(label)?.minor === true;
+}
+
+/**
+ * Sort key for the results kept on the face of the card. Potassium leads its panel — a
+ * dangerous K is the electrolyte a round acts on first — then the rest hold the order they
+ * were recorded in.
+ */
+export function keyLabRank(label: string): number {
+  return canonicalLabName(label) === "K" ? 0 : 1;
 }

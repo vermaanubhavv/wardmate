@@ -118,6 +118,7 @@ export function ObjectiveSummaryView({
     summary.findings.length === 0 &&
     summary.labs.length === 0 &&
     summary.keyLabs.length === 0 &&
+    summary.mutedLabs.length === 0 &&
     !summary.imaging &&
     summary.normalLabCount === 0 &&
     summary.normalCount === 0;
@@ -195,6 +196,8 @@ export function ObjectiveSummaryView({
 
       {summary.imaging && <ImagingReport imaging={summary.imaging} />}
 
+      {summary.mutedLabs.length > 0 && <MutedLabs labs={summary.mutedLabs} />}
+
       {summary.normalLabCount > 0 && (
         <p className="mt-1 text-[13px] text-muted">
           {summary.normalLabCount} other blood{" "}
@@ -228,6 +231,38 @@ export function ObjectiveSummaryView({
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * The blood results deliberately kept off the face of the card — red-cell indices, an
+ * eosinophil count, the liver panel on a gallstone patient. One tap shows every one of them,
+ * with its value and range but no flag; the summary line says how many are outside range so
+ * nothing is hidden without a count.
+ */
+function MutedLabs({
+  labs,
+}: {
+  labs: ReturnType<typeof summariseObjective>["mutedLabs"];
+}) {
+  const out = labs.filter((l) => l.outOfRange).length;
+  return (
+    <details className="mt-1 [&[open]_.lab-chev]:rotate-90">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 text-[13px] text-muted active:opacity-60 [&::-webkit-details-marker]:hidden">
+        <span className="lab-chev text-[10px] transition-transform">▶</span>
+        {labs.length} other blood {labs.length === 1 ? "result" : "results"}
+        {out > 0 && ` · ${out} outside range`}
+      </summary>
+      <div className="mt-0.5">
+        {labs.map((l) => (
+          <p key={l.id} className="mt-1 text-[13px] text-muted">
+            {l.label} <span className="tabular-nums">{l.value}</span>
+            {l.range && ` (${l.range}${l.source === "builtin" ? " typical" : ""})`}
+            {l.when && ` · ${l.when}`}
+          </p>
+        ))}
+      </div>
+    </details>
   );
 }
 

@@ -235,10 +235,10 @@ export function summariseImaging(
  * appear here.
  */
 export const ETIOLOGY_KEY_LABS: Record<EtiologyKey, string[]> = {
-  biliary: ["ALP", "T. bilirubin", "D. bilirubin", "SGOT", "SGPT"],
-  pancreatitis: ["Amylase", "Lipase", "Calcium", "ALP", "T. bilirubin"],
+  biliary: ["ALP"],
+  pancreatitis: ["Amylase", "Lipase", "Ca", "ALP", "T. bilirubin"],
   renal: ["Creatinine", "Urea", "Uric acid"],
   appendicitis: ["TLC", "CRP", "Neutrophils"],
-  "bowel-obstruction": ["Lactate", "Potassium", "Creatinine"],
+  "bowel-obstruction": ["Lactate", "K", "Creatinine"],
   hepatic: ["ALP", "T. bilirubin", "SGOT", "SGPT", "Albumin", "INR"],
 };

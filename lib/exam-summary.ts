@@ -19,6 +19,9 @@
 import {
   canonicalLabName,
   classifyLab,
+  isMinorLab,
+  keyLabRank,
+  labPanel,
   type LabFlag,
   type RangeSource,
   type SuppliedRange,
@@ -86,6 +89,19 @@ export type ObjectiveSummary = {
    *  cares about, with the rest of the study kept behind a fold. Null when the findings held
    *  no report, or held one but no diagnosis to trim it by beyond grouping. */
   imaging: ImagingSummary | null;
+  /** Blood results deliberately kept off the face of the card — a red-cell index or an
+   *  eosinophil count that nobody rounds on, an LFT component other than ALP on a gallstone
+   *  patient. Shown, plainly and without a flag, only when the fold is opened. `outOfRange`
+   *  drives the fold's own summary line so it is never a silent drop. */
+  mutedLabs: {
+    id: string;
+    label: string;
+    value: string;
+    range: string | null;
+    source: RangeSource | null;
+    when: string | null;
+    outOfRange: boolean;
+  }[];
   /** Blood results that were in range. Counted, not listed. */
   normalLabCount: number;
   /** How many systems were recorded and read as plainly normal. Drives "Rest — NAD". */
@@ -237,7 +253,14 @@ export function summariseObjective(
   const findings: { id: string; label: string; value: string }[] = [];
   const labs: ObjectiveSummary["labs"] = [];
   const keyLabs: ObjectiveSummary["keyLabs"] = [];
+  const mutedLabs: ObjectiveSummary["mutedLabs"] = [];
   let normalLabCount = 0;
+  // On a gallstone / cholecystitis patient the liver panel collapses to ALP — the
+  // transaminases and proteins move behind the fold whether or not they are deranged, because
+  // for this problem they are expected noise, not the finding. The fold's count keeps it
+  // honest. Liver-parenchymal disease (abscess, hepatitis) is not folded this way — there the
+  // transaminases are the point.
+  const lftToAlpOnly = opts.etiology === "biliary";
   let normalCount = 0;
   // "PICCLE negative", said as one phrase. The speaker is asserting all seven at once, which
   // they are entitled to do — so nothing is outstanding when they have.
@@ -281,22 +304,54 @@ export function summariseObjective(
 
     const lab = classifyLab(v.label, value, opts.sex ?? null, supplied);
     if (lab) {
-      if (lab.flag) {
-        labs.push({ id: v.id, ...lab, when: agoLabel(v.recordedAt ?? null, now) });
+      const canon = canonicalLabName(v.label);
+      const panel = labPanel(v.label);
+      const onWatchList = keyLabNames?.has(canon.toLowerCase()) ?? false;
+      const when = agoLabel(v.recordedAt ?? null, now);
+      const mute = () =>
+        mutedLabs.push({
+          id: v.id,
+          label: lab.label,
+          value: lab.value,
+          range: lab.range,
+          source: lab.source,
+          when,
+          outOfRange: lab.flag !== null,
+        });
+
+      // A minor index (MCV, eosinophils, urate) is never foregrounded — deranged or not, it
+      // goes behind the fold. The watch-list can still pull one forward if the diagnosis wants
+      // it, which is why that check comes first.
+      if (!onWatchList && isMinorLab(v.label)) {
+        mute();
         continue;
       }
+
+      // The liver panel on a hepatobiliary patient: only ALP stays on the face.
+      if (lftToAlpOnly && panel === "lft" && canon !== "ALP") {
+        mute();
+        continue;
+      }
+
+      if (lab.flag) {
+        // Deranged and not suppressed above — this is the reason the section is read.
+        labs.push({ id: v.id, ...lab, when });
+        continue;
+      }
+
       if (lab.range) {
-        // Known result, read as a number, inside its range. Normally the one case worth folding
-        // away — unless this analyte is on the watch-list for the patient's problem, where the
-        // in-range value and its trend are exactly what the round is checking.
-        if (keyLabNames?.has(canonicalLabName(v.label).toLowerCase())) {
+        // In range. Kept on the face only when it is something a round on this patient
+        // actually reads: a watch-list analyte, or a core line of the CBC or KFT. Everything
+        // else — an in-range LFT component, an in-range CRP — is counted, not listed.
+        const corePanel = (panel === "cbc" || panel === "kft") && !isMinorLab(v.label);
+        if (onWatchList || corePanel) {
           keyLabs.push({
             id: v.id,
             label: lab.label,
             value: lab.value,
             range: lab.range,
             source: lab.source,
-            when: agoLabel(v.recordedAt ?? null, now),
+            when,
           });
         } else {
           normalLabCount += 1;
@@ -304,7 +359,7 @@ export function summariseObjective(
         continue;
       }
       // Known result whose value could not be read as a number — shown, never assumed normal.
-      labs.push({ id: v.id, ...lab, when: agoLabel(v.recordedAt ?? null, now) });
+      labs.push({ id: v.id, ...lab, when });
       continue;
     }
 
@@ -360,12 +415,16 @@ export function summariseObjective(
     ? findings.filter((f) => !groupedIds.has(f.id))
     : findings;
 
+  // Potassium leads the results kept on the face; the rest hold recorded order.
+  keyLabs.sort((a, b) => keyLabRank(a.label) - keyLabRank(b.label));
+
   return {
     vitals,
     piccle,
     findings: remainingFindings,
     labs,
     keyLabs,
+    mutedLabs,
     imaging,
     normalLabCount,
     normalCount,
