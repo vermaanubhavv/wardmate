@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { replaceTodayNoteSection } from "./note/actions";
 
@@ -64,30 +64,47 @@ export default function SoapRows({
     ...extras.map((o) => ({ label: o.label, value: o.value, missing: false })),
   ]);
 
+  // The row shows the new wording the moment Save is tapped; the write to the Mumbai database
+  // happens behind it. React drops the optimistic value once the refresh below brings the
+  // real one back — or, if the write failed, snaps the row back and shows the error.
+  const [optimisticShown, patchShown] = useOptimistic(
+    shown,
+    (groups: Group[], patch: { key: string; value: string }) =>
+      groups.map((g) =>
+        g.key === patch.key ? { ...g, value: patch.value || null, missing: false } : g
+      )
+  );
+
   function open(key: string, value: string | null) {
     setEditing(key);
     setDraft(value ?? "");
     setError(null);
   }
 
-  function save(labels: string[]) {
+  // labels: every checklist label this line stands for (a single dictation can answer
+  // several at once). key: the group to patch on screen, or null for a pertinent-negative
+  // row, which changes shape rather than value and just waits for the refresh.
+  function save(labels: string[], key: string | null) {
     const value = draft.trim();
+    setEditing(null);
+    setError(null);
     startTransition(async () => {
-      for (const label of labels) {
-        const res = await replaceTodayNoteSection(
-          patientId,
-          label.toLowerCase().trim(),
-          writeKind,
-          value ? [value] : []
-        );
-        if (!res.ok) return setError(res.error ?? "Could not save.");
+      if (key) patchShown({ key, value });
+      const results = await Promise.all(
+        labels.map((label) =>
+          replaceTodayNoteSection(patientId, label.toLowerCase().trim(), writeKind, value ? [value] : [])
+        )
+      );
+      const failed = results.find((r) => !r.ok);
+      if (failed) {
+        setError(failed.error ?? "Could not save.");
+        return;
       }
-      setEditing(null);
       router.refresh();
     });
   }
 
-  function editor(key: string, labels: string[], placeholder: string) {
+  function editor(labels: string[], placeholder: string, patchKey: string | null) {
     return (
       <div className="flex items-center gap-2 py-1.5">
         <input
@@ -97,7 +114,7 @@ export default function SoapRows({
           placeholder={placeholder}
           className="min-w-0 flex-1 rounded-md border border-line bg-card px-2 py-1 text-[15px] outline-none focus:border-accent"
         />
-        <button type="button" disabled={pending} onClick={() => save(labels)} className="shrink-0 text-[14px] font-semibold text-accent">
+        <button type="button" disabled={pending} onClick={() => save(labels, patchKey)} className="shrink-0 text-[14px] font-semibold text-accent">
           Save
         </button>
         <button type="button" onClick={() => setEditing(null)} className="shrink-0 text-[13px] text-muted">
@@ -109,7 +126,7 @@ export default function SoapRows({
 
   function line(g: Group) {
     const label = g.labels.join(" · ");
-    if (editing === g.key) return <div key={g.key}>{editor(g.key, g.labels, "Leave blank to clear")}</div>;
+    if (editing === g.key) return <div key={g.key}>{editor(g.labels, "Leave blank to clear", g.key)}</div>;
     return (
       <button
         type="button"
@@ -131,7 +148,7 @@ export default function SoapRows({
 
   return (
     <>
-      <div className="divide-y divide-line">{shown.map(line)}</div>
+      <div className="divide-y divide-line">{optimisticShown.map(line)}</div>
 
       {negatives.length > 0 && (
         <p className="mt-1.5 text-[13px] text-muted">
@@ -152,7 +169,7 @@ export default function SoapRows({
         </p>
       )}
       {editing && negatives.some((n) => n.label === editing) &&
-        editor(editing, [editing], `e.g. ${editing} present since morning`)}
+        editor([editing], `e.g. ${editing} present since morning`, null)}
       {error && <p className="mt-1 text-[13px] text-orange-700">{error}</p>}
     </>
   );

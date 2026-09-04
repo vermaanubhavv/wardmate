@@ -101,15 +101,17 @@ export default function ConfirmDictation({
                     />
                     <button
                       type="button"
-                      onClick={async () => {
+                      onClick={() => {
                         const fd = new FormData();
                         fd.set("observation_id", o.id);
                         fd.set("patient_id", patientId);
                         fd.set("value_text", draft);
-                        await updateObservation(fd);
+                        // Close the editor at once — the corrected value is already on the
+                        // row above it — and let the write and the teaching run behind it.
+                        setEditingId(null);
+                        void updateObservation(fd);
                         // Saving a correction teaches it too — see flag-misheard.ts.
                         flagMisheard(o.value_text ?? "", draft, o.kind === "medication" ? "drug" : null);
-                        setEditingId(null);
                       }}
                       className="shrink-0 text-[14px] font-semibold text-accent"
                     >
