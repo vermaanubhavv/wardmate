@@ -19,7 +19,9 @@ function revalidateEverywhere(patientId: string) {
   revalidatePath(`/patients/${patientId}/note/build`);
   revalidatePath("/todo");
   revalidatePath("/handover");
-  revalidatePath("/");
+  // Not "/": the home screen only counts patients by location, which a note-workspace write
+  // never changes. "/ward" stays — the kind written here can be "plan" (open_task_count) or
+  // "vital" (the ward list's worst-flag badge), and this helper is shared across kinds.
   revalidatePath("/ward");
 }
 

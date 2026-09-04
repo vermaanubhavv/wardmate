@@ -96,7 +96,8 @@ export async function applyRound(formData: FormData) {
     .update({ status: "applied", applied_at: new Date().toISOString() })
     .eq("id", dictationId);
 
-  revalidatePath("/");
+  // Not "/": applying a round dictation inserts observations across patients already on the
+  // ward, never moves one, so the home screen's location counts stay exactly right without it.
   revalidatePath("/ward");
   revalidatePath("/todo");
   revalidatePath("/handover");

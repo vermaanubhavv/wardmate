@@ -174,7 +174,9 @@ function revalidateEverywhere(patientId: string) {
   revalidatePath(`/patients/${patientId}`);
   revalidatePath("/todo");
   revalidatePath("/handover");
-  revalidatePath("/");
+  // Not "/": the home screen only shows patient counts by location, which none of these
+  // entry-level writes change. Revalidating it here would just make the next visit there
+  // pay for a re-render that shows exactly what it already showed.
   revalidatePath("/ward");
 }
 
@@ -275,8 +277,7 @@ async function confirmIds(ids: string[], patientId: string) {
   revalidatePath(`/patients/${patientId}`);
   revalidatePath("/todo");
   revalidatePath("/handover");
-  revalidatePath("/");
-  revalidatePath("/ward");
+  revalidatePath("/ward"); // unconfirmed_count on the ward list changed
 }
 
 /**
@@ -307,9 +308,11 @@ export async function cycleUrgency(formData: FormData) {
     .eq("id", id);
 
   revalidatePath(`/patients/${patientId}`);
-  revalidatePath("/todo");
-  revalidatePath("/");
-  revalidatePath("/ward");
+  revalidatePath("/todo"); // sorts and colours by urgency
+  revalidatePath("/handover"); // shows the same colour, via effectiveUrgency
+  // Neither "/" nor "/ward": ward_screen() counts unconfirmed and open-task observations,
+  // not their urgency — the ward list has never shown this colour, so a grade change here
+  // has nothing on that screen to make stale.
 }
 
 /** Tick a job off. The plan itself is kept — only its done state changes. */
@@ -485,6 +488,7 @@ async function setTaskDone(formData: FormData, done: boolean) {
 
   revalidatePath(`/patients/${patientId}`);
   revalidatePath("/todo");
-  revalidatePath("/");
-  revalidatePath("/ward");
+  revalidatePath("/handover"); // handover's open/done split reads done_at the same way
+  revalidatePath("/ward"); // open_task_count on the ward list
+  // Not "/": task completion never changes a patient's location or count.
 }

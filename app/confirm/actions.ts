@@ -12,8 +12,8 @@ function revalidateEverywhere() {
   revalidatePath("/confirm");
   revalidatePath("/todo");
   revalidatePath("/handover");
-  revalidatePath("/");
-  revalidatePath("/ward");
+  // Not "/": confirming a dictated value never changes a patient's location or count.
+  revalidatePath("/ward"); // unconfirmed_count on the ward list
 }
 
 async function currentUser() {

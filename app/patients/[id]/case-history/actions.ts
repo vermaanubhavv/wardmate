@@ -26,7 +26,7 @@ function revalidateEverywhere(patientId: string) {
   revalidatePath(`/patients/${patientId}/note`);
   revalidatePath("/todo");
   revalidatePath("/handover");
-  revalidatePath("/");
+  // Not "/": a case-history edit never changes a patient's location or count.
   revalidatePath("/ward");
 }
 

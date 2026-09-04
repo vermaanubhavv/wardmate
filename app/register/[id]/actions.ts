@@ -105,7 +105,8 @@ export async function applyRegister(formData: FormData) {
     .update({ status: "applied", applied_at: new Date().toISOString() })
     .eq("id", readId);
 
-  revalidatePath("/");
+  // Not "/": applying a register read inserts observations, never moves a patient, so the
+  // home screen's location counts have nothing here to catch up on.
   revalidatePath("/ward");
   redirect("/ward");
 }
