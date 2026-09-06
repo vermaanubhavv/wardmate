@@ -1,0 +1,18 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>WardMate</title>
+<!--
+  The native app is a shell around the live site: WardMate needs a server for every screen it
+  draws (sign-in, the ward, transcription), so there is nothing meaningful to ship inside the
+  .ipa. Capacitor still insists on a web directory, and this is it — a page the app should
+  never reach, saying so plainly rather than showing a blank white screen if it somehow does.
+-->
+<style>
+  body { font: 17px -apple-system, system-ui, sans-serif; margin: 0; padding: 24px;
+         background: #f2f2f7; color: #000; }
+  h1 { font-size: 22px; margin: 0 0 8px; }
+  p { color: #636366; margin: 0; line-height: 1.4; }
+</style>
+<h1>Cannot reach WardMate</h1>
+<p>The app could not load wardmate.in. Check the phone&rsquo;s connection and reopen it.</p>
