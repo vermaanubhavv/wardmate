@@ -78,6 +78,7 @@ const ANALYTES: AnalyteSpec[] = [
   { key: "rr", aliases: /\b(resp(iratory)? rate|rr\b)\b/i, unitAnalyte: "rr" },
   { key: "temp", aliases: /\b(temp(erature)?|febrile|pyrexia)\b/i, unitAnalyte: "temp" },
   { key: "ph", aliases: /\b(ph\b|arterial ph|blood ph)\b/i, unitAnalyte: null },
+  { key: "bicarbonate", aliases: /\b(bicarbonate|hco3-?|serum bicarbonate|bicarb)\b/i, unitAnalyte: null },
   { key: "amylase", aliases: /\b(amylase)\b/i, unitAnalyte: null },
   { key: "lipase", aliases: /\b(lipase)\b/i, unitAnalyte: null },
   { key: "triglycerides", aliases: /\b(triglycerides?|tg\b)\b/i, unitAnalyte: null },
@@ -113,6 +114,25 @@ function baseInput(row: ObservationRow, key: string): Omit<EngineInput, "value" 
 
 export function toEngineInputs(rows: ObservationRow[], patient: PatientFacts): EngineInput[] {
   const out: EngineInput[] = [];
+
+  // Synthetic: sex, from the patient record. A CHA₂DS₂-VASc criterion; never a timestamped
+  // observation. Normalised to "female" / "male" so a component can test `eq "female"`.
+  if (patient.sex != null && patient.sex.trim() !== "") {
+    const s = patient.sex.trim().toLowerCase();
+    const norm = /^f/.test(s) ? "female" : /^m/.test(s) ? "male" : s;
+    out.push({
+      key: "sex",
+      value: null,
+      unit: null,
+      text: norm,
+      original: { value: patient.sex, unit: null },
+      at: patient.admittedAt,
+      sourceId: "patient.sex",
+      sourceQuote: `Sex: ${patient.sex} (patient record)`,
+      refLow: null,
+      refHigh: null,
+    });
+  }
 
   // Synthetic: age at admission, from the patient record (not a timestamped observation).
   if (patient.ageYears != null) {

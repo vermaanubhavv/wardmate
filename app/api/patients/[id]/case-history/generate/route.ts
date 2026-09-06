@@ -6,6 +6,7 @@ import {
   compileCaseHistory,
   generateDiagnosis,
   generatePlan,
+  generateRelevantNegatives,
 } from "@/lib/case-history-ai";
 
 /**
@@ -23,9 +24,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
-  let body: { section?: string };
+  let body: { section?: string; diagnosis?: string; differentials?: string[] };
   try {
-    body = (await request.json()) as { section?: string };
+    body = (await request.json()) as { section?: string; diagnosis?: string; differentials?: string[] };
   } catch {
     return NextResponse.json({ error: "Malformed request." }, { status: 400 });
   }
@@ -78,6 +79,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (body.section === "compile") return NextResponse.json(await compileCaseHistory(digest, ctx));
     if (body.section === "diagnosis") return NextResponse.json(await generateDiagnosis(withCtx));
     if (body.section === "plan") return NextResponse.json(await generatePlan(withCtx));
+    if (body.section === "negatives")
+      return NextResponse.json(
+        await generateRelevantNegatives(
+          withCtx,
+          (body.diagnosis ?? patient?.primary_diagnosis ?? "").trim(),
+          Array.isArray(body.differentials) ? body.differentials.map(String) : []
+        )
+      );
     return NextResponse.json({ error: "Unknown section." }, { status: 400 });
   } catch (e) {
     return NextResponse.json({ error: plainAiError(e) }, { status: 502 });

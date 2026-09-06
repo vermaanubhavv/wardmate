@@ -18,7 +18,6 @@ export type VitalComponent = {
   range: string;
 };
 
-const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 
 function firstNumber(s: string): number | null {
   const m = s.match(/-?\d+(?:\.\d+)?/);
@@ -63,9 +62,51 @@ const VITALS: {
   { key: "temp", label: "Temp", aliases: ["temperature", "temp", "temp f", "fever"], low: 97, high: 99.5, unit: "°F" },
 ];
 
+/**
+ * A label reduced to the words in it, so a chart's own phrasing still matches.
+ *
+ * Spoken vitals arrive as "BP" or "pulse". Photographed ones arrive as whatever was printed at
+ * the top of the column — "Blood Pressure (mmHg)", "Temp. °F", "SpO2 %", "Pulse/min" — and an
+ * exact alias match rejected every one of them, which is why an obs chart read off a photograph
+ * showed on the patient page and then vanished from the printed note.
+ *
+ * Only packaging is removed: a bracketed unit, a bare unit at the end, and punctuation. The
+ * words themselves are untouched, so this widens what matches without inventing a match.
+ */
+const UNIT_WORDS = new Set([
+  // "hr" is deliberately absent: on a chart it is the heart rate, not an hour, and PR claims it.
+  "mmhg", "bpm", "cpm", "min", "per", "c", "f", "deg", "degree", "degrees",
+  "celsius", "centigrade", "fahrenheit", "mm", "of", "reading",
+]);
+
+function labelWords(label: string): string {
+  return label
+    .toLowerCase()
+    // Splitting on everything that is not a letter, a digit or the ₂ of SpO₂ takes the brackets,
+    // slashes, degree signs and percent signs with it.
+    .split(/[^a-z0-9₂]+/)
+    .filter((w) => w && !UNIT_WORDS.has(w))
+    .join(" ");
+}
+
 function findVital(label: string): (typeof VITALS)[number] | null {
-  const l = norm(label);
+  const l = labelWords(label);
   return VITALS.find((v) => v.aliases.includes(l)) ?? null;
+}
+
+/**
+ * Which of the five charted vitals a label names, if any — the one place in the app that
+ * decides this. BP, PR, SpO₂, Temp and RR are the vitals a ward charts and the ones the printed
+ * note and the examination line both lead with, and they were each matching against their own
+ * private list of aliases before this existed.
+ */
+export type VitalKey = "bp" | "pr" | "spo2" | "temp" | "rr";
+
+export function matchVitalLabel(label: string): VitalKey | null {
+  if (/^bp$|blood pressure/.test(labelWords(label))) return "bp";
+  const def = findVital(label);
+  if (!def) return null;
+  return def.key === "hr" ? "pr" : (def.key as VitalKey);
 }
 
 /**
@@ -77,7 +118,7 @@ export function classifyVital(label: string, value: string | null): VitalCompone
   if (!value || !value.trim()) return [];
   const v = value.trim();
 
-  if (/^bp$|blood pressure/.test(norm(label))) {
+  if (matchVitalLabel(label) === "bp") {
     const bp = classifyBP(v);
     if (bp) return bp;
     return [{ label: "BP", value: v, flag: null, range: "" }];
@@ -108,5 +149,5 @@ export function classifyVital(label: string, value: string | null): VitalCompone
 
 /** True when this label is a vital this file can classify at all — BP included. */
 export function isKnownVital(label: string): boolean {
-  return /^bp$|blood pressure/.test(norm(label)) || findVital(label) !== null;
+  return matchVitalLabel(label) !== null;
 }

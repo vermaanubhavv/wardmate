@@ -206,6 +206,13 @@ export async function applyCompiledCaseHistory(
     "medication history",
     "surgical history",
     "menstrual and obstetric history",
+    // Medical oncology. Only reachable on an oncology unit, where the workspace is the only
+    // thing that writes these labels.
+    "oncological history",
+    "treatment received",
+    "current cycle",
+    "toxicity since last cycle",
+    "performance status",
   ]);
   const clean = sections
     .map((s) => ({ label: s.label.toLowerCase().trim(), text: s.text.trim() }))
@@ -337,10 +344,16 @@ export async function appendCaseHistoryDictation(
   return { ok: true, written: rows.length + examSections.length };
 }
 
-/** Approve the AI-proposed provisional diagnosis — writes it to the patient record. */
+/**
+ * Approve the AI-proposed provisional diagnosis — writes it to the patient record, and stores
+ * the differential list as a single case-history observation (label "differential diagnosis")
+ * so the Diagnosis step and the printed sheet's second side can read it back. The differential
+ * is deliberately kept out of the history block (see lib/case-history.ts).
+ */
 export async function approveCaseHistoryDiagnosis(
   patientId: string,
-  text: string
+  text: string,
+  differentials: string[] = []
 ): Promise<{ ok: boolean; error?: string }> {
   const value = text.trim();
   if (!value) return { ok: false, error: "Nothing to approve yet." };
@@ -355,8 +368,48 @@ export async function approveCaseHistoryDiagnosis(
     .eq("id", patientId);
   if (error) return { ok: false, error: error.message };
 
+  const ddx = differentials.map((d) => d.trim()).filter(Boolean);
+  const entryIds = await caseHistoryEntryIds(supabase, patientId);
+  if (entryIds.length > 0) {
+    await supabase
+      .from("observations")
+      .delete()
+      .eq("patient_id", patientId)
+      .in("entry_id", entryIds)
+      .ilike("label", "differential diagnosis");
+  }
+  if (ddx.length > 0) {
+    const entryId = await manualEntryId(supabase, patientId, user.id);
+    if (entryId) {
+      const now = new Date().toISOString();
+      const joined = ddx.join(" ; ");
+      await supabase.from("observations").insert({
+        entry_id: entryId,
+        patient_id: patientId,
+        kind: "note",
+        label: "differential diagnosis",
+        value_text: joined,
+        source_quote: joined,
+        needs_confirmation: false,
+        confirmed_at: now,
+        confirmed_by: user.id,
+      });
+    }
+  }
+
   revalidateEverywhere(patientId);
   return { ok: true };
+}
+
+/**
+ * Approve the AI-proposed relevant (pertinent) negatives — stored as their own history
+ * section so they print on the clerking sheet's first side and show on the patient page.
+ */
+export async function applyRelevantNegatives(
+  patientId: string,
+  lines: string[]
+): Promise<{ ok: boolean; error?: string }> {
+  return replaceCaseHistorySection(patientId, "relevant negatives", "note", lines);
 }
 
 /**

@@ -63,7 +63,8 @@ export default function SpeakPatient({
       };
       recorder.onstop = () => void send(recorder.mimeType);
 
-      recorder.start();
+      // Timeslice: a chunk a second, so a stray interruption does not empty the buffer.
+      recorder.start(1000);
       recorderRef.current = recorder;
       setStatus("recording");
       navigator.vibrate?.(30);

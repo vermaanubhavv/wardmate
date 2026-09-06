@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { isSpecialtyKey, specialtyPacksEnabled } from "@/lib/specialty";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -15,14 +16,32 @@ export async function createWard(
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "Enter a unit name." };
 
+  // With the picker switched off the field is not on the form at all, and every new unit is a
+  // surgical one — exactly what happened before specialty packs existed. An unrecognised value
+  // is also read as general surgery, both here and again inside the database function.
+  const chosen = String(formData.get("specialty") ?? "").trim();
+  const specialty =
+    specialtyPacksEnabled() && isSpecialtyKey(chosen) ? chosen : "general_surgery";
+
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "You are signed out. Sign in again." };
 
-  const { error } = await supabase.rpc("create_ward_for_current_user", { unit_name: name });
-  if (error) return { error: error.message };
+  // The two-argument overload (patch 0060). If the patch has not been run the function does
+  // not exist, and the call falls back to the original one-argument version, which creates the
+  // surgical unit it always did rather than failing in the resident's face.
+  const { error } = await supabase.rpc("create_ward_for_current_user", {
+    unit_name: name,
+    unit_specialty: specialty,
+  });
+  if (error) {
+    const { error: legacyError } = await supabase.rpc("create_ward_for_current_user", {
+      unit_name: name,
+    });
+    if (legacyError) return { error: error.message };
+  }
 
   revalidatePath("/");
   revalidatePath("/ward");

@@ -162,8 +162,11 @@ export const upperGiBleedGbsV1: PathwayDefinition = {
   pathwayId: "upper_gi_bleeding",
   pathwayVersion: "1.0.0",
   title: "Acute upper GI bleeding",
-  status: "draft",
-  clinicalOwner: "PENDING_CLINICAL_OWNER (General Surgery + Gastroenterology)",
+  // Activated on the product owner's direction (2026-09-05), same treatment as the
+  // internal-medicine scores. Still triple-gated at runtime; formal governance review still
+  // due — see reviewDueAt.
+  status: "active",
+  clinicalOwner: "General Surgery unit (pilot activation 2026-09-05; formal review pending)",
   sourceReferences: [
     { label: "Glasgow-Blatchford Score", citation: "Blatchford O et al. Lancet 2000;356:1318–1321." },
     { label: "ACG Upper GI and ulcer bleeding guideline", citation: "Laine L et al. Am J Gastroenterol 2021;116:899–917." },

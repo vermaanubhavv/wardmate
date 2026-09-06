@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getCurrentWard, getDiagnosisSuggestions } from "@/lib/ward";
+import { getCurrentWard, getDiagnosisSuggestions, getWardSpecialtyStored } from "@/lib/ward";
+import { getSpecialtyPack } from "@/lib/specialty";
 import { listTemplateChoices } from "@/lib/templates";
 import PatientForm from "./patient-form";
 
@@ -17,9 +18,13 @@ export default async function NewPatientPage() {
     );
   }
 
+  // The unit's department decides which checklist rows the form offers and whether it asks
+  // for a chemotherapy cycle at all.
+  const pack = getSpecialtyPack(await getWardSpecialtyStored(ward.id));
+
   const [suggestions, templateChoices] = await Promise.all([
     getDiagnosisSuggestions(ward.id),
-    listTemplateChoices(),
+    listTemplateChoices(pack.pickerPhase),
   ]);
 
   return (
@@ -33,6 +38,7 @@ export default async function NewPatientPage() {
         wardId={ward.id}
         diagnosisSuggestions={suggestions}
         templateChoices={templateChoices}
+        specialty={pack.key}
       />
     </main>
   );

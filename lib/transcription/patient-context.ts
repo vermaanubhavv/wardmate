@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DictationContext, NoteType, Specialty } from "./lexicon";
 import { describeSelection, getDeepgramKeyterms } from "./selectMedicalKeyterms";
+import { getSpecialtyPack } from "@/lib/specialty";
 
 /**
  * Map WardMate's existing patient data onto the DictationContext the keyterm selector reads.
@@ -11,8 +12,9 @@ import { describeSelection, getDeepgramKeyterms } from "./selectMedicalKeyterms"
  * spoken since. The two together are enough to choose 20–50 keyterms for a patient.
  */
 
-/** WardMate is a general-surgical ward product today. The field exists so a future pack can
- *  set something else through the same selector. */
+/** The core boosted when the caller does not say which unit this is. General surgery, so an
+ *  un-migrated database and every existing unit keep exactly the keyterms they had. A caller
+ *  that knows the unit passes its pack's `lexiconSpecialty` instead. */
 export const DEFAULT_SPECIALTY: Specialty = "general-surgery";
 
 type PatientRow = {
@@ -191,18 +193,38 @@ function dedupe(list: string[]): string[] {
 export async function getPatientDictationKeyterms(
   supabase: SupabaseClient,
   patientId: string,
-  opts: { noteType?: NoteType; ward?: string } = {}
+  opts: { noteType?: NoteType; ward?: string; specialty?: Specialty } = {}
 ): Promise<string[]> {
   try {
     const { data: patient } = await supabase
       .from("current_patients")
       .select(
-        "primary_diagnosis, procedure_text, template_family, template_variant, surgery_date, post_op_day"
+        "ward_id, primary_diagnosis, procedure_text, template_family, template_variant, surgery_date, post_op_day"
       )
       .eq("id", patientId)
       .maybeSingle();
 
     if (!patient) return [];
+
+    // Which department this unit is, so an oncology round is boosted with regimen and drug
+    // names rather than operative anatomy. Read here rather than asked of every caller, and
+    // guarded: `specialty` does not exist before patch 0060, and PostgREST rejects a whole
+    // select that names a column it does not know. Falling back to general surgery is what
+    // every unit had before packs existed.
+    const specialty =
+      opts.specialty ??
+      (await (async () => {
+        const wardId = (patient as { ward_id?: string | null }).ward_id;
+        if (!wardId) return DEFAULT_SPECIALTY;
+        const { data: ward, error } = await supabase
+          .from("wards")
+          .select("specialty")
+          .eq("id", wardId)
+          .maybeSingle();
+        if (error) return DEFAULT_SPECIALTY;
+        return getSpecialtyPack((ward as { specialty?: string | null } | null)?.specialty)
+          .lexiconSpecialty;
+      })());
 
     const { data: observations } = await supabase
       .from("observations")
@@ -218,6 +240,7 @@ export async function getPatientDictationKeyterms(
       observations: (observations ?? []) as ObservationRow[],
       noteType: opts.noteType,
       ward: opts.ward,
+      specialty,
     });
 
     if (process.env.NODE_ENV === "development") {

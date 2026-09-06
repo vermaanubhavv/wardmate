@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { countPending, flush } from "@/lib/outbox";
+import { countPending, flush, recoverInterruptedChunks } from "@/lib/outbox";
 
 /**
  * Whether the app is online, what is waiting to be sent, and — when offline — a warning that
@@ -46,10 +46,22 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   const [pending, setPending] = useState(0);
   const [sending, setSending] = useState(false);
   const [reviews, setReviews] = useState<string[]>([]);
+  const [recovered, setRecovered] = useState(0);
 
   const refresh = useCallback(async () => {
     setPending(await countPending());
   }, []);
+
+  // A recording whose recorder was killed mid-sentence (no pagehide fired) leaves its
+  // second-by-second chunks behind. Reassemble them into ordinary queue items on open, so the
+  // words are not lost just because the tab died.
+  const recover = useCallback(async () => {
+    const items = await recoverInterruptedChunks();
+    if (items.length > 0) {
+      setRecovered((n) => n + items.length);
+      await refresh();
+    }
+  }, [refresh]);
 
   const send = useCallback(async () => {
     if (!navigator.onLine || sending) return;
@@ -72,15 +84,18 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   // session left queued. The rule cannot tell the two apart.
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    void refresh();
-    if (online) void send();
-  }, [online, refresh, send]);
+    void recover().then(() => {
+      void refresh();
+      if (online) void send();
+    });
+  }, [online, recover, refresh, send]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     // Coming back to the foreground is the moment a resident has walked somewhere with signal.
     const woke = () => {
       if (document.visibilityState === "visible") {
+        void recover();
         void refresh();
         void send();
       }
@@ -93,10 +108,10 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
       document.removeEventListener("visibilitychange", woke);
       window.removeEventListener("outbox-changed", refresh as EventListener);
     };
-  }, [refresh, send]);
+  }, [recover, refresh, send]);
 
-  // Nothing to say: online, nothing queued, nothing to review.
-  if (online && pending === 0 && reviews.length === 0 && !sending) return null;
+  // Nothing to say: online, nothing queued, nothing to review, nothing recovered.
+  if (online && pending === 0 && reviews.length === 0 && !sending && recovered === 0) return null;
 
   const fetched = new Date(renderedAt).toLocaleTimeString("en-IN", {
     timeZone: "Asia/Kolkata",
@@ -116,6 +131,13 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
         <p>
           <span className="font-semibold">No signal.</span> This screen is as it was at{" "}
           {fetched} — it may be out of date. Anything you record is saved on this phone.
+        </p>
+      )}
+
+      {recovered > 0 && (
+        <p className={sending || pending > 0 ? "mb-1" : ""}>
+          {recovered === 1 ? "An unfinished recording was" : `${recovered} unfinished recordings were`}{" "}
+          recovered from a closed session.
         </p>
       )}
 

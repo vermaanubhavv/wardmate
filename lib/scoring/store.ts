@@ -14,7 +14,9 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { isScoringEngineEnabled } from "./flag";
-import { triggerableDefinitions, getDefinition } from "./definitions/registry";
+import { definitionsForSpecialty, getDefinition } from "./definitions/registry";
+import { getSpecialtyPack } from "@/lib/specialty";
+import { getWardSpecialtyStored } from "@/lib/ward";
 import { detectTriggers, isWorkingDiagnosis } from "./triggers";
 import { evaluateCard, hashResult, type EvaluateContext } from "./engine";
 import { toEngineInputs, type ObservationRow, type PatientFacts } from "./observations-adapter";
@@ -48,7 +50,10 @@ export async function syncPatientPathways(patientId: string): Promise<void> {
   if (!(await isScoringEngineEnabled(patient.ward_id))) return;
 
   const diagnosisText = await collectDiagnosisText(supabase, patientId, patient.primary_diagnosis);
-  const defs = triggerableDefinitions();
+  // Only the pathways this unit's department actually uses. An oncology unit's list is empty,
+  // so nothing triggers there — see the pack's scoringKeys.
+  const pack = getSpecialtyPack(await getWardSpecialtyStored(patient.ward_id));
+  const defs = definitionsForSpecialty(pack.scoringKeys);
   const matches = detectTriggers({ text: diagnosisText }, defs);
 
   for (const m of matches) {

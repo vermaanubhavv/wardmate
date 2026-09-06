@@ -23,7 +23,22 @@
 export type HistoryLine = { id: string; text: string };
 
 export type HistorySection = {
-  key: "chief" | "hopi" | "past" | "family" | "medication" | "surgical" | "obstetric";
+  key:
+    | "chief"
+    | "hopi"
+    | "relnegatives"
+    | "past"
+    | "family"
+    | "medication"
+    | "surgical"
+    | "obstetric"
+    // Medical oncology. All shown only when something was recorded, so they never appear on a
+    // surgical or medicine clerking — nothing is ever filed into them there.
+    | "onco_disease"
+    | "onco_treatment"
+    | "onco_cycle"
+    | "onco_toxicity"
+    | "performance";
   label: string;
   lines: HistoryLine[];
   /** Shown in place of lines when there are none. Null means show nothing at all. */
@@ -59,6 +74,14 @@ const SECTIONS: {
       "presenting illness", "history of illness",
     ],
     alwaysShow: true,
+  },
+  {
+    key: "relnegatives",
+    label: "Relevant negatives",
+    aliases: ["relevant negatives", "pertinent negatives", "relevant negative history"],
+    // Shown only when the resident has generated and approved them on the Diagnosis step —
+    // a clerking without them is not a gap to chase in orange, so never "NR".
+    alwaysShow: false,
   },
   {
     key: "past",
@@ -103,6 +126,54 @@ const SECTIONS: {
     ],
     // Shown only when something was recorded — irrelevant for most surgical admissions, and
     // never prompted for male patients.
+    alwaysShow: false,
+  },
+
+  // --- Medical oncology ------------------------------------------------------------------
+  // Ordered the way an oncologist takes the history: what the cancer is, what has been given
+  // for it, what is running now, and what the last cycle did to the patient. None is
+  // alwaysShow — a section with nothing in it simply is not printed, which is what keeps these
+  // invisible on every non-oncology clerking.
+  {
+    key: "onco_disease",
+    label: "Oncological history",
+    aliases: [
+      "oncological history", "oncology history", "onco history", "cancer history",
+      "tumour history", "tumor history", "disease history",
+    ],
+    alwaysShow: false,
+  },
+  {
+    key: "onco_treatment",
+    label: "Treatment received",
+    aliases: [
+      "treatment received", "treatment history", "previous treatment", "prior treatment",
+      "past chemotherapy", "previous chemotherapy", "lines of therapy",
+    ],
+    alwaysShow: false,
+  },
+  {
+    key: "onco_cycle",
+    label: "Current cycle",
+    aliases: [
+      "current cycle", "present cycle", "current chemotherapy", "current regimen",
+      "this cycle", "ongoing chemotherapy",
+    ],
+    alwaysShow: false,
+  },
+  {
+    key: "onco_toxicity",
+    label: "Toxicity since last cycle",
+    aliases: [
+      "toxicity since last cycle", "toxicity", "chemotherapy toxicity", "side effects",
+      "toxicity after last cycle", "adverse effects",
+    ],
+    alwaysShow: false,
+  },
+  {
+    key: "performance",
+    label: "Performance status",
+    aliases: ["performance status", "ecog", "ecog status", "ecog performance status", "kps"],
     alwaysShow: false,
   },
 ];
@@ -185,6 +256,10 @@ export function summariseCaseHistory<
     // Jobs stated in the clerking note live on the to-do list, which is where they get ticked
     // off. Repeating them here would be the same job in two places.
     if (o.kind === "plan") continue;
+    // The differential list is held for the Diagnosis step and the printed sheet's second
+    // side — it is not part of the history block and must not fall through into "other" (the
+    // examination). The provisional diagnosis itself lives on patients.primary_diagnosis.
+    if (norm(o.label) === "differential diagnosis") continue;
 
     const key = sectionFor(o.label);
     const text = (o.value_text ?? "").trim();
@@ -199,7 +274,10 @@ export function summariseCaseHistory<
 
   const sections: HistorySection[] = SECTIONS.map((def) => {
     const hits = buckets.get(def.key) ?? [];
-    const positives = hits.filter((h) => !h.normal);
+    // Relevant negatives ARE negations by definition — every line reads as a denial and would
+    // otherwise be collapsed away. This is the one section where a "normal"-reading line is
+    // exactly what belongs on the sheet, so keep them all.
+    const positives = def.key === "relnegatives" ? hits : hits.filter((h) => !h.normal);
     const lines = positives.map((h) => ({ id: h.id, text: h.text }));
 
     if (!def.alwaysShow) {

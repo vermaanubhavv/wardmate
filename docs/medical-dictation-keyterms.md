@@ -63,6 +63,15 @@ lands.
 | `surgery.ts` | high-value operative anatomy |
 | `medications.ts` | generic drugs + Indian brands + IV fluids + critical-care vocabulary |
 | `scores.ts` | scoring systems and classifications |
+| `oncology.ts` | regimens, cytotoxics, count / toxicity / response vocabulary — tagged `medical-oncology` |
+| `internal-medicine.ts` | tropical-fever serology (NS1, Widal, Weil-Felix, MP smear, CBNAAT), Indian anti-microbial brands (Monocef, Magnex, Piptaz, Meronem), ATT as one token, insulin / antihypertensive vocabulary, haematology shorthand — tagged `internal-medicine` |
+
+The specialty files (`oncology.ts`, `internal-medicine.ts`) are only ever boosted for a unit
+whose specialty pack asks for them (`pack.lexiconSpecialty`, `lib/specialty/`). A surgical
+unit's keyterm budget is never spent on `bortezomib` or `Weil-Felix`; a medicine unit's is
+never spent on operative anatomy. Where `surgery.ts` is procedure- and anatomy-heavy,
+`internal-medicine.ts` is drug-, serology- and syndrome-heavy — that difference is the whole
+point of a specialty core.
 
 Each entry is a `MedicalLexiconEntry`:
 

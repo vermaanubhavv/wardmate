@@ -35,13 +35,21 @@ export type LexiconCategory =
   | "anatomy" //         high-value operative anatomy
   | "medication" //      generic drug names
   | "medication-brand" // Indian brand names
+  | "chemotherapy" //    cytotoxic, targeted and immunotherapy agents and regimens
+  | "oncology" //        staging, response, toxicity and haemato-oncology vocabulary
   | "fluid" //           IV fluids
   | "critical-care" //   sepsis / ICU vocabulary
   | "score"; //          scoring systems and classifications
 
-/** The specialty tag. WardMate is a surgical-ward product today; the field exists so a future
- *  medicine or ortho pack can be merged through the same selector. */
-export type Specialty = "general-surgery" | "surgical-gastroenterology" | "vascular-surgery";
+/** The specialty tag. One per WardMate specialty pack (lib/specialty/), plus the surgical
+ *  sub-specialty cores that predate them. The selector adds 30 points to any term tagged with
+ *  the unit's own specialty, and tops a thin context up from it. */
+export type Specialty =
+  | "general-surgery"
+  | "surgical-gastroenterology"
+  | "vascular-surgery"
+  | "medical-oncology"
+  | "internal-medicine";
 
 export type NoteType =
   | "ward-round"

@@ -25,7 +25,17 @@ type Patient = {
   procedure_text: string | null;
   template_family: string | null;
   template_variant: string | null;
+  regimen?: string | null;
+  cycle_number?: number | null;
+  cycle_started_on?: string | null;
 };
+
+/** Regimens the box suggests. A list of suggestions, never a restriction — every unit writes
+ *  these its own way and typing anything is allowed. */
+const REGIMEN_SUGGESTIONS = [
+  "ABVD", "AC-T", "BEACOPP", "BEP", "CAPOX", "DaraVRd", "FOLFIRI", "FOLFOX",
+  "R-CHOP", "TCH", "VRd", "carboplatin-paclitaxel", "hyper-CVAD",
+];
 
 /** What the Management select shows right now, given what's stored. Post-op is a fourth
  *  option here even though it is never itself stored — see readManagement in actions.ts. */
@@ -59,11 +69,15 @@ function currentProcedure(patient: Patient, choices: TemplateChoice[]): string {
 export default function EditIdentity({
   patient,
   templateChoices,
+  specialty = "general_surgery",
   openSignal,
   hideTrigger = false,
 }: {
   patient: Patient;
   templateChoices: TemplateChoice[];
+  /** The unit's department. A medical oncology unit gets the chemotherapy fields; a surgical
+   *  one never sees them, and its save therefore leaves those columns untouched. */
+  specialty?: string;
   /** Bumped by a parent (the ⋯ menu) to open the dialog without its own pen button. */
   openSignal?: number;
   hideTrigger?: boolean;
@@ -302,6 +316,60 @@ export default function EditIdentity({
               name="procedure"
               value={currentProcedure(patient, templateChoices)}
             />
+          )}
+
+          {specialty === "medical_oncology" && (
+            <>
+              <label className="flex flex-col gap-2">
+                <span className="text-[15px] text-muted">Regimen</span>
+                <input
+                  name="regimen"
+                  list="regimen-suggestions"
+                  defaultValue={patient.regimen ?? ""}
+                  autoCapitalize="characters"
+                  placeholder="e.g. R-CHOP"
+                  className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+                />
+                <datalist id="regimen-suggestions">
+                  {REGIMEN_SUGGESTIONS.map((r) => (
+                    <option key={r} value={r} />
+                  ))}
+                </datalist>
+                <span className="text-[13px] text-muted">
+                  Type anything — the suggestions are only suggestions. Clearing this clears the
+                  cycle with it, and the patient counts hospital days again.
+                </span>
+              </label>
+
+              <div className="flex gap-3">
+                <label className="flex w-24 shrink-0 flex-col gap-2">
+                  <span className="text-[15px] text-muted">Cycle</span>
+                  <input
+                    type="number"
+                    name="cycle_number"
+                    min={1}
+                    max={60}
+                    inputMode="numeric"
+                    defaultValue={patient.cycle_number ?? ""}
+                    className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+                  />
+                </label>
+
+                <label className="flex min-w-0 flex-1 flex-col gap-2">
+                  <span className="text-[15px] text-muted">Cycle started</span>
+                  <input
+                    type="date"
+                    name="cycle_started_on"
+                    defaultValue={patient.cycle_started_on ?? ""}
+                    className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+                  />
+                </label>
+              </div>
+              <span className="-mt-1 text-[13px] text-muted">
+                Day 1 is the day the drugs went up, not the day after. This is what the ward
+                list counts from — &ldquo;C2 D3&rdquo;.
+              </span>
+            </>
           )}
 
           {state.error && (

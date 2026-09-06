@@ -1,5 +1,6 @@
 import { stripPatientHonorific } from "@/lib/patients";
-import { classifyVital } from "@/lib/vital-ranges";
+import { classifyVital, matchVitalLabel, type VitalKey } from "@/lib/vital-ranges";
+import { dedupeTasks } from "@/lib/dedupe-tasks";
 import { classifyLab, canonicalLabName, type SuppliedRange } from "@/lib/lab-ranges";
 import { flagRadiology } from "@/lib/radiology-flags";
 import type { WardRanges } from "@/lib/exam-summary";
@@ -60,8 +61,19 @@ function findLabel(observations: Observation[], aliases: string[]): Observation 
 
 const CNS_ALIASES = ["cns", "central nervous system", "neurological examination", "neuro", "sensorium"];
 const CONSCIOUS_PATTERN = /conscious|oriented|drowsy|confused|altered sensorium|unresponsive|gcs/i;
-const BP_ALIASES = ["bp", "blood pressure"];
-const PR_ALIASES = ["pr", "pulse", "pulse rate", "heart rate", "hr"];
+/** The charted vitals, matched the one way the whole app matches them — so a value read off a
+ *  photographed obs chart, whose column was headed "Blood Pressure (mmHg)", prints here too. */
+const VITAL_HEADINGS: Record<VitalKey, string> = {
+  bp: "BP",
+  pr: "PR",
+  temp: "Temp",
+  spo2: "SpO₂",
+  rr: "RR",
+};
+
+function findVital(observations: Observation[], key: VitalKey): Observation | undefined {
+  return observations.find((o) => matchVitalLabel(o.label) === key && o.value_text);
+}
 const ABDOMEN_ALIASES = ["abdomen", "per abdomen", "p/a", "pa", "abdominal examination"];
 const CHEST_ALIASES = ["chest", "respiratory system", "rs", "lungs", "air entry"];
 const FLATUS_ALIASES = ["flatus", "passed flatus", "wind"];
@@ -162,12 +174,29 @@ export function buildProgressNote(
   // placeholder when unrecorded: a blank after two short abbreviations already reads as "not
   // yet taken" without a run of dashes to make the point. Still flagged when deranged, the same
   // classifyVital every other vitals display in the app uses.
-  const bpObs = findLabel(todaysObservations, BP_ALIASES);
-  const prObs = findLabel(todaysObservations, PR_ALIASES);
+  const bpObs = findVital(todaysObservations, "bp");
+  const prObs = findVital(todaysObservations, "pr");
   const bpText = bpObs ? renderVital(classifyVital(bpObs.label, bpObs.value_text)) : "";
   const prText = prObs ? renderVital(classifyVital(prObs.label, prObs.value_text)) : "";
   const line5 = `BP: ${bpText}`;
   const line5b = `PR: ${prText}`;
+
+  // 5c. The rest of the chart — temperature, saturation, respiratory rate — on one line, and
+  // only when something was actually recorded. These were being dropped from the printed sheet
+  // entirely: the ward charts four or five vitals and photographs the chart, the app read every
+  // one of them, and then the note printed two. A spiking temperature is the single most
+  // consequential number on a post-operative round and it was not reaching the page anyone
+  // signs. No empty heading when none were recorded — an unwritten line here is not a field
+  // waiting to be filled by hand, it is a chart that was never taken.
+  const otherVitals = (["temp", "spo2", "rr"] as const)
+    .map((key) => {
+      const obs = findVital(todaysObservations, key);
+      if (!obs) return null;
+      const text = renderVital(classifyVital(obs.label, obs.value_text));
+      return text ? `${VITAL_HEADINGS[key]}: ${text}` : null;
+    })
+    .filter((line): line is string => line !== null);
+  const line5c = otherVitals.join("   ");
 
   // 6. P/Abdomen, said today — printed exactly as recorded, never normalised to "NAD" wording
   // that was not actually said. No trailing BLANK when empty: unlike a single-word field (a
@@ -252,7 +281,10 @@ export function buildProgressNote(
   const scoreLines = options?.scoreLines ?? [];
 
   const observation = [
-    line2, line3, line3b, line4, line5, line5b, line6, line6b, line7, line7b, line7c,
+    line2, line3, line3b, line4, line5, line5b,
+    // Omitted rather than printed empty — see line5c above.
+    ...(line5c ? [line5c] : []),
+    line6, line6b, line7, line7b, line7c,
     line8, ...scoreLines, line9, ...issueBlankLines,
   ];
 
@@ -274,7 +306,15 @@ export function buildProgressNote(
   // and an interdepartmental referral are all just "plan" observations the same way any other
   // job is; a referral is flagged distinctly below (see referralHint) so it does not slip past
   // as an ordinary line item, without this file generating a second document for it.
-  const planLines = todaysObservations.filter((o) => o.kind === "plan").map((o) => o.value_text ?? o.label);
+  //
+  // Repeats are folded the same way the on-screen to-do list folds them, and for the same
+  // reason: a round that says "continue antibiotics" at the bedside and again while writing up
+  // is one order, and printing it twice on a sheet a nurse works from is how a dose gets given
+  // twice. The newest wording is the one that prints — observations arrive newest-first, which
+  // is what dedupeTasks relies on.
+  const planLines = dedupeTasks(todaysObservations.filter((o) => o.kind === "plan")).map(
+    ({ task }) => task.value_text ?? task.label
+  );
 
   // Right column, in the order the physical sheet wants it: Plan at the top, then Advice below
   // it as a numbered list of whatever the patient is CURRENTLY on — everything the resident has

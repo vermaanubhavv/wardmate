@@ -7,6 +7,7 @@ import { getDeepgramKeyterms } from "@/lib/transcription/selectMedicalKeyterms";
 import { correctTranscript } from "@/lib/glossary";
 import { buildRoundDraft } from "@/lib/round-draft";
 import { getCurrentWard, getActivePatients } from "@/lib/ward";
+import { readReceipt, saveReceipt } from "@/lib/dictation-receipt";
 
 /**
  * A whole round, dictated in one go. Produces a DRAFT and writes nothing to any patient.
@@ -29,10 +30,16 @@ export async function POST(request: Request) {
   const form = await request.formData();
   const audio = form.get("audio");
   const typed = String(form.get("text") ?? "").trim();
+  const clientUuid = String(form.get("client_uuid") ?? "") || null;
 
   if (!(audio instanceof Blob) || audio.size === 0) {
     if (!typed) return NextResponse.json({ error: "Nothing was recorded." }, { status: 400 });
   }
+
+  // Already split this exact recording into a draft (a retry, or a duplicate from the offline
+  // queue): hand back the same draft rather than paying to build a second one.
+  const prior = await readReceipt(supabase, clientUuid, user.id);
+  if (prior) return NextResponse.json(prior);
 
   // 1. Speech to text, unless it was typed.
   // The ward's active patients — needed now for the Deepgram keyterms (every bed's diagnosis
@@ -122,5 +129,7 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ dictation_id: dictation.id, segments: read.segments.length });
+  const body = { dictation_id: dictation.id, segments: read.segments.length };
+  await saveReceipt(supabase, clientUuid, user.id, "round", body);
+  return NextResponse.json(body);
 }

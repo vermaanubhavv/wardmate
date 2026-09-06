@@ -15,6 +15,9 @@
 const STOPWORDS = new Set([
   "the", "a", "an", "to", "for", "of", "and", "please", "kindly", "his", "her", "their",
   "patient", "patients", "is", "be", "will", "should", "can", "we", "let", "us", "him",
+  // Words a spoken instruction leans on that name nothing: "do it tomorrow" is a job with no
+  // content, and this file has always said such a job must never be folded into another one.
+  "do", "it", "this", "that",
 ]);
 
 /**
@@ -41,21 +44,61 @@ const SYNONYMS: Record<string, string> = {
   remove: "remove",
 };
 
+/**
+ * The word, reduced to the part that carries its meaning.
+ *
+ * A ward says one job in every tense it has. "Continue antibiotics", "continued the
+ * antibiotic", "continuing antibiotics" are one instruction, and before this they produced
+ * three different keys and three rows on a list whose whole purpose is to be the count of what
+ * is left. Only endings are cut — plural, past, progressive, the silent e — so this can merge
+ * two forms of the same word and cannot merge two different words. That asymmetry is the same
+ * one SYNONYMS above is held to: failing to merge leaves the list untidy, merging wrongly hides
+ * a job.
+ *
+ * It is deliberately not a real stemmer. Porter and its kin fold "operate" and "operation"
+ * together, which on a surgical ward is two different things being said.
+ */
+function stem(word: string): string {
+  let w = word;
+
+  if (w.length > 4 && w.endsWith("ies")) w = w.slice(0, -3) + "y";
+  else if (w.length > 3 && w.endsWith("s") && !w.endsWith("ss") && !w.endsWith("us")) {
+    w = w.slice(0, -1);
+  }
+
+  if (w.length > 5 && w.endsWith("ing")) w = w.slice(0, -3);
+  else if (w.length > 4 && w.endsWith("ed")) w = w.slice(0, -2);
+
+  // "planned" → "plann" → "plan", so it meets "plan". Not for l/s/z, where the double letter is
+  // usually the word itself ("still", "pass", "buzz").
+  const last = w[w.length - 1];
+  if (w.length > 3 && last === w[w.length - 2] && !"lsz".includes(last)) w = w.slice(0, -1);
+
+  // The silent e, so "remove" meets "removed" → "remov" and "dose" meets "doses" → "dos".
+  if (w.length > 4 && w.endsWith("e")) w = w.slice(0, -1);
+
+  return w;
+}
+
+/** Filler that says when, not what. Two sayings of one job rarely agree on the day. */
+const TIMEFRAMES = new Set([
+  "today", "tomorrow", "tonight", "morning", "evening", "afternoon", "now",
+  "later", "asap", "stat", "urgently", "immediately", "soon",
+]);
+
 export function taskKey(text: string): string {
   const words = text
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
     .filter(Boolean)
+    // Synonyms, then the words that carry nothing, and only then the endings. Dropping the
+    // filler first matters: stemming would cut "evening" to "even" and "please" to "pleas",
+    // and neither would match the list it is supposed to be removed by.
     .map((w) => SYNONYMS[w] ?? w)
     .filter((w) => !STOPWORDS.has(w))
-    .filter(
-      (w) =>
-        ![
-          "today", "tomorrow", "tonight", "morning", "evening", "afternoon", "now",
-          "later", "asap", "stat", "urgently", "immediately", "soon",
-        ].includes(w)
-    );
+    .filter((w) => !TIMEFRAMES.has(w))
+    .map(stem);
 
   // Sorted, so "drain out" and "out drain" collapse together — speech reorders freely, and
   // the order of two words is not a second job.

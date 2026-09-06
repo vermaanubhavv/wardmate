@@ -1,12 +1,49 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Mark from "@/app/mark";
 import { ImageIcon, MicIcon, StopIcon } from "@/app/icons";
 import { prepareImageForUpload } from "@/lib/image-for-upload";
+import {
+  clearChunks,
+  clearInFlight,
+  dropRecording,
+  markInFlight,
+  putChunk,
+  saveRecording,
+} from "@/lib/outbox";
 
 type Status = "idle" | "starting" | "recording" | "working";
+
+/**
+ * What a full clerking covers, in the order it is taken. Shown next to the mic in the "speak"
+ * variant so the resident can dictate straight down the list and see at a glance what is still
+ * to say. Mirrors the card walk in case-history-workspace so a spoken note sorts cleanly.
+ */
+const CLERKING_FORMAT: { title: string; hint: string }[] = [
+  { title: "Chief complaints", hint: "each problem and how long it has been there — worst first" },
+  {
+    title: "History of present illness",
+    hint: "for each complaint: onset, duration, progression, character, what makes it better or worse, associated symptoms",
+  },
+  { title: "Past history", hint: "diabetes, hypertension, TB, asthma, heart disease, similar episodes before" },
+  { title: "Family history", hint: "relevant illnesses running in the family" },
+  { title: "Medication history", hint: "current medicines and doses, any drug allergy" },
+  { title: "Surgical history", hint: "previous operations, any anaesthetic trouble" },
+  { title: "Menstrual & obstetric history", hint: "if applicable — last period, cycle, pregnancies and deliveries" },
+  { title: "Personal history", hint: "diet, appetite, bowel and bladder, sleep, smoking, alcohol" },
+  {
+    title: "General examination",
+    hint: "build and nutrition, pallor, icterus, cyanosis, clubbing, lymph nodes, oedema",
+  },
+  { title: "Vitals", hint: "pulse, blood pressure, temperature, respiratory rate, SpO₂" },
+  { title: "Per abdomen", hint: "inspection, palpation, percussion, auscultation" },
+  { title: "Other systems", hint: "chest, cardiovascular, neurological — whatever is relevant" },
+  { title: "Local examination", hint: "the lump, wound or affected part in detail" },
+  { title: "Provisional diagnosis", hint: "what you think this is" },
+  { title: "Plan", hint: "investigations, treatment, consent, referrals" },
+];
 
 /**
  * Getting the admission clerking note into the app, the one time it is needed per patient.
@@ -21,8 +58,13 @@ export default function CaseHistoryCapture({
   hasExisting = false,
   defaultOpen = false,
   savedHref,
+  variant = "menu",
 }: {
   patientId: string;
+  /** "menu" — the collapsible photo/dictate control used on the patient page.
+   *  "speak" — a dedicated dictation panel: the clerking format checklist beside one big
+   *  Speak button, no photo option, no collapsing. Used on the new-clerking screen. */
+  variant?: "menu" | "speak";
   /** Once a case history exists, this becomes "add an addendum" rather than the first prompt —
    *  no reason to re-explain what it is, or offer to skip something already done. */
   hasExisting?: boolean;
@@ -38,6 +80,10 @@ export default function CaseHistoryCapture({
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const recIdRef = useRef<string>("");
+  const recMimeRef = useRef<string>("audio/webm");
+  const seqRef = useRef(0);
+  const recordingRef = useRef(false);
 
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState<string | null>(null);
@@ -48,7 +94,9 @@ export default function CaseHistoryCapture({
     if (defaultOpen && detailsRef.current) detailsRef.current.open = true;
   }, [defaultOpen]);
 
-  async function submit(body: FormData) {
+  /** Returns how it went, so a dictation caller knows whether to keep its phone copy for the
+   *  queue ("kept") or let it go ("done"). The photo caller ignores the return. */
+  async function submit(body: FormData, savedLocally = false): Promise<"done" | "kept"> {
     setStatus("working");
     setMessage(null);
     try {
@@ -57,8 +105,13 @@ export default function CaseHistoryCapture({
       setStatus("idle");
 
       if (!res.ok) {
+        // 5xx / AI outage is worth retrying from the queue; a 4xx rejection is not.
+        if (res.status >= 500 && savedLocally) {
+          setMessage(data.error ?? "Saved on this phone — the server could not take it. It will retry.");
+          return "kept";
+        }
         setMessage(data.error ?? "Could not save the case history.");
-        return;
+        return "done";
       }
 
       const n = data.observations?.length ?? 0;
@@ -70,12 +123,18 @@ export default function CaseHistoryCapture({
       );
       if (savedHref) {
         router.push(savedHref);
-        return;
+        return "done";
       }
       router.refresh();
+      return "done";
     } catch {
       setStatus("idle");
-      setMessage("No connection. Nothing was saved.");
+      setMessage(
+        savedLocally
+          ? "Saved on this phone — no signal. It will be sent when you are back online."
+          : "No connection. Nothing was saved."
+      );
+      return savedLocally ? "kept" : "done";
     }
   }
 
@@ -86,7 +145,51 @@ export default function CaseHistoryCapture({
     const form = new FormData();
     form.append("patient_id", patientId);
     form.append("photo", photo);
+    // So a retried photo upload is not read and stored twice.
+    form.append("client_uuid", crypto.randomUUID());
     void submit(form);
+  }
+
+  async function finishRecording(type: string) {
+    recordingRef.current = false;
+    const ext = type.includes("mp4") ? "m4a" : type.includes("mpeg") ? "mp3" : "webm";
+    const blob = new Blob(chunksRef.current, { type });
+    chunksRef.current = [];
+    const id = recIdRef.current;
+
+    if (blob.size < 1200) {
+      setStatus("idle");
+      setMessage("Nothing was recorded — hold on a moment longer before stopping.");
+      void dropRecording(id);
+      return;
+    }
+
+    // On the phone before the upload, so a lock or a lost signal cannot take the clerking with
+    // it. Dropped once the server has it; left for the queue if not.
+    await saveRecording(id, {
+      kind: "case-history",
+      url: "/api/entries/case-history",
+      patientId,
+      label: "Case history",
+      audio: blob,
+      mimeType: type,
+    });
+    window.dispatchEvent(new Event("outbox-changed"));
+
+    const form = new FormData();
+    form.append("patient_id", patientId);
+    form.append("audio", blob, `case-history.${ext}`);
+    form.append("client_uuid", id);
+    markInFlight(id);
+    try {
+      const outcome = await submit(form, true);
+      if (outcome === "done") {
+        void dropRecording(id);
+        void clearChunks(id);
+      }
+    } finally {
+      clearInFlight(id);
+    }
   }
 
   async function startRecording() {
@@ -102,21 +205,29 @@ export default function CaseHistoryCapture({
       );
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       chunksRef.current = [];
+      recIdRef.current = crypto.randomUUID();
+      recMimeRef.current = recorder.mimeType || mimeType || "audio/webm";
+      seqRef.current = 0;
+      recordingRef.current = true;
+      const recId = recIdRef.current;
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
+        if (e.data.size === 0) return;
+        chunksRef.current.push(e.data);
+        void putChunk(recId, seqRef.current++, e.data, {
+          kind: "case-history",
+          url: "/api/entries/case-history",
+          patientId,
+          label: "Case history",
+          mimeType: recMimeRef.current,
+        });
       };
       recorder.onstop = () => {
         stream.getTracks().forEach((t) => t.stop());
-        const type = recorder.mimeType || mimeType || "audio/webm";
-        const ext = type.includes("mp4") ? "m4a" : type.includes("mpeg") ? "mp3" : "webm";
-        const blob = new Blob(chunksRef.current, { type });
-        const form = new FormData();
-        form.append("patient_id", patientId);
-        form.append("audio", blob, `case-history.${ext}`);
-        void submit(form);
+        void finishRecording(recorder.mimeType || mimeType || "audio/webm");
       };
       mediaRef.current = recorder;
-      recorder.start();
+      // Timeslice: a chunk a second, so an interruption before a clean stop costs a second.
+      recorder.start(1000);
       setStatus("recording");
     } catch {
       setStatus("idle");
@@ -126,6 +237,101 @@ export default function CaseHistoryCapture({
 
   function stopRecording() {
     mediaRef.current?.stop();
+  }
+
+  // Phone locked, app swiped away, or component unmounted mid-dictation: keep what was said.
+  const salvage = useCallback(() => {
+    if (!recordingRef.current) return;
+    const chunks = chunksRef.current;
+    if (chunks.length) {
+      const blob = new Blob(chunks, { type: recMimeRef.current });
+      if (blob.size > 800) {
+        void saveRecording(recIdRef.current, {
+          kind: "case-history",
+          url: "/api/entries/case-history",
+          patientId,
+          label: "Case history",
+          audio: blob,
+          mimeType: recMimeRef.current,
+        });
+      }
+    }
+    try {
+      mediaRef.current?.requestData?.();
+      if (mediaRef.current?.state === "recording") mediaRef.current.stop();
+    } catch {
+      // Already stopped, or the page is going faster than this can run.
+    }
+  }, [patientId]);
+
+  useEffect(() => {
+    const onHide = () => {
+      if (document.visibilityState === "hidden") salvage();
+    };
+    window.addEventListener("pagehide", salvage);
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      window.removeEventListener("pagehide", salvage);
+      document.removeEventListener("visibilitychange", onHide);
+      salvage();
+    };
+  }, [salvage]);
+
+  if (variant === "speak") {
+    const recording = status === "recording";
+    return (
+      <div className="mt-2">
+        <p className="px-1 text-[13px] leading-relaxed text-muted">
+          Speak the clerking straight down this list — in your own words, in any order. Each part
+          is transcribed and sorted into its card for you to check. Nothing here is compulsory;
+          say what applies.
+        </p>
+
+        <ol className="ios-group mt-3 divide-y divide-line">
+          {CLERKING_FORMAT.map((s, i) => (
+            <li key={s.title} className="flex gap-3 px-4 py-2.5">
+              <span className="text-[13px] font-semibold tabular-nums text-muted">{i + 1}</span>
+              <span>
+                <span className="text-[15px] font-semibold">{s.title}</span>
+                <span className="mt-0.5 block text-[13px] leading-relaxed text-muted">{s.hint}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+
+        <button
+          type="button"
+          onClick={recording ? stopRecording : startRecording}
+          disabled={status === "working" || status === "starting"}
+          className={
+            "mt-3 flex w-full items-center justify-center gap-2 rounded-[12px] px-4 py-3.5 text-[16px] font-semibold disabled:opacity-50 " +
+            (recording ? "bg-red-500 text-white" : "bg-accent text-accent-ink")
+          }
+        >
+          {recording ? (
+            <StopIcon className="h-[20px] w-[20px]" />
+          ) : status === "working" ? (
+            <Mark className="h-[20px] w-[20px]" spinning />
+          ) : (
+            <MicIcon className="h-[20px] w-[20px]" />
+          )}
+          {recording
+            ? "Stop and save"
+            : status === "starting"
+              ? "Starting…"
+              : status === "working"
+                ? "Working…"
+                : "Speak the clerking"}
+        </button>
+
+        {recording && (
+          <p className="mt-2 text-center text-[13px] text-red-500">
+            Recording — scroll the list as you go. Tap stop when done.
+          </p>
+        )}
+        {message && <p className="mt-3 text-[13px] text-muted">{message}</p>}
+      </div>
+    );
   }
 
   return (

@@ -216,7 +216,8 @@ export function DictateArea({
       setStatus("idle");
     };
     mediaRef.current = rec;
-    rec.start();
+    // Timeslice: a chunk a second, so an interruption before a clean stop costs a second.
+    rec.start(1000);
     setStatus("recording");
   }
 

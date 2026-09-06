@@ -7,6 +7,8 @@ import {
   type CareTemplate,
 } from "@/lib/templates";
 import { derivePatientState, type Observation, type PatientState } from "@/lib/patient-state";
+import { getSpecialtyPack, type SpecialtyPack } from "@/lib/specialty";
+import { getWardSpecialtyStored } from "@/lib/ward";
 import { effectiveUrgency, URGENCY_META } from "@/lib/urgency";
 
 export type HandoverPatient = {
@@ -18,6 +20,9 @@ export type HandoverPatient = {
   primary_diagnosis: string | null;
   post_op_day: number | null;
   admission_day: number;
+  regimen: string | null;
+  cycle_number: number | null;
+  cycle_day: number | null;
   template: CareTemplate | null;
   /** The operation recorded against this patient, for those who have had one. */
   procedure: string | null;
@@ -28,6 +33,8 @@ export type HandoverPatient = {
 
 export type WardHandover = {
   ward: { id: string; name: string };
+  /** The unit's specialty pack — it decides how each patient's day is named below. */
+  pack: SpecialtyPack;
   patients: HandoverPatient[];
   generated_at: string;
 };
@@ -37,20 +44,55 @@ export type WardHandover = {
  * opening every patient in turn. Reuses exactly the logic the bedside screen uses per patient
  * (derivePatientState) so the two never disagree about what counts as outstanding.
  */
+const BASE_PATIENT_COLUMNS =
+  "id, display_name, age_years, sex, bed, primary_diagnosis, post_op_day, admission_day, surgery_date, template_family, template_variant, procedure_text, management";
+
+/** The chemotherapy columns patch 0060 adds. Only ever asked for when the unit is an oncology
+ *  unit — and a unit can only BE an oncology unit if 0060 has run, so naming them can never
+ *  reject the query on a database that has not been migrated. */
+const CHEMO_PATIENT_COLUMNS = ", regimen, cycle_number, cycle_day";
+
+/** The row those columns come back as. Written out because the column list is chosen at
+ *  runtime, which is more than the Supabase client's select-string typing can follow. */
+type HandoverRow = {
+  id: string;
+  display_name: string;
+  age_years: number | null;
+  sex: string | null;
+  bed: string;
+  primary_diagnosis: string | null;
+  post_op_day: number | null;
+  admission_day: number;
+  surgery_date: string | null;
+  template_family: string | null;
+  template_variant: string | null;
+  procedure_text: string | null;
+  management: string | null;
+  regimen?: string | null;
+  cycle_number?: number | null;
+  cycle_day?: number | null;
+};
+
 export async function getWardHandover(ward: { id: string; name: string }): Promise<WardHandover> {
   const generated_at = new Date().toISOString();
   const supabase = await createClient();
 
+  const pack = getSpecialtyPack(await getWardSpecialtyStored(ward.id));
+  const PATIENT_COLUMNS =
+    BASE_PATIENT_COLUMNS + (pack.key === "general_surgery" ? "" : CHEMO_PATIENT_COLUMNS);
+
   const { data: patients } = await supabase
     .from("current_patients")
     .select(
-      "id, display_name, age_years, sex, bed, primary_diagnosis, post_op_day, admission_day, surgery_date, template_family, template_variant, procedure_text, management"
+      PATIENT_COLUMNS
     )
     .eq("ward_id", ward.id)
     .eq("status", "active");
 
-  const rows = (patients ?? []).slice().sort((a, b) => compareBeds(a.bed, b.bed));
-  if (rows.length === 0) return { ward, patients: [], generated_at };
+  const rows = ((patients ?? []) as unknown as HandoverRow[])
+    .slice()
+    .sort((a, b) => compareBeds(a.bed, b.bed));
+  if (rows.length === 0) return { ward, pack, patients: [], generated_at };
 
   // Every observation on the ward in one query, newest first, so grouping by patient below
   // preserves the newest-first order derivePatientState relies on to pick the latest value.
@@ -83,13 +125,25 @@ export async function getWardHandover(ward: { id: string; name: string }): Promi
     const state = derivePatientState(
       byPatient.get(p.id) ?? [],
       template,
-      p.post_op_day ?? p.admission_day,
-      { surgeryDate: p.surgery_date }
+      pack.dayCount(p).n,
+      {
+        surgeryDate: p.surgery_date,
+        cycleDay: p.cycle_day,
+        onRegimen: Boolean(p.regimen),
+      }
     );
-    out.push({ ...p, template, procedure: procedureFor(p, procedures), state });
+    out.push({
+      regimen: null,
+      cycle_number: null,
+      cycle_day: null,
+      ...p,
+      template,
+      procedure: procedureFor(p, procedures),
+      state,
+    });
   }
 
-  return { ward, patients: out, generated_at };
+  return { ward, pack, patients: out, generated_at };
 }
 
 /**
@@ -117,7 +171,7 @@ export function formatHandoverText(handover: WardHandover): string {
   for (const p of handover.patients) {
     const management = managementLabel(p);
     lines.push(
-      `${p.bed} · ${patientName(p)} · ${dayLabel(p)}${p.procedure ? ` ${p.procedure}` : ""} · ${p.primary_diagnosis || "no diagnosis recorded"}${management ? ` · ${management}` : ""}`
+      `${p.bed} · ${patientName(p)} · ${dayLabel(p, handover.pack)}${p.procedure ? ` ${p.procedure}` : ""} · ${p.primary_diagnosis || "no diagnosis recorded"}${management ? ` · ${management}` : ""}`
     );
 
     const { openTasks, pending, missing } = p.state;

@@ -14,15 +14,26 @@ import type { AdmissionPaperPatient } from "@/lib/read-admission-paper";
  * The one screen in the app where typing is allowed, because it happens once per admission
  * rather than once per round.
  */
+/** Regimens the box suggests. Suggestions only — every unit writes these its own way and
+ *  typing anything is allowed. Mirrors the list in ../edit-identity.tsx. */
+const REGIMEN_SUGGESTIONS = [
+  "ABVD", "AC-T", "BEACOPP", "BEP", "CAPOX", "DaraVRd", "FOLFIRI", "FOLFOX",
+  "R-CHOP", "TCH", "VRd", "carboplatin-paclitaxel", "hyper-CVAD",
+];
+
 export default function PatientForm({
   wardId,
   diagnosisSuggestions,
   templateChoices,
+  specialty = "general_surgery",
 }: {
   wardId: string;
   diagnosisSuggestions: string[];
   templateChoices: { family: string; variant: string | null; label: string }[];
+  /** The unit's department. Only an oncology unit is asked for a chemotherapy cycle. */
+  specialty?: string;
 }) {
+  const oncology = specialty === "medical_oncology";
   const [state, formAction, pending] = useActionState<AddPatientState, FormData>(addPatient, {
     error: null,
   });
@@ -44,7 +55,15 @@ export default function PatientForm({
     primary_diagnosis: "",
     procedure: "",
     uhid_ip_no: "",
+    mrd_no: "",
+    regimen: "",
+    cycle_number: "",
+    cycle_started_on: "",
   });
+
+  // Admission date is controlled separately: it starts at today's date and a paper may
+  // replace it, whereas everything above starts blank.
+  const [admittedOn, setAdmittedOn] = useState("");
 
   const set = (k: keyof typeof fields) => (v: string) =>
     setFields((f) => ({ ...f, [k]: v }));
@@ -65,19 +84,46 @@ export default function PatientForm({
       primary_diagnosis: p.diagnosis ?? f.primary_diagnosis,
       procedure: p.procedure ?? f.procedure,
       uhid_ip_no: f.uhid_ip_no,
+      mrd_no: f.mrd_no,
+      regimen: f.regimen,
+      cycle_number: f.cycle_number,
+      cycle_started_on: f.cycle_started_on,
     }));
   }
 
-  /** A paper and speech behave the same way: fill only what was actually found. */
+  /**
+   * A paper and speech behave the same way: fill only what was actually found.
+   *
+   * Every box the paper did not carry keeps whatever is already in it. Photographing a second
+   * paper therefore adds to the form rather than resetting it, and a box typed by hand is
+   * never overwritten by a null.
+   */
   function fillFromPaper(p: AdmissionPaperPatient) {
     setFields((f) => ({
       ...f,
+      bed: p.bed ?? f.bed,
       display_name: p.name ?? f.display_name,
       age_years: p.age_years !== null ? String(p.age_years) : f.age_years,
       sex: p.sex ?? f.sex,
       uhid_ip_no: p.uhid_ip_no ?? f.uhid_ip_no,
+      mrd_no: p.mrd_no ?? f.mrd_no,
       primary_diagnosis: p.diagnosis ?? f.primary_diagnosis,
+      procedure: p.procedure ?? f.procedure,
+      // Only offered where they mean something. A regimen read off a paper on a surgical ward
+      // has no field to land in, and filling a hidden box would store it unseen.
+      regimen: oncology ? (p.regimen ?? f.regimen) : f.regimen,
+      cycle_number: oncology
+        ? (p.cycle_number !== null ? String(p.cycle_number) : f.cycle_number)
+        : f.cycle_number,
+      cycle_started_on: oncology ? (p.cycle_started_on ?? f.cycle_started_on) : f.cycle_started_on,
     }));
+    if (p.admitted_on) setAdmittedOn(p.admitted_on);
+
+    // DELIBERATELY NOT SET: management. An operation named on the paper does say the patient
+    // arrives already operated, but choosing "Post-op" here would put a date of operation box
+    // on screen pre-filled with today — a date nobody read off anything. The operation text is
+    // kept (a hidden input carries it either way), and the resident chooses the phase and
+    // types the real date.
   }
 
   return (
@@ -86,7 +132,7 @@ export default function PatientForm({
 
       {/* Above the boxes it fills, so the order on screen is the order of the work. */}
       <SpeakPatient onParsed={fillFromSpeech} />
-      <AdmissionPaper onParsed={fillFromPaper} />
+      <AdmissionPaper onParsed={fillFromPaper} oncology={oncology} />
 
       {/* Bed and location together: the bed label often already says ICU, but the label is
           free text and the landing page counts real rows, so where a patient is gets asked
@@ -148,6 +194,8 @@ export default function PatientForm({
           <Field label="MRD no.">
             <input
               name="mrd_no"
+              value={fields.mrd_no}
+              onChange={(e) => set("mrd_no")(e.target.value)}
               className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
             />
           </Field>
@@ -202,8 +250,9 @@ export default function PatientForm({
           type="date"
           name="admitted_on"
           required
-          defaultValue={localToday}
+          value={admittedOn || localToday}
           max={localToday}
+          onChange={(e) => setAdmittedOn(e.target.value)}
           className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
         />
       </Field>
@@ -278,6 +327,65 @@ export default function PatientForm({
           operation out loud it still goes with the patient. */}
       {management !== "preop" && management !== "postop" && fields.procedure && (
         <input type="hidden" name="procedure" value={fields.procedure} />
+      )}
+
+      {/* Chemotherapy. Asked only on an oncology unit, and asked at admission because the
+          cycle is what the whole ward round then counts by — a patient admitted without it
+          shows a hospital day until somebody goes back and fills it in. */}
+      {oncology && (
+        <>
+          <Field
+            label="Regimen"
+            hint="Type anything. Leave blank if the patient is not on a named regimen"
+          >
+            <input
+              name="regimen"
+              list="new-regimen-suggestions"
+              value={fields.regimen}
+              onChange={(e) => set("regimen")(e.target.value)}
+              autoCapitalize="characters"
+              placeholder="e.g. R-CHOP"
+              className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+            />
+            <datalist id="new-regimen-suggestions">
+              {REGIMEN_SUGGESTIONS.map((r) => (
+                <option key={r} value={r} />
+              ))}
+            </datalist>
+          </Field>
+
+          {/* Only once there is a regimen to have a cycle OF. */}
+          {fields.regimen.trim() && (
+            <div className="flex gap-3">
+              <div className="w-28 shrink-0">
+                <Field label="Cycle">
+                  <input
+                    type="number"
+                    name="cycle_number"
+                    inputMode="numeric"
+                    min={1}
+                    max={60}
+                    value={fields.cycle_number}
+                    onChange={(e) => set("cycle_number")(e.target.value)}
+                    className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+                  />
+                </Field>
+              </div>
+              <div className="min-w-0 flex-1">
+                <Field label="Cycle started" hint="Day 1 is the day the drugs went up">
+                  <input
+                    type="date"
+                    name="cycle_started_on"
+                    max={localToday}
+                    value={fields.cycle_started_on}
+                    onChange={(e) => set("cycle_started_on")(e.target.value)}
+                    className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+                  />
+                </Field>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {state.error && (

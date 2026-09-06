@@ -183,12 +183,16 @@ export const getTemplateForPatient = cache(async function getTemplateForPatient(
 })
 
 /** Everything a patient can be assigned to, for the add-patient screen. */
-export const listTemplateChoices = cache(async function listTemplateChoices(): Promise<TemplateChoice[]> {
+export const listTemplateChoices = cache(async function listTemplateChoices(
+  /** Which phase's rows to offer — the unit's pack decides. Defaults to the surgical answer,
+   *  so a caller that passes nothing behaves exactly as this function always did. */
+  phase: "before_surgery" | "after_surgery" = "after_surgery"
+): Promise<TemplateChoice[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("care_templates")
     .select("family, variant, name")
-    .eq("phase", "after_surgery")
+    .eq("phase", phase)
     .order("family");
 
   const seen = new Set<string>();
@@ -201,7 +205,7 @@ export const listTemplateChoices = cache(async function listTemplateChoices(): P
     out.push({
       family: t.family,
       variant: t.variant,
-      label: t.name.replace(/\s+—\s+after surgery$/i, ""),
+      label: t.name.replace(/\s+—\s+(after|before) surgery$/i, ""),
     });
   }
   return out;
@@ -355,6 +359,11 @@ export function matchTemplate(
     surgeryDate?: string | null;
     /** Admission timestamp, for hours-since-admission trigger conditions. */
     admittedOn?: string | null;
+    /** Chemotherapy cycle day (1-based) and whether a regimen is recorded — the oncology
+     *  clock, for the cycle_day_* / day_of_cycle / on_regimen conditions. Null and false for
+     *  every surgical patient, which is what makes those conditions never fire there. */
+    cycleDay?: number | null;
+    onRegimen?: boolean;
     /** Overridable clock, for tests. */
     now?: string;
   } = {}
@@ -393,6 +402,8 @@ export function matchTemplate(
     postOpDay: opts.surgeryDate ? (opts.knownDay ?? null) : null,
     hoursSinceSurgery: hoursSince(opts.surgeryDate),
     hoursSinceAdmission: hoursSince(opts.admittedOn),
+    cycleDay: opts.cycleDay ?? null,
+    onRegimen: opts.onRegimen ?? false,
     hasValue: (labelOrAlias) => {
       const o = byLabel.get(norm(labelOrAlias));
       return Boolean(o && (o.value_text ?? "").trim());

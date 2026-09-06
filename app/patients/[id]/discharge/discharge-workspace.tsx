@@ -101,6 +101,17 @@ const PROCEDURE_SUGGESTIONS = [
   "Drainage of liver abscess",
 ];
 
+// The resident's usual post-op discharge set — one tap fills in all five instead of five
+// separate "Add a medication" rounds. Never auto-inserted; only added on request, same as any
+// other drug the resident types in by hand.
+const STANDARD_DISCHARGE_MEDICATIONS: { generic: string; strength: string | null; dose: string | null; route: string | null; frequency: string }[] = [
+  { generic: "Pantop", strength: "40 mg", dose: null, route: "Oral", frequency: "OD" },
+  { generic: "Paracetamol", strength: "500 mg", dose: null, route: "Oral", frequency: "TDS" },
+  { generic: "Ondansetron", strength: "4 mg", dose: null, route: "Oral", frequency: "OD" },
+  { generic: "Diclofenac", strength: "50 mg", dose: null, route: "Oral", frequency: "SOS" },
+  { generic: "MVI", strength: null, dose: "1 tablet", route: "Oral", frequency: "OD" },
+];
+
 // --- the look ------------------------------------------------------------------
 //
 // One card per protocol section, walked through in order like a terminal multi-select, then a
@@ -113,10 +124,21 @@ const PROCEDURE_SUGGESTIONS = [
 
 type StepId = DischargeSectionId | "review";
 
+// Patient Actions and Red Flags live inside the Advice card rather than as their own steps —
+// same data, same checks, one less card to page through.
 const STEPS: { id: StepId; title: string; required: boolean }[] = [
-  ...DISCHARGE_SECTIONS.map((s) => ({ id: s.id as StepId, title: s.title, required: s.required })),
+  ...DISCHARGE_SECTIONS.filter((s) => s.id !== "patientActions" && s.id !== "redFlags").map((s) => ({
+    id: s.id as StepId,
+    title: s.title,
+    required: s.required,
+  })),
   { id: "review", title: "Review & sign", required: true },
 ];
+
+/** Sections whose checks/nav should surface on the Advice card now that they share it. */
+function cardSections(id: StepId): DischargeSectionId[] {
+  return id === "advice" ? ["advice", "patientActions", "redFlags"] : [id as DischargeSectionId];
+}
 
 /** One line of the review preview — reads as the finished summary will, and is the tap target
  *  for editing that section. */
@@ -525,12 +547,8 @@ export default function DischargeWorkspace({
         );
       case "primaryCareActions":
         return draft.primaryCareActions.length > 0;
-      case "patientActions":
-        return draft.patientActions.length > 0;
       case "advice":
-        return draft.advice.included;
-      case "redFlags":
-        return draft.redFlags.included;
+        return draft.advice.included || draft.patientActions.length > 0 || draft.redFlags.included;
       case "authentication":
         return !!draft.authentication.doctorName?.trim();
       default:
@@ -574,12 +592,13 @@ export default function DischargeWorkspace({
         return blockingBySection.has("conditionAtDischarge") ? statusChip("incomplete", "warn") : statusChip("compiled", "muted");
       case "primaryCareActions":
         return statusChip(`${draft.primaryCareActions.length}`, "muted");
-      case "patientActions":
-        return statusChip(`${draft.patientActions.length}`, "muted");
-      case "advice":
-        return draft.advice.included ? statusChip("included", "ok") : statusChip("optional", "muted");
-      case "redFlags":
-        return draft.redFlags.included ? statusChip("included", "ok") : statusChip("optional", "muted");
+      case "advice": {
+        const parts: string[] = [];
+        if (draft.patientActions.length) parts.push(`${draft.patientActions.length} to patient`);
+        if (draft.advice.included) parts.push("advice");
+        if (draft.redFlags.included) parts.push("red flags");
+        return parts.length ? statusChip(parts.join(" · "), "ok") : statusChip("optional", "muted");
+      }
       case "authentication":
         return draft.authentication.doctorName ? statusChip("compiled", "muted") : statusChip("name missing", "warn");
       default:
@@ -936,6 +955,26 @@ export default function DischargeWorkspace({
             >
               ＋ Add a medication
             </OptionRow>
+            <OptionRow
+              dashed
+              onClick={() =>
+                patch("medications", "medications", [
+                  ...draft.medications,
+                  ...STANDARD_DISCHARGE_MEDICATIONS.map((m) => ({
+                    id: uid(),
+                    ...m,
+                    duration: null,
+                    indication: null,
+                    status: "new" as const,
+                    reason: null,
+                    drugKey: "",
+                    source: "resident" as const,
+                  })),
+                ])
+              }
+            >
+              ＋ Add usual discharge set (Pantop, Paracetamol, Ondansetron, Diclofenac, MVI)
+            </OptionRow>
           </>
         );
 
@@ -986,17 +1025,16 @@ export default function DischargeWorkspace({
           </>
         );
 
-      case "patientActions":
-        return (
-          <>
-            <p className="text-[12px] leading-[1.45] text-muted">Clear tasks the patient must do. Prefer 0–3.</p>
-            <StringList items={draft.patientActions} onChange={(v) => patch("patientActions", "patientActions", v)} placeholder="e.g. Attend Surgery OPD after 7 days for wound review" noneLabel="None." />
-          </>
-        );
-
       case "advice":
         return (
           <>
+            <div className="flex flex-col gap-2">
+              <p className="text-[12px] leading-[1.45] text-muted">Clear tasks the patient must do. Prefer 0–3.</p>
+              <StringList items={draft.patientActions} onChange={(v) => patch("patientActions", "patientActions", v)} placeholder="e.g. Attend Surgery OPD after 7 days for wound review" noneLabel="None." />
+            </div>
+
+            <div className="my-1 border-t border-line" />
+
             <div className="flex items-center gap-3">
               <span className="flex-1 text-[15px]">Include an Advice section</span>
               <Toggle on={draft.advice.included} onClick={() => patch("advice", "advice", { ...draft.advice, included: !draft.advice.included })} />
@@ -1027,12 +1065,9 @@ export default function DischargeWorkspace({
                 </OptionRow>
               </>
             )}
-          </>
-        );
 
-      case "redFlags":
-        return (
-          <>
+            <div className="my-1 border-t border-line" />
+
             <div className="flex items-center gap-3">
               <span className="flex-1 text-[15px]">Include a Red Flags section</span>
               <Toggle on={draft.redFlags.included} onClick={() => patch("redFlags", "redFlags", { ...draft.redFlags, included: !draft.redFlags.included })} />
@@ -1112,12 +1147,12 @@ export default function DischargeWorkspace({
             {(checks.blocking.length > 0 || checks.warnings.length > 0) && (
               <div className="flex flex-col gap-1">
                 {checks.blocking.map((c) => (
-                  <button key={c.id} type="button" onClick={() => goTo(stepIndexOf(c.section))} className="block text-left text-[13px] text-red-600">
+                  <button key={c.id} type="button" onClick={() => goTo(stepIndexOf(c.section === "patientActions" || c.section === "redFlags" ? "advice" : c.section))} className="block text-left text-[13px] text-red-600">
                     ● {c.message}
                   </button>
                 ))}
                 {checks.warnings.map((c) => (
-                  <button key={c.id} type="button" onClick={() => goTo(stepIndexOf(c.section))} className="block text-left text-[13px] text-orange-700">
+                  <button key={c.id} type="button" onClick={() => goTo(stepIndexOf(c.section === "patientActions" || c.section === "redFlags" ? "advice" : c.section))} className="block text-left text-[13px] text-orange-700">
                     ▲ {c.message}
                   </button>
                 ))}
@@ -1153,12 +1188,17 @@ export default function DischargeWorkspace({
               <PreviewLine label="Condition" onEdit={() => goTo(stepIndexOf("conditionAtDischarge"))}>
                 {dc.prose.trim() || dc.freeText?.trim() || <em className="text-orange-700">not set</em>}
               </PreviewLine>
-              <PreviewLine label="Patient to" onEdit={() => goTo(stepIndexOf("patientActions"))}>
+              <PreviewLine label="Patient to" onEdit={() => goTo(stepIndexOf("advice"))}>
                 {draft.patientActions.length ? draft.patientActions.join("; ") : <em className="text-muted">nothing added</em>}
               </PreviewLine>
               <PreviewLine label="Advice" onEdit={() => goTo(stepIndexOf("advice"))}>
                 {draft.advice.included && draft.advice.items.length
                   ? draft.advice.items.map((a) => a.module || "advice").join(", ")
+                  : <em className="text-muted">not included</em>}
+              </PreviewLine>
+              <PreviewLine label="Red flags" onEdit={() => goTo(stepIndexOf("advice"))}>
+                {draft.redFlags.included && draft.redFlags.items.length
+                  ? draft.redFlags.items.join(", ")
                   : <em className="text-muted">not included</em>}
               </PreviewLine>
               <PreviewLine label="Signed" onEdit={() => goTo(stepIndexOf("authentication"))} last>
@@ -1217,13 +1257,15 @@ export default function DischargeWorkspace({
         </div>
 
         <div className="flex flex-col gap-3 px-4 py-4">
-          {current.id !== "review" && blockingBySection.has(current.id as DischargeSectionId) && (
+          {current.id !== "review" && cardSections(current.id).some((s) => blockingBySection.has(s)) && (
             <div className="rounded-[10px] bg-red-50 px-3 py-2">
-              {blockingBySection.get(current.id as DischargeSectionId)!.map((c) => (
-                <p key={c.id} className="text-[13px] text-red-600">
-                  {c.message}
-                </p>
-              ))}
+              {cardSections(current.id)
+                .flatMap((s) => blockingBySection.get(s) ?? [])
+                .map((c) => (
+                  <p key={c.id} className="text-[13px] text-red-600">
+                    {c.message}
+                  </p>
+                ))}
             </div>
           )}
           {renderSection(current.id)}
@@ -1248,7 +1290,7 @@ export default function DischargeWorkspace({
       {menuOpen && (
         <div className="ios-group flex flex-col p-1.5">
           {STEPS.map((s, i) => {
-            const isBlocking = s.id !== "review" && blockingBySection.has(s.id as DischargeSectionId);
+            const isBlocking = s.id !== "review" && cardSections(s.id).some((sec) => blockingBySection.has(sec));
             const done = s.id === "review" ? checks.blocking.length === 0 : filledFor(s.id);
             const dot = isBlocking ? "bg-red-500" : done ? "bg-accent" : "bg-line";
             return (

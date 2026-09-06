@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Mark from "@/app/mark";
+import InstallHint from "@/app/install-hint";
 
 /**
  * Sign-in is a 6-digit code sent by email, not a "click this link" email.
@@ -121,6 +122,8 @@ export default function LoginPage() {
           <p className="text-muted mt-1">Your Residency Companion</p>
         </div>
       </header>
+
+      {step === "email" && <InstallHint />}
 
       {step === "email" && (
         <div className="flex flex-col gap-4">

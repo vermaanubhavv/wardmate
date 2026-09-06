@@ -1,6 +1,7 @@
 import type { DischargeContext } from "@/lib/discharge-data";
 import type { Observation, PatientState } from "@/lib/patient-state";
 import { consultantForWard } from "@/lib/unit-consultants";
+import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
 
 /**
  * The in-memory DischargeContext a one-off discharge summary is compiled and rendered from —
@@ -26,11 +27,15 @@ export function oneOffContext(
   formularyMappings: Map<string, string>,
   observations: Observation[],
   patientState: PatientState,
-  medications: Observation[]
+  medications: Observation[],
+  /** The unit's specialty pack. Defaults to general surgery, so an older caller behaves the
+   *  way this function always did. */
+  pack: SpecialtyPack = generalSurgeryPack
 ): DischargeContext {
   const age = Number(identity.age);
   const admitted = identity.admittedOn?.trim() || new Date().toISOString().slice(0, 10);
   return {
+    pack,
     patient: {
       id: "",
       ward_id: ward?.id ?? "",

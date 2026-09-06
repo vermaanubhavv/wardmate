@@ -15,6 +15,7 @@ import CreateUnitForm from "../onboarding/create-unit-form";
 import { getFormularySize } from "@/lib/formulary";
 import { DESIGNATION_CHOICES } from "@/lib/patients";
 import { ChecklistIcon, DocumentIcon, MicIcon } from "../icons";
+import { listSpecialties, specialtyPacksEnabled } from "@/lib/specialty";
 
 /**
  * The unit: who is on it, how to join it, and which one the app is showing.
@@ -453,7 +454,7 @@ export default async function UnitPage() {
           the way in was missing. Creating switches you to the new unit, as it does at first run. */}
       <section className="px-6 pb-6">
         <p className="mb-2 text-[15px] text-muted">Create another unit</p>
-        <CreateUnitForm />
+        <CreateUnitForm specialties={specialtyChoices()} />
         <p className="mt-2 text-[13px] text-muted leading-relaxed">
           A new unit starts empty, with its own code and its own patients. You will be its owner.
         </p>
@@ -519,4 +520,11 @@ export default async function UnitPage() {
       )}
     </div>
   );
+}
+
+/** The departments to offer at unit setup. Empty list = no picker, everything general surgery.
+ *  Server-side because the flag is a server env var. */
+function specialtyChoices() {
+  if (!specialtyPacksEnabled()) return [];
+  return listSpecialties().map((p) => ({ key: p.key, label: p.label, blurb: p.blurb }));
 }

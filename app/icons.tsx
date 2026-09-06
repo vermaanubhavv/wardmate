@@ -188,3 +188,47 @@ export function TrayIcon({ className = "h-4 w-4" }: { className?: string }) {
     </svg>
   );
 }
+
+/**
+ * iOS's Share button, as it looks in Safari's toolbar: a box with an arrow lifting out of it.
+ *
+ * Drawn to be recognised rather than described — the install instructions can say "tap this"
+ * and point at the same shape the doctor is looking for at the bottom of their screen.
+ */
+export function ShareIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M12 15V3" />
+      <path d="m8 7 4-4 4 4" />
+      <path d="M8 11H6a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-2" />
+    </svg>
+  );
+}
+
+/** A home screen with room for one more app on it: the "Add to Home Screen" row. */
+export function AddToHomeIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect x="3" y="3" width="18" height="18" rx="4" />
+      <path d="M12 8v8M8 12h8" />
+    </svg>
+  );
+}

@@ -23,6 +23,13 @@ import {
   type RangeSource,
   type SuppliedRange,
 } from "@/lib/lab-ranges";
+import {
+  ETIOLOGY_KEY_LABS,
+  summariseImaging,
+  type EtiologyKey,
+  type ImagingSummary,
+} from "@/lib/imaging-summary";
+import { matchVitalLabel, type VitalKey } from "@/lib/vital-ranges";
 
 export type ExamValue = {
   id: string;
@@ -63,6 +70,22 @@ export type ObjectiveSummary = {
     source: RangeSource | null;
     when: string | null;
   }[];
+  /** Blood results that were in range but are worth watching for this patient's problem —
+   *  ALP for a gallstone, lipase for a pancreatitis. Shown in full rather than counted, so a
+   *  drifting number is visible before it crosses the range. Empty when no etiology was given
+   *  or none of its watch-list analytes were recorded. */
+  keyLabs: {
+    id: string;
+    label: string;
+    value: string;
+    range: string | null;
+    source: RangeSource | null;
+    when: string | null;
+  }[];
+  /** A radiology report folded to its impression plus the organs this patient's diagnosis
+   *  cares about, with the rest of the study kept behind a fold. Null when the findings held
+   *  no report, or held one but no diagnosis to trim it by beyond grouping. */
+  imaging: ImagingSummary | null;
   /** Blood results that were in range. Counted, not listed. */
   normalLabCount: number;
   /** How many systems were recorded and read as plainly normal. Drives "Rest — NAD". */
@@ -94,13 +117,18 @@ const PICCLE: { key: string; label: string; aliases: string[] }[] = [
 // and an abnormal nail finding rendered as "Clubbing +" would be the app putting a sign in a
 // doctor's mouth. Unmapped labels simply print under their own name, which is the safe failure.
 
-/** Vitals worth leading with, in the order a chart puts them. Anything else prints after. */
-const VITAL_ORDER: { label: string; aliases: string[] }[] = [
-  { label: "BP", aliases: ["bp", "blood pressure"] },
-  { label: "PR", aliases: ["pr", "pulse", "pulse rate", "heart rate", "hr"] },
-  { label: "Temp", aliases: ["temperature", "temp", "fever"] },
-  { label: "SpO₂", aliases: ["spo2", "saturation", "oxygen saturation", "sats"] },
-  { label: "RR", aliases: ["rr", "respiratory rate"] },
+/** Vitals worth leading with, in the order a chart puts them. Anything else prints after.
+ *
+ *  Which label counts as which vital is not decided here — lib/vital-ranges.ts owns that for
+ *  the whole app, so a value read off a photographed obs chart headed "Blood Pressure (mmHg)"
+ *  reaches this line as readily as a spoken "BP". This list is now only the order and the
+ *  heading each one prints under. */
+const VITAL_ORDER: { key: VitalKey; label: string }[] = [
+  { key: "bp", label: "BP" },
+  { key: "pr", label: "PR" },
+  { key: "temp", label: "Temp" },
+  { key: "spo2", label: "SpO₂" },
+  { key: "rr", label: "RR" },
 ];
 
 /** How the unit writes a system's name, so "abdomen" reads as "P/A" on the line. */
@@ -189,15 +217,26 @@ function displayLabel(label: string): string {
  */
 export function summariseObjective(
   values: ExamValue[],
-  opts: { sex?: string | null; now?: Date; wardRanges?: WardRanges } = {}
+  opts: {
+    sex?: string | null;
+    now?: Date;
+    wardRanges?: WardRanges;
+    /** The patient's disease family, derived from their recorded diagnosis. Drives which
+     *  radiology-report lines and which in-range bloods stay on the face of the card. */
+    etiology?: EtiologyKey | null;
+  } = {}
 ): ObjectiveSummary {
   const recorded = values.filter((v) => v.value !== null && v.value.trim() !== "");
   const now = opts.now ?? new Date();
+  const keyLabNames = opts.etiology
+    ? new Set(ETIOLOGY_KEY_LABS[opts.etiology].map((n) => n.toLowerCase()))
+    : null;
 
   const vitals: { label: string; value: string }[] = [];
   const piccleHits = new Map<string, { label: string; value: string; normal: boolean }>();
   const findings: { id: string; label: string; value: string }[] = [];
   const labs: ObjectiveSummary["labs"] = [];
+  const keyLabs: ObjectiveSummary["keyLabs"] = [];
   let normalLabCount = 0;
   let normalCount = 0;
   // "PICCLE negative", said as one phrase. The speaker is asserting all seven at once, which
@@ -212,9 +251,9 @@ export function summariseObjective(
       continue;
     }
 
-    const vital = matchList(v.label, VITAL_ORDER);
-    if (vital) {
-      vitals.push({ label: vital.label, value });
+    const vitalKey = matchVitalLabel(v.label);
+    if (vitalKey) {
+      vitals.push({ label: VITAL_ORDER.find((x) => x.key === vitalKey)!.label, value });
       continue;
     }
 
@@ -247,8 +286,21 @@ export function summariseObjective(
         continue;
       }
       if (lab.range) {
-        // Known result, read as a number, inside its range. The one case worth folding away.
-        normalLabCount += 1;
+        // Known result, read as a number, inside its range. Normally the one case worth folding
+        // away — unless this analyte is on the watch-list for the patient's problem, where the
+        // in-range value and its trend are exactly what the round is checking.
+        if (keyLabNames?.has(canonicalLabName(v.label).toLowerCase())) {
+          keyLabs.push({
+            id: v.id,
+            label: lab.label,
+            value: lab.value,
+            range: lab.range,
+            source: lab.source,
+            when: agoLabel(v.recordedAt ?? null, now),
+          });
+        } else {
+          normalLabCount += 1;
+        }
         continue;
       }
       // Known result whose value could not be read as a number — shown, never assumed normal.
@@ -298,7 +350,26 @@ export function summariseObjective(
     piccle = { text, notRecorded };
   }
 
-  return { vitals, piccle, findings, labs, normalLabCount, normalCount };
+  // A radiology report arrives as a run of finding rows. Group them back into the one study
+  // they came from and, when the diagnosis says which organs matter, surface those and fold the
+  // rest — see lib/imaging-summary.ts. The grouped rows leave `findings` so they are not shown
+  // twice; nothing is dropped, the fold carries the whole report.
+  const imaging = summariseImaging(findings, opts.etiology ?? null);
+  const groupedIds = imaging ? new Set(imaging.all.map((r) => r.id)) : null;
+  const remainingFindings = groupedIds
+    ? findings.filter((f) => !groupedIds.has(f.id))
+    : findings;
+
+  return {
+    vitals,
+    piccle,
+    findings: remainingFindings,
+    labs,
+    keyLabs,
+    imaging,
+    normalLabCount,
+    normalCount,
+  };
 }
 
 /** The calendar day an instant falls on in IST — the day the round actually happened. */

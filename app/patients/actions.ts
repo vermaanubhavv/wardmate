@@ -38,6 +38,12 @@ export async function addPatient(
   const location = readLocation(String(formData.get("location") ?? ""));
   const operationDate = String(formData.get("operation_date") ?? "").trim();
 
+  // Chemotherapy, on an oncology unit only — the form carries these fields there and nowhere
+  // else. Same reader the edit dialog uses, so an admission and a later correction validate
+  // the cycle identically.
+  const chemo = formData.has("regimen") ? readChemotherapy(formData) : null;
+  if (chemo && "error" in chemo) return chemo;
+
   if (!wardId) return { error: "No ward selected." };
   if (!bed) return { error: "Bed is required." };
   if (!name) return { error: "Name is required." };
@@ -52,6 +58,16 @@ export async function addPatient(
   // by definition, and a postponed list still needs its original date recorded.
   if (managementRaw === "postop" && operationDate < admittedOn) {
     return { error: "Date of operation is before the admission date. Check both." };
+  }
+
+  // A cycle that started before the patient was admitted is normal and common — most cycles
+  // begin in day care and the admission follows. A cycle starting in the FUTURE is not: it
+  // would print a day count of zero or less beside a patient already on the ward.
+  if (chemo && !("error" in chemo) && chemo.cycle_started_on && chemo.cycle_started_on > admittedOn) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (chemo.cycle_started_on > today) {
+      return { error: "The cycle start date is in the future. Check it." };
+    }
   }
 
   // Post-op is never stored as management — see readManagement. Choosing it records the
@@ -85,6 +101,7 @@ export async function addPatient(
       admitted_on: admittedOn,
       ...dates,
       ...resolveProcedure(String(formData.get("procedure") ?? ""), await listTemplateChoices()),
+      ...(chemo && !("error" in chemo) ? chemo : {}),
       created_by: user.id,
     })
     .select("id")
@@ -274,6 +291,43 @@ export type EditPatientState = { error: string | null; ok?: boolean };
  * instead: an upcoming operation that has not happened yet must never touch surgery_date, or
  * the day count would go negative before the surgery has actually taken place.
  */
+/**
+ * The three chemotherapy fields, read off an oncology unit's edit dialog.
+ *
+ * All three move together on purpose. `cycle_started_on` is what the cycle-day counter counts
+ * from (patch 0060), and a cycle number with no start date would print "C2 D—" — a number that
+ * looks like a day and is not one. Clearing the regimen therefore clears all three: the
+ * patient is off treatment and falls back to the hospital day.
+ *
+ * Nothing here is inferred. An empty box means the resident has not said, and stores null.
+ */
+function readChemotherapy(
+  formData: FormData
+): { regimen: string | null; cycle_number: number | null; cycle_started_on: string | null } | { error: string } {
+  const regimen = String(formData.get("regimen") ?? "").trim();
+  const cycleRaw = String(formData.get("cycle_number") ?? "").trim();
+  const startedOn = String(formData.get("cycle_started_on") ?? "").trim();
+
+  if (!regimen) return { regimen: null, cycle_number: null, cycle_started_on: null };
+
+  let cycle: number | null = null;
+  if (cycleRaw) {
+    const n = Number(cycleRaw);
+    if (!Number.isInteger(n) || n < 1 || n > 60) {
+      return { error: "Cycle number must be a whole number between 1 and 60." };
+    }
+    cycle = n;
+  }
+
+  // A cycle number without a start date cannot produce a day count, and a day count is the
+  // whole reason these fields exist. Say so rather than storing half of it.
+  if (cycle !== null && !startedOn) {
+    return { error: "Give the date this cycle started, or clear the cycle number." };
+  }
+
+  return { regimen, cycle_number: cycle, cycle_started_on: startedOn || null };
+}
+
 export async function updatePatientIdentity(
   _prev: EditPatientState,
   formData: FormData
@@ -297,6 +351,12 @@ export async function updatePatientIdentity(
   const managementRaw = String(formData.get("management") ?? "");
   const operationDate = String(formData.get("operation_date") ?? "").trim();
   const location = readLocation(String(formData.get("location") ?? ""));
+
+  // Chemotherapy. Only read when the form actually carried the fields — an oncology unit's
+  // dialog renders them, a surgical unit's does not. A form without them must leave whatever
+  // is stored alone rather than clearing it, the same reasoning as the hidden operation input.
+  const chemo = formData.has("regimen") ? readChemotherapy(formData) : null;
+  if (chemo && "error" in chemo) return chemo;
 
   if (!id) return { error: "No patient." };
   if (!name) return { error: "Name cannot be empty." };
@@ -347,6 +407,7 @@ export async function updatePatientIdentity(
       management: readManagement(managementRaw),
       ...dates,
       ...procedure,
+      ...(chemo ?? {}),
     })
     .eq("id", id);
 

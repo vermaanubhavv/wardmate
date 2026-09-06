@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getWardScreen } from "@/lib/ward-screen";
 import { getDoctorName, getUser } from "@/lib/auth";
 import { dayLabel, patientName, type WardPatient } from "@/lib/patients";
+import type { SpecialtyPack } from "@/lib/specialty";
 import { procedureFor } from "@/lib/templates";
 import RegisterButton from "../register-button";
 import {
@@ -33,7 +34,7 @@ export default async function Home({
   // rides alongside it: getDoctorName reads the session cookie rather than asking Supabase,
   // so it adds no round trip of its own.
   const [
-    { ward, patients, procedures, templateChoices, removedCount, error: wardError },
+    { ward, pack, patients, procedures, templateChoices, removedCount, error: wardError },
     doctor,
     { data: profile },
   ] = await Promise.all([
@@ -220,6 +221,7 @@ export default async function Home({
                 flag={flags.get(p.id) ?? null}
                 procedures={procedures}
                 templateChoices={templateChoices}
+                pack={pack}
               />
             ))}
           </ul>
@@ -279,12 +281,15 @@ function PatientRow({
   flag,
   procedures,
   templateChoices,
+  pack,
 }: {
   patient: WardPatient;
   /** The single worst flagged vital or lab on this patient, if any — see lib/ward-flags.ts. */
   flag: WardFlag | null;
   procedures: Map<string, string>;
   templateChoices: { family: string; variant: string | null; label: string }[];
+  /** The unit's specialty pack — it decides whether the day reads "POD 3" or "C2 D3". */
+  pack: SpecialtyPack;
 }) {
   // Named only for patients who have actually been operated on, and only from the operation
   // recorded against them. A patient still awaiting surgery counts from admission and has no
@@ -312,7 +317,7 @@ function PatientRow({
               is one clinical thought, and the number means little without what it counts
               from. */}
           <span className="mt-0.5 block truncate text-[15px] text-muted">
-            <span className="text-foreground tabular-nums">{dayLabel(patient)}</span>
+            <span className="text-foreground tabular-nums">{dayLabel(patient, pack)}</span>
             {procedure && <span className="text-foreground"> {procedure}</span>}
             {" · "}
             {patient.primary_diagnosis || "No diagnosis recorded"}
@@ -350,7 +355,7 @@ function PatientRow({
 
       {/* Both sit outside the link, at the right, where iOS puts a row's accessories. */}
       <div className="absolute right-2 top-2 flex items-center gap-0.5">
-        <PatientMenu patient={patient} templateChoices={templateChoices} />
+        <PatientMenu patient={patient} templateChoices={templateChoices} specialty={pack.key} />
         <ChevronIcon className="h-4 w-4 shrink-0 text-muted/60" />
       </div>
     </li>

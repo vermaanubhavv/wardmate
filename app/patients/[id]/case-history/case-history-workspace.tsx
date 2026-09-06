@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { caseHistorySectionOf } from "@/lib/case-history";
@@ -24,9 +24,37 @@ import {
   replaceCaseHistorySection,
   replaceCaseHistoryExam,
   applyCompiledCaseHistory,
+  applyRelevantNegatives,
   approveCaseHistoryDiagnosis,
   approveCaseHistoryPlan,
 } from "./actions";
+
+/** "3 days", "2 weeks", "6/12", "1 yr" → an approximate day count, for ordering complaints
+ *  longest-standing first. Unparseable durations sort last (Infinity keeps tap order stable
+ *  only when every complaint has one). */
+function durationToDays(raw: string): number {
+  const s = raw.toLowerCase().trim();
+  if (!s) return Number.POSITIVE_INFINITY;
+  const m = s.match(/(\d+(?:\.\d+)?)\s*(hour|hr|h|day|d|week|wk|w|month|mon|mo|m|year|yr|y)/);
+  if (!m) return Number.POSITIVE_INFINITY;
+  const n = parseFloat(m[1]);
+  const u = m[2];
+  if (/^h/.test(u)) return n / 24;
+  if (/^d/.test(u)) return n;
+  if (/^w/.test(u)) return n * 7;
+  if (/^(mo|mon|m)$/.test(u)) return n * 30;
+  return n * 365;
+}
+
+/** Split a stored complaint / HOPI-key back into its bare name and its duration.
+ *  Accepts "pain abdomen × 3 days", "pain abdomen x 3 days" and "pain abdomen - 3 days". */
+function splitDuration(stored: string): { name: string; duration: string } {
+  const m = stored.match(/^(.*?)\s*(?:[×x]|-)\s*([^×x]+?)\s*$/i);
+  if (m && durationToDays(m[2]) !== Number.POSITIVE_INFINITY) {
+    return { name: m[1].trim(), duration: m[2].trim() };
+  }
+  return { name: stored.trim(), duration: "" };
+}
 
 export type WorkspaceObs = { id: string; kind: string; label: string; value: string | null };
 
@@ -231,6 +259,57 @@ function hopiAttrsFor(complaint: string): HopiAttr[] {
   return SYMPTOM_TEMPLATES.find((t) => t.match.test(complaint))?.attrs ?? GENERIC_HOPI;
 }
 
+// --- medical oncology --------------------------------------------------------------------
+// Quick taps for the four oncology history cards. Each writes its own words into the same free
+// text the resident can type or dictate into, so a card filled by tapping and one filled by
+// speaking are the same card.
+const ONCO_DISEASE_PILLS = [
+  "Newly diagnosed", "Recurrent", "Biopsy proven", "Cytology proven", "On imaging only",
+  "Early stage", "Locally advanced", "Metastatic",
+];
+const ONCO_TREATMENT_PILLS = [
+  "Treatment naive", "Surgery done", "Radiotherapy done", "Neoadjuvant", "Adjuvant",
+  "Palliative intent", "First line", "Second line", "Third line or beyond",
+];
+const ONCO_CYCLE_PILLS = [
+  "First cycle", "Full dose", "Dose reduced", "Cycle delayed", "Day care",
+  "Admitted for this cycle", "Growth factor given",
+];
+const ONCO_TOXICITY_PILLS = [
+  "No toxicity", "Nausea / vomiting", "Mucositis", "Diarrhoea", "Constipation",
+  "Peripheral neuropathy", "Fever", "Neutropenia", "Thrombocytopenia",
+  "Anaemia needing transfusion", "Hand-foot syndrome", "Fatigue",
+];
+
+// Node stations, in survey order — the same order a resident actually palpates in. Each tap
+// appends "<station> — <finding>" so several stations can be recorded without one overwriting
+// another; typing or dictating adds size, number, mobility, matting or tenderness in the
+// resident's own words.
+const NODE_STATIONS = ["Cervical", "Supraclavicular", "Axillary", "Inguinal"];
+const NODE_FINDINGS = ["not enlarged", "enlarged", "matted", "fixed", "tender", "firm", "mobile"];
+
+const MUCOSITIS_GRADES: { line: string; label: string }[] = [
+  { line: "No mucositis", label: "No mucositis" },
+  { line: "Grade 1 mucositis", label: "Grade 1 — soreness, no ulcers" },
+  { line: "Grade 2 mucositis", label: "Grade 2 — ulcers, can eat solids" },
+  { line: "Grade 3 mucositis", label: "Grade 3 — ulcers, only liquids" },
+  { line: "Grade 4 mucositis", label: "Grade 4 — cannot swallow, feeding tube / TPN needed" },
+];
+const SKIN_LINE_PILLS = [
+  "Hand-foot syndrome", "Rash", "Extravasation site", "Alopecia",
+  "Petechiae", "Ecchymoses", "Nail changes",
+  "Chemoport site clean", "PICC site clean", "Line site erythema", "Line site discharge",
+];
+
+/** ECOG, in the wording the scale actually uses. Exclusive — one patient, one status. */
+const ECOG_CHOICES: { line: string; label: string }[] = [
+  { line: "ECOG 0", label: "0 — Fully active, no restriction" },
+  { line: "ECOG 1", label: "1 — Restricted in strenuous activity; walks, does light work" },
+  { line: "ECOG 2", label: "2 — Up and about more than half the day; cannot work" },
+  { line: "ECOG 3", label: "3 — In bed or a chair more than half the day; limited self-care" },
+  { line: "ECOG 4", label: "4 — Completely confined to bed or chair" },
+];
+
 const ABDOMEN_PILLS = ["Soft", "Non-tender", "Tender", "Guarding", "Distended", "Lump", "Organomegaly"];
 const CHEST_PILLS = ["Clear", "NVBS", "Bilateral air entry equal", "Added sounds", "Decreased air entry"];
 
@@ -256,6 +335,13 @@ type StepId =
   | "medication"
   | "surgical"
   | "obstetric"
+  | "onco_disease"
+  | "onco_treatment"
+  | "onco_cycle"
+  | "onco_toxicity"
+  | "performance"
+  | "onco_nodes"
+  | "onco_mucosa_line"
   | "piccle"
   | "vitals"
   | "abdomen"
@@ -272,6 +358,7 @@ export default function CaseHistoryWorkspace({
   observations,
   fullObservations,
   rangeEntries,
+  specialty = "general_surgery",
 }: {
   patientId: string;
   sex: string | null;
@@ -279,7 +366,11 @@ export default function CaseHistoryWorkspace({
   observations: WorkspaceObs[];
   fullObservations: Observation[];
   rangeEntries: [string, { low: number | null; high: number | null; text: string | null }][];
+  /** The unit's department. An oncology unit gets four extra history cards and a performance
+   *  status card; every other unit's stack is exactly what it has always been. */
+  specialty?: string;
 }) {
+  const oncology = specialty === "medical_oncology";
   const router = useRouter();
   const searchParams = useSearchParams();
   const liveDictationOn = process.env.NEXT_PUBLIC_LIVE_DICTATION === "1";
@@ -308,22 +399,42 @@ export default function CaseHistoryWorkspace({
 
   // --- seed every card from the record, once -----------------------------------------
 
-  const seededComplaints = useMemo(
-    () => (bySection.chief ?? []).map((o) => (o.value ?? "").trim()).filter(Boolean),
+  const seededComplaintRows = useMemo(
+    () =>
+      (bySection.chief ?? [])
+        .map((o) => splitDuration((o.value ?? "").trim()))
+        .filter((r) => r.name),
     [bySection]
   );
-  const [complaints, setComplaints] = useState<string[]>(seededComplaints);
+  const [complaints, setComplaints] = useState<string[]>(seededComplaintRows.map((r) => r.name));
+  const [complaintDur, setComplaintDur] = useState<Record<string, string>>(() => {
+    const out: Record<string, string> = {};
+    for (const r of seededComplaintRows) if (r.duration) out[r.name] = r.duration;
+    return out;
+  });
   const [customComplaint, setCustomComplaint] = useState("");
 
-  const [hopi, setHopi] = useState<Record<string, string>>(() => {
-    const out: Record<string, string> = {};
+  // HOPI is stored as "<complaint>: (<duration>) <narrative>" — pull the three apart on the way in.
+  const seededHopi = useMemo(() => {
+    const text: Record<string, string> = {};
+    const dur: Record<string, string> = {};
     for (const o of bySection.hopi ?? []) {
       const v = (o.value ?? "").trim();
       const m = v.match(/^([^:]{2,40}):\s*([\s\S]+)$/);
-      if (m) out[m[1].trim()] = m[2].trim();
+      if (!m) continue;
+      const key = m[1].trim();
+      let body = m[2].trim();
+      const dm = body.match(/^\(([^)]{1,40})\)\s*([\s\S]*)$/);
+      if (dm) {
+        dur[key] = dm[1].trim();
+        body = dm[2].trim();
+      }
+      text[key] = body;
     }
-    return out;
-  });
+    return { text, dur };
+  }, [bySection]);
+  const [hopi, setHopi] = useState<Record<string, string>>(() => seededHopi.text);
+  const [hopiDur, setHopiDur] = useState<Record<string, string>>(() => seededHopi.dur);
 
   const seedHistory = (key: string): { mode: Mode; text: string } => {
     const lines = (bySection[key] ?? []).map((o) => (o.value ?? "").trim()).filter(Boolean);
@@ -331,6 +442,18 @@ export default function CaseHistoryWorkspace({
     if (lines.every(readsDenial)) return { mode: "none", text: "" };
     return { mode: "significant", text: lines.join("; ") };
   };
+  // Oncology cards. Plain free text seeded from the record — the chips below write into the
+  // same string, so a card filled by tapping and a card filled by dictation are the same card.
+  const seedText = (key: string) =>
+    (bySection[key] ?? []).map((o) => (o.value ?? "").trim()).filter(Boolean).join("; ");
+  const [oncoDisease, setOncoDisease] = useState(() => seedText("onco_disease"));
+  const [oncoTreatment, setOncoTreatment] = useState(() => seedText("onco_treatment"));
+  const [oncoCycle, setOncoCycle] = useState(() => seedText("onco_cycle"));
+  const [oncoToxicity, setOncoToxicity] = useState(() => seedText("onco_toxicity"));
+  const [performance, setPerformance] = useState(() => seedText("performance"));
+  const [oncoNodes, setOncoNodes] = useState(() => examValue(["lymph node survey"]));
+  const [oncoMucosaLine, setOncoMucosaLine] = useState(() => examValue(["mucosa, skin and vascular access"]));
+
   const [past, setPast] = useState(() => seedHistory("past"));
   const [family, setFamily] = useState(() => seedHistory("family"));
   const [surgical, setSurgical] = useState(() => seedHistory("surgical"));
@@ -375,8 +498,24 @@ export default function CaseHistoryWorkspace({
   const [chest, setChest] = useState<string>(() => examValue(["chest", "respiratory system", "rs"]));
   const [local, setLocal] = useState<string>(() => examValue(["local examination", "local exam"]));
 
-  const [diagnosis, setDiagnosis] = useState<{ text: string; uncertain: string[] }>({
+  const seededDifferentials = useMemo(() => {
+    const row = observations.find((o) => o.label.toLowerCase().trim() === "differential diagnosis");
+    return (row?.value ?? "")
+      .split(/\s*;\s*|\s*\|\s*/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }, [observations]);
+  const seededNegatives = useMemo(
+    () => (bySection.relnegatives ?? []).map((o) => (o.value ?? "").trim()).filter(Boolean),
+    [bySection]
+  );
+  const [diagnosis, setDiagnosis] = useState<{ text: string; differentials: string[]; uncertain: string[] }>({
     text: primaryDiagnosis ?? "",
+    differentials: seededDifferentials,
+    uncertain: [],
+  });
+  const [negatives, setNegatives] = useState<{ items: string[]; uncertain: string[] }>({
+    items: seededNegatives,
     uncertain: [],
   });
   const [plan, setPlan] = useState<{ items: string[]; uncertain: string[] }>({ items: [], uncertain: [] });
@@ -393,6 +532,24 @@ export default function CaseHistoryWorkspace({
     { id: "medication", title: "Medication history" },
     { id: "surgical", title: "Surgical history" },
     ...(sex && /^f/i.test(sex) ? [{ id: "obstetric" as StepId, title: "Menstrual & obstetric" }] : []),
+    // The disease, then what has been given for it, then what is running now, then what the
+    // last cycle did — the order an oncologist actually asks in. They sit after the general
+    // background because that is where a clerking reaches the cancer itself.
+    ...(oncology
+      ? [
+          { id: "onco_disease" as StepId, title: "Oncological history" },
+          { id: "onco_treatment" as StepId, title: "Treatment received" },
+          { id: "onco_cycle" as StepId, title: "Current cycle" },
+          { id: "onco_toxicity" as StepId, title: "Toxicity since last cycle" },
+        ]
+      : []),
+    ...(oncology
+      ? [
+          { id: "performance" as StepId, title: "Performance status" },
+          { id: "onco_nodes" as StepId, title: "Lymph node survey" },
+          { id: "onco_mucosa_line" as StepId, title: "Mucosa, skin & line" },
+        ]
+      : []),
     { id: "piccle", title: "General examination" },
     { id: "vitals", title: "Vitals" },
     { id: "abdomen", title: "Per abdomen" },
@@ -410,16 +567,29 @@ export default function CaseHistoryWorkspace({
     setMessage(null);
   };
 
+  /** Complaints as they are stored: "<name> × <duration>", longest-standing first when every
+   *  selected complaint carries a parseable duration; tap order otherwise. */
+  function orderedComplaints(): string[] {
+    const rows = complaints.map((c) => ({ c, d: (complaintDur[c] ?? "").trim() }));
+    const allTimed = rows.length > 0 && rows.every((r) => durationToDays(r.d) !== Number.POSITIVE_INFINITY);
+    const sorted = allTimed
+      ? [...rows].sort((a, b) => durationToDays(b.d) - durationToDays(a.d))
+      : rows;
+    return sorted.map((r) => (r.d ? `${r.c} × ${r.d}` : r.c));
+  }
+
   async function persist(id: StepId): Promise<boolean> {
     const L = "history of presenting illness";
     let res: { ok: boolean; error?: string } = { ok: true };
-    if (id === "complaints") res = await replaceCaseHistorySection(patientId, "chief complaints", "note", complaints);
+    if (id === "complaints") res = await replaceCaseHistorySection(patientId, "chief complaints", "note", orderedComplaints());
     else if (id === "hopi")
       res = await replaceCaseHistorySection(
         patientId,
         L,
         "note",
-        complaintList.filter((c) => (hopi[c] ?? "").trim()).map((c) => `${c}: ${hopi[c].trim()}`)
+        complaintList
+          .filter((c) => (hopi[c] ?? "").trim())
+          .map((c) => `${c}: ${(hopiDur[c] ?? "").trim() ? `(${hopiDur[c].trim()}) ` : ""}${hopi[c].trim()}`)
       );
     else if (id === "past") res = await replaceCaseHistorySection(patientId, "past history", "note", composeHistory(past));
     else if (id === "family") res = await replaceCaseHistorySection(patientId, "family history", "note", composeHistory(family));
@@ -433,6 +603,20 @@ export default function CaseHistoryWorkspace({
       );
     else if (id === "obstetric")
       res = await replaceCaseHistorySection(patientId, "menstrual and obstetric history", "note", obstetric.trim() ? [obstetric.trim()] : []);
+    else if (id === "onco_disease")
+      res = await replaceCaseHistorySection(patientId, "oncological history", "note", oneLine(oncoDisease));
+    else if (id === "onco_treatment")
+      res = await replaceCaseHistorySection(patientId, "treatment received", "note", oneLine(oncoTreatment));
+    else if (id === "onco_cycle")
+      res = await replaceCaseHistorySection(patientId, "current cycle", "note", oneLine(oncoCycle));
+    else if (id === "onco_toxicity")
+      res = await replaceCaseHistorySection(patientId, "toxicity since last cycle", "note", oneLine(oncoToxicity));
+    else if (id === "performance")
+      res = await replaceCaseHistorySection(patientId, "performance status", "note", oneLine(performance));
+    else if (id === "onco_nodes")
+      res = await replaceCaseHistoryExam(patientId, [{ label: "lymph node survey", kind: "exam", value: oncoNodes.trim() || null }]);
+    else if (id === "onco_mucosa_line")
+      res = await replaceCaseHistoryExam(patientId, [{ label: "mucosa, skin and vascular access", kind: "exam", value: oncoMucosaLine.trim() || null }]);
     else if (id === "piccle")
       res = await replaceCaseHistoryExam(
         patientId,
@@ -487,20 +671,34 @@ export default function CaseHistoryWorkspace({
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   }
 
-  async function generate(section: "diagnosis" | "plan" | "compile") {
+  async function generate(section: "diagnosis" | "plan" | "compile" | "negatives") {
     setGenerating(section);
     setMessage(null);
     try {
       const r = await fetch(`/api/patients/${patientId}/case-history/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ section }),
+        body: JSON.stringify(
+          section === "negatives"
+            ? { section, diagnosis: diagnosis.text, differentials: diagnosis.differentials }
+            : { section }
+        ),
       });
       const data = await r.json();
       if (!r.ok) {
         setMessage(data.error ?? "Could not generate.");
       } else if (section === "diagnosis") {
-        setDiagnosis({ text: String(data.text ?? ""), uncertain: data.uncertainPoints ?? [] });
+        setDiagnosis((d) => ({
+          ...d,
+          text: String(data.text ?? ""),
+          differentials: Array.isArray(data.differentials) ? data.differentials.map(String) : [],
+          uncertain: data.uncertainPoints ?? [],
+        }));
+      } else if (section === "negatives") {
+        setNegatives({
+          items: Array.isArray(data.negatives) ? data.negatives.map(String) : [],
+          uncertain: data.uncertainPoints ?? [],
+        });
       } else if (section === "plan") {
         setPlan({ items: Array.isArray(data.items) ? data.items : [], uncertain: data.uncertainPoints ?? [] });
       } else {
@@ -529,20 +727,45 @@ export default function CaseHistoryWorkspace({
     });
   }
 
-  function approve(section: "diagnosis" | "plan") {
+  function approve(section: "diagnosis" | "plan" | "negatives") {
     startTransition(async () => {
       const res =
         section === "diagnosis"
-          ? await approveCaseHistoryDiagnosis(patientId, diagnosis.text)
-          : await approveCaseHistoryPlan(patientId, plan.items);
+          ? await approveCaseHistoryDiagnosis(patientId, diagnosis.text, diagnosis.differentials)
+          : section === "negatives"
+            ? await applyRelevantNegatives(patientId, negatives.items)
+            : await approveCaseHistoryPlan(patientId, plan.items);
       if (!res.ok) {
         setMessage(res.error ?? "Could not save.");
         return;
       }
-      setMessage(section === "diagnosis" ? "Diagnosis saved to the patient." : "Plan added to the to-do list.");
+      setMessage(
+        section === "diagnosis"
+          ? "Diagnosis and differentials saved."
+          : section === "negatives"
+            ? "Relevant negatives saved to the case history."
+            : "Plan added to the to-do list."
+      );
       router.refresh();
     });
   }
+
+  // Reaching the Review step compiles the tapped/dictated history into proper case-history
+  // prose automatically — the resident still reads, edits and applies it. Fires once per visit
+  // to Review; the manual "Rewrite" button covers re-runs.
+  const autoCompiledFor = useRef<string | null>(null);
+  const hasHistory = useMemo(
+    () => observations.some((o) => caseHistorySectionOf(o.label)),
+    [observations]
+  );
+  useEffect(() => {
+    if (current.id !== "review") return;
+    if (compiled || generating || dirty.size > 0 || !hasHistory) return;
+    if (autoCompiledFor.current === "done") return;
+    autoCompiledFor.current = "done";
+    void generate("compile");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current.id, compiled, generating, dirty.size, hasHistory]);
 
   // --- card bodies ------------------------------------------------------------------
 
@@ -604,7 +827,7 @@ export default function CaseHistoryWorkspace({
     if (id === "complaints")
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">Tap every complaint the patient came in with. Add anything not listed.</p>
+          <p className="text-[12px] leading-[1.45] text-muted">Tap every complaint the patient came in with. Add anything not listed, then say how long each one has been going on.</p>
           <div className="flex flex-wrap gap-1.5">
             {[...new Set([...COMPLAINT_CHIPS, ...complaints])].map((c) => (
               <SelChip key={c} selected={complaints.includes(c)} onClick={() => { toggleInList(complaints, c, setComplaints); mark("complaints"); }}>
@@ -612,6 +835,23 @@ export default function CaseHistoryWorkspace({
               </SelChip>
             ))}
           </div>
+          {complaints.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[12px] font-medium text-muted">How long has each been present?</span>
+              {complaints.map((c) => (
+                <div key={c} className="flex items-center gap-2">
+                  <span className="flex-1 text-[14px]">{c}</span>
+                  <input
+                    value={complaintDur[c] ?? ""}
+                    onChange={(e) => { setComplaintDur({ ...complaintDur, [c]: e.target.value }); mark("complaints"); }}
+                    placeholder="e.g. 3 days"
+                    className="h-9 w-28 rounded-[10px] border border-line bg-card px-2.5 text-[14px] outline-none focus:border-accent"
+                  />
+                </div>
+              ))}
+              <span className="text-[11px] text-muted">Longest-standing complaint is listed first automatically.</span>
+            </div>
+          )}
           <div className="flex gap-2">
             <input
               value={customComplaint}
@@ -645,6 +885,15 @@ export default function CaseHistoryWorkspace({
           <p className="text-[12px] leading-[1.45] text-muted">
             Tap what fits <span className="font-medium">{c}</span> — each tap adds to the line below. Then type or speak anything the pills can&rsquo;t say.
           </p>
+          <div className="flex items-center gap-2">
+            <span className="text-[13px] font-medium text-muted">Duration</span>
+            <input
+              value={hopiDur[c] ?? ""}
+              onChange={(e) => { setHopiDur({ ...hopiDur, [c]: e.target.value }); mark("hopi"); }}
+              placeholder="e.g. 3 days"
+              className="h-9 w-32 rounded-[10px] border border-line bg-card px-2.5 text-[14px] outline-none focus:border-accent"
+            />
+          </div>
           {attrs.map((a) => (
             <AttrGroup key={a.label} attr={a} value={hopi[c] ?? ""} onChange={set} />
           ))}
@@ -704,10 +953,32 @@ export default function CaseHistoryWorkspace({
         </>
       );
 
-    if (id === "piccle")
+    if (id === "piccle") {
+      const piccleKeys = ["pallor", "icterus", "cyanosis", "clubbing", "lymphadenopathy", "oedema"];
+      const allNormal = piccleKeys.every((k) => piccle[k]?.state === "normal");
+      const setAllPiccle = (state: SignState) => {
+        const next = { ...piccle };
+        for (const k of piccleKeys) next[k] = { state, note: "" };
+        setPiccle(next);
+        mark("piccle");
+      };
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">Tap each sign you checked. Leave a sign untouched if you did not look for it.</p>
+          <p className="text-[12px] leading-[1.45] text-muted">
+            <span className="font-medium">PICCLE</span> — Pallor, Icterus, Cyanosis, Clubbing,
+            Lymphadenopathy, (o)Edema. Tap each sign you checked; leave a sign untouched if you
+            did not look for it.
+          </p>
+          <button
+            type="button"
+            onClick={() => setAllPiccle(allNormal ? "unset" : "normal")}
+            className={
+              "self-start rounded-[10px] px-3 py-1.5 text-[13px] font-semibold " +
+              (allNormal ? "bg-accent text-accent-ink" : "border border-line text-accent")
+            }
+          >
+            {allNormal ? "✓ Normal PICCLE — tap to clear" : "All normal — no PICCLE"}
+          </button>
           <div className="flex flex-col gap-2">
             {PICCLE_SIGNS.map((s) => {
               const st = piccle[s.label];
@@ -736,6 +1007,7 @@ export default function CaseHistoryWorkspace({
           </div>
         </>
       );
+    }
 
     if (id === "vitals")
       return (
@@ -757,6 +1029,181 @@ export default function CaseHistoryWorkspace({
         </>
       );
 
+    if (id === "onco_disease")
+      return (
+        <>
+          <p className="text-[12px] leading-[1.45] text-muted">
+            What the cancer IS. Site, what the biopsy showed, the stage, and when it was
+            diagnosed — the facts every later decision is read against.
+          </p>
+          <PillsAndText
+            pills={ONCO_DISEASE_PILLS}
+            value={oncoDisease}
+            onChange={(v) => { setOncoDisease(v); mark("onco_disease"); }}
+            placeholder="Primary site, histology and grade, IHC / molecular markers, stage, date of diagnosis"
+            rows={5}
+          />
+        </>
+      );
+
+    if (id === "onco_treatment")
+      return (
+        <>
+          <p className="text-[12px] leading-[1.45] text-muted">
+            What has already been given for it — surgery, radiotherapy, earlier lines of
+            chemotherapy — with how many cycles and what the response was.
+          </p>
+          <PillsAndText
+            pills={ONCO_TREATMENT_PILLS}
+            value={oncoTreatment}
+            onChange={(v) => { setOncoTreatment(v); mark("onco_treatment"); }}
+            placeholder="What was given, how many cycles, when it finished, and the response"
+            rows={5}
+          />
+        </>
+      );
+
+    if (id === "onco_cycle")
+      return (
+        <>
+          <p className="text-[12px] leading-[1.45] text-muted">
+            The cycle running now, in words. The day count on the ward list is not taken from
+            here — it comes from the regimen and cycle start date on the patient record, which
+            the pen beside the patient&rsquo;s name sets.
+          </p>
+          <PillsAndText
+            pills={ONCO_CYCLE_PILLS}
+            value={oncoCycle}
+            onChange={(v) => { setOncoCycle(v); mark("onco_cycle"); }}
+            placeholder="Regimen, which cycle, which day, and any dose change with the reason"
+            rows={5}
+          />
+        </>
+      );
+
+    if (id === "onco_toxicity")
+      return (
+        <>
+          <p className="text-[12px] leading-[1.45] text-muted">
+            What the last cycle did to the patient. Write a grade only if one was actually
+            decided — otherwise say what it stopped them doing, which is the more useful record
+            anyway.
+          </p>
+          <PillsAndText
+            pills={ONCO_TOXICITY_PILLS}
+            value={oncoToxicity}
+            onChange={(v) => { setOncoToxicity(v); mark("onco_toxicity"); }}
+            placeholder="e.g. mouth ulcers for four days, could not take solids; no fever"
+            rows={5}
+          />
+        </>
+      );
+
+    if (id === "performance") {
+      const setEcog = (line: string) => {
+        // The ECOG line is replaced; anything typed after it is kept. One patient has one
+        // performance status, so these are exclusive — but the note beside it is not.
+        const rest = performance.replace(/^ECOG\s*\d[^;]*;?\s*/i, "").trim();
+        setPerformance(rest ? `${line}; ${rest}` : line);
+        mark("performance");
+      };
+      return (
+        <>
+          <p className="text-[12px] leading-[1.45] text-muted">
+            Judged from the patient in front of you, not from what they say. It decides
+            fitness for the next cycle, so it is worth being honest about.
+          </p>
+          <div className="flex flex-col gap-2">
+            {ECOG_CHOICES.map((c) => (
+              <OptionRow
+                key={c.line}
+                selected={performance.trim().toLowerCase().startsWith(c.line.toLowerCase())}
+                onClick={() => setEcog(c.line)}
+              >
+                {c.label}
+              </OptionRow>
+            ))}
+          </div>
+          <DictateArea
+            value={performance}
+            onChange={(v) => { setPerformance(v); mark("performance"); }}
+            placeholder="Weight trend, what they can and cannot do, who is looking after them"
+            rows={3}
+          />
+        </>
+      );
+    }
+
+    if (id === "onco_nodes")
+      return (
+        <>
+          <p className="text-[12px] leading-[1.45] text-muted">
+            Station by station. Tap a station, then what you found there — the tap appends
+            &ldquo;Station — finding&rdquo; to the line below, so more than one station can be
+            recorded. Size, number and consistency are worth adding in your own words.
+          </p>
+          <div className="flex flex-col gap-2">
+            {NODE_STATIONS.map((station) => (
+              <div key={station} className="flex flex-wrap items-center gap-1.5">
+                <span className="w-24 shrink-0 text-[13px] font-medium text-muted">{station}</span>
+                {NODE_FINDINGS.map((f) => (
+                  <SelChip
+                    key={f}
+                    selected={new RegExp(`${escRe(station)}\\s*—\\s*[^;]*\\b${escRe(f)}\\b`, "i").test(oncoNodes)}
+                    onClick={() => {
+                      const line = `${station} — ${f}`;
+                      setOncoNodes((v) => (v.trim() ? `${v.trim()}; ${line}` : line));
+                      mark("onco_nodes");
+                    }}
+                  >
+                    {f}
+                  </SelChip>
+                ))}
+              </div>
+            ))}
+          </div>
+          <DictateArea
+            value={oncoNodes}
+            onChange={(v) => { setOncoNodes(v); mark("onco_nodes"); }}
+            placeholder="Size in cm, number, mobility, matting, tenderness — per station"
+            rows={4}
+          />
+        </>
+      );
+
+    if (id === "onco_mucosa_line")
+      return (
+        <>
+          <p className="text-[12px] leading-[1.45] text-muted">
+            The mucositis grade decides whether the next cycle can go ahead on schedule. Skin,
+            nails and the line site are what a chemotherapy round examines that a surgical round
+            does not.
+          </p>
+          <div className="flex flex-col gap-2">
+            {MUCOSITIS_GRADES.map((g) => (
+              <OptionRow
+                key={g.line}
+                selected={oncoMucosaLine.trim().toLowerCase().startsWith(g.line.toLowerCase())}
+                onClick={() => {
+                  const rest = oncoMucosaLine.replace(/^(No mucositis|Grade \d mucositis)[^;]*;?\s*/i, "").trim();
+                  setOncoMucosaLine(rest ? `${g.line}; ${rest}` : g.line);
+                  mark("onco_mucosa_line");
+                }}
+              >
+                {g.label}
+              </OptionRow>
+            ))}
+          </div>
+          <PillsAndText
+            pills={SKIN_LINE_PILLS}
+            value={oncoMucosaLine}
+            onChange={(v) => { setOncoMucosaLine(v); mark("onco_mucosa_line"); }}
+            placeholder="Ulcer site, rash distribution, line site findings"
+            rows={4}
+          />
+        </>
+      );
+
     if (id === "diagnosis")
       return (
         <>
@@ -766,10 +1213,66 @@ export default function CaseHistoryWorkspace({
           </button>
           <UncertainList points={diagnosis.uncertain} />
           <Area value={diagnosis.text} onChange={(v) => setDiagnosis({ ...diagnosis, text: v })} rows={3} placeholder="Provisional diagnosis" />
+
+          <div className="flex flex-col gap-2">
+            <span className="text-[12px] font-medium text-muted">Differential diagnosis</span>
+            {diagnosis.differentials.map((d, i) => (
+              <div key={i} className="flex gap-2">
+                <input
+                  value={d}
+                  onChange={(e) => setDiagnosis({ ...diagnosis, differentials: diagnosis.differentials.map((x, j) => (j === i ? e.target.value : x)) })}
+                  className="h-10 flex-1 rounded-[10px] border border-line bg-card px-3 text-[14px] outline-none focus:border-accent"
+                />
+                <button type="button" onClick={() => setDiagnosis({ ...diagnosis, differentials: diagnosis.differentials.filter((_, j) => j !== i) })} className="shrink-0 px-2 text-[13px] text-muted">
+                  Remove
+                </button>
+              </div>
+            ))}
+            <button type="button" onClick={() => setDiagnosis({ ...diagnosis, differentials: [...diagnosis.differentials, ""] })} className="self-start text-[13px] font-medium text-accent">
+              + Add a differential
+            </button>
+          </div>
+
           {diagnosis.text.trim() && (
             <button type="button" onClick={() => approve("diagnosis")} disabled={pending} className={approveBtn}>
-              Approve — save to patient
+              Approve — save diagnosis &amp; differentials
             </button>
+          )}
+
+          {diagnosis.text.trim() && (
+            <div className="mt-1 flex flex-col gap-2 rounded-[10px] border border-line bg-card p-3">
+              <p className="text-[12px] leading-[1.45] text-muted">
+                Relevant negatives — the pertinent negative history that supports the working
+                diagnosis and argues against each differential. The AI drafts them; you edit,
+                then approve to write them into the case history.
+              </p>
+              <button type="button" disabled={generating === "negatives"} onClick={() => generate("negatives")} className={genBtn}>
+                {generating === "negatives" ? "Generating…" : negatives.items.length ? "Regenerate relevant negatives" : "Generate relevant negatives"}
+              </button>
+              <UncertainList points={negatives.uncertain} />
+              {negatives.items.map((it, i) => (
+                <div key={i} className="flex gap-2">
+                  <input
+                    value={it}
+                    onChange={(e) => setNegatives({ ...negatives, items: negatives.items.map((x, j) => (j === i ? e.target.value : x)) })}
+                    className="h-10 flex-1 rounded-[10px] border border-line bg-card px-3 text-[14px] outline-none focus:border-accent"
+                  />
+                  <button type="button" onClick={() => setNegatives({ ...negatives, items: negatives.items.filter((_, j) => j !== i) })} className="shrink-0 px-2 text-[13px] text-muted">
+                    Remove
+                  </button>
+                </div>
+              ))}
+              {negatives.items.length > 0 && (
+                <>
+                  <button type="button" onClick={() => setNegatives({ ...negatives, items: [...negatives.items, ""] })} className="self-start text-[13px] font-medium text-accent">
+                    + Add a line
+                  </button>
+                  <button type="button" onClick={() => approve("negatives")} disabled={pending} className={approveBtn}>
+                    Approve — save to case history
+                  </button>
+                </>
+              )}
+            </div>
           )}
         </>
       );
@@ -829,8 +1332,10 @@ export default function CaseHistoryWorkspace({
         </span>
         <div className="flex flex-col gap-2 rounded-[10px] border border-line bg-card p-3">
           <p className="text-[12px] leading-[1.45] text-muted">
-            Bind the tapped fragments and the dictated bits into a proper written history, using
-            what is already on record for this patient. Read it, edit any paragraph, then apply.
+            The AI writes the tapped fragments and dictated bits up into a proper case history —
+            in clinical prose, in the usual order and language — using what is already on record
+            for this patient. It runs on its own when you reach this step. Read it, edit any
+            paragraph, then apply.
           </p>
           <button
             type="button"
@@ -869,6 +1374,19 @@ export default function CaseHistoryWorkspace({
           <CaseHistoryCard observations={fullObservations} sex={sex} wardRanges={wardRanges} />
         </div>
         {dirty.size > 0 && <p className="text-[13px] text-orange-700">{dirty.size} card(s) not yet saved — step back into them.</p>}
+
+        <Link
+          href={`/patients/${patientId}/case-history/print`}
+          className="self-start rounded-[10px] border border-line px-3 py-2 text-[14px] font-semibold text-accent"
+        >
+          Print / save as PDF
+        </Link>
+        {compiled && (
+          <p className="text-[12px] text-orange-700">
+            Apply the compiled prose above before printing, or the sheet prints the rough notes.
+          </p>
+        )}
+
         <Link href={`/patients/${patientId}`} className="self-start text-[14px] font-semibold text-accent">
           Done — back to patient
         </Link>
@@ -898,6 +1416,7 @@ export default function CaseHistoryWorkspace({
     <div className="flex flex-col gap-3 px-4 pb-40">
       {dictating && (
         <DictationOverlay
+          specialty={specialty}
           patientId={patientId}
           initialFilled={dictationFilled}
           initialComplaints={complaints}
@@ -980,6 +1499,13 @@ export default function CaseHistoryWorkspace({
       </div>
     </div>
   );
+}
+
+/** A free-text oncology card's value, as the one line it is stored as. An empty card stores
+ *  nothing at all rather than an empty string — absence is shown, never filled. */
+function oneLine(text: string): string[] {
+  const t = text.trim();
+  return t ? [t] : [];
 }
 
 function composeHistory(state: { mode: Mode; text: string }): string[] {

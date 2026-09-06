@@ -63,8 +63,11 @@ export const cholangitisTg18V1: PathwayDefinition = {
   pathwayId: "acute_cholangitis",
   pathwayVersion: "1.0.0",
   title: "Acute cholangitis",
-  status: "draft",
-  clinicalOwner: "PENDING_CLINICAL_OWNER (General Surgery + HPB / Gastroenterology)",
+  // Activated on the product owner's direction (2026-09-05), same treatment as the
+  // internal-medicine scores. Still triple-gated at runtime; formal governance review still
+  // due — see reviewDueAt.
+  status: "active",
+  clinicalOwner: "General Surgery unit (pilot activation 2026-09-05; formal review pending)",
   sourceReferences: [
     { label: "TG18 cholangitis diagnosis & severity", citation: "Kiriyama S et al. J Hepatobiliary Pancreat Sci 2018;25:17–30." },
   ],

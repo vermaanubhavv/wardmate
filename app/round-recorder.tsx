@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MicIcon, StopIcon } from "./icons";
 import Mark from "./mark";
-import { enqueue } from "@/lib/outbox";
+import {
+  clearChunks,
+  clearInFlight,
+  dropRecording,
+  markInFlight,
+  putChunk,
+  saveRecording,
+} from "@/lib/outbox";
 
 type Status = "idle" | "starting" | "recording" | "working";
 
@@ -33,12 +40,57 @@ export default function RoundRecorder() {
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const autoStoppedRef = useRef(false);
+  const recIdRef = useRef<string>("");
+  const seqRef = useRef(0);
+  const statusRef = useRef<Status>(status);
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
 
   useEffect(() => {
     if (status !== "recording") return;
     const id = setInterval(() => setSeconds((s) => s + 1), 1000);
     return () => clearInterval(id);
   }, [status]);
+
+  // Phone locked / swiped away / killed mid-dictation: write what we have to IndexedDB now.
+  // A later clean stop re-saves the fuller take under the same id, so this never doubles it.
+  const salvage = useCallback(() => {
+    if (statusRef.current !== "recording" && statusRef.current !== "working") return;
+    const chunks = chunksRef.current;
+    const mime = recorderRef.current?.mimeType || "audio/webm";
+    if (chunks.length) {
+      const blob = new Blob(chunks, { type: mime });
+      if (blob.size > 800) {
+        void saveRecording(recIdRef.current, {
+          kind: "round",
+          url: "/api/round",
+          label: "Round dictation",
+          audio: blob,
+          mimeType: mime,
+        });
+      }
+    }
+    try {
+      recorderRef.current?.requestData?.();
+      if (recorderRef.current?.state === "recording") recorderRef.current.stop();
+    } catch {
+      // Already stopped, or the page is going faster than this can run.
+    }
+  }, []);
+
+  useEffect(() => {
+    const onHide = () => {
+      if (document.visibilityState === "hidden") salvage();
+    };
+    window.addEventListener("pagehide", salvage);
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      window.removeEventListener("pagehide", salvage);
+      document.removeEventListener("visibilitychange", onHide);
+      salvage();
+    };
+  }, [salvage]);
 
   useEffect(() => {
     if (status === "recording" && seconds >= MAX_SECONDS) {
@@ -55,6 +107,8 @@ export default function RoundRecorder() {
     setMessage(null);
     setSeconds(0);
     autoStoppedRef.current = false;
+    recIdRef.current = crypto.randomUUID();
+    seqRef.current = 0;
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -73,12 +127,22 @@ export default function RoundRecorder() {
 
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       chunksRef.current = [];
+      const recId = recIdRef.current;
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
+        if (e.data.size === 0) return;
+        chunksRef.current.push(e.data);
+        void putChunk(recId, seqRef.current++, e.data, {
+          kind: "round",
+          url: "/api/round",
+          label: "Round dictation",
+          mimeType: recorder.mimeType || mimeType || "audio/webm",
+        });
       };
       recorder.onstop = () => void send(recorder.mimeType);
 
-      recorder.start();
+      // Timeslice: a chunk every second, so an interruption before a clean stop costs at most
+      // the last second rather than the whole recording.
+      recorder.start(1000);
       recorderRef.current = recorder;
       setStatus("recording");
       navigator.vibrate?.(30);
@@ -103,53 +167,67 @@ export default function RoundRecorder() {
   async function send(mimeType: string) {
     const blob = new Blob(chunksRef.current, { type: mimeType });
     chunksRef.current = [];
+    const id = recIdRef.current;
 
     if (blob.size < 1000) {
       setStatus("idle");
       setMessage("That was too short to hear anything.");
+      void dropRecording(id);
       return;
     }
 
+    const ext = mimeType.includes("mp4") ? "m4a" : mimeType.includes("mpeg") ? "mp3" : "webm";
     const form = new FormData();
-    form.append("audio", blob);
+    form.append("audio", blob, `round.${ext}`);
+    form.append("client_uuid", id);
 
-    // Offline before we even try: queue it rather than spending 30 seconds failing.
-    if (!navigator.onLine) return void queueIt(blob, mimeType);
+    // Keep the words on the phone before doing anything that can fail or be frozen. Dropped
+    // again the moment the server has it; left in place to retry if it does not.
+    await saveRecording(id, {
+      kind: "round",
+      url: "/api/round",
+      label: "Round dictation",
+      audio: blob,
+      mimeType,
+    });
+    window.dispatchEvent(new Event("outbox-changed"));
 
+    if (!navigator.onLine) {
+      setStatus("idle");
+      setMessage("No signal — saved on this phone. It will be read when you are back online.");
+      return;
+    }
+
+    markInFlight(id);
     try {
       const res = await fetch("/api/round", { method: "POST", body: form });
       const data = await res.json();
 
       if (!res.ok) {
-        setStatus("idle");
-        setMessage(data.error ?? "Something went wrong.");
+        if (res.status >= 500) {
+          setStatus("idle");
+          setMessage(data.error ?? "Saved on this phone — the server could not take it. It will retry.");
+        } else {
+          void dropRecording(id);
+          setStatus("idle");
+          setMessage(data.error ?? "Something went wrong.");
+        }
         return;
       }
 
-      // Straight to the review screen. Nothing has been written to anyone yet.
+      // The server has it — safe to drop the phone copy and the live chunks. Straight to the
+      // review screen; nothing has been written to any patient yet.
+      void dropRecording(id);
+      void clearChunks(id);
+      window.dispatchEvent(new Event("outbox-changed"));
       router.push(`/round/${data.dictation_id}`);
     } catch {
-      // The signal went during the upload. The words are the one thing that cannot be
-      // reconstructed later, so they go to the phone rather than being lost.
-      void queueIt(blob, mimeType);
-    }
-  }
-
-  async function queueIt(blob: Blob, mimeType: string) {
-    try {
-      await enqueue({
-        kind: "round",
-        url: "/api/round",
-        label: "Round dictation",
-        audio: blob,
-        mimeType,
-      });
-      window.dispatchEvent(new Event("outbox-changed"));
+      // The signal went during the upload. The recording is already on the phone, so it just
+      // waits for the queue.
       setStatus("idle");
       setMessage("No signal — saved on this phone. It will be read when you are back online.");
-    } catch {
-      setStatus("idle");
-      setMessage("No signal, and this phone would not store it. Do not close the app.");
+    } finally {
+      clearInFlight(id);
     }
   }
 

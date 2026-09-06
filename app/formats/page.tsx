@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { getCurrentWard } from "@/lib/ward";
+import { getCurrentWard, getWardSpecialtyStored } from "@/lib/ward";
 import { FORMAT_KINDS, getWardFormats } from "@/lib/formats";
 import FormatSlot from "./format-slot";
+import { getSpecialtyPack } from "@/lib/specialty";
 
 /**
  * The unit's own paperwork.
@@ -23,7 +24,15 @@ export default async function FormatsPage() {
     );
   }
 
-  const held = await getWardFormats(ward.id);
+  const [held, specialty] = await Promise.all([
+    getWardFormats(ward.id),
+    getWardSpecialtyStored(ward.id),
+  ]);
+  // An oncology unit has no operating theatre, so it is never shown an "OT notes" slot — an
+  // empty slot is a statement that the app has not been told something, and that one would be
+  // a statement about a document this unit will never have.
+  const pack = getSpecialtyPack(specialty);
+  const kinds = FORMAT_KINDS.filter((k) => pack.formatKinds.includes(k.kind));
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
@@ -39,9 +48,10 @@ export default async function FormatsPage() {
       </header>
 
       <section className="px-6 pb-16 flex flex-col gap-3">
-        {/* All five shown whether filled or not: an empty slot says the app has not been told
-            how this unit writes that document, which is worth seeing. */}
-        {FORMAT_KINDS.map((k) => (
+        {/* Every slot this unit can have is shown whether filled or not: an empty slot says
+            the app has not been told how this unit writes that document, which is worth
+            seeing. Which slots those are is the specialty's call — see lib/specialty/. */}
+        {kinds.map((k) => (
           <FormatSlot
             key={k.kind}
             wardId={ward.id}

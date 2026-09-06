@@ -35,7 +35,7 @@ const SECTION_COLUMN: Record<DischargeSectionId, { column: ColumnKey; key: keyof
 };
 
 export function mergeDischargeDraft(context: DischargeContext): DischargeDraft {
-  const compiled = compileDischargeDraft(context);
+  const compiled = compileDischargeDraft(context, { pack: context.pack });
   const row = context.row;
   if (!row) return compiled;
 

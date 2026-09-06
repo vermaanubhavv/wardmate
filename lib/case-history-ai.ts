@@ -76,28 +76,30 @@ Absolute rules:
 1. Use only what the digest contains — presenting complaints, history, examination findings, any investigation already recorded. Never invent a symptom, a sign or a result.
 2. This is a PROVISIONAL diagnosis at admission, not a confirmed one. Phrase it as such where the digest does not support certainty.
 3. If the digest genuinely does not point to a diagnosis, return an empty string rather than guessing.
-4. One line. The primary clinical problem, in standard terminology. Add "? [differential]" only if the digest itself leaves it open.
-5. Expand abbreviations you are not certain are unambiguous.
-6. Put anything you are unsure of, or any internal contradiction in the digest, in uncertain_points.
+4. "diagnosis" is one line — the primary clinical problem, in standard terminology.
+5. "differentials" is the list of other diagnoses a careful surgeon would actively consider and rule out for THIS presentation — 0 to 4 of them, each one short (a diagnosis name, standard terminology). Order them most to least likely. Return an empty list only if the presentation genuinely admits no reasonable alternative.
+6. Expand abbreviations you are not certain are unambiguous.
+7. Put anything you are unsure of, or any internal contradiction in the digest, in uncertain_points.
 
-Return JSON: { "diagnosis": string, "uncertain_points": string[] }.`;
+Return JSON: { "diagnosis": string, "differentials": string[], "uncertain_points": string[] }.`;
 
 const DIAGNOSIS_SCHEMA = {
   type: "object",
   properties: {
     diagnosis: { type: "string" },
+    differentials: { type: "array", items: { type: "string" } },
     uncertain_points: { type: "array", items: { type: "string" } },
   },
-  required: ["diagnosis", "uncertain_points"],
+  required: ["diagnosis", "differentials", "uncertain_points"],
   additionalProperties: false,
 } as const;
 
 export async function generateDiagnosis(
   digest: string
-): Promise<{ text: string; uncertainPoints: string[]; model: string }> {
+): Promise<{ text: string; differentials: string[]; uncertainPoints: string[]; model: string }> {
   const response = await client().messages.create({
     model: AI_MODEL,
-    max_tokens: 500,
+    max_tokens: 600,
     system: [{ type: "text", text: DIAGNOSIS_SYSTEM, cache_control: { type: "ephemeral" } }],
     output_config: {
       effort: "low",
@@ -107,9 +109,72 @@ export async function generateDiagnosis(
   });
   const block = response.content.find((b) => b.type === "text");
   const parsed =
-    block && block.type === "text" ? JSON.parse(block.text) : { diagnosis: "", uncertain_points: [] };
+    block && block.type === "text"
+      ? JSON.parse(block.text)
+      : { diagnosis: "", differentials: [], uncertain_points: [] };
   return {
     text: String(parsed.diagnosis ?? "").trim(),
+    differentials: Array.isArray(parsed.differentials)
+      ? parsed.differentials.map(String).map((s: string) => s.trim()).filter(Boolean)
+      : [],
+    uncertainPoints: Array.isArray(parsed.uncertain_points) ? parsed.uncertain_points.map(String) : [],
+    model: AI_MODEL,
+  };
+}
+
+// --- Relevant (pertinent) negatives -------------------------------------------------------
+
+const NEGATIVES_SYSTEM = `You list the RELEVANT NEGATIVES for a general-surgery admission in an Indian hospital: the pertinent negative history a resident should have documented to support the working diagnosis and to argue against each differential.
+
+You are given the clerking digest, the working provisional diagnosis, and the list of differential diagnoses being considered.
+
+Absolute rules:
+1. Every line is a NEGATIVE — something the patient does NOT have or has NOT experienced — phrased the way a case sheet records it: "No history of fever or night sweats", "No previous similar episode", "No altered bowel habit", "No weight loss or anorexia", "No urinary symptoms".
+2. Choose negatives that actually discriminate: for each differential, the feature whose absence makes it less likely; for the working diagnosis, the classic associated features that are reassuringly absent.
+3. Do NOT list something the digest already records as PRESENT, and do NOT contradict the digest. If the digest already states a negative, you may keep it but do not duplicate wording.
+4. Never invent a specific detail (a number, a date). These are plain absences only.
+5. 4 to 10 lines. Short. One clinical idea per line.
+6. Put anything you are unsure of in uncertain_points.
+
+Return JSON: { "negatives": string[], "uncertain_points": string[] }.`;
+
+const NEGATIVES_SCHEMA = {
+  type: "object",
+  properties: {
+    negatives: { type: "array", items: { type: "string" } },
+    uncertain_points: { type: "array", items: { type: "string" } },
+  },
+  required: ["negatives", "uncertain_points"],
+  additionalProperties: false,
+} as const;
+
+export async function generateRelevantNegatives(
+  digest: string,
+  diagnosis: string,
+  differentials: string[]
+): Promise<{ negatives: string[]; uncertainPoints: string[]; model: string }> {
+  const ddx = differentials.filter(Boolean);
+  const ask =
+    `Working provisional diagnosis: ${diagnosis || "(not yet settled)"}\n` +
+    `Differential diagnoses under consideration: ${ddx.length ? ddx.join("; ") : "(none listed)"}\n\n` +
+    `Clerking digest:\n\n${digest}`;
+  const response = await client().messages.create({
+    model: AI_MODEL,
+    max_tokens: 700,
+    system: [{ type: "text", text: NEGATIVES_SYSTEM, cache_control: { type: "ephemeral" } }],
+    output_config: {
+      effort: "low",
+      format: { type: "json_schema", schema: NEGATIVES_SCHEMA as unknown as Record<string, unknown> },
+    },
+    messages: [{ role: "user", content: ask }],
+  });
+  const block = response.content.find((b) => b.type === "text");
+  const parsed =
+    block && block.type === "text" ? JSON.parse(block.text) : { negatives: [], uncertain_points: [] };
+  return {
+    negatives: Array.isArray(parsed.negatives)
+      ? parsed.negatives.map(String).map((s: string) => s.trim()).filter(Boolean)
+      : [],
     uncertainPoints: Array.isArray(parsed.uncertain_points) ? parsed.uncertain_points.map(String) : [],
     model: AI_MODEL,
   };
@@ -176,6 +241,7 @@ Absolute rules:
 6. Return one entry per section that actually has content. Omit a section entirely if there is nothing for it. Allowed section labels, exactly: "chief complaints", "history of presenting illness", "past history", "family history", "medication history", "surgical history", "menstrual and obstetric history".
 7. For "chief complaints" keep it to the complaints with their duration, and lead each complaint WITH its duration, longest-standing complaint first, e.g. "3 days - pain in the right iliac fossa, 1 day - vomiting". Do not reorder if the notes give no durations.
 8. For "history of presenting illness" open with the duration of the principal complaint before describing it, e.g. "The patient presented with a 3-day history of pain in the right iliac fossa..." or "She was apparently well 3 days ago, when she developed...". Only use a duration the notes actually give.
+9. A duration may be written in the notes as "pain abdomen x 3 days", "pain abdomen × 3 days" or "vomiting: (1 day) ..." — read all of these as the duration of that complaint and render it as natural prose ("a 3-day history of...").
 
 Return JSON: { "sections": [ { "label": string, "text": string } ], "uncertain_points": string[] }.`;
 

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
-import { getWardConsultantStored } from "@/lib/ward";
+import { getWardConsultantStored, getWardSpecialtyStored } from "@/lib/ward";
+import { getSpecialtyPack, type SpecialtyPack } from "@/lib/specialty";
 import { consultantForWard } from "@/lib/unit-consultants";
 import { derivePatientState, type Observation, type PatientState } from "@/lib/patient-state";
 import { getTemplateForPatient, getProcedureLabels, procedureFor } from "@/lib/templates";
@@ -88,6 +89,9 @@ export type DischargeContext = {
   formularySize: number;
   /** The stored discharge_summaries row, or null when nothing has been saved yet. */
   row: DischargeRow | null;
+  /** The unit's specialty pack — it decides which set of discharge templates a diagnosis is
+   *  matched against. Always present; general surgery when nothing else is known. */
+  pack: SpecialtyPack;
 };
 
 const DISCHARGE_ROW_COLUMNS =
@@ -163,6 +167,7 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
     wardId: patient.ward_id as string,
     wardName: wardRow?.name ?? null,
     wardConsultant: consultantForWard(await getWardConsultantStored(patient.ward_id), wardRow?.name),
+    pack: getSpecialtyPack(await getWardSpecialtyStored(patient.ward_id)),
     letterhead: wardRow?.letterhead ?? null,
     logoUrl: wardFormats.get("logo")?.url ?? null,
     doctor: profileRow

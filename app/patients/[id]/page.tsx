@@ -21,6 +21,7 @@ import {
 import { isIdentifierLabel, stripPatientHonorific, MANAGEMENT_CHOICES } from "@/lib/patients";
 import { describeWhen, effectiveUrgency } from "@/lib/urgency";
 import BedsideBar from "./bedside-bar";
+import PatientTabs from "./patient-tabs";
 import EditIdentity from "../edit-identity";
 import UrgencyDot from "./urgency-dot";
 import { ChevronIcon } from "../../icons";
@@ -31,7 +32,8 @@ import CaseHistoryCapture from "./case-history-capture";
 import { CaseHistoryCard, ObjectiveSummaryView } from "./case-history-card";
 import RoutineRoundButton from "./routine-round";
 import SoapRows from "./soap-rows";
-import DischargeSection from "./discharge-section";
+import DischargeTab from "./discharge-tab";
+import InvestigationsSection from "./investigations-section";
 import ScoringTaskRows from "./scoring/task-rows";
 import ScoreCards from "./scoring/score-card";
 import { syncPatientPathways } from "@/lib/scoring/store";
@@ -42,8 +44,11 @@ import ConfirmDictation from "./confirm-dictation";
 import BottomBar from "../../bottom-bar";
 import { listedComorbidities } from "@/lib/comorbidities";
 import { summariseObjective, type WardRanges } from "@/lib/exam-summary";
-import { classifyVital, isKnownVital } from "@/lib/vital-ranges";
+import { etiologyFromDiagnosis, type EtiologyKey } from "@/lib/imaging-summary";
+import { classifyVital, matchVitalLabel } from "@/lib/vital-ranges";
 import { getWardLabRanges } from "@/lib/ward-lab-ranges";
+import { getSpecialtyPack } from "@/lib/specialty";
+import { getWardSpecialtyStored } from "@/lib/ward";
 
 type Entry = {
   id: string;
@@ -70,12 +75,16 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const { data: patient } = await supabase
     .from("current_patients")
     .select(
-      "id, ward_id, display_name, age_years, sex, bed, uhid_ip_no, mrd_no, primary_diagnosis, admitted_on, surgery_date, planned_surgery_date, post_op_day, admission_day, status, template_family, template_variant, procedure_text, management, location"
+      "id, ward_id, display_name, age_years, sex, bed, uhid_ip_no, mrd_no, primary_diagnosis, admitted_on, surgery_date, planned_surgery_date, post_op_day, admission_day, regimen, cycle_number, cycle_started_on, cycle_day, status, template_family, template_variant, procedure_text, management, location"
     )
     .eq("id", id)
     .maybeSingle();
 
   if (!patient) notFound();
+
+  // The unit's department, resolved once: it decides how this patient's day is counted, which
+  // checklist rows the picker offers, and whether the edit dialog shows chemotherapy fields.
+  const pack = getSpecialtyPack(await getWardSpecialtyStored(patient.ward_id));
 
   // The next bed in walking order, so finishing one patient and starting the next is one tap
   // rather than a trip back through the ward list.
@@ -87,7 +96,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     template,
     { data: dischargeRow },
   ] = await Promise.all([
-      getActivePatients(patient.ward_id),
+      getActivePatients(patient.ward_id, pack.key !== "general_surgery"),
       supabase
         .from("entries")
         .select(
@@ -96,7 +105,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         .eq("patient_id", id)
         .order("recorded_at", { ascending: false }),
       getProcedureLabels(),
-      listTemplateChoices(),
+      listTemplateChoices(pack.pickerPhase),
       // Needs only fields already in hand from the patient row, so it was queueing behind the
       // batch for nothing.
       getTemplateForPatient(patient),
@@ -170,11 +179,17 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // entries: the case history is excluded from the day-by-day record but not from what decides
   // the to-do list and "where things stand" — a plan is a plan whichever way it was captured.
   const allObservations = allEntries.flatMap((e) => e.observations);
+  const day = pack.dayCount(patient);
   const patientState = derivePatientState(
     allObservations,
     template,
-    patient.post_op_day ?? patient.admission_day,
-    { surgeryDate: patient.surgery_date, admittedOn: patient.admitted_on }
+    day.n,
+    {
+      surgeryDate: patient.surgery_date,
+      admittedOn: patient.admitted_on,
+      cycleDay: patient.cycle_day,
+      onRegimen: Boolean(patient.regimen),
+    }
   );
   const { matched, missing, extra, openTasks, doneTasks, pending, pac } = patientState;
 
@@ -214,6 +229,11 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         template_family: patient.template_family,
         template_variant: patient.template_variant,
       });
+  // The disease family behind this admission, read off whichever diagnosis we have — recorded,
+  // or derived from the operation. It decides which lines of a radiology report and which
+  // in-range bloods stay on the face of the record instead of behind a fold. Null is fine: it
+  // just means the report is grouped but not trimmed. See lib/imaging-summary.ts.
+  const etiology = etiologyFromDiagnosis(diagnosis ?? derivedDiagnosis?.text ?? null);
   // Background illness is cumulative, not a latest-wins vital: "K/C/O asthma" from the
   // admission sheet must remain visible when diabetes is mentioned on a later round. The
   // helper also recognises older entries captured before the extractor used this label.
@@ -232,117 +252,31 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     });
 
 
-  return (
-    <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
-      {/* A real navigation bar: back on the left, where the eye and thumb both go for it, and
-          the walk to the next bed on the right. Both at iOS's size. */}
-      <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-line/60 bg-background/80 px-2 pb-2.5 top-bar backdrop-blur-xl">
-        <Link href="/ward" className="flex items-center text-[17px] text-accent active:opacity-60">
-          <ChevronIcon className="h-[18px] w-[18px] rotate-180" />
-          Ward
-        </Link>
-        <div className="flex items-center gap-3 pr-2">
-          {position && <span className="text-[13px] text-muted tabular-nums">{position}</span>}
-          {next && (
-            <Link
-              href={`/patients/${next.id}`}
-              className="flex items-center text-[17px] font-medium text-accent active:opacity-60"
-            >
-              Next
-              <ChevronIcon className="h-[18px] w-[18px]" />
-            </Link>
-          )}
-        </div>
-      </div>
+  // The record, grouped along the lines a round already thinks in. Nothing is dropped and
+  // nothing is reordered inside a group — see patient-tabs.tsx for why they are filed
+  // rather than stacked.
 
-      <header className="px-4 pb-6 pt-4">
-        <div className="flex items-center gap-2.5">
-          <div className="min-w-0 flex-1">
-            <h1 className="flex min-w-0 items-baseline gap-2 text-[clamp(1.05rem,5vw,1.5rem)] tracking-tight">
-              <span className="shrink-0 rounded-md bg-chip px-1.5 py-0.5 font-mono text-[0.72em] font-semibold text-accent">
-                {patient.bed}
-              </span>
-              <span className="min-w-0 truncate font-bold">
-                {stripPatientHonorific(patient.display_name)}
-              </span>
-              <span className="shrink-0 whitespace-nowrap text-[0.72em] font-medium tracking-normal text-muted">
-                {[
-                  patient.age_years !== null ? patient.age_years : null,
-                  patient.sex === "other" ? "O" : patient.sex,
-                ]
-                  .filter((value) => value !== null && value !== "")
-                  .join("/")}
-              </span>
-            </h1>
-            {patient.uhid_ip_no && (
-              <p className="mt-2 truncate pl-0.5 text-[12px] text-muted">
-                <span className="uppercase tracking-wide">IP no.</span>
-                <span className="mx-1.5">·</span>
-                <span className="font-mono text-foreground/80">{patient.uhid_ip_no}</span>
-              </p>
-            )}
-          </div>
-          <div className="shrink-0">
-            <EditIdentity patient={patient} templateChoices={templateChoices} />
-          </div>
-        </div>
+  const todayPanel = (
+    <>
+      {/* Vitals first. The round asks how the patient is this morning before it asks anything
+          else, and this is the only block on the page that answers it in one glance. */}
+      <VitalsPanel observations={allObservations} />
 
-        {/* Only the clinical facts needed to identify the admission live here. Bed and hospital
-            number have moved into the header above; the rest of the record follows below.
-
-            The banner leads with whichever fact matters most right now: once operated, that IS
-            the headline (POD 0 Lap chole) with the diagnosis dropped to a parenthetical below
-            it — nobody rounding on a post-op patient reads "diagnosis" first. Before that, there
-            is no operation to lead with, so the diagnosis takes the same top spot instead, with
-            the phase of care (Pre-op / Conservative / Workup) as its own parenthetical. */}
-        <div className="ios-group mt-5">
-          {/* The day count and what it counts from, with the note one tap away — read together,
-              because the banner is where the eye lands and "what did we write today" is the
-              question most often asked from it. */}
-          <div className="flex items-start justify-between gap-3 px-4 py-3">
-            <div className="min-w-0">
-              {patient.post_op_day !== null ? (
-                <>
-                  <p className="text-[19px] font-bold uppercase leading-snug">
-                    POD {patient.post_op_day}
-                    {procedure ? ` ${procedure}` : ""}
-                  </p>
-                  <p className="mt-0.5 text-[13px] text-muted">
-                    {/* A derived diagnosis reads exactly like a recorded one. It is a fixed
-                        mapping from the operation — see lib/diagnosis-from-procedure.ts — and
-                        the unit reads "lap chole" as gall stone disease without being told so
-                        every time it opens a patient. Nothing is stored either way. */}
-                    ({diagnosis ?? derivedDiagnosis?.text ?? "diagnosis not recorded"})
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-[19px] font-bold uppercase leading-snug">
-                    {diagnosis ?? "Diagnosis not recorded"}
-                  </p>
-                  {(() => {
-                    const managementChoice = MANAGEMENT_CHOICES.find((c) => c.value === patient.management);
-                    return managementChoice ? (
-                      <p className="mt-0.5 text-[13px] text-muted">({managementChoice.label})</p>
-                    ) : null;
-                  })()}
-                </>
-              )}
-            </div>
-            <Link
-              href={`/patients/${patient.id}/note`}
-              className="shrink-0 pt-0.5 text-[13px] font-semibold text-accent active:opacity-60"
-            >
-              View note ›
-            </Link>
-          </div>
-          <SummaryRow
-            label="Co-morbidities"
-            value={comorbidities.length > 0 ? comorbidities.join(" · ") : "Not recorded"}
+      {/* Then whatever the app heard but is not sure of. It sits above the work because a
+          to-do built on a misheard number is worse than a to-do done late. */}
+      {pending.length > 0 && (
+        <section className="px-4 pb-6">
+          <p className="ios-group-header mb-2 px-4 text-orange-700">
+            Confirm dictation
+          </p>
+          <ConfirmDictation
+            pending={pending}
+            patientId={patient.id}
+            computedDay={day.n}
+            procedureChoices={templateChoices.map((c) => c.label)}
           />
-        </div>
-      </header>
-
+        </section>
+      )}
 
       {(openTasks.length > 0 || doneTasks.length > 0 || scoringTasks.length > 0) && (
         <section className="px-4 pb-6">
@@ -435,25 +369,6 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         </section>
       )}
 
-      <ScoreCards cards={scoreCards} />
-
-
-      {pending.length > 0 && (
-        <section className="px-4 pb-6">
-          <p className="ios-group-header mb-2 px-4 text-orange-700">
-            Confirm dictation
-          </p>
-          <ConfirmDictation
-            pending={pending}
-            patientId={patient.id}
-            computedDay={patient.post_op_day ?? patient.admission_day}
-            procedureChoices={templateChoices.map((c) => c.label)}
-          />
-        </section>
-      )}
-
-      <VitalsPanel observations={allObservations} />
-
       {(matched.length > 0 || extra.length > 0) && (
         <section className="px-4 pb-6">
           {/* Today: where the patient stands right now, with the note one tap away. The whole
@@ -512,6 +427,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                     negatives={negatives}
                     sex={patient.sex}
                     wardRanges={wardRanges}
+                    etiology={etiology}
                   />
                 ) : (
                 <SoapRows
@@ -535,13 +451,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         </section>
       )}
 
-      {/* Only before surgery, and shown even when empty — an unanswered PAC is the single
-          thing most likely to stop a list, so "nobody has recorded one" has to be visible
-          rather than inferred from a section that isn't there. It sits below Today rather
-          than above it: the verdict is a standing fact about the admission, and the question
-          asked first at a bedside is still how the patient is this morning. */}
-      {beforeSurgery && <PacSection pac={pac} />}
-
+      {/* The drug list belongs with today: it is what the patient is on right now, and a drug
+          round reads it off the same screen the ward round was written on. */}
       {/* The drugs currently on record, in their own block rather than buried in the Plan
           section of the SOAP above. At a drug round this is the one list being scanned, and
           each row keeps the words it came from, so it is never only the app's paraphrase. */}
@@ -563,11 +474,25 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         </section>
       )}
 
+      <ScoreCards cards={scoreCards} />
+
+      {/* Only before surgery, and shown even when empty — an unanswered PAC is the single
+          thing most likely to stop a list, so "nobody has recorded one" has to be visible
+          rather than inferred from a section that isn't there. It sits below Today rather
+          than above it: the verdict is a standing fact about the admission, and the question
+          asked first at a bedside is still how the patient is this morning. */}
+      {beforeSurgery && <PacSection pac={pac} />}
+    </>
+  );
+
+  const historyPanel = (
+    <>
       <CaseHistorySection
         entries={caseHistoryEntries}
         patientId={patient.id}
         sex={patient.sex}
         wardRanges={wardRanges}
+        etiology={etiology}
         photoUrls={photoUrls}
         protocolTitles={protocolTitles}
       />
@@ -616,6 +541,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                         observations={dayObservations}
                         sex={patient.sex}
                         wardRanges={wardRanges}
+                        etiology={etiology}
                       />
 
                       {/* And the day exactly as recorded, one tap further in. A tidier summary
@@ -674,16 +600,175 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           </ul>
         )}
       </section>
+    </>
+  );
 
-      {/* Last on the page: the admission ending, after everything it is assembled from.
-          Bottom padding clears the fixed speak bar so it stays openable. */}
-      <section className="px-6 pb-72">
-        <DischargeSection
-          status={dischargeStatus}
-          patientName={stripPatientHonorific(patient.display_name)}
-          patientId={patient.id}
-        />
-      </section>
+  const investigationsPanel = (
+    <InvestigationsSection
+      observations={allObservations}
+      sex={patient.sex}
+      wardRanges={wardRanges}
+    />
+  );
+
+  const dischargePanel = (
+    <DischargeTab
+      patientId={patient.id}
+      patientName={stripPatientHonorific(patient.display_name)}
+      status={dischargeStatus}
+    />
+  );
+
+
+  // A tab with nothing in it says so, rather than opening on empty space. History, Investigations
+  // and Discharge each carry their own empty state, so only Today is decided here.
+  const todayEmpty =
+    openTasks.length === 0 &&
+    doneTasks.length === 0 &&
+    scoringTasks.length === 0 &&
+    scoreCards.length === 0 &&
+    pending.length === 0 &&
+    matched.length === 0 &&
+    extra.length === 0 &&
+    medications.length === 0 &&
+    !beforeSurgery &&
+    !allObservations.some((o) => CHARTED_VITALS.has(matchVitalLabel(o.label) ?? "") && o.value_text);
+
+  return (
+    <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
+      {/* A real navigation bar: back on the left, where the eye and thumb both go for it, and
+          the walk to the next bed on the right. Both at iOS's size. */}
+      <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-line/60 bg-background/80 px-2 pb-2.5 top-bar backdrop-blur-xl">
+        <Link href="/ward" className="flex items-center text-[17px] text-accent active:opacity-60">
+          <ChevronIcon className="h-[18px] w-[18px] rotate-180" />
+          Ward
+        </Link>
+        <div className="flex items-center gap-3 pr-2">
+          {position && <span className="text-[13px] text-muted tabular-nums">{position}</span>}
+          {next && (
+            <Link
+              href={`/patients/${next.id}`}
+              className="flex items-center text-[17px] font-medium text-accent active:opacity-60"
+            >
+              Next
+              <ChevronIcon className="h-[18px] w-[18px]" />
+            </Link>
+          )}
+        </div>
+      </div>
+
+      <header className="px-4 pb-6 pt-4">
+        <div className="flex items-center gap-2.5">
+          <div className="min-w-0 flex-1">
+            <h1 className="flex min-w-0 items-baseline gap-2 text-[clamp(1.05rem,5vw,1.5rem)] tracking-tight">
+              <span className="shrink-0 rounded-md bg-chip px-1.5 py-0.5 font-mono text-[0.72em] font-semibold text-accent">
+                {patient.bed}
+              </span>
+              <span className="min-w-0 truncate font-bold">
+                {stripPatientHonorific(patient.display_name)}
+              </span>
+              <span className="shrink-0 whitespace-nowrap text-[0.72em] font-medium tracking-normal text-muted">
+                {[
+                  patient.age_years !== null ? patient.age_years : null,
+                  patient.sex === "other" ? "O" : patient.sex,
+                ]
+                  .filter((value) => value !== null && value !== "")
+                  .join("/")}
+              </span>
+            </h1>
+            {patient.uhid_ip_no && (
+              <p className="mt-2 truncate pl-0.5 text-[12px] text-muted">
+                <span className="uppercase tracking-wide">IP no.</span>
+                <span className="mx-1.5">·</span>
+                <span className="font-mono text-foreground/80">{patient.uhid_ip_no}</span>
+              </p>
+            )}
+          </div>
+          <div className="shrink-0">
+            <EditIdentity patient={patient} templateChoices={templateChoices} specialty={pack.key} />
+          </div>
+        </div>
+
+        {/* Only the clinical facts needed to identify the admission live here. Bed and hospital
+            number have moved into the header above; the rest of the record follows below.
+
+            The banner leads with whichever fact matters most right now: once operated, that IS
+            the headline (POD 0 Lap chole) with the diagnosis dropped to a parenthetical below
+            it — nobody rounding on a post-op patient reads "diagnosis" first. Before that, there
+            is no operation to lead with, so the diagnosis takes the same top spot instead, with
+            the phase of care (Pre-op / Conservative / Workup) as its own parenthetical. */}
+        <div className="ios-group mt-5">
+          {/* The day count and what it counts from, with the note one tap away — read together,
+              because the banner is where the eye lands and "what did we write today" is the
+              question most often asked from it. */}
+          <div className="flex items-start justify-between gap-3 px-4 py-3">
+            <div className="min-w-0">
+              {day.clock !== "admission" ? (
+                <>
+                  {/* The headline is the day count and what it counts from — "POD 0 Lap chole"
+                      on a surgical ward, "C2 D3 R-CHOP" on an oncology one. Both are the one
+                      fact a round leads with; the diagnosis drops to a parenthetical below. */}
+                  <p className="text-[19px] font-bold uppercase leading-snug">
+                    {day.text}
+                    {day.clock === "cycle"
+                      ? patient.regimen
+                        ? ` ${patient.regimen}`
+                        : ""
+                      : procedure
+                        ? ` ${procedure}`
+                        : ""}
+                  </p>
+                  <p className="mt-0.5 text-[13px] text-muted">
+                    {/* A derived diagnosis reads exactly like a recorded one. It is a fixed
+                        mapping from the operation — see lib/diagnosis-from-procedure.ts — and
+                        the unit reads "lap chole" as gall stone disease without being told so
+                        every time it opens a patient. Nothing is stored either way. */}
+                    ({diagnosis ?? derivedDiagnosis?.text ?? "diagnosis not recorded"})
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-[19px] font-bold uppercase leading-snug">
+                    {diagnosis ?? "Diagnosis not recorded"}
+                  </p>
+                  {(() => {
+                    const managementChoice = MANAGEMENT_CHOICES.find((c) => c.value === patient.management);
+                    return managementChoice ? (
+                      <p className="mt-0.5 text-[13px] text-muted">({managementChoice.label})</p>
+                    ) : null;
+                  })()}
+                </>
+              )}
+            </div>
+            <Link
+              href={`/patients/${patient.id}/note`}
+              className="shrink-0 pt-0.5 text-[13px] font-semibold text-accent active:opacity-60"
+            >
+              View note ›
+            </Link>
+          </div>
+          <SummaryRow
+            label="Co-morbidities"
+            value={comorbidities.length > 0 ? comorbidities.join(" · ") : "Not recorded"}
+          />
+        </div>
+      </header>
+
+
+      <PatientTabs
+        tabs={[
+          {
+            key: "today",
+            label: "Today",
+            empty: todayEmpty ? "Nothing recorded for today yet." : undefined,
+            content: todayPanel,
+          },
+          { key: "history", label: "History", content: historyPanel },
+          { key: "investigations", label: "Investigations", content: investigationsPanel },
+          { key: "discharge", label: "Discharge", content: dischargePanel },
+        ]}
+      />
+
 
       {/* Fixed, so the button is under your thumb no matter how long the record has grown. */}
       <BottomBar>
@@ -703,6 +788,7 @@ function CaseHistorySection({
   patientId,
   sex,
   wardRanges,
+  etiology,
   photoUrls,
   protocolTitles,
 }: {
@@ -710,6 +796,7 @@ function CaseHistorySection({
   patientId: string;
   sex: string | null;
   wardRanges: WardRanges;
+  etiology: EtiologyKey | null;
   photoUrls: Map<string, string>;
   protocolTitles: Map<string, string>;
 }) {
@@ -738,10 +825,21 @@ function CaseHistorySection({
           </Link>
 
           {entries.length > 0 && (
+            <Link
+              href={`/patients/${patientId}/case-history/print`}
+              className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 text-[14px] font-medium text-accent active:bg-chip"
+            >
+              <span>Print / save as PDF</span>
+              <span className="text-xl font-normal">›</span>
+            </Link>
+          )}
+
+          {entries.length > 0 && (
             <CaseHistoryCard
               observations={entries.flatMap((e) => e.observations)}
               sex={sex}
               wardRanges={wardRanges}
+              etiology={etiology}
             />
           )}
 
@@ -807,10 +905,12 @@ function DaySoap({
   observations,
   sex,
   wardRanges,
+  etiology,
 }: {
   observations: Observation[];
   sex: string | null;
   wardRanges: WardRanges;
+  etiology: EtiologyKey | null;
 }) {
   const groups = SOAP_ORDER.map((section) => ({
     section,
@@ -841,7 +941,7 @@ function DaySoap({
                   refHigh: o.ref_high,
                   refText: o.ref_text,
                 })),
-                { sex, wardRanges }
+                { sex, wardRanges, etiology }
               )}
             />
           ) : (
@@ -896,8 +996,21 @@ const PAC_META: Record<
  * the difference between a doctor noticing a bad number in one glance and an app quietly
  * building a treatment plan on top of it.
  */
+/**
+ * The four this block shows, and only when they were actually recorded.
+ *
+ * A round reads blood pressure, pulse, saturation and temperature. Respiratory rate is charted
+ * too and is kept in the record, on the note and in the examination line — it is simply not one
+ * of the four a surgical round scans for, and a fifth tile earns its place on a phone only by
+ * being read. Nothing is shown as absent: a vital nobody took has no tile at all, because a
+ * dash where a number belongs reads at a glance like a number.
+ */
+const CHARTED_VITALS = new Set(["bp", "pr", "spo2", "temp"]);
+
 function VitalsPanel({ observations }: { observations: Observation[] }) {
-  const readings = observations.filter((o) => isKnownVital(o.label) && o.value_text);
+  const readings = observations.filter(
+    (o) => CHARTED_VITALS.has(matchVitalLabel(o.label) ?? "") && o.value_text
+  );
   if (readings.length === 0) return null;
 
   // Vitals said in the same breath share one recorded_at, because they come from a single
@@ -1088,6 +1201,7 @@ function ObjectiveBlock({
   negatives = [],
   sex,
   wardRanges,
+  etiology,
 }: {
   matchedItems: MatchedItem[];
   extraItems: Observation[];
@@ -1095,6 +1209,7 @@ function ObjectiveBlock({
   negatives?: string[];
   sex: string | null;
   wardRanges: WardRanges;
+  etiology: EtiologyKey | null;
 }) {
   const summary = summariseObjective(
     [
@@ -1117,7 +1232,7 @@ function ObjectiveBlock({
         refText: o.ref_text,
       })),
     ],
-    { sex, wardRanges }
+    { sex, wardRanges, etiology }
   );
   // Objective checklist items with nothing recorded today. A core item carrying yesterday's
   // value is flagged stale by matchTemplate, but it is NOT missing — listing it here while the

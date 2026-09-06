@@ -46,6 +46,25 @@ export async function getCurrentWard() {
  * column is named. On that error — and when nothing is stored — this returns null and callers
  * fall back to the seeded default for the unit number (see lib/unit-consultants.ts).
  */
+/**
+ * The unit's specialty, or null.
+ *
+ * A separate guarded read for the same reason getWardConsultantStored is one: until patch 0060
+ * has been run, naming `specialty` in a select makes PostgREST reject the entire query. On any
+ * error this returns null, and null means general surgery — the app behaves exactly as it did
+ * before specialty packs existed.
+ */
+export async function getWardSpecialtyStored(wardId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("wards")
+    .select("specialty")
+    .eq("id", wardId)
+    .maybeSingle();
+  if (error) return null;
+  return (data as { specialty?: string | null } | null)?.specialty ?? null;
+}
+
 export async function getWardConsultantStored(wardId: string): Promise<string | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -69,7 +88,13 @@ export async function getMyWards() {
   return data ?? [];
 }
 
-export async function getActivePatients(wardId: string) {
+export async function getActivePatients(
+  wardId: string,
+  /** Ask for the chemotherapy columns patch 0060 adds. Only true for an oncology unit — and a
+   *  unit can only BE an oncology unit if 0060 has run, so this can never name a column the
+   *  database does not have and reject the whole select. */
+  includeChemo = false
+) {
   const supabase = await createClient();
 
   // Both queries go out together. The badge counts used to wait for the patient list purely
@@ -80,7 +105,8 @@ export async function getActivePatients(wardId: string) {
     supabase
       .from("current_patients")
       .select(
-        "id, display_name, age_years, sex, bed, uhid_ip_no, mrd_no, primary_diagnosis, admitted_on, surgery_date, planned_surgery_date, post_op_day, admission_day, last_entry_at, template_family, template_variant, procedure_text, management, location"
+        "id, display_name, age_years, sex, bed, uhid_ip_no, mrd_no, primary_diagnosis, admitted_on, surgery_date, planned_surgery_date, post_op_day, admission_day, last_entry_at, template_family, template_variant, procedure_text, management, location" +
+          (includeChemo ? ", regimen, cycle_number, cycle_day" : "")
       )
       .eq("ward_id", wardId)
       .eq("status", "active"),
@@ -124,7 +150,14 @@ export async function getActivePatients(wardId: string) {
     entryCounts.set(row.patient_id, (entryCounts.get(row.patient_id) ?? 0) + 1);
   }
 
-  const withFlags: WardPatient[] = patients.map((p) => ({
+  // Cast because the column list is chosen at runtime (see includeChemo), which is more than
+  // the Supabase client's select-string typing can follow.
+  const rows = patients as unknown as Omit<
+    WardPatient,
+    "unconfirmed_count" | "open_task_count" | "entry_count"
+  >[];
+
+  const withFlags: WardPatient[] = rows.map((p) => ({
     ...p,
     unconfirmed_count: counts.get(p.id) ?? 0,
     open_task_count: taskCounts.get(p.id) ?? 0,

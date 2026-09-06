@@ -62,9 +62,16 @@ export function derivePatientState(
   /** The post-op / admission day the app computes from recorded dates — passed through so the
    *  "post-operative day" checklist item is not flagged missing when the number is already known. */
   knownDay: number | null = null,
-  /** The operative date and admission time, for checklist items whose auto-trigger is time
-   *  based (post-op day, hours since surgery / admission). See lib/checklist-triggers.ts. */
-  clock: { surgeryDate?: string | null; admittedOn?: string | null } = {}
+  /** The operative date, admission time and chemotherapy cycle day, for checklist items whose
+   *  auto-trigger is time based (post-op day, cycle day, hours since surgery / admission).
+   *  See lib/checklist-triggers.ts. A surgical patient has no cycle and an oncology patient
+   *  has no operation; both are normal and each simply leaves the other's conditions unmet. */
+  clock: {
+    surgeryDate?: string | null;
+    admittedOn?: string | null;
+    cycleDay?: number | null;
+    onRegimen?: boolean;
+  } = {}
 ): PatientState {
   // Keyed on normalised kind+label so "ALP" and "alp" collapse to the same row instead of
   // sitting side by side because the extraction step phrased one of them differently.
@@ -96,6 +103,8 @@ export function derivePatientState(
         knownDay,
         surgeryDate: clock.surgeryDate ?? null,
         admittedOn: clock.admittedOn ?? null,
+        cycleDay: clock.cycleDay ?? null,
+        onRegimen: clock.onRegimen ?? false,
       })
     : [];
   const missing = matched.filter((m) => m.missing);

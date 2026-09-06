@@ -6,8 +6,12 @@ import type { AdmissionPaperPatient } from "@/lib/read-admission-paper";
 
 export default function AdmissionPaper({
   onParsed,
+  oncology = false,
 }: {
   onParsed: (patient: AdmissionPaperPatient) => void;
+  /** Changes only what the caption promises — an oncology day-care sheet carries a regimen
+   *  and a cycle where an admission sheet carries an operation. */
+  oncology?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [busy, setBusy] = useState(false);
@@ -65,7 +69,10 @@ export default function AdmissionPaper({
         {busy ? "Reading the paper…" : "Add from admission / OPD paper"}
       </button>
       <p className="text-center text-[13px] text-muted">
-        Take a photo or choose one. Name, age, sex, IP no. and diagnosis will be suggested.
+        Take a photo or choose one. Name, age, sex, IP and MRD numbers, bed, admission date and
+        diagnosis will be suggested
+        {oncology ? ", along with the regimen and cycle if the paper prints them" : ""}. Anything
+        the paper does not carry is left for you.
       </p>
       {message && <p className="text-center text-[13px] text-orange-700">{message}</p>}
     </div>

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { nextUrgency, type Urgency } from "@/lib/urgency";
 import { istDayKey } from "@/lib/patient-state";
 import { extractObservations } from "@/lib/extract";
+import { getWardSpecialtyStored } from "@/lib/ward";
 import { getTemplateForPatient, matchTemplate } from "@/lib/templates";
 
 const CONCERNING_RE =
@@ -77,17 +78,21 @@ export async function editEntry(formData: FormData) {
 
   const { data: patient } = await supabase
     .from("current_patients")
-    .select("id, surgery_date, post_op_day, admission_day, template_family, template_variant")
+    .select("id, ward_id, surgery_date, post_op_day, admission_day, template_family, template_variant")
     .eq("id", patientId)
     .maybeSingle();
   if (!patient) return;
+
+  // The unit's department, for the dictation prompt. Null — and so general surgery — on any
+  // database without patch 0060.
+  const specialty = getWardSpecialtyStored(patient.ward_id);
 
   const template = await getTemplateForPatient(patient);
   const expectedLabels = template?.items.map((i) => i.label) ?? [];
 
   let extraction;
   try {
-    extraction = await extractObservations(corrected, expectedLabels);
+    extraction = await extractObservations(corrected, expectedLabels, [], await specialty);
   } catch {
     // Keep the correction even when structuring fails. The words are the evidence, and a
     // resident who has just fixed a mis-hearing should not lose the fix as well.

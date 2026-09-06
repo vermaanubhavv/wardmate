@@ -6,8 +6,10 @@ import { getPatientDictationKeyterms } from "@/lib/transcription/patient-context
 import { correctTranscript } from "@/lib/glossary";
 import { readCaseSheet } from "@/lib/read-case-sheet";
 import { extractObservations } from "@/lib/extract";
+import { getWardSpecialtyStored } from "@/lib/ward";
 import { getTemplateForPatient } from "@/lib/templates";
 import { applyProcedureDone } from "@/lib/apply-procedure-done";
+import { readReceipt, saveReceipt } from "@/lib/dictation-receipt";
 
 const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp"] as const;
 const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
@@ -38,6 +40,7 @@ export async function POST(request: Request) {
   const patientId = String(form.get("patient_id") ?? "");
   const photo = form.get("photo");
   const audio = form.get("audio");
+  const clientUuid = String(form.get("client_uuid") ?? "") || null;
 
   if (!patientId) return NextResponse.json({ error: "No patient." }, { status: 400 });
   if (!(photo instanceof Blob) && !(audio instanceof Blob)) {
@@ -50,7 +53,7 @@ export async function POST(request: Request) {
   const { data: patient, error: patientError } = await supabase
     .from("current_patients")
     .select(
-      "id, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text"
+      "id, ward_id, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text"
     )
     .eq("id", patientId)
     .maybeSingle();
@@ -58,6 +61,15 @@ export async function POST(request: Request) {
   if (patientError || !patient) {
     return NextResponse.json({ error: "Patient not found." }, { status: 404 });
   }
+
+  // Already processed this exact recording — a retry, or a duplicate from the offline queue.
+  const prior = await readReceipt(supabase, clientUuid, user.id);
+  if (prior) return NextResponse.json(prior);
+
+  // The unit's department, for the dictation prompt. Started here and awaited at the
+  // extraction call so it overlaps the speech-to-text step. Null — and so general surgery —
+  // on any database without patch 0060.
+  const specialty = getWardSpecialtyStored(patient.ward_id);
 
   const template = await getTemplateForPatient(patient);
   // The sections a clerking note is written in, so that when the resident dictates one it is
@@ -172,7 +184,7 @@ export async function POST(request: Request) {
 
   let extraction;
   try {
-    extraction = await extractObservations(transcript, expectedLabels);
+    extraction = await extractObservations(transcript, expectedLabels, [], await specialty);
   } catch (e) {
     // The transcript is the evidence even when structuring fails, exactly as for a round note.
     const { data: entry } = await supabase
@@ -188,12 +200,14 @@ export async function POST(request: Request) {
       .select("id")
       .single();
 
-    return NextResponse.json({
+    const body = {
       entry_id: entry?.id ?? null,
       transcript,
       observations: [],
       error: "Saved the case history, but could not structure it. Open it to read the words.",
-    });
+    };
+    await saveReceipt(supabase, clientUuid, user.id, "case-history", body);
+    return NextResponse.json(body);
   }
 
   const { data: entry, error: entryError } = await supabase
@@ -263,12 +277,14 @@ export async function POST(request: Request) {
 
   await applyProcedureDone(supabase, patientId, patient, extraction.observations);
 
-  return NextResponse.json({
+  const body = {
     entry_id: entry.id,
     transcript,
     observations: extraction.observations,
     discarded: extraction.rejected.length,
-  });
+  };
+  await saveReceipt(supabase, clientUuid, user.id, "case-history", body);
+  return NextResponse.json(body);
 }
 
 /** Same rule as every other entry point: a day the resident stated is checked against the

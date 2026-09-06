@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentWard } from "@/lib/ward";
+import { getCurrentWard, getWardSpecialtyStored } from "@/lib/ward";
 import { getWardFormats } from "@/lib/formats";
 import { getFormularyMappings } from "@/lib/formulary";
 import { correctTranscript } from "@/lib/glossary";
@@ -7,7 +7,12 @@ import { extractObservations } from "@/lib/extract";
 import { derivePatientState, type Observation } from "@/lib/patient-state";
 import { compileDischargeDraft } from "@/lib/discharge-compile";
 import { buildDischargeDocument } from "@/lib/discharge-render";
-import { matchDischargeTemplate, getDischargeTemplate, listDischargeTemplates } from "@/lib/discharge-templates";
+import { getSpecialtyPack } from "@/lib/specialty";
+import {
+  getDischargeTemplateFor,
+  listDischargeTemplatesFor,
+  matchDischargeTemplateFor,
+} from "@/lib/specialty/discharge";
 import { oneOffContext, type OneOffIdentity } from "@/lib/discharge-oneoff";
 import { createClient } from "@/lib/supabase/server";
 import type { ReadLabValue } from "@/lib/read-lab-photo";
@@ -134,6 +139,9 @@ export async function POST(request: Request) {
     ward ? getFormularyMappings(ward.id) : Promise.resolve(new Map<string, string>()),
   ]);
 
+  // Which department’s templates this unit gets. An oncology unit is never offered "Lap chole".
+  const pack = getSpecialtyPack(ward ? await getWardSpecialtyStored(ward.id) : null);
+
   const context = oneOffContext(
     identity,
     ward ?? null,
@@ -141,7 +149,8 @@ export async function POST(request: Request) {
     formularyMappings,
     observations,
     patientState,
-    medications
+    medications,
+    pack
   );
 
   // The diagnosis template: an explicit "no template" wins; then the resident's explicit
@@ -149,13 +158,13 @@ export async function POST(request: Request) {
   const template =
     body.templateKey === "__none__"
       ? null
-      : (getDischargeTemplate(body.templateKey) ??
-        matchDischargeTemplate({
+      : (getDischargeTemplateFor(pack, body.templateKey) ??
+        matchDischargeTemplateFor(pack, {
           procedureText: identity.procedure,
           diagnosisText: identity.diagnosis,
         }));
 
-  const draft = compileDischargeDraft(context, { template, seedAll: true });
+  const draft = compileDischargeDraft(context, { template, seedAll: true, pack });
   const doc = buildDischargeDocument(draft, context);
 
   return NextResponse.json({
@@ -163,6 +172,6 @@ export async function POST(request: Request) {
     draft,
     observations: observations.length,
     template: template ? { key: template.key, label: template.label } : null,
-    templates: listDischargeTemplates(),
+    templates: listDischargeTemplatesFor(pack),
   });
 }

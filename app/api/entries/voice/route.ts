@@ -4,10 +4,12 @@ import { createClient } from "@/lib/supabase/server";
 import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
 import { getPatientDictationKeyterms } from "@/lib/transcription/patient-context";
 import { extractObservations } from "@/lib/extract";
+import { getWardSpecialtyStored } from "@/lib/ward";
 import { correctTranscript } from "@/lib/glossary";
 import { getTemplateForPatient } from "@/lib/templates";
 import { getPublishedProtocolContext } from "@/lib/protocols";
 import { applyProcedureDone } from "@/lib/apply-procedure-done";
+import { readReceipt, saveReceipt } from "@/lib/dictation-receipt";
 
 /**
  * The whole voice round-trip, on the server: audio in, stored observations out.
@@ -27,18 +29,24 @@ export async function POST(request: Request) {
   const form = await request.formData();
   const patientId = String(form.get("patient_id") ?? "");
   const audio = form.get("audio");
+  const clientUuid = String(form.get("client_uuid") ?? "") || null;
 
   if (!patientId) return NextResponse.json({ error: "No patient." }, { status: 400 });
   if (!(audio instanceof Blob) || audio.size === 0) {
     return NextResponse.json({ error: "No audio was recorded." }, { status: 400 });
   }
 
+  // Already processed this exact recording (a retry after a lost connection, a duplicate from
+  // the offline queue): return what it got the first time, touch nothing.
+  const prior = await readReceipt(supabase, clientUuid, user.id);
+  if (prior) return NextResponse.json(prior);
+
   // Confirm this doctor may write to this patient before spending money on the AI calls.
   // The database would refuse the insert anyway; this just fails earlier and cheaper.
   const { data: patient, error: patientError } = await supabase
     .from("current_patients")
     .select(
-      "id, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text"
+      "id, ward_id, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text"
     )
     .eq("id", patientId)
     .maybeSingle();
@@ -46,6 +54,11 @@ export async function POST(request: Request) {
   if (patientError || !patient) {
     return NextResponse.json({ error: "Patient not found." }, { status: 404 });
   }
+
+  // Which department this unit is, for the dictation prompt. Started here and awaited only at
+  // the extraction call, so it overlaps the speech-to-text step and costs no extra wall time.
+  // It resolves to null — and so to general surgery — on any database without patch 0060.
+  const specialty = getWardSpecialtyStored(patient.ward_id);
 
   // 1. Speech to text, then the engine's known mishearings of surgical terms — "lab chole" for
   // lap chole, "PAS" for PAC. Corrected BEFORE extraction, so a template matches the operation
@@ -89,7 +102,7 @@ export async function POST(request: Request) {
 
   let extraction;
   try {
-    extraction = await extractObservations(transcript, expectedLabels, protocols);
+    extraction = await extractObservations(transcript, expectedLabels, protocols, await specialty);
   } catch (e) {
     // The transcript is worth keeping even when extraction fails — it is the evidence, and
     // the resident can still read it. Store the entry with the error recorded against it.
@@ -108,15 +121,15 @@ export async function POST(request: Request) {
       .select("id")
       .single();
 
-    return NextResponse.json(
-      {
-        entry_id: entry?.id ?? null,
-        transcript,
-        observations: [],
-        error: "Saved what you said, but could not structure it. Tap the entry to read it.",
-      },
-      { status: 200 }
-    );
+    const body = {
+      entry_id: entry?.id ?? null,
+      transcript,
+      observations: [],
+      error: "Saved what you said, but could not structure it. Tap the entry to read it.",
+    };
+    // The entry is saved — a resend would duplicate it, so this counts as processed.
+    await saveReceipt(supabase, clientUuid, user.id, "voice", body);
+    return NextResponse.json(body, { status: 200 });
   }
 
   // 3. Store the evidence.
@@ -173,14 +186,16 @@ export async function POST(request: Request) {
 
   await applyProcedureDone(supabase, patientId, patient, extraction.observations);
 
-  return NextResponse.json({
+  const body = {
     entry_id: entry.id,
     transcript,
     observations: extraction.observations,
     // Surfaced rather than hidden: if the model produced values it could not point at in the
     // transcript, that is worth knowing about, not silently swallowing.
     discarded: extraction.rejected.length,
-  });
+  };
+  await saveReceipt(supabase, clientUuid, user.id, "voice", body);
+  return NextResponse.json(body);
 }
 
 /**

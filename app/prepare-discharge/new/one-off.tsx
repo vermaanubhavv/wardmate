@@ -5,7 +5,11 @@ import { PAPER_KINDS, type PaperKind } from "@/lib/read-paper";
 import type { DischargeDocument } from "@/lib/discharge-render";
 import type { DischargeDraft, MedicationStatus } from "@/lib/discharge-entities";
 import { MEDICATION_STATUSES, CONDITION_VARIABLES } from "@/lib/discharge-entities";
-import { listDischargeTemplates, matchDischargeTemplate } from "@/lib/discharge-templates";
+import { getSpecialtyPack, type SpecialtyKey } from "@/lib/specialty";
+import {
+  listDischargeTemplatesFor,
+  matchDischargeTemplateFor,
+} from "@/lib/specialty/discharge";
 import DischargeSheet from "../../patients/[id]/discharge/sheet";
 import PrintButton from "../../patients/[id]/note/print-button";
 import { Field, Area, StringList } from "../../patients/[id]/discharge/discharge-fields";
@@ -48,7 +52,12 @@ const uid = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.r
  * template for that diagnosis, to fill rather than to write from scratch. See
  * lib/discharge-templates.ts.
  */
-export default function OneOff() {
+export default function OneOff({
+  /** The unit's department, so the template picker offers that department's summaries. */
+  specialty,
+}: {
+  specialty: SpecialtyKey;
+}) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [pages, setPages] = useState<Page[]>([]);
   const [identity, setIdentity] = useState({
@@ -64,7 +73,8 @@ export default function OneOff() {
   });
   const [templateKey, setTemplateKey] = useState<string>("auto");
   const [usedTemplateLabel, setUsedTemplateLabel] = useState<string | null>(null);
-  const templates = listDischargeTemplates();
+  const pack = getSpecialtyPack(specialty);
+  const templates = listDischargeTemplatesFor(pack);
 
   const [draft, setDraft] = useState<DischargeDraft | null>(null);
   const [doc, setDoc] = useState<DischargeDocument | null>(null);
@@ -134,7 +144,10 @@ export default function OneOff() {
   const ready = pages.filter((p) => p.status === "read" && p.include);
   const haveSubject = !!(identity.procedure.trim() || identity.diagnosis.trim());
 
-  const autoMatch = matchDischargeTemplate({ procedureText: identity.procedure, diagnosisText: identity.diagnosis });
+  const autoMatch = matchDischargeTemplateFor(pack, {
+    procedureText: identity.procedure,
+    diagnosisText: identity.diagnosis,
+  });
   const chosenLabel =
     templateKey === "none"
       ? null

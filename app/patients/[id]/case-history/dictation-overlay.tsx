@@ -18,7 +18,7 @@ import { HELD_SECTIONS, type RoutedSegment } from "@/lib/case-history-sections";
 
 type SessionState = "connecting" | "listening" | "sorting" | "paused" | "error";
 
-const OVERVIEW: { key: string; label: string }[] = [
+const BASE_OVERVIEW: { key: string; label: string }[] = [
   { key: "complaints", label: "Complaints" },
   { key: "hopi", label: "History of each complaint" },
   { key: "past", label: "Past history" },
@@ -26,6 +26,21 @@ const OVERVIEW: { key: string; label: string }[] = [
   { key: "medication", label: "Medication history" },
   { key: "surgical", label: "Surgical history" },
   { key: "obstetric", label: "Menstrual & obstetric" },
+];
+
+/** Inserted after the general background, matching the card order in the workspace — the
+ *  running list has to read in the order the resident is being walked through. */
+const ONCOLOGY_OVERVIEW: { key: string; label: string }[] = [
+  { key: "onco_disease", label: "Oncological history" },
+  { key: "onco_treatment", label: "Treatment received" },
+  { key: "onco_cycle", label: "Current cycle" },
+  { key: "onco_toxicity", label: "Toxicity since last cycle" },
+  { key: "performance", label: "Performance status" },
+  { key: "onco_nodes", label: "Lymph node survey" },
+  { key: "onco_mucosa_line", label: "Mucosa, skin & line" },
+];
+
+const EXAM_OVERVIEW: { key: string; label: string }[] = [
   { key: "examination", label: "General examination & vitals" },
   { key: "abdomen", label: "Per abdomen" },
   { key: "chest", label: "Chest" },
@@ -34,17 +49,27 @@ const OVERVIEW: { key: string; label: string }[] = [
   { key: "plan", label: "Plan" },
 ];
 
+function overviewFor(specialty: string): { key: string; label: string }[] {
+  return specialty === "medical_oncology"
+    ? [...BASE_OVERVIEW, ...ONCOLOGY_OVERVIEW, ...EXAM_OVERVIEW]
+    : [...BASE_OVERVIEW, ...EXAM_OVERVIEW];
+}
+
 export default function DictationOverlay({
   patientId,
   initialFilled,
   initialComplaints,
+  specialty = "general_surgery",
   onClose,
 }: {
   patientId: string;
   initialFilled: Record<string, boolean>;
   initialComplaints: string[];
+  /** The unit's department — decides which sections the running list shows. */
+  specialty?: string;
   onClose: () => void;
 }) {
+  const OVERVIEW = overviewFor(specialty);
   const [state, setState] = useState<SessionState>("connecting");
   const [message, setMessage] = useState<string | null>(null);
   const [partial, setPartial] = useState("");

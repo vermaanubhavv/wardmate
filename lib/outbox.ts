@@ -21,9 +21,14 @@
 // A rebrand is not worth losing a round.
 const DB_NAME = "coreresident-outbox";
 const STORE = "pending";
-const VERSION = 1;
+/** Live chunks of a recording still in progress — written a second at a time as it is spoken,
+ *  so a hard kill that fires no pagehide (an out-of-memory kill, a force-quit) still leaves
+ *  every second but the last on the phone. Assembled into a normal `pending` item on next
+ *  open. Cleared the moment the finished recording is saved the ordinary way. */
+const CHUNKS = "chunks";
+const VERSION = 2;
 
-export type PendingKind = "round" | "bedside";
+export type PendingKind = "round" | "bedside" | "case-history";
 
 export type Pending = {
   id: string;
@@ -46,8 +51,14 @@ function open(): Promise<IDBDatabase> {
     const req = indexedDB.open(DB_NAME, VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
+      // Never dropped or recreated: a phone upgrading from v1 may be holding recordings made
+      // offline and not yet sent.
       if (!db.objectStoreNames.contains(STORE)) {
         db.createObjectStore(STORE, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(CHUNKS)) {
+        const s = db.createObjectStore(CHUNKS, { keyPath: ["recId", "seq"] });
+        s.createIndex("recId", "recId", { unique: false });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -55,17 +66,127 @@ function open(): Promise<IDBDatabase> {
   });
 }
 
-function tx<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+function tx<T>(
+  mode: IDBTransactionMode,
+  run: (store: IDBObjectStore) => IDBRequest<T>,
+  store: string = STORE
+): Promise<T> {
   return open().then(
     (db) =>
       new Promise<T>((resolve, reject) => {
-        const t = db.transaction(STORE, mode);
-        const req = run(t.objectStore(STORE));
+        const t = db.transaction(store, mode);
+        const req = run(t.objectStore(store));
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
         t.oncomplete = () => db.close();
       })
   );
+}
+
+function chunkStoreTx<T>(
+  mode: IDBTransactionMode,
+  run: (store: IDBObjectStore) => IDBRequest<T> | void
+): Promise<T | undefined> {
+  return open().then(
+    (db) =>
+      new Promise<T | undefined>((resolve, reject) => {
+        const t = db.transaction(CHUNKS, mode);
+        const req = run(t.objectStore(CHUNKS));
+        t.oncomplete = () => {
+          db.close();
+          resolve(req ? req.result : undefined);
+        };
+        t.onerror = () => reject(t.error);
+      })
+  );
+}
+
+type ChunkRow = {
+  recId: string;
+  seq: number;
+  blob: Blob;
+  meta: Omit<Pending, "id" | "queuedAt" | "attempts" | "audio">;
+};
+
+/** Append one timeslice of a recording still in progress. */
+export async function putChunk(
+  recId: string,
+  seq: number,
+  blob: Blob,
+  meta: ChunkRow["meta"]
+): Promise<void> {
+  try {
+    await chunkStoreTx("readwrite", (s) => {
+      s.put({ recId, seq, blob, meta } satisfies ChunkRow);
+    });
+  } catch {
+    // Storage full or unavailable — the in-memory chunks and the save-on-stop path still hold.
+  }
+}
+
+/** Drop a recording's live chunks — called once it has been saved the ordinary way. */
+export async function clearChunks(recId: string): Promise<void> {
+  try {
+    await chunkStoreTx("readwrite", (s) => {
+      const idx = s.index("recId");
+      const cur = idx.openCursor(IDBKeyRange.only(recId));
+      cur.onsuccess = () => {
+        const c = cur.result;
+        if (c) {
+          c.delete();
+          c.continue();
+        }
+      };
+    });
+  } catch {
+    // Nothing to clear, or no database.
+  }
+}
+
+/**
+ * Recordings that have live chunks but never finished — the recorder was killed before it
+ * could save. Each is assembled into a Pending so the ordinary queue can send it. Excludes
+ * any recId already in `pending` (that one finished; its chunks are just not cleared yet).
+ */
+export async function recoverInterruptedChunks(): Promise<Pending[]> {
+  let rows: ChunkRow[];
+  try {
+    rows = (await chunkStoreTx<ChunkRow[]>("readonly", (s) => s.getAll() as IDBRequest<ChunkRow[]>)) ?? [];
+  } catch {
+    return [];
+  }
+  if (rows.length === 0) return [];
+
+  const pendingIds = new Set((await listPending()).map((p) => p.id));
+  const byRec = new Map<string, ChunkRow[]>();
+  const staleRecs = new Set<string>();
+  for (const r of rows) {
+    if (pendingIds.has(r.recId)) {
+      // That recording finished and is already queued the ordinary way — its chunks are just
+      // leftovers.
+      staleRecs.add(r.recId);
+      continue;
+    }
+    const group = byRec.get(r.recId);
+    if (group) group.push(r);
+    else byRec.set(r.recId, [r]);
+  }
+  for (const recId of staleRecs) await clearChunks(recId);
+
+  const recovered: Pending[] = [];
+  for (const [recId, group] of byRec) {
+    group.sort((a, b) => a.seq - b.seq);
+    const mime = group[0].meta.mimeType;
+    const blob = new Blob(group.map((g) => g.blob), { type: mime });
+    if (blob.size < 1000) {
+      await clearChunks(recId);
+      continue;
+    }
+    const item = await saveRecording(recId, { ...group[0].meta, audio: blob });
+    recovered.push(item);
+    await clearChunks(recId);
+  }
+  return recovered;
 }
 
 export async function enqueue(item: Omit<Pending, "id" | "queuedAt" | "attempts">) {
@@ -77,6 +198,33 @@ export async function enqueue(item: Omit<Pending, "id" | "queuedAt" | "attempts"
   };
   await tx("readwrite", (s) => s.add(full));
   return full;
+}
+
+/**
+ * Save a recording under a caller-chosen id, replacing any earlier save of the same id.
+ *
+ * A recorder writes its audio here BEFORE it tries to upload — so a phone that is locked,
+ * backgrounded and killed mid-upload has already kept the words — and deletes it again with
+ * dropRecording() once the server has confirmed receipt. Using put() (not add()) means a
+ * salvage on pagehide followed by a normal save is one row, not two.
+ */
+export async function saveRecording(
+  id: string,
+  item: Omit<Pending, "id" | "queuedAt" | "attempts">
+) {
+  const full: Pending = { ...item, id, queuedAt: new Date().toISOString(), attempts: 0 };
+  await tx("readwrite", (s) => s.put(full));
+  return full;
+}
+
+/** Drop a recording once the server has it — the counterpart to saveRecording(). Silent if
+ *  it was already sent and removed. */
+export async function dropRecording(id: string) {
+  try {
+    await remove(id);
+  } catch {
+    // Already gone, or no database. Nothing waiting to send is the outcome either way.
+  }
 }
 
 export async function listPending(): Promise<Pending[]> {
@@ -95,6 +243,23 @@ export async function countPending(): Promise<number> {
 
 async function remove(id: string) {
   await tx("readwrite", (s) => s.delete(id));
+}
+
+/**
+ * Recordings a recorder is uploading itself, right now, in this tab.
+ *
+ * A recorder saves its audio here before it uploads (so a crash mid-upload loses nothing) and
+ * drops it on success. In the gap between, flush() must not also send it — that is how one
+ * recording becomes two observations. This set is that interlock. It is in-memory and
+ * per-tab: after a reload the inline upload is gone too, so the row is genuinely flush's to
+ * send.
+ */
+const inFlight = new Set<string>();
+export function markInFlight(id: string) {
+  inFlight.add(id);
+}
+export function clearInFlight(id: string) {
+  inFlight.delete(id);
 }
 
 async function bumpAttempts(item: Pending) {
@@ -118,12 +283,27 @@ export type FlushResult = {
  */
 export async function flush(): Promise<FlushResult> {
   const result: FlushResult = { sent: 0, failed: 0, reviews: [] };
-  const items = await listPending();
+  // Skip anything a recorder is uploading itself right now — it will drop it on success.
+  const items = (await listPending()).filter((i) => !inFlight.has(i.id));
 
   for (const item of items) {
+    // The transcriber picks its decoder from the file extension, so a queued recording has to
+    // carry one — an extensionless "audio" is how a webm gets fed to an mp4 decoder and comes
+    // back blank.
+    const ext = item.mimeType.includes("mp4")
+      ? "m4a"
+      : item.mimeType.includes("mpeg")
+        ? "mp3"
+        : item.mimeType.includes("ogg")
+          ? "ogg"
+          : "webm";
     const form = new FormData();
-    form.append("audio", new File([item.audio], "audio", { type: item.mimeType }));
+    form.append("audio", new File([item.audio], `audio.${ext}`, { type: item.mimeType }));
     if (item.patientId) form.append("patient_id", item.patientId);
+    // The item id is the recording's id, chosen when it was recorded. Sent so the server can
+    // recognise a recording it already processed — the queue and a recorder's own upload can
+    // both reach it, and a kill between "server has it" and "row deleted" sends it again.
+    form.append("client_uuid", item.id);
 
     let res: Response;
     try {

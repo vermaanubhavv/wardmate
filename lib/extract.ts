@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { AI_MODEL } from "@/lib/model";
 import { isIdentifierLabel } from "@/lib/patients";
 import { extractClinicalEntities } from "@/lib/clinical-ner";
+import { generalSurgeryPack, getSpecialtyPack, type SpecialtyPack } from "@/lib/specialty";
 
 export const OBSERVATION_KINDS = [
   "diagnosis",
@@ -37,7 +38,15 @@ export type ExtractedObservation = {
   pac_verdict: (typeof PAC_VERDICTS)[number] | null;
 };
 
-const SYSTEM_PROMPT = `You convert a surgical resident's spoken ward-round note into structured observations.
+/**
+ * The shared body of the extraction prompt — everything after the "who is speaking" line.
+ *
+ * EVERY SAFETY RULE LIVES HERE, and none of it is specialty-specific. A pack supplies the role
+ * line and, optionally, a section of guidance about what words mean on its ward; it can never
+ * remove or weaken a rule below, and the verbatim-quote CHECK that enforces rule 2 is done in
+ * code after the model answers, not by the prompt. See lib/specialty/types.ts.
+ */
+const SHARED_PROMPT_BODY = `
 
 The transcript is the only source of truth. You are recording what was said — not interpreting it, not completing it, and not improving it.
 
@@ -96,6 +105,25 @@ Urgency — plans only, and rule 1 applies to it as hard as to any number:
 - null: THE DEFAULT, and the correct answer whenever the resident stated no timeframe at all. "Repeat the haemoglobin" is null — not green. Absence of urgency in the words is not evidence of low urgency, and a job wrongly graded green is a job that looks safe to leave undone. Grading it null puts it in front of the resident to grade themselves.
 
 Set urgency to null for every observation that is not a plan.`;
+
+/**
+ * The system prompt for one unit's specialty.
+ *
+ * Kept as a pure function of the pack so it can be built once per request and still hit the
+ * prompt cache: the cache is a PREFIX match, and every call from a given unit produces the
+ * identical string. Two specialties simply keep two cache entries.
+ *
+ * For general surgery this returns byte-for-byte what the single hardcoded prompt used to be.
+ */
+export function buildSystemPrompt(pack: SpecialtyPack = generalSurgeryPack): string {
+  const guidance = pack.extractGuidance.trim();
+  return (
+    pack.extractRoleLine +
+    SHARED_PROMPT_BODY +
+    (guidance ? `\n\n${guidance}\n` : "")
+  );
+}
+
 
 const SCHEMA = {
   type: "object",
@@ -170,8 +198,13 @@ export type ExtractionResult = {
 export async function extractObservations(
   transcript: string,
   expectedLabels: string[] = [],
-  protocols: { id: string; title: string; summary: string }[] = []
+  protocols: { id: string; title: string; summary: string }[] = [],
+  /** The unit's specialty (wards.specialty). Anything unknown — including undefined, because
+   *  patch 0060 has not been run — gets the surgery pack and the prompt this app has always
+   *  sent. */
+  specialty?: string | null
 ): Promise<ExtractionResult> {
+  const pack = getSpecialtyPack(specialty);
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
 
@@ -224,7 +257,7 @@ export async function extractObservations(
     // cache on every request if it sat inside the same block. Caching is a prefix match, so
     // the stable half has to physically come first.
     system: [
-      { type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
+      { type: "text", text: buildSystemPrompt(pack), cache_control: { type: "ephemeral" } },
       { type: "text", text: expected + protocolBlock + detectedBlock },
     ],
     // Low effort: this is constrained extraction from a short transcript, and the resident

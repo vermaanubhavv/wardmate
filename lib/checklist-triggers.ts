@@ -10,7 +10,10 @@
  * Two families of condition, both of which the ward asked for:
  *   - history / entry based — something is already in the record (a diagnosis, a drug, a lab
  *     over a threshold, another checklist line answered)
- *   - time based — the post-op day, or hours since surgery / admission, has reached a point
+ *   - time based — the post-op day, the chemotherapy cycle day, or hours since surgery /
+ *     admission, has reached a point. Which of these clocks a unit's checklist hangs off is
+ *     the pack's `checklistAnchor` (lib/specialty/) — a surgical checklist counts from the
+ *     operation, an oncology one from the cycle.
  *
  * Pure. The caller builds a `TriggerContext` from the patient's observations and dates.
  */
@@ -29,6 +32,14 @@ export type TriggerCondition =
   | { type: "day_of_surgery" }
   | { type: "hours_since_surgery_gte"; hours: number }
   | { type: "hours_since_admission_gte"; hours: number }
+  /** Chemotherapy cycle day >= / <= n. 1-based: the day the cycle starts is day 1, not day 0
+   *  (patch 0060). Only ever true for a patient on an active cycle. */
+  | { type: "cycle_day_gte"; days: number }
+  | { type: "cycle_day_lte"; days: number }
+  /** The cycle starts today (cycle day 1). */
+  | { type: "day_of_cycle" }
+  /** The patient is on a named chemotherapy regimen at all. */
+  | { type: "on_regimen" }
   /** Another checklist line has a value recorded / has nothing recorded. `label` is matched
    *  case-insensitively against item labels and their aliases. */
   | { type: "item_present"; label: string }
@@ -50,6 +61,10 @@ export type TriggerContext = {
   postOpDay: number | null;
   hoursSinceSurgery: number | null;
   hoursSinceAdmission: number | null;
+  /** Chemotherapy cycle day (1-based), or null when the patient is not on an active cycle. */
+  cycleDay?: number | null;
+  /** True when a regimen is recorded on the patient. */
+  onRegimen?: boolean;
   /** True when any observation was recorded for a label / alias. */
   hasValue: (labelOrAlias: string) => boolean;
   /** Numeric readings keyed by a normalised analyte name. */
@@ -98,6 +113,14 @@ function evalCondition(c: TriggerCondition, ctx: TriggerContext): boolean {
       return ctx.hoursSinceSurgery !== null && ctx.hoursSinceSurgery >= c.hours;
     case "hours_since_admission_gte":
       return ctx.hoursSinceAdmission !== null && ctx.hoursSinceAdmission >= c.hours;
+    case "cycle_day_gte":
+      return ctx.cycleDay != null && ctx.cycleDay >= c.days;
+    case "cycle_day_lte":
+      return ctx.cycleDay != null && ctx.cycleDay <= c.days;
+    case "day_of_cycle":
+      return ctx.cycleDay === 1;
+    case "on_regimen":
+      return ctx.onRegimen === true;
     case "item_present":
       return ctx.hasValue(c.label);
     case "item_absent":

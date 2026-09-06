@@ -126,8 +126,11 @@ export const acutePancreatitisV1: PathwayDefinition = {
   pathwayId: "acute_pancreatitis",
   pathwayVersion: "1.0.0",
   title: "Acute pancreatitis",
-  status: "draft",
-  clinicalOwner: "PENDING_CLINICAL_OWNER (General Surgery + Gastroenterology/HPB)",
+  // Activated on the product owner's direction (2026-09-05), same treatment as the
+  // internal-medicine scores. Still triple-gated at runtime; formal governance review still
+  // due — see reviewDueAt.
+  status: "active",
+  clinicalOwner: "General Surgery unit (pilot activation 2026-09-05; formal review pending)",
   sourceReferences: [
     { label: "BISAP", citation: "Wu BU et al. Gut 2008;57:1698–1703." },
     { label: "ACG Acute Pancreatitis guideline (2024 update)", citation: "American College of Gastroenterology." },

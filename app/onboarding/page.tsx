@@ -6,6 +6,7 @@ import { signOut } from "../actions";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 import ProfessionalForm from "./professional-form";
+import { listSpecialties, specialtyPacksEnabled } from "@/lib/specialty";
 
 /** The only first-run decision: join the team already working, or start a new one. */
 export default async function OnboardingPage() {
@@ -54,7 +55,7 @@ export default async function OnboardingPage() {
           <p className="mb-3 text-[13px] leading-relaxed text-muted">
             You will be its owner and can share its code with your team.
           </p>
-          <CreateUnitForm autoFocus />
+          <CreateUnitForm autoFocus specialties={specialtyChoices()} />
         </section>
 
         <p className="mt-8 text-center text-[13px] text-muted">
@@ -64,4 +65,11 @@ export default async function OnboardingPage() {
       </main>
     </div>
   );
+}
+
+/** The departments to offer at unit setup. Empty list = no picker, everything general surgery.
+ *  Server-side because the flag is a server env var. */
+function specialtyChoices() {
+  if (!specialtyPacksEnabled()) return [];
+  return listSpecialties().map((p) => ({ key: p.key, label: p.label, blurb: p.blurb }));
 }

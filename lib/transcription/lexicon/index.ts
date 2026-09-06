@@ -9,6 +9,8 @@ import { PROCEDURES } from "./procedures";
 import { SURGICAL_ANATOMY } from "./surgery";
 import { MEDICATIONS } from "./medications";
 import { SCORES } from "./scores";
+import { ONCOLOGY } from "./oncology";
+import { INTERNAL_MEDICINE } from "./internal-medicine";
 
 export * from "./types";
 
@@ -30,6 +32,8 @@ export const MASTER_LEXICON: readonly MedicalLexiconEntry[] = Object.freeze([
   ...SURGICAL_ANATOMY,
   ...MEDICATIONS,
   ...SCORES,
+  ...ONCOLOGY,
+  ...INTERNAL_MEDICINE,
 ]);
 
 /**

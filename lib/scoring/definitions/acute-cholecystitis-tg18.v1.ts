@@ -61,8 +61,11 @@ export const cholecystitisTg18V1: PathwayDefinition = {
   pathwayId: "acute_cholecystitis",
   pathwayVersion: "1.0.0",
   title: "Acute cholecystitis",
-  status: "draft",
-  clinicalOwner: "PENDING_CLINICAL_OWNER (General Surgery + HPB)",
+  // Activated on the product owner's direction (2026-09-05), same treatment as the
+  // internal-medicine scores. Still triple-gated at runtime; formal governance review still
+  // due — see reviewDueAt.
+  status: "active",
+  clinicalOwner: "General Surgery unit (pilot activation 2026-09-05; formal review pending)",
   sourceReferences: [
     { label: "TG18 diagnosis & severity", citation: "Yokoe M et al. J Hepatobiliary Pancreat Sci 2018;25:41–54." },
     { label: "TG18 initial management", citation: "Miura F et al. J Hepatobiliary Pancreat Sci 2018;25:31–40." },

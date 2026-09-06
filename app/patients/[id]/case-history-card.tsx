@@ -6,6 +6,7 @@ export function formatList(items: string[]): string {
   return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 }
 import { summariseObjective, type WardRanges } from "@/lib/exam-summary";
+import type { EtiologyKey, ImagingSummary } from "@/lib/imaging-summary";
 import type { Observation } from "@/lib/patient-state";
 
 /**
@@ -20,10 +21,12 @@ export function CaseHistoryCard({
   observations,
   sex,
   wardRanges,
+  etiology = null,
 }: {
   observations: Observation[];
   sex: string | null;
   wardRanges: WardRanges;
+  etiology?: EtiologyKey | null;
 }) {
   const { sections, other } = summariseCaseHistory(observations);
 
@@ -40,7 +43,7 @@ export function CaseHistoryCard({
       refHigh: o.ref_high,
       refText: o.ref_text,
     })),
-    { sex, wardRanges }
+    { sex, wardRanges, etiology }
   );
 
   return (
@@ -114,6 +117,8 @@ export function ObjectiveSummaryView({
     !summary.piccle &&
     summary.findings.length === 0 &&
     summary.labs.length === 0 &&
+    summary.keyLabs.length === 0 &&
+    !summary.imaging &&
     summary.normalLabCount === 0 &&
     summary.normalCount === 0;
 
@@ -162,6 +167,34 @@ export function ObjectiveSummaryView({
         </p>
       ))}
 
+      {/* In-range bloods on the watch-list for this patient's problem — folded by default. The
+          abnormal ones above are the reason anyone reads this card; a whole in-range panel
+          (LFTs, lipids…) here just to watch one trend was burying them. The full picture, every
+          report, is always in Investigations — this fold is a shortcut, not the only way in. */}
+      {summary.keyLabs.length > 0 && (
+        <details className="mt-1 [&[open]_.watch-chev]:rotate-90">
+          <summary className="flex cursor-pointer list-none items-center gap-1.5 text-[13px] text-muted active:opacity-60 [&::-webkit-details-marker]:hidden">
+            <span className="watch-chev text-[10px] transition-transform">▶</span>
+            {summary.keyLabs.length} in-range result{summary.keyLabs.length === 1 ? "" : "s"} on the watch-list
+          </summary>
+          {summary.keyLabs.map((l) => (
+            <p key={l.id} className="mt-1">
+              <span className="text-muted">{l.label}</span>{" "}
+              <span className="font-medium tabular-nums">{l.value}</span>
+              {l.range && (
+                <span className="ml-1 text-[13px] text-muted">
+                  ({l.range}
+                  {l.source === "builtin" ? " typical" : ""})
+                </span>
+              )}
+              {l.when && <span className="ml-1 text-[13px] text-muted">· {l.when}</span>}
+            </p>
+          ))}
+        </details>
+      )}
+
+      {summary.imaging && <ImagingReport imaging={summary.imaging} />}
+
       {summary.normalLabCount > 0 && (
         <p className="mt-1 text-[13px] text-muted">
           {summary.normalLabCount} other blood{" "}
@@ -193,6 +226,51 @@ export function ObjectiveSummaryView({
         <p className="mt-1.5 text-[13px] text-muted">
           {outstanding.join(", ").replace(/^./, (c) => c.toUpperCase())} — NAD
         </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * A radiology report shown the way it gets read on a round: the impression, then the organs
+ * that bear on this patient's problem, then a fold that carries the whole study verbatim. The
+ * fold is always there when anything was tucked into it — a shorter face never costs the reader
+ * a line of the report, the same rule the raw transcript is kept under.
+ */
+function ImagingReport({ imaging }: { imaging: ImagingSummary }) {
+  const line = (r: { id: string; label: string; value: string }) => (
+    <p key={r.id} className="mt-1">
+      <span className="text-muted">{r.label}</span>{" "}
+      <span className="font-medium">{r.value}</span>
+    </p>
+  );
+
+  return (
+    <div className="mt-1.5">
+      {imaging.impression ? (
+        <p className="mt-1">
+          <span className="text-muted">
+            {imaging.modality ?? "Imaging"} — impression
+          </span>{" "}
+          <span className="font-medium">{imaging.impression.value}</span>
+        </p>
+      ) : (
+        imaging.modality && (
+          <p className="mt-1 text-[13px] text-muted">{imaging.modality}</p>
+        )
+      )}
+
+      {imaging.key.map(line)}
+
+      {imaging.hidden.length > 0 && (
+        <details className="mt-1 [&[open]_.rep-chev]:rotate-90">
+          <summary className="flex cursor-pointer list-none items-center gap-1.5 text-[13px] text-muted active:opacity-60 [&::-webkit-details-marker]:hidden">
+            <span className="rep-chev text-[10px] transition-transform">▶</span>
+            Full {imaging.modality ?? "report"} · {imaging.hidden.length} more{" "}
+            {imaging.hidden.length === 1 ? "line" : "lines"}
+          </summary>
+          <div className="mt-0.5">{imaging.all.map(line)}</div>
+        </details>
       )}
     </div>
   );

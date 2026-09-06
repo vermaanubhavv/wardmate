@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { readAdmissionPaper } from "@/lib/read-admission-paper";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentWard, getWardSpecialtyStored } from "@/lib/ward";
 
 const ALLOWED = ["image/jpeg", "image/png", "image/webp"] as const;
 const MAX_BYTES = 12 * 1024 * 1024;
@@ -30,10 +31,17 @@ export async function POST(request: Request) {
     );
   }
 
+  // The unit's department. It changes only what the paper is expected to carry — an oncology
+  // day-care sheet prints a regimen and a cycle where an admission sheet prints an operation —
+  // never a rule about what may be returned.
+  const { ward } = await getCurrentWard();
+  const specialty = ward ? await getWardSpecialtyStored(ward.id) : null;
+
   try {
     const result = await readAdmissionPaper(
       Buffer.from(await paper.arrayBuffer()).toString("base64"),
-      mediaType
+      mediaType,
+      specialty
     );
     return NextResponse.json({ patient: result.patient });
   } catch (error) {

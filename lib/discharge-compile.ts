@@ -16,7 +16,9 @@ import {
   type HistopathologySpecimen,
   type Procedure,
 } from "@/lib/discharge-entities";
-import { matchDischargeTemplate, type DischargeTemplate } from "@/lib/discharge-templates";
+import { type DischargeTemplate } from "@/lib/discharge-templates";
+import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { matchDischargeTemplateFor } from "@/lib/specialty/discharge";
 
 /**
  * Compile a PROPOSED discharge draft from what is already on the record.
@@ -471,7 +473,14 @@ export function applyDischargeTemplate(
 
 export function compileDischargeDraft(
   context: DischargeContext,
-  options?: { template?: DischargeTemplate | null; seedAll?: boolean }
+  options?: {
+    template?: DischargeTemplate | null;
+    seedAll?: boolean;
+    /** The unit's specialty pack, which decides WHICH set of templates a vague diagnosis is
+     *  matched against. Defaults to general surgery, so a caller that has not been given one
+     *  behaves exactly as this function always did. */
+    pack?: SpecialtyPack;
+  }
 ): DischargeDraft {
   const { patient, doctor, wardName, wardConsultant } = context;
 
@@ -519,7 +528,7 @@ export function compileDischargeDraft(
   // record.
   const template =
     options?.template ??
-    matchDischargeTemplate({
+    matchDischargeTemplateFor(options?.pack ?? generalSurgeryPack, {
       procedureText: context.procedure ?? patient.procedure_text,
       diagnosisText: base.diagnoses.find((d) => d.category === "primary")?.text,
       templateFamily: patient.template_family,

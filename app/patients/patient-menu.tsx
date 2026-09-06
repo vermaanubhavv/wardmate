@@ -22,6 +22,9 @@ type Patient = {
   procedure_text: string | null;
   template_family: string | null;
   template_variant: string | null;
+  regimen?: string | null;
+  cycle_number?: number | null;
+  cycle_started_on?: string | null;
   entry_count?: number;
 };
 
@@ -37,9 +40,13 @@ type TemplateChoice = { family: string; variant: string | null; label: string };
 export default function PatientMenu({
   patient,
   templateChoices,
+  specialty,
 }: {
   patient: Patient;
   templateChoices: TemplateChoice[];
+  /** The unit's department — passed straight through to the edit dialog, which shows the
+   *  chemotherapy fields only on an oncology unit. */
+  specialty?: string;
 }) {
   const patientName = stripPatientHonorific(patient.display_name);
   const [open, setOpen] = useState(false);
@@ -188,6 +195,7 @@ export default function PatientMenu({
       <EditIdentity
         patient={patient}
         templateChoices={templateChoices}
+        specialty={specialty}
         openSignal={editSignal}
         hideTrigger
       />

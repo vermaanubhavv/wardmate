@@ -1,7 +1,13 @@
 import Link from "next/link";
 import OneOff from "./one-off";
+import { getCurrentWard, getWardSpecialtyStored } from "@/lib/ward";
+import { getSpecialtyPack } from "@/lib/specialty";
 
-export default function OneOffPage() {
+export default async function OneOffPage() {
+  // The unit's own template set — an oncology unit picks from oncology templates.
+  const { ward } = await getCurrentWard();
+  const pack = getSpecialtyPack(ward ? await getWardSpecialtyStored(ward.id) : null);
+
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-6 pb-16 pt-8 print:max-w-none print:px-0">
       <div className="print:hidden">
@@ -16,7 +22,7 @@ export default function OneOffPage() {
       </div>
 
       <div className="mt-6">
-        <OneOff />
+        <OneOff specialty={pack.key} />
       </div>
     </div>
   );

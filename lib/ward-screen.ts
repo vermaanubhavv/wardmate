@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { compareBeds, type WardPatient } from "@/lib/patients";
-import { getCurrentWard, getActivePatients, getRemovedCount } from "@/lib/ward";
+import { getCurrentWard, getActivePatients, getRemovedCount, getWardSpecialtyStored } from "@/lib/ward";
 import { getProcedureLabels, listTemplateChoices, type TemplateChoice } from "@/lib/templates";
+import { getSpecialtyPack, type SpecialtyPack } from "@/lib/specialty";
 
 export type Ward = {
   id: string;
@@ -9,10 +10,15 @@ export type Ward = {
   owner_id: string;
   join_code: string;
   letterhead: string | null;
+  /** Which department this unit is — see lib/specialty/. Optional because patch 0060 may not
+   *  have run yet; getSpecialtyPack() reads undefined as general surgery. */
+  specialty?: string | null;
 };
 
 export type WardScreen = {
   ward: Ward | null;
+  /** The unit's specialty pack, resolved once here so every screen reads the same one. */
+  pack: SpecialtyPack;
   patients: WardPatient[];
   removedCount: number;
   templateChoices: TemplateChoice[];
@@ -26,21 +32,29 @@ type RpcShape = {
   ward: Ward | null;
   patients: (WardPatient & Record<string, unknown>)[];
   removed_count: number;
-  procedures: { family: string; variant: string | null; name: string }[];
+  procedures: { family: string; variant: string | null; name: string; phase?: string }[];
 };
 
-/** "Lap chole — after surgery" is the template's name; the choice is the operation itself. */
-function toChoices(rows: RpcShape["procedures"]): TemplateChoice[] {
+/**
+ * "Lap chole — after surgery" is the template's name; the choice is the operation itself.
+ *
+ * `phase` filters to the rows this unit's department actually uses. It is optional because a
+ * database still on the pre-0060 ward_screen() returns rows without it — those are already
+ * only the after-surgery ones, which is exactly what a surgical unit wants, so an absent
+ * phase is kept rather than discarded.
+ */
+function toChoices(rows: RpcShape["procedures"], phase: string): TemplateChoice[] {
   const seen = new Set<string>();
   const out: TemplateChoice[] = [];
   for (const t of rows ?? []) {
+    if (t.phase && t.phase !== phase) continue;
     const key = `${t.family}|${t.variant ?? ""}`;
     if (seen.has(key)) continue;
     seen.add(key);
     out.push({
       family: t.family,
       variant: t.variant,
-      label: t.name.replace(/\s+—\s+after surgery$/i, ""),
+      label: t.name.replace(/\s+—\s+(after|before) surgery$/i, ""),
     });
   }
   return out;
@@ -68,10 +82,12 @@ export async function getWardScreen(): Promise<WardScreen> {
 
   if (!error && data) {
     const payload = data as RpcShape;
-    const choices = toChoices(payload.procedures ?? []);
+    const pack = getSpecialtyPack(payload.ward?.specialty);
+    const choices = toChoices(payload.procedures ?? [], pack.pickerPhase);
 
     return {
       ward: payload.ward,
+      pack,
       // Sorted here, not in SQL: beds run SW-2, SW-10, and Postgres would order them as text.
       patients: (payload.patients ?? []).slice().sort((a, b) => compareBeds(a.bed, b.bed)),
       removedCount: payload.removed_count ?? 0,
@@ -87,6 +103,7 @@ export async function getWardScreen(): Promise<WardScreen> {
   if (wardError || !ward) {
     return {
       ward: null,
+      pack: getSpecialtyPack(null),
       patients: [],
       removedCount: 0,
       templateChoices: [],
@@ -96,15 +113,22 @@ export async function getWardScreen(): Promise<WardScreen> {
     };
   }
 
+  // The specialty is read separately, and guarded: naming a column PostgREST does not know
+  // about rejects the WHOLE select, so a unit whose database has not had patch 0060 would
+  // lose its patient list rather than just its specialty. See getWardConsultantStored.
+  const specialty = await getWardSpecialtyStored(ward.id);
+  const pack = getSpecialtyPack(specialty);
+
   const [{ patients }, procedures, templateChoices, removedCount] = await Promise.all([
-    getActivePatients(ward.id),
+    getActivePatients(ward.id, pack.key !== "general_surgery"),
     getProcedureLabels(),
-    listTemplateChoices(),
+    listTemplateChoices(pack.pickerPhase),
     getRemovedCount(ward.id),
   ]);
 
   return {
-    ward: ward as Ward,
+    ward: { ...(ward as Ward), specialty },
+    pack,
     patients,
     removedCount,
     templateChoices,

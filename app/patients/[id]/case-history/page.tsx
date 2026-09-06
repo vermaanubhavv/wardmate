@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { stripPatientHonorific } from "@/lib/patients";
 import { getWardLabRanges } from "@/lib/ward-lab-ranges";
+import { getWardSpecialtyStored } from "@/lib/ward";
+import { getSpecialtyPack } from "@/lib/specialty";
 import type { Observation } from "@/lib/patient-state";
 import CaseHistoryWorkspace, { type WorkspaceObs } from "./case-history-workspace";
 
@@ -29,7 +31,7 @@ export default async function CaseHistoryWorkspacePage({
     .maybeSingle();
   if (!patient) notFound();
 
-  const [{ data: entriesData }, wardRanges] = await Promise.all([
+  const [{ data: entriesData }, wardRanges, specialty] = await Promise.all([
     supabase
       .from("entries")
       .select(
@@ -39,6 +41,7 @@ export default async function CaseHistoryWorkspacePage({
       .eq("is_case_history", true)
       .order("recorded_at", { ascending: true }),
     getWardLabRanges(patient.ward_id),
+    getWardSpecialtyStored(patient.ward_id),
   ]);
 
   const fullObservations = ((entriesData ?? []) as unknown as { observations: Observation[] }[]).flatMap(
@@ -78,6 +81,7 @@ export default async function CaseHistoryWorkspacePage({
         observations={observations}
         fullObservations={fullObservations}
         rangeEntries={rangeEntries}
+        specialty={getSpecialtyPack(specialty).key}
       />
     </div>
   );

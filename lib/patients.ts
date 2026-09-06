@@ -1,3 +1,5 @@
+import { generalSurgeryPack, type DayCountPatient, type SpecialtyPack } from "@/lib/specialty";
+
 export type WardPatient = {
   id: string;
   display_name: string;
@@ -14,6 +16,12 @@ export type WardPatient = {
   planned_surgery_date: string | null;
   post_op_day: number | null;
   admission_day: number;
+  /** Chemotherapy: the regimen as the unit names it, which cycle, and the day within it
+   *  (1-based). Null on every surgical patient and on an oncology patient not on an active
+   *  cycle. See supabase/patches/0060_specialty_packs.sql. */
+  regimen?: string | null;
+  cycle_number?: number | null;
+  cycle_day?: number | null;
   last_entry_at: string | null;
   template_family: string | null;
   template_variant: string | null;
@@ -220,16 +228,19 @@ export function patientName(p: {
 }
 
 /**
- * How the day is described on a card. Operated patients are counted from the operation,
- * everyone else from admission — and the label always says which, because "day 3" meaning
- * two different things on two adjacent beds is exactly the ambiguity this app should remove.
+ * How the day is described on a card.
+ *
+ * WHICH CLOCK IS THE UNIT'S DECISION, not this function's. A surgical unit counts from the
+ * operation, an oncology unit from the chemotherapy cycle, and everyone falls back to the
+ * admission day — the rule lives in that unit's pack (lib/specialty/). The label always says
+ * which clock it is, because "day 3" meaning two different things on two adjacent beds is
+ * exactly the ambiguity this app exists to remove.
+ *
+ * The pack defaults to general surgery, so a caller that has not been given one behaves
+ * exactly as this function always did.
  */
-export function dayLabel(p: {
-  post_op_day: number | null;
-  admission_day: number;
-}): string {
-  if (p.post_op_day !== null) return `POD ${p.post_op_day}`;
-  return `Day ${p.admission_day}`;
+export function dayLabel(p: DayCountPatient, pack: SpecialtyPack = generalSurgeryPack): string {
+  return pack.dayCount(p).text;
 }
 
 /**

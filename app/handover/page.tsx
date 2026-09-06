@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCurrentWard } from "@/lib/ward";
 import { dayLabel, managementLabel, patientName } from "@/lib/patients";
 import { getWardHandover, formatHandoverText, type HandoverPatient } from "@/lib/handover";
+import type { SpecialtyPack } from "@/lib/specialty";
 import CopyHandoverButton from "./copy-button";
 import BottomBar from "../bottom-bar";
 
@@ -40,7 +41,9 @@ export default async function HandoverPage() {
             No active patients on this ward.
           </p>
         ) : (
-          handover.patients.map((p) => <PatientSummary key={p.id} patient={p} />)
+          handover.patients.map((p) => (
+            <PatientSummary key={p.id} patient={p} pack={handover.pack} />
+          ))
         )}
       </section>
 
@@ -51,7 +54,7 @@ export default async function HandoverPage() {
   );
 }
 
-function PatientSummary({ patient }: { patient: HandoverPatient }) {
+function PatientSummary({ patient, pack }: { patient: HandoverPatient; pack: SpecialtyPack }) {
   const { openTasks, pending, missing } = patient.state;
   const clear = openTasks.length === 0 && pending.length === 0 && missing.length === 0;
   const management = managementLabel(patient);
@@ -72,7 +75,7 @@ function PatientSummary({ patient }: { patient: HandoverPatient }) {
         </div>
         {/* Same pairing as the ward list, so the two screens read identically. */}
         <p className="mt-0.5 text-[15px] text-muted truncate">
-          <span className="text-foreground tabular-nums">{dayLabel(patient)}</span>
+          <span className="text-foreground tabular-nums">{dayLabel(patient, pack)}</span>
           {patient.procedure && <span className="text-foreground"> {patient.procedure}</span>}
           {" · "}
           {patient.primary_diagnosis || "No diagnosis recorded"}
