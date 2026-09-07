@@ -1,45 +1,83 @@
 import { classifyVital } from "@/lib/vital-ranges";
-import { classifyLab, canonicalLabName, type SuppliedRange } from "@/lib/lab-ranges";
-import type { WardRanges } from "@/lib/exam-summary";
+import { canonicalLabName } from "@/lib/lab-ranges";
 import type { WardPatient } from "@/lib/patients";
 
-export type WardFlag = { label: string; value: string; direction: "high" | "low" | "abnormal" };
+export type WardFlag = { label: string; value: string; reason: string };
 
 /**
- * The single worst flagged reading on a patient's latest vitals and most recent labs, for the
- * ward list. Reuses classifyVital and classifyLab exactly as the patient page does — no second
- * opinion about what counts as deranged lives here, because a list that disagreed with the page
- * underneath it would be worse than no list at all.
+ * The one genuinely critical finding on a patient's latest vitals and most recent bloods, for
+ * the ward list's "Critical" chip and filter.
  *
- * SpO2 leads the priority order deliberately: a resident scanning a ward of twenty during a
- * round should see hypoxia before a mildly abnormal potassium, even though both would flag.
- * Everything else keeps whatever order it was recorded or matched in — this is triage of what
- * to show first, not a ranking of clinical severity beyond that one deliberate choice.
+ * This is NOT "anything out of range". A mildly raised SGPT, an eosinophil count of 0.35, a
+ * pulse of 108 — all abnormal, none critical, none belong on this list. The bar here is
+ * deliberately high and fixed by absolute clinical thresholds, not by how far a number sits
+ * from a lab's reference band:
+ *
+ *   • On vasopressor / inotrope support   (read from the management text — best effort)
+ *   • Hypotension        — systolic BP < 90
+ *   • Tachycardia        — pulse > 120
+ *   • Severe leucocytosis — TLC / WBC > 16,000
+ *   • Severe thrombocytopenia — platelets < 50,000
+ *   • Severe anaemia     — haemoglobin < 5
+ *
+ * Nothing else. Every other abnormal result still shows on the patient's own page with its
+ * range; it just does not raise the ward alarm. The value carried in the chip is exactly the
+ * value recorded — never a diagnosis about it.
+ *
+ * Checked worst-first so the single chip shows the most pressing thing when more than one
+ * applies.
  */
-const PRIORITY = ["SpO₂", "Systolic", "Diastolic", "PR", "RR", "Temp"];
 
-export function worstFlag(patient: WardPatient, wardRanges: WardRanges): WardFlag | null {
-  const vitalFlags = (patient.vitals ?? [])
-    .flatMap((v) => classifyVital(v.label, v.value_text))
-    .filter((c) => c.flag);
+const VASOPRESSOR =
+  /\b(nor-?ad(renaline)?|norepinephrine|adrenaline|epinephrine|vasopressin|dopamine|dobutamine|phenylephrine|metaraminol|milrinone|(vaso|iono|ino)trop\w*|vasopressor\w*)\b/i;
 
-  if (vitalFlags.length > 0) {
-    vitalFlags.sort((a, b) => PRIORITY.indexOf(a.label) - PRIORITY.indexOf(b.label));
-    const f = vitalFlags[0];
-    return { label: f.label, value: f.value, direction: f.flag! };
+function num(s: string | null | undefined): number | null {
+  if (!s) return null;
+  const m = s.match(/-?\d+(?:\.\d+)?/);
+  if (!m) return null;
+  const n = Number(m[0]);
+  return Number.isFinite(n) ? n : null;
+}
+
+export function criticalFlag(patient: WardPatient): WardFlag | null {
+  // Vitals — hard numbers, checked first.
+  for (const v of patient.vitals ?? []) {
+    for (const c of classifyVital(v.label, v.value_text)) {
+      const n = num(c.value);
+      if (n === null) continue;
+      if (c.label === "Systolic" && n < 90) {
+        return { label: "BP", value: (v.value_text ?? c.value).trim(), reason: "hypotension" };
+      }
+      if (c.label === "PR" && n > 120) {
+        return { label: "PR", value: String(n), reason: "tachycardia" };
+      }
+    }
   }
 
-  for (const l of patient.labs ?? []) {
-    const supplied: SuppliedRange | null =
-      l.ref_low !== null || l.ref_high !== null
-        ? { low: l.ref_low, high: l.ref_high, text: l.ref_text, source: "report" }
-        : (() => {
-            const w = wardRanges.get(canonicalLabName(l.label));
-            return w && (w.low !== null || w.high !== null) ? { ...w, source: "ward" } : null;
-          })();
+  // Vasopressor / inotrope support, if the management line records it.
+  if (patient.management && VASOPRESSOR.test(patient.management)) {
+    return { label: "On vasopressor", value: "", reason: "vasopressor support" };
+  }
 
-    const reading = classifyLab(l.label, l.value_text, patient.sex, supplied);
-    if (reading?.flag) return { label: reading.label, value: reading.value, direction: reading.flag };
+  // Bloods — CBC only, absolute thresholds, scale-tolerant (a total count is written "16200"
+  // on one report and "16.2" on the next; platelets as "45000", "45" or "0.45").
+  for (const l of patient.labs ?? []) {
+    const name = canonicalLabName(l.label);
+    const n = num(l.value_text);
+    if (n === null) continue;
+    const value = (l.value_text ?? "").trim();
+
+    if (name === "Hb" && n < 5) {
+      return { label: "Hb", value, reason: "severe anaemia" };
+    }
+    if (name === "TLC") {
+      const wbc = n < 1000 ? n * 1000 : n;
+      if (wbc > 16000) return { label: "TLC", value, reason: "leucocytosis" };
+    }
+    if (name === "Platelets") {
+      const plt = n < 10 ? n * 100000 : n < 1000 ? n * 1000 : n;
+      if (plt < 50000) return { label: "Platelets", value, reason: "severe thrombocytopenia" };
+    }
   }
 
   return null;

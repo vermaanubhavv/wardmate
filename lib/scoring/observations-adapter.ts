@@ -89,6 +89,9 @@ const ANALYTES: AnalyteSpec[] = [
   { key: "albumin", aliases: /\b(serum albumin|s\.?\s?albumin|albumin)\b/i, unitAnalyte: null },
   { key: "neutrophil_percent", aliases: /\b(neutrophils?|polymorphs?|neutrophil %|anc %|n%)\b/i, unitAnalyte: null },
   { key: "hb", aliases: /\b(h(a)?emoglobin|hb%?|hgb)\b/i, unitAnalyte: null },
+  { key: "sodium", aliases: /\b(sodium|s\.?\s?na\b|serum sodium|na\+?)\b/i, unitAnalyte: null },
+  { key: "potassium", aliases: /\b(potassium|s\.?\s?k\b|serum potassium|k\+?)\b/i, unitAnalyte: null },
+  { key: "lactate", aliases: /\b(lactate|serum lactate|blood lactate|lactic acid)\b/i, unitAnalyte: null },
 ];
 
 const IMAGING = /\b(x-?ray|cxr|chest film|ct\b|ct scan|cect|usg|ultrasound|sonograph|imaging|radiograph)\b/i;

@@ -40,6 +40,7 @@ const VALID_SELECTORS = [
 ];
 const VALID_CALC_KINDS = [
   "sum_points",
+  "max_points",
   "sirs",
   "modified_marshall",
   "revised_atlanta",

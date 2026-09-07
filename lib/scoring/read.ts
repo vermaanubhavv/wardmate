@@ -44,10 +44,14 @@ export type ScoreCardView = {
 };
 
 function cardMeta(def: CardDefinition) {
+  const perInputMax = (i: CardDefinition["inputs"][number]) =>
+    Math.max(i.points, ...(i.bands?.map((b) => b.points) ?? []), ...(i.assess?.options.map((o) => o.points ?? i.points) ?? [i.points]));
   const maxPoints =
     def.calculation.kind === "sum_points"
-      ? def.inputs.reduce((s, i) => s + Math.max(i.points, ...(i.assess?.options.map((o) => o.points ?? i.points) ?? [i.points])), 0)
-      : null;
+      ? def.inputs.reduce((s, i) => s + perInputMax(i), 0)
+      : def.calculation.kind === "max_points"
+        ? Math.max(0, ...def.inputs.map(perInputMax))
+        : null;
   const assessable: ScoreAssess[] = def.inputs
     .filter((i) => i.clinicianAssessed && i.assess)
     .map((i) => ({

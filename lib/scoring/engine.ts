@@ -416,16 +416,20 @@ export function evaluateCard(card: CardDefinition, ctx: EvaluateContext): CardRe
   // *provisional* total when the only gaps are clinician assessments (objective data complete).
   let provisionalTotal: number | null = null;
   let assumedComponentIds: string[] = [];
-  if (card.calculation.kind === "sum_points") {
+  if (card.calculation.kind === "sum_points" || card.calculation.kind === "max_points") {
+    const combine = (cs: ComponentResult[]) =>
+      card.calculation.kind === "max_points"
+        ? cs.reduce((m, c) => Math.max(m, c.points), 0)
+        : cs.reduce((s, c) => s + c.points, 0);
     const anyKnown = components.some((c) => c.status === "satisfied" || c.status === "not_satisfied");
-    total = anyKnown && missingRequired.length === 0 ? components.reduce((s, c) => s + c.points, 0) : null;
+    total = anyKnown && missingRequired.length === 0 ? combine(components) : null;
 
     const assessedDefIds = new Set(card.inputs.filter((i) => i.clinicianAssessed).map((i) => i.componentId));
     const objectiveUnknown = missingRequired.filter((c) => !assessedDefIds.has(c.componentId));
     const pendingAssessments = missingRequired.filter((c) => assessedDefIds.has(c.componentId));
     if (objectiveUnknown.length === 0 && pendingAssessments.length > 0) {
       // Unknown criteria contribute 0 points — the assumption, shown not stored.
-      provisionalTotal = components.reduce((s, c) => s + c.points, 0);
+      provisionalTotal = combine(components);
       assumedComponentIds = pendingAssessments.map((c) => c.componentId);
     }
   }

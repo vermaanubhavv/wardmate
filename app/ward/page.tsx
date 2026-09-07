@@ -20,9 +20,8 @@ import BottomBar from "../bottom-bar";
 import Wordmark from "../wordmark";
 import Mark from "../mark";
 import { createClient } from "@/lib/supabase/server";
-import { getWardLabRanges } from "@/lib/ward-lab-ranges";
 import { countWardPendingConfirmations } from "@/lib/confirm-queue";
-import { worstFlag, type WardFlag } from "@/lib/ward-flags";
+import { criticalFlag, type WardFlag } from "@/lib/ward-flags";
 
 export default async function Home({
   searchParams,
@@ -55,12 +54,9 @@ export default async function Home({
 
   if (!wardError && !ward) redirect("/onboarding");
 
-  // Only once the ward resolved: this is one more round trip, worth it only when there is a
-  // ward to flag patients against.
-  const wardRanges = ward ? await getWardLabRanges(ward.id) : new Map();
   const pendingConfirmCount = ward ? await countWardPendingConfirmations(ward.id) : 0;
   const flags = new Map<string, WardFlag | null>(
-    patients.map((p) => [p.id, worstFlag(p, wardRanges)])
+    patients.map((p) => [p.id, criticalFlag(p)])
   );
   const criticalCount = [...flags.values()].filter(Boolean).length;
   const visiblePatients = showCriticalOnly ? patients.filter((p) => flags.get(p.id)) : patients;
@@ -284,7 +280,7 @@ function PatientRow({
   pack,
 }: {
   patient: WardPatient;
-  /** The single worst flagged vital or lab on this patient, if any — see lib/ward-flags.ts. */
+  /** The one genuinely critical vital or blood result on this patient, if any — see lib/ward-flags.ts. */
   flag: WardFlag | null;
   procedures: Map<string, string>;
   templateChoices: { family: string; variant: string | null; label: string }[];
@@ -332,12 +328,13 @@ function PatientRow({
             // Management is deliberately NOT here. "POST OP" only repeats the POD count already
             // on the line above, and a management label is a standing fact about the patient
             // rather than something the ward list needs to shout — it lives on their own page.
-            // A flagged vital or lab now leads this chain: on a round, a critical reading
-            // outranks an unconfirmed transcription every time. It carries the actual value,
-            // not a count, because "SpO2 77" tells a resident something a bare "1 critical"
-            // does not — and it is exactly the reading recorded, never a diagnosis about it.
+            // A critical reading leads this chain: on a round it outranks an unconfirmed
+            // transcription every time. It carries the actual value, not a count, because
+            // "BP 84/50" tells a resident something a bare "1 critical" does not — and it is
+            // exactly the reading recorded, never a diagnosis about it. See lib/ward-flags.ts
+            // for exactly what counts as critical (it is a short, fixed list).
             const chip = flag
-              ? { text: `${flag.label} ${flag.value}`, tone: "critical" as const }
+              ? { text: [flag.label, flag.value].filter(Boolean).join(" "), tone: "critical" as const }
               : patient.unconfirmed_count > 0
                 ? { text: `${patient.unconfirmed_count} to confirm`, tone: "warn" as const }
                 : patient.open_task_count > 0

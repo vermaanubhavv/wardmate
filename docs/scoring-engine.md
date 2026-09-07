@@ -241,6 +241,13 @@ heart-rate criterion is a clinician tap rather than auto-read from vitals.
 
 A new pathway still starts `status: "draft"` and needs the same sign-off before activation.
 
+**Batch 2 (2026-09-07, `draft`, not yet in any pack):** Mannheim Peritonitis Index
+(`perforation_peritonitis`), LRINEC (`nsti` — every band `attention`, low score reads "does
+not exclude"), HEART (`heart_score`), CIWA-Ar (`ciwa_ar`), Child-Pugh (`child_pugh`), KDIGO AKI
+stage (`kdigo_aki`). Registered for validation + tests only; each is absent from every
+`scoringKeys` list, so it cannot trigger for any unit until it is reviewed and the `pathwayId`
+is added to the relevant pack. New engine kind `max_points` (KDIGO stage = worst sub-score).
+
 Licensing review required before enabling: **AJCC TNM, AIS/ISS, BI-RADS, ACR TI-RADS**, and any
 third-party calculator text/logo (`skeletons.ts` → `licensingReview: true`).
 

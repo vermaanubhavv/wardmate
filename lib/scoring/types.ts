@@ -312,6 +312,9 @@ export type ComponentInput = {
 
 export type CardCalculation =
   | { kind: "sum_points" }
+  /** The card total is the HIGHEST sub-score, not the sum — KDIGO AKI stage, where the stage
+   *  is the worst of the creatinine, urine-output and RRT criteria, never their total. */
+  | { kind: "max_points" }
   | { kind: "sirs" }
   | { kind: "modified_marshall" }
   | { kind: "revised_atlanta" }

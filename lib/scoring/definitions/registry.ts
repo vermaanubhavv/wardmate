@@ -22,6 +22,12 @@ import { hasBledV1 } from "./has-bled.v1";
 import { wellsDvtV1 } from "./wells-dvt.v1";
 import { wellsPeV1 } from "./wells-pe.v1";
 import { dkaSeverityV1 } from "./dka-severity.v1";
+import { mannheimPeritonitisIndexV1 } from "./mannheim-peritonitis-index.v1";
+import { lrinecV1 } from "./lrinec.v1";
+import { heartScoreV1 } from "./heart-score.v1";
+import { ciwaArV1 } from "./ciwa-ar.v1";
+import { childPughV1 } from "./child-pugh.v1";
+import { kdigoAkiV1 } from "./kdigo-aki.v1";
 import { PATHWAY_SKELETONS } from "./skeletons";
 
 const BUILT_IN: PathwayDefinition[] = [
@@ -40,6 +46,15 @@ const BUILT_IN: PathwayDefinition[] = [
   wellsDvtV1,
   wellsPeV1,
   dkaSeverityV1,
+  // Batch 2 — `status: "draft"`, registered for validation + tests but NOT in any specialty
+  // pack's scoringKeys, so they cannot trigger for any unit until a clinician signs each off
+  // and the pathwayId is added to the relevant pack.
+  mannheimPeritonitisIndexV1, // perforation_peritonitis
+  lrinecV1, // nsti (with the mandatory low-score safeguard)
+  heartScoreV1, // heart_score — chest pain
+  ciwaArV1, // ciwa_ar — alcohol withdrawal
+  childPughV1, // child_pugh — chronic liver disease
+  kdigoAkiV1, // kdigo_aki — acute kidney injury
 ];
 
 // Fail fast in dev/test if a built-in definition is malformed.
