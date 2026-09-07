@@ -13,7 +13,9 @@ export type WardFlag = { label: string; value: string; reason: string };
  * deliberately high and fixed by absolute clinical thresholds, not by how far a number sits
  * from a lab's reference band:
  *
- *   • On vasopressor / inotrope support   (read from the management text — best effort)
+ *   • On the ICU / HDU  — any value in the Vitals card's "ICU / support" field
+ *   • On vasopressor / inotrope support   (fallback: read from the management text)
+ *   • Hypoxia            — SpO₂ < 90
  *   • Hypotension        — systolic BP < 90
  *   • Tachycardia        — pulse > 120
  *   • Severe leucocytosis — TLC / WBC > 16,000
@@ -39,12 +41,30 @@ function num(s: string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+const AFFIRMATIVE = /^(y|yes|on|true|✓|✔|present)$/i;
+
 export function criticalFlag(patient: WardPatient): WardFlag | null {
-  // Vitals — hard numbers, checked first.
+  // ICU / organ support — recorded in the Vitals card. Being sick enough to be on the unit is
+  // itself the flag; the value (e.g. "on noradrenaline 0.08") rides along in the chip.
+  for (const v of patient.vitals ?? []) {
+    if (v.label.trim().toLowerCase().replace(/\s+/g, " ") !== "icu") continue;
+    const support = (v.value_text ?? "").trim();
+    if (!support) continue;
+    return {
+      label: "ICU",
+      value: AFFIRMATIVE.test(support) ? "" : support,
+      reason: "on ICU / organ support",
+    };
+  }
+
+  // Vitals — hard numbers.
   for (const v of patient.vitals ?? []) {
     for (const c of classifyVital(v.label, v.value_text)) {
       const n = num(c.value);
       if (n === null) continue;
+      if (c.label === "SpO₂" && n < 90) {
+        return { label: "SpO₂", value: String(n), reason: "hypoxia" };
+      }
       if (c.label === "Systolic" && n < 90) {
         return { label: "BP", value: (v.value_text ?? c.value).trim(), reason: "hypotension" };
       }

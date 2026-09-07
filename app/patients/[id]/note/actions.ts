@@ -142,6 +142,61 @@ export async function replaceTodayNoteExam(
 }
 
 /**
+ * The Vitals card, written as ONE insert so every field shares a `recorded_at`.
+ *
+ * The ward screen's "latest vitals" (ward_screen RPC) keys off an exact `max(recorded_at)` for
+ * the patient's vital observations — so vitals split across even a few milliseconds would show
+ * only the last field there. Deleting per label keeps the old semantics (a voice-recorded vital
+ * today is still replaced by the card); only the insert is batched.
+ */
+export async function replaceTodayNoteVitals(
+  patientId: string,
+  entries: { label: string; value: string | null }[]
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient();
+  const user = await currentUser(supabase);
+  if (!user) return { ok: false, error: "Not signed in." };
+
+  const ids = await todayEntryIds(supabase, patientId);
+  if (ids.length) {
+    for (const e of entries) {
+      const { error } = await supabase
+        .from("observations")
+        .delete()
+        .eq("patient_id", patientId)
+        .in("entry_id", ids)
+        .ilike("label", e.label);
+      if (error) return { ok: false, error: error.message };
+    }
+  }
+
+  const clean = entries
+    .map((e) => ({ label: e.label, value: (e.value ?? "").trim() }))
+    .filter((e) => e.value);
+  if (clean.length) {
+    const entryId = await todayManualEntryId(supabase, patientId, user.id);
+    if (!entryId) return { ok: false, error: "Could not open today's note." };
+    const now = new Date().toISOString();
+    const { error } = await supabase.from("observations").insert(
+      clean.map((e) => ({
+        entry_id: entryId,
+        patient_id: patientId,
+        kind: "vital",
+        label: e.label,
+        value_text: e.value,
+        source_quote: e.value,
+        needs_confirmation: false,
+        confirmed_at: now,
+        confirmed_by: user.id,
+      }))
+    );
+    if (error) return { ok: false, error: error.message };
+  }
+  revalidateEverywhere(patientId);
+  return { ok: true };
+}
+
+/**
  * Replace the patient's active medication list with what the Medications card holds.
  *
  * Unlike the other lines, medications are a STANDING list — lib/progress-note.ts carries them

@@ -196,7 +196,11 @@ export function buildProgressNote(
       return text ? `${VITAL_HEADINGS[key]}: ${text}` : null;
     })
     .filter((line): line is string => line !== null);
-  const line5c = otherVitals.join("   ");
+  // ICU / organ support, if the Vitals card recorded it — a standing fact about how sick the
+  // patient is, printed with the rest of the chart rather than buried.
+  const icuObs = todaysObservations.find((o) => o.kind === "vital" && norm(o.label) === "icu");
+  const icuLine = icuObs?.value_text?.trim() ? `ICU: ${icuObs.value_text.trim()}` : null;
+  const line5c = [...otherVitals, icuLine].filter(Boolean).join("   ");
 
   // 6. P/Abdomen, said today — printed exactly as recorded, never normalised to "NAD" wording
   // that was not actually said. No trailing BLANK when empty: unlike a single-word field (a

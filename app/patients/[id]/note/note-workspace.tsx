@@ -16,6 +16,7 @@ import {
 } from "../card-kit";
 import {
   replaceTodayNoteSection,
+  replaceTodayNoteVitals,
   replaceTodayNoteExam,
   replaceActiveMedications,
   applyCompiledNote,
@@ -86,6 +87,9 @@ const VITALS: { key: string; label: string; ph: string }[] = [
   { key: "Temp", label: "Temp", ph: "Afebrile" },
   { key: "SpO2", label: "SpO₂", ph: "98% RA" },
   { key: "GRBS", label: "GRBS", ph: "—" },
+  // Anything here means the patient is on the ICU/HDU — it flags them Critical on the ward
+  // list. Free text so the resident can note the support ("on noradrenaline 0.08", "HFNC").
+  { key: "ICU", label: "ICU / support", ph: "e.g. on noradrenaline 0.08" },
 ];
 
 type StepId =
@@ -165,6 +169,7 @@ export default function NoteWorkspace({
     Temp: val(["temp", "temperature"]),
     SpO2: val(["spo2", "saturation", "oxygen saturation"]),
     GRBS: val(["grbs", "rbs", "cbg"]),
+    ICU: val(["icu", "icu / support", "support"]),
   }));
   const [abdomen, setAbdomen] = useState(() => val(["per abdomen", "abdomen", "p/a", "pa"]));
   const [chest, setChest] = useState(() => val(["chest", "respiratory system", "rs"]));
@@ -191,9 +196,9 @@ export default function NoteWorkspace({
     if (id === "complaints") res = await replaceTodayNoteSection(patientId, "complaints", "note", complaints ? [complaints] : []);
     else if (id === "sensorium") res = await replaceTodayNoteExam(patientId, [{ label: "sensorium", kind: "exam", value: sensorium || null }]);
     else if (id === "vitals")
-      res = await replaceTodayNoteExam(
+      res = await replaceTodayNoteVitals(
         patientId,
-        VITALS.map((v) => ({ label: v.key, kind: "vital" as const, value: vitals[v.key]?.trim() || null }))
+        VITALS.map((v) => ({ label: v.key, value: vitals[v.key]?.trim() || null }))
       );
     else if (id === "abdomen") res = await replaceTodayNoteExam(patientId, [{ label: "per abdomen", kind: "exam", value: abdomen || null }]);
     else if (id === "chest") res = await replaceTodayNoteExam(patientId, [{ label: "chest", kind: "exam", value: chest || null }]);
@@ -322,6 +327,7 @@ export default function NoteWorkspace({
                 Temp: yVal(["temp", "temperature"]),
                 SpO2: yVal(["spo2", "saturation", "oxygen saturation"]),
                 GRBS: yVal(["grbs", "rbs", "cbg"]),
+                ICU: yVal(["icu", "icu / support", "support"]),
               });
               mark("vitals");
             }}
