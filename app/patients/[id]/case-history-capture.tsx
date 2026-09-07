@@ -309,11 +309,11 @@ export default function CaseHistoryCapture({
           }
         >
           {recording ? (
-            <StopIcon className="h-[20px] w-[20px]" />
+            <StopIcon className="h-5 w-5 shrink-0" />
           ) : status === "working" ? (
-            <Mark className="h-[20px] w-[20px]" spinning />
+            <Mark className="h-5 w-5 shrink-0" spinning />
           ) : (
-            <MicIcon className="h-[20px] w-[20px]" />
+            <MicIcon className="h-5 w-5 shrink-0" />
           )}
           {recording
             ? "Stop and save"

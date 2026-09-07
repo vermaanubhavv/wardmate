@@ -199,7 +199,8 @@ export async function applyCompiledCaseHistory(
   if (!user) return { ok: false, error: "Not signed in." };
 
   const allowed = new Set([
-    "chief complaints",
+    // "chief complaints" excluded on purpose — the complaints list is structured (chips +
+    // durations) and a prose rewrite does not round-trip back into the Complaints card.
     "history of presenting illness",
     "past history",
     "family history",
@@ -402,14 +403,16 @@ export async function approveCaseHistoryDiagnosis(
 }
 
 /**
- * Approve the AI-proposed relevant (pertinent) negatives — stored as their own history
- * section so they print on the clerking sheet's first side and show on the patient page.
+ * Save the pertinent negatives — one short passage (1–2 sentences). Stored under its own
+ * label but rendered at the tail of the history of presenting illness (see lib/case-history.ts)
+ * and folded into the discharge Clinical Course, never as a section of its own.
  */
 export async function applyRelevantNegatives(
   patientId: string,
-  lines: string[]
+  text: string
 ): Promise<{ ok: boolean; error?: string }> {
-  return replaceCaseHistorySection(patientId, "relevant negatives", "note", lines);
+  const t = text.trim();
+  return replaceCaseHistorySection(patientId, "relevant negatives", "note", t ? [t] : []);
 }
 
 /**

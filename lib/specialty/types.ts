@@ -68,6 +68,14 @@ export type SpecialtyPack = {
     admissionNoun: string;
   };
 
+  /**
+   * How an admission under this unit is referred to when framing an AI prompt — e.g.
+   * "a general-surgery admission", "a medical oncology admission". Used by the case-history AI
+   * (diagnosis / plan / relevant negatives / compile) so its wording fits the department.
+   * `general_surgery` keeps the exact phrase the prompts were written with.
+   */
+  admissionPhrase: string;
+
   /** The day a patient is on. Never returns null — every patient has at least an admission day. */
   dayCount: (patient: DayCountPatient) => DayCount;
 

@@ -46,11 +46,12 @@ function durationToDays(raw: string): number {
   return n * 365;
 }
 
-/** Split a stored complaint / HOPI-key back into its bare name and its duration.
- *  Accepts "pain abdomen × 3 days", "pain abdomen x 3 days" and "pain abdomen - 3 days". */
+/** Split a stored complaint back into its bare name and duration. Only the canonical "<name> ×
+ *  <duration>" shape this file writes is recognised — a comma, a semicolon, or a long tail
+ *  means it is not a single "name × duration" and is returned untouched. */
 function splitDuration(stored: string): { name: string; duration: string } {
-  const m = stored.match(/^(.*?)\s*(?:[×x]|-)\s*([^×x]+?)\s*$/i);
-  if (m && durationToDays(m[2]) !== Number.POSITIVE_INFINITY) {
+  const m = stored.match(/^(.+?)\s*[×x]\s*([^,;×x]{1,24})$/);
+  if (m && m[1].trim() && durationToDays(m[2]) !== Number.POSITIVE_INFINITY) {
     return { name: m[1].trim(), duration: m[2].trim() };
   }
   return { name: stored.trim(), duration: "" };
@@ -335,6 +336,7 @@ type StepId =
   | "medication"
   | "surgical"
   | "obstetric"
+  | "negatives"
   | "onco_disease"
   | "onco_treatment"
   | "onco_cycle"
@@ -506,16 +508,20 @@ export default function CaseHistoryWorkspace({
       .filter(Boolean);
   }, [observations]);
   const seededNegatives = useMemo(
-    () => (bySection.relnegatives ?? []).map((o) => (o.value ?? "").trim()).filter(Boolean),
-    [bySection]
+    () =>
+      (
+        observations.find((o) => /^(relevant|pertinent) negatives?$/.test(o.label.toLowerCase().trim()))
+          ?.value ?? ""
+      ).trim(),
+    [observations]
   );
   const [diagnosis, setDiagnosis] = useState<{ text: string; differentials: string[]; uncertain: string[] }>({
     text: primaryDiagnosis ?? "",
     differentials: seededDifferentials,
     uncertain: [],
   });
-  const [negatives, setNegatives] = useState<{ items: string[]; uncertain: string[] }>({
-    items: seededNegatives,
+  const [negatives, setNegatives] = useState<{ text: string; uncertain: string[] }>({
+    text: seededNegatives,
     uncertain: [],
   });
   const [plan, setPlan] = useState<{ items: string[]; uncertain: string[] }>({ items: [], uncertain: [] });
@@ -524,9 +530,13 @@ export default function CaseHistoryWorkspace({
   // --- steps -------------------------------------------------------------------------
 
   const complaintList = complaints.length > 0 ? complaints : ["Presenting illness"];
+  // The pertinent-negatives card appears the moment a provisional diagnosis exists — the one
+  // the "add patient" card sets, or one generated later in this workspace.
+  const hasDiagnosisForNegatives = (primaryDiagnosis ?? "").trim().length > 0 || diagnosis.text.trim().length > 0;
   const STEPS: { id: StepId; title: string }[] = [
     { id: "complaints", title: "Complaints" },
     ...complaintList.map((c, i) => ({ id: `hopi` as StepId, title: `HOPI — ${c}`, _c: c, _i: i })),
+    ...(hasDiagnosisForNegatives ? [{ id: "negatives" as StepId, title: "Relevant negatives" }] : []),
     { id: "past", title: "Past history" },
     { id: "family", title: "Family history" },
     { id: "medication", title: "Medication history" },
@@ -591,6 +601,7 @@ export default function CaseHistoryWorkspace({
           .filter((c) => (hopi[c] ?? "").trim())
           .map((c) => `${c}: ${(hopiDur[c] ?? "").trim() ? `(${hopiDur[c].trim()}) ` : ""}${hopi[c].trim()}`)
       );
+    else if (id === "negatives") res = await applyRelevantNegatives(patientId, negatives.text);
     else if (id === "past") res = await replaceCaseHistorySection(patientId, "past history", "note", composeHistory(past));
     else if (id === "family") res = await replaceCaseHistorySection(patientId, "family history", "note", composeHistory(family));
     else if (id === "surgical") res = await replaceCaseHistorySection(patientId, "surgical history", "note", composeHistory(surgical));
@@ -668,6 +679,7 @@ export default function CaseHistoryWorkspace({
     }
     setStep(index);
     setMenuOpen(false);
+    maybeAutoDraftNegatives(index);
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   }
 
@@ -695,10 +707,8 @@ export default function CaseHistoryWorkspace({
           uncertain: data.uncertainPoints ?? [],
         }));
       } else if (section === "negatives") {
-        setNegatives({
-          items: Array.isArray(data.negatives) ? data.negatives.map(String) : [],
-          uncertain: data.uncertainPoints ?? [],
-        });
+        setNegatives({ text: String(data.text ?? ""), uncertain: data.uncertainPoints ?? [] });
+        if (String(data.text ?? "").trim()) mark("negatives");
       } else if (section === "plan") {
         setPlan({ items: Array.isArray(data.items) ? data.items : [], uncertain: data.uncertainPoints ?? [] });
       } else {
@@ -727,24 +737,18 @@ export default function CaseHistoryWorkspace({
     });
   }
 
-  function approve(section: "diagnosis" | "plan" | "negatives") {
+  function approve(section: "diagnosis" | "plan") {
     startTransition(async () => {
       const res =
         section === "diagnosis"
           ? await approveCaseHistoryDiagnosis(patientId, diagnosis.text, diagnosis.differentials)
-          : section === "negatives"
-            ? await applyRelevantNegatives(patientId, negatives.items)
-            : await approveCaseHistoryPlan(patientId, plan.items);
+          : await approveCaseHistoryPlan(patientId, plan.items);
       if (!res.ok) {
         setMessage(res.error ?? "Could not save.");
         return;
       }
       setMessage(
-        section === "diagnosis"
-          ? "Diagnosis and differentials saved."
-          : section === "negatives"
-            ? "Relevant negatives saved to the case history."
-            : "Plan added to the to-do list."
+        section === "diagnosis" ? "Diagnosis and differentials saved." : "Plan added to the to-do list."
       );
       router.refresh();
     });
@@ -766,6 +770,16 @@ export default function CaseHistoryWorkspace({
     void generate("compile");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current.id, compiled, generating, dirty.size, hasHistory]);
+
+  // Landing on the Relevant-negatives card with a diagnosis and nothing written yet drafts it
+  // once (kicked from goTo, not an effect). Manual "Rewrite with AI" covers re-runs.
+  const autoNegativesDone = useRef(false);
+  function maybeAutoDraftNegatives(index: number) {
+    if (STEPS[index]?.id !== "negatives" || autoNegativesDone.current) return;
+    if (generating || negatives.text.trim() || !hasDiagnosisForNegatives) return;
+    autoNegativesDone.current = true;
+    void generate("negatives");
+  }
 
   // --- card bodies ------------------------------------------------------------------
 
@@ -1233,47 +1247,39 @@ export default function CaseHistoryWorkspace({
             </button>
           </div>
 
+          <p className="text-[11px] leading-[1.4] text-muted">
+            The differential feeds the <span className="font-medium">Relevant negatives</span>{" "}
+            card near the top of the stack. Regenerate that card after editing this list.
+          </p>
+
           {diagnosis.text.trim() && (
             <button type="button" onClick={() => approve("diagnosis")} disabled={pending} className={approveBtn}>
               Approve — save diagnosis &amp; differentials
             </button>
           )}
+        </>
+      );
 
-          {diagnosis.text.trim() && (
-            <div className="mt-1 flex flex-col gap-2 rounded-[10px] border border-line bg-card p-3">
-              <p className="text-[12px] leading-[1.45] text-muted">
-                Relevant negatives — the pertinent negative history that supports the working
-                diagnosis and argues against each differential. The AI drafts them; you edit,
-                then approve to write them into the case history.
-              </p>
-              <button type="button" disabled={generating === "negatives"} onClick={() => generate("negatives")} className={genBtn}>
-                {generating === "negatives" ? "Generating…" : negatives.items.length ? "Regenerate relevant negatives" : "Generate relevant negatives"}
-              </button>
-              <UncertainList points={negatives.uncertain} />
-              {negatives.items.map((it, i) => (
-                <div key={i} className="flex gap-2">
-                  <input
-                    value={it}
-                    onChange={(e) => setNegatives({ ...negatives, items: negatives.items.map((x, j) => (j === i ? e.target.value : x)) })}
-                    className="h-10 flex-1 rounded-[10px] border border-line bg-card px-3 text-[14px] outline-none focus:border-accent"
-                  />
-                  <button type="button" onClick={() => setNegatives({ ...negatives, items: negatives.items.filter((_, j) => j !== i) })} className="shrink-0 px-2 text-[13px] text-muted">
-                    Remove
-                  </button>
-                </div>
-              ))}
-              {negatives.items.length > 0 && (
-                <>
-                  <button type="button" onClick={() => setNegatives({ ...negatives, items: [...negatives.items, ""] })} className="self-start text-[13px] font-medium text-accent">
-                    + Add a line
-                  </button>
-                  <button type="button" onClick={() => approve("negatives")} disabled={pending} className={approveBtn}>
-                    Approve — save to case history
-                  </button>
-                </>
-              )}
-            </div>
-          )}
+    if (id === "negatives")
+      return (
+        <>
+          <p className="text-[12px] leading-[1.45] text-muted">
+            The pertinent negatives that close the history of presenting illness — the ones that
+            support{" "}
+            <span className="font-medium">{(primaryDiagnosis ?? diagnosis.text ?? "the diagnosis").trim() || "the diagnosis"}</span>{" "}
+            and argue against the differentials. One or two sentences, main points only. It
+            prints at the end of the HOPI on the case sheet and folds into the discharge summary.
+          </p>
+          <button type="button" disabled={generating === "negatives"} onClick={() => generate("negatives")} className={genBtn}>
+            {generating === "negatives" ? "Writing…" : negatives.text.trim() ? "Rewrite with AI" : "Draft with AI"}
+          </button>
+          <UncertainList points={negatives.uncertain} />
+          <Area
+            value={negatives.text}
+            onChange={(v) => { setNegatives({ ...negatives, text: v }); mark("negatives"); }}
+            rows={4}
+            placeholder="e.g. There is no history of fever, weight loss or altered bowel habit, and no previous similar episodes."
+          />
         </>
       );
 

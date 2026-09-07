@@ -26,7 +26,6 @@ export type HistorySection = {
   key:
     | "chief"
     | "hopi"
-    | "relnegatives"
     | "past"
     | "family"
     | "medication"
@@ -74,14 +73,6 @@ const SECTIONS: {
       "presenting illness", "history of illness",
     ],
     alwaysShow: true,
-  },
-  {
-    key: "relnegatives",
-    label: "Relevant negatives",
-    aliases: ["relevant negatives", "pertinent negatives", "relevant negative history"],
-    // Shown only when the resident has generated and approved them on the Diagnosis step —
-    // a clerking without them is not a gap to chase in orange, so never "NR".
-    alwaysShow: false,
   },
   {
     key: "past",
@@ -251,6 +242,10 @@ export function summariseCaseHistory<
 >(observations: T[]): CaseHistoryView<T> {
   const buckets = new Map<HistorySection["key"], { id: string; text: string; normal: boolean }[]>();
   const other: T[] = [];
+  // The pertinent negatives (1–2 sentences) are recorded once, under their own label, but they
+  // are NOT a section of their own — they close the history of presenting illness, on the sheet
+  // and on the discharge paper alike. Held here and appended to the HOPI lines below.
+  const relevantNegatives: { id: string; text: string }[] = [];
 
   for (const o of observations) {
     // Jobs stated in the clerking note live on the to-do list, which is where they get ticked
@@ -260,6 +255,11 @@ export function summariseCaseHistory<
     // side — it is not part of the history block and must not fall through into "other" (the
     // examination). The provisional diagnosis itself lives on patients.primary_diagnosis.
     if (norm(o.label) === "differential diagnosis") continue;
+    if (/^(relevant|pertinent) negatives?$/.test(norm(o.label))) {
+      const t = (o.value_text ?? "").trim();
+      if (t) relevantNegatives.push({ id: o.id, text: t });
+      continue;
+    }
 
     const key = sectionFor(o.label);
     const text = (o.value_text ?? "").trim();
@@ -274,11 +274,10 @@ export function summariseCaseHistory<
 
   const sections: HistorySection[] = SECTIONS.map((def) => {
     const hits = buckets.get(def.key) ?? [];
-    // Relevant negatives ARE negations by definition — every line reads as a denial and would
-    // otherwise be collapsed away. This is the one section where a "normal"-reading line is
-    // exactly what belongs on the sheet, so keep them all.
-    const positives = def.key === "relnegatives" ? hits : hits.filter((h) => !h.normal);
+    const positives = hits.filter((h) => !h.normal);
     const lines = positives.map((h) => ({ id: h.id, text: h.text }));
+    // The pertinent negatives ride at the tail of the history of presenting illness.
+    if (def.key === "hopi") lines.push(...relevantNegatives);
 
     if (!def.alwaysShow) {
       // Family history: only when there is something positive to say.

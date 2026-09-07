@@ -39,6 +39,8 @@ export const medicalOncologyPack: SpecialtyPack = {
     admissionNoun: "cycle",
   },
 
+  admissionPhrase: "a medical oncology admission",
+
   // "C2 D3" is how it is said and written on a treatment card, so it is what prints. A patient
   // with no active cycle falls back to the hospital day rather than showing nothing — and the
   // label says which, the same guarantee the surgical pack gives.

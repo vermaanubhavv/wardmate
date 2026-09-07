@@ -19,6 +19,8 @@ export const generalSurgeryPack: SpecialtyPack = {
     admissionNoun: "operation",
   },
 
+  admissionPhrase: "a general-surgery admission",
+
   // Operated patients are counted from the operation, everyone else from admission — and the
   // label always says which. This is lib/patients.ts dayLabel(), moved, not changed.
   dayCount: (p) => {

@@ -52,6 +52,8 @@ export const internalMedicinePack: SpecialtyPack = {
     admissionNoun: "problem",
   },
 
+  admissionPhrase: "an internal medicine admission",
+
   // Always the hospital day. A medicine patient has no operation and no cycle; `post_op_day`
   // and the chemo fields are ignored on purpose. The label still says "Day n" so a bed on a
   // mixed corridor is never ambiguous against a surgical "POD n" next to it.
