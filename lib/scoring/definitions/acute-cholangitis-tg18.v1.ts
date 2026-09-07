@@ -3,7 +3,7 @@
  * (Grade I / II / III). Grade III = any organ dysfunction; Grade II = ANY TWO of five criteria;
  * Grade I = neither.
  *
- * STATUS: draft — clinical governance sign-off pending. Sources: [8].
+ * STATUS: active — single-clinician pilot sign-off (Dr. Anubhav, 2026-09-07); departmental review still due by reviewDueAt. Sources: [8].
  * (The 2019 ASGE choledocholithiasis-risk categories are a separate decision aid, out of scope
  * for this one-grading-per-disease card.)
  */
@@ -63,11 +63,10 @@ export const cholangitisTg18V1: PathwayDefinition = {
   pathwayId: "acute_cholangitis",
   pathwayVersion: "1.0.0",
   title: "Acute cholangitis",
-  // Activated on the product owner's direction (2026-09-05), same treatment as the
-  // internal-medicine scores. Still triple-gated at runtime; formal governance review still
-  // due — see reviewDueAt.
+  // Reviewed against the cited source and signed off for pilot use by Dr. Anubhav on
+  // 2026-09-07. Triple-gated at runtime; departmental governance review still due (reviewDueAt).
   status: "active",
-  clinicalOwner: "General Surgery unit (pilot activation 2026-09-05; formal review pending)",
+  clinicalOwner: "Reviewed against the cited sources and signed off for pilot use by Dr. Anubhav, General Surgery — 2026-09-07. Single-clinician sign-off; departmental / multidisciplinary review due 2027-09-01.",
   sourceReferences: [
     { label: "TG18 cholangitis diagnosis & severity", citation: "Kiriyama S et al. J Hepatobiliary Pancreat Sci 2018;25:17–30." },
   ],

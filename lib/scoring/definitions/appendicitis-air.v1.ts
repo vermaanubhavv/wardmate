@@ -3,7 +3,7 @@
  * Response (AIR) score. WSES identifies AIR (and the Adult Appendicitis Score) as the best
  * adult clinical prediction tools, and advises against Alvarado for positive confirmation.
  *
- * STATUS: draft — clinical governance sign-off pending. Sources: [5].
+ * STATUS: active — single-clinician pilot sign-off (Dr. Anubhav, 2026-09-07); departmental review still due by reviewDueAt. Sources: [5].
  */
 
 import type { CardDefinition, PathwayDefinition, TimeWindow } from "../types";
@@ -146,11 +146,10 @@ export const appendicitisAirV1: PathwayDefinition = {
   pathwayId: "acute_appendicitis",
   pathwayVersion: "1.0.0",
   title: "Acute appendicitis",
-  // Activated on the product owner's direction (2026-09-05), same treatment as the
-  // internal-medicine scores. Still triple-gated at runtime; formal governance review still
-  // due — see reviewDueAt.
+  // Reviewed against the cited source and signed off for pilot use by Dr. Anubhav on
+  // 2026-09-07. Triple-gated at runtime; departmental governance review still due (reviewDueAt).
   status: "active",
-  clinicalOwner: "General Surgery unit (pilot activation 2026-09-05; formal review pending)",
+  clinicalOwner: "Reviewed against the cited sources and signed off for pilot use by Dr. Anubhav, General Surgery — 2026-09-07. Single-clinician sign-off; departmental / multidisciplinary review due 2027-09-01.",
   sourceReferences: [
     { label: "WSES Jerusalem guidelines 2020", citation: "Di Saverio S et al. World J Emerg Surg 2020;15:27." },
   ],

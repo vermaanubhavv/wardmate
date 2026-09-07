@@ -6,8 +6,8 @@
  * least as likely. Score ≥ 2 → DVT likely (proceed to compression ultrasound); < 2 → DVT
  * unlikely (a D-dimer can rule it out without imaging).
  *
- * STATUS: active for the internal-medicine pilot (2026-09-05), same basis as the other four
- * medicine scores — formal governance review still due. Sources: Wells PS et al., Lancet
+ * STATUS: active — reviewed and signed off for pilot use by Dr. Anubhav on 2026-09-07;
+ * departmental governance review still due (reviewDueAt). Sources: Wells PS et al., Lancet
  * 1997;350:1795–8; Wells PS et al., NEJM 2003;349:1227–35 (two-tier simplification).
  */
 
@@ -72,7 +72,7 @@ export const wellsDvtV1: PathwayDefinition = {
   pathwayVersion: "1.0.0",
   title: "Suspected deep vein thrombosis",
   status: "active",
-  clinicalOwner: "Internal Medicine unit (pilot activation 2026-09-05; formal review pending)",
+  clinicalOwner: "Reviewed against the cited sources and signed off for pilot use by Dr. Anubhav — 2026-09-07. Single-clinician sign-off; Internal Medicine departmental review due 2027-09-01.",
   sourceReferences: [
     { label: "Wells PS et al., Lancet 1997", citation: "Value of assessment of pretest probability of deep-vein thrombosis in clinical management. Lancet 1997;350:1795–8." },
     { label: "Wells PS et al., NEJM 2003", citation: "Evaluation of D-dimer in the diagnosis of suspected deep-vein thrombosis. N Engl J Med 2003;349:1227–35." },

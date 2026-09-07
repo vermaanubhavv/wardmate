@@ -7,7 +7,7 @@
  * male thresholds for both sexes in this first version — the safe direction (slight
  * over-scoring for women); a sex-aware version is a later refinement.
  *
- * STATUS: draft — clinical governance sign-off pending. Sources: [15], [16].
+ * STATUS: active — single-clinician pilot sign-off (Dr. Anubhav, 2026-09-07); departmental review still due by reviewDueAt. Sources: [15], [16].
  */
 
 import type { CardDefinition, PathwayDefinition, TimeWindow } from "../types";
@@ -162,11 +162,10 @@ export const upperGiBleedGbsV1: PathwayDefinition = {
   pathwayId: "upper_gi_bleeding",
   pathwayVersion: "1.0.0",
   title: "Acute upper GI bleeding",
-  // Activated on the product owner's direction (2026-09-05), same treatment as the
-  // internal-medicine scores. Still triple-gated at runtime; formal governance review still
-  // due — see reviewDueAt.
+  // Reviewed against the cited source and signed off for pilot use by Dr. Anubhav on
+  // 2026-09-07. Triple-gated at runtime; departmental governance review still due (reviewDueAt).
   status: "active",
-  clinicalOwner: "General Surgery unit (pilot activation 2026-09-05; formal review pending)",
+  clinicalOwner: "Reviewed against the cited sources and signed off for pilot use by Dr. Anubhav, General Surgery — 2026-09-07. Single-clinician sign-off; departmental / multidisciplinary review due 2027-09-01.",
   sourceReferences: [
     { label: "Glasgow-Blatchford Score", citation: "Blatchford O et al. Lancet 2000;356:1318–1321." },
     { label: "ACG Upper GI and ulcer bleeding guideline", citation: "Laine L et al. Am J Gastroenterol 2021;116:899–917." },

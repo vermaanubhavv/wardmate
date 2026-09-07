@@ -3,7 +3,7 @@
  * (Grade I / II / III). Modelled as a tiered classification: Grade III if any organ-dysfunction
  * criterion is met, else Grade II if any Grade-II criterion is met, else Grade I.
  *
- * STATUS: draft — clinical governance sign-off pending. Sources: [6], [7].
+ * STATUS: active — single-clinician pilot sign-off (Dr. Anubhav, 2026-09-07); departmental review still due by reviewDueAt. Sources: [6], [7].
  * LICENSING: TG18 severity criteria are freely published; the diagnostic-criteria wording is
  * reproduced in summary only.
  */
@@ -61,11 +61,10 @@ export const cholecystitisTg18V1: PathwayDefinition = {
   pathwayId: "acute_cholecystitis",
   pathwayVersion: "1.0.0",
   title: "Acute cholecystitis",
-  // Activated on the product owner's direction (2026-09-05), same treatment as the
-  // internal-medicine scores. Still triple-gated at runtime; formal governance review still
-  // due — see reviewDueAt.
+  // Reviewed against the cited source and signed off for pilot use by Dr. Anubhav on
+  // 2026-09-07. Triple-gated at runtime; departmental governance review still due (reviewDueAt).
   status: "active",
-  clinicalOwner: "General Surgery unit (pilot activation 2026-09-05; formal review pending)",
+  clinicalOwner: "Reviewed against the cited sources and signed off for pilot use by Dr. Anubhav, General Surgery — 2026-09-07. Single-clinician sign-off; departmental / multidisciplinary review due 2027-09-01.",
   sourceReferences: [
     { label: "TG18 diagnosis & severity", citation: "Yokoe M et al. J Hepatobiliary Pancreat Sci 2018;25:41–54." },
     { label: "TG18 initial management", citation: "Miura F et al. J Hepatobiliary Pancreat Sci 2018;25:31–40." },

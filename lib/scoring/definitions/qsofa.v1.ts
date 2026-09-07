@@ -10,7 +10,7 @@
  * alongside because Indian medicine units still use it at the bedside and it is more sensitive
  * early; the engine computes it from whatever vitals and counts are recorded (lib/scoring/sirs.ts).
  *
- * STATUS: draft — clinical governance sign-off pending. Added with the internal-medicine
+ * STATUS: active — single-clinician pilot sign-off (Dr. Anubhav, 2026-09-07); departmental review still due by reviewDueAt. Added with the internal-medicine
  * specialty pack (docs/specialty-packs.md §8). Sources: Singer M et al. (Sepsis-3), JAMA
  * 2016;315:801–10; Seymour CW et al., JAMA 2016;315:762–74.
  */
@@ -109,10 +109,10 @@ export const qsofaV1: PathwayDefinition = {
   pathwayId: "qsofa",
   pathwayVersion: "1.0.0",
   title: "Sepsis screen",
-  // Activated for the internal-medicine pilot on the product owner's direction (2026-09-04).
-  // Still triple-gated at runtime; formal governance review still due — see reviewDueAt.
+  // Reviewed against the cited source and signed off for pilot use by Dr. Anubhav on
+  // 2026-09-07. Triple-gated at runtime; departmental governance review still due (reviewDueAt).
   status: "active",
-  clinicalOwner: "Internal Medicine unit (pilot activation 2026-09-04; formal review pending)",
+  clinicalOwner: "Reviewed against the cited sources and signed off for pilot use by Dr. Anubhav — 2026-09-07. Single-clinician sign-off; Internal Medicine departmental review due 2027-09-01.",
   sourceReferences: [
     { label: "Singer M et al. (Sepsis-3), JAMA 2016", citation: "The Third International Consensus Definitions for Sepsis and Septic Shock. JAMA 2016;315:801–10." },
     { label: "Seymour CW et al., JAMA 2016", citation: "Assessment of Clinical Criteria for Sepsis. JAMA 2016;315:762–74." },

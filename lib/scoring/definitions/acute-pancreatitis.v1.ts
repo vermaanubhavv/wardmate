@@ -9,10 +9,10 @@
  *
  * Ranson / Revised Atlanta / Modified CTSI card builders are kept below and exported for the
  * engine test-suite only (`PANCREATITIS_EXTENDED_CARDS`) — they are NOT part of the shipped
- * pathway and would need clinical governance before being added.
+ * pathway and would need the same sign-off before being added.
  *
  * Clinical content: DOCX §1 (Wardmate_General_Surgery_Scoring_Engine_v1). Sources [1]–[4].
- * STATUS: `draft` until a clinical governance owner signs off.
+ * STATUS: active — signed off for pilot use by Dr. Anubhav on 2026-09-07; departmental governance review still due (reviewDueAt).
  */
 
 import type { CardDefinition, PathwayDefinition, TimeWindow } from "../types";
@@ -126,11 +126,10 @@ export const acutePancreatitisV1: PathwayDefinition = {
   pathwayId: "acute_pancreatitis",
   pathwayVersion: "1.0.0",
   title: "Acute pancreatitis",
-  // Activated on the product owner's direction (2026-09-05), same treatment as the
-  // internal-medicine scores. Still triple-gated at runtime; formal governance review still
-  // due — see reviewDueAt.
+  // Reviewed against the cited source and signed off for pilot use by Dr. Anubhav on
+  // 2026-09-07. Triple-gated at runtime; departmental governance review still due (reviewDueAt).
   status: "active",
-  clinicalOwner: "General Surgery unit (pilot activation 2026-09-05; formal review pending)",
+  clinicalOwner: "Reviewed against the cited sources and signed off for pilot use by Dr. Anubhav, General Surgery — 2026-09-07. Single-clinician sign-off; departmental / multidisciplinary review due 2027-09-01.",
   sourceReferences: [
     { label: "BISAP", citation: "Wu BU et al. Gut 2008;57:1698–1703." },
     { label: "ACG Acute Pancreatitis guideline (2024 update)", citation: "American College of Gastroenterology." },

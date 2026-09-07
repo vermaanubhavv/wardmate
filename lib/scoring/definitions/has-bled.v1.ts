@@ -8,7 +8,7 @@
  * bleeding risk who needs closer review and correction of modifiable factors — it does NOT by
  * itself contraindicate anticoagulation.
  *
- * STATUS: draft — clinical governance sign-off pending. Added with the internal-medicine
+ * STATUS: active — single-clinician pilot sign-off (Dr. Anubhav, 2026-09-07); departmental review still due by reviewDueAt. Added with the internal-medicine
  * specialty pack (docs/specialty-packs.md §8). Source: Pisters R et al., Chest 2010;138:1093–100.
  */
 
@@ -94,10 +94,10 @@ export const hasBledV1: PathwayDefinition = {
   pathwayId: "has_bled",
   pathwayVersion: "1.0.0",
   title: "Atrial fibrillation — bleeding risk",
-  // Activated for the internal-medicine pilot on the product owner's direction (2026-09-04).
-  // Still triple-gated at runtime; formal governance review still due — see reviewDueAt.
+  // Reviewed against the cited source and signed off for pilot use by Dr. Anubhav on
+  // 2026-09-07. Triple-gated at runtime; departmental governance review still due (reviewDueAt).
   status: "active",
-  clinicalOwner: "Internal Medicine unit (pilot activation 2026-09-04; formal review pending)",
+  clinicalOwner: "Reviewed against the cited sources and signed off for pilot use by Dr. Anubhav — 2026-09-07. Single-clinician sign-off; Internal Medicine departmental review due 2027-09-01.",
   sourceReferences: [
     { label: "Pisters R et al., Chest 2010", citation: "A novel user-friendly score (HAS-BLED) to assess 1-year risk of major bleeding in patients with atrial fibrillation. Chest 2010;138:1093–100." },
   ],

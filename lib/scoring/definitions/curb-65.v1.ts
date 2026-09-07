@@ -6,7 +6,7 @@
  * outpatient management; 2 → short inpatient / supervised outpatient; 3–5 → manage as severe,
  * assess for critical care.
  *
- * STATUS: draft — clinical governance sign-off pending. First internal-medicine score, added
+ * STATUS: active — single-clinician pilot sign-off (Dr. Anubhav, 2026-09-07); departmental review still due by reviewDueAt. First internal-medicine score, added
  * with the specialty pack (docs/specialty-packs.md §8). Sources: BTS/NICE CAP guidance;
  * Lim WS et al., Thorax 2003;58:377–82.
  */
@@ -99,11 +99,12 @@ export const curb65V1: PathwayDefinition = {
   pathwayId: "curb_65",
   pathwayVersion: "1.0.0",
   title: "Community-acquired pneumonia",
-  // Activated for the internal-medicine pilot on the product owner's direction (2026-09-04).
-  // Still triple-gated at runtime (NEXT_PUBLIC_SCORING_ENGINE + a per-ward ward_scoring_engine
-  // row + the pack's scoringKeys). Formal governance review is still due — see reviewDueAt.
+  // Reviewed against the cited sources and signed off for pilot use by Dr. Anubhav on
+  // 2026-09-07. Still triple-gated at runtime (NEXT_PUBLIC_SCORING_ENGINE + a per-ward
+  // ward_scoring_engine row + the pack's scoringKeys). Departmental governance review still
+  // due — see reviewDueAt.
   status: "active",
-  clinicalOwner: "Internal Medicine unit (pilot activation 2026-09-04; formal review pending)",
+  clinicalOwner: "Reviewed against the cited sources and signed off for pilot use by Dr. Anubhav — 2026-09-07. Single-clinician sign-off; Internal Medicine departmental review due 2027-09-01.",
   sourceReferences: [
     { label: "Lim WS et al., Thorax 2003", citation: "Defining community acquired pneumonia severity on presentation to hospital. Thorax 2003;58:377–82." },
     { label: "BTS/NICE CAP guidance", citation: "NICE NG138 / BTS community-acquired pneumonia in adults." },

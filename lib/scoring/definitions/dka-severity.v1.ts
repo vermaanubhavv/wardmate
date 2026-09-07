@@ -11,8 +11,8 @@
  * separate clinical judgement (glucose, ketones and pH pattern together), not a severity
  * ladder, and is deliberately left to the resident rather than a wrong single number.
  *
- * STATUS: active for the internal-medicine pilot (2026-09-05) — formal governance review still
- * due. Source: Kitabchi AE et al. (ADA consensus), Diabetes Care 2009;32:1335–43; Joint British
+ * STATUS: active — reviewed and signed off for pilot use by Dr. Anubhav on 2026-09-07;
+ * departmental governance review still due (reviewDueAt). Source: Kitabchi AE et al. (ADA consensus), Diabetes Care 2009;32:1335–43; Joint British
  * Diabetes Societies (JBDS) DKA guideline.
  */
 
@@ -66,7 +66,7 @@ export const dkaSeverityV1: PathwayDefinition = {
   pathwayVersion: "1.0.0",
   title: "Diabetic ketoacidosis — severity",
   status: "active",
-  clinicalOwner: "Internal Medicine unit (pilot activation 2026-09-05; formal review pending)",
+  clinicalOwner: "Reviewed against the cited sources and signed off for pilot use by Dr. Anubhav — 2026-09-07. Single-clinician sign-off; Internal Medicine departmental review due 2027-09-01.",
   sourceReferences: [
     { label: "Kitabchi AE et al. (ADA consensus), Diabetes Care 2009", citation: "Hyperglycemic crises in adult patients with diabetes. Diabetes Care 2009;32:1335–43." },
     { label: "Joint British Diabetes Societies DKA guideline", citation: "The management of diabetic ketoacidosis in adults." },

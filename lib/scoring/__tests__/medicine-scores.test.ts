@@ -22,18 +22,20 @@ const comp = (r: ReturnType<typeof evaluateCard>, id: string) => {
   return c;
 };
 
-describe("every medicine definition validates and is draft", () => {
+describe("every medicine definition validates and is signed off for pilot use", () => {
   for (const def of [curb65V1, qsofaV1, cha2ds2VascV1, hasBledV1, wellsDvtV1, wellsPeV1, dkaSeverityV1]) {
     it(`${def.pathwayId} passes the schema validator`, () => {
       const res = validatePathwayDefinition(def);
       expect(res.issues).toEqual([]);
       expect(res.ok).toBe(true);
     });
-    it(`${def.pathwayId} is active for the pilot with a review still on the books`, () => {
-      // Activated on the product owner's direction 2026-09-04; runtime is still gated by
-      // NEXT_PUBLIC_SCORING_ENGINE + a per-ward ward_scoring_engine row + the pack scoringKeys.
+    it(`${def.pathwayId} is active, has a named sign-off and a scheduled re-review`, () => {
+      // Single-clinician pilot sign-off (Dr. Anubhav, 2026-09-07). Runtime is still gated by
+      // NEXT_PUBLIC_SCORING_ENGINE + a per-ward ward_scoring_engine row + the pack scoringKeys;
+      // a departmental governance review is still on the books at reviewDueAt.
       expect(def.status).toBe("active");
-      expect(def.clinicalOwner).toMatch(/review pending/i);
+      expect(def.clinicalOwner).toMatch(/signed off/i);
+      expect(def.clinicalOwner).toMatch(/review (due|pending|still)/i);
       expect(def.reviewDueAt).toBeTruthy();
     });
   }

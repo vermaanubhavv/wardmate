@@ -12,8 +12,12 @@ Configuration-driven scoring for surgical ward pathways.
 | Acute cholecystitis | Tokyo Guidelines 2018 severity | tiered classification (Grade I/II/III) |
 | Acute cholangitis | Tokyo Guidelines 2018 severity | tiered classification (Grade II = any 2) |
 
-All ship `status: "draft"` — inert until governance sign-off, then flip to `"active"` (or set
-`SCORING_ENGINE_ALLOW_DRAFTS=on` to pilot).
+All 12 shipped pathways (5 surgery + 7 internal-medicine, see the specialty packs) are
+`status: "active"` — single-clinician pilot sign-off by Dr. Anubhav on 2026-09-07, recorded in
+each definition's `clinicalOwner`; a departmental / multidisciplinary governance review is
+still scheduled at each pathway's `reviewDueAt`. Runtime is still triple-gated
+(`NEXT_PUBLIC_SCORING_ENGINE` + a per-ward `ward_scoring_engine` row + the unit's specialty
+pack). A brand-new pathway still starts `draft` and needs the same sign-off before activation.
 
 Each disease shows **one card** on the patient page:
 - the number (or grade), one line, with an **interpretation** band;
@@ -221,9 +225,21 @@ never shows them to ordinary users.
 
 ## 11. Clinical-governance review
 
-Nothing is clinically live until, per pathway: a named clinical owner, a source list, approval
-records, an effective date, and configured local toggles exist. `acute-pancreatitis.v1` ships
-as `status: "draft"` with `clinicalOwner: "PENDING_CLINICAL_OWNER"` deliberately.
+Each pathway carries its governance state in three fields on the definition: `clinicalOwner`
+(who has reviewed it and when), `sourceReferences` (the papers/guidelines it is built from),
+and `reviewDueAt` (when it must be re-checked). There is no separate approval table — the
+`clinicalOwner` string is the record, and it is shown to clinicians in the score-card footer.
+
+**Current state (2026-09-07):** all 12 shipped pathways carry a single-clinician pilot
+sign-off by Dr. Anubhav — reviewed criterion-by-criterion against the cited sources. A
+departmental / multidisciplinary review is still scheduled at each `reviewDueAt` (2027). Four
+known simplifications were reviewed and accepted for the pilot and are noted in the relevant
+files: Glasgow-Blatchford Hb bands use the male thresholds for both sexes; the cholangitis
+albumin cut-off is fixed at 2.5 g/dL rather than each lab's own lower limit; Wells DVT's
+"−2 for an alternative diagnosis" is a result override, not a negative point; Wells PE's
+heart-rate criterion is a clinician tap rather than auto-read from vitals.
+
+A new pathway still starts `status: "draft"` and needs the same sign-off before activation.
 
 Licensing review required before enabling: **AJCC TNM, AIS/ISS, BI-RADS, ACR TI-RADS**, and any
 third-party calculator text/logo (`skeletons.ts` → `licensingReview: true`).

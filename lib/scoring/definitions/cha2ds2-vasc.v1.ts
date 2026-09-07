@@ -6,7 +6,7 @@
  * (1). Used to decide whether the stroke risk of non-valvular AF is high enough to offset the
  * bleeding risk of oral anticoagulation — always read together with HAS-BLED.
  *
- * STATUS: draft — clinical governance sign-off pending. Added with the internal-medicine
+ * STATUS: active — single-clinician pilot sign-off (Dr. Anubhav, 2026-09-07); departmental review still due by reviewDueAt. Added with the internal-medicine
  * specialty pack (docs/specialty-packs.md §8). Sources: Lip GYH et al., Chest 2010;137:263–72;
  * ESC 2020 AF guidelines.
  */
@@ -140,10 +140,10 @@ export const cha2ds2VascV1: PathwayDefinition = {
   pathwayId: "cha2ds2_vasc",
   pathwayVersion: "1.0.0",
   title: "Atrial fibrillation — stroke risk",
-  // Activated for the internal-medicine pilot on the product owner's direction (2026-09-04).
-  // Still triple-gated at runtime; formal governance review still due — see reviewDueAt.
+  // Reviewed against the cited source and signed off for pilot use by Dr. Anubhav on
+  // 2026-09-07. Triple-gated at runtime; departmental governance review still due (reviewDueAt).
   status: "active",
-  clinicalOwner: "Internal Medicine unit (pilot activation 2026-09-04; formal review pending)",
+  clinicalOwner: "Reviewed against the cited sources and signed off for pilot use by Dr. Anubhav — 2026-09-07. Single-clinician sign-off; Internal Medicine departmental review due 2027-09-01.",
   sourceReferences: [
     { label: "Lip GYH et al., Chest 2010", citation: "Refining clinical risk stratification for predicting stroke and thromboembolism in atrial fibrillation. Chest 2010;137:263–72." },
     { label: "ESC 2020 AF guidelines", citation: "Hindricks G et al. Eur Heart J 2021;42:373–498." },

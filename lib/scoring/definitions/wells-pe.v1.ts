@@ -5,8 +5,8 @@
  * Seven weighted clinical features. Score > 4 → PE likely (proceed to CT pulmonary
  * angiography); ≤ 4 → PE unlikely (a D-dimer can rule it out without imaging).
  *
- * STATUS: active for the internal-medicine pilot (2026-09-05) — formal governance review still
- * due. Source: Wells PS et al., Thromb Haemost 2000;83:416–20 (derivation); Christopher Study
+ * STATUS: active — reviewed and signed off for pilot use by Dr. Anubhav on 2026-09-07;
+ * departmental governance review still due (reviewDueAt). Source: Wells PS et al., Thromb Haemost 2000;83:416–20 (derivation); Christopher Study
  * Investigators, JAMA 2006;295:172–9 (two-tier validation).
  */
 
@@ -64,7 +64,7 @@ export const wellsPeV1: PathwayDefinition = {
   pathwayVersion: "1.0.0",
   title: "Suspected pulmonary embolism",
   status: "active",
-  clinicalOwner: "Internal Medicine unit (pilot activation 2026-09-05; formal review pending)",
+  clinicalOwner: "Reviewed against the cited sources and signed off for pilot use by Dr. Anubhav — 2026-09-07. Single-clinician sign-off; Internal Medicine departmental review due 2027-09-01.",
   sourceReferences: [
     { label: "Wells PS et al., Thromb Haemost 2000", citation: "Derivation of a simple clinical model to categorize patients probability of pulmonary embolism. Thromb Haemost 2000;83:416–20." },
     { label: "Christopher Study, JAMA 2006", citation: "Effectiveness of managing suspected pulmonary embolism using an algorithm combining clinical probability, D-dimer testing, and CT. JAMA 2006;295:172–9." },
