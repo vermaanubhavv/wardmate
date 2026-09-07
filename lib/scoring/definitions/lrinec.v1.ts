@@ -8,9 +8,11 @@
  * that it does not rule the diagnosis out. Scoring and imaging must not delay senior surgical
  * review or exploration.
  *
- * STATUS: draft — not yet offered to any unit pending clinician review. Sources: Wong CH et al.,
- * Crit Care Med 2004;32:1535–41; Fernando SM et al. (diagnostic accuracy meta-analysis), Ann
- * Surg 2019;269:58–65.
+ * STATUS: active — single-clinician pilot sign-off (Dr. Anubhav, 2026-09-07), low-score
+ * safeguard explicitly confirmed; departmental review due 2027-09-30. Runtime is triple-gated
+ * (env flag + per-ward row + the specialty pack scoringKeys).
+ * Sources: Wong CH et al., Crit Care Med 2004;32:1535–41; Fernando SM et al., Ann Surg
+ * 2019;269:58–65.
  */
 
 import type { CardDefinition, PathwayDefinition, TimeWindow } from "../types";
@@ -116,8 +118,8 @@ export const lrinecV1: PathwayDefinition = {
   pathwayId: "nsti",
   pathwayVersion: "1.0.0",
   title: "Necrotising soft-tissue infection",
-  status: "draft",
-  clinicalOwner: "PENDING — awaiting single-clinician review. NOTE: the low-score safeguard (a low LRINEC never reads as 'excluded' / green) must be explicitly confirmed at review.",
+  status: "active",
+  clinicalOwner: "Reviewed against the cited sources and signed off for pilot use by Dr. Anubhav — 2026-09-07. Single-clinician sign-off; departmental review due 2027-09-30.",
   sourceReferences: [
     { label: "Wong CH et al., Crit Care Med 2004", citation: "The LRINEC (Laboratory Risk Indicator for Necrotizing Fasciitis) score. Crit Care Med 2004;32:1535–41." },
     { label: "Fernando SM et al., Ann Surg 2019", citation: "Necrotizing soft tissue infection: diagnostic accuracy of physical examination, imaging, and LRINEC score. Ann Surg 2019;269:58–65." },

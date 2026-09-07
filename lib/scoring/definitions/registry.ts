@@ -46,15 +46,14 @@ const BUILT_IN: PathwayDefinition[] = [
   wellsDvtV1,
   wellsPeV1,
   dkaSeverityV1,
-  // Batch 2 — `status: "draft"`, registered for validation + tests but NOT in any specialty
-  // pack's scoringKeys, so they cannot trigger for any unit until a clinician signs each off
-  // and the pathwayId is added to the relevant pack.
-  mannheimPeritonitisIndexV1, // perforation_peritonitis
-  lrinecV1, // nsti (with the mandatory low-score safeguard)
-  heartScoreV1, // heart_score — chest pain
-  ciwaArV1, // ciwa_ar — alcohol withdrawal
-  childPughV1, // child_pugh — chronic liver disease
-  kdigoAkiV1, // kdigo_aki — acute kidney injury
+  // Batch 2 — signed off for pilot use 2026-09-07 (Dr. Anubhav); see each pack's scoringKeys
+  // for which unit is offered which.
+  mannheimPeritonitisIndexV1, // perforation_peritonitis  — surgery
+  lrinecV1, // nsti (low-score safeguard confirmed)  — surgery
+  heartScoreV1, // heart_score — chest pain  — medicine
+  ciwaArV1, // ciwa_ar — alcohol withdrawal  — surgery + medicine
+  childPughV1, // child_pugh — chronic liver disease  — surgery + medicine
+  kdigoAkiV1, // kdigo_aki — acute kidney injury  — surgery + medicine
 ];
 
 // Fail fast in dev/test if a built-in definition is malformed.

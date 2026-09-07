@@ -137,7 +137,7 @@ describe("internal medicine counts by the hospital day", () => {
     expect(prompt).toContain("There is no post-op day on this ward");
   });
 
-  it("offers its seven medicine scores and no surgical pathway, and no OT notes slot", () => {
+  it("offers its medicine scores (incl. the batch-2 cross-listed ones) and no surgical pathway, and no OT notes slot", () => {
     expect(p.scoringKeys).toEqual([
       "curb_65",
       "qsofa",
@@ -146,8 +146,14 @@ describe("internal medicine counts by the hospital day", () => {
       "wells_dvt",
       "wells_pe",
       "dka_severity",
+      "heart_score",
+      "ciwa_ar",
+      "child_pugh",
+      "kdigo_aki",
     ]);
     expect(p.scoringKeys).not.toContain("acute_pancreatitis");
+    expect(p.scoringKeys).not.toContain("nsti");
+    expect(p.scoringKeys).not.toContain("perforation_peritonitis");
     expect(p.formatKinds).not.toContain("ot_notes");
   });
 

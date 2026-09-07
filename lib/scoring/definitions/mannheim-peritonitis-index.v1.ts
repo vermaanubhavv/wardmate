@@ -9,8 +9,7 @@
  * ~26. It is a prognostic index, NOT a surgical-indication score — source control is never
  * delayed for it.
  *
- * STATUS: draft — not yet offered to any unit (absent from every pack's scoringKeys) pending
- * clinician review. Source: Linder MM et al., Chirurg 1987;58:84–92; Singh R et al. (Indian
+ * STATUS: active — single-clinician pilot sign-off (Dr. Anubhav, 2026-09-07); departmental review due 2027-09-30. Runtime is triple-gated (env flag + per-ward row + the specialty pack scoringKeys).
  * cohort), PMC11057927.
  */
 
@@ -65,8 +64,8 @@ export const mannheimPeritonitisIndexV1: PathwayDefinition = {
   pathwayId: "perforation_peritonitis",
   pathwayVersion: "1.0.0",
   title: "Perforation / secondary peritonitis",
-  status: "draft",
-  clinicalOwner: "PENDING — awaiting single-clinician review (General Surgery).",
+  status: "active",
+  clinicalOwner: "Reviewed against the cited sources and signed off for pilot use by Dr. Anubhav — 2026-09-07. Single-clinician sign-off; departmental review due 2027-09-30.",
   sourceReferences: [
     { label: "Linder MM et al., Chirurg 1987", citation: "Der Mannheimer Peritonitis-Index. Chirurg 1987;58:84–92." },
     { label: "Singh R et al. (Indian cohort)", citation: "Comparative evaluation of MPI in a geographically diverse Indian population. PMC11057927." },

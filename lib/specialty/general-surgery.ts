@@ -45,6 +45,14 @@ export const generalSurgeryPack: SpecialtyPack = {
     "acute_cholecystitis",
     "acute_cholangitis",
     "upper_gi_bleeding",
+    // Batch 2 — signed off for pilot use 2026-09-07 (Dr. Anubhav).
+    "perforation_peritonitis", // Mannheim Peritonitis Index
+    "nsti", // LRINEC (adjunct only, with the low-score safeguard)
+    // Cross-listed with internal medicine — these present on surgical wards too
+    // (post-op AKI, alcohol withdrawal, the cirrhotic surgical patient).
+    "kdigo_aki",
+    "ciwa_ar",
+    "child_pugh",
   ],
 
   // All six slots, listed rather than derived from FORMAT_KINDS: that constant lives in a

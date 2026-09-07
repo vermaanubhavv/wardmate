@@ -90,7 +90,11 @@ Internal medicine ward — what the words mean here:
   // `status: "active"` (pilot activation 2026-09-04), still gated at runtime by the scoring
   // engine's env flag and a per-ward `ward_scoring_engine` row. SIRS rides along inside the
   // qSOFA pathway as a second card.
-  scoringKeys: ["curb_65", "qsofa", "cha2ds2_vasc", "has_bled", "wells_dvt", "wells_pe", "dka_severity"],
+  scoringKeys: [
+    "curb_65", "qsofa", "cha2ds2_vasc", "has_bled", "wells_dvt", "wells_pe", "dka_severity",
+    // Batch 2 — signed off for pilot use 2026-09-07 (Dr. Anubhav).
+    "heart_score", "ciwa_ar", "child_pugh", "kdigo_aki",
+  ],
 
   // No OT notes slot: this unit has no operating theatre. Everything else stays.
   formatKinds: [

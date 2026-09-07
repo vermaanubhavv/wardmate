@@ -241,12 +241,13 @@ heart-rate criterion is a clinician tap rather than auto-read from vitals.
 
 A new pathway still starts `status: "draft"` and needs the same sign-off before activation.
 
-**Batch 2 (2026-09-07, `draft`, not yet in any pack):** Mannheim Peritonitis Index
-(`perforation_peritonitis`), LRINEC (`nsti` — every band `attention`, low score reads "does
-not exclude"), HEART (`heart_score`), CIWA-Ar (`ciwa_ar`), Child-Pugh (`child_pugh`), KDIGO AKI
-stage (`kdigo_aki`). Registered for validation + tests only; each is absent from every
-`scoringKeys` list, so it cannot trigger for any unit until it is reviewed and the `pathwayId`
-is added to the relevant pack. New engine kind `max_points` (KDIGO stage = worst sub-score).
+**Batch 2 (2026-09-07, `active`, single-clinician pilot sign-off):** Mannheim Peritonitis
+Index (`perforation_peritonitis` — surgery), LRINEC (`nsti` — surgery; every band `attention`,
+low score reads "does not exclude", plus a score-independent urgent-review task), HEART
+(`heart_score` — medicine), CIWA-Ar (`ciwa_ar` — surgery + medicine), Child-Pugh (`child_pugh`
+— surgery + medicine), KDIGO AKI stage (`kdigo_aki` — surgery + medicine). `ciwa_ar`,
+`child_pugh` and `kdigo_aki` are cross-listed on both packs because they present on surgical
+wards too. New engine kind `max_points` (KDIGO stage = worst sub-score, never the sum).
 
 Licensing review required before enabling: **AJCC TNM, AIS/ISS, BI-RADS, ACR TI-RADS**, and any
 third-party calculator text/logo (`skeletons.ts` → `licensingReview: true`).

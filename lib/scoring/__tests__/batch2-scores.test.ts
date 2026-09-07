@@ -29,9 +29,11 @@ describe("batch 2 — every definition validates", () => {
     it(`${def.pathwayId}`, () => {
       expect(validatePathwayDefinition(def)).toEqual({ ok: true, issues: [] });
     });
-    it(`${def.pathwayId} ships draft and is not in any specialty pack yet`, () => {
-      expect(def.status).toBe("draft");
-      expect(def.clinicalOwner).toMatch(/PENDING/);
+    it(`${def.pathwayId} is active, signed off, with a scheduled re-review`, () => {
+      expect(def.status).toBe("active");
+      expect(def.clinicalOwner).toMatch(/signed off/i);
+      expect(def.clinicalOwner).toMatch(/review due/i);
+      expect(def.reviewDueAt).toBeTruthy();
     });
   }
 });

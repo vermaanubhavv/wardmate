@@ -6,8 +6,7 @@
  * assessment are clinician taps — the app does not hold a reliable pre-morbid baseline. Absolute
  * creatinine ≥ 4.0 mg/dL (with a recent rise) fills from the renal profile.
  *
- * STATUS: draft — not yet offered to any unit pending clinician review. Source: KDIGO Clinical
- * Practice Guideline for Acute Kidney Injury, Kidney Int Suppl 2012;2:1–138.
+ * STATUS: active — single-clinician pilot sign-off (Dr. Anubhav, 2026-09-07); departmental review due 2027-09-30. Runtime is triple-gated (env flag + per-ward row + the specialty pack scoringKeys).
  */
 
 import type { CardDefinition, PathwayDefinition, TimeWindow } from "../types";
@@ -117,8 +116,8 @@ export const kdigoAkiV1: PathwayDefinition = {
   pathwayId: "kdigo_aki",
   pathwayVersion: "1.0.0",
   title: "Acute kidney injury — stage",
-  status: "draft",
-  clinicalOwner: "PENDING — awaiting single-clinician review (Internal Medicine / Nephrology).",
+  status: "active",
+  clinicalOwner: "Reviewed against the cited sources and signed off for pilot use by Dr. Anubhav — 2026-09-07. Single-clinician sign-off; departmental review due 2027-09-30.",
   sourceReferences: [
     { label: "KDIGO AKI Guideline 2012", citation: "KDIGO Clinical Practice Guideline for Acute Kidney Injury. Kidney Int Suppl 2012;2:1–138." },
   ],

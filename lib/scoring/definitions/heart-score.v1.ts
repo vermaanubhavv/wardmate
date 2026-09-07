@@ -7,8 +7,7 @@
  * serial troponin), 7–10 high (early invasive strategy). It supports disposition; it does not
  * diagnose ACS or replace serial troponin and clinical judgement.
  *
- * STATUS: draft — not yet offered to any unit pending clinician review. Source: Six AJ et al.,
- * Neth Heart J 2008;16:191–6; Backus BE et al., Int J Cardiol 2013;168:2153–8.
+ * STATUS: active — single-clinician pilot sign-off (Dr. Anubhav, 2026-09-07); departmental review due 2027-09-30. Runtime is triple-gated (env flag + per-ward row + the specialty pack scoringKeys).
  */
 
 import type { CardDefinition, PathwayDefinition, TimeWindow } from "../types";
@@ -142,8 +141,8 @@ export const heartScoreV1: PathwayDefinition = {
   pathwayId: "heart_score",
   pathwayVersion: "1.0.0",
   title: "Chest pain — cardiac risk",
-  status: "draft",
-  clinicalOwner: "PENDING — awaiting single-clinician review (Internal Medicine / Cardiology).",
+  status: "active",
+  clinicalOwner: "Reviewed against the cited sources and signed off for pilot use by Dr. Anubhav — 2026-09-07. Single-clinician sign-off; departmental review due 2027-09-30.",
   sourceReferences: [
     { label: "Six AJ et al., Neth Heart J 2008", citation: "Chest pain in the emergency room: value of the HEART score. Neth Heart J 2008;16:191–6." },
     { label: "Backus BE et al., Int J Cardiol 2013", citation: "A prospective validation of the HEART score for chest pain patients. Int J Cardiol 2013;168:2153–8." },

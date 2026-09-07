@@ -11,8 +11,7 @@
  * Not valid in a patient who cannot communicate, is delirious from another cause, or has a
  * primary medical illness driving the observations.
  *
- * STATUS: draft — not yet offered to any unit pending clinician review. Source: Sullivan JT
- * et al., Br J Addict 1989;84:1353–7.
+ * STATUS: active — single-clinician pilot sign-off (Dr. Anubhav, 2026-09-07); departmental review due 2027-09-30. Runtime is triple-gated (env flag + per-ward row + the specialty pack scoringKeys).
  */
 
 import type { CardDefinition, PathwayDefinition, TimeWindow } from "../types";
@@ -104,8 +103,8 @@ export const ciwaArV1: PathwayDefinition = {
   pathwayId: "ciwa_ar",
   pathwayVersion: "1.0.0",
   title: "Alcohol withdrawal",
-  status: "draft",
-  clinicalOwner: "PENDING — awaiting single-clinician review (Internal Medicine).",
+  status: "active",
+  clinicalOwner: "Reviewed against the cited sources and signed off for pilot use by Dr. Anubhav — 2026-09-07. Single-clinician sign-off; departmental review due 2027-09-30.",
   sourceReferences: [
     { label: "Sullivan JT et al., Br J Addict 1989", citation: "Assessment of alcohol withdrawal: the revised CIWA-Ar scale. Br J Addict 1989;84:1353–7." },
   ],

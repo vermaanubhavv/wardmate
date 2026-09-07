@@ -7,8 +7,7 @@
  * prognosis and to gauge peri-procedural risk — it is not a treatment instruction, and MELD is
  * the preferred score for transplant listing and some acute decisions.
  *
- * STATUS: draft — not yet offered to any unit pending clinician review. Source: Pugh RN et al.,
- * Br J Surg 1973;60:646–9.
+ * STATUS: active — single-clinician pilot sign-off (Dr. Anubhav, 2026-09-07); departmental review due 2027-09-30. Runtime is triple-gated (env flag + per-ward row + the specialty pack scoringKeys).
  */
 
 import type { CardDefinition, PathwayDefinition, TimeWindow } from "../types";
@@ -130,8 +129,8 @@ export const childPughV1: PathwayDefinition = {
   pathwayId: "child_pugh",
   pathwayVersion: "1.0.0",
   title: "Chronic liver disease — severity",
-  status: "draft",
-  clinicalOwner: "PENDING — awaiting single-clinician review (Internal Medicine / Gastroenterology / Surgery).",
+  status: "active",
+  clinicalOwner: "Reviewed against the cited sources and signed off for pilot use by Dr. Anubhav — 2026-09-07. Single-clinician sign-off; departmental review due 2027-09-30.",
   sourceReferences: [
     { label: "Pugh RN et al., Br J Surg 1973", citation: "Transection of the oesophagus for bleeding oesophageal varices. Br J Surg 1973;60:646–9." },
   ],
