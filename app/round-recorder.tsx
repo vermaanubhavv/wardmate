@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MicIcon, StopIcon } from "./icons";
 import Mark from "./mark";
+import { track } from "@/lib/track";
 import {
   clearChunks,
   clearInFlight,
@@ -145,6 +146,7 @@ export default function RoundRecorder() {
       recorder.start(1000);
       recorderRef.current = recorder;
       setStatus("recording");
+      track("round_recording_started");
       navigator.vibrate?.(30);
     } catch {
       setStatus("idle");

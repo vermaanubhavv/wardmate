@@ -3,6 +3,7 @@ import { Geist_Mono } from "next/font/google";
 import "./globals.css";
 import RegisterSW from "./register-sw";
 import ConnectionBar from "./connection-bar";
+import PageView from "./page-view";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             must not happen is a resident trusting it as live. */}
         <ConnectionBar renderedAt={renderedAt} />
         {children}
+        <PageView />
         <RegisterSW />
       </body>
     </html>

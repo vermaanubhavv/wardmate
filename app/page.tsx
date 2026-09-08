@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getHomeScreen } from "@/lib/home-screen";
 import { getCurrentWard } from "@/lib/ward";
 import { getDoctorName } from "@/lib/auth";
+import { isCurrentUserAdmin } from "@/lib/admin";
 import { signOut } from "./actions";
 import Wordmark from "./wordmark";
 import { ChevronIcon } from "./icons";
@@ -21,10 +22,11 @@ import { ChevronIcon } from "./icons";
  */
 export default async function Home() {
   // The greeting name is a local cookie read; the rest is one round trip. See lib/home-screen.
-  const [home, googleName, { ward: currentWard, error: wardError }] = await Promise.all([
+  const [home, googleName, { ward: currentWard, error: wardError }, isAdmin] = await Promise.all([
     getHomeScreen(),
     getDoctorName(),
     getCurrentWard(),
+    isCurrentUserAdmin(),
   ]);
 
   if (!wardError && !currentWard) redirect("/onboarding");
@@ -86,6 +88,14 @@ export default async function Home() {
               so this page knows who you are.
             </p>
           )
+        )}
+        {isAdmin && (
+          <p className="mt-6 px-4 text-[13px] text-muted">
+            <Link href="/admin" className="text-accent">
+              Admin console
+            </Link>{" "}
+            — adoption, activity and friction across every unit.
+          </p>
         )}
       </main>
     </div>
