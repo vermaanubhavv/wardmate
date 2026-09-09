@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { MicIcon } from "@/app/icons";
 import Mark from "@/app/mark";
 import { useRouter } from "next/navigation";
-import { enqueue } from "@/lib/outbox";
+import {
+  clearChunks,
+  clearInFlight,
+  dropRecording,
+  markInFlight,
+  putChunk,
+  saveRecording,
+} from "@/lib/outbox";
 import { openLiveDictation, type LiveDictationSession } from "@/lib/stt/live";
 
 type Status = "idle" | "starting" | "recording" | "working";
@@ -63,6 +70,18 @@ export default function Recorder({
   const rafRef = useRef<number | null>(null);
   const liveSessionRef = useRef<LiveDictationSession | null>(null);
   const liveFinalRef = useRef("");
+  // One id per recording, used as the IndexedDB key, the per-chunk key, and the server's
+  // dedup `client_uuid` — so a salvage, a clean save and a queue retry are all the same row.
+  const recIdRef = useRef<string>("");
+  const seqRef = useRef(0);
+  const modeRef = useRef<Mode>(null);
+  const statusRef = useRef<Status>(status);
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
 
   useEffect(() => {
     onBusyChange?.(status === "recording" || status === "starting");
@@ -84,14 +103,51 @@ export default function Recorder({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seconds, status]);
 
-  // Tear everything down if the component goes away mid-recording.
-  useEffect(
-    () => () => {
+  // Phone locked / swiped away / killed mid-dictation: write what the batch recorder has to
+  // IndexedDB now, before the tab can be frozen. A later clean stop re-saves the fuller take
+  // under the same id, so this never doubles it. The live path needs none of this — its words
+  // are already on screen and filed sentence by sentence.
+  const salvage = useCallback(() => {
+    if (modeRef.current !== "batch") return;
+    if (statusRef.current !== "recording" && statusRef.current !== "working") return;
+    const chunks = chunksRef.current;
+    const mime = recorderRef.current?.mimeType || "audio/webm";
+    if (chunks.length) {
+      const blob = new Blob(chunks, { type: mime });
+      if (blob.size > 800) {
+        void saveRecording(recIdRef.current, {
+          kind: "bedside",
+          url: "/api/entries/voice",
+          patientId,
+          label: "Bedside note",
+          audio: blob,
+          mimeType: mime,
+        });
+      }
+    }
+    try {
+      recorderRef.current?.requestData?.();
+      if (recorderRef.current?.state === "recording") recorderRef.current.stop();
+    } catch {
+      // Already stopped, or the page is going faster than this can run.
+    }
+  }, [patientId]);
+
+  // Tear everything down if the component goes away mid-recording — and salvage first.
+  useEffect(() => {
+    const onHide = () => {
+      if (document.visibilityState === "hidden") salvage();
+    };
+    window.addEventListener("pagehide", salvage);
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      window.removeEventListener("pagehide", salvage);
+      document.removeEventListener("visibilitychange", onHide);
+      salvage();
       stopMeter();
       liveSessionRef.current?.stop();
-    },
-    []
-  );
+    };
+  }, [salvage]);
 
   function startMeter(stream: MediaStream) {
     try {
@@ -141,6 +197,8 @@ export default function Recorder({
     setSeconds(0);
     autoStoppedRef.current = false;
     liveFinalRef.current = "";
+    recIdRef.current = crypto.randomUUID();
+    seqRef.current = 0;
 
     if (await startLive()) return;
     await startBatch();
@@ -206,12 +264,24 @@ export default function Recorder({
 
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       chunksRef.current = [];
+      const recId = recIdRef.current;
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
+        if (e.data.size === 0) return;
+        chunksRef.current.push(e.data);
+        // Every second lands in IndexedDB as it is recorded, so a freeze or kill before a
+        // clean stop costs at most the last second — recoverInterruptedChunks() reassembles
+        // the rest on the next app open.
+        void putChunk(recId, seqRef.current++, e.data, {
+          kind: "bedside",
+          url: "/api/entries/voice",
+          patientId,
+          label: "Bedside note",
+          mimeType: recorder.mimeType || mimeType || "audio/webm",
+        });
       };
       recorder.onstop = () => void send(recorder.mimeType);
 
-      recorder.start();
+      recorder.start(1000);
       recorderRef.current = recorder;
       setMode("batch");
       setStatus("recording");
@@ -294,48 +364,28 @@ export default function Recorder({
   async function send(mimeType: string) {
     const blob = new Blob(chunksRef.current, { type: mimeType });
     chunksRef.current = [];
+    const id = recIdRef.current;
 
     if (blob.size < 1000) {
       setStatus("idle");
       setMessage("That was too short to hear anything.");
+      void dropRecording(id);
+      void clearChunks(id);
       return;
     }
 
+    const ext = mimeType.includes("mp4") ? "m4a" : mimeType.includes("mpeg") ? "mp3" : "webm";
     const form = new FormData();
     form.append("patient_id", patientId);
-    form.append("audio", blob);
+    form.append("audio", blob, `bedside.${ext}`);
+    form.append("client_uuid", id);
 
-    // Offline before we even try: queue rather than spend half a minute failing.
-    if (!navigator.onLine) return void queueIt(blob, mimeType);
-
+    // On the phone before anything that can fail or be frozen. What was said at a bedside is
+    // the one thing that cannot be reconstructed later. Dropped again once the server has it;
+    // left to retry through the queue if it does not. The server dedups on client_uuid, so a
+    // queue retry of a recording that did land cannot create a second observation.
     try {
-      const res = await fetch("/api/entries/voice", { method: "POST", body: form });
-      const data = await res.json();
-      setStatus("idle");
-      setTranscript(data.transcript || null);
-
-      if (!res.ok) {
-        setMessage(data.error ?? "Something went wrong.");
-        return;
-      }
-
-      setFindings(normaliseFindings(data.observations));
-      setMessage(
-        data.error ??
-          ((data.observations ?? []).length === 0 ? "Nothing clinical was found in that." : null) ??
-          (autoStoppedRef.current ? "Stopped at 3 minutes." : null)
-      );
-      router.refresh();
-    } catch {
-      // The signal went mid-upload. What was said at a bedside is the one thing that cannot
-      // be reconstructed later, so it goes to the phone rather than being lost.
-      void queueIt(blob, mimeType);
-    }
-  }
-
-  async function queueIt(blob: Blob, mimeType: string) {
-    try {
-      await enqueue({
+      await saveRecording(id, {
         kind: "bedside",
         url: "/api/entries/voice",
         patientId,
@@ -344,11 +394,53 @@ export default function Recorder({
         mimeType,
       });
       window.dispatchEvent(new Event("outbox-changed"));
-      setStatus("idle");
-      setMessage("No signal — saved on this phone. It will be sent when you are back online.");
     } catch {
       setStatus("idle");
       setMessage("No signal, and this phone would not store it. Do not close the app.");
+      return;
+    }
+
+    if (!navigator.onLine) {
+      setStatus("idle");
+      setMessage("No signal — saved on this phone. It will be sent when you are back online.");
+      return;
+    }
+
+    markInFlight(id);
+    try {
+      const res = await fetch("/api/entries/voice", { method: "POST", body: form });
+      const data = await res.json();
+      setStatus("idle");
+      setTranscript(data.transcript || null);
+
+      if (!res.ok) {
+        if (res.status >= 500) {
+          setMessage(data.error ?? "Saved on this phone — the server could not take it. It will retry.");
+        } else {
+          void dropRecording(id);
+          void clearChunks(id);
+          setMessage(data.error ?? "Something went wrong.");
+        }
+        return;
+      }
+
+      void dropRecording(id);
+      void clearChunks(id);
+      window.dispatchEvent(new Event("outbox-changed"));
+      setFindings(normaliseFindings(data.observations));
+      setMessage(
+        data.error ??
+          ((data.observations ?? []).length === 0 ? "Nothing clinical was found in that." : null) ??
+          (autoStoppedRef.current ? "Stopped at 3 minutes." : null)
+      );
+      router.refresh();
+    } catch {
+      // The signal went mid-upload. The recording is already on the phone, so it just waits
+      // for the queue.
+      setStatus("idle");
+      setMessage("No signal — saved on this phone. It will be sent when you are back online.");
+    } finally {
+      clearInFlight(id);
     }
   }
 
