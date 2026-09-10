@@ -80,6 +80,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
+  // Sentry's tunnel (next.config.ts → tunnelRoute). The browser SDK POSTs error reports here
+  // and they are forwarded on to Sentry; a crash on the sign-in screen, before any session
+  // exists, still needs to get out, so this must not be gated.
+  if (path.startsWith("/monitoring")) return NextResponse.next({ request });
+
   const isLoginPage = path.startsWith("/login");
   const cookie = readAuthCookie(request);
 

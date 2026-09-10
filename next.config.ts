@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -22,4 +23,23 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// `withSentryConfig` adds build-time pieces: source-map upload (so a stack trace points at
+// real code, not minified soup) and the `/monitoring` tunnel below. With no SENTRY_AUTH_TOKEN
+// it just skips the upload with a warning — the build still succeeds — so this is safe to
+// commit before the Sentry account exists.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+
+  // Quiet during local builds, verbose in CI/Vercel.
+  silent: !process.env.CI,
+
+  // Route Sentry's own network calls through wardmate.in/monitoring instead of sentry.io, so
+  // an ad blocker or a hospital firewall can't quietly swallow every error report.
+  tunnelRoute: "/monitoring",
+
+  // Upload source maps for the browser bundle, then delete them so they aren't served.
+  widenClientFileUpload: true,
+  sourcemaps: { deleteSourcemapsAfterUpload: true },
+});

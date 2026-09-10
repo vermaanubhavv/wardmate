@@ -22,6 +22,7 @@ repo to Vercel for deploys — everything past this point assumes that has happe
 | AI | **Anthropic API** (`claude-opus-5`) | Structures spoken/typed notes into clinical values; reads photographed lab reports and the ward register. |
 | Speech-to-text | Pluggable — **OpenAI**, **Sarvam** or **Deepgram** | Behind `lib/stt/`, selected by the `STT_PROVIDER` env var. Swappable without touching anything else; the point of that seam is comparing engines on Indian-accented medical speech. Deepgram runs `nova-3-medical` in `en-IN` with a per-patient keyterm list — see `docs/medical-dictation-keyterms.md`. |
 | Outbound email | **Resend**, via Supabase's SMTP integration | Sends the sign-in codes. |
+| Monitoring | **Sentry** (`@sentry/nextjs`) | Crash reports + 10%-sampled performance traces, browser and server. Dormant unless `NEXT_PUBLIC_SENTRY_DSN` is set. See "Sentry" below. |
 | Styling | Tailwind, hand-rolled iOS-style components | No component library. |
 | No ORM | Raw `@supabase/supabase-js` queries throughout | |
 
@@ -39,6 +40,10 @@ SARVAM_API_KEY
 DEEPGRAM_API_KEY
 STT_PROVIDER
 NEXT_PUBLIC_LIVE_DICTATION
+NEXT_PUBLIC_SENTRY_DSN     # empty = Sentry off; a real DSN turns it on. Not a secret.
+SENTRY_ORG                # build-time only, for source-map upload
+SENTRY_PROJECT            # build-time only
+SENTRY_AUTH_TOKEN         # build-time only, IS a secret — set in Vercel, not in the browser
 ```
 
 To trial Deepgram Nova-3 Medical, set `DEEPGRAM_API_KEY` and `STT_PROVIDER=deepgram`. The key
@@ -90,9 +95,10 @@ to run twice). Nineteen have shipped:
 0020  single-round-trip ward list function
 ```
 
-**Whoever takes this over should get a real migration tool running** (Supabase CLI migrations,
-or something like it) before writing patch 0021. The manual-numbering approach worked for one
-person iterating fast; it will not survive two people working at once.
+**Applying patches is now automated** — see "Automating deploys" below. `npm run db:push`
+applies every patch not yet recorded in the `public._patch_log` table, in filename order. The
+hand-numbered convention stays; the pasting-into-the-SQL-Editor step is gone. New patches still
+need to be idempotent and wrapped in `begin; ... commit;`.
 
 ### Row-level security is the actual security boundary
 
@@ -190,6 +196,91 @@ behaviour, not just an icon:
   per-ward custom letterhead/template (`0019`, `0017`) — they are not freshly generated prose
   from a model at discharge time. Read `app/patients/[id]/discharge-section.tsx` (or wherever
   it currently lives) before assuming otherwise.
+
+## Sentry
+
+Error and performance monitoring, added 2026-09-09. The integration is committed but **inert
+until `NEXT_PUBLIC_SENTRY_DSN` is set** — with no DSN, `Sentry.init` is a no-op and the app is
+byte-for-byte what it was before.
+
+Files: `instrumentation-client.ts` (browser), `sentry.server.config.ts` /
+`sentry.edge.config.ts` (server + middleware), `instrumentation.ts` (wires those in),
+`app/global-error.tsx` (root-level crash screen — the only error boundary above the app
+chrome), `next.config.ts` (`withSentryConfig`), `middleware.ts` (allowlists `/monitoring`).
+
+### Privacy — read before changing any Sentry config
+
+WardMate is a clinical tool, so the config is deliberately conservative:
+
+- `sendDefaultPii: false` everywhere — no IP address, no cookies, no request bodies, no
+  end-user identity attached to a report.
+- `lib/sentry-scrub.ts` runs in `beforeSend` on every runtime. It strips query strings,
+  replaces patient UUIDs in URLs with `:id` (same collapse `app/page-view.tsx` does), drops
+  `console` breadcrumbs, and removes request headers/cookies/body. A missed report is an
+  acceptable price; a patient identifier in a third-party dashboard is not.
+- **Session Replay is off** (`replaysSessionSampleRate: 0`). It screenshots the DOM, which on
+  a ward screen is patient data. Do not turn it on without a real DPA/consent conversation.
+- The one thing the scrubber cannot catch is a name passed straight into `throw new
+  Error(...)`. Error messages must describe what failed, never who.
+
+### Turning it on
+
+1. Create a Sentry account → new project, platform **Next.js**. Free tier is fine to start.
+2. Copy the **DSN** (Project Settings → Client Keys). Set `NEXT_PUBLIC_SENTRY_DSN` in
+   `.env.local` and in Vercel (all environments).
+3. For source maps: create an **auth token** (Settings → Auth Tokens, scope
+   `project:releases`). Set `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` in Vercel
+   only. Without these the build still succeeds — stack traces are just minified.
+4. Redeploy. Confirm by triggering a test error and seeing it land in Sentry.
+
+## Automating deploys
+
+Added 2026-09-10.
+
+### One-time setup
+
+```
+npm run deploy:init
+```
+
+Guided. Logs into Vercel and links the folder if needed, **downloads the current production
+env vars** into `env/production.env` (no retyping), asks for the one thing it can't discover
+(the Supabase connection string), and baselines the SQL-patch tracker. Safe to re-run.
+
+### Everyday
+
+```
+npm run ship
+```
+
+= apply new SQL patches → push `env/production.env` to Vercel → `vercel --prod`. Stops on the
+first failure. Replaces the manual "paste patches, edit dashboard, run `vercel --prod`" dance.
+
+Sub-commands if you want just one part: `npm run db:push`, `npm run env:sync` (both take
+`-- --dry-run` and `-- --status`).
+
+### How each part works
+
+- **`scripts/db-push.mjs`** — keeps a `public._patch_log` table of which `supabase/patches/*.sql`
+  files have run; applies the rest in filename order, each recorded only on success. Patches
+  must stay idempotent and `begin; … commit;`-wrapped. Needs `SUPABASE_DB_URL` (direct
+  connection, port 5432), stored in git-ignored `env/deploy.env`.
+- **`scripts/env-sync.mjs`** — `env/production.env` is the source of truth; every line is
+  pushed to Vercel (Production + Preview), unchanged ones skipped. `VERCEL_*` keys in the file
+  (added by `vercel env pull`) are ignored. Locally it reads the project from
+  `.vercel/project.json` and the token from your `vercel login` — no config.
+
+### Automatic deploys on `git push` (optional)
+
+```
+npm run deploy:github
+```
+
+Prints the five GitHub secrets to add and copies the big one to your clipboard, then the
+Action in `.github/workflows/deploy.yml` runs `test → db:push → env:sync → deploy` on every
+push to `main`. **Don't also connect the repo in Vercel's dashboard** — the Action deploys, a
+Vercel Git connection would double it. Use a *fresh* token from vercel.com/account/tokens for
+the secret (the CLI login token expires).
 
 ## Known gaps / near-term work
 

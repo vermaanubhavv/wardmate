@@ -8,10 +8,16 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "deploy:init": "node scripts/deploy-init.mjs",
+    "deploy:github": "node scripts/deploy-github.mjs",
+    "ship": "node scripts/ship.mjs",
+    "db:push": "node scripts/db-push.mjs",
+    "env:sync": "node scripts/env-sync.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",
+    "@sentry/nextjs": "^10.74.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",
     "docx": "^9.7.1",
@@ -29,6 +35,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.0",
+    "pg": "^8.23.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^3.2.7"

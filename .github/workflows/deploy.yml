@@ -1,0 +1,69 @@
+# Ship on every push to main: run the tests, apply any new database patches, sync environment
+# variables to Vercel, then deploy. This is the whole release pipeline — nothing is done by
+# hand any more.
+#
+# Because this workflow deploys, do NOT also connect the repo to Vercel's Git integration, or
+# every push deploys twice. Vercel only needs the CLI token below.
+#
+# Required GitHub repository secrets (Settings -> Secrets and variables -> Actions):
+#   PRODUCTION_ENV      the entire contents of env/production.env (multi-line paste)
+#   SUPABASE_DB_URL     Supabase direct connection string (port 5432)
+#   VERCEL_TOKEN        https://vercel.com/account/tokens
+#   VERCEL_PROJECT_ID   Vercel -> project -> Settings -> "Project ID"
+#   VERCEL_TEAM_ID      Vercel -> team -> Settings -> "Team ID" (omit for a personal account)
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {} # lets you run it by hand from the Actions tab
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false # never interrupt a deploy that is applying SQL
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm test
+
+      - name: Write env/production.env from secret
+        run: |
+          mkdir -p env
+          printf '%s\n' "$PRODUCTION_ENV" > env/production.env
+        env:
+          PRODUCTION_ENV: ${{ secrets.PRODUCTION_ENV }}
+
+      - name: Apply database patches
+        run: npm run db:push
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
+      - name: Sync environment variables to Vercel
+        run: npm run env:sync
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+
+      - name: Deploy to Vercel
+        run: |
+          npm i -g vercel@latest
+          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          vercel build --prod --token="$VERCEL_TOKEN"
+          vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
