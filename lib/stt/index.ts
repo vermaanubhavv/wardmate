@@ -2,6 +2,7 @@ import type { SttProvider } from "./types";
 import { OpenAITranscriber } from "./openai";
 import { SarvamTranscriber } from "./sarvam";
 import { DeepgramTranscriber } from "./deepgram";
+import { traced } from "@/lib/observability";
 
 export { MEDICAL_VOCABULARY_HINT, MEDICAL_KEYTERMS } from "./types";
 export type { SttProvider, Transcription, TranscribeOptions } from "./types";
@@ -13,7 +14,25 @@ export type { SttProvider, Transcription, TranscribeOptions } from "./types";
  */
 export function getTranscriber(): SttProvider {
   const choice = process.env.STT_PROVIDER ?? "openai";
-  return buildTranscriber(choice);
+  return withTracing(buildTranscriber(choice));
+}
+
+/**
+ * Wrap a transcriber so every `transcribe()` call is a span in the request's trace — how long
+ * the speech-to-text step took, which engine, how many bytes of audio. One place, so it
+ * covers whichever provider `STT_PROVIDER` selects. No-op when Sentry is off.
+ */
+function withTracing(p: SttProvider): SttProvider {
+  return {
+    provider: p.provider,
+    model: p.model,
+    transcribe: (audio, hint, options) =>
+      traced("stt.transcribe", "gen_ai.transcribe", () => p.transcribe(audio, hint, options), {
+        "stt.provider": p.provider,
+        "stt.model": p.model,
+        "audio.bytes": audio.size,
+      }),
+  };
 }
 
 function buildTranscriber(choice: string): SttProvider {

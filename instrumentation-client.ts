@@ -5,7 +5,7 @@
 // With no NEXT_PUBLIC_SENTRY_DSN set, Sentry.init is a no-op and the SDK stays dormant — so
 // this is safe to ship before the Sentry account exists.
 import * as Sentry from "@sentry/nextjs";
-import { scrubEvent } from "@/lib/sentry-scrub";
+import { scrubEvent, scrubLog } from "@/lib/sentry-scrub";
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -23,6 +23,10 @@ Sentry.init({
   // patient names, beds and results. Errors + stack traces are plenty.
   replaysSessionSampleRate: 0,
   replaysOnErrorSampleRate: 0,
+
+  // Structured logs, same as the server. No console forwarding.
+  enableLogs: true,
+  beforeSendLog: scrubLog,
 
   beforeSend: scrubEvent,
 });

@@ -10,6 +10,7 @@ import { getTemplateForPatient } from "@/lib/templates";
 import { getPublishedProtocolContext } from "@/lib/protocols";
 import { applyProcedureDone } from "@/lib/apply-procedure-done";
 import { readReceipt, saveReceipt } from "@/lib/dictation-receipt";
+import { tagRequest, log } from "@/lib/observability";
 
 /**
  * The whole voice round-trip, on the server: audio in, stored observations out.
@@ -55,6 +56,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Patient not found." }, { status: 404 });
   }
 
+  // Per-request context on every span, log and error from here on. ward_id only — no patient
+  // id, no name (same rule as app_events).
+  tagRequest({ "wardmate.route": "entries/voice", "ward.id": patient.ward_id });
+
   // Which department this unit is, for the dictation prompt. Started here and awaited only at
   // the extraction call, so it overlaps the speech-to-text step and costs no extra wall time.
   // It resolves to null — and so to general surgery — on any database without patch 0060.
@@ -79,7 +84,14 @@ export async function POST(request: Request) {
     });
     heard = result.text;
     transcript = (await correctTranscript(heard)).text;
+    log.info("dictation transcribed", {
+      "stt.provider": stt.provider,
+      "transcript.chars": transcript.length,
+      "keyterms.count": keyterms.length,
+      corrected: heard !== transcript,
+    });
   } catch (e) {
+    log.error("dictation transcription failed", { "stt.provider": stt?.provider ?? "unknown" });
     return NextResponse.json(
       { error: plainAiError(e) },
       { status: 502 }
@@ -195,6 +207,11 @@ export async function POST(request: Request) {
     discarded: extraction.rejected.length,
   };
   await saveReceipt(supabase, clientUuid, user.id, "voice", body);
+  log.info("dictation stored", {
+    observations: extraction.observations.length,
+    discarded: extraction.rejected.length,
+    "extraction.model": extraction.model,
+  });
   return NextResponse.json(body);
 }
 

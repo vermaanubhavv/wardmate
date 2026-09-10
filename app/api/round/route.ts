@@ -8,6 +8,7 @@ import { correctTranscript } from "@/lib/glossary";
 import { buildRoundDraft } from "@/lib/round-draft";
 import { getCurrentWard, getActivePatients } from "@/lib/ward";
 import { readReceipt, saveReceipt } from "@/lib/dictation-receipt";
+import { tagRequest, log } from "@/lib/observability";
 
 /**
  * A whole round, dictated in one go. Produces a DRAFT and writes nothing to any patient.
@@ -26,6 +27,8 @@ export async function POST(request: Request) {
 
   const { ward } = await getCurrentWard();
   if (!ward) return NextResponse.json({ error: "No ward found." }, { status: 404 });
+
+  tagRequest({ "wardmate.route": "round", "ward.id": ward.id });
 
   const form = await request.formData();
   const audio = form.get("audio");
@@ -131,5 +134,11 @@ export async function POST(request: Request) {
 
   const body = { dictation_id: dictation.id, segments: read.segments.length };
   await saveReceipt(supabase, clientUuid, user.id, "round", body);
+  log.info("round draft built", {
+    segments: read.segments.length,
+    "stt.provider": stt?.provider ?? "typed",
+    "transcript.chars": transcript.length,
+    patients: patients.length,
+  });
   return NextResponse.json(body);
 }

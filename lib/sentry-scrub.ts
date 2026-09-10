@@ -33,6 +33,33 @@ function scrubStrings<T>(input: T): T {
   return input;
 }
 
+/**
+ * Same job as `scrubEvent`, for structured logs (`Sentry.logger.*` and any console capture).
+ * Runs in `beforeSendLog`. Collapses ids in the message and in string attributes, and drops
+ * attributes whose key suggests free text — so an accidental
+ * `log.info("saved", { transcript })` never ships the transcript.
+ */
+const FREE_TEXT_KEYS =
+  /transcript|(^|[._])text$|(^|[._])name$|note|value_text|source_quote|message|prompt|content|display_name/i;
+
+export function scrubLog<T extends { message?: unknown; attributes?: Record<string, unknown> }>(
+  logEntry: T
+): T | null {
+  if (typeof logEntry.message === "string") {
+    logEntry.message = logEntry.message.replace(UUID, ":id");
+  }
+  if (logEntry.attributes) {
+    for (const [k, v] of Object.entries(logEntry.attributes)) {
+      if (FREE_TEXT_KEYS.test(k)) {
+        delete logEntry.attributes[k];
+      } else if (typeof v === "string") {
+        logEntry.attributes[k] = v.replace(UUID, ":id");
+      }
+    }
+  }
+  return logEntry;
+}
+
 export function scrubEvent(event: ErrorEvent): ErrorEvent | null {
   // Request metadata: keep the method and a de-identified path, drop the rest.
   if (event.request) {

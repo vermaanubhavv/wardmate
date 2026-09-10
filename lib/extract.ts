@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { AI_MODEL } from "@/lib/model";
+import { traced, recordAiUsage } from "@/lib/observability";
 import { isIdentifierLabel } from "@/lib/patients";
 import { extractClinicalEntities } from "@/lib/clinical-ner";
 import { generalSurgeryPack, getSpecialtyPack, type SpecialtyPack } from "@/lib/specialty";
@@ -225,7 +226,12 @@ export async function extractObservations(
   // this app's judgement and not proof of anything: it exists purely so a term the LLM might
   // otherwise mishear or skip in a noisy dictation gets a second look. Rule 2 above still
   // applies in full — a listed term with no verbatim quote in the transcript is not real.
-  const detectedEntities = await extractClinicalEntities(transcript);
+  const detectedEntities = await traced(
+    "ai.clinical-ner",
+    "gen_ai.chat",
+    () => extractClinicalEntities(transcript),
+    { "transcript.chars": transcript.length }
+  );
   const detectedBlock =
     detectedEntities.length > 0
       ? `\n\nA specialised medical term-spotter (not this app's judgement, and not proof anything was actually said) flagged these terms as possibly present in the transcript below. Use this only to catch a term you might otherwise mishear or skip over in a noisy dictation — every rule above still applies in full, especially rule 2: an observation is only valid if you can copy its own verbatim source_quote from the transcript. A term listed here that you cannot actually find quoted in the transcript is not real and must not be emitted just because it is on this list.\n${detectedEntities.map((e) => `- ${e.text} (${e.label})`).join("\n")}`
@@ -247,32 +253,45 @@ export async function extractObservations(
         }
       : SCHEMA;
 
-  const response = await client.messages.create({
-    model,
-    max_tokens: 4000,
-    // Still caches on Sonnet 5: ~2,400 tokens against its 1024-token minimum.
-    // Two blocks, not one concatenated string. The first is identical on every call and is
-    // the expensive part (~2,400 tokens, sent again for every bed on the round); the rest
-    // varies by patient — expected labels, this unit's protocols — and would invalidate the
-    // cache on every request if it sat inside the same block. Caching is a prefix match, so
-    // the stable half has to physically come first.
-    system: [
-      { type: "text", text: buildSystemPrompt(pack), cache_control: { type: "ephemeral" } },
-      { type: "text", text: expected + protocolBlock + detectedBlock },
-    ],
-    // Low effort: this is constrained extraction from a short transcript, and the resident
-    // is standing at a bedside. Raise it if extraction quality turns out to need it.
-    output_config: {
-      effort: "low",
-      format: { type: "json_schema", schema: schema as unknown as Record<string, unknown> },
-    },
-    messages: [
-      {
-        role: "user",
-        content: `Transcript:\n\n${transcript}`,
-      },
-    ],
-  });
+  const response = await traced(
+    "ai.extract-observations",
+    "gen_ai.chat",
+    () =>
+      client.messages.create({
+        model,
+        max_tokens: 4000,
+        // Still caches on Sonnet 5: ~2,400 tokens against its 1024-token minimum.
+        // Two blocks, not one concatenated string. The first is identical on every call and
+        // is the expensive part (~2,400 tokens, sent again for every bed on the round); the
+        // rest varies by patient — expected labels, this unit's protocols — and would
+        // invalidate the cache on every request if it sat inside the same block. Caching is a
+        // prefix match, so the stable half has to physically come first.
+        system: [
+          { type: "text", text: buildSystemPrompt(pack), cache_control: { type: "ephemeral" } },
+          { type: "text", text: expected + protocolBlock + detectedBlock },
+        ],
+        // Low effort: this is constrained extraction from a short transcript, and the
+        // resident is standing at a bedside. Raise it if extraction quality needs it.
+        output_config: {
+          effort: "low",
+          format: { type: "json_schema", schema: schema as unknown as Record<string, unknown> },
+        },
+        messages: [
+          {
+            role: "user",
+            content: `Transcript:\n\n${transcript}`,
+          },
+        ],
+      }),
+    {
+      "gen_ai.request.model": model,
+      "transcript.chars": transcript.length,
+      "expected_labels.count": expectedLabels.length,
+      "protocols.count": protocols.length,
+      "ner_entities.count": detectedEntities.length,
+    }
+  );
+  recordAiUsage(response.usage);
 
   const text = response.content.find((b) => b.type === "text");
   const parsed = text && text.type === "text" ? JSON.parse(text.text) : { observations: [] };

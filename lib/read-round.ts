@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { AI_MODEL } from "@/lib/model";
+import { traced, recordAiUsage } from "@/lib/observability";
 
 export type RoundSegment = {
   /** The bed as spoken — "1", "SW-12", "ICU-3". Empty if none was said. */
@@ -116,21 +117,32 @@ export async function readRoundDictation(
       ? `\n\nThe beds on this ward are: ${wardBeds.join(", ")}. Use these to recognise how this unit names its beds. A bed on this list being unmentioned in the transcript means it gets no segment — never create one for it.`
       : "";
 
-  const response = await client.messages.create({
-    model,
-    max_tokens: 8000,
-    system: SYSTEM_PROMPT + beds,
-    // Getting a boundary wrong here puts one patient's instruction onto another patient, so
-    // this is the last read that should be economised on. It is still set to "medium": "high"
-    // is off across the whole app for now, on cost. The escalation path if per-bed accuracy
-    // slips is to put this back to "high" or move to Opus (see lib/model.ts) once there is
-    // funding for it — not to leave it here and hope.
-    output_config: {
-      effort: "medium",
-      format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> },
-    },
-    messages: [{ role: "user", content: `Transcript:\n\n${transcript}` }],
-  });
+  const response = await traced(
+    "ai.round-split",
+    "gen_ai.chat",
+    () =>
+      client.messages.create({
+        model,
+        max_tokens: 8000,
+        system: SYSTEM_PROMPT + beds,
+        // Getting a boundary wrong here puts one patient's instruction onto another patient,
+        // so this is the last read that should be economised on. It is still set to "medium":
+        // "high" is off across the whole app for now, on cost. The escalation path if per-bed
+        // accuracy slips is to put this back to "high" or move to Opus (see lib/model.ts)
+        // once there is funding for it — not to leave it here and hope.
+        output_config: {
+          effort: "medium",
+          format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> },
+        },
+        messages: [{ role: "user", content: `Transcript:\n\n${transcript}` }],
+      }),
+    {
+      "gen_ai.request.model": model,
+      "transcript.chars": transcript.length,
+      "ward_beds.count": wardBeds.length,
+    }
+  );
+  recordAiUsage(response.usage);
 
   const text = response.content.find((b) => b.type === "text");
   const parsed = text && text.type === "text" ? JSON.parse(text.text) : { segments: [] };

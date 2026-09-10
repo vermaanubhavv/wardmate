@@ -223,6 +223,29 @@ WardMate is a clinical tool, so the config is deliberately conservative:
 - The one thing the scrubber cannot catch is a name passed straight into `throw new
   Error(...)`. Error messages must describe what failed, never who.
 
+### Request instrumentation (added 2026-09-10)
+
+Beyond auto-captured errors and traces, the dictation / AI pipeline is instrumented by hand
+so a slow request shows *where* the time went:
+
+- `lib/observability.ts` — `traced(name, op, fn, attrs)` wraps a step in a span; `log.info/
+  warn/error` emit structured logs attached to the trace; `tagRequest({...})` stamps
+  per-request context (route, `ward.id`) onto every span/log/error via the isolation scope.
+  All no-ops when Sentry is off.
+- Spans: `stt.transcribe` (any provider, via a wrapper in `lib/stt/index.ts`),
+  `ai.clinical-ner` + `ai.extract-observations` (`lib/extract.ts`), `ai.round-split`
+  (`lib/read-round.ts`) — each carries token usage under `gen_ai.usage.*`.
+- Logs: the `entries/voice` and `round` routes emit `dictation transcribed` / `dictation
+  stored` / `round draft built` with counts and provider — never a transcript or a name.
+- `enableLogs: true` in all three configs, **no console forwarding** — only explicit
+  `Sentry.logger.*` calls ship. `beforeSendLog` (`scrubLog` in `lib/sentry-scrub.ts`) drops
+  ids and any attribute whose key looks like free text.
+- `lib/sentry-sampling.ts` — `tracesSampler` replaces the flat rate: 0% for telemetry/health
+  noise, 100% for the pipeline routes, 10% for everything else.
+
+To extend: `tagRequest()` at the top of a route, `traced()` around a slow call, `log.info()`
+at a milestone. Keep attributes scalar and PHI-free.
+
 ### Turning it on
 
 1. Create a Sentry account → new project, platform **Next.js**. Free tier is fine to start.
