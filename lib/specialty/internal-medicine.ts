@@ -35,12 +35,16 @@ import type { SpecialtyPack } from "./types";
  *    patient is more than an hour into the admission — the same mechanism the oncology
  *    febrile-neutropenia checklist uses.
  *
- * PILOT-ACTIVATED 2026-09-04 on the product owner's direction. The four scores in `scoringKeys`
- * are now `status: "active"` and the checklist protocols (patch 0064) are published. Formal
- * clinical governance review is still on the books (each score's `reviewDueAt`). The discharge
- * *condition* templates remain the one hold-back — see lib/discharge-templates-medicine.ts.
- * Runtime is still gated: the scoring engine's env flag + a per-ward `ward_scoring_engine`
- * row, and `SPECIALTY_PACKS=on` for the picker. See docs/specialty-packs.md §8.
+ * PILOT-ACTIVATED 2026-09-04, EXPANDED 2026-09-05, PUBLISHED FOR ALPHA 2026-09-13, all on the
+ * product owner's direction. Every score in `scoringKeys` is `status: "active"`, every
+ * checklist protocol (patches 0064, 0067) is published, and the discharge *condition*
+ * templates (lib/discharge-templates-medicine.ts) are now live — the one deliberate hold-back
+ * through the pilot build, released for alpha testing rather than kept back for a full
+ * departmental read-through first. Formal clinical governance review is still on the books
+ * (each score's `reviewDueAt`); alpha use is expected to surface corrections, not prove there
+ * are none. Runtime is still gated: the scoring engine's env flag + a per-ward
+ * `ward_scoring_engine` row, and `SPECIALTY_PACKS=on` for the picker. See
+ * docs/specialty-packs.md §8–§9.
  */
 export const internalMedicinePack: SpecialtyPack = {
   key: "internal_medicine",

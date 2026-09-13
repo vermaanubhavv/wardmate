@@ -161,11 +161,20 @@ describe("internal medicine counts by the hospital day", () => {
     expect(p.checklistAnchor).toBe("admission");
   });
 
-  it("ships the generic discharge template until the unit's clinical read-through", () => {
-    // MEDICINE_DISCHARGE_TEMPLATES is deliberately empty for the pilot — see the file header.
-    expect(p.dischargeTemplates).toEqual([]);
-    expect(listDischargeTemplatesFor(p).map((t) => t.key)).toEqual([p.genericDischargeTemplate.key]);
-    expect(matchDischargeTemplateFor(p, { diagnosisText: "dengue fever with warning signs" })).toBeNull();
+  it("ships the condition-keyed templates plus the generic fallback (published 2026-09-13)", () => {
+    // MEDICINE_DISCHARGE_TEMPLATES was deliberately empty through the pilot build; published
+    // for alpha testing on the product owner's direction — see the file header.
+    expect(p.dischargeTemplates.length).toBeGreaterThan(10);
+    expect(listDischargeTemplatesFor(p).map((t) => t.key)).toContain(p.genericDischargeTemplate.key);
+    expect(matchDischargeTemplateFor(p, { diagnosisText: "dengue fever with warning signs" })?.key).toBe("dengue");
+  });
+
+  it("no medicine template ever guesses a drug or dose", () => {
+    // The one rule that was never up for debate, even once published: a medicine discharge
+    // prescription is entirely patient-specific. Every template's medications list stays empty.
+    for (const t of [...p.dischargeTemplates, p.genericDischargeTemplate]) {
+      expect(t.scaffold.medications).toEqual([]);
+    }
   });
 });
 
