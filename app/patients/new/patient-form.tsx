@@ -21,6 +21,15 @@ const REGIMEN_SUGGESTIONS = [
   "R-CHOP", "TCH", "VRd", "carboplatin-paclitaxel", "hyper-CVAD",
 ];
 
+/** Mirrors the one in ../edit-identity.tsx — see that file for why this field's visibility
+ *  and label both had to stop assuming every patient is a surgical one. */
+function checklistFieldLabel(specialty: string): string {
+  if (specialty === "medical_oncology") return "Chemo cycle / checklist";
+  if (specialty === "internal_medicine") return "Working diagnosis (for checklist)";
+  if (specialty === "general_surgery") return "Operation";
+  return "Checklist";
+}
+
 export default function PatientForm({
   wardId,
   diagnosisSuggestions,
@@ -279,55 +288,63 @@ export default function PatientForm({
         </select>
       </Field>
 
-      {(management === "preop" || management === "postop") && (
-        <>
-          <Field
-            label="Operation"
-            hint="Type anything. Picking one of the suggestions also brings its checklist of what to mention."
-          >
-            <input
-              name="procedure"
-              list="operation-suggestions"
-              value={fields.procedure}
-              onChange={(e) => set("procedure")(e.target.value)}
-              autoCapitalize="none"
-              className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
-            />
-            <datalist id="operation-suggestions">
-              {templateChoices.map((t) => (
-                <option key={`${t.family}|${t.variant ?? ""}`} value={t.label} />
-              ))}
-            </datalist>
-          </Field>
+      {/* The checklist picker itself: for a surgical unit this only ever meant an operation, so
+          it stayed behind the Pre-op/Post-op gate. Medicine and oncology have no operation and
+          (for medicine) no equivalent management state, so without also showing it for any
+          non-surgical specialty, neither department could attach a checklist to a patient at
+          all — see checklistFieldLabel above. */}
+      {(management === "preop" || management === "postop" || specialty !== "general_surgery") && (
+        <Field
+          label={checklistFieldLabel(specialty)}
+          hint="Type anything. Picking one of the suggestions also brings its checklist of what to mention."
+        >
+          <input
+            name="procedure"
+            list="operation-suggestions"
+            value={fields.procedure}
+            onChange={(e) => set("procedure")(e.target.value)}
+            autoCapitalize="none"
+            className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+          />
+          <datalist id="operation-suggestions">
+            {templateChoices.map((t) => (
+              <option key={`${t.family}|${t.variant ?? ""}`} value={t.label} />
+            ))}
+          </datalist>
+        </Field>
+      )}
 
-          <Field
-            label={management === "postop" ? "Date of operation" : "Planned date of operation"}
-            hint={
-              management === "postop"
-                ? "The day count on the card is taken from this"
-                : "Left blank if the date is not fixed yet"
-            }
-          >
-            <input
-              type="date"
-              name="operation_date"
-              required={management === "postop"}
-              // An operation that has happened cannot be in the future. A planned one is
-              // deliberately unbounded: a postponed list still needs its old date recorded.
-              max={management === "postop" ? localToday : undefined}
-              defaultValue={management === "postop" ? localToday : ""}
-              className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
-            />
-          </Field>
-        </>
+      {/* The operation date itself stays surgery-only — medicine and oncology have no date to
+          give here. */}
+      {(management === "preop" || management === "postop") && (
+        <Field
+          label={management === "postop" ? "Date of operation" : "Planned date of operation"}
+          hint={
+            management === "postop"
+              ? "The day count on the card is taken from this"
+              : "Left blank if the date is not fixed yet"
+          }
+        >
+          <input
+            type="date"
+            name="operation_date"
+            required={management === "postop"}
+            // An operation that has happened cannot be in the future. A planned one is
+            // deliberately unbounded: a postponed list still needs its old date recorded.
+            max={management === "postop" ? localToday : undefined}
+            defaultValue={management === "postop" ? localToday : ""}
+            className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+          />
+        </Field>
       )}
 
       {/* Nothing spoken is lost because a dropdown above it happens to be unset. The visible
-          Operation box only appears for pre-op and post-op, but if the resident named an
-          operation out loud it still goes with the patient. */}
-      {management !== "preop" && management !== "postop" && fields.procedure && (
-        <input type="hidden" name="procedure" value={fields.procedure} />
-      )}
+          checklist box only appears for pre-op, post-op, or a non-surgical specialty, but if
+          the resident named an operation out loud it still goes with the patient. */}
+      {management !== "preop" &&
+        management !== "postop" &&
+        specialty === "general_surgery" &&
+        fields.procedure && <input type="hidden" name="procedure" value={fields.procedure} />}
 
       {/* Chemotherapy. Asked only on an oncology unit, and asked at admission because the
           cycle is what the whole ward round then counts by — a patient admitted without it

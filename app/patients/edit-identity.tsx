@@ -46,6 +46,22 @@ function currentManagementChoice(patient: Patient): string {
 
 type TemplateChoice = { family: string; variant: string | null; label: string };
 
+/**
+ * The checklist-family picker was built as an "Operation" field and gated behind the surgical
+ * Pre-op/Post-op management states — the only ones that ever unlocked it. A medicine or
+ * oncology patient has no operation and (for medicine especially) no equivalent management
+ * state, so the field was unreachable: neither department could attach any of their published
+ * checklists (febrile illness, DKA, febrile neutropenia, …) to a patient at all. Fixed by
+ * showing the field whenever the specialty isn't general surgery, on top of the existing
+ * pre-op/post-op gate — labelled for what it actually picks in each department.
+ */
+function checklistFieldLabel(specialty: string): string {
+  if (specialty === "medical_oncology") return "Chemo cycle / checklist";
+  if (specialty === "internal_medicine") return "Working diagnosis (for checklist)";
+  if (specialty === "general_surgery") return "Operation";
+  return "Checklist";
+}
+
 /** What to put in the box: the unit's own wording if there is any, otherwise the name of the
  *  template this patient was linked to before free text existed. */
 function currentProcedure(patient: Patient, choices: TemplateChoice[]): string {
@@ -262,11 +278,15 @@ export default function EditIdentity({
             </select>
           </label>
 
-          {/* A conservative or workup patient has no operation to name and no date to give. */}
-          {management === "preop" || management === "postop" ? (
+          {/* A conservative or workup SURGICAL patient has no operation to name and no date to
+              give — that part of the gate is unchanged. A non-surgical patient never has an
+              operation either, but does still need to reach the checklist picker, so the field
+              is also shown whenever the specialty isn't general surgery (see
+              checklistFieldLabel above for why). */}
+          {management === "preop" || management === "postop" || specialty !== "general_surgery" ? (
             <>
               <label className="flex flex-col gap-2">
-                <span className="text-[15px] text-muted">Operation</span>
+                <span className="text-[15px] text-muted">{checklistFieldLabel(specialty)}</span>
                 <input
                   name="procedure"
                   list="operation-suggestions"
@@ -284,27 +304,29 @@ export default function EditIdentity({
                 </span>
               </label>
 
-              <label className="flex flex-col gap-2">
-                <span className="text-[15px] text-muted">
-                  {management === "postop" ? "Date of operation" : "Planned date of operation"}
-                </span>
-                <input
-                  type="date"
-                  name="operation_date"
-                  required={management === "postop"}
-                  defaultValue={
-                    management === "postop"
-                      ? (patient.surgery_date ?? "")
-                      : (patient.planned_surgery_date ?? "")
-                  }
-                  className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
-                />
-                {management === "postop" && (
-                  <span className="text-[13px] text-muted">
-                    Sets the post-op day count shown on the ward list.
+              {(management === "preop" || management === "postop") && (
+                <label className="flex flex-col gap-2">
+                  <span className="text-[15px] text-muted">
+                    {management === "postop" ? "Date of operation" : "Planned date of operation"}
                   </span>
-                )}
-              </label>
+                  <input
+                    type="date"
+                    name="operation_date"
+                    required={management === "postop"}
+                    defaultValue={
+                      management === "postop"
+                        ? (patient.surgery_date ?? "")
+                        : (patient.planned_surgery_date ?? "")
+                    }
+                    className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+                  />
+                  {management === "postop" && (
+                    <span className="text-[13px] text-muted">
+                      Sets the post-op day count shown on the ward list.
+                    </span>
+                  )}
+                </label>
+              )}
             </>
           ) : (
             /* THIS IS LOAD-BEARING. The save always writes the operation from this form, so
