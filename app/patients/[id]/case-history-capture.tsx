@@ -1,20 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Mark from "@/app/mark";
 import { ImageIcon, MicIcon, StopIcon } from "@/app/icons";
 import { prepareImageForUpload } from "@/lib/image-for-upload";
-import {
-  clearChunks,
-  clearInFlight,
-  dropRecording,
-  markInFlight,
-  putChunk,
-  saveRecording,
-} from "@/lib/outbox";
+import { useDictation } from "@/lib/use-dictation";
 
-type Status = "idle" | "starting" | "recording" | "working";
+/** No one dictates a clerking for 15 minutes on purpose — this is only the "forgotten and left
+ *  open" backstop, generous enough to never interrupt a real one. */
+const MAX_SECONDS = 900;
 
 /**
  * What a full clerking covers, in the order it is taken. Shown next to the mic in the "speak"
@@ -78,42 +73,60 @@ export default function CaseHistoryCapture({
   const router = useRouter();
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
-  const mediaRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const recIdRef = useRef<string>("");
-  const recMimeRef = useRef<string>("audio/webm");
-  const seqRef = useRef(0);
-  const recordingRef = useRef(false);
 
-  const [status, setStatus] = useState<Status>("idle");
-  const [message, setMessage] = useState<string | null>(null);
   const [showPhotoChoices, setShowPhotoChoices] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
 
   useEffect(() => {
     if (defaultOpen && detailsRef.current) detailsRef.current.open = true;
   }, [defaultOpen]);
 
-  /** Returns how it went, so a dictation caller knows whether to keep its phone copy for the
-   *  queue ("kept") or let it go ("done"). The photo caller ignores the return. */
-  async function submit(body: FormData, savedLocally = false): Promise<"done" | "kept"> {
-    setStatus("working");
+  const { status, recording, message, setMessage, start: startRecording, stop: stopRecording } =
+    useDictation({
+      kind: "case-history",
+      url: "/api/entries/case-history",
+      label: "Case history",
+      patientId,
+      maxSeconds: MAX_SECONDS,
+      rejectionMessage: (data) =>
+        typeof data.error === "string" ? data.error : "Could not save the case history.",
+      onResult: (data) => {
+        const n = Array.isArray(data.observations) ? data.observations.length : 0;
+        if (savedHref) {
+          router.push(savedHref);
+        } else {
+          router.refresh();
+        }
+        return typeof data.error === "string"
+          ? data.error
+          : n === 0
+            ? "Saved, but nothing structured was found in it."
+            : `Saved — ${n} ${n === 1 ? "item" : "items"} recorded, including any plan mentioned.`;
+      },
+    });
+
+  async function uploadPhoto(file: File) {
+    setPhotoBusy(true);
     setMessage(null);
     try {
-      const res = await fetch("/api/entries/case-history", { method: "POST", body });
+      // A library image can be HEIC or too large for the request. The camera and library paths
+      // meet here so they receive the same conversion and the server always sees a supported
+      // file.
+      const photo = await prepareImageForUpload(file);
+      const form = new FormData();
+      form.append("patient_id", patientId);
+      form.append("photo", photo);
+      // So a retried photo upload is not read and stored twice.
+      form.append("client_uuid", crypto.randomUUID());
+      const res = await fetch("/api/entries/case-history", { method: "POST", body: form });
       const data = await res.json();
-      setStatus("idle");
+      setPhotoBusy(false);
 
       if (!res.ok) {
-        // 5xx / AI outage is worth retrying from the queue; a 4xx rejection is not.
-        if (res.status >= 500 && savedLocally) {
-          setMessage(data.error ?? "Saved on this phone — the server could not take it. It will retry.");
-          return "kept";
-        }
         setMessage(data.error ?? "Could not save the case history.");
-        return "done";
+        return;
       }
-
       const n = data.observations?.length ?? 0;
       setMessage(
         data.error ??
@@ -123,162 +136,18 @@ export default function CaseHistoryCapture({
       );
       if (savedHref) {
         router.push(savedHref);
-        return "done";
+      } else {
+        router.refresh();
       }
-      router.refresh();
-      return "done";
     } catch {
-      setStatus("idle");
-      setMessage(
-        savedLocally
-          ? "Saved on this phone — no signal. It will be sent when you are back online."
-          : "No connection. Nothing was saved."
-      );
-      return savedLocally ? "kept" : "done";
+      setPhotoBusy(false);
+      setMessage("No connection. Nothing was saved.");
     }
   }
 
-  async function uploadPhoto(file: File) {
-    // A library image can be HEIC or too large for the request. The camera and library paths
-    // meet here so they receive the same conversion and the server always sees a supported file.
-    const photo = await prepareImageForUpload(file);
-    const form = new FormData();
-    form.append("patient_id", patientId);
-    form.append("photo", photo);
-    // So a retried photo upload is not read and stored twice.
-    form.append("client_uuid", crypto.randomUUID());
-    void submit(form);
-  }
-
-  async function finishRecording(type: string) {
-    recordingRef.current = false;
-    const ext = type.includes("mp4") ? "m4a" : type.includes("mpeg") ? "mp3" : "webm";
-    const blob = new Blob(chunksRef.current, { type });
-    chunksRef.current = [];
-    const id = recIdRef.current;
-
-    if (blob.size < 1200) {
-      setStatus("idle");
-      setMessage("Nothing was recorded — hold on a moment longer before stopping.");
-      void dropRecording(id);
-      return;
-    }
-
-    // On the phone before the upload, so a lock or a lost signal cannot take the clerking with
-    // it. Dropped once the server has it; left for the queue if not.
-    await saveRecording(id, {
-      kind: "case-history",
-      url: "/api/entries/case-history",
-      patientId,
-      label: "Case history",
-      audio: blob,
-      mimeType: type,
-    });
-    window.dispatchEvent(new Event("outbox-changed"));
-
-    const form = new FormData();
-    form.append("patient_id", patientId);
-    form.append("audio", blob, `case-history.${ext}`);
-    form.append("client_uuid", id);
-    markInFlight(id);
-    try {
-      const outcome = await submit(form, true);
-      if (outcome === "done") {
-        void dropRecording(id);
-        void clearChunks(id);
-      }
-    } finally {
-      clearInFlight(id);
-    }
-  }
-
-  async function startRecording() {
-    if (status !== "idle") return;
-    setStatus("starting");
-    setMessage(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Safari/iOS records mp4, Chrome/Android webm — the transcriber picks its decoder from
-      // the file extension, so carry the real type through rather than assuming webm.
-      const mimeType = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/mpeg"].find(
-        (t) => MediaRecorder.isTypeSupported(t)
-      );
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-      chunksRef.current = [];
-      recIdRef.current = crypto.randomUUID();
-      recMimeRef.current = recorder.mimeType || mimeType || "audio/webm";
-      seqRef.current = 0;
-      recordingRef.current = true;
-      const recId = recIdRef.current;
-      recorder.ondataavailable = (e) => {
-        if (e.data.size === 0) return;
-        chunksRef.current.push(e.data);
-        void putChunk(recId, seqRef.current++, e.data, {
-          kind: "case-history",
-          url: "/api/entries/case-history",
-          patientId,
-          label: "Case history",
-          mimeType: recMimeRef.current,
-        });
-      };
-      recorder.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop());
-        void finishRecording(recorder.mimeType || mimeType || "audio/webm");
-      };
-      mediaRef.current = recorder;
-      // Timeslice: a chunk a second, so an interruption before a clean stop costs a second.
-      recorder.start(1000);
-      setStatus("recording");
-    } catch {
-      setStatus("idle");
-      setMessage("Could not reach the microphone.");
-    }
-  }
-
-  function stopRecording() {
-    mediaRef.current?.stop();
-  }
-
-  // Phone locked, app swiped away, or component unmounted mid-dictation: keep what was said.
-  const salvage = useCallback(() => {
-    if (!recordingRef.current) return;
-    const chunks = chunksRef.current;
-    if (chunks.length) {
-      const blob = new Blob(chunks, { type: recMimeRef.current });
-      if (blob.size > 800) {
-        void saveRecording(recIdRef.current, {
-          kind: "case-history",
-          url: "/api/entries/case-history",
-          patientId,
-          label: "Case history",
-          audio: blob,
-          mimeType: recMimeRef.current,
-        });
-      }
-    }
-    try {
-      mediaRef.current?.requestData?.();
-      if (mediaRef.current?.state === "recording") mediaRef.current.stop();
-    } catch {
-      // Already stopped, or the page is going faster than this can run.
-    }
-  }, [patientId]);
-
-  useEffect(() => {
-    const onHide = () => {
-      if (document.visibilityState === "hidden") salvage();
-    };
-    window.addEventListener("pagehide", salvage);
-    document.addEventListener("visibilitychange", onHide);
-    return () => {
-      window.removeEventListener("pagehide", salvage);
-      document.removeEventListener("visibilitychange", onHide);
-      salvage();
-    };
-  }, [salvage]);
+  const busy = status !== "idle" || photoBusy;
 
   if (variant === "speak") {
-    const recording = status === "recording";
     return (
       <div className="mt-2">
         <p className="px-1 text-[13px] leading-relaxed text-muted">
@@ -302,7 +171,7 @@ export default function CaseHistoryCapture({
         <button
           type="button"
           onClick={recording ? stopRecording : startRecording}
-          disabled={status === "working" || status === "starting"}
+          disabled={status === "working" || status === "starting" || photoBusy}
           className={
             "mt-3 flex w-full items-center justify-center gap-2 rounded-[12px] px-4 py-3.5 text-[16px] font-semibold disabled:opacity-50 " +
             (recording ? "bg-red-500 text-white" : "bg-accent text-accent-ink")
@@ -354,21 +223,21 @@ export default function CaseHistoryCapture({
       <div className="mt-3 grid grid-cols-2 gap-2.5">
         <button
           type="button"
-          onClick={status === "recording" ? stopRecording : startRecording}
-          disabled={status === "working" || status === "starting"}
+          onClick={recording ? stopRecording : startRecording}
+          disabled={status === "working" || status === "starting" || photoBusy}
           className={
             "flex items-center justify-center gap-1.5 rounded-[10px] px-3 py-3 text-[15px] font-medium disabled:opacity-50 " +
-            (status === "recording" ? "bg-red-500 text-white" : "bg-accent text-accent-ink")
+            (recording ? "bg-red-500 text-white" : "bg-accent text-accent-ink")
           }
         >
-          {status === "recording" ? (
+          {recording ? (
             <StopIcon className="h-[18px] w-[18px]" />
           ) : status === "working" ? (
             <Mark className="h-[18px] w-[18px]" spinning />
           ) : (
             <MicIcon className="h-[18px] w-[18px]" />
           )}
-          {status === "recording"
+          {recording
             ? "Stop"
             : status === "starting"
               ? "Starting…"
@@ -380,7 +249,7 @@ export default function CaseHistoryCapture({
         <button
           type="button"
           onClick={() => setShowPhotoChoices((shown) => !shown)}
-          disabled={status !== "idle"}
+          disabled={busy}
           aria-expanded={showPhotoChoices}
           className="flex items-center justify-center gap-1.5 rounded-[10px] border border-line bg-card px-3 py-3 text-[15px] font-medium disabled:opacity-50"
         >
@@ -393,7 +262,7 @@ export default function CaseHistoryCapture({
             <button
               type="button"
               onClick={() => cameraInputRef.current?.click()}
-              disabled={status !== "idle"}
+              disabled={busy}
               className="rounded-lg bg-card px-3 py-2.5 text-[14px] font-medium disabled:opacity-50"
             >
               Take picture
@@ -401,7 +270,7 @@ export default function CaseHistoryCapture({
             <button
               type="button"
               onClick={() => uploadInputRef.current?.click()}
-              disabled={status !== "idle"}
+              disabled={busy}
               className="rounded-lg bg-card px-3 py-2.5 text-[14px] font-medium disabled:opacity-50"
             >
               Upload photo
@@ -441,7 +310,7 @@ export default function CaseHistoryCapture({
 
       {/* Only offered before anything is saved and before one exists — once a case history is
           on record there is nothing left to skip. */}
-      {!message && !hasExisting && status === "idle" && (
+      {!message && !hasExisting && !busy && (
         <button
           type="button"
           onClick={() => {

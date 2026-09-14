@@ -32,6 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# Real deploy-script credentials (npm run deploy:init writes these) — .env* above does not
+# match them, they don't start with a dot. Never commit these; .example templates are fine.
+/env/deploy.env
+/env/production.env
 
 # vercel
 .vercel

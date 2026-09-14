@@ -19,6 +19,13 @@ import {
  * one lost the timeslice and the crash-recovery writes in a rewrite and was silently back to
  * losing whole rounds. One implementation cannot drift from itself.
  *
+ * `round-recorder.tsx` and `case-history-capture.tsx` are on this hook now. `recorder.tsx`
+ * (bedside) deliberately is NOT: it runs a live streaming transcription mode alongside this
+ * batch mode, sharing one button and one status — folding that in here would mean the hook
+ * carrying a second, unrelated recording pipeline just to merge two `status` values back
+ * together, on the single most-used surface in the app. Its batch half was brought up to this
+ * same model by hand instead (see its own comments) and stays a direct, readable copy.
+ *
  * What it guarantees, matching what the hand-written versions did:
  *
  *  - **One id per recording** (`crypto.randomUUID`) used three ways: the IndexedDB row key, the
