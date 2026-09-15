@@ -129,27 +129,6 @@ export function ClipboardIcon({ className = "h-4 w-4" }: { className?: string })
   );
 }
 
-/** The "Unit" capsule: the people on this ward. */
-export function UsersIcon({ className = "h-4 w-4" }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden
-    >
-      <circle cx="9" cy="8" r="3.2" />
-      <path d="M3.5 20a5.7 5.7 0 0 1 11 0" />
-      <path d="M16 6.2a3.2 3.2 0 0 1 0 6.2" />
-      <path d="M15 14.3c2.6.4 4.5 2.3 5 5.7" />
-    </svg>
-  );
-}
-
 /** The "Formats" capsule: the unit's own paperwork. */
 export function DocumentIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
