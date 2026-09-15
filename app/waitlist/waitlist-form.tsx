@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import styles from "./waitlist.module.css";
 
 /**
@@ -97,7 +97,7 @@ export default function WaitlistForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
-  const submittedEmail = useRef("");
+  const [submittedEmail, setSubmittedEmail] = useState("");
 
   const resolvedDepartment =
     department === "Other" ? departmentOther.trim() : department;
@@ -133,7 +133,7 @@ export default function WaitlistForm() {
       });
       const data = await res.json();
       if (data.ok) {
-        submittedEmail.current = email.toLowerCase();
+        setSubmittedEmail(email.toLowerCase());
         setDone(true);
         return;
       }
@@ -189,7 +189,7 @@ export default function WaitlistForm() {
           </h2>
           <p className="text-[15px] text-muted">
             We&rsquo;ll write to{" "}
-            <span className="text-foreground">{submittedEmail.current}</span> when
+            <span className="text-foreground">{submittedEmail}</span> when
             WardMate opens for your college.
           </p>
         </div>
