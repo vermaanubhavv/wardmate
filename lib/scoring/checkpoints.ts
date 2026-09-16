@@ -21,7 +21,3 @@ export function dueCheckpoints(rows: CheckpointRow[], now: Instant): CheckpointR
   const t = Date.parse(now);
   return rows.filter((r) => r.executedAt == null && Date.parse(r.dueAt) <= t);
 }
-
-export function isCheckpointDue(row: CheckpointRow, now: Instant): boolean {
-  return row.executedAt == null && Date.parse(row.dueAt) <= Date.parse(now);
-}
