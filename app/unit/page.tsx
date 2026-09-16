@@ -174,6 +174,16 @@ export default async function UnitPage() {
               </Link>
             </li>
           )}
+          {/* Who looked at which patient. Owner-only, and enforced as such at the database —
+              see 0072_patient_access_log.sql — so this link is a convenience, not the gate. */}
+          {isOwner && (
+            <li>
+              <Link href="/unit/access-log" className="flex items-center gap-3 px-4 py-3 active:bg-chip">
+                <DocumentIcon className="h-4 w-4 shrink-0 text-accent" />
+                <span className="flex-1 text-[15px]">Access log</span>
+              </Link>
+            </li>
+          )}
         </ul>
       </section>
 

@@ -118,6 +118,17 @@ export type ActivityRow = {
 export const getActivityLog = (limit = 150) =>
   callRows<ActivityRow>("admin_activity_log", { p_limit: limit });
 
+export type WaitlistEntry = {
+  id: number;
+  email: string;
+  name: string | null;
+  college: string | null;
+  department: string | null;
+  year_of_residency: string | null;
+  created_at: string;
+};
+export const getWaitlist = () => callRows<WaitlistEntry>("admin_waitlist");
+
 export type EventSummary = {
   name: string;
   events: number;

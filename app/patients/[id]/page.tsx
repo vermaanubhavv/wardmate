@@ -49,6 +49,7 @@ import { classifyVital, matchVitalLabel } from "@/lib/vital-ranges";
 import { getWardLabRanges } from "@/lib/ward-lab-ranges";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { getWardSpecialtyStored } from "@/lib/ward";
+import { getUser } from "@/lib/auth";
 
 type Entry = {
   id: string;
@@ -81,6 +82,16 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     .maybeSingle();
 
   if (!patient) notFound();
+
+  // Access log: who looked at this patient's record, and when — see
+  // 0072_patient_access_log.sql. Fire-and-forget; a failed log write must never be the reason
+  // a doctor can't see a patient.
+  getUser().then((user) => {
+    if (!user) return;
+    void supabase
+      .from("patient_access_log")
+      .insert({ patient_id: patient.id, ward_id: patient.ward_id, actor_id: user.id });
+  });
 
   // The unit's department, resolved once: it decides how this patient's day is counted, which
   // checklist rows the picker offers, and whether the edit dialog shows chemotherapy fields.

@@ -1,0 +1,416 @@
+<title>Sub-Processor Register</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #f6f5f0;
+    --card: #ffffff;
+    --ink: #1b211f;
+    --muted: #5d675f;
+    --faint: #8b948b;
+    --line: #dfe3dc;
+    --accent: #0e6b57;
+    --accent-ink: #f6f5f0;
+    --accent-soft: #e4efe9;
+    --warn-bg: #fbf1e2;
+    --warn-ink: #7a4c07;
+    --warn-line: #ecd8ae;
+    --mono-bg: #eef0ea;
+    --shadow: 0 1px 2px rgba(27, 33, 31, 0.04), 0 8px 24px -12px rgba(27, 33, 31, 0.10);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101512;
+      --card: #171e1a;
+      --ink: #e7ece8;
+      --muted: #9aa69f;
+      --faint: #6b756e;
+      --line: #263029;
+      --accent: #46c39c;
+      --accent-ink: #08130f;
+      --accent-soft: #17281f;
+      --warn-bg: #211a0c;
+      --warn-ink: #e3b978;
+      --warn-line: #3a2e14;
+      --mono-bg: #1b2320;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101512;
+    --card: #171e1a;
+    --ink: #e7ece8;
+    --muted: #9aa69f;
+    --faint: #6b756e;
+    --line: #263029;
+    --accent: #46c39c;
+    --accent-ink: #08130f;
+    --accent-soft: #17281f;
+    --warn-bg: #211a0c;
+    --warn-ink: #e3b978;
+    --warn-line: #3a2e14;
+    --mono-bg: #1b2320;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Public Sans", ui-sans-serif, system-ui, sans-serif;
+    padding-inline: 20px;
+    padding-block: 48px 80px;
+  }
+
+  .sheet {
+    max-width: 760px;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  h1, h2 {
+    font-family: "Source Serif 4", Georgia, serif;
+    text-wrap: balance;
+  }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  header.masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  header.masthead h1 {
+    font-size: clamp(28px, 5vw, 38px);
+    font-weight: 700;
+    line-height: 1.15;
+    margin: 0;
+  }
+
+  .dek {
+    max-width: 60ch;
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12.5px;
+    color: var(--faint);
+  }
+
+  .meta-row span b { color: var(--muted); font-weight: 500; }
+
+  section h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+
+  section .section-note {
+    color: var(--muted);
+    font-size: 14.5px;
+    line-height: 1.6;
+    max-width: 62ch;
+    margin: 0 0 18px;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 640px;
+  }
+
+  thead th {
+    text-align: left;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--faint);
+    font-weight: 500;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--mono-bg);
+  }
+  thead th:first-child { border-top-left-radius: 12px; }
+  thead th:last-child { border-top-right-radius: 12px; }
+
+  tbody td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    font-size: 14.5px;
+    line-height: 1.5;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .vendor {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .vendor .role {
+    display: block;
+    font-weight: 400;
+    color: var(--muted);
+    font-size: 12.5px;
+    margin-top: 2px;
+  }
+
+  .tag {
+    display: inline-block;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .tag.none { background: var(--mono-bg); color: var(--faint); }
+
+  .muted-cell { color: var(--muted); }
+
+  .callout {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+  }
+  .callout h3 {
+    margin: 0 0 10px;
+    font-size: 14px;
+    font-family: "Public Sans", sans-serif;
+    font-weight: 600;
+  }
+  .callout ul {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: var(--muted);
+  }
+  .callout ul li b { color: var(--ink); font-weight: 600; }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 620px) {
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+
+  .warn {
+    display: flex;
+    gap: 12px;
+    border: 1px solid var(--warn-line);
+    background: var(--warn-bg);
+    color: var(--warn-ink);
+    border-radius: 12px;
+    padding: 16px 18px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .warn svg { flex-shrink: 0; margin-top: 2px; }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--faint);
+  }
+  code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    background: var(--mono-bg);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--muted);
+    font-size: 0.9em;
+  }
+</style>
+
+<div class="sheet">
+
+  <header class="masthead">
+    <span class="eyebrow">WardMate · Sub-Processor Register</span>
+    <h1>Where a patient's data actually goes</h1>
+    <p class="dek">
+      Every outside service that receives any data from WardMate on a hospital's behalf, what
+      each one is sent, and why. Prepared for a unit's compliance review before onboarding —
+      sourced directly from the running application, not from a marketing description of it.
+    </p>
+    <div class="meta-row">
+      <span><b>Prepared:</b> 16 Sep 2026</span>
+      <span><b>Applies to:</b> wardmate.in (production)</span>
+      <span><b>Governing law:</b> India · DPDP Act, 2023</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>Processors that see clinical data</h2>
+    <p class="section-note">
+      These services are sent patient-identifying or clinical content — a transcript, a
+      photograph, a diagnosis — because doing so is how the feature works. WardMate is the
+      Data Fiduciary's processor here; each of these is, in turn, WardMate's own sub-processor.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Sub-processor</th>
+            <th>Sent</th>
+            <th>Purpose</th>
+            <th>Retained by them?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="vendor">Anthropic<span class="role">Claude API</span></td>
+            <td><span class="tag">image</span> <span class="tag">text</span> admission-paper photos, voice transcripts, lab-report photos, register photos, case-history text</td>
+            <td class="muted-cell">Reads the unstructured input and returns structured fields — diagnosis, bed, dates — for the doctor to confirm.</td>
+            <td class="muted-cell">Per Anthropic's API terms; confirm current retention/training settings in the account's data-handling agreement before launch.</td>
+          </tr>
+          <tr>
+            <td class="vendor">OpenAI<span class="role">default speech-to-text</span></td>
+            <td><span class="tag">audio</span> raw voice recordings</td>
+            <td class="muted-cell">Transcribes spoken bedside notes to text. Active only when <code>STT_PROVIDER</code> is unset or <code>openai</code>.</td>
+            <td class="muted-cell">Per OpenAI's API terms — confirm current policy.</td>
+          </tr>
+          <tr>
+            <td class="vendor">Deepgram<span class="role">alternate speech-to-text</span></td>
+            <td><span class="tag">audio</span> raw voice recordings, incl. live-dictation streams</td>
+            <td class="muted-cell">Same job as OpenAI above; a per-ward setting picks one provider, not both.</td>
+            <td class="muted-cell">Per Deepgram's API terms — confirm current policy.</td>
+          </tr>
+          <tr>
+            <td class="vendor">Sarvam<span class="role">alternate speech-to-text</span></td>
+            <td><span class="tag">audio</span> short (&lt;30s) voice recordings</td>
+            <td class="muted-cell">Same job, evaluated for Indian-accented medical speech.</td>
+            <td class="muted-cell">Per Sarvam's API terms — confirm current policy.</td>
+          </tr>
+          <tr>
+            <td class="vendor">Hugging Face<span class="role">hosted inference API</span></td>
+            <td><span class="tag">text</span> dictated transcript text</td>
+            <td class="muted-cell">Spots candidate drug/condition names before the main extraction step, as a hint — never trusted on its own.</td>
+            <td class="muted-cell">Per Hugging Face's inference-API terms — confirm current policy.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Infrastructure</h2>
+    <p class="section-note">
+      These carry or store the data but aren't asked to read or interpret it as part of their
+      job — the system of record, the servers it runs on, and the two that never see clinical
+      content at all.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Provider</th>
+            <th>Role</th>
+            <th>Sees clinical data?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="vendor">Supabase</td>
+            <td class="muted-cell">Database, authentication, and file storage — the system of record for every patient, entry, and photo.</td>
+            <td><span class="tag">yes</span> — this is where it lives</td>
+          </tr>
+          <tr>
+            <td class="vendor">Vercel</td>
+            <td class="muted-cell">Hosts and runs the application itself; every request passes through it.</td>
+            <td><span class="tag">yes</span> — in transit, not stored</td>
+          </tr>
+          <tr>
+            <td class="vendor">Resend</td>
+            <td class="muted-cell">Delivers the 6-digit sign-in code by email.</td>
+            <td><span class="tag none">no</span> — an address only, no clinical content</td>
+          </tr>
+          <tr>
+            <td class="vendor">Sentry</td>
+            <td class="muted-cell">Crash and performance monitoring, dormant unless explicitly enabled.</td>
+            <td><span class="tag none">no</span> — deliberately scrubbed before it leaves the server</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>What never leaves the ward</h2>
+    <div class="grid-2">
+      <div class="callout">
+        <h3>Fields the app never collects</h3>
+        <ul>
+          <li><b>No phone number, no home address.</b> A patient record holds a name and a bed — a deliberate product decision, not an oversight.</li>
+          <li>No government ID of any kind.</li>
+        </ul>
+      </div>
+      <div class="callout">
+        <h3>Discarded after use, not stored</h3>
+        <ul>
+          <li>The audio and photo used to <b>quick-fill the "Add patient" form</b> are sent to Anthropic/the speech provider, used once, and never written to disk or database.</li>
+          <li>Session Replay (screen recording) is <b>off</b> in Sentry — it would otherwise capture a ward screen full of patient data.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="warn">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="margin-top:2px">
+      <path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      This register is compiled from the running application's actual code and configuration —
+      it is engineering fact, not a legal opinion. It doesn't establish a lawful basis for
+      processing on its own; that still depends on the agreement between the hospital and
+      WardMate, and on each vendor's own current data-processing terms, which WardMate does not
+      control and should be checked directly before this document is relied on.
+    </div>
+  </div>
+
+  <footer>
+    <span>WardMate · <code>wardmate.in</code></span>
+    <span>Speech-to-text provider is a per-deployment setting (<code>STT_PROVIDER</code>) — only one of OpenAI / Deepgram / Sarvam is active at a time. Update this register if that setting changes.</span>
+  </footer>
+
+</div>

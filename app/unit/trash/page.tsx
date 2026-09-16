@@ -35,6 +35,25 @@ export default async function TrashPage() {
 
   const supabase = await createClient();
 
+  // Evidence (photos/audio) is deleted separately from the patient row it belongs to, and
+  // must happen first: once purge_expired_trash() removes the row, nothing can tell us which
+  // files were theirs. See 0071_purge_evidence_on_trash_expiry.sql.
+  const { data: expiring } = await supabase
+    .from("patients")
+    .select("id")
+    .eq("ward_id", ward.id)
+    .eq("status", "trashed")
+    .lt("trashed_at", new Date(Date.now() - TRASH_DAYS * 86_400_000).toISOString());
+
+  for (const patient of expiring ?? []) {
+    const { data: files } = await supabase.storage.from("evidence").list(patient.id);
+    if (files?.length) {
+      await supabase.storage
+        .from("evidence")
+        .remove(files.map((f) => `${patient.id}/${f.name}`));
+    }
+  }
+
   // A scheduled job performs deletion on time; this is an additional harmless cleanup for
   // records that expired before that job was configured.
   await supabase.rpc("purge_expired_trash");

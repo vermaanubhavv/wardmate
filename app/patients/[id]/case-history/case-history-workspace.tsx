@@ -103,7 +103,7 @@ const PICCLE_SIGNS = [
 // symptom — a row of quick pills each, plus free text for the narrative. Pills are matched
 // against and written into the same one free-text string that gets stored, so the card
 // round-trips: tap "Colicky" and it appears in the sentence; re-open and the pill reads as on.
-type HopiAttr = { label: string; options: string[]; multi?: boolean };
+type HopiAttr = { label: string; options: string[] };
 
 const GENERIC_HOPI: HopiAttr[] = [
   { label: "Onset", options: ["Sudden", "Gradual"] },
@@ -124,9 +124,9 @@ const SYMPTOM_TEMPLATES: { match: RegExp; attrs: HopiAttr[] }[] = [
       { label: "Severity", options: ["Mild", "Moderate", "Severe"] },
       { label: "Duration", options: ["<1 day", "1–3 days", "<1 week", "1–4 weeks", ">1 month"] },
       { label: "Progression", options: ["Improving", "Static", "Worsening"] },
-      { label: "Aggravated by", options: ["Movement", "Food", "Fatty food", "Coughing", "Deep breath"], multi: true },
-      { label: "Relieved by", options: ["Rest", "Vomiting", "Leaning forward", "Antacids", "Passing stool / flatus"], multi: true },
-      { label: "Associated with", options: ["Vomiting", "Fever", "Distension", "Constipation", "Loose stools", "Anorexia", "Jaundice", "Dysuria", "Haematuria"], multi: true },
+      { label: "Aggravated by", options: ["Movement", "Food", "Fatty food", "Coughing", "Deep breath"] },
+      { label: "Relieved by", options: ["Rest", "Vomiting", "Leaning forward", "Antacids", "Passing stool / flatus"] },
+      { label: "Associated with", options: ["Vomiting", "Fever", "Distension", "Constipation", "Loose stools", "Anorexia", "Jaundice", "Dysuria", "Haematuria"] },
     ],
   },
   {
@@ -139,7 +139,7 @@ const SYMPTOM_TEMPLATES: { match: RegExp; attrs: HopiAttr[] }[] = [
       { label: "Relation to food", options: ["Soon after eating", "Delayed", "Unrelated"] },
       { label: "Nature", options: ["Projectile", "Effortless", "Preceded by nausea"] },
       { label: "Progression", options: ["Improving", "Static", "Worsening"] },
-      { label: "Associated with", options: ["Pain abdomen", "Distension", "Constipation", "Obstipation", "Fever", "Weight loss"], multi: true },
+      { label: "Associated with", options: ["Pain abdomen", "Distension", "Constipation", "Obstipation", "Fever", "Weight loss"] },
     ],
   },
   {
@@ -151,7 +151,7 @@ const SYMPTOM_TEMPLATES: { match: RegExp; attrs: HopiAttr[] }[] = [
       { label: "Pattern", options: ["Continuous", "Intermittent", "Remittent", "Evening rise"] },
       { label: "Chills / rigors", options: ["With rigors", "With chills only", "No chills"] },
       { label: "Progression", options: ["Improving", "Static", "Worsening"] },
-      { label: "Associated with", options: ["Night sweats", "Weight loss", "Cough", "Dysuria", "Pain abdomen", "Loose stools", "Rash"], multi: true },
+      { label: "Associated with", options: ["Night sweats", "Weight loss", "Cough", "Dysuria", "Pain abdomen", "Loose stools", "Rash"] },
     ],
   },
   {
@@ -164,7 +164,7 @@ const SYMPTOM_TEMPLATES: { match: RegExp; attrs: HopiAttr[] }[] = [
       { label: "Urine", options: ["High-coloured", "Normal"] },
       { label: "Stools", options: ["Clay-coloured", "Pale", "Normal"] },
       { label: "Pruritus", options: ["Present", "Absent"] },
-      { label: "Associated with", options: ["Fever", "Weight loss", "Anorexia", "Vomiting", "Abdominal lump"], multi: true },
+      { label: "Associated with", options: ["Fever", "Weight loss", "Anorexia", "Vomiting", "Abdominal lump"] },
     ],
   },
   {
@@ -177,7 +177,7 @@ const SYMPTOM_TEMPLATES: { match: RegExp; attrs: HopiAttr[] }[] = [
       { label: "Pain", options: ["Painful", "Painless"] },
       { label: "Reducibility", options: ["Reducible", "Irreducible", "Reducible on lying down"] },
       { label: "Cough impulse", options: ["Present", "Absent"] },
-      { label: "Associated with", options: ["Pain abdomen", "Vomiting", "Constipation", "Skin changes", "Other lumps", "Weight loss"], multi: true },
+      { label: "Associated with", options: ["Pain abdomen", "Vomiting", "Constipation", "Skin changes", "Other lumps", "Weight loss"] },
     ],
   },
   {
@@ -188,7 +188,7 @@ const SYMPTOM_TEMPLATES: { match: RegExp; attrs: HopiAttr[] }[] = [
       { label: "Extent", options: ["Localised", "Generalised"] },
       { label: "Progression", options: ["Increasing", "Static", "Decreasing"] },
       { label: "Flatus / stool", options: ["Passing normally", "Reduced", "Absent (obstipation)"] },
-      { label: "Associated with", options: ["Pain abdomen", "Vomiting", "Constipation", "Breathlessness", "Visible peristalsis"], multi: true },
+      { label: "Associated with", options: ["Pain abdomen", "Vomiting", "Constipation", "Breathlessness", "Visible peristalsis"] },
     ],
   },
   {
@@ -199,7 +199,7 @@ const SYMPTOM_TEMPLATES: { match: RegExp; attrs: HopiAttr[] }[] = [
       { label: "Stool", options: ["Hard", "Pellet-like", "Narrow calibre"] },
       { label: "Pattern", options: ["Progressive", "Alternating with diarrhoea"] },
       { label: "Blood / mucus", options: ["Blood in stool", "Mucus", "Neither"] },
-      { label: "Associated with", options: ["Pain abdomen", "Distension", "Tenesmus", "Weight loss", "Anorexia"], multi: true },
+      { label: "Associated with", options: ["Pain abdomen", "Distension", "Tenesmus", "Weight loss", "Anorexia"] },
     ],
   },
   {
@@ -211,7 +211,7 @@ const SYMPTOM_TEMPLATES: { match: RegExp; attrs: HopiAttr[] }[] = [
       { label: "Consistency", options: ["Watery", "Semi-formed", "Mucoid"] },
       { label: "Blood / mucus", options: ["Blood present", "Mucus present", "Neither"] },
       { label: "Timing", options: ["Nocturnal", "Post-prandial", "Tenesmus"] },
-      { label: "Associated with", options: ["Fever", "Pain abdomen", "Vomiting", "Dehydration", "Weight loss"], multi: true },
+      { label: "Associated with", options: ["Fever", "Pain abdomen", "Vomiting", "Dehydration", "Weight loss"] },
     ],
   },
   {
@@ -222,7 +222,7 @@ const SYMPTOM_TEMPLATES: { match: RegExp; attrs: HopiAttr[] }[] = [
       { label: "Amount", options: ["Streaks on stool", "Mixed with stool", "Splash in the pan", "Dripping after stool"] },
       { label: "Relation to defecation", options: ["During", "After", "Unrelated"] },
       { label: "Pain", options: ["Painful", "Painless"] },
-      { label: "Associated with", options: ["Mucus", "Mass / prolapse", "Change in bowel habit", "Weight loss", "Pallor / giddiness"], multi: true },
+      { label: "Associated with", options: ["Mucus", "Mass / prolapse", "Change in bowel habit", "Weight loss", "Pallor / giddiness"] },
     ],
   },
   {
@@ -230,10 +230,10 @@ const SYMPTOM_TEMPLATES: { match: RegExp; attrs: HopiAttr[] }[] = [
     attrs: [
       { label: "Onset", options: ["Sudden", "Gradual"] },
       { label: "Duration", options: ["<3 days", "<1 week", "1–4 weeks", ">1 month"] },
-      { label: "Voiding", options: ["Increased frequency", "Urgency", "Poor stream", "Incomplete emptying", "Terminal dribbling"], multi: true },
+      { label: "Voiding", options: ["Increased frequency", "Urgency", "Poor stream", "Incomplete emptying", "Terminal dribbling"] },
       { label: "Urine", options: ["Haematuria", "Cloudy / turbid", "Foul-smelling", "Clear"] },
       { label: "Pain site", options: ["Suprapubic", "Loin", "Urethral"] },
-      { label: "Associated with", options: ["Fever", "Rigors", "Loin pain", "Nausea / vomiting"], multi: true },
+      { label: "Associated with", options: ["Fever", "Rigors", "Loin pain", "Nausea / vomiting"] },
     ],
   },
   {
@@ -242,7 +242,7 @@ const SYMPTOM_TEMPLATES: { match: RegExp; attrs: HopiAttr[] }[] = [
       { label: "Duration", options: ["<1 month", "1–3 months", ">3 months"] },
       { label: "Severity", options: ["Mild", "Marked", "Aversion to food"] },
       { label: "Progression", options: ["Improving", "Static", "Worsening"] },
-      { label: "Associated with", options: ["Weight loss", "Nausea", "Early satiety", "Pain abdomen", "Altered taste"], multi: true },
+      { label: "Associated with", options: ["Weight loss", "Nausea", "Early satiety", "Pain abdomen", "Altered taste"] },
     ],
   },
   {
@@ -251,7 +251,7 @@ const SYMPTOM_TEMPLATES: { match: RegExp; attrs: HopiAttr[] }[] = [
       { label: "Amount", options: ["2–5 kg", "5–10 kg", ">10 kg", "Not quantified"] },
       { label: "Over", options: ["<1 month", "1–3 months", "3–6 months", ">6 months"] },
       { label: "Appetite", options: ["Preserved", "Reduced"] },
-      { label: "Associated with", options: ["Fever", "Night sweats", "Cough", "Bowel change", "Lump", "Anorexia"], multi: true },
+      { label: "Associated with", options: ["Fever", "Night sweats", "Cough", "Bowel change", "Lump", "Anorexia"] },
     ],
   },
 ];
@@ -1546,9 +1546,7 @@ function AttrGroup({
 
   function toggle(p: string) {
     if (has(p)) return onChange(drop(value, p));
-    let t = value;
-    if (!attr.multi) for (const o of attr.options) if (o !== p && has(o)) t = drop(t, o);
-    onChange(append(t, p));
+    onChange(append(value, p));
   }
 
   return (
