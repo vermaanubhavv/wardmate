@@ -34,6 +34,23 @@ export default function ProfessionalForm() {
         <input name="attestation" type="checkbox" required className="mt-0.5 h-4 w-4 accent-accent" />
         <span>I confirm that I am a doctor or medical intern and these details are accurate.</span>
       </label>
+      <label className="flex items-start gap-2 text-[13px] leading-relaxed text-muted">
+        <input name="terms" type="checkbox" required className="mt-0.5 h-4 w-4 accent-accent" />
+        <span>
+          I have read and accept the{" "}
+          {/* TODO: point at a real page on wardmate.in once the draft has had legal review —
+              not a claude.ai artifact link, which shouldn't ship in the live app. */}
+          <a
+            href="/terms"
+            target="_blank"
+            rel="noreferrer"
+            className="text-accent underline"
+          >
+            Clinician Data Agreement
+          </a>
+          .
+        </span>
+      </label>
       {state.error && <p className="text-[13px] text-red-700">{state.error}</p>}
       <button disabled={pending || state.done} className="rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink disabled:opacity-60">
         {pending || state.done ? "Continuing…" : "Continue"}
