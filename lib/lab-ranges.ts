@@ -289,11 +289,6 @@ export function classifyLab(
   return { label: name, value: v, flag: null, range: printed, source };
 }
 
-/** True when this label is a blood result at all — normal or not. */
-export function isKnownLab(label: string): boolean {
-  return findLab(label) !== null;
-}
-
 /**
  * The name an analyte accumulates under, so "Haemoglobin", "HAEMOGLOBIN" and "Hb" all land on
  * one row of the ward's reference table instead of three. Unknown analytes keep their own

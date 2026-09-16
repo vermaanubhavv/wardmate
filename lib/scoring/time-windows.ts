@@ -135,31 +135,6 @@ export function changeFromBaseline(
   return { delta: round(current.value - baseline.value, 2), current, baseline };
 }
 
-/**
- * Total hours a value for `key` stayed at/above `threshold` within the window. Used for the
- * Atlanta persistence timer ("organ failure ≥ 48 h"). Conservative: only counts spans between
- * consecutive in-window readings that are BOTH above threshold.
- */
-export function durationAboveThreshold(
-  inputs: EngineInput[],
-  key: string,
-  rw: ResolvedWindow,
-  threshold: number,
-  direction: "above" | "below" = "above"
-): number {
-  const vs = valuesInWindow(inputs, key, rw).filter((v) => v.value != null);
-  let hours = 0;
-  for (let n = 1; n < vs.length; n++) {
-    const a = vs[n - 1].value as number;
-    const b = vs[n].value as number;
-    const meets = (x: number) => (direction === "above" ? x >= threshold : x <= threshold);
-    if (meets(a) && meets(b)) {
-      hours += (Date.parse(vs[n].at) - Date.parse(vs[n - 1].at)) / HOUR_MS;
-    }
-  }
-  return round(hours, 1);
-}
-
 function round(n: number, dp = 1): number {
   const f = 10 ** dp;
   return Math.round(n * f) / f;

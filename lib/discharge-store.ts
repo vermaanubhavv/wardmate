@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getDischargeContext, type DischargeContext, type DischargeRow } from "@/lib/discharge-data";
 import { compileDischargeDraft } from "@/lib/discharge-compile";
-import { buildConditionProse } from "@/lib/discharge-compile";
 import { runDischargeChecks, buildCheckContext, type DischargeCheck } from "@/lib/discharge-checks";
 import type { DischargeDraft, DischargeSectionId } from "@/lib/discharge-entities";
 
@@ -209,10 +208,4 @@ export async function resetDischargeSummary(patientId: string): Promise<{ ok: bo
   const supabase = await createClient();
   const { error } = await supabase.from("discharge_summaries").delete().eq("patient_id", patientId);
   return error ? { ok: false, error: error.message } : { ok: true };
-}
-
-/** Recompute the Condition-at-Discharge prose from its variables unless the resident edited it. */
-export function withConditionProse(condition: DischargeDraft["conditionAtDischarge"]): DischargeDraft["conditionAtDischarge"] {
-  if (condition.proseEdited) return condition;
-  return { ...condition, prose: buildConditionProse(condition.vars) };
 }

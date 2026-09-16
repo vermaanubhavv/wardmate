@@ -12,8 +12,6 @@
  * flagged for content-governance / licensing review.
  */
 
-import type { PathwayDefinition } from "../types";
-
 export type PathwaySkeleton = {
   pathwayId: string;
   title: string;
@@ -209,18 +207,3 @@ export const PATHWAY_SKELETONS: PathwaySkeleton[] = [
     notes: "FLUIDS: do not hard-code one Parkland order. Make the formula institution-configurable, show time since burn, subtract fluid already given, require clinician confirmation.",
   },
 ];
-
-/** Skeletons rendered as minimal (invalid-for-activation) PathwayDefinition stubs. */
-export function skeletonAsDefinition(s: PathwaySkeleton): Pick<
-  PathwayDefinition,
-  "pathwayId" | "pathwayVersion" | "title" | "status" | "clinicalOwner" | "reviewDueAt"
-> {
-  return {
-    pathwayId: s.pathwayId,
-    pathwayVersion: "0.0.0",
-    title: s.title,
-    status: "unavailable",
-    clinicalOwner: "PENDING",
-    reviewDueAt: "PENDING",
-  };
-}

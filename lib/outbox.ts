@@ -189,17 +189,6 @@ export async function recoverInterruptedChunks(): Promise<Pending[]> {
   return recovered;
 }
 
-export async function enqueue(item: Omit<Pending, "id" | "queuedAt" | "attempts">) {
-  const full: Pending = {
-    ...item,
-    id: crypto.randomUUID(),
-    queuedAt: new Date().toISOString(),
-    attempts: 0,
-  };
-  await tx("readwrite", (s) => s.add(full));
-  return full;
-}
-
 /**
  * Save a recording under a caller-chosen id, replacing any earlier save of the same id.
  *

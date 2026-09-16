@@ -14,7 +14,6 @@ export {
 export type {
   MedicalLexiconEntry,
   LexiconCategory,
-  LexiconProvider,
   DictationContext,
   SelectedKeyterm,
   SelectKeytermOptions,

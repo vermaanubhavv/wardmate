@@ -28,7 +28,6 @@ import { heartScoreV1 } from "./heart-score.v1";
 import { ciwaArV1 } from "./ciwa-ar.v1";
 import { childPughV1 } from "./child-pugh.v1";
 import { kdigoAkiV1 } from "./kdigo-aki.v1";
-import { PATHWAY_SKELETONS } from "./skeletons";
 
 const BUILT_IN: PathwayDefinition[] = [
   // General surgery
@@ -70,15 +69,6 @@ for (const def of BUILT_IN) {
 const byKey = new Map<string, PathwayDefinition>();
 for (const def of BUILT_IN) byKey.set(`${def.pathwayId}@${def.pathwayVersion}`, def);
 
-export function builtInDefinitions(): PathwayDefinition[] {
-  return [...BUILT_IN];
-}
-
-/** All definitions eligible to trigger (status active). Skeletons never appear here. */
-export function activeDefinitions(): PathwayDefinition[] {
-  return BUILT_IN.filter((d) => d.status === "active");
-}
-
 /**
  * Definitions the trigger engine considers. In production this is `status === "active"`; a
  * `draft` definition (like pancreatitis v1 today) is included only when
@@ -105,8 +95,4 @@ export function definitionsForSpecialty(scoringKeys: readonly string[]): Pathway
 
 export function getDefinition(pathwayId: string, pathwayVersion: string): PathwayDefinition | null {
   return byKey.get(`${pathwayId}@${pathwayVersion}`) ?? null;
-}
-
-export function pathwaySkeletons() {
-  return PATHWAY_SKELETONS;
 }
