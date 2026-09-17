@@ -8,7 +8,7 @@ export type ProfessionalState = { error: string | null; done?: boolean };
 // Bumped only when a change affects how patient data is handled — see §9 of the Clinician
 // Data Agreement. Stamped on profiles.terms_version at acceptance, not read from the form, so
 // a doctor can't submit whatever version string a stale client happened to send.
-export const TERMS_VERSION = "draft-1";
+const TERMS_VERSION = "draft-1";
 
 export async function completeProfessionalOnboarding(_previous: ProfessionalState, formData: FormData): Promise<ProfessionalState> {
   if (formData.get("attestation") !== "on") return { error: "Confirm that the information is accurate." };
