@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Mark from "@/app/mark";
 import WaitlistForm from "@/app/waitlist/waitlist-form";
+import ContactForm from "@/app/home/contact-form";
 
 /**
  * The full marketing page — About, the academic pitch, the founder, real product screens —
@@ -305,17 +306,20 @@ export default function HomePage() {
       <Divider />
 
       {/* ---- contact ---- */}
-      <section id="contact" className="mx-auto max-w-3xl px-6 py-12">
+      <section id="contact" className="mx-auto max-w-md px-6 py-12">
         <h2 className="text-[24px] font-semibold tracking-tight">Contact us</h2>
         <p className="mt-2 text-[15px] text-muted">
           Tell us about your program, or what&rsquo;s missing from how your team hands over.
         </p>
-        <a
-          href="mailto:anubhav@wardmate.in"
-          className="mt-4 inline-block rounded-[10px] border border-line px-5 py-3 text-[15px] font-semibold"
-        >
-          Write to anubhav@wardmate.in
-        </a>
+        <div className="mt-5">
+          <ContactForm />
+        </div>
+        <p className="mt-4 text-[13px] text-muted">
+          Prefer email? Write to{" "}
+          <a href="mailto:anubhav@wardmate.in" className="text-foreground underline underline-offset-2">
+            anubhav@wardmate.in
+          </a>
+        </p>
       </section>
 
       <footer className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 border-t border-line px-6 py-8 bottom-bar text-[13px] text-muted">

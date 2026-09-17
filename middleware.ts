@@ -75,12 +75,13 @@ export async function middleware(request: NextRequest) {
   if (path.startsWith("/auth/callback")) return NextResponse.next({ request });
 
   // The public waitlist (linked from the Instagram bio), the fuller marketing page at /home,
-  // and the waitlist form endpoint they both use. Visitors here have no session and must not
-  // be bounced to /login.
+  // and the waitlist/contact form endpoints they use. Visitors here have no session and must
+  // not be bounced to /login.
   if (
     path.startsWith("/waitlist") ||
     path.startsWith("/home") ||
-    path.startsWith("/api/waitlist")
+    path.startsWith("/api/waitlist") ||
+    path.startsWith("/api/contact")
   ) {
     return NextResponse.next({ request });
   }
