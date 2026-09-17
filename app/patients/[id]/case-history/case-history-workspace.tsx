@@ -291,6 +291,8 @@ const SYMPTOM_TEMPLATES: { match: RegExp; attrs: HopiAttr[] }[] = [
   },
 ];
 
+const DURATION_QUICK = ["1 day", "2 days", "3 days", "5 days", "1 week", "2 weeks", "1 month", "3 months"];
+
 function hopiAttrsFor(complaint: string): HopiAttr[] {
   return SYMPTOM_TEMPLATES.find((t) => t.match.test(complaint))?.attrs ?? GENERIC_HOPI;
 }
@@ -901,14 +903,27 @@ export default function CaseHistoryWorkspace({
             <div className="flex flex-col gap-1.5">
               <span className="text-[12px] font-medium text-muted">How long has each been present?</span>
               {complaints.map((c) => (
-                <div key={c} className="flex items-center gap-2">
-                  <span className="flex-1 text-[14px]">{c}</span>
-                  <input
-                    value={complaintDur[c] ?? ""}
-                    onChange={(e) => { setComplaintDur({ ...complaintDur, [c]: e.target.value }); mark("complaints"); }}
-                    placeholder="e.g. 3 days"
-                    className="h-9 w-28 rounded-[10px] border border-line bg-card px-2.5 text-[14px] outline-none focus:border-accent"
-                  />
+                <div key={c} className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="flex-1 text-[14px]">{c}</span>
+                    <input
+                      value={complaintDur[c] ?? ""}
+                      onChange={(e) => { setComplaintDur({ ...complaintDur, [c]: e.target.value }); mark("complaints"); }}
+                      placeholder="e.g. 3 days"
+                      className="h-9 w-28 rounded-[10px] border border-line bg-card px-2.5 text-[14px] outline-none focus:border-accent"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {DURATION_QUICK.map((d) => (
+                      <SelChip
+                        key={d}
+                        selected={(complaintDur[c] ?? "").trim().toLowerCase() === d}
+                        onClick={() => { setComplaintDur({ ...complaintDur, [c]: d }); mark("complaints"); }}
+                      >
+                        {d}
+                      </SelChip>
+                    ))}
+                  </div>
                 </div>
               ))}
               <span className="text-[11px] text-muted">Longest-standing complaint is listed first automatically.</span>
