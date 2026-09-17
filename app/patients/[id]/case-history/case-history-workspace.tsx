@@ -291,7 +291,7 @@ const SYMPTOM_TEMPLATES: { match: RegExp; attrs: HopiAttr[] }[] = [
   },
 ];
 
-const DURATION_QUICK = ["1 day", "2 days", "3 days", "5 days", "1 week", "2 weeks", "1 month", "3 months"];
+const DURATION_QUICK = ["1 day", "3 days", "1 week", "2 weeks", "1 month"];
 
 function hopiAttrsFor(complaint: string): HopiAttr[] {
   return SYMPTOM_TEMPLATES.find((t) => t.match.test(complaint))?.attrs ?? GENERIC_HOPI;
@@ -903,27 +903,31 @@ export default function CaseHistoryWorkspace({
             <div className="flex flex-col gap-1.5">
               <span className="text-[12px] font-medium text-muted">How long has each been present?</span>
               {complaints.map((c) => (
-                <div key={c} className="flex flex-col gap-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="flex-1 text-[14px]">{c}</span>
-                    <input
-                      value={complaintDur[c] ?? ""}
-                      onChange={(e) => { setComplaintDur({ ...complaintDur, [c]: e.target.value }); mark("complaints"); }}
-                      placeholder="e.g. 3 days"
-                      className="h-9 w-28 rounded-[10px] border border-line bg-card px-2.5 text-[14px] outline-none focus:border-accent"
-                    />
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
+                <div key={c} className="flex flex-wrap items-center gap-1.5">
+                  <span className="mr-auto text-[14px]">{c}</span>
+                  <div className="flex items-center gap-1">
                     {DURATION_QUICK.map((d) => (
-                      <SelChip
+                      <button
                         key={d}
-                        selected={(complaintDur[c] ?? "").trim().toLowerCase() === d}
+                        type="button"
                         onClick={() => { setComplaintDur({ ...complaintDur, [c]: d }); mark("complaints"); }}
+                        className={
+                          "rounded-full px-2 py-1 text-[11px] whitespace-nowrap " +
+                          ((complaintDur[c] ?? "").trim().toLowerCase() === d
+                            ? "bg-accent text-accent-ink"
+                            : "bg-chip text-muted")
+                        }
                       >
                         {d}
-                      </SelChip>
+                      </button>
                     ))}
                   </div>
+                  <input
+                    value={complaintDur[c] ?? ""}
+                    onChange={(e) => { setComplaintDur({ ...complaintDur, [c]: e.target.value }); mark("complaints"); }}
+                    placeholder="e.g. 3 days"
+                    className="h-9 w-24 shrink-0 rounded-[10px] border border-line bg-card px-2 text-[14px] outline-none focus:border-accent"
+                  />
                 </div>
               ))}
               <span className="text-[11px] text-muted">Longest-standing complaint is listed first automatically.</span>
