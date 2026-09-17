@@ -83,7 +83,15 @@ const STEP_TITLES = [
   { title: "Your year", hint: "Whichever fits best." },
 ];
 
-export default function WaitlistForm() {
+export default function WaitlistForm({
+  autoFocusFirstField = true,
+}: {
+  /** False on pages where the form isn't the whole screen — autofocusing the email field
+   * would otherwise yank the initial scroll position down to it, away from whatever comes
+   * before the form (e.g. the hero on /home). /waitlist is the form's own page, so it keeps
+   * the default. */
+  autoFocusFirstField?: boolean;
+} = {}) {
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState<"fwd" | "back">("fwd");
   const [emailUser, setEmailUser] = useState("");
@@ -259,7 +267,7 @@ export default function WaitlistForm() {
                 <input
                   type="text"
                   required
-                  autoFocus
+                  autoFocus={autoFocusFirstField}
                   inputMode="email"
                   autoCapitalize="off"
                   autoCorrect="off"
