@@ -503,6 +503,14 @@ export default function CaseHistoryWorkspace({
     if (lines.every(readsDenial)) return { none: true, text: "" };
     return { none: false, text: lines.join("\n") };
   });
+  /** Add a drug as its own line, name plus a dose/frequency placeholder to fill in — every
+   *  chip-picked drug carries the same "dose, frequency" prompt as free-typed lines. */
+  function appendMedLine(name: string) {
+    if (medication.text.toLowerCase().includes(name.toLowerCase())) return;
+    const line = `${name} — dose, frequency`;
+    setMedication({ none: false, text: (medication.text ? medication.text.replace(/\n+$/, "") + "\n" : "") + line });
+    mark("medication");
+  }
 
   const [obstetric, setObstetric] = useState<string>(() =>
     ((bySection.obstetric ?? [])[0]?.value ?? "").trim()
@@ -570,6 +578,24 @@ export default function CaseHistoryWorkspace({
   const [planTab, setPlanTab] = useState<"workup" | "conservative" | "medications">("workup");
   /** Which medication-class chip's drug dropdown is open, if any. */
   const [drugPicker, setDrugPicker] = useState<string | null>(null);
+
+  // Carry the medication-history list into the treatment plan automatically — a patient's
+  // existing regular medications default to continued in the plan unless the resident removes
+  // them there. Tracks what it last copied so an edited history line replaces the stale plan
+  // line instead of leaving a duplicate, without touching lines the resident added by hand.
+  const syncedMedsRef = useRef<string[]>([]);
+  useEffect(() => {
+    const lines = medication.none ? [] : medication.text.split("\n").map((s) => s.trim()).filter(Boolean);
+    setPlan((p) => {
+      const prevSynced = syncedMedsRef.current;
+      const kept = p.medications.filter((m) => lines.includes(m) || !prevSynced.includes(m));
+      const meds = [...kept, ...lines.filter((l) => !kept.includes(l))];
+      return meds.length === p.medications.length && meds.every((m, i) => m === p.medications[i])
+        ? p
+        : { ...p, medications: meds };
+    });
+    syncedMedsRef.current = lines;
+  }, [medication.text, medication.none]);
   const [compiled, setCompiled] = useState<{ sections: { label: string; text: string }[]; uncertain: string[] } | null>(null);
 
   // --- steps -------------------------------------------------------------------------
@@ -1020,9 +1046,7 @@ export default function CaseHistoryWorkspace({
                     selected={medication.text.toLowerCase().includes(c.toLowerCase())}
                     onClick={() => {
                       if (DRUG_OPTIONS[c]) setDrugPicker((cur) => (cur === c ? null : c));
-                      if (medication.text.toLowerCase().includes(c.toLowerCase())) return;
-                      setMedication({ none: false, text: (medication.text ? medication.text.replace(/\n+$/, "") + "\n" : "") + c });
-                      mark("medication");
+                      appendMedLine(c);
                     }}
                   >
                     {c}
@@ -1037,11 +1061,7 @@ export default function CaseHistoryWorkspace({
                       <SelChip
                         key={d}
                         selected={medication.text.toLowerCase().includes(d.toLowerCase())}
-                        onClick={() => {
-                          if (medication.text.toLowerCase().includes(d.toLowerCase())) return;
-                          setMedication({ none: false, text: (medication.text ? medication.text.replace(/\n+$/, "") + "\n" : "") + d });
-                          mark("medication");
-                        }}
+                        onClick={() => appendMedLine(d)}
                       >
                         {d}
                       </SelChip>
