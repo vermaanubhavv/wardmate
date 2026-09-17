@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DictationContext, NoteType, Specialty } from "./lexicon";
-import { describeSelection, getDeepgramKeyterms } from "./selectMedicalKeyterms";
+import {
+  describeSelection,
+  getDeepgramKeyterms,
+  dedupeCaseInsensitive as dedupe,
+} from "./selectMedicalKeyterms";
 import { getSpecialtyPack } from "@/lib/specialty";
 
 /**
@@ -167,18 +171,6 @@ function cleanDrug(s: string): string {
     .replace(/\b\d+(\.\d+)?\s*(mg|g|ml|mcg|units?|iu)\b/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
-}
-
-function dedupe(list: string[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const s of list) {
-    const key = s.toLowerCase().trim();
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    out.push(s.trim());
-  }
-  return out;
 }
 
 /**

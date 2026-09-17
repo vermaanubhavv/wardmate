@@ -1,0 +1,374 @@
+<title>Clinician Data Agreement</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #f6f5f0;
+    --card: #ffffff;
+    --ink: #1b211f;
+    --muted: #5d675f;
+    --faint: #8b948b;
+    --line: #dfe3dc;
+    --accent: #0e6b57;
+    --accent-ink: #f6f5f0;
+    --accent-soft: #e4efe9;
+    --warn-bg: #fbf1e2;
+    --warn-ink: #7a4c07;
+    --warn-line: #ecd8ae;
+    --draft-bg: #fdecea;
+    --draft-ink: #8a2a1f;
+    --draft-line: #f3c9c2;
+    --mono-bg: #eef0ea;
+    --shadow: 0 1px 2px rgba(27, 33, 31, 0.04), 0 8px 24px -12px rgba(27, 33, 31, 0.10);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101512;
+      --card: #171e1a;
+      --ink: #e7ece8;
+      --muted: #9aa69f;
+      --faint: #6b756e;
+      --line: #263029;
+      --accent: #46c39c;
+      --accent-ink: #08130f;
+      --accent-soft: #17281f;
+      --warn-bg: #211a0c;
+      --warn-ink: #e3b978;
+      --warn-line: #3a2e14;
+      --draft-bg: #2a1512;
+      --draft-ink: #f0a898;
+      --draft-line: #4a231c;
+      --mono-bg: #1b2320;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101512; --card: #171e1a; --ink: #e7ece8; --muted: #9aa69f; --faint: #6b756e;
+    --line: #263029; --accent: #46c39c; --accent-ink: #08130f; --accent-soft: #17281f;
+    --warn-bg: #211a0c; --warn-ink: #e3b978; --warn-line: #3a2e14;
+    --draft-bg: #2a1512; --draft-ink: #f0a898; --draft-line: #4a231c;
+    --mono-bg: #1b2320; --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Public Sans", ui-sans-serif, system-ui, sans-serif;
+    padding-inline: 20px;
+    padding-block: 40px 80px;
+  }
+
+  .sheet {
+    max-width: 720px;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  h1, h2 { font-family: "Source Serif 4", Georgia, serif; text-wrap: balance; }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .draft-banner {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    border: 1px solid var(--draft-line);
+    background: var(--draft-bg);
+    color: var(--draft-ink);
+    border-radius: 12px;
+    padding: 16px 18px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .draft-banner svg { flex-shrink: 0; margin-top: 2px; }
+  .draft-banner b { font-weight: 700; }
+
+  header.masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--line);
+  }
+  header.masthead h1 {
+    font-size: clamp(26px, 5vw, 34px);
+    font-weight: 700;
+    line-height: 1.15;
+    margin: 0;
+  }
+  .dek { max-width: 60ch; color: var(--muted); font-size: 15.5px; line-height: 1.6; margin: 0; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 8px 20px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12.5px; color: var(--faint);
+  }
+  .meta-row b { color: var(--muted); font-weight: 500; }
+
+  article {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  section.clause { display: flex; flex-direction: column; gap: 10px; }
+
+  .clause-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .clause-num {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  section.clause h2 { font-size: 18.5px; font-weight: 600; margin: 0; }
+
+  section.clause p, section.clause li {
+    max-width: 66ch;
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.65;
+  }
+  section.clause p { margin: 0; }
+  section.clause .sub { color: var(--muted); }
+
+  section.clause ul, section.clause ol {
+    margin: 4px 0 0;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; }
+
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+  }
+  table { border-collapse: collapse; width: 100%; min-width: 520px; }
+  thead th {
+    text-align: left;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--faint); font-weight: 500;
+    padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--mono-bg);
+  }
+  tbody td { padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 14px; line-height: 1.5; vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .callout {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .callout b { color: var(--ink); }
+
+  code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    background: var(--mono-bg);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--muted);
+    font-size: 0.88em;
+  }
+
+  .accept-block {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px 22px;
+    background: var(--accent-soft);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .accept-block h3 { margin: 0; font-size: 15px; font-family: "Public Sans", sans-serif; font-weight: 700; }
+  .accept-block p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--muted); max-width: 62ch; }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--faint);
+  }
+</style>
+
+<div class="sheet">
+
+  <div class="draft-banner">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div><b>Unreviewed draft.</b> This was written by an engineer to close a real gap — nothing today asks a doctor to agree to anything before their patient data is processed — not by a lawyer. Have counsel familiar with the DPDP Act, 2023 and Indian medical-council rules review and revise this before it is shown to a single resident.</div>
+  </div>
+
+  <header class="masthead">
+    <span class="eyebrow">WardMate · Clinician Data Agreement</span>
+    <h1>The agreement between WardMate and you, the doctor</h1>
+    <p class="dek">
+      WardMate is adopted unit by unit, resident by resident — not procured by a hospital's IT
+      department first. So this agreement is written for the relationship that actually exists
+      today: between WardMate and the individual clinician who creates an account, not a
+      hospital that may not yet know the app is in use.
+    </p>
+    <div class="meta-row">
+      <span><b>Version:</b> draft-1 · not yet published</span>
+      <span><b>Governing law:</b> India · DPDP Act, 2023</span>
+      <span><b>Companion document:</b> <a href="https://claude.ai/artifact/4QuM4EMKX8De2P9NqNmbby">Sub-Processor Register</a></span>
+    </div>
+  </header>
+
+  <article>
+
+    <section class="clause">
+      <div class="clause-head"><span class="clause-num">1</span><h2>Who this is between</h2></div>
+      <p>This agreement is between <b><code>[legal entity name]</code></b>, operating WardMate
+        (&ldquo;WardMate,&rdquo; &ldquo;we&rdquo;), and you, the doctor or resident creating an
+        account (&ldquo;you,&rdquo; &ldquo;the clinician&rdquo;). It is not, on its own, an
+        agreement with any hospital — if your hospital later adopts WardMate formally, a
+        separate institutional agreement should govern that relationship and would take
+        precedence over this one for anything it covers.</p>
+    </section>
+
+    <section class="clause">
+      <div class="clause-head"><span class="clause-num">2</span><h2>What each of us is, under the DPDP Act</h2></div>
+      <p>For the patient data you enter into WardMate, <b>you are the Data Fiduciary</b> — the
+        one with the actual clinical relationship to the patient, and the one responsible for
+        having a lawful basis to hold their data (your treating role, and your hospital's own
+        admission and consent processes). <b>WardMate is your Data Processor</b>: we process
+        that data only to provide the features you use, only on the instructions this agreement
+        and the app's own design represent, and never for a purpose of our own.</p>
+      <p class="sub">If your hospital has its own DPA with WardMate covering the same patients,
+        that governs instead, and you are not separately liable for anything it assigns to the
+        hospital.</p>
+    </section>
+
+    <section class="clause">
+      <div class="clause-head"><span class="clause-num">3</span><h2>What we actually do with it</h2></div>
+      <p>The short version: a photo or a spoken note you capture is sent to the AI services
+        listed in our <a href="https://claude.ai/artifact/4QuM4EMKX8De2P9NqNmbby">Sub-Processor Register</a> to be turned into structured
+        fields, which you review before anything is saved. Nothing is auto-confirmed. The full,
+        current list of every service that touches patient data, and what each one is sent, is
+        kept in that companion document rather than repeated here — so it stays accurate as
+        providers change without this agreement needing to be re-signed.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>We will</th><th>We won't</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Process patient data only for clinical documentation, care coordination, and the record-keeping your role requires.</td>
+              <td>Sell patient data, or use it to train a model we own.</td>
+            </tr>
+            <tr>
+              <td>Use only the sub-processors listed in the register, and update it when that changes.</td>
+              <td>Add a new class of sub-processor without updating that register.</td>
+            </tr>
+            <tr>
+              <td>Delete a patient's record and its evidence on the schedule described in §6, once you remove them.</td>
+              <td>Keep a deleted patient's data "just in case."</td>
+            </tr>
+            <tr>
+              <td>Tell you within <code>[X hours]</code> of confirming any breach affecting your ward's data.</td>
+              <td>Sit on a known breach.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="clause">
+      <div class="clause-head"><span class="clause-num">4</span><h2>What we're asking of you</h2></div>
+      <ul>
+        <li>Enter only patients under your own care, on the unit you're a member of.</li>
+        <li>Keep your sign-in and your unit's join code to yourself — anyone holding the code
+          sees the same patient list you do.</li>
+        <li>Tell us, and your hospital, promptly if you believe an account or a unit's code has
+          been compromised.</li>
+        <li>Continue to follow your hospital's own policies on patient records and consent —
+          this agreement sits alongside those, not in place of them.</li>
+      </ul>
+    </section>
+
+    <section class="clause">
+      <div class="clause-head"><span class="clause-num">5</span><h2>Your rights, and a patient's</h2></div>
+      <p>You can see, correct, or remove any patient record on your unit at any time through the
+        app itself. If a patient (or someone acting for them) asks you for a copy of what's held
+        about them, or to have it erased, you can act on that directly — the app is how you do
+        it, and WardMate does not stand between you and that request.</p>
+    </section>
+
+    <section class="clause">
+      <div class="clause-head"><span class="clause-num">6</span><h2>How long data is kept</h2></div>
+      <p>An active patient stays on the record for as long as you keep them there. Removing a
+        patient moves them to Trash for 7 days — recoverable the whole time — after which the
+        record, and any photo or audio evidence tied to it, is permanently deleted, including
+        from storage, not merely hidden from view.</p>
+    </section>
+
+    <section class="clause">
+      <div class="clause-head"><span class="clause-num">7</span><h2>No warranty on the clinical content</h2></div>
+      <p>WardMate helps you document faster; it does not practice medicine and does not replace
+        your judgment. Every AI-suggested field is exactly that — a suggestion, shown beside the
+        transcript or photo it came from, for you to accept, edit, or discard. You remain solely
+        responsible for the accuracy of your patients' clinical record.</p>
+    </section>
+
+    <section class="clause">
+      <div class="clause-head"><span class="clause-num">8</span><h2>Ending this</h2></div>
+      <p>You may leave your unit or delete your account at any time from Settings. Your
+        patients' records stay with the unit — they belong to the clinical team, not to any one
+        doctor who rotates off it.</p>
+    </section>
+
+    <section class="clause">
+      <div class="clause-head"><span class="clause-num">9</span><h2>Changes to this agreement</h2></div>
+      <p>A change that affects what we're allowed to do with your patients' data will be shown
+        to you again before it takes effect, with a new version number. Continuing to use
+        WardMate after a change that doesn't affect data handling — a formatting fix, a
+        clarified sentence — doesn't require re-acceptance.</p>
+    </section>
+
+    <div class="callout">
+      <b>Contact:</b> <code>[insert support email]</code> — for a question about this agreement,
+      a data request, or to report a suspected breach.
+    </div>
+
+  </article>
+
+  <div class="accept-block">
+    <h3>Where this gets accepted</h3>
+    <p>Onboarding already asks every doctor to self-attest their registration number and
+      hospital before joining a unit (<code>app/onboarding/professional-form.tsx</code>). The
+      natural place for this is a second checkbox on that same screen, stamping
+      <code>profiles.terms_accepted_at</code> and the version they saw — one more field on a
+      form residents already fill in, not a new step.</p>
+  </div>
+
+  <footer>
+    <span>WardMate · Clinician Data Agreement · draft-1</span>
+    <span>Not yet linked from the product. See the implementation note above for where it's meant to attach.</span>
+  </footer>
+
+</div>

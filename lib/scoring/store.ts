@@ -85,52 +85,6 @@ export async function syncPatientPathways(patientId: string): Promise<void> {
   }
 }
 
-export async function recomputeInstance(instanceId: string, trigger = "manual"): Promise<void> {
-  if (!scoringEngineGloballyEnabled()) return;
-  const supabase = await createClient();
-  const { data: inst } = await supabase
-    .from("pathway_instances")
-    .select("*")
-    .eq("id", instanceId)
-    .maybeSingle();
-  if (!inst) return;
-  if (!(await isScoringEngineEnabled(inst.ward_id))) return;
-  await recomputeInstanceRow(supabase, inst, trigger);
-}
-
-/**
- * Record an inbound trigger event with the canonical dedup key. Returns false when the event
- * was already delivered (unique-violation) — the caller then does nothing (DOCX §4).
- */
-export async function recordEvent(a: {
-  patientId: string;
-  wardId: string;
-  instanceId: string | null;
-  eventType: string;
-  dedupKey: string;
-  sourceId: string | null;
-  checkpoint: string | null;
-  payload?: Record<string, unknown>;
-}): Promise<boolean> {
-  const supabase = await createClient();
-  const { error } = await supabase.from("pathway_events").insert({
-    patient_id: a.patientId,
-    ward_id: a.wardId,
-    instance_id: a.instanceId,
-    event_type: a.eventType,
-    dedup_key: a.dedupKey,
-    source_id: a.sourceId,
-    checkpoint: a.checkpoint,
-    payload: a.payload ?? {},
-  });
-  if (error) {
-    // 23505 = unique_violation → this exact event was already processed.
-    if ((error as { code?: string }).code === "23505") return false;
-    throw error;
-  }
-  return true;
-}
-
 // ---------------------------------------------------------------------------
 // Trigger / instance lifecycle
 // ---------------------------------------------------------------------------

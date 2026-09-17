@@ -37,17 +37,6 @@ export const MASTER_LEXICON: readonly MedicalLexiconEntry[] = Object.freeze([
 ]);
 
 /**
- * A source of extra lexicon entries merged in at selection time — the extension point for the
- * layered model in the brief (GLOBAL wardmate-india → SPECIALTY general-surgery → HOSPITAL
- * ESIC → PATIENT). A database-backed implementation can load a ward's or hospital's custom
- * vocabulary and hand it back here without the selector or the master lexicon changing.
- */
-export interface LexiconProvider {
-  /** Extra entries to consider alongside MASTER_LEXICON for this context. */
-  getCustomTerms(input: { ward?: string; hospital?: string; specialty?: string }): Promise<MedicalLexiconEntry[]>;
-}
-
-/**
  * Merge custom entries onto a base lexicon.
  *
  * A custom entry whose `term` matches a base entry (case-insensitively) REPLACES it — this is

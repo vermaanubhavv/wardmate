@@ -1,4 +1,4 @@
-import { estimateTotalTokens } from "./selectMedicalKeyterms";
+import { estimateTotalTokens, dedupeCaseInsensitive } from "./selectMedicalKeyterms";
 
 /**
  * Build the Deepgram `/v1/listen` query for WardMate's dictation.
@@ -45,7 +45,7 @@ export function buildDeepgramParams(
     search.set(key, String(value));
   }
 
-  const safe = dedupeExact(keyterms).slice(0, MAX_KEYTERMS);
+  const safe = dedupeCaseInsensitive(keyterms).slice(0, MAX_KEYTERMS);
   for (const term of safe) {
     const trimmed = term.trim();
     if (trimmed) search.append("keyterm", trimmed);
@@ -69,7 +69,7 @@ export function keytermBudget(keyterms: readonly string[]): {
   withinWardmateCeiling: boolean;
   withinDeepgramLimit: boolean;
 } {
-  const safe = dedupeExact(keyterms).slice(0, MAX_KEYTERMS);
+  const safe = dedupeCaseInsensitive(keyterms).slice(0, MAX_KEYTERMS);
   const estimatedTokens = estimateTotalTokens(safe);
   return {
     count: safe.length,
@@ -77,16 +77,4 @@ export function keytermBudget(keyterms: readonly string[]): {
     withinWardmateCeiling: estimatedTokens <= WARDMATE_TOKEN_CEILING,
     withinDeepgramLimit: estimatedTokens <= DEEPGRAM_TOKEN_LIMIT,
   };
-}
-
-function dedupeExact(terms: readonly string[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const t of terms) {
-    const key = t.trim().toLowerCase();
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    out.push(t.trim());
-  }
-  return out;
 }

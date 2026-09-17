@@ -35,28 +35,6 @@ export async function getGlossary(limit = 80): Promise<GlossaryTerm[]> {
   }
 }
 
-/**
- * The glossary as prompt text, grouped by category.
- *
- * NOT currently wired into anything. The corrections are applied to the transcript instead —
- * see correctTranscript below for why that had to be the mechanism — and this is kept because
- * it was asked for and because it is what the prompt-hint approach would need if the exact-match
- * substitution ever turns out to miss too many near-misses. Delete it if that day does not come.
- */
-export async function getPromptGlossary(limit = 80): Promise<string> {
-  const terms = await getGlossary(limit);
-  if (terms.length === 0) return "";
-
-  const byCategory = terms.reduce<Record<string, string[]>>((acc, t) => {
-    (acc[t.category ?? "other"] ??= []).push(`"${t.wrong_term}" → "${t.correct_term}"`);
-    return acc;
-  }, {});
-
-  return Object.entries(byCategory)
-    .map(([category, entries]) => `${category}:\n${entries.join("\n")}`)
-    .join("\n\n");
-}
-
 /** Regex-safe, and matched on whole words so "pac" cannot fire inside "packed". */
 function termPattern(wrong: string): RegExp {
   const escaped = wrong.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
