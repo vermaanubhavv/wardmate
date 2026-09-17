@@ -203,27 +203,39 @@ const PLAN_SYSTEM = `You propose the INITIAL PLAN OF MANAGEMENT for a general-su
 
 Absolute rules:
 1. Build the plan only from what the digest supports — the presentation, the examination, the provisional diagnosis. Never order something for a condition the digest does not mention.
-2. Each item is one concrete action a resident would write on the plan: an investigation to send, a treatment to start, a referral, a monitoring instruction, a consent/PAC step, NBM status, etc.
-3. Standard, conservative first-day management. Do not commit to a definitive operation or procedure the digest does not already indicate; "plan for [procedure] after workup" is acceptable where the diagnosis implies it.
-4. 3–8 items. Short imperative phrases. Expand unsafe abbreviations.
-5. Put anything you are unsure of in uncertain_points.
+2. Split the plan into three groups:
+   - "workup": investigations to send or imaging to order.
+   - "conservative": non-drug measures — NBM status, IV fluids, monitoring, positioning, consent/PAC, drains, referrals, and the like.
+   - "medications": specific drugs to start, each its own line naming the drug (with route/frequency if it is standard for that drug). Choose these because they treat THIS patient's presenting complaints and provisional diagnosis — never a generic admission bundle, and never a drug for a condition the digest does not support.
+3. Each item is one concrete, short imperative phrase. Expand unsafe abbreviations.
+4. Standard, conservative first-day management. Do not commit to a definitive operation or procedure the digest does not already indicate; "plan for [procedure] after workup" is acceptable where the diagnosis implies it.
+5. 2–6 items per group. Leave a group an empty array if nothing in the digest calls for it — never pad it with filler.
+6. Put anything you are unsure of in uncertain_points.
 
-Return JSON: { "items": string[], "uncertain_points": string[] }.`;
+Return JSON: { "workup": string[], "conservative": string[], "medications": string[], "uncertain_points": string[] }.`;
 
 const PLAN_SCHEMA = {
   type: "object",
   properties: {
-    items: { type: "array", items: { type: "string" } },
+    workup: { type: "array", items: { type: "string" } },
+    conservative: { type: "array", items: { type: "string" } },
+    medications: { type: "array", items: { type: "string" } },
     uncertain_points: { type: "array", items: { type: "string" } },
   },
-  required: ["items", "uncertain_points"],
+  required: ["workup", "conservative", "medications", "uncertain_points"],
   additionalProperties: false,
 } as const;
 
 export async function generatePlan(
   digest: string,
   admissionPhrase: string = DEFAULT_ADMISSION_PHRASE
-): Promise<{ items: string[]; uncertainPoints: string[]; model: string }> {
+): Promise<{
+  workup: string[];
+  conservative: string[];
+  medications: string[];
+  uncertainPoints: string[];
+  model: string;
+}> {
   const response = await client().messages.create({
     model: AI_MODEL,
     max_tokens: 900,
@@ -236,9 +248,14 @@ export async function generatePlan(
   });
   const block = response.content.find((b) => b.type === "text");
   const parsed =
-    block && block.type === "text" ? JSON.parse(block.text) : { items: [], uncertain_points: [] };
+    block && block.type === "text"
+      ? JSON.parse(block.text)
+      : { workup: [], conservative: [], medications: [], uncertain_points: [] };
+  const arr = (v: unknown) => (Array.isArray(v) ? v.map(String).filter(Boolean) : []);
   return {
-    items: Array.isArray(parsed.items) ? parsed.items.map(String).filter(Boolean) : [],
+    workup: arr(parsed.workup),
+    conservative: arr(parsed.conservative),
+    medications: arr(parsed.medications),
     uncertainPoints: Array.isArray(parsed.uncertain_points) ? parsed.uncertain_points.map(String) : [],
     model: AI_MODEL,
   };

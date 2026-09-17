@@ -87,7 +87,26 @@ const MED_CHIPS = [
   "Steroid",
   "Inhaler",
   "Thyroxine",
+  "CKD medication",
 ];
+
+/** For a medication class the resident taps, the common drugs in it — offered right there as a
+ *  dropdown of pills so the class chip (kept for a quick generic entry) can be followed
+ *  immediately by the actual drug name, without typing it out. */
+const DRUG_OPTIONS: Record<string, string[]> = {
+  "Antihypertensive": [
+    "Amlodipine", "Telmisartan", "Losartan", "Enalapril", "Ramipril",
+    "Metoprolol", "Atenolol", "Hydrochlorothiazide", "Chlorthalidone",
+  ],
+  "Oral hypoglycaemic": [
+    "Metformin", "Glimepiride", "Gliclazide", "Sitagliptin", "Vildagliptin",
+    "Empagliflozin", "Voglibose", "Pioglitazone",
+  ],
+  "CKD medication": [
+    "Erythropoietin", "Iron sucrose", "Calcium carbonate", "Sodium bicarbonate",
+    "Cholecalciferol", "Furosemide", "Cinacalcet",
+  ],
+};
 
 const PICCLE_SIGNS = [
   { label: "pallor", title: "Pallor" },
@@ -114,6 +133,22 @@ const GENERIC_HOPI: HopiAttr[] = [
 ];
 
 const SYMPTOM_TEMPLATES: { match: RegExp; attrs: HopiAttr[] }[] = [
+  {
+    // Checked before the generic pain/ache template below, which would otherwise catch
+    // "headache" too (it contains "ache") and ask abdominal-pain questions for it.
+    match: /headache|migraine|cephalgia/i,
+    attrs: [
+      { label: "Site", options: ["Unilateral", "Bilateral", "Frontal", "Occipital", "Temporal", "Generalised"] },
+      { label: "Onset", options: ["Sudden (thunderclap)", "Gradual"] },
+      { label: "Character", options: ["Throbbing", "Pressing / tightening", "Sharp / stabbing", "Dull ache"] },
+      { label: "Severity", options: ["Mild", "Moderate", "Severe — worst ever"] },
+      { label: "Duration", options: ["<1 day", "1–3 days", "<1 week", "1–4 weeks", ">1 month"] },
+      { label: "Pattern", options: ["First episode", "Recurrent", "Chronic daily"] },
+      { label: "Aggravated by", options: ["Straining / coughing", "Bending forward", "Light", "Noise", "Movement"] },
+      { label: "Relieved by", options: ["Rest", "Dark quiet room", "Analgesics", "Sleep"] },
+      { label: "Associated with", options: ["Nausea / vomiting", "Photophobia", "Phonophobia", "Visual disturbance", "Neck stiffness", "Fever", "Weakness / numbness", "Loss of consciousness", "Seizure"] },
+    ],
+  },
   {
     match: /pain|ache/i,
     attrs: [
@@ -524,7 +559,15 @@ export default function CaseHistoryWorkspace({
     text: seededNegatives,
     uncertain: [],
   });
-  const [plan, setPlan] = useState<{ items: string[]; uncertain: string[] }>({ items: [], uncertain: [] });
+  const [plan, setPlan] = useState<{ workup: string[]; conservative: string[]; medications: string[]; uncertain: string[] }>({
+    workup: [],
+    conservative: [],
+    medications: [],
+    uncertain: [],
+  });
+  const [planTab, setPlanTab] = useState<"workup" | "conservative" | "medications">("workup");
+  /** Which medication-class chip's drug dropdown is open, if any. */
+  const [drugPicker, setDrugPicker] = useState<string | null>(null);
   const [compiled, setCompiled] = useState<{ sections: { label: string; text: string }[]; uncertain: string[] } | null>(null);
 
   // --- steps -------------------------------------------------------------------------
@@ -710,7 +753,12 @@ export default function CaseHistoryWorkspace({
         setNegatives({ text: String(data.text ?? ""), uncertain: data.uncertainPoints ?? [] });
         if (String(data.text ?? "").trim()) mark("negatives");
       } else if (section === "plan") {
-        setPlan({ items: Array.isArray(data.items) ? data.items : [], uncertain: data.uncertainPoints ?? [] });
+        setPlan({
+          workup: Array.isArray(data.workup) ? data.workup : [],
+          conservative: Array.isArray(data.conservative) ? data.conservative : [],
+          medications: Array.isArray(data.medications) ? data.medications : [],
+          uncertain: data.uncertainPoints ?? [],
+        });
       } else {
         setCompiled({
           sections: Array.isArray(data.sections) ? data.sections : [],
@@ -742,7 +790,7 @@ export default function CaseHistoryWorkspace({
       const res =
         section === "diagnosis"
           ? await approveCaseHistoryDiagnosis(patientId, diagnosis.text, diagnosis.differentials)
-          : await approveCaseHistoryPlan(patientId, plan.items);
+          : await approveCaseHistoryPlan(patientId, [...plan.workup, ...plan.conservative, ...plan.medications]);
       if (!res.ok) {
         setMessage(res.error ?? "Could not save.");
         return;
@@ -939,6 +987,7 @@ export default function CaseHistoryWorkspace({
                     key={c}
                     selected={medication.text.toLowerCase().includes(c.toLowerCase())}
                     onClick={() => {
+                      if (DRUG_OPTIONS[c]) setDrugPicker((cur) => (cur === c ? null : c));
                       if (medication.text.toLowerCase().includes(c.toLowerCase())) return;
                       setMedication({ none: false, text: (medication.text ? medication.text.replace(/\n+$/, "") + "\n" : "") + c });
                       mark("medication");
@@ -948,6 +997,26 @@ export default function CaseHistoryWorkspace({
                   </SelChip>
                 ))}
               </div>
+              {drugPicker && DRUG_OPTIONS[drugPicker] && (
+                <div className="flex flex-col gap-1.5 rounded-[10px] bg-chip/50 p-2.5">
+                  <span className="text-[12px] font-medium text-muted">Common {drugPicker} drugs</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {DRUG_OPTIONS[drugPicker].map((d) => (
+                      <SelChip
+                        key={d}
+                        selected={medication.text.toLowerCase().includes(d.toLowerCase())}
+                        onClick={() => {
+                          if (medication.text.toLowerCase().includes(d.toLowerCase())) return;
+                          setMedication({ none: false, text: (medication.text ? medication.text.replace(/\n+$/, "") + "\n" : "") + d });
+                          mark("medication");
+                        }}
+                      >
+                        {d}
+                      </SelChip>
+                    ))}
+                  </div>
+                </div>
+              )}
               <DictateArea
                 value={medication.text}
                 onChange={(v) => { setMedication({ none: false, text: v }); mark("medication"); }}
@@ -1283,38 +1352,59 @@ export default function CaseHistoryWorkspace({
         </>
       );
 
-    if (id === "plan")
+    if (id === "plan") {
+      const hasAny = plan.workup.length > 0 || plan.conservative.length > 0 || plan.medications.length > 0;
+      const PLAN_TABS: { id: "workup" | "conservative" | "medications"; title: string }[] = [
+        { id: "workup", title: "Workup" },
+        { id: "conservative", title: "Conservative" },
+        { id: "medications", title: "Medications" },
+      ];
+      const list = plan[planTab];
+      const setList = (items: string[]) => setPlan({ ...plan, [planTab]: items });
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">The AI drafts an initial plan. Edit the list, then approve — approving puts each line on the to-do list.</p>
+          <p className="text-[12px] leading-[1.45] text-muted">
+            The AI drafts an initial plan from the complaints and provisional diagnosis on record — workup, conservative
+            measures, and specific medications for this presentation. Edit any line, then approve — approving puts every
+            line, across all three, on the to-do list.
+          </p>
           <button type="button" disabled={generating === "plan"} onClick={() => generate("plan")} className={genBtn}>
-            {generating === "plan" ? "Generating…" : plan.items.length ? "Regenerate with AI" : "Generate with AI"}
+            {generating === "plan" ? "Generating…" : hasAny ? "Regenerate with AI" : "Generate with AI"}
           </button>
           <UncertainList points={plan.uncertain} />
+          <div className="flex gap-1.5">
+            {PLAN_TABS.map((t) => (
+              <SelChip key={t.id} selected={planTab === t.id} onClick={() => setPlanTab(t.id)}>
+                {t.title}
+                {plan[t.id].length > 0 ? ` (${plan[t.id].length})` : ""}
+              </SelChip>
+            ))}
+          </div>
           <div className="flex flex-col gap-2">
-            {plan.items.map((it, i) => (
+            {list.map((it, i) => (
               <div key={i} className="flex gap-2">
                 <input
                   value={it}
-                  onChange={(e) => setPlan({ ...plan, items: plan.items.map((x, j) => (j === i ? e.target.value : x)) })}
+                  onChange={(e) => setList(list.map((x, j) => (j === i ? e.target.value : x)))}
                   className="h-11 flex-1 rounded-[10px] border border-line bg-card px-3 text-[15px] outline-none focus:border-accent"
                 />
-                <button type="button" onClick={() => setPlan({ ...plan, items: plan.items.filter((_, j) => j !== i) })} className="shrink-0 px-2 text-[13px] text-muted">
+                <button type="button" onClick={() => setList(list.filter((_, j) => j !== i))} className="shrink-0 px-2 text-[13px] text-muted">
                   Remove
                 </button>
               </div>
             ))}
-            <button type="button" onClick={() => setPlan({ ...plan, items: [...plan.items, ""] })} className="self-start text-[13px] font-medium text-accent">
+            <button type="button" onClick={() => setList([...list, ""])} className="self-start text-[13px] font-medium text-accent">
               + Add a line
             </button>
           </div>
-          {plan.items.some((i) => i.trim()) && (
+          {[...plan.workup, ...plan.conservative, ...plan.medications].some((i) => i.trim()) && (
             <button type="button" onClick={() => approve("plan")} disabled={pending} className={approveBtn}>
               Approve — add to to-do list
             </button>
           )}
         </>
       );
+    }
 
     // review
     const missing: string[] = [];
@@ -1415,7 +1505,7 @@ export default function CaseHistoryWorkspace({
     chest: chest.trim().length > 0,
     local: local.trim().length > 0,
     diagnosis: diagnosis.text.trim().length > 0,
-    plan: plan.items.length > 0,
+    plan: plan.workup.length > 0 || plan.conservative.length > 0 || plan.medications.length > 0,
   };
 
   return (
