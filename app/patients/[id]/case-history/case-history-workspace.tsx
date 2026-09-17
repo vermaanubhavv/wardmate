@@ -966,13 +966,26 @@ export default function CaseHistoryWorkspace({
           <p className="text-[12px] leading-[1.45] text-muted">
             Tap what fits <span className="font-medium">{c}</span> — each tap adds to the line below. Then type or speak anything the pills can&rsquo;t say.
           </p>
-          <div className="flex items-center gap-2">
-            <span className="text-[13px] font-medium text-muted">Duration</span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 text-[13px] font-medium text-muted">Duration</span>
+            {DURATION_QUICK.map((d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => { setHopiDur({ ...hopiDur, [c]: d }); mark("hopi"); }}
+                className={
+                  "rounded-full px-2 py-1 text-[11px] whitespace-nowrap " +
+                  ((hopiDur[c] ?? "").trim().toLowerCase() === d ? "bg-accent text-accent-ink" : "bg-chip text-muted")
+                }
+              >
+                {d}
+              </button>
+            ))}
             <input
               value={hopiDur[c] ?? ""}
               onChange={(e) => { setHopiDur({ ...hopiDur, [c]: e.target.value }); mark("hopi"); }}
               placeholder="e.g. 3 days"
-              className="h-9 w-32 rounded-[10px] border border-line bg-card px-2.5 text-[14px] outline-none focus:border-accent"
+              className="h-9 w-28 rounded-[10px] border border-line bg-card px-2.5 text-[14px] outline-none focus:border-accent"
             />
           </div>
           {attrs.map((a) => (
