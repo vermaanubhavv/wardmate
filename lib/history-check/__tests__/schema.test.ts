@@ -110,3 +110,29 @@ describe("fever tree content", () => {
     expect(feverV1.differentials.find((d) => d.id === "post_op_fever")?.appliesWhen).toBe("post_op");
   });
 });
+
+describe("tier and teaching text", () => {
+  it("accepts core/detailed tiers and refuses anything else", () => {
+    const t = clone();
+    t.slots[5].tier = "detailed";
+    expect(validateHistoryTree(t).ok).toBe(true);
+    (t.slots[5] as { tier: string }).tier = "advanced";
+    expect(validateHistoryTree(t).issues.some((i) => /core or detailed/.test(i.message))).toBe(true);
+  });
+
+  it("accepts a reason to ask, and refuses teaching text that states a diagnosis or a treatment", () => {
+    const t = clone();
+    t.slots[5].teach = "Pain behind the eyes is asked about because it separates some viral fevers from others.";
+    expect(validateHistoryTree(t).ok).toBe(true);
+    t.slots[5].teach = "This is dengue until proven otherwise.";
+    expect(validateHistoryTree(t).issues.some((i) => /must not state a diagnosis/.test(i.message))).toBe(true);
+    t.slots[5].teach = "Start paracetamol 500 mg if present.";
+    expect(validateHistoryTree(t).issues.some((i) => /treatment wording/.test(i.message))).toBe(true);
+  });
+
+  it("marks every red flag and HPI slot core in the fever tree", () => {
+    for (const s of feverV1.slots) {
+      if (s.group === "red_flag" || s.group === "hpi") expect(s.tier ?? "core").toBe("core");
+    }
+  });
+});

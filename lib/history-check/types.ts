@@ -55,6 +55,21 @@ export type Slot = {
   /** A value that is usually a number (days, degrees). Rendered amber and marked unconfirmed,
    *  the same convention every other number in the app follows until a resident confirms it. */
   numeric?: boolean;
+  /**
+   * How much of the tree a mode shows. "core" is what a ward round needs; "detailed" is what a
+   * long case adds on top. Red flags are shown in every mode whatever this says — the engine
+   * ignores the tier for the red_flag group. Absent means "core".
+   *
+   * The mode is applied on READ, when the gap list and history are built. Extraction always
+   * fills the whole tree, so switching mode never triggers another model call.
+   */
+  tier?: "core" | "detailed";
+  /**
+   * One sentence on why the question is worth asking, shown under the gap in academic mode.
+   * Held to the same rules as every other clinical text here: a reason to ask, never a
+   * diagnosis, never a treatment. Left empty until a clinician writes it.
+   */
+  teach?: string;
 };
 
 export type Differential = {

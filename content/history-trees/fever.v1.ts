@@ -18,6 +18,10 @@ import type { HistoryTree } from "@/lib/history-check/types";
  * "jaundice" and "dark urine", "breathlessness" and "chest pain". A negative for one must never
  * be read as a negative for the other, and the validator matches terms per slot.
  *
+ * Tiers: everything is "core" unless marked "detailed". Core is what a ward-round history
+ * needs; detailed is what a long case adds. Red flags ignore the tier and always show.
+ * `teach` lines are deliberately empty — a clinician writes them, not the app.
+ *
  * Editing rules:
  *  - Any change to a slot id, its terms, or the output order is a NEW version file
  *    (fever.v2.ts). Stored results reference the version they were run against.
@@ -48,6 +52,7 @@ export const feverV1: HistoryTree = {
       id: "reliability",
       group: "informant",
       kind: "value",
+      tier: "detailed",
       label: "Reliability",
       question: "Is the history reliable?",
       terms: ["reliable", "unreliable", "reliability"],
@@ -152,23 +157,23 @@ export const feverV1: HistoryTree = {
     { id: "joint_pain", group: "associated", kind: "yes_no", label: "Joint pain", question: "Any joint pain or joint swelling?", terms: ["joint pain", "joint pains", "arthralgia", "joint swelling", "joints", "arthritis"] },
     { id: "rash", group: "associated", kind: "yes_no", label: "Rash", question: "Any rash, and when did it appear relative to the fever?", terms: ["rash", "rashes", "skin lesions", "red spots", "petechiae", "eruption"] },
     { id: "cough", group: "associated", kind: "yes_no", label: "Cough", question: "Any cough — dry or with sputum, and for how long?", terms: ["cough", "sputum", "expectoration", "phlegm", "haemoptysis", "hemoptysis", "blood in sputum"] },
-    { id: "sore_throat", group: "associated", kind: "yes_no", label: "Sore throat / coryza", question: "Any sore throat or runny nose?", terms: ["sore throat", "throat pain", "runny nose", "cold", "coryza", "nasal discharge", "throat"] },
-    { id: "ear_symptoms", group: "associated", kind: "yes_no", label: "Ear pain / discharge", question: "Any ear pain or ear discharge?", terms: ["ear pain", "ear discharge", "earache", "ear ache", "ear"] },
+    { id: "sore_throat", group: "associated", kind: "yes_no", tier: "detailed", label: "Sore throat / coryza", question: "Any sore throat or runny nose?", terms: ["sore throat", "throat pain", "runny nose", "cold", "coryza", "nasal discharge", "throat"] },
+    { id: "ear_symptoms", group: "associated", kind: "yes_no", tier: "detailed", label: "Ear pain / discharge", question: "Any ear pain or ear discharge?", terms: ["ear pain", "ear discharge", "earache", "ear ache", "ear"] },
     { id: "abdominal_pain", group: "associated", kind: "yes_no", label: "Abdominal pain", question: "Any abdominal pain, and where?", terms: ["abdominal pain", "pain abdomen", "pain in abdomen", "stomach pain", "abdomen pain", "abdominal discomfort", "epigastric pain", "right hypochondrium"] },
     { id: "vomiting", group: "associated", kind: "yes_no", label: "Vomiting", question: "Any vomiting or nausea?", terms: ["vomiting", "vomit", "vomited", "nausea", "vomitings"] },
     { id: "diarrhoea", group: "associated", kind: "yes_no", label: "Diarrhoea", question: "Any diarrhoea or loose stools?", terms: ["diarrhoea", "diarrhea", "loose stools", "loose stool", "loose motion", "loose motions", "watery stools"] },
-    { id: "constipation", group: "associated", kind: "yes_no", label: "Constipation", question: "Any constipation?", terms: ["constipation", "constipated", "not passing stool", "not passed stool", "bowels not open"] },
+    { id: "constipation", group: "associated", kind: "yes_no", tier: "detailed", label: "Constipation", question: "Any constipation?", terms: ["constipation", "constipated", "not passing stool", "not passed stool", "bowels not open"] },
     { id: "jaundice", group: "associated", kind: "yes_no", label: "Jaundice", question: "Any yellowing of the eyes or skin?", terms: ["jaundice", "yellow", "yellowish", "yellowness", "icterus", "icteric", "yellow eyes", "yellow urine"] },
     { id: "dark_urine", group: "associated", kind: "yes_no", label: "Dark urine / pale stools", question: "Any dark-coloured urine or pale stools?", terms: ["dark urine", "dark coloured urine", "dark colored urine", "high coloured urine", "high colored urine", "cola coloured urine", "pale stools", "clay coloured stools", "clay colored stools"] },
     { id: "urinary", group: "associated", kind: "yes_no", label: "Urinary symptoms", question: "Any burning micturition, frequency or flank pain?", terms: ["burning micturition", "dysuria", "frequency", "urgency", "flank pain", "loin pain", "burning urination", "burning while passing urine", "urinary", "haematuria", "hematuria", "increased frequency"] },
-    { id: "night_sweats", group: "associated", kind: "yes_no", label: "Night sweats", question: "Any night sweats?", terms: ["night sweats", "night sweat", "sweating at night", "drenching sweats"] },
-    { id: "weight_loss", group: "associated", kind: "yes_no", label: "Weight loss", question: "Any weight loss?", terms: ["weight loss", "lost weight", "losing weight", "loss of weight"] },
-    { id: "appetite", group: "associated", kind: "yes_no", label: "Appetite", question: "Any loss of appetite?", terms: ["loss of appetite", "appetite", "anorexia", "not eating", "decreased appetite", "reduced appetite", "reduced intake", "decreased intake"] },
+    { id: "night_sweats", group: "associated", kind: "yes_no", tier: "detailed", label: "Night sweats", question: "Any night sweats?", terms: ["night sweats", "night sweat", "sweating at night", "drenching sweats"] },
+    { id: "weight_loss", group: "associated", kind: "yes_no", tier: "detailed", label: "Weight loss", question: "Any weight loss?", terms: ["weight loss", "lost weight", "losing weight", "loss of weight"] },
+    { id: "appetite", group: "associated", kind: "yes_no", tier: "detailed", label: "Appetite", question: "Any loss of appetite?", terms: ["loss of appetite", "appetite", "anorexia", "not eating", "decreased appetite", "reduced appetite", "reduced intake", "decreased intake"] },
     { id: "local_infection", group: "associated", kind: "yes_no", label: "Local site of infection", question: "Any painful swelling, boil, wound, tooth or skin infection?", terms: ["swelling", "boil", "abscess", "wound", "cellulitis", "skin infection", "tooth", "dental", "ulcer", "pus", "discharge from"] },
     { id: "eschar", group: "associated", kind: "yes_no", label: "Eschar / insect bite", question: "Any black scab (eschar) or history of an insect or tick bite?", terms: ["eschar", "black scab", "scab", "insect bite", "tick bite", "mite", "bite mark", "black spot"] },
-    { id: "calf_pain", group: "associated", kind: "yes_no", label: "Calf pain", question: "Any calf pain or calf swelling?", terms: ["calf pain", "calf tenderness", "calf swelling", "calf", "leg pain", "leg swelling"] },
-    { id: "red_eyes", group: "associated", kind: "yes_no", label: "Red eyes", question: "Any redness of the eyes?", terms: ["red eyes", "red eye", "redness of eyes", "conjunctival suffusion", "conjunctival congestion", "congested eyes"] },
-    { id: "lymph_nodes", group: "associated", kind: "yes_no", label: "Lymph node swelling", question: "Any swelling in the neck, armpit or groin?", terms: ["lymph node", "lymph nodes", "lymphadenopathy", "neck swelling", "swelling in neck", "swelling in the neck", "glands", "armpit", "groin swelling"] },
+    { id: "calf_pain", group: "associated", kind: "yes_no", tier: "detailed", label: "Calf pain", question: "Any calf pain or calf swelling?", terms: ["calf pain", "calf tenderness", "calf swelling", "calf", "leg pain", "leg swelling"] },
+    { id: "red_eyes", group: "associated", kind: "yes_no", tier: "detailed", label: "Red eyes", question: "Any redness of the eyes?", terms: ["red eyes", "red eye", "redness of eyes", "conjunctival suffusion", "conjunctival congestion", "congested eyes"] },
+    { id: "lymph_nodes", group: "associated", kind: "yes_no", tier: "detailed", label: "Lymph node swelling", question: "Any swelling in the neck, armpit or groin?", terms: ["lymph node", "lymph nodes", "lymphadenopathy", "neck swelling", "swelling in neck", "swelling in the neck", "glands", "armpit", "groin swelling"] },
 
     // --- Must-not-miss red flags -------------------------------------------------------------
     // Always listed as gaps when unasked, whatever the leading differential looks like.
@@ -192,8 +197,8 @@ export const feverV1: HistoryTree = {
     { id: "tb_contact", group: "exposure", kind: "yes_no", label: "TB contact / past TB", question: "Any contact with a tuberculosis patient, or past tuberculosis or treatment for it?", terms: ["tb", "tuberculosis", "koch", "kochs", "koch's", "att", "akt", "dots", "contact with tb", "tb contact", "past tb", "previous tb", "anti tubercular"] },
     { id: "water_food", group: "exposure", kind: "yes_no", label: "Unsafe water / outside food", question: "Any outside food, street food or unsafe drinking water?", terms: ["outside food", "street food", "unsafe water", "contaminated water", "drinking water", "tap water", "food from outside", "hotel food", "roadside", "unhygienic"] },
     { id: "flood_rodent", group: "exposure", kind: "yes_no", label: "Flood water / rodents / animals", question: "Any wading in flood or drain water, rat or rodent exposure, or animal contact?", terms: ["flood", "flood water", "rain water", "wading", "sewage", "drain water", "rat", "rats", "rodent", "rodents", "animal", "animals", "cattle", "dog bite", "farm", "paddy", "fields"] },
-    { id: "blood_sexual", group: "exposure", kind: "yes_no", label: "Blood / needle / sexual exposure", question: "Any blood transfusion, injections, needle sharing, tattoo or unprotected sexual exposure?", terms: ["transfusion", "blood transfusion", "injection", "needle", "needles", "tattoo", "sexual", "unprotected", "multiple partners", "iv drug", "intravenous drug", "drug abuse", "dialysis"] },
-    { id: "recent_hospitalisation", group: "exposure", kind: "yes_no", label: "Recent hospitalisation", question: "Any hospital admission or invasive procedure in the last three months?", terms: ["hospitalised", "hospitalized", "hospitalisation", "hospitalization", "admitted", "admission", "icu", "recent admission", "previous admission", "nursing home"] },
+    { id: "blood_sexual", group: "exposure", kind: "yes_no", tier: "detailed", label: "Blood / needle / sexual exposure", question: "Any blood transfusion, injections, needle sharing, tattoo or unprotected sexual exposure?", terms: ["transfusion", "blood transfusion", "injection", "needle", "needles", "tattoo", "sexual", "unprotected", "multiple partners", "iv drug", "intravenous drug", "drug abuse", "dialysis"] },
+    { id: "recent_hospitalisation", group: "exposure", kind: "yes_no", tier: "detailed", label: "Recent hospitalisation", question: "Any hospital admission or invasive procedure in the last three months?", terms: ["hospitalised", "hospitalized", "hospitalisation", "hospitalization", "admitted", "admission", "icu", "recent admission", "previous admission", "nursing home"] },
   ],
 
   differentials: [

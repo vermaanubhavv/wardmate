@@ -1,5 +1,5 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { feverV1 } from "./fever.v1";
+import { feverV1 } from "@/content/history-trees/fever.v1";
 
 /**
  * Every complaint tree the app ships, every version. Adding a complaint is a new file beside

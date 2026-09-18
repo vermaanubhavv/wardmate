@@ -1,6 +1,6 @@
 import { HISTORY_TREES } from "@/content/history-trees";
-import { validateHistoryTree } from "./schema";
-import type { HistoryTree } from "./types";
+import { validateHistoryTree } from "@/lib/history-check/schema";
+import type { HistoryTree } from "@/lib/history-check/types";
 
 /**
  * The tree registry, validated on first use. A content file that fails validation throws

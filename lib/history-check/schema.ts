@@ -12,11 +12,12 @@
  *  - a duplicate slot id, a slot with no terms, an uppercase term
  *  - a slot "question" that is not phrased as a question, or that reads as an instruction
  *  - any dose, drug-regimen or treatment wording anywhere in the clinical text
+ *  - teaching text that states a diagnosis rather than a reason to ask
  *  - a differential that points at a slot that does not exist
  *  - an output order that names a slot that does not exist, or a non-value duration slot
  */
 
-import { SLOT_GROUPS, SLOT_STATES, type HistoryTree, type Slot } from "./types";
+import { SLOT_GROUPS, SLOT_STATES, type HistoryTree, type Slot } from "@/lib/history-check/types";
 
 export type ValidationIssue = { path: string; message: string };
 export type ValidationResult = { ok: boolean; issues: ValidationIssue[] };
@@ -31,6 +32,10 @@ const INSTRUCTION = /^(start|give|prescribe|administer|order|send|do|stop|treat|
  */
 const TREATMENT_ADVICE =
   /\b(\d+\s?(mg|mcg|g|ml|iu|units?)\b|\b(od|bd|tds|qid|hs|stat)\b|\b(prescribe|administer|dose of|start(ing)? (on )?(iv|oral|tab)|should be (given|started|treated)|give (iv|oral|tab|inj))\b)/i;
+
+/** Teaching text explains why a question is asked. It must not tell the reader what the
+ *  patient has — that is the anchoring the whole gap list is built to avoid. */
+const DIAGNOSIS_CLAIM = /\b(this is|the patient has|diagnos(is|e|ed) (is|as)|confirms?|rules? out|it is)\b/i;
 
 export function validateHistoryTree(tree: unknown): ValidationResult {
   const issues: ValidationIssue[] = [];
@@ -164,6 +169,14 @@ function validateSlot(
     });
   }
   if (s.numeric !== undefined && typeof s.numeric !== "boolean") add(`${p}.numeric`, "must be boolean");
+  if (s.tier !== undefined && s.tier !== "core" && s.tier !== "detailed") {
+    add(`${p}.tier`, "must be core or detailed");
+  }
+  if (s.teach !== undefined) {
+    if (typeof s.teach !== "string" || !s.teach.trim()) add(`${p}.teach`, "must be a non-empty string when present");
+    else if (TREATMENT_ADVICE.test(s.teach)) add(`${p}.teach`, "treatment wording is not allowed");
+    else if (DIAGNOSIS_CLAIM.test(s.teach)) add(`${p}.teach`, "teaching text must not state a diagnosis");
+  }
   if (s.numeric && s.kind !== "value") add(`${p}.numeric`, "only a value slot can be numeric");
 }
 
