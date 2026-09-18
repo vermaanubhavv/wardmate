@@ -14,6 +14,10 @@ import type { HistoryTree } from "@/lib/history-check/types";
  * says what to ASK. It never says what is TRUE — a slot the resident did not dictate is
  * "unasked" and prints as "not recorded".
  *
+ * Slots are one item each on purpose: "diarrhoea" and "constipation" are separate, as are
+ * "jaundice" and "dark urine", "breathlessness" and "chest pain". A negative for one must never
+ * be read as a negative for the other, and the validator matches terms per slot.
+ *
  * Editing rules:
  *  - Any change to a slot id, its terms, or the output order is a NEW version file
  *    (fever.v2.ts). Stored results reference the version they were run against.
@@ -144,21 +148,26 @@ export const feverV1: HistoryTree = {
     // --- Associated symptoms ------------------------------------------------------------------
     { id: "headache", group: "associated", kind: "yes_no", label: "Headache", question: "Any headache with the fever?", terms: ["headache", "head ache", "head pain"] },
     { id: "retro_orbital_pain", group: "associated", kind: "yes_no", label: "Retro-orbital pain", question: "Any pain behind the eyes?", terms: ["retro-orbital", "retro orbital", "retroorbital", "behind the eyes", "eye pain"] },
-    { id: "body_ache", group: "associated", kind: "yes_no", label: "Body ache / joint pain", question: "Any body ache, muscle pain or joint pain?", terms: ["body ache", "bodyache", "myalgia", "arthralgia", "joint pain", "joint pains", "muscle pain", "generalised weakness", "generalized weakness", "backache", "back pain"] },
+    { id: "body_ache", group: "associated", kind: "yes_no", label: "Body ache", question: "Any body ache or muscle pain?", terms: ["body ache", "bodyache", "body pain", "myalgia", "muscle pain", "generalised weakness", "generalized weakness", "backache", "back pain"] },
+    { id: "joint_pain", group: "associated", kind: "yes_no", label: "Joint pain", question: "Any joint pain or joint swelling?", terms: ["joint pain", "joint pains", "arthralgia", "joint swelling", "joints", "arthritis"] },
     { id: "rash", group: "associated", kind: "yes_no", label: "Rash", question: "Any rash, and when did it appear relative to the fever?", terms: ["rash", "rashes", "skin lesions", "red spots", "petechiae", "eruption"] },
     { id: "cough", group: "associated", kind: "yes_no", label: "Cough", question: "Any cough — dry or with sputum, and for how long?", terms: ["cough", "sputum", "expectoration", "phlegm", "haemoptysis", "hemoptysis", "blood in sputum"] },
-    { id: "sore_throat", group: "associated", kind: "yes_no", label: "Sore throat / coryza", question: "Any sore throat, runny nose or ear pain?", terms: ["sore throat", "throat pain", "runny nose", "cold", "coryza", "nasal discharge", "ear pain", "ear discharge", "earache"] },
+    { id: "sore_throat", group: "associated", kind: "yes_no", label: "Sore throat / coryza", question: "Any sore throat or runny nose?", terms: ["sore throat", "throat pain", "runny nose", "cold", "coryza", "nasal discharge", "throat"] },
+    { id: "ear_symptoms", group: "associated", kind: "yes_no", label: "Ear pain / discharge", question: "Any ear pain or ear discharge?", terms: ["ear pain", "ear discharge", "earache", "ear ache", "ear"] },
     { id: "abdominal_pain", group: "associated", kind: "yes_no", label: "Abdominal pain", question: "Any abdominal pain, and where?", terms: ["abdominal pain", "pain abdomen", "pain in abdomen", "stomach pain", "abdomen pain", "abdominal discomfort", "epigastric pain", "right hypochondrium"] },
     { id: "vomiting", group: "associated", kind: "yes_no", label: "Vomiting", question: "Any vomiting or nausea?", terms: ["vomiting", "vomit", "vomited", "nausea", "vomitings"] },
-    { id: "bowel", group: "associated", kind: "yes_no", label: "Bowel habit", question: "Any diarrhoea or constipation?", terms: ["diarrhoea", "diarrhea", "loose stools", "loose motion", "loose motions", "constipation", "constipated", "bowel"] },
-    { id: "jaundice", group: "associated", kind: "yes_no", label: "Jaundice", question: "Any yellowing of the eyes or skin, or dark urine?", terms: ["jaundice", "yellow", "yellowish", "icterus", "icteric", "dark urine", "high coloured urine", "high colored urine", "pale stools", "clay coloured stools"] },
+    { id: "diarrhoea", group: "associated", kind: "yes_no", label: "Diarrhoea", question: "Any diarrhoea or loose stools?", terms: ["diarrhoea", "diarrhea", "loose stools", "loose stool", "loose motion", "loose motions", "watery stools"] },
+    { id: "constipation", group: "associated", kind: "yes_no", label: "Constipation", question: "Any constipation?", terms: ["constipation", "constipated", "not passing stool", "not passed stool", "bowels not open"] },
+    { id: "jaundice", group: "associated", kind: "yes_no", label: "Jaundice", question: "Any yellowing of the eyes or skin?", terms: ["jaundice", "yellow", "yellowish", "yellowness", "icterus", "icteric", "yellow eyes", "yellow urine"] },
+    { id: "dark_urine", group: "associated", kind: "yes_no", label: "Dark urine / pale stools", question: "Any dark-coloured urine or pale stools?", terms: ["dark urine", "dark coloured urine", "dark colored urine", "high coloured urine", "high colored urine", "cola coloured urine", "pale stools", "clay coloured stools", "clay colored stools"] },
     { id: "urinary", group: "associated", kind: "yes_no", label: "Urinary symptoms", question: "Any burning micturition, frequency or flank pain?", terms: ["burning micturition", "dysuria", "frequency", "urgency", "flank pain", "loin pain", "burning urination", "burning while passing urine", "urinary", "haematuria", "hematuria", "increased frequency"] },
     { id: "night_sweats", group: "associated", kind: "yes_no", label: "Night sweats", question: "Any night sweats?", terms: ["night sweats", "night sweat", "sweating at night", "drenching sweats"] },
     { id: "weight_loss", group: "associated", kind: "yes_no", label: "Weight loss", question: "Any weight loss?", terms: ["weight loss", "lost weight", "losing weight", "loss of weight"] },
     { id: "appetite", group: "associated", kind: "yes_no", label: "Appetite", question: "Any loss of appetite?", terms: ["loss of appetite", "appetite", "anorexia", "not eating", "decreased appetite", "reduced appetite", "reduced intake", "decreased intake"] },
     { id: "local_infection", group: "associated", kind: "yes_no", label: "Local site of infection", question: "Any painful swelling, boil, wound, tooth or skin infection?", terms: ["swelling", "boil", "abscess", "wound", "cellulitis", "skin infection", "tooth", "dental", "ulcer", "pus", "discharge from"] },
     { id: "eschar", group: "associated", kind: "yes_no", label: "Eschar / insect bite", question: "Any black scab (eschar) or history of an insect or tick bite?", terms: ["eschar", "black scab", "scab", "insect bite", "tick bite", "mite", "bite mark", "black spot"] },
-    { id: "calf_pain", group: "associated", kind: "yes_no", label: "Calf pain / red eyes", question: "Any calf pain or red eyes?", terms: ["calf pain", "calf tenderness", "calf swelling", "red eyes", "conjunctival suffusion", "conjunctival congestion", "leg pain"] },
+    { id: "calf_pain", group: "associated", kind: "yes_no", label: "Calf pain", question: "Any calf pain or calf swelling?", terms: ["calf pain", "calf tenderness", "calf swelling", "calf", "leg pain", "leg swelling"] },
+    { id: "red_eyes", group: "associated", kind: "yes_no", label: "Red eyes", question: "Any redness of the eyes?", terms: ["red eyes", "red eye", "redness of eyes", "conjunctival suffusion", "conjunctival congestion", "congested eyes"] },
     { id: "lymph_nodes", group: "associated", kind: "yes_no", label: "Lymph node swelling", question: "Any swelling in the neck, armpit or groin?", terms: ["lymph node", "lymph nodes", "lymphadenopathy", "neck swelling", "swelling in neck", "swelling in the neck", "glands", "armpit", "groin swelling"] },
 
     // --- Must-not-miss red flags -------------------------------------------------------------
@@ -166,7 +175,8 @@ export const feverV1: HistoryTree = {
     { id: "altered_sensorium", group: "red_flag", kind: "yes_no", label: "Altered sensorium", question: "Any drowsiness, confusion, irritability or altered sensorium?", terms: ["altered sensorium", "drowsy", "drowsiness", "confused", "confusion", "irrelevant talk", "irritable", "irritability", "unconscious", "unresponsive", "sensorium", "disoriented", "not responding"] },
     { id: "neck_stiffness", group: "red_flag", kind: "yes_no", label: "Neck stiffness", question: "Any neck stiffness or photophobia?", terms: ["neck stiffness", "neck rigidity", "stiff neck", "photophobia", "neck pain"] },
     { id: "seizures", group: "red_flag", kind: "yes_no", label: "Seizures", question: "Any seizure or fit?", terms: ["seizure", "seizures", "fit", "fits", "convulsion", "convulsions", "episode of unconsciousness"] },
-    { id: "breathlessness", group: "red_flag", kind: "yes_no", label: "Breathlessness / chest pain", question: "Any breathlessness or chest pain?", terms: ["breathlessness", "breathless", "shortness of breath", "dyspnoea", "dyspnea", "difficulty breathing", "chest pain", "fast breathing", "sob"] },
+    { id: "breathlessness", group: "red_flag", kind: "yes_no", label: "Breathlessness", question: "Any breathlessness or fast breathing?", terms: ["breathlessness", "breathless", "shortness of breath", "dyspnoea", "dyspnea", "difficulty breathing", "difficulty in breathing", "fast breathing", "sob"] },
+    { id: "chest_pain", group: "red_flag", kind: "yes_no", label: "Chest pain", question: "Any chest pain?", terms: ["chest pain", "pain in chest", "chest discomfort", "chest tightness", "pleuritic"] },
     { id: "bleeding", group: "red_flag", kind: "yes_no", label: "Bleeding", question: "Any bleeding — gums, nose, skin, black stools, blood in vomit or urine, heavy menses?", terms: ["bleeding", "bleed", "gum bleeding", "gum bleed", "nose bleed", "epistaxis", "black stools", "malena", "melena", "melaena", "blood in vomit", "haematemesis", "hematemesis", "petechiae", "bruising", "blood in urine", "heavy menses", "menorrhagia", "bleeding per vaginum"] },
     { id: "urine_output", group: "red_flag", kind: "yes_no", label: "Reduced urine output", question: "Has the urine output decreased?", terms: ["urine output", "decreased urine", "reduced urine", "less urine", "not passing urine", "oliguria", "anuria", "passing less urine"] },
     { id: "hypotension_symptoms", group: "red_flag", kind: "yes_no", label: "Giddiness / fainting", question: "Any giddiness on standing, cold extremities or fainting?", terms: ["giddiness", "giddy", "fainting", "syncope", "postural", "cold extremities", "cold peripheries", "cold hands", "lightheaded", "dizziness", "dizzy", "collapse"] },
@@ -190,20 +200,20 @@ export const feverV1: HistoryTree = {
     {
       id: "dengue",
       name: "Dengue",
-      pointers: ["headache", "retro_orbital_pain", "body_ache", "rash", "bleeding", "mosquito_exposure"],
-      discriminators: ["retro_orbital_pain", "rash", "bleeding", "body_ache", "mosquito_exposure", "urine_output", "severe_abdominal_pain", "oral_intake", "prior_investigations"],
+      pointers: ["headache", "retro_orbital_pain", "body_ache", "joint_pain", "rash", "bleeding", "mosquito_exposure"],
+      discriminators: ["retro_orbital_pain", "rash", "bleeding", "body_ache", "joint_pain", "mosquito_exposure", "urine_output", "severe_abdominal_pain", "oral_intake", "prior_investigations"],
     },
     {
       id: "enteric",
       name: "Enteric fever",
-      pointers: ["pattern", "abdominal_pain", "bowel", "water_food", "headache"],
-      discriminators: ["pattern", "diurnal", "abdominal_pain", "bowel", "water_food", "prior_treatment", "prior_investigations", "appetite"],
+      pointers: ["pattern", "abdominal_pain", "diarrhoea", "constipation", "water_food", "headache"],
+      discriminators: ["pattern", "diurnal", "abdominal_pain", "diarrhoea", "constipation", "water_food", "prior_treatment", "prior_investigations", "appetite"],
     },
     {
       id: "malaria",
       name: "Malaria",
-      pointers: ["chills_rigors", "pattern", "travel", "jaundice", "mosquito_exposure"],
-      discriminators: ["chills_rigors", "pattern", "travel", "jaundice", "altered_sensorium", "urine_output", "prior_investigations"],
+      pointers: ["chills_rigors", "pattern", "travel", "jaundice", "dark_urine", "mosquito_exposure"],
+      discriminators: ["chills_rigors", "pattern", "travel", "jaundice", "dark_urine", "altered_sensorium", "urine_output", "prior_investigations"],
     },
     {
       id: "scrub_typhus",
@@ -215,7 +225,7 @@ export const feverV1: HistoryTree = {
       id: "sepsis_pneumonia",
       name: "Sepsis / pneumonia",
       pointers: ["cough", "breathlessness", "chills_rigors", "altered_sensorium", "local_infection"],
-      discriminators: ["cough", "breathlessness", "chills_rigors", "local_infection", "urinary", "altered_sensorium", "hypotension_symptoms", "recent_hospitalisation"],
+      discriminators: ["cough", "breathlessness", "chest_pain", "chills_rigors", "local_infection", "urinary", "altered_sensorium", "hypotension_symptoms", "recent_hospitalisation"],
     },
     {
       id: "tuberculosis",
@@ -226,8 +236,8 @@ export const feverV1: HistoryTree = {
     {
       id: "hepatitis",
       name: "Acute viral hepatitis",
-      pointers: ["jaundice", "appetite", "vomiting", "water_food", "blood_sexual"],
-      discriminators: ["jaundice", "appetite", "vomiting", "water_food", "blood_sexual", "abdominal_pain", "altered_sensorium"],
+      pointers: ["jaundice", "dark_urine", "appetite", "vomiting", "water_food", "blood_sexual"],
+      discriminators: ["jaundice", "dark_urine", "appetite", "vomiting", "water_food", "blood_sexual", "abdominal_pain", "altered_sensorium"],
     },
     {
       id: "uti",
@@ -238,8 +248,8 @@ export const feverV1: HistoryTree = {
     {
       id: "leptospirosis",
       name: "Leptospirosis",
-      pointers: ["flood_rodent", "calf_pain", "jaundice", "urine_output"],
-      discriminators: ["flood_rodent", "calf_pain", "jaundice", "urine_output", "bleeding", "breathlessness"],
+      pointers: ["flood_rodent", "calf_pain", "red_eyes", "jaundice", "urine_output"],
+      discriminators: ["flood_rodent", "calf_pain", "red_eyes", "jaundice", "urine_output", "bleeding", "breathlessness"],
     },
     {
       id: "meningitis",
