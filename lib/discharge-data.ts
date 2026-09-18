@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
-import { getWardConsultantStored, getWardSpecialtyStored } from "@/lib/ward";
+import { getWardConsultantStored, getWardSpecialtyStored, getWardIsEsicFaridabad } from "@/lib/ward";
 import { getSpecialtyPack, type SpecialtyPack } from "@/lib/specialty";
 import { consultantForWard } from "@/lib/unit-consultants";
 import { derivePatientState, type Observation, type PatientState } from "@/lib/patient-state";
@@ -74,6 +74,12 @@ export type DischargeContext = {
   wardConsultant: string | null;
   letterhead: string | null;
   logoUrl: string | null;
+  /** Whether this is the ESIC Medical College Faridabad pilot unit — see patch 0078 and
+   *  lib/ward.ts getWardIsEsicFaridabad. buildDischargeDocument reads this to decide whether the
+   *  logo and letterhead print at the top of the discharge summary at all; every other unit
+   *  gets the generic document with no hospital branding, regardless of what is saved in
+   *  `letterhead`/`logoUrl`. */
+  isEsicFaridabad: boolean;
   doctor: DischargeDoctor | null;
   /** Every observation on the record, with identifiers (bed, name, age) already filtered out —
    *  the same filter the patient page applies before deriving anything. Newest first. */
@@ -120,6 +126,7 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
     formularySize,
     wardFormats,
     { data: dischargeRow },
+    isEsicFaridabad,
   ] = await Promise.all([
     supabase
       .from("entries")
@@ -136,6 +143,7 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
     getFormularySize(patient.ward_id),
     getWardFormats(patient.ward_id),
     supabase.from("discharge_summaries").select(DISCHARGE_ROW_COLUMNS).eq("patient_id", patientId).maybeSingle(),
+    getWardIsEsicFaridabad(patient.ward_id),
   ]);
 
   // Bed number and the patient's own name are properties of the patient, not clinical findings
@@ -170,6 +178,7 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
     pack: getSpecialtyPack(await getWardSpecialtyStored(patient.ward_id)),
     letterhead: wardRow?.letterhead ?? null,
     logoUrl: wardFormats.get("logo")?.url ?? null,
+    isEsicFaridabad,
     doctor: profileRow
       ? {
           display_name: profileRow.display_name ?? null,
