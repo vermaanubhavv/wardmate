@@ -10,6 +10,20 @@ import { headacheV1 } from "@/content/history-trees/headache.v1";
 import { alteredSensoriumV1 } from "@/content/history-trees/altered-sensorium.v1";
 import { limbWeaknessV1 } from "@/content/history-trees/limb-weakness.v1";
 import { diarrhoeaV1 } from "@/content/history-trees/diarrhoea.v1";
+import { palpitationsV1 } from "@/content/history-trees/palpitations.v1";
+import { syncopeV1 } from "@/content/history-trees/syncope.v1";
+import { giBleedV1 } from "@/content/history-trees/gi-bleed.v1";
+import { haemoptysisV1 } from "@/content/history-trees/haemoptysis.v1";
+import { jointPainV1 } from "@/content/history-trees/joint-pain.v1";
+import { weaknessFatigueV1 } from "@/content/history-trees/weakness-fatigue.v1";
+import { urinarySymptomsV1 } from "@/content/history-trees/urinary-symptoms.v1";
+import { abdominalDistensionV1 } from "@/content/history-trees/abdominal-distension.v1";
+import { poisoningV1 } from "@/content/history-trees/poisoning.v1";
+import { snakeBiteV1 } from "@/content/history-trees/snake-bite.v1";
+import { vertigoV1 } from "@/content/history-trees/vertigo.v1";
+import { weightLossV1 } from "@/content/history-trees/weight-loss.v1";
+import { diabetesPolyuriaV1 } from "@/content/history-trees/diabetes-polyuria.v1";
+import { neckSwellingV1 } from "@/content/history-trees/neck-swelling.v1";
 
 /**
  * Every complaint tree the app ships, every version. Adding a complaint is a new file beside
@@ -30,4 +44,18 @@ export const HISTORY_TREES: readonly HistoryTree[] = [
   alteredSensoriumV1,
   limbWeaknessV1,
   diarrhoeaV1,
+  palpitationsV1,
+  syncopeV1,
+  giBleedV1,
+  haemoptysisV1,
+  jointPainV1,
+  weaknessFatigueV1,
+  urinarySymptomsV1,
+  abdominalDistensionV1,
+  poisoningV1,
+  snakeBiteV1,
+  vertigoV1,
+  weightLossV1,
+  diabetesPolyuriaV1,
+  neckSwellingV1,
 ];
