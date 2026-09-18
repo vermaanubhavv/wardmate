@@ -23,6 +23,21 @@
   --accent: #0f9e96; /* WardMate teal — from the mark, not a system colour */
   --accent-ink: #ffffff;
   --chip: #efeff4; /* the flat fill behind a bed number */
+
+  /* Semantic status colours — the same three tones the app already used ad hoc (the
+     ward-list Badge, lib/urgency.ts's red/yellow/green) named once here so a new stat
+     tile, dot or card can reach for --critical/--warn/--good instead of re-typing a
+     Tailwind shade. Values are exactly Tailwind's red/orange/emerald 100/500/700 —
+     nothing new is invented, existing colour is just centralised. */
+  --critical-bg: #fee2e2; /* red-100 */
+  --critical-fg: #b91c1c; /* red-700 */
+  --critical-dot: #ef4444; /* red-500 */
+  --warn-bg: #ffedd5; /* orange-100 */
+  --warn-fg: #c2410c; /* orange-700 */
+  --warn-dot: #f59e0b; /* amber-500 */
+  --good-bg: #d1fae5; /* emerald-100 */
+  --good-fg: #047857; /* emerald-700 */
+  --good-dot: #10b981; /* emerald-500 */
 }
 
 @theme inline {
@@ -34,6 +49,15 @@
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
   --color-chip: var(--chip);
+  --color-critical-bg: var(--critical-bg);
+  --color-critical-fg: var(--critical-fg);
+  --color-critical-dot: var(--critical-dot);
+  --color-warn-bg: var(--warn-bg);
+  --color-warn-fg: var(--warn-fg);
+  --color-warn-dot: var(--warn-dot);
+  --color-good-bg: var(--good-bg);
+  --color-good-fg: var(--good-fg);
+  --color-good-dot: var(--good-dot);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
 }

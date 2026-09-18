@@ -2,38 +2,45 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getWardScreen } from "@/lib/ward-screen";
 import { getDoctorName, getUser } from "@/lib/auth";
-import { dayLabel, patientName, type WardPatient } from "@/lib/patients";
+import { dayLabel, patientName, stripPatientHonorific, type WardPatient } from "@/lib/patients";
 import type { SpecialtyPack } from "@/lib/specialty";
 import { procedureFor } from "@/lib/templates";
 import RegisterButton from "../register-button";
-import {
-  ChecklistIcon,
-  ChevronIcon,
-  ClipboardIcon,
-  PlusIcon,
-  TrayIcon,
-} from "../icons";
+import { ChevronIcon, PlusIcon } from "../icons";
 import RoundRecorder from "../round-recorder";
 import PatientMenu from "../patients/patient-menu";
 import { signOut } from "../actions";
+import { restorePatient } from "../patients/actions";
 import BottomBar from "../bottom-bar";
 import Wordmark from "../wordmark";
 import Mark from "../mark";
 import { createClient } from "@/lib/supabase/server";
 import { countWardPendingConfirmations } from "@/lib/confirm-queue";
 import { criticalFlag, type WardFlag } from "@/lib/ward-flags";
+import { getWardTasks } from "@/lib/todo";
+import { getWardScoringTasks } from "@/lib/scoring/read";
+import { buildWardTodoPreview, countWardOutstanding } from "@/lib/ward-todo-preview";
+import { Users, TriangleAlert, CircleCheckBig, ListChecks, SquarePen, CircleAlert } from "lucide-react";
+
+/** Nothing critical and nothing outstanding — a fair, transparent proxy for "worth
+ *  considering for discharge today," not a clinical certification. See lib/ward-flags.ts
+ *  and lib/ward-screen.ts for where unconfirmed_count/open_task_count come from — both
+ *  already ride along in the one ward_screen() round trip, so this costs nothing extra. */
+function isDischargeable(patient: WardPatient, flag: WardFlag | null): boolean {
+  return !flag && patient.unconfirmed_count === 0 && patient.open_task_count === 0;
+}
 
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ delete_failed?: string; filter?: string }>;
+  searchParams: Promise<{ delete_failed?: string; filter?: string; discharged?: string }>;
 }) {
   const supabase = await createClient();
   // One round trip for the whole screen. See lib/ward-screen.ts — it was six. The greeting
   // rides alongside it: getDoctorName reads the session cookie rather than asking Supabase,
   // so it adds no round trip of its own.
   const [
-    { ward, pack, patients, procedures, templateChoices, removedCount, error: wardError },
+    { ward, pack, patients, procedures, templateChoices, error: wardError },
     doctor,
     { data: profile },
   ] = await Promise.all([
@@ -47,19 +54,44 @@ export default async function Home({
   ]);
   const params = await searchParams;
   const deleteFailed = params.delete_failed;
-  const showCriticalOnly = params.filter === "critical";
+  const filter = params.filter;
+  const dischargedId = params.discharged;
   const department = profile?.department?.trim() || null;
   const designation = profile?.designation?.trim() || null;
   const departmentLabel = department === "General Surgery" ? "Gen. Surgery" : department;
 
   if (!wardError && !ward) redirect("/onboarding");
 
-  const pendingConfirmCount = ward ? await countWardPendingConfirmations(ward.id) : 0;
+  // Everything the header needs beyond the patient list itself, fetched together once the
+  // ward id is known — the same "one wave of parallel fetches" the screen's own patients
+  // query follows, just a beat later because the ward id isn't known until then.
+  const [pendingConfirmCount, tasks, scoringByPatient, dischargedPatient] = ward
+    ? await Promise.all([
+        countWardPendingConfirmations(ward.id),
+        getWardTasks(ward.id),
+        getWardScoringTasks(ward.id),
+        // Only looked up for the one-time "discharged · Undo" banner — the patient is no
+        // longer in `patients` (the active list) by the time this renders.
+        dischargedId
+          ? supabase.from("patients").select("display_name").eq("id", dischargedId).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ])
+    : [0, [], new Map(), { data: null }];
+
   const flags = new Map<string, WardFlag | null>(
     patients.map((p) => [p.id, criticalFlag(p)])
   );
   const criticalCount = [...flags.values()].filter(Boolean).length;
-  const visiblePatients = showCriticalOnly ? patients.filter((p) => flags.get(p.id)) : patients;
+  const dischargeableCount = patients.filter((p) => isDischargeable(p, flags.get(p.id) ?? null)).length;
+  const visiblePatients =
+    filter === "critical"
+      ? patients.filter((p) => flags.get(p.id))
+      : filter === "dischargeable"
+        ? patients.filter((p) => isDischargeable(p, flags.get(p.id) ?? null))
+        : patients;
+
+  const todoPreview = buildWardTodoPreview(tasks, scoringByPatient, patients, 3);
+  const totalOutstanding = countWardOutstanding(tasks, scoringByPatient);
 
   if (wardError || !ward) {
     return (
@@ -127,61 +159,129 @@ export default async function Home({
           </span>
         </Link>
 
+        {/* Patients / Critical / Dischargeable — the same three counts a resident used to
+            have to open the list to add up themselves. Each tile is also the filter: tapping
+            one is the same "?filter=" the old All/Critical pill used, just with a third
+            state and something to look at while deciding whether to tap it. Dischargeable is
+            a heuristic (nothing critical, nothing outstanding), not a clinical sign-off —
+            see isDischargeable() above. */}
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <StatTile
+            href="/ward"
+            icon={<Users className="h-[15px] w-[15px]" strokeWidth={2.3} />}
+            value={patients.length}
+            label="Patients"
+            tone="neutral"
+            active={!filter}
+          />
+          <StatTile
+            href="/ward?filter=critical"
+            icon={<TriangleAlert className="h-[15px] w-[15px]" strokeWidth={2.3} />}
+            value={criticalCount}
+            label="Critical"
+            tone="critical"
+            active={filter === "critical"}
+          />
+          <StatTile
+            href="/ward?filter=dischargeable"
+            icon={<CircleCheckBig className="h-[15px] w-[15px]" strokeWidth={2.3} />}
+            value={dischargeableCount}
+            label="Dischargeable"
+            tone="good"
+            active={filter === "dischargeable"}
+          />
+        </div>
+
+        {/* The top few outstanding jobs across the whole unit, red first then yellow, so
+            something urgent is visible without opening /todo. Merges the same two sources
+            /todo itself reads — see lib/ward-todo-preview.ts. */}
+        <div className="mt-2 rounded-[12px] bg-card pt-3 pb-1">
+          <div className="flex items-center justify-between px-3 pb-2.5">
+            <div className="flex items-center gap-1.5">
+              <ListChecks className="h-4 w-4 text-accent" strokeWidth={2.2} />
+              <span className="text-[15px] font-semibold">
+                To do{totalOutstanding > 0 ? ` · ${totalOutstanding} outstanding` : ""}
+              </span>
+            </div>
+            <Link href="/todo" className="shrink-0 text-[13px] font-semibold text-accent">
+              See all ›
+            </Link>
+          </div>
+          {todoPreview.length === 0 ? (
+            <p className="px-3 pb-3 text-[14px] text-muted">Nothing urgent right now.</p>
+          ) : (
+            <ul className="flex flex-col">
+              {todoPreview.map((item) => (
+                <li key={item.id} className="flex items-start gap-2.5 border-t border-chip px-3 py-2">
+                  <span
+                    className={
+                      "mt-1.5 h-2 w-2 shrink-0 rounded-full " +
+                      (item.urgency === "red"
+                        ? "bg-critical-dot"
+                        : item.urgency === "yellow"
+                          ? "bg-warn-dot"
+                          : item.urgency === "green"
+                            ? "bg-good-dot"
+                            : "border border-dashed border-muted/60")
+                    }
+                    aria-hidden
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[14px] leading-snug">{item.text}</p>
+                    <p className="mt-0.5 flex items-center gap-1.5 truncate text-[12px] text-accent">
+                      <span className="rounded bg-chip px-1 font-mono tabular-nums text-muted">
+                        {item.bed}
+                      </span>
+                      {stripPatientHonorific(item.patientName)}
+                    </p>
+                    {item.suggestedBy && (
+                      <p className="mt-1 inline-flex items-center rounded-[5px] bg-warn-bg px-1.5 py-0.5 text-[10.5px] font-semibold text-warn-fg">
+                        Suggested · {item.suggestedBy}
+                      </p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* One-time confirmation right after discharging a patient — instant feedback only.
+            It carries no state of its own (just the id in the URL) and is gone the moment
+            this page is reloaded or left. The real 48-hour undo window lives on
+            /unit → Discharged, which survives navigation — see app/patients/actions.ts. */}
+        {dischargedId && (
+          <div className="mt-2 flex items-center gap-2.5 rounded-[10px] border-l-[3px] border-accent bg-card px-3 py-2.5">
+            <CircleCheckBig className="h-[17px] w-[17px] shrink-0 text-accent" strokeWidth={2.2} />
+            <p className="flex-1 text-[14px]">
+              {dischargedPatient.data
+                ? stripPatientHonorific(dischargedPatient.data.display_name)
+                : "Patient"}{" "}
+              discharged
+            </p>
+            <form action={restorePatient}>
+              <input type="hidden" name="patient_id" value={dischargedId} />
+              <button className="shrink-0 text-[14px] font-semibold text-accent">Undo</button>
+            </form>
+          </div>
+        )}
+
         {/* A grid rather than a horizontal-scroll row: nothing here should be able to slide
-            off the edge of the screen unseen, which is exactly what was happening to a
-            capsule before. Formats and Protocols moved to the Unit page — unit-wide settings
-            reached far less often than these two, not something to compete for space with on
-            the page opened most. Wraps to a second row when the "Discharged" tile appears. */}
+            off the edge of the screen unseen. "To do" no longer needs its own tile — the
+            preview card above already links to /todo. "Discharged" moved to /unit, beside
+            Trash, the same "not something reached for on every round" reasoning that put
+            Formats and Protocols there. */}
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <NavTile href="/todo" icon={<ChecklistIcon className="h-[19px] w-[19px]" />}>
-            To do
-          </NavTile>
-          <NavTile href="/handover" icon={<ClipboardIcon className="h-[19px] w-[19px]" />}>
-            Ward round
+          <NavTile href="/handover" icon={<SquarePen className="h-[19px] w-[19px]" strokeWidth={2.2} />}>
+            Update
           </NavTile>
           {pendingConfirmCount > 0 && (
-            <NavTile href="/confirm" icon={<ChecklistIcon className="h-[19px] w-[19px]" />}>
+            <NavTile href="/confirm" icon={<CircleAlert className="h-[19px] w-[19px]" strokeWidth={2.2} />}>
               Confirm · {pendingConfirmCount}
-            </NavTile>
-          )}
-          {/* No "Prepare discharge" tile: a discharge is one thing, reached one way — open the
-              patient and open their discharge summary. Photographing the paper file is a step
-              inside that summary, not a second door beside it. The one-off summary (no patient
-              to open) moved to the Unit page, beside the other rarely-reached actions. */}
-          {/* Only once there is something to undo — an empty list is not worth a tile. */}
-          {removedCount > 0 && (
-            <NavTile href="/removed" icon={<TrayIcon className="h-[19px] w-[19px]" />}>
-              Discharged · {removedCount}
             </NavTile>
           )}
         </div>
       </header>
-
-      {/* Only shown once there is something to filter — an "All / Critical" toggle over one
-          patient, none of them flagged, is a control with nothing to do. */}
-      {criticalCount > 0 && (
-        <div className="px-4 pb-2">
-          <div className="inline-flex rounded-full bg-card p-0.5 text-[14px] font-medium">
-            <Link
-              href="/ward"
-              className={
-                "rounded-full px-3 py-1 " + (!showCriticalOnly ? "bg-chip" : "text-muted")
-              }
-            >
-              All {patients.length}
-            </Link>
-            <Link
-              href="/ward?filter=critical"
-              className={
-                "rounded-full px-3 py-1 " +
-                (showCriticalOnly ? "bg-red-100 text-red-700" : "text-muted")
-              }
-            >
-              Critical {criticalCount}
-            </Link>
-          </div>
-        </div>
-      )}
 
       {/* Bottom padding clears the floating bar so the last patient stays readable. The bar is
           a row of circles now rather than three stacked buttons, so this is much less. */}
@@ -215,6 +315,7 @@ export default async function Home({
                 key={p.id}
                 patient={p}
                 flag={flags.get(p.id) ?? null}
+                dischargeable={isDischargeable(p, flags.get(p.id) ?? null)}
                 procedures={procedures}
                 templateChoices={templateChoices}
                 pack={pack}
@@ -249,6 +350,51 @@ export default async function Home({
   );
 }
 
+/** One of the three Patients/Critical/Dischargeable tiles — an icon, the count, and the
+ *  label, doubling as the filter control the old All/Critical pill used to be. */
+function StatTile({
+  href,
+  icon,
+  value,
+  label,
+  tone,
+  active,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  value: number;
+  label: string;
+  tone: "neutral" | "critical" | "good";
+  active: boolean;
+}) {
+  const card =
+    tone === "critical" ? "bg-critical-bg" : tone === "good" ? "bg-good-bg" : "bg-card";
+  const iconWrap =
+    tone === "critical"
+      ? "bg-critical-fg/10 text-critical-fg"
+      : tone === "good"
+        ? "bg-good-fg/10 text-good-fg"
+        : "bg-chip text-accent";
+  const valueColor = tone === "critical" ? "text-critical-fg" : tone === "good" ? "text-good-fg" : "text-foreground";
+  const labelColor = tone === "critical" ? "text-critical-fg" : tone === "good" ? "text-good-fg" : "text-muted";
+
+  return (
+    <Link
+      href={href}
+      className={
+        "flex flex-col gap-1.5 rounded-[12px] px-3 py-2.5 active:opacity-70 " +
+        card +
+        (active ? " ring-2 ring-accent" : "")
+      }
+    >
+      <span className={"grid h-[24px] w-[24px] place-items-center rounded-[7px] " + iconWrap}>{icon}</span>
+      <span>
+        <span className={"block text-[20px] font-bold leading-none tabular-nums " + valueColor}>{value}</span>
+        <span className={"mt-0.5 block text-[12px] " + labelColor}>{label}</span>
+      </span>
+    </Link>
+  );
+}
 
 /** One tile in the header's nav grid — icon above label, sized to read at a glance without
  *  reading, the same reasoning the capsules' icons used before. */
@@ -275,6 +421,7 @@ function NavTile({
 function PatientRow({
   patient,
   flag,
+  dischargeable,
   procedures,
   templateChoices,
   pack,
@@ -282,6 +429,8 @@ function PatientRow({
   patient: WardPatient;
   /** The one genuinely critical vital or blood result on this patient, if any — see lib/ward-flags.ts. */
   flag: WardFlag | null;
+  /** Nothing critical, nothing outstanding — see isDischargeable() above. */
+  dischargeable: boolean;
   procedures: Map<string, string>;
   templateChoices: { family: string; variant: string | null; label: string }[];
   /** The unit's specialty pack — it decides whether the day reads "POD 3" or "C2 D3". */
@@ -294,11 +443,18 @@ function PatientRow({
 
   return (
     // ios-row draws the hairline between rows. The ⋯ is a sibling of the link rather than
-    // inside it, so opening the menu does not also walk into the patient.
-    <li className="ios-row relative">
+    // inside it, so opening the menu does not also walk into the patient. The left edge
+    // carries the same critical/dischargeable colour as the stat row above, so a row reads
+    // at a glance on a long list without adding a second badge.
+    <li
+      className={
+        "ios-row relative border-l-[3px] " +
+        (flag ? "border-l-critical-dot" : dischargeable ? "border-l-good-dot" : "border-l-transparent")
+      }
+    >
       <Link
         href={`/patients/${patient.id}`}
-        className="flex items-start gap-3 py-2.5 pl-4 pr-16 active:bg-chip"
+        className="flex items-start gap-3 py-2.5 pl-3 pr-16 active:bg-chip"
       >
         {/* Bed leads the row: on rounds you are looking for a bed, not a name. */}
         <span className="mt-0.5 min-w-[32px] shrink-0 rounded-md bg-chip px-1.5 py-0.5 text-center font-mono text-[13px] tabular-nums">
@@ -369,14 +525,15 @@ function Badge({
   return (
     <span
       className={
-        "inline-flex items-center rounded-md px-1.5 py-0.5 text-[12px] font-medium " +
+        "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium " +
         (tone === "critical"
-          ? "bg-red-100 text-red-700"
+          ? "bg-critical-bg text-critical-fg"
           : tone === "warn"
-            ? "bg-orange-100 text-orange-700"
+            ? "bg-warn-bg text-warn-fg"
             : "bg-chip text-muted")
       }
     >
+      {tone === "critical" && <TriangleAlert className="h-3 w-3" strokeWidth={2.6} />}
       {children}
     </span>
   );

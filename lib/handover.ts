@@ -9,7 +9,13 @@ import {
 import { derivePatientState, type Observation, type PatientState } from "@/lib/patient-state";
 import { getSpecialtyPack, type SpecialtyPack } from "@/lib/specialty";
 import { getWardSpecialtyStored } from "@/lib/ward";
-import { effectiveUrgency, URGENCY_META } from "@/lib/urgency";
+import { effectiveUrgency, istDate, URGENCY_META } from "@/lib/urgency";
+
+/** One line of what actually happened today — a resulted investigation, the operation if
+ *  done today, or a job ticked off. Deliberately NOT "everything recorded today": routine
+ *  vitals and medication-administration entries are excluded on purpose, so a WhatsApp
+ *  update stays scannable rather than becoming the whole chart. See deriveDoneToday(). */
+export type DoneTodayItem = { id: string; text: string };
 
 export type HandoverPatient = {
   id: string;
@@ -29,7 +35,37 @@ export type HandoverPatient = {
   surgery_date: string | null;
   management: string | null;
   state: PatientState;
+  doneToday: DoneTodayItem[];
 };
+
+/**
+ * What counts as a "meaningful clinical event" for the day, rather than everything the
+ * chart grew by: a resulted investigation (kind "lab"), the operation itself if it
+ * happened today (kind "procedure_done" — see lib/apply-procedure-done.ts), and any job
+ * actually ticked off today (state.doneTasks, filtered to today's done_at). Vitals and
+ * medication-administration entries are recorded constantly through the day and would
+ * drown the two or three things worth telling a consultant about, so neither kind is
+ * included here — see the confirmed scope in the plan this was built from.
+ */
+function deriveDoneToday(rawObservations: Observation[], doneTasks: Observation[], todayKey: string): DoneTodayItem[] {
+  const items: DoneTodayItem[] = [];
+
+  for (const o of rawObservations) {
+    if (o.kind === "lab" && istDate(o.recorded_at) === todayKey) {
+      items.push({ id: o.id, text: `${o.label}${o.value_text ? `: ${o.value_text}` : ""}` });
+    } else if (o.kind === "procedure_done" && istDate(o.recorded_at) === todayKey) {
+      items.push({ id: o.id, text: `Operated: ${o.value_text ?? o.label}` });
+    }
+  }
+
+  for (const t of doneTasks) {
+    if (t.done_at && istDate(t.done_at) === todayKey) {
+      items.push({ id: t.id, text: t.value_text ?? t.label });
+    }
+  }
+
+  return items;
+}
 
 export type WardHandover = {
   ward: { id: string; name: string };
@@ -118,12 +154,14 @@ export async function getWardHandover(ward: { id: string; name: string }): Promi
   }
 
   const procedures = await getProcedureLabels();
+  const todayKey = istDate(generated_at);
 
   const out: HandoverPatient[] = [];
   for (const p of rows) {
     const template = await getTemplateForPatient(p);
+    const rawObs = byPatient.get(p.id) ?? [];
     const state = derivePatientState(
-      byPatient.get(p.id) ?? [],
+      rawObs,
       template,
       pack.dayCount(p).n,
       {
@@ -140,6 +178,7 @@ export async function getWardHandover(ward: { id: string; name: string }): Promi
       template,
       procedure: procedureFor(p, procedures),
       state,
+      doneToday: deriveDoneToday(rawObs, state.doneTasks, todayKey),
     });
   }
 
@@ -173,6 +212,10 @@ export function formatHandoverText(handover: WardHandover): string {
     lines.push(
       `${p.bed} · ${patientName(p)} · ${dayLabel(p, handover.pack)}${p.procedure ? ` ${p.procedure}` : ""} · ${p.primary_diagnosis || "no diagnosis recorded"}${management ? ` · ${management}` : ""}`
     );
+
+    for (const d of p.doneToday) {
+      lines.push(`  Today: ${d.text}`);
+    }
 
     const { openTasks, pending, missing } = p.state;
     if (openTasks.length === 0 && pending.length === 0 && missing.length === 0) {

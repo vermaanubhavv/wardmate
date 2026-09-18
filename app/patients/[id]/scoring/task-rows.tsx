@@ -51,7 +51,7 @@ function Row({ patientId, t }: { patientId: string; t: ScoringTask }) {
           )}
         </p>
         <p className="mt-0.5 text-[13px] text-muted">
-          For the BISAP score · {t.reason}
+          {t.pathwayTitle ? `Suggested by ${t.pathwayTitle}` : "Suggested"} · {t.reason}
         </p>
         {!declining ? (
           <button

@@ -4,9 +4,11 @@ import { getWardPendingConfirmations } from "@/lib/confirm-queue";
 import ConfirmQueue from "./confirm-queue";
 
 /**
- * The end-of-round pass: every dictated value still waiting to be checked, across the whole
- * unit, cleared from one screen instead of opening each patient in turn. Same confirm / edit /
- * discard as the patient page's own "Confirm dictation" card.
+ * The end-of-round pass over real conflicts, across the whole unit — two recordings that
+ * actually disagree about the same value, cleared from one screen instead of opening each
+ * patient in turn. Same confirm / edit / discard as the patient page's own "Confirm
+ * dictation" card, which still shows the broader "might be misheard" set this screen no
+ * longer does — see lib/confirm-queue.ts.
  */
 export default async function ConfirmPage() {
   const { ward, error } = await getCurrentWard();
@@ -30,11 +32,11 @@ export default async function ConfirmPage() {
         <Link href="/ward" className="text-[17px] text-accent">
           ‹ Ward
         </Link>
-        <h1 className="mt-3 ios-large-title">Confirm dictations</h1>
+        <h1 className="mt-3 ios-large-title">Confirm</h1>
         <p className="mt-1 text-[15px] text-muted">
           {items.length > 0
-            ? `${items.length} value${items.length === 1 ? "" : "s"} across the unit. Tick and accept, or open one to correct it.`
-            : "The values a mis-hearing could get wrong — numbers, drugs, beds — from every patient at once."}
+            ? `${items.length} conflict${items.length === 1 ? "" : "s"} across the unit — two recordings disagree. Tick and accept, or open one to correct it.`
+            : "Two recordings disagreeing about the same value, from every patient at once."}
         </p>
       </header>
 

@@ -21,9 +21,11 @@ export default function ScoringSection({ tasks }: { tasks: WardScoringTask[] }) 
     <div>
       <div className="mb-2 flex items-baseline gap-2">
         <span className="h-2.5 w-2.5 rounded-full" style={{ background: AMBER }} aria-hidden />
-        <p className="text-[17px] font-medium">Score inputs · {tasks.length}</p>
+        <p className="text-[17px] font-medium">Recommended · {tasks.length}</p>
       </div>
-      <p className="mb-2 text-[13px] text-muted">Needed to complete a clinical score</p>
+      <p className="mb-2 text-[13px] text-muted">
+        Investigations and score inputs suggested by a matched clinical pathway
+      </p>
       <ul className="divide-y divide-line rounded-[10px] border border-line bg-card">
         {tasks.map((t) => (
           <Row key={t.id} t={t} />
@@ -33,7 +35,9 @@ export default function ScoringSection({ tasks }: { tasks: WardScoringTask[] }) 
   );
 }
 
-function Row({ t }: { t: WardScoringTask }) {
+/** Exported for the "By type" view (app/todo/todo-lists.tsx), which regroups the same
+ *  scoring tasks by clinical category instead of listing them all under one heading. */
+export function Row({ t }: { t: WardScoringTask }) {
   const [pending, start] = useTransition();
   const [declining, setDeclining] = useState(false);
   const [reason, setReason] = useState("");
@@ -56,7 +60,9 @@ function Row({ t }: { t: WardScoringTask }) {
           <span className="rounded bg-chip px-1 font-mono tabular-nums text-muted">{t.bed}</span>
           {t.name}
         </Link>
-        <p className="mt-0.5 text-[13px] text-muted">For the BISAP score · {t.reason}</p>
+        <p className="mt-0.5 text-[13px] text-muted">
+          {t.pathwayTitle ? `Suggested by ${t.pathwayTitle}` : "Suggested"} · {t.reason}
+        </p>
         {!declining ? (
           <button
             onClick={() => setDeclining(true)}
