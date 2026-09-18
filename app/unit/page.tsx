@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentWard, getMyWards, getWardConsultantStored } from "@/lib/ward";
+import { getCurrentWard, getMyWards, getWardConsultantStored, getWardIsEsicFaridabad } from "@/lib/ward";
 import { consultantForWard } from "@/lib/unit-consultants";
 import CodeBox from "./code-box";
 import JoinForm from "./join-form";
@@ -10,6 +10,7 @@ import FormularyImport from "./formulary-import";
 import InviteShare from "./invite-share";
 import CopySetup from "./copy-setup";
 import ClaimName from "./claim-name";
+import EsicTemplateToggle from "./esic-template-toggle";
 import { getExpectedMembers } from "@/lib/expected-members";
 import CreateUnitForm from "../onboarding/create-unit-form";
 import { getFormularySize } from "@/lib/formulary";
@@ -74,6 +75,7 @@ export default async function UnitPage() {
   // What the field shows: the stored value if the column exists and is set, otherwise the
   // seeded default for this unit's number — so the box is never blank for units 1–4.
   const consultantInCharge = consultantForWard(await getWardConsultantStored(ward.id), ward.name);
+  const isEsicFaridabad = await getWardIsEsicFaridabad(ward.id);
 
   const isOwner = ward.owner_id === user?.id;
 
@@ -439,6 +441,27 @@ export default async function UnitPage() {
           </form>
           <p className="mt-2 text-[13px] text-muted">
             Printed at the top of every discharge summary, exactly as typed.
+          </p>
+        </section>
+      )}
+
+      {isOwner && (
+        <section className="px-6 pb-6">
+          <div className="flex items-center justify-between ios-group px-4 py-3">
+            <div className="pr-4">
+              <p className="text-[15px]">ESIC Medical College Faridabad</p>
+              <p className="mt-0.5 text-[13px] text-muted">
+                {isEsicFaridabad
+                  ? "On — today’s note prints on the pilot’s own sheet."
+                  : "Off — today’s note prints the generic SOAP layout."}
+              </p>
+            </div>
+            <EsicTemplateToggle wardId={ward.id} initial={isEsicFaridabad} />
+          </div>
+          <p className="mt-2 text-[13px] text-muted">
+            Which printable layout Today&rsquo;s note uses. Leave this on for the ESIC Faridabad
+            pilot&rsquo;s own sheet; switch it off for any other hospital&rsquo;s unit, which
+            gets a generic Subjective / Objective / Assessment / Plan sheet instead.
           </p>
         </section>
       )}
