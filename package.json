@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",
+    "@capacitor/android": "^8.5.2",
     "@sentry/nextjs": "^10.74.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",

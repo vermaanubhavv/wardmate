@@ -1,20 +1,27 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 /**
- * The iOS wrapper.
+ * The iOS and Android wrappers.
  *
  * WardMate is a server-rendered app — every screen, the sign-in, and the transcription all
- * come from the server — so there is no version of it that can be frozen into an .ipa and
- * shipped. This wrapper therefore does not bundle the app at all: it opens the live site in a
- * native web view, and `capacitor-shell/` exists only because Capacitor requires a web
- * directory to point at.
+ * come from the server — so there is no version of it that can be frozen into an .ipa or .apk
+ * and shipped. Neither wrapper bundles the app at all: each opens the live site in a native web
+ * view, and `capacitor-shell/` exists only because Capacitor requires a web directory to point
+ * at.
  *
- * What it buys, and the only reason to build it: a native microphone permission granted once
- * instead of per-session, recording that survives the screen locking mid-round, and a
- * TestFlight link that can be sent to a colleague.
+ * What it buys, and the only reason to build either: a native microphone permission granted
+ * once instead of per-session, and an install link (TestFlight, or a sideloaded .apk) that can
+ * be sent to a colleague instead of a spoken instruction about the browser's Share button.
  *
  * The consequence to remember: because the app is the live site, a `vercel --prod` deploy
- * updates the native app too. Nothing needs rebuilding or resubmitting for a normal change.
+ * updates both native apps too. Nothing needs rebuilding or resubmitting for a normal change —
+ * see `docs/ios-app.md` and `docs/android-app.md` for what does.
+ *
+ * The two platforms are NOT at parity on one point: iOS's `UIBackgroundModes: audio` (below)
+ * keeps the mic open once the screen locks mid-round. Android has no manifest-only equivalent —
+ * it would need a foreground service, which this wrapper does not add — so a locked screen on
+ * Android still ends the recording. `lib/use-dictation.ts`'s salvage-on-hide path is what saves
+ * a round when that happens; it is not a substitute for the fix.
  */
 const config: CapacitorConfig = {
   appId: "in.wardmate.app",
@@ -42,6 +49,14 @@ const config: CapacitorConfig = {
     // The recorder is the app. A web view that stops the microphone when the phone is put in
     // a pocket mid-round is the one failure this whole wrapper exists to prevent.
     limitsNavigationsToAppBoundDomains: false,
+  },
+
+  android: {
+    // Chrome's per-tab getUserMedia re-prompt (and the outright failures some Android phones
+    // return instead) is the "issues with live dictation" this wrapper exists to fix. The
+    // actual grant comes from RECORD_AUDIO / MODIFY_AUDIO_SETTINGS in AndroidManifest.xml —
+    // this block only ever needs touching for a debug build's chrome://inspect.
+    webContentsDebuggingEnabled: false,
   },
 };
 
