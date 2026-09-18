@@ -20,6 +20,14 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Feature docs
+
+- [History check](docs/history-check.md) — complaint trees, the deterministic validator, the
+  Ward/Academic toggle, the general physical examination checklist, evals, and rollback.
+  Behind `NEXT_PUBLIC_HISTORY_CHECK=on`.
+- [Scoring engine](docs/scoring-engine.md), [specialty packs](docs/specialty-packs.md),
+  [admin console](docs/admin-console.md).
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
