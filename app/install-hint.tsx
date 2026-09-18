@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { ShareIcon, AddToHomeIcon } from "./icons";
 import Mark from "./mark";
 
@@ -21,19 +21,29 @@ import Mark from "./mark";
  * Shown only in a browser tab: once the app is running from the home screen, standalone is
  * true and this disappears on its own.
  */
+function subscribeNever() {
+  return () => {};
+}
+
+function isStandalone(): boolean {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    // iOS's own flag, which predates the standard one and is still what older iPhones set.
+    (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+  );
+}
+
+function isIos(): boolean {
+  return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+}
+
 export default function InstallHint() {
-  const [show, setShow] = useState(false);
-  const [ios, setIos] = useState(false);
-
-  useEffect(() => {
-    const standalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      // iOS's own flag, which predates the standard one and is still what older iPhones set.
-      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
-
-    setIos(/iphone|ipad|ipod/i.test(window.navigator.userAgent));
-    setShow(!standalone);
-  }, []);
+  // Read from the browser through useSyncExternalStore rather than an effect that sets state:
+  // the server snapshot says "already installed" so nothing flashes before hydration, and the
+  // client snapshot takes over on first render without a second pass.
+  const standalone = useSyncExternalStore(subscribeNever, isStandalone, () => true);
+  const ios = useSyncExternalStore(subscribeNever, isIos, () => false);
+  const show = !standalone;
 
   if (!show) return null;
 

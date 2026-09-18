@@ -6,7 +6,7 @@
  *
  * Used via scripts/alias-register.mjs:  node --import ./scripts/alias-register.mjs scripts/foo.ts
  */
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const ROOT = new URL("../", import.meta.url).href;
@@ -14,8 +14,10 @@ const ROOT = new URL("../", import.meta.url).href;
 export function resolve(specifier, context, nextResolve) {
   if (specifier.startsWith("@/")) {
     let target = ROOT + specifier.slice(2);
-    const lastSegment = target.split("/").pop() ?? "";
-    if (!lastSegment.includes(".")) {
+    // A dotted basename ("fever.v1") is not an extension — check what actually exists rather
+    // than guessing from the name.
+    const isFile = (u) => existsSync(fileURLToPath(u)) && statSync(fileURLToPath(u)).isFile();
+    if (!isFile(target)) {
       if (existsSync(fileURLToPath(target + ".ts"))) target += ".ts";
       else if (existsSync(fileURLToPath(target + "/index.ts"))) target += "/index.ts";
     }

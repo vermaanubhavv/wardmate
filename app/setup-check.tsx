@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
+
+function subscribeNever() {
+  return () => {};
+}
+const readInstalled = (): boolean | null => window.matchMedia("(display-mode: standalone)").matches;
+const readMic = (): boolean | null => typeof navigator.mediaDevices?.getUserMedia === "function";
 
 /** Reports what this particular phone can do. The microphone line is the one that matters. */
 export default function SetupCheck() {
-  const [installed, setInstalled] = useState<boolean | null>(null);
-  const [mic, setMic] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    setInstalled(window.matchMedia("(display-mode: standalone)").matches);
-    setMic(typeof navigator.mediaDevices?.getUserMedia === "function");
-  }, []);
+  // Server snapshot is null ("not known yet"); the browser answers on the first client render.
+  const installed = useSyncExternalStore(subscribeNever, readInstalled, () => null);
+  const mic = useSyncExternalStore(subscribeNever, readMic, () => null);
 
   return (
     <section className="ios-group p-5">
