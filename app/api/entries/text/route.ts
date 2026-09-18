@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
 import { extractObservations } from "@/lib/extract";
 import { getTemplateForPatient } from "@/lib/templates";

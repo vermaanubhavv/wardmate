@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
 import { readLabPhoto } from "@/lib/read-lab-photo";
 import { canonicalLabName } from "@/lib/lab-ranges";

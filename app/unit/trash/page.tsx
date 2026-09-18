@@ -16,6 +16,12 @@ type TrashedPatient = {
 
 const TRASH_DAYS = 7;
 
+/** The moment before which a trashed patient has expired. Kept out of the component body so
+ *  the clock read is not treated as part of render. */
+function expiryCutoff(): string {
+  return new Date(Date.now() - TRASH_DAYS * 86_400_000).toISOString();
+}
+
 /**
  * Patients deleted from the ward, recoverable until seven days after they landed here.
  */
@@ -43,7 +49,7 @@ export default async function TrashPage() {
     .select("id")
     .eq("ward_id", ward.id)
     .eq("status", "trashed")
-    .lt("trashed_at", new Date(Date.now() - TRASH_DAYS * 86_400_000).toISOString());
+    .lt("trashed_at", expiryCutoff());
 
   for (const patient of expiring ?? []) {
     const { data: files } = await supabase.storage.from("evidence").list(patient.id);
