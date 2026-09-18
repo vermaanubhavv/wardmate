@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentWard } from "@/lib/ward";
+import { getCurrentWard, getWardIsEsicFaridabad } from "@/lib/ward";
 import { getWardFormats } from "@/lib/formats";
 import { getFormularyMappings } from "@/lib/formulary";
 import { derivePatientState } from "@/lib/patient-state";
@@ -31,9 +31,10 @@ export async function POST(request: Request) {
   if (!body.draft) return NextResponse.json({ error: "Nothing to render." }, { status: 400 });
 
   const { ward } = await getCurrentWard();
-  const [formats, formularyMappings] = await Promise.all([
+  const [formats, formularyMappings, isEsicFaridabad] = await Promise.all([
     ward ? getWardFormats(ward.id) : Promise.resolve(new Map()),
     ward ? getFormularyMappings(ward.id) : Promise.resolve(new Map<string, string>()),
+    ward ? getWardIsEsicFaridabad(ward.id) : Promise.resolve(true),
   ]);
 
   const context = oneOffContext(
@@ -43,7 +44,9 @@ export async function POST(request: Request) {
     formularyMappings,
     [],
     derivePatientState([], null),
-    []
+    [],
+    undefined,
+    isEsicFaridabad
   );
 
   return NextResponse.json({ doc: buildDischargeDocument(body.draft, context) });
