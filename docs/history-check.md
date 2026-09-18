@@ -70,8 +70,11 @@ triggered it. Numeric values render amber with "(unconfirmed)"; there is no conf
 
 ### Trees — `content/history-trees/`
 
-Eleven complaints: fever, chest pain, breathlessness, abdominal pain, jaundice, cough, oedema,
-headache, altered sensorium / seizures, limb weakness, diarrhoea / vomiting. Shared
+Twenty-five complaints: fever, chest pain, breathlessness, abdominal pain, jaundice, cough,
+oedema, headache, altered sensorium / seizures, limb weakness, diarrhoea / vomiting,
+palpitations, syncope, GI bleeding, haemoptysis, joint pain, generalised weakness / fatigue,
+urinary symptoms, abdominal distension, poisoning, snake bite, vertigo, weight loss,
+polyuria / uncontrolled diabetes, neck swelling / lymphadenopathy. Shared
 constructors are in `_helpers.ts` (`yn`, `val`, `commonHpi`, `IMMUNOCOMPROMISE`, `PREGNANCY`,
 `rce`, textbook references). Schema in `lib/history-check/types.ts`, validator in
 `lib/history-check/schema.ts`.
@@ -115,6 +118,18 @@ the (i) on `/learn/examination/general_physical`), `significance` ("seen in …"
 `normal`. Types in `lib/history-check/exam-types.ts`, validator in `exam-schema.ts` (same
 dose / diagnosis rules), registry in `content/examination/index.ts`, test in
 `__tests__/exam.test.ts`.
+
+## Clinician review pack
+
+`docs/review-pack.html` is every tree and checklist as one printable page with a verdict box
+per tree, for senior clinicians to mark up and sign. Regenerate it after any content change:
+
+```bash
+node --import ./scripts/alias-register.mjs scripts/review-pack.ts
+```
+
+When a reviewer approves a tree, set `reviewStatus: "reviewed"` and `reviewedBy: "<name>"` in
+that tree's file, bump `version` if any wording changed, and rebuild the pack.
 
 ## Evals
 
