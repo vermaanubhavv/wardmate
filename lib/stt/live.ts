@@ -1,4 +1,5 @@
 import { buildDeepgramParams } from "@/lib/transcription/buildDeepgramUrl";
+import { startBackgroundRecording, stopBackgroundRecording } from "@/lib/stt/background-service";
 
 /**
  * Live dictation transport — the browser streams the microphone straight to Deepgram
@@ -76,6 +77,7 @@ export async function openLiveDictation(
   } catch {
     throw new Error("Microphone blocked — allow it for this site in your browser settings.");
   }
+  startBackgroundRecording();
 
   const mime = pickMime();
   if (!mime) {
@@ -104,6 +106,7 @@ export async function openLiveDictation(
   const teardown = () => {
     if (closed) return;
     closed = true;
+    stopBackgroundRecording();
     try {
       if (recorder && recorder.state !== "inactive") recorder.stop();
     } catch {

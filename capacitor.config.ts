@@ -17,11 +17,13 @@ import type { CapacitorConfig } from "@capacitor/cli";
  * updates both native apps too. Nothing needs rebuilding or resubmitting for a normal change —
  * see `docs/ios-app.md` and `docs/android-app.md` for what does.
  *
- * The two platforms are NOT at parity on one point: iOS's `UIBackgroundModes: audio` (below)
- * keeps the mic open once the screen locks mid-round. Android has no manifest-only equivalent —
- * it would need a foreground service, which this wrapper does not add — so a locked screen on
- * Android still ends the recording. `lib/use-dictation.ts`'s salvage-on-hide path is what saves
- * a round when that happens; it is not a substitute for the fix.
+ * The two platforms reach "survives the screen locking mid-round" differently. iOS gets it for
+ * free from `UIBackgroundModes: audio` (below) — one manifest key. Android has no manifest-only
+ * equivalent; it needs a foreground service, which is what
+ * `android/app/.../RecordingForegroundService.java` is — started and stopped from
+ * `lib/stt/background-service.ts`, bracketing the live dictation socket in `lib/stt/live.ts`.
+ * It does not cover the record-then-upload ("batch") path in `lib/use-dictation.ts`, which
+ * deliberately stops and salvages on backgrounding instead of trying to keep running headless.
  */
 const config: CapacitorConfig = {
   appId: "in.wardmate.app",

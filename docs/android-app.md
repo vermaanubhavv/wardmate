@@ -15,19 +15,30 @@ browser PWA. Two causes, both fixed by a native shell and neither fixable from w
 2. **TestFlight-equivalent distribution.** A `.apk` a colleague sideloads, rather than a spoken
    instruction about "Add to Home Screen."
 
-## What it does NOT fix
+## Surviving a locked screen mid-round
 
-**Android has no equivalent of iOS's `UIBackgroundModes: audio`.** On iOS that one manifest key
-keeps the mic open once the screen locks. On Android, backgrounding the app suspends the WebView
-the same way it would in Chrome — the recording still ends when the phone is put in a pocket
-mid-round. Fixing that for real means a foreground service (a persistent notification, a
-`RECORD_AUDIO`-holding background process, `FOREGROUND_SERVICE_MICROPHONE` on API 34+) that this
-wrapper does not add. Until it does, `lib/use-dictation.ts`'s salvage-on-hide logic (writes
-whatever audio exists so far on `visibilitychange → hidden`) is what limits the damage — it saves
-the round, it does not keep it recording.
+Android has no manifest-only equivalent of iOS's `UIBackgroundModes: audio`. Backgrounding an app
+on Android suspends its WebView the same way it would a Chrome tab, so without more than a
+manifest key the recording would end the moment the phone goes in a pocket.
 
-If losing rounds on lock is still happening after this ships, that foreground service is the next
-piece of work, not a config tweak.
+The fix is a **foreground service**: `RecordingForegroundService.java` holds a persistent
+"WardMate is recording" notification (Android's price of admission for keeping a process alive
+in the background) with `foregroundServiceType="microphone"`, which is what actually keeps the
+WebView's `getUserMedia` stream open through a lock. `RecordingServicePlugin.java` is the
+Capacitor bridge that starts and stops it; `lib/stt/background-service.ts` is the web-side
+wrapper, called from `lib/stt/live.ts` around every live dictation session (both
+`app/patients/[id]/recorder.tsx`'s bedside recorder and the case-history dictation overlay run
+through it, since both call `openLiveDictation`). It is a genuine no-op on the browser and iOS —
+`registerPlugin` is only ever invoked behind an `isAndroidNative()` check.
+
+**This does not cover the record-then-upload ("batch") path** — `round-recorder.tsx`,
+`speak-patient.tsx`, `case-history-capture.tsx`, all on `lib/use-dictation.ts`. That path
+deliberately stops and salvages the partial recording on `visibilitychange → hidden` rather than
+trying to keep running headless (see that file's own comments), so backgrounding it still ends
+the round early by design — the foreground service would keep the mic open, but there is nothing
+in that path that resumes writing to the same recorder afterward. If batch recordings losing
+data on lock becomes a live complaint, extending the service to that path is the next piece of
+work, not a config tweak.
 
 ## How it works
 
