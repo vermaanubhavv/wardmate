@@ -85,6 +85,20 @@ export type Differential = {
   appliesWhen?: "post_op";
 };
 
+/**
+ * Where a tree's content came from. Every tree names at least one; the academic view shows
+ * them so a student can go and read the primary source rather than trust the app.
+ */
+export type Reference = {
+  title: string;
+  /** Journal, book or guideline body: "JAMA (Rational Clinical Examination)", "NCVBDC". */
+  source: string;
+  year?: number;
+  /** PubMed id when the source is indexed there. Digits only. */
+  pmid?: string;
+  url?: string;
+};
+
 export type HistoryTree = {
   /** "fever" — the file is named after it. */
   id: string;
@@ -100,6 +114,8 @@ export type HistoryTree = {
    *  tree is used on a ward. The flag is data so the card can say so. */
   reviewStatus: "pending_clinician_review" | "reviewed";
   reviewedBy: string | null;
+  /** Primary sources the questions were drawn from. Required — see Reference. */
+  references: Reference[];
   slots: Slot[];
   differentials: Differential[];
   output: {

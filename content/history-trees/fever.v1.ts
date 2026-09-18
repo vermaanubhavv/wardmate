@@ -38,6 +38,17 @@ export const feverV1: HistoryTree = {
   reviewStatus: "pending_clinician_review",
   reviewedBy: null,
 
+  references: [
+    { title: "National Guidelines for Clinical Management of Dengue Fever 2023", source: "NCVBDC, Ministry of Health and Family Welfare, India", year: 2023, url: "https://ncvbdc.mohfw.gov.in/Doc/National%20Guidelines%20for%20Clinical%20Management%20of%20Dengue%20Fever%202023.pdf" },
+    { title: "Value of clinical features in the diagnosis of enteric fever", source: "Journal (PubMed)", pmid: "9465434" },
+    { title: "Frequency and distribution of eschar in patients with scrub typhus in India: systematic review and meta-analysis", source: "PubMed", pmid: "39282546" },
+    { title: "Leptospirosis in India: a systematic review and meta-analysis of clinical profile, treatment and outcomes", source: "PubMed", year: 2023, pmid: "37701390" },
+    { title: "The rational clinical examination. Does this adult patient have acute meningitis?", source: "JAMA (Rational Clinical Examination)", year: 1999, pmid: "10411200" },
+    { title: "Does this patient have community-acquired pneumonia? Diagnosing pneumonia by history and physical examination", source: "JAMA (Rational Clinical Examination)", year: 1997 },
+    { title: "National TB Elimination Programme: presumptive TB definition (cough > 2 weeks, fever, weight loss, night sweats, contact)", source: "NTEP, Government of India", url: "https://journals.lww.com/ascp/fulltext/2022/10020/national_tb_elimination_program__ntep___at_a.1.aspx" },
+    { title: "Macleod's Clinical Examination — history taking", source: "Elsevier (textbook)" },
+  ],
+
   slots: [
     // --- Informant ------------------------------------------------------------------------
     {

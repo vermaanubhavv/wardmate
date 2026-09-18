@@ -8,7 +8,7 @@
  *
  * Rejects:
  *  - a missing or malformed id / version / complaint / setting / review status
- *  - no triggers, no slots, no red flags, no differentials
+ *  - no triggers, no slots, no red flags, no differentials, no references
  *  - a duplicate slot id, a slot with no terms, an uppercase term
  *  - a slot "question" that is not phrased as a question, or that reads as an instruction
  *  - any dose, drug-regimen or treatment wording anywhere in the clinical text
@@ -17,7 +17,7 @@
  *  - an output order that names a slot that does not exist, or a non-value duration slot
  */
 
-import { SLOT_GROUPS, SLOT_STATES, type HistoryTree, type Slot } from "@/lib/history-check/types";
+import { SLOT_GROUPS, SLOT_STATES, type HistoryTree, type Reference, type Slot } from "@/lib/history-check/types";
 
 export type ValidationIssue = { path: string; message: string };
 export type ValidationResult = { ok: boolean; issues: ValidationIssue[] };
@@ -60,6 +60,11 @@ export function validateHistoryTree(tree: unknown): ValidationResult {
   }
   if (t.reviewStatus === "reviewed" && !t.reviewedBy) {
     add("$.reviewedBy", "a reviewed tree must name its reviewer");
+  }
+  if (!Array.isArray(t.references) || t.references.length === 0) {
+    add("$.references", "at least one reference required (where the questions came from)");
+  } else {
+    t.references.forEach((r, i) => validateReference(r, `$.references[${i}]`, add));
   }
   if (!Array.isArray(t.triggers) || t.triggers.length === 0) {
     add("$.triggers", "at least one trigger word required");
@@ -128,6 +133,24 @@ export function validateHistoryTree(tree: unknown): ValidationResult {
   }
 
   return { ok: issues.length === 0, issues };
+}
+
+export function validateReference(
+  r: Reference | undefined,
+  p: string,
+  add: (path: string, message: string) => void
+) {
+  if (!r || typeof r !== "object") {
+    add(p, "reference must be an object");
+    return;
+  }
+  if (!r.title || typeof r.title !== "string") add(`${p}.title`, "required");
+  if (!r.source || typeof r.source !== "string") add(`${p}.source`, "required");
+  if (r.year !== undefined && (!Number.isInteger(r.year) || r.year < 1900 || r.year > 2100)) {
+    add(`${p}.year`, "must be a plausible year");
+  }
+  if (r.pmid !== undefined && !/^\d{4,9}$/.test(r.pmid)) add(`${p}.pmid`, "PubMed ids are 4-9 digits");
+  if (r.url !== undefined && !/^https?:\/\//.test(r.url)) add(`${p}.url`, "must be an http(s) URL");
 }
 
 function validateSlot(
