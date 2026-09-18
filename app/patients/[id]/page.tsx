@@ -50,6 +50,8 @@ import { getWardLabRanges } from "@/lib/ward-lab-ranges";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { getUser } from "@/lib/auth";
+import HistoryCheckCard from "./history-check-card";
+import { loadHistoryCheckCard } from "@/lib/history-check/page-data";
 
 type Entry = {
   id: string;
@@ -254,6 +256,17 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // admission sheet must remain visible when diabetes is mentioned on a later round. The
   // helper also recognises older entries captured before the extractor used this label.
   const comorbidities = listedComorbidities(allObservations);
+
+  // History check (behind NEXT_PUBLIC_HISTORY_CHECK). Suggestions come from the chief
+  // complaints as dictated; the card itself is rendered from stored runs, never live.
+  const historyCheck = await loadHistoryCheckCard(
+    supabase,
+    patient,
+    caseHistoryEntries
+      .flatMap((e) => e.observations)
+      .filter((o) => /chief complaint|presenting complaint/i.test(o.label))
+      .map((o) => o.value_text ?? o.label)
+  );
 
   // Latest of each drug recorded, for the discharge brief. Taken from the same observations
   // the rest of the screen uses, so it can hold nothing that was not said.
@@ -512,6 +525,15 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         photoUrls={photoUrls}
         protocolTitles={protocolTitles}
       />
+
+      {historyCheck && (
+        <HistoryCheckCard
+          patientId={patient.id}
+          trees={historyCheck.trees}
+          runs={historyCheck.runs}
+          hasSources={historyCheck.hasSources}
+        />
+      )}
 
       {/* Bottom padding clears the fixed speak bar so the oldest entry stays reachable. */}
       <section className="px-4 pb-6">
