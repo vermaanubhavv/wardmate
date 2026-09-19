@@ -183,7 +183,12 @@ export async function dischargePatient(formData: FormData) {
   revalidatePath("/ward");
   revalidatePath("/todo");
   revalidatePath("/handover");
-  redirect("/ward");
+  revalidatePath("/unit/discharged");
+  // The query param drives a one-time "Patient discharged · Undo" banner on the ward
+  // page (app/ward/page.tsx) — instant feedback only. It carries no state of its own and
+  // is gone the moment the page is reloaded or left; the real 48-hour undo window lives
+  // in /unit/discharged's own query, not here.
+  redirect(`/ward?discharged=${id}`);
 }
 
 /** Undo a removal: back onto the active ward list, exactly as they were. */
@@ -204,7 +209,7 @@ export async function restorePatient(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/ward");
-  revalidatePath("/removed");
+  revalidatePath("/unit/discharged");
   revalidatePath("/todo");
   revalidatePath("/handover");
   revalidatePath(`/patients/${id}`);
@@ -239,7 +244,7 @@ export async function deletePatientForever(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/ward");
-  revalidatePath("/removed");
+  revalidatePath("/unit/discharged");
   revalidatePath("/unit/trash");
 
   if (error) redirect(`/ward?delete_failed=${encodeURIComponent(error.message)}`);
@@ -269,7 +274,7 @@ export async function restoreFromTrash(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/ward");
-  revalidatePath("/removed");
+  revalidatePath("/unit/discharged");
   revalidatePath("/unit/trash");
   revalidatePath(`/patients/${id}`);
 }

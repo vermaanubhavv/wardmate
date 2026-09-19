@@ -2,14 +2,20 @@
 
 import { useState } from "react";
 
-/** Puts the handover text on the clipboard so it can be pasted straight into the unit's
- *  WhatsApp handover message, which is how this actually gets used at end of round. */
+/**
+ * The generated update, editable before it goes anywhere — the original ask was for "an
+ * editable form... that can be copied and sent," not a fixed message. `value` starts as
+ * `text` (lib/handover.ts's formatHandoverText) and diverges the moment a resident types;
+ * Copy always reads the current textarea contents, never the original generated string.
+ * Nothing here is sent by the app itself — pasting into WhatsApp is still a manual step.
+ */
 export default function CopyHandoverButton({ text }: { text: string }) {
+  const [value, setValue] = useState(text);
   const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(value);
       setState("copied");
     } catch {
       setState("failed");
@@ -19,10 +25,16 @@ export default function CopyHandoverButton({ text }: { text: string }) {
 
   return (
     <div>
+      <textarea
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        rows={14}
+        className="w-full rounded-[10px] border border-line bg-card p-3 text-[14px] leading-relaxed text-foreground"
+      />
       <button
         type="button"
         onClick={copy}
-        className="w-full rounded-xl bg-accent px-4 py-4 text-center text-[17px] font-semibold text-accent-ink active:opacity-70"
+        className="mt-3 w-full rounded-xl bg-accent px-4 py-4 text-center text-[17px] font-semibold text-accent-ink active:opacity-70"
       >
         {state === "copied" ? "Copied" : "Copy for WhatsApp"}
       </button>

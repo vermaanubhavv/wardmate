@@ -261,18 +261,24 @@ export default function HomePage() {
               {ROUND_LINES.map(([bed, who, body, critical]) => (
                 <div
                   key={bed}
-                  className={critical ? "rounded-[10px] px-4 py-3.5" : "ios-group rounded-[10px] px-4 py-3.5"}
-                  style={critical ? { background: "#fdf6f5", boxShadow: "inset 0 0 0 1px #e3b3ac" } : undefined}
+                  className={critical ? "rounded-[10px] px-4 py-3.5 bg-critical-bg" : "ios-group rounded-[10px] px-4 py-3.5"}
+                  style={critical ? { boxShadow: "inset 0 0 0 1px var(--critical-fg)" } : undefined}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-[14.5px] font-semibold">{who}</p>
                     {critical && (
-                      <span className="rounded-[5px] px-2 py-0.5 text-[10.5px] font-bold text-white" style={{ background: "#b23b2e" }}>
+                      <span className="rounded-[5px] px-2 py-0.5 text-[10.5px] font-bold text-white bg-critical-fg">
                         CRITICAL
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-[13.5px] leading-snug" style={critical ? { color: "#b23b2e", fontWeight: 500 } : undefined}>
+                  <p
+                    className={
+                      critical
+                        ? "mt-1 text-[13.5px] leading-snug text-critical-fg font-medium"
+                        : "mt-1 text-[13.5px] leading-snug"
+                    }
+                  >
                     {!critical && <span className="text-muted">{body}</span>}
                     {critical && body}
                   </p>

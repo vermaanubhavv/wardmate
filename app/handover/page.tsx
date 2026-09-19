@@ -4,7 +4,6 @@ import { dayLabel, managementLabel, patientName } from "@/lib/patients";
 import { getWardHandover, formatHandoverText, type HandoverPatient } from "@/lib/handover";
 import type { SpecialtyPack } from "@/lib/specialty";
 import CopyHandoverButton from "./copy-button";
-import BottomBar from "../bottom-bar";
 
 export default async function HandoverPage() {
   const { ward, error: wardError } = await getCurrentWard();
@@ -12,7 +11,7 @@ export default async function HandoverPage() {
   if (wardError || !ward) {
     return (
       <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
-        <h1 className="ios-large-title">Ward round</h1>
+        <h1 className="ios-large-title">Update</h1>
         <p className="mt-4 ios-group px-4 py-3 text-[15px] text-orange-700">
           {wardError ? `Could not read the database: ${wardError.message}` : "No ward found."}
         </p>
@@ -29,13 +28,13 @@ export default async function HandoverPage() {
         <Link href="/ward" className="text-[17px] text-accent">
           ‹ Ward
         </Link>
-        <h1 className="mt-3 ios-large-title">{ward.name} — ward round</h1>
+        <h1 className="mt-3 ios-large-title">{ward.name} — update</h1>
         <p className="mt-1 text-[15px] text-muted">
           {handover.patients.length} active {handover.patients.length === 1 ? "patient" : "patients"}
         </p>
       </header>
 
-      <section className="px-6 pb-48 flex flex-col gap-3">
+      <section className="px-6 flex flex-col gap-3">
         {handover.patients.length === 0 ? (
           <p className="ios-group p-6 text-[15px] text-muted">
             No active patients on this ward.
@@ -47,9 +46,13 @@ export default async function HandoverPage() {
         )}
       </section>
 
-      <BottomBar>
+      {/* The assembled message, ready to edit before it goes to the consultant's WhatsApp
+          group — see app/handover/copy-button.tsx. Sits at the end of the page rather than
+          a floating bar: there's a full textarea to read and adjust here, not a single tap. */}
+      <section className="px-6 pt-6 pb-16">
+        <p className="mb-2 text-[13px] font-medium text-muted">Ready to send</p>
         <CopyHandoverButton text={text} />
-        </BottomBar>
+      </section>
     </div>
   );
 }
@@ -80,6 +83,16 @@ function PatientSummary({ patient, pack }: { patient: HandoverPatient; pack: Spe
           {" · "}
           {patient.primary_diagnosis || "No diagnosis recorded"}
         </p>
+
+        {patient.doneToday.length > 0 && (
+          <ul className="mt-2 flex flex-col gap-1">
+            {patient.doneToday.map((d) => (
+              <li key={d.id} className="text-[15px]">
+                <span className="text-good-fg">Today:</span> {d.text}
+              </li>
+            ))}
+          </ul>
+        )}
 
         {clear ? (
           <p className="mt-2 text-[15px] text-muted/70">Nothing outstanding.</p>

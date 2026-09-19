@@ -17,6 +17,7 @@ import { getFormularySize } from "@/lib/formulary";
 import { DESIGNATION_CHOICES } from "@/lib/patients";
 import { ChecklistIcon, DocumentIcon, MicIcon } from "../icons";
 import { listSpecialties, specialtyPacksEnabled } from "@/lib/specialty";
+import { getFinalisedDischargeMap, visibleDischargedFilter } from "@/lib/discharged";
 
 /**
  * The unit: who is on it, how to join it, and which one the app is showing.
@@ -69,6 +70,17 @@ export default async function UnitPage() {
         .eq("status", "trashed"),
       supabase.rpc("is_protocol_publisher"),
     ]);
+
+  // The same "saved, or still inside the 48-hour undo window" count app/unit/discharged
+  // itself lists by — never the raw count of everyone ever discharged, which is exactly
+  // the ever-growing number this link was moved here to get away from.
+  const finalisedMap = await getFinalisedDischargeMap(supabase, ward.id);
+  const { count: dischargedCount } = await supabase
+    .from("patients")
+    .select("id", { count: "exact", head: true })
+    .eq("ward_id", ward.id)
+    .eq("status", "discharged")
+    .or(visibleDischargedFilter([...finalisedMap.keys()]));
 
   const formularySize = await getFormularySize(ward.id);
   const { rows: expected, missing: rosterMissing } = await getExpectedMembers(ward.id);
@@ -536,8 +548,23 @@ export default async function UnitPage() {
         </section>
       )}
 
-      {/* Kept at the end, away from routine profile and unit controls. It remains hidden when
-          empty, so it never creates a destination without something recoverable in it. */}
+      {/* Kept at the end, away from routine profile and unit controls. Both remain hidden
+          when empty, so neither creates a destination without something recoverable in
+          it — moved here from the ward page's own header for the same reason Formats and
+          Protocols were: not something reached for on every round. */}
+      {Boolean(dischargedCount) && (
+        <section className="px-6 pb-3">
+          <Link
+            href="/unit/discharged"
+            className="flex items-center justify-between rounded-[10px] bg-card px-4 py-3 text-[15px]"
+          >
+            <span>Discharged</span>
+            <span className="text-muted">
+              {dischargedCount} {dischargedCount === 1 ? "patient" : "patients"} ›
+            </span>
+          </Link>
+        </section>
+      )}
       {Boolean(trashCount) && (
         <section className="px-6 pb-16">
           <Link
