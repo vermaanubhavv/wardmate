@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { criticalFlag } from "@/lib/ward-flags";
+import { criticalFlag, isDischargeable } from "@/lib/ward-flags";
 import type { WardPatient } from "@/lib/patients";
 
 function patient(over: Partial<WardPatient>): WardPatient {
@@ -93,5 +93,24 @@ describe("criticalFlag — only genuinely critical findings", () => {
     expect(criticalFlag(patient({ management: "POD 2, on noradrenaline, ventilated" }))?.reason).toBe(
       "vasopressor support"
     );
+  });
+});
+
+describe("isDischargeable — nothing critical, nothing outstanding", () => {
+  it("is dischargeable with no flag, nothing unconfirmed, no open tasks", () => {
+    expect(isDischargeable(patient({ unconfirmed_count: 0, open_task_count: 0 }), null)).toBe(true);
+  });
+
+  it("is not dischargeable when critically flagged, even with nothing else outstanding", () => {
+    const flag = { label: "BP", value: "84/50", reason: "hypotension" };
+    expect(isDischargeable(patient({ unconfirmed_count: 0, open_task_count: 0 }), flag)).toBe(false);
+  });
+
+  it("is not dischargeable with anything unconfirmed", () => {
+    expect(isDischargeable(patient({ unconfirmed_count: 1, open_task_count: 0 }), null)).toBe(false);
+  });
+
+  it("is not dischargeable with an open task", () => {
+    expect(isDischargeable(patient({ unconfirmed_count: 0, open_task_count: 1 }), null)).toBe(false);
   });
 });

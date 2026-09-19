@@ -102,3 +102,17 @@ export function criticalFlag(patient: WardPatient): WardFlag | null {
 
   return null;
 }
+
+/**
+ * Nothing critical, nothing outstanding — the ward page's "Dischargeable" stat/filter
+ * (app/ward/page.tsx). A fair, transparent proxy for "worth considering for discharge
+ * today," not a clinical certification: `flag` is this same file's own criticalFlag(),
+ * and `unconfirmed_count`/`open_task_count` already ride along in the one ward_screen()
+ * round trip (lib/ward-screen.ts), so this costs nothing extra to compute.
+ */
+export function isDischargeable(
+  patient: Pick<WardPatient, "unconfirmed_count" | "open_task_count">,
+  flag: WardFlag | null
+): boolean {
+  return !flag && patient.unconfirmed_count === 0 && patient.open_task_count === 0;
+}
