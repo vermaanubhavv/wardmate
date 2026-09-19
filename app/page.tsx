@@ -7,6 +7,7 @@ import { isCurrentUserAdmin } from "@/lib/admin";
 import { signOut } from "./actions";
 import Wordmark from "./wordmark";
 import { ChevronIcon } from "./icons";
+import { Bed, HeartPulse, Siren } from "lucide-react";
 
 /**
  * The front door: who you are, which unit you are on, and where your patients are.
@@ -60,9 +61,9 @@ export default async function Home() {
 
         <p className="ios-group-header mb-2 mt-7 px-4">Patients</p>
         <div className="ios-group">
-          <CountRow label="Ward" count={home.counts.ward} />
-          <CountRow label="ICU" count={home.counts.icu} />
-          <CountRow label="Emergency" count={home.counts.emergency} />
+          <CountRow icon={<Bed className="h-[17px] w-[17px]" strokeWidth={2} />} label="Ward" count={home.counts.ward} />
+          <CountRow icon={<HeartPulse className="h-[17px] w-[17px]" strokeWidth={2} />} label="ICU" count={home.counts.icu} />
+          <CountRow icon={<Siren className="h-[17px] w-[17px]" strokeWidth={2} />} label="Emergency" count={home.counts.emergency} />
         </div>
 
         <Link
@@ -74,7 +75,7 @@ export default async function Home() {
         </Link>
 
         {home.unavailable ? (
-          <p className="ios-group mt-6 px-4 py-3 text-[13px] leading-relaxed text-orange-800">
+          <p className="mt-6 rounded-[10px] bg-warn-bg px-4 py-3 text-[13px] leading-relaxed text-warn-fg">
             These counts are not live yet — run patch{" "}
             <span className="font-mono">0023_home_screen.sql</span> in Supabase. The ward itself
             works normally in the meantime.
@@ -114,10 +115,13 @@ function Row({ label, value }: { label: string; value: string | null }) {
   );
 }
 
-function CountRow({ label, count }: { label: string; count: number }) {
+function CountRow({ icon, label, count }: { icon: React.ReactNode; label: string; count: number }) {
   return (
-    <div className="ios-row flex items-baseline justify-between gap-3 px-4 py-2.5">
-      <span className="text-[17px]">{label}</span>
+    <div className="ios-row flex items-center justify-between gap-3 px-4 py-2.5">
+      <span className="flex items-center gap-2.5 text-[17px]">
+        <span className="text-accent">{icon}</span>
+        {label}
+      </span>
       <span className="text-[17px] font-semibold tabular-nums">{count}</span>
     </div>
   );

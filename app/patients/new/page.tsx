@@ -10,7 +10,7 @@ export default async function NewPatientPage() {
   if (!ward) {
     return (
       <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
-        <p className="text-[15px] text-orange-700">No ward found for your account.</p>
+        <p className="rounded-[10px] bg-warn-bg px-4 py-3 text-[15px] text-warn-fg">No ward found for your account.</p>
         <Link href="/ward" className="mt-4 inline-block text-[15px] text-muted underline">
           Back
         </Link>
