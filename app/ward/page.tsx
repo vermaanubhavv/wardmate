@@ -16,19 +16,11 @@ import Wordmark from "../wordmark";
 import Mark from "../mark";
 import { createClient } from "@/lib/supabase/server";
 import { countWardPendingConfirmations } from "@/lib/confirm-queue";
-import { criticalFlag, type WardFlag } from "@/lib/ward-flags";
+import { criticalFlag, isDischargeable, type WardFlag } from "@/lib/ward-flags";
 import { getWardTasks } from "@/lib/todo";
 import { getWardScoringTasks } from "@/lib/scoring/read";
 import { buildWardTodoPreview, countWardOutstanding } from "@/lib/ward-todo-preview";
 import { Users, TriangleAlert, CircleCheckBig, ListChecks, SquarePen, CircleAlert } from "lucide-react";
-
-/** Nothing critical and nothing outstanding — a fair, transparent proxy for "worth
- *  considering for discharge today," not a clinical certification. See lib/ward-flags.ts
- *  and lib/ward-screen.ts for where unconfirmed_count/open_task_count come from — both
- *  already ride along in the one ward_screen() round trip, so this costs nothing extra. */
-function isDischargeable(patient: WardPatient, flag: WardFlag | null): boolean {
-  return !flag && patient.unconfirmed_count === 0 && patient.open_task_count === 0;
-}
 
 export default async function Home({
   searchParams,

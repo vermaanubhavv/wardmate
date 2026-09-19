@@ -10,8 +10,6 @@ import { useState, useTransition } from "react";
 import type { ScoringTask } from "@/lib/scoring/read";
 import { completeScoringTask, declineScoringTask } from "./actions";
 
-const AMBER = "#a8560b";
-
 export default function ScoringTaskRows({
   patientId,
   tasks,
@@ -79,7 +77,7 @@ function Row({ patientId, t }: { patientId: string; t: ScoringTask }) {
             </button>
           </div>
         )}
-        {err && <p className="mt-1 text-[13px]" style={{ color: AMBER }}>{err}</p>}
+        {err && <p className="mt-1 text-[13px] text-warn-fg">{err}</p>}
       </div>
     </li>
   );

@@ -47,7 +47,7 @@ export type HandoverPatient = {
  * drown the two or three things worth telling a consultant about, so neither kind is
  * included here — see the confirmed scope in the plan this was built from.
  */
-function deriveDoneToday(rawObservations: Observation[], doneTasks: Observation[], todayKey: string): DoneTodayItem[] {
+export function deriveDoneToday(rawObservations: Observation[], doneTasks: Observation[], todayKey: string): DoneTodayItem[] {
   const items: DoneTodayItem[] = [];
 
   for (const o of rawObservations) {
