@@ -377,6 +377,8 @@ type StepId =
   | "medication"
   | "surgical"
   | "obstetric"
+  | "dietary"
+  | "environmental"
   | "negatives"
   | "onco_disease"
   | "onco_treatment"
@@ -522,6 +524,10 @@ export default function CaseHistoryWorkspace({
   const [obstetric, setObstetric] = useState<string>(() =>
     ((bySection.obstetric ?? [])[0]?.value ?? "").trim()
   );
+  const [dietary, setDietary] = useState<string>(() => ((bySection.dietary ?? [])[0]?.value ?? "").trim());
+  const [environmental, setEnvironmental] = useState<string>(() =>
+    ((bySection.environmental ?? [])[0]?.value ?? "").trim()
+  );
 
   const [piccle, setPiccle] = useState<Record<string, { state: SignState; note: string }>>(() => {
     const out: Record<string, { state: SignState; note: string }> = {};
@@ -620,6 +626,8 @@ export default function CaseHistoryWorkspace({
     { id: "family", title: "Family history" },
     { id: "medication", title: "Medication history" },
     { id: "surgical", title: "Surgical history" },
+    { id: "dietary", title: "Dietary history" },
+    { id: "environmental", title: "Environmental history" },
     ...(sex && /^f/i.test(sex) ? [{ id: "obstetric" as StepId, title: "Menstrual & obstetric" }] : []),
     // The disease, then what has been given for it, then what is running now, then what the
     // last cycle did — the order an oncologist actually asks in. They sit after the general
@@ -692,6 +700,10 @@ export default function CaseHistoryWorkspace({
         "note",
         medication.none ? ["None"] : medication.text.split("\n").map((s) => s.trim()).filter(Boolean)
       );
+    else if (id === "dietary")
+      res = await replaceCaseHistorySection(patientId, "dietary history", "note", dietary.trim() ? [dietary.trim()] : []);
+    else if (id === "environmental")
+      res = await replaceCaseHistorySection(patientId, "environmental history", "note", environmental.trim() ? [environmental.trim()] : []);
     else if (id === "obstetric")
       res = await replaceCaseHistorySection(patientId, "menstrual and obstetric history", "note", obstetric.trim() ? [obstetric.trim()] : []);
     else if (id === "onco_disease")
@@ -1095,6 +1107,22 @@ export default function CaseHistoryWorkspace({
               />
             </>
           )}
+        </>
+      );
+
+    if (id === "dietary")
+      return (
+        <>
+          <p className="text-[12px] leading-[1.45] text-muted">What the patient eats: vegetarian or mixed, meals a day, appetite, recent change — only what was said.</p>
+          <DictateArea value={dietary} onChange={(v) => { setDietary(v); mark("dietary"); }} placeholder="e.g. mixed diet, three meals a day, appetite reduced for two weeks" rows={4} />
+        </>
+      );
+
+    if (id === "environmental")
+      return (
+        <>
+          <p className="text-[12px] leading-[1.45] text-muted">Housing, water source, sanitation, occupational or travel exposure — only what was said.</p>
+          <DictateArea value={environmental} onChange={(v) => { setEnvironmental(v); mark("environmental"); }} placeholder="e.g. borewell water, works in a stone quarry, no recent travel" rows={4} />
         </>
       );
 
@@ -1570,6 +1598,8 @@ export default function CaseHistoryWorkspace({
     medication: medication.none || medication.text.trim().length > 0,
     surgical: surgical.mode !== "unset",
     obstetric: obstetric.trim().length > 0,
+    dietary: dietary.trim().length > 0,
+    environmental: environmental.trim().length > 0,
     examination: PICCLE_SIGNS.some((s) => piccle[s.label].state !== "unset") || VITALS.some((v) => (vitals[v.key] ?? "").trim()),
     abdomen: abdomen.trim().length > 0,
     chest: chest.trim().length > 0,

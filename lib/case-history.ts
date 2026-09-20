@@ -35,6 +35,8 @@ export type HistorySection = {
     | "medication"
     | "surgical"
     | "obstetric"
+    | "dietary"
+    | "environmental"
     // Medical oncology. All shown only when something was recorded, so they never appear on a
     // surgical or medicine clerking — nothing is ever filed into them there.
     | "onco_disease"
@@ -130,6 +132,20 @@ const SECTIONS: {
     ],
     // Shown only when something was recorded — irrelevant for most surgical admissions, and
     // never prompted for male patients.
+    alwaysShow: false,
+  },
+
+  // Shown only when recorded — a diet or exposure nobody asked about is not a finding.
+  {
+    key: "dietary",
+    label: "Dietary history",
+    aliases: ["dietary history", "diet history", "diet"],
+    alwaysShow: false,
+  },
+  {
+    key: "environmental",
+    label: "Environmental history",
+    aliases: ["environmental history", "environment history", "occupational history", "exposure history"],
     alwaysShow: false,
   },
 

@@ -73,3 +73,14 @@ describe("historyReadsNormal — personal-history denials", () => {
     expect(historyReadsNormal("no addictions, but chews gutka occasionally")).toBe(false);
   });
 });
+
+describe("dietary and environmental sections", () => {
+  it("routes their labels and stays hidden until something is recorded", () => {
+    expect(caseHistorySectionOf("dietary history")).toBe("dietary");
+    expect(caseHistorySectionOf("environmental history")).toBe("environmental");
+    const empty = summariseCaseHistory([]);
+    expect(empty.sections.find((s) => s.key === "dietary")!.hidden).toBe(true);
+    const stated = summariseCaseHistory([obs("1", "dietary history", "Vegetarian, three meals a day")]);
+    expect(stated.sections.find((s) => s.key === "dietary")!.lines.map((l) => l.text)).toEqual(["Vegetarian, three meals a day"]);
+  });
+});
