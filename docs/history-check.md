@@ -76,7 +76,12 @@ weakness, giddiness, decreased urine output, constipation, abdominal distension,
 per rectum, burning micturition, loss of weight / appetite, palpitations, joint pain,
 haematemesis, polyuria / polydipsia, low back pain, sore throat, fever with rash, poisoning /
 snake bite, dysphagia, groin swelling, breast lump, anorectal pain, leg ulcer, and scrotal
-swelling.
+swelling, head injury, shock, and four paediatric complaints (fever, diarrhoea, cough or
+difficult breathing, and seizure).
+
+Paediatric trees add `paedBackground()` from `_helpers.ts`: birth history, immunisation,
+development, feeding and growth. Age is deliberately not a slot — it comes from the patient
+record, and only name, age, sex and bed identify a patient.
 
 Some complaints legitimately match more than one tree — "breast lump" suggests both the generic
 `lump` tree and `breast_lump`, and a bite suggests both `poisoning_snakebite` and any tree its

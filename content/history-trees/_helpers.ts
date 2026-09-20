@@ -42,6 +42,23 @@ export function commonHpi(complaint: string): Slot[] {
   ];
 }
 
+/**
+ * The background every paediatric history carries and no adult history does: how the child was
+ * born, what they have been immunised against, whether they are developing and growing, and
+ * what they are fed. All are "value" slots — they record the mother's own words rather than a
+ * judgement. Age is deliberately NOT a slot: it comes from the patient record, and only name,
+ * age, sex and bed identify a patient.
+ */
+export function paedBackground(): Slot[] {
+  return [
+    val("hpi", "birth_history", "Birth history", "Was the child born at term or early, what was the birth weight, was the delivery normal, and did the baby cry immediately?", ["term", "preterm", "premature", "birth weight", "kg", "normal delivery", "caesarean", "lscs", "cried immediately", "did not cry", "nicu", "admitted after birth", "home delivery"], { numeric: true }),
+    val("hpi", "immunisation", "Immunisation", "Is immunisation up to date for the age, and is the card available to check?", ["immunisation", "immunization", "vaccination", "vaccinated", "up to date", "card", "bcg", "opv", "pentavalent", "measles", "not vaccinated", "incomplete", "due"]),
+    val("hpi", "development", "Development", "Is the child doing the things expected for the age — sitting, walking, speaking, school — and has any skill been lost?", ["milestones", "development", "sitting", "walking", "speaking", "school", "delayed", "normal for age", "lost skills", "regression", "not achieved"]),
+    val("hpi", "feeding_nutrition", "Feeding and nutrition", "What is the child eating and drinking, has that changed with this illness, and is breastfeeding still continuing?", ["breastfeeding", "breast milk", "top feed", "formula", "weaning", "eating", "refusing", "reduced feeds", "not feeding", "appetite", "diet"]),
+    val("hpi", "growth", "Growth", "Has the child been gaining weight, and is there a growth chart or previous weight to compare with?", ["weight gain", "gaining", "not gaining", "losing weight", "growth chart", "previous weight", "kg", "faltering", "thin"], { numeric: true, tier: "detailed" }),
+  ];
+}
+
 /** The commonest background red flags that change the reading of any presentation. */
 export const IMMUNOCOMPROMISE = yn("red_flag", "immunocompromise", "Immunocompromise", "Is the patient immunocompromised — HIV, steroids, chemotherapy, uncontrolled diabetes, transplant?", ["hiv", "immunocompromised", "immunosuppressed", "steroid", "steroids", "chemotherapy", "chemo", "transplant", "diabetic", "diabetes", "uncontrolled sugars", "cancer", "malignancy"], { teach: "Immunosuppression widens every differential (fungal, opportunistic and atypical infections) and blunts the signs; fever may be the only finding." });
 

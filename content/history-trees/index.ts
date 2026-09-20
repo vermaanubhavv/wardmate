@@ -33,6 +33,12 @@ import { breastLumpV1 } from "@/content/history-trees/breast-lump.v1";
 import { anorectalPainV1 } from "@/content/history-trees/anorectal-pain.v1";
 import { legUlcerV1 } from "@/content/history-trees/leg-ulcer.v1";
 import { scrotalSwellingV1 } from "@/content/history-trees/scrotal-swelling.v1";
+import { headInjuryV1 } from "@/content/history-trees/head-injury.v1";
+import { shockV1 } from "@/content/history-trees/shock.v1";
+import { paediatricFeverV1 } from "@/content/history-trees/paediatric-fever.v1";
+import { paediatricDiarrhoeaV1 } from "@/content/history-trees/paediatric-diarrhoea.v1";
+import { paediatricBreathingV1 } from "@/content/history-trees/paediatric-breathing.v1";
+import { paediatricSeizureV1 } from "@/content/history-trees/paediatric-seizure.v1";
 
 /**
  * Every complaint tree the app ships, every version. Adding a complaint is a new file beside
@@ -76,4 +82,10 @@ export const HISTORY_TREES: readonly HistoryTree[] = [
   anorectalPainV1,
   legUlcerV1,
   scrotalSwellingV1,
+  headInjuryV1,
+  shockV1,
+  paediatricFeverV1,
+  paediatricDiarrhoeaV1,
+  paediatricBreathingV1,
+  paediatricSeizureV1,
 ];
