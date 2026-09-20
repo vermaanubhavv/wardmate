@@ -23,7 +23,7 @@ import type {
   TimeWindow,
 } from "./types";
 
-export type ValidationIssue = { path: string; message: string };
+type ValidationIssue = { path: string; message: string };
 export type ValidationResult = { ok: boolean; issues: ValidationIssue[] };
 
 const VALID_CARD_TYPES = ["calculator", "structured_classification", "documentation_only"];

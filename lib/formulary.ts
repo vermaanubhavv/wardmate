@@ -18,8 +18,6 @@ export { drugKey };
  * See supabase/patches/0047_ward_formulary.sql.
  */
 
-export type FormularyMapping = { drugKey: string; itemText: string };
-
 /** Every confirmed mapping for this ward, as a lookup from drug key to formulary entry. */
 export async function getFormularyMappings(wardId: string): Promise<Map<string, string>> {
   const supabase = await createClient();

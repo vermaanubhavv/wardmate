@@ -25,11 +25,6 @@ export type NoteContext = {
   procedure: string | null;
 };
 
-/** The lines the compile is allowed to rewrite. Everything else on the sheet
- *  (diagnosis line, vitals, issues from deranged labs, current medications) is assembled
- *  deterministically by lib/progress-note.ts and is not the model's to touch. */
-const NOTE_FIELDS = new Set(["complaints", "sensorium", "abdomen", "chest", "assessment"]);
-
 const SYSTEM = `You write the daily progress-sheet entry for an inpatient on a general-surgery ward in an Indian hospital, from the rough notes taken on this morning's round — tapped keywords, comma-separated fragments, dictated half-sentences.
 
 You are REWRITING the fragments into the terse, standard phrasing a progress sheet uses. Not adding, not completing, not interpreting.
@@ -109,5 +104,3 @@ export async function compileProgressNote(digest: string, ctx?: NoteContext): Pr
     model: AI_MODEL,
   };
 }
-
-export { NOTE_FIELDS };

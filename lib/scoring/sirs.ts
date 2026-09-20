@@ -19,7 +19,7 @@ import type { EngineInput } from "./types";
 import type { ResolvedWindow } from "./time-windows";
 import { worstValue } from "./time-windows";
 
-export type SirsCriterion = {
+type SirsCriterion = {
   id: "temperature" | "heart_rate" | "respiratory_rate" | "wbc";
   label: string;
   status: "met" | "not_met" | "unknown";

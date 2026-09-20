@@ -49,7 +49,7 @@ export type DayCountPatient = {
  * `text` is what prints on the card. It always names the clock, because "day 3" meaning two
  * different things on two adjacent beds is exactly the ambiguity this app exists to remove.
  */
-export type DayCount = {
+type DayCount = {
   clock: "post_op" | "cycle" | "admission";
   n: number;
   text: string;

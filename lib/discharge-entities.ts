@@ -19,10 +19,10 @@
  * Editing an "ai" section flips it to "resident" and clears `approvedAt` (see discharge-store).
  */
 
-export type SectionSource = "compiled" | "ai" | "resident";
+type SectionSource = "compiled" | "ai" | "resident";
 
 /** Provenance + approval carried by every AI-generatable section. */
-export type SectionMeta = {
+type SectionMeta = {
   source: SectionSource;
   /** The model id, when this content was AI-generated. */
   model?: string | null;
@@ -34,7 +34,7 @@ export type SectionMeta = {
 
 // --- 3. Indication for Admission -------------------------------------------------------------
 
-export type IndicationForAdmission = SectionMeta & {
+type IndicationForAdmission = SectionMeta & {
   /** "Patient admitted with [presentation] requiring [inpatient management/…]." Never a repeat
    *  of the final diagnosis. */
   text: string;
@@ -42,7 +42,7 @@ export type IndicationForAdmission = SectionMeta & {
 
 // --- 2. Encounter Details ------------------------------------------------------------------
 
-export type EncounterDetails = {
+type EncounterDetails = {
   admittedAt: string | null;
   dischargedAt: string | null;
   department: string | null;
@@ -85,7 +85,7 @@ export type Procedure = {
 
 // --- 6. Clinical Course (AI, mandatory) ----------------------------------------------------
 
-export type ClinicalCourse = SectionMeta & {
+type ClinicalCourse = SectionMeta & {
   text: string;
   /** Contradictions the model spotted and did NOT resolve — surfaced to the resident
    *  (AI Safety Rule 4). */
@@ -94,7 +94,7 @@ export type ClinicalCourse = SectionMeta & {
 
 // --- 7. Relevant Investigations (AI-heavy) -----------------------------------------------
 
-export type RelevantInvestigation = {
+type RelevantInvestigation = {
   id: string;
   /** "CBC", "LFT", "Ultrasound Abdomen", "Blood Culture" … */
   group: string;
@@ -111,7 +111,7 @@ export type RelevantInvestigation = {
   sourceObservationIds: string[];
 };
 
-export type RelevantInvestigations = {
+type RelevantInvestigations = {
   items: RelevantInvestigation[];
   approvedAt: string | null;
   approvedBy: string | null;
@@ -241,7 +241,7 @@ export type Advice = {
 
 // --- 14. Red Flags -------------------------------------------------------------------
 
-export type RedFlags = {
+type RedFlags = {
   items: string[];
   /** Optional section — off until the resident confirms which warnings are relevant. */
   included: boolean;

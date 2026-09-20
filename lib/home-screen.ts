@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 
-export type DoctorProfile = {
+type DoctorProfile = {
   display_name: string | null;
   designation: string | null;
   department: string | null;

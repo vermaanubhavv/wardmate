@@ -70,7 +70,7 @@ function line(o: Observation): string {
  * The admission, as text, built purely from stored observations and the compiled draft — the
  * only thing the model is given. Chronological, day by day, in IST (the day the round happened).
  */
-export function buildAdmissionDigest(context: DischargeContext, draft: DischargeDraft): string {
+function buildAdmissionDigest(context: DischargeContext, draft: DischargeDraft): string {
   const { patient } = context;
   const out: string[] = [];
 

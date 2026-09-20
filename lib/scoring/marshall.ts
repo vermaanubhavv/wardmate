@@ -22,9 +22,9 @@ import type { EngineInput } from "./types";
 import type { ResolvedWindow } from "./time-windows";
 import { worstValue, lowestValue } from "./time-windows";
 
-export type OrganSystem = "respiratory" | "renal" | "cardiovascular";
+type OrganSystem = "respiratory" | "renal" | "cardiovascular";
 
-export type MarshallSystemScore = {
+type MarshallSystemScore = {
   system: OrganSystem;
   score: number | null; // null = not evaluable
   organFailure: boolean; // score ≥ 2
@@ -222,5 +222,3 @@ export function classifyAtlanta(a: AtlantaInput): AtlantaResult {
     rationale: "No organ failure and no local or systemic complication.",
   };
 }
-
-export { PERSISTENCE_HOURS };

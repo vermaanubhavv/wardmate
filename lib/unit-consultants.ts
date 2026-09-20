@@ -19,7 +19,7 @@ const ROMAN: Record<string, number> = { i: 1, ii: 2, iii: 3, iv: 4 };
  * The unit number (1–4) written into a free-text ward name — "Unit 3", "UNIT-III",
  * "General Surgery Unit 2". Null when the name carries no unambiguous 1–4.
  */
-export function unitNumberFromName(name: string | null | undefined): 1 | 2 | 3 | 4 | null {
+function unitNumberFromName(name: string | null | undefined): 1 | 2 | 3 | 4 | null {
   if (!name) return null;
   const s = name.toLowerCase();
 

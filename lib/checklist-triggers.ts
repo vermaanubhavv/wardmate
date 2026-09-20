@@ -18,7 +18,7 @@
  * Pure. The caller builds a `TriggerContext` from the patient's observations and dates.
  */
 
-export type TriggerCondition =
+type TriggerCondition =
   /** A regex (case-insensitive) matches somewhere in the recorded values, NOT immediately
    *  preceded by a negation — "no past jaundice" does not count. */
   | { type: "history"; pattern: string }

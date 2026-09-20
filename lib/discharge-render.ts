@@ -319,4 +319,4 @@ export function formatDischargePlainText(doc: DischargeDocument): string {
   return out.join("\n");
 }
 
-export { istDay as dischargeDocIstDay, istDateTime as dischargeDocIstDateTime, medLine, procedureLines };
+export { medLine, procedureLines };

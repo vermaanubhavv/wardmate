@@ -19,7 +19,7 @@ import { getWardFormats } from "@/lib/formats";
  * (lib/discharge-checks.ts), the printable document (lib/discharge-render.ts) and the Word
  * export. Keeping it in one place is why a fix to any of those cannot leave the others behind.
  */
-export type DischargePatient = {
+type DischargePatient = {
   id: string;
   ward_id: string;
   display_name: string;
@@ -59,7 +59,7 @@ export type DischargeRow = {
   authentication: unknown;
 };
 
-export type DischargeDoctor = {
+type DischargeDoctor = {
   display_name: string | null;
   designation: string | null;
   department: string | null;

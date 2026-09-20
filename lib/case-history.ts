@@ -23,7 +23,7 @@
  * examination should not be read two different ways depending only on which day it was written.
  */
 
-export type HistoryLine = { id: string; text: string };
+type HistoryLine = { id: string; text: string };
 
 export type HistorySection = {
   key:
@@ -246,9 +246,6 @@ function sectionFor(label: string): HistorySection["key"] | null {
  *  everything else. Exposed so the case-history workspace groups lines exactly the way the
  *  summary does, rather than keeping its own copy of the alias table. */
 export const caseHistorySectionOf = sectionFor;
-
-/** The always-shown sections, in the order a case sheet is written. */
-export const CASE_HISTORY_SECTIONS = SECTIONS.map((s) => ({ key: s.key, label: s.label }));
 
 export function summariseCaseHistory<
   T extends { id: string; kind: string; label: string; value_text: string | null },

@@ -27,8 +27,8 @@ async function activeInstances(supabase: Awaited<ReturnType<typeof createClient>
 // Patient-page score cards
 // ---------------------------------------------------------------------------
 
-export type AssessOption = { label: string; normal: boolean };
-export type ScoreAssess = { componentId: string; question: string; options: AssessOption[] };
+type AssessOption = { label: string; normal: boolean };
+type ScoreAssess = { componentId: string; question: string; options: AssessOption[] };
 
 export type ScoreCardView = {
   instanceId: string;

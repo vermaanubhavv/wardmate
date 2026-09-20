@@ -21,7 +21,7 @@ import {
  * dropped, so the extension can say "3 of 5 filled, 2 need linking" instead of silently
  * entering a shorter prescription than the doctor wrote.
  */
-export type EsicMedication = {
+type EsicMedication = {
   drug: string;
   formulary: string | null;
   doseValue: string | null;

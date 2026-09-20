@@ -71,11 +71,11 @@ export const HISTORY_SECTION_LABEL: Record<string, string> = {
  * Performance status sits with the examination rather than the history, because it is
  * something you judge from the patient in front of you, not something you are told.
  */
-export const SPECIALTY_HISTORY_SECTIONS: Record<string, RoutableSection[]> = {
+const SPECIALTY_HISTORY_SECTIONS: Record<string, RoutableSection[]> = {
   medical_oncology: ["onco_disease", "onco_treatment", "onco_cycle", "onco_toxicity"],
 };
 
-export const SPECIALTY_EXAM_SECTIONS: Record<string, RoutableSection[]> = {
+const SPECIALTY_EXAM_SECTIONS: Record<string, RoutableSection[]> = {
   // NCCN/ASCO-style oncology survey: what a routine surgical exam has no place to record —
   // node-station-by-node-station findings, mucositis and skin toxicity, and the line the
   // chemotherapy actually goes through. Performance status sits with these because, like them,

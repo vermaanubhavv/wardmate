@@ -216,7 +216,7 @@ export async function dropRecording(id: string) {
   }
 }
 
-export async function listPending(): Promise<Pending[]> {
+async function listPending(): Promise<Pending[]> {
   const all = await tx<Pending[]>("readonly", (s) => s.getAll() as IDBRequest<Pending[]>);
   // Oldest first: a round is dictated in bed order, and it should arrive in that order.
   return all.sort((a, b) => a.queuedAt.localeCompare(b.queuedAt));

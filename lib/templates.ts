@@ -9,7 +9,7 @@ import {
   type TriggerContext,
 } from "@/lib/checklist-triggers";
 
-export type TemplateItem = {
+type TemplateItem = {
   id: string;
   label: string;
   aliases: string[];
@@ -213,7 +213,7 @@ export const listTemplateChoices = cache(async function listTemplateChoices(
 
 /** The key a patient's operation is looked up under. Kept in one place so the ward list and
  *  the patient screen cannot disagree about how family and variant combine. */
-export function procedureKey(p: {
+function procedureKey(p: {
   template_family: string | null;
   template_variant: string | null;
 }): string | null {

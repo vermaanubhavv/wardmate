@@ -40,34 +40,24 @@ import { matchDischargeTemplateFor } from "@/lib/specialty/discharge";
 // Matched on the LABEL the extractor gave an observation — for a photographed OT note that
 // comes from the headings on the page itself (see the OPERATION_SECTIONS list in the
 // prepare-discharge store route).
-export const OPERATIVE_LABEL = /\b(operative|operation|finding|procedure|intra[- ]?op)\b/i;
-export const POST_OP_LABEL = /\bpost[- ]?op(erative)?\b/i;
-export const ANAESTHESIA_LABEL = /\b(an(a)?esthesia|an(a)?esthetic|\bga\b|spinal|epidural|\bla\b|local)\b/i;
+const OPERATIVE_LABEL = /\b(operative|operation|finding|procedure|intra[- ]?op)\b/i;
+const POST_OP_LABEL = /\bpost[- ]?op(erative)?\b/i;
+const ANAESTHESIA_LABEL = /\b(an(a)?esthesia|an(a)?esthetic|\bga\b|spinal|epidural|\bla\b|local)\b/i;
 /** The pathology / HPE report is prose, not a number, so it is matched by label like radiology. */
 export const PATHOLOGY_LABEL = /\b(hpe|histopath\w*|biopsy|specimen)\b/i;
 /** A complication the resident named as one — not a judgement this file makes from wording. */
-export const COMPLICATION_LABEL =
+const COMPLICATION_LABEL =
   /\b(complication|ssi|surgical site infection|wound infection|dehiscence|burst abdomen|anastomotic leak|\bleak\b|collection|abscess|atelectasis|pneumonia|\bdvt\b|pulmonary embolism|\bpe\b|ileus|re-?exploration|re-?laparotomy|sepsis|bile leak|haematoma|hemorrhage|haemorrhage|re-?admission)\b/i;
 /** A job that the patient themselves has to do — an OPD visit, a suture removal. */
-export const PATIENT_ACTION_LABEL =
+const PATIENT_ACTION_LABEL =
   /\b(opd|follow[\s-]?up|review in|suture removal|staple removal|stitch removal|remove sutures|remove staples|dressing|come back|revisit|report to|attend)\b/i;
-
-const istDay = (iso: string | null): string | null =>
-  iso
-    ? new Date(iso).toLocaleDateString("en-GB", {
-        timeZone: "Asia/Kolkata",
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
-    : null;
 
 /** yyyy-mm-dd from an ISO instant or date, for a date input. */
 const isoDate = (v: string | null): string | null => (v ? v.slice(0, 10) : null);
 
 /** The point of the Histopathology card for a resident is that the report gets TRACED — what
  *  specimen was sent is secondary. So a compiled row always carries this line. */
-export const HPE_REVIEW_PLAN = "Review the histopathology report at the Surgery OPD follow-up.";
+const HPE_REVIEW_PLAN = "Review the histopathology report at the Surgery OPD follow-up.";
 
 /**
  * The specimen an operation sends for histopathology, from its name — the same fixed-table
@@ -97,7 +87,7 @@ const SPECIMEN_RULES: { match: RegExp; specimen: string | "none" }[] = [
   { match: /hydrocelectom|eversion of (the )?sac|jaboulay|lord'?s (plication|procedure)/i, specimen: "none" },
 ];
 
-export function specimenForProcedure(name: string | null | undefined): string | "none" | null {
+function specimenForProcedure(name: string | null | undefined): string | "none" | null {
   const n = (name ?? "").trim();
   if (!n) return null;
   return SPECIMEN_RULES.find((r) => r.match.test(n))?.specimen ?? null;
@@ -105,7 +95,7 @@ export function specimenForProcedure(name: string | null | undefined): string | 
 
 /** A histopathology row for the specimen an operation sends — pending, with the review plan
  *  that makes it get traced. Returns null when the operation routinely sends nothing. */
-export function pendingHistopathologyFor(
+function pendingHistopathologyFor(
   procedureName: string | null | undefined,
   surgeryDate: string | null
 ): HistopathologySpecimen | null {
@@ -536,6 +526,3 @@ export function compileDischargeDraft(
 
   return template ? applyDischargeTemplate(base, template, options?.seedAll ?? false) : base;
 }
-
-/** For the console-test script and the compile digest — the human-readable admission date. */
-export { istDay as dischargeIstDay };

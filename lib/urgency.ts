@@ -1,4 +1,4 @@
-export const URGENCY_ORDER = ["red", "yellow", "green", null] as const;
+const URGENCY_ORDER = ["red", "yellow", "green", null] as const;
 
 export type Urgency = "red" | "yellow" | "green" | null;
 
@@ -123,7 +123,7 @@ export function describeWhen(text: string, recordedAtIso: string, now: string = 
 
 /** Whole days between two instants, by IST calendar date rather than elapsed hours: a job
  *  said at 11pm and read at 8am the next morning is one day old, not zero. */
-export function daysApart(fromIso: string, toIso: string): number {
+function daysApart(fromIso: string, toIso: string): number {
   const from = new Date(`${istDate(fromIso)}T00:00:00Z`).getTime();
   const to = new Date(`${istDate(toIso)}T00:00:00Z`).getTime();
   return Math.round((to - from) / 86_400_000);

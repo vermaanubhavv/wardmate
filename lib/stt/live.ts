@@ -18,7 +18,7 @@ import { buildDeepgramParams } from "@/lib/transcription/buildDeepgramUrl";
  * cannot change them mid-session — so they are chosen server-side and passed in here.
  */
 
-export const DEEPGRAM_WSS = "wss://api.deepgram.com/v1/listen";
+const DEEPGRAM_WSS = "wss://api.deepgram.com/v1/listen";
 
 export type LiveDictationHandlers = {
   /** Speech detected — for the "listening" animation. */
