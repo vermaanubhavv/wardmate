@@ -109,48 +109,50 @@ export const OBSTETRICS_GYNAECOLOGY: MedicalLexiconEntry[] = [
   drug("misoprostol", ["cytotec"]),
 
   // --- Hypertensive and haemorrhagic emergencies --------------------------------------
-  dx("pregnancy-induced hypertension", ["PIH", "gestational hypertension"], ["pih"]),
+  dx("pregnancy-induced hypertension", ["PIH", "gestational hypertension"]),
   // "PE" is deliberately absent as a bare alias — it substring-matches inside "operative" (and
   // so fires as a false "context trigger" on any post-op patient), the same collision class as
   // the "RA"/"ALA" bug documented in docs/specialty-packs.md §9. The longer, safe forms carry
   // the term instead; also ambiguous with pulmonary embolism on a ward that sees both.
   dx("pre-eclampsia", ["preeclampsia", "severe pre-eclampsia"]),
-  dx("eclampsia", ["eclamptic fit"], ["eclampsia"]),
+  dx("eclampsia", ["eclamptic fit"]),
+  // "eclampsia"/"pre-eclampsia" as explicit triggers here are legitimate — they pull this drug
+  // in from a DIFFERENT entry's diagnosis text, not a duplicate of magnesium sulfate's own name.
   drug("magnesium sulfate", ["MgSO4", "Mag sulf", "magsulf"], ["eclampsia", "pre-eclampsia"]),
-  dx("antepartum haemorrhage", ["APH", "antepartum hemorrhage"], ["aph"]),
-  dx("postpartum haemorrhage", ["PPH", "postpartum hemorrhage"], ["pph"]),
-  dx("placenta praevia", ["placenta previa"], ["placenta praevia"]),
-  dx("abruptio placentae", ["placental abruption", "abruption"], ["abruption"]),
+  dx("antepartum haemorrhage", ["APH", "antepartum hemorrhage"]),
+  dx("postpartum haemorrhage", ["PPH", "postpartum hemorrhage"]),
+  dx("placenta praevia", ["placenta previa"]),
+  dx("abruptio placentae", ["placental abruption", "abruption"]),
   dx("uterine atony", ["atonic PPH", "atonic uterus"], ["atony"]),
   dx("retained placenta", ["retained products of conception", "RPOC"]),
   dx("PPH drill", ["obstetric emergency drill", "code obstetric"]),
 
   // --- Diabetes, Rh status and fetal wellbeing ----------------------------------------
-  dx("gestational diabetes mellitus", ["GDM"], ["gdm"]),
+  dx("gestational diabetes mellitus", ["GDM"]),
   test("OGTT", ["oral glucose tolerance test"]),
   dx("Rh negative", ["Rh-negative", "rhesus negative"]),
   // "anti-D" (the bare hyphenated form) dropped — collides with "anti-dsDNA"/"anti-ds-DNA",
   // the lupus autoantibody test already in the medicine lexicon.
   drug("anti-D injection", ["Rhogam"]),
-  dx("IUGR", ["intrauterine growth restriction", "fetal growth restriction", "FGR"], ["iugr"]),
-  dx("oligohydramnios", ["reduced liquor", "decreased AFI"], ["oligohydramnios"]),
-  dx("polyhydramnios", ["increased liquor", "increased AFI"], ["polyhydramnios"]),
+  dx("IUGR", ["intrauterine growth restriction", "fetal growth restriction", "FGR"]),
+  dx("oligohydramnios", ["reduced liquor", "decreased AFI"]),
+  dx("polyhydramnios", ["increased liquor", "increased AFI"]),
   test("AFI", ["amniotic fluid index"]),
   dx("fetal heart sound", ["FHS", "FHR", "fetal heart rate"]),
-  dx("intrauterine death", ["IUD", "IUFD", "intrauterine fetal death"], ["iufd"]),
+  dx("intrauterine death", ["IUD", "IUFD", "intrauterine fetal death"]),
 
   // --- Early pregnancy and gynaecology -------------------------------------------------
   dx("ectopic pregnancy", ["tubal pregnancy", "ruptured ectopic"], ["ectopic"]),
-  dx("missed abortion", ["missed miscarriage"], ["missed abortion"]),
-  dx("incomplete abortion", ["incomplete miscarriage"], ["incomplete abortion"]),
-  dx("threatened abortion", ["threatened miscarriage"], ["threatened abortion"]),
+  dx("missed abortion", ["missed miscarriage"]),
+  dx("incomplete abortion", ["incomplete miscarriage"]),
+  dx("threatened abortion", ["threatened miscarriage"]),
   proc("MTP", ["medical termination of pregnancy", "termination of pregnancy"]),
   proc("D&C", ["dilatation and curettage", "D and C"]),
   proc("evacuation", ["suction evacuation", "MVA", "manual vacuum aspiration"]),
-  dx("molar pregnancy", ["hydatidiform mole", "H mole"], ["molar pregnancy"]),
-  dx("PCOD", ["PCOS", "polycystic ovarian disease", "polycystic ovary syndrome"], ["pcod", "pcos"]),
+  dx("molar pregnancy", ["hydatidiform mole", "H mole"]),
+  dx("PCOD", ["PCOS", "polycystic ovarian disease", "polycystic ovary syndrome"]),
   dx("fibroid uterus", ["uterine fibroid", "leiomyoma"], ["fibroid"]),
-  dx("ovarian cyst", ["adnexal cyst", "ovarian mass"], ["ovarian cyst"]),
+  dx("ovarian cyst", ["adnexal cyst", "ovarian mass"]),
   dx("adnexal torsion", ["ovarian torsion"], ["torsion"]),
   proc("TAH", ["total abdominal hysterectomy"]),
   proc("VH", ["vaginal hysterectomy"]),
@@ -159,6 +161,6 @@ export const OBSTETRICS_GYNAECOLOGY: MedicalLexiconEntry[] = [
   proc("laparoscopic tubal ligation", ["LTL"]),
   proc("colposcopy", ["colposcopy done"]),
   test("Pap smear", ["Papanicolaou smear", "pap test"]),
-  dx("PID", ["pelvic inflammatory disease"], ["pid"]),
-  dx("abnormal uterine bleeding", ["AUB", "dysfunctional uterine bleeding", "DUB"], ["aub", "dub"]),
+  dx("PID", ["pelvic inflammatory disease"]),
+  dx("abnormal uterine bleeding", ["AUB", "dysfunctional uterine bleeding", "DUB"]),
 ];
