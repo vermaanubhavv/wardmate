@@ -25,6 +25,18 @@ import PatientTabs from "./patient-tabs";
 import EditIdentity from "../edit-identity";
 import UrgencyDot from "./urgency-dot";
 import { ChevronIcon } from "../../icons";
+import {
+  Activity,
+  ClipboardX,
+  CircleAlert,
+  Droplets,
+  HeartPulse,
+  ListChecks,
+  Pill,
+  Stethoscope,
+  Thermometer,
+  type LucideIcon,
+} from "lucide-react";
 import { quoteAddsNothing } from "@/lib/dedupe-tasks";
 import Tick from "./tick";
 import EntryCard from "./entry-card";
@@ -231,6 +243,19 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const days = groupByDay(sittings);
   const todayKey = istDayKey(new Date().toISOString());
 
+  // The banner's left edge, same language as the ward row: red for a flagged latest vital,
+  // amber while something is unconfirmed, green once nothing is open. A colour, not a verdict —
+  // nothing here is stored or claimed beyond what the numbers below already show.
+  const hasFlaggedVital = latestVitalTiles(allObservations).some((t) => t.flag);
+  const bannerEdge = hasFlaggedVital
+    ? "border-l-critical-dot"
+    : pending.length > 0
+      ? "border-l-warn-dot"
+      : openTasks.length + scoringTasks.length === 0
+        ? "border-l-good-dot"
+        : "border-l-transparent";
+  const openCount = openTasks.length + scoringTasks.length;
+
   const procedure = procedureFor(patient, procedures);
   const caseHistoryDiagnosis = caseHistoryEntries
     .flatMap((entry) => entry.observations)
@@ -295,7 +320,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           to-do built on a misheard number is worse than a to-do done late. */}
       {pending.length > 0 && (
         <section className="px-4 pb-6">
-          <p className="ios-group-header mb-2 px-4 text-orange-700">
+          <p className="ios-group-header mb-2 flex items-center gap-1.5 px-4 text-warn-fg">
+            <CircleAlert className="h-3.5 w-3.5" strokeWidth={2.4} />
             Confirm dictation
           </p>
           <ConfirmDictation
@@ -309,7 +335,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
       {(openTasks.length > 0 || doneTasks.length > 0 || scoringTasks.length > 0) && (
         <section className="px-4 pb-6">
-          <p className="ios-group-header mb-2 px-4">
+          <p className="ios-group-header mb-2 flex items-center gap-1.5 px-4">
+            <ListChecks className="h-3.5 w-3.5 text-accent" strokeWidth={2.4} />
             Advices, plans &amp; to do
             {openTasks.length + scoringTasks.length > 0 ? ` · ${openTasks.length + scoringTasks.length}` : ""}
           </p>
@@ -408,7 +435,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           <div className="mb-2 flex items-baseline gap-2 px-4">
             <span className="ios-group-header">Today</span>
             {missing.length > 0 && (
-              <span className="shrink-0 text-[13px] text-orange-700 tabular-nums">
+              <span className="shrink-0 text-[13px] text-warn-fg tabular-nums">
                 {missing.length} not recorded
               </span>
             )}
@@ -487,7 +514,10 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           each row keeps the words it came from, so it is never only the app's paraphrase. */}
       {medications.length > 0 && (
         <section className="px-4 pb-6">
-          <p className="ios-group-header mb-2 px-4">Treatment</p>
+          <p className="ios-group-header mb-2 flex items-center gap-1.5 px-4">
+            <Pill className="h-3.5 w-3.5 text-accent" strokeWidth={2.4} />
+            Treatment
+          </p>
           <ul className="ios-group divide-y divide-line">
             {medications.map((m) => (
               <li key={m.id} className="px-4 py-2.5">
@@ -735,7 +765,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             it — nobody rounding on a post-op patient reads "diagnosis" first. Before that, there
             is no operation to lead with, so the diagnosis takes the same top spot instead, with
             the phase of care (Pre-op / Conservative / Workup) as its own parenthetical. */}
-        <div className="ios-group mt-5">
+        <div className={"ios-group mt-5 border-l-[4px] " + bannerEdge}>
           {/* The day count and what it counts from, with the note one tap away — read together,
               because the banner is where the eye lands and "what did we write today" is the
               question most often asked from it. */}
@@ -789,6 +819,14 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             label="Co-morbidities"
             value={comorbidities.length > 0 ? comorbidities.join(" · ") : "Not recorded"}
           />
+        </div>
+
+        {/* The three counts this page already works out, so they need not be added up from the
+            sections below. "Not recorded" is amber, not red: it is a gap to fill, not an alarm. */}
+        <div className="mt-2 grid grid-cols-3 gap-2">
+          <CountTile icon={ListChecks} value={openCount} label="To do" tone="neutral" />
+          <CountTile icon={CircleAlert} value={pending.length} label="To confirm" tone={pending.length > 0 ? "warn" : "neutral"} />
+          <CountTile icon={ClipboardX} value={missing.length} label="Not recorded" tone={missing.length > 0 ? "warn" : "neutral"} />
         </div>
       </header>
 
@@ -1001,23 +1039,23 @@ const PAC_META: Record<
 > = {
   fit: {
     word: "Fit",
-    chip: "border-emerald-300 bg-emerald-50 text-emerald-800",
-    dot: "bg-emerald-500",
+    chip: "bg-good-bg text-good-fg",
+    dot: "bg-good-dot",
   },
   fit_with_conditions: {
     word: "Fit \u2014 conditions",
-    chip: "border-amber-300 bg-amber-50 text-amber-900",
-    dot: "bg-amber-500",
+    chip: "bg-warn-bg text-warn-fg",
+    dot: "bg-warn-dot",
   },
   unfit: {
     word: "Unfit",
-    chip: "border-red-300 bg-red-50 text-red-800",
-    dot: "bg-red-500",
+    chip: "bg-critical-bg text-critical-fg",
+    dot: "bg-critical-dot",
   },
   pending: {
     word: "Pending",
-    chip: "border-orange-300 bg-orange-50 text-orange-800",
-    dot: "bg-orange-400",
+    chip: "bg-warn-bg text-warn-fg",
+    dot: "bg-warn-dot",
   },
 };
 
@@ -1045,23 +1083,41 @@ const PAC_META: Record<
  */
 const CHARTED_VITALS = new Set(["bp", "pr", "spo2", "temp"]);
 
-function VitalsPanel({ observations }: { observations: Observation[] }) {
+/** Readings grouped by the moment they were said, newest first, plus the latest set's tiles. */
+function vitalSets(observations: Observation[]) {
   const readings = observations.filter(
     (o) => CHARTED_VITALS.has(matchVitalLabel(o.label) ?? "") && o.value_text
   );
-  if (readings.length === 0) return null;
-
   // Vitals said in the same breath share one recorded_at, because they come from a single
   // insert with no per-row timestamp — see app/api/entries/voice/route.ts. Grouping on it turns
   // "BP 90/50, PR 110, SpO2 91" back into the one reading it was, rather than three.
   const byTime = new Map<string, Observation[]>();
   for (const o of readings) byTime.set(o.recorded_at, [...(byTime.get(o.recorded_at) ?? []), o]);
   const sets = [...byTime.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
+  const latest = sets[0];
+  const tiles = latest
+    ? latest[1].flatMap((o) =>
+        classifyVital(o.label, o.value_text).map((c) => ({ ...c, id: `${o.id}-${c.label}` }))
+      )
+    : [];
+  return { sets, tiles };
+}
 
-  const [[latestTime, latestObs], ...earlier] = sets;
-  const tiles = latestObs.flatMap((o) =>
-    classifyVital(o.label, o.value_text).map((c) => ({ ...c, id: `${o.id}-${c.label}` }))
-  );
+function latestVitalTiles(observations: Observation[]) {
+  return vitalSets(observations).tiles;
+}
+
+const VITAL_ICONS: Record<string, LucideIcon> = {
+  bp: Activity,
+  pr: HeartPulse,
+  spo2: Droplets,
+  temp: Thermometer,
+};
+
+function VitalsPanel({ observations }: { observations: Observation[] }) {
+  const { sets, tiles } = vitalSets(observations);
+  if (sets.length === 0) return null;
+  const [[latestTime], ...earlier] = sets;
 
   return (
     <section className="px-4 pb-6">
@@ -1070,28 +1126,39 @@ function VitalsPanel({ observations }: { observations: Observation[] }) {
         <p className="text-[13px] text-muted">{vitalsWhen(latestTime)}</p>
       </div>
 
-      {/* One card, not a tile each — a grid of separately bordered boxes read as its own
-          dashboard sitting on top of the page rather than another line in the same record. */}
-      <div className="ios-group flex flex-wrap gap-x-4 gap-y-2 px-4 py-3">
-        {tiles.map((t) => (
-          <div key={t.id} className="min-w-[4.5rem]">
-            <span className="text-[11px] uppercase tracking-wide text-muted">{t.label}</span>{" "}
-            <span
-              className={
-                "text-[15px] font-semibold tabular-nums " +
-                (t.flag ? "text-red-600" : "text-foreground")
-              }
+      <div className="grid grid-cols-2 gap-2">
+        {tiles.map((t) => {
+          const Icon = VITAL_ICONS[matchVitalLabel(t.label) ?? ""] ?? Activity;
+          return (
+            <div
+              key={t.id}
+              className={"flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 " + (t.flag ? "bg-critical-bg" : "bg-card")}
             >
-              {t.value}
-            </span>
-            {/* The range rides along with the flag rather than the flag standing alone —
-                a colour with no stated reason is exactly the "trust me" the rival app asks
-                for. This one shows its work. */}
-            {t.flag && (
-              <span className="ml-1 text-[11px] font-medium text-red-600">({t.range})</span>
-            )}
-          </div>
-        ))}
+              <span
+                className={
+                  "grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[9px] " +
+                  (t.flag ? "bg-critical-fg/10 text-critical-fg" : "bg-chip text-accent")
+                }
+              >
+                <Icon className="h-[16px] w-[16px]" strokeWidth={2.2} />
+              </span>
+              <div className="min-w-0">
+                <span className="block text-[11px] uppercase tracking-wide text-muted">{t.label}</span>
+                <span
+                  className={
+                    "text-[17px] font-semibold tabular-nums " + (t.flag ? "text-critical-fg" : "text-foreground")
+                  }
+                >
+                  {t.value}
+                </span>
+                {/* The range rides along with the flag rather than the flag standing alone —
+                    a colour with no stated reason is exactly the "trust me" the rival app asks
+                    for. This one shows its work. */}
+                {t.flag && <span className="ml-1 text-[11px] font-medium text-critical-fg">({t.range})</span>}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {earlier.length > 0 && (
@@ -1147,14 +1214,17 @@ function PacSection({ pac }: { pac: Observation[] }) {
     <section className="px-4 pb-6">
       <details className="ios-group [&[open]_.pac-chev]:rotate-90">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[15px] font-semibold active:bg-chip [&::-webkit-details-marker]:hidden">
-          <span>Pre-anaesthetic checkup</span>
+          <span className="flex items-center gap-2">
+            <Stethoscope className="h-4 w-4 text-accent" strokeWidth={2.2} />
+            Pre-anaesthetic checkup
+          </span>
           <span className="flex items-center gap-2">
             {/* The verdict rides on the closed card, because on the morning of a list this one
                 word is the entire reason anyone opens this patient. */}
             <span
               className={
-                "rounded-full border px-2 py-0.5 text-[12px] font-semibold " +
-                (meta ? meta.chip : "border-orange-300 bg-orange-50 text-orange-800")
+                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-semibold " +
+                (meta ? meta.chip : "bg-warn-bg text-warn-fg")
               }
             >
               {meta ? meta.word : "Not recorded"}
@@ -1372,7 +1442,7 @@ function CameDue({ observation }: { observation: Observation }) {
   const effective = effectiveUrgency(observation);
   if (!effective.note) return null;
 
-  return <span className="ml-2 whitespace-nowrap text-xs text-red-600">— {effective.note}</span>;
+  return <span className="ml-2 whitespace-nowrap text-xs text-critical-fg">— {effective.note}</span>;
 }
 
 /** A fact in the patient identity block. The long text gets room; the label stays scannable. */
@@ -1384,9 +1454,45 @@ function SummaryRow({
   value: string;
 }) {
   return (
-    <div className="ios-row px-4 py-3">
-      <dt className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">{label}</dt>
-      <dd className="mt-0.5 text-[16px] leading-snug">{value}</dd>
+    <div className="ios-row flex items-start gap-2.5 px-4 py-3">
+      <HeartPulse className="mt-0.5 h-4 w-4 shrink-0 text-muted" strokeWidth={2.2} />
+      <div className="min-w-0">
+        <dt className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">{label}</dt>
+        <dd className="mt-0.5 text-[16px] leading-snug">{value}</dd>
+      </div>
+    </div>
+  );
+}
+
+/** One of the header's three counts — same look as the ward page's StatTile, without the link. */
+function CountTile({
+  icon: Icon,
+  value,
+  label,
+  tone,
+}: {
+  icon: LucideIcon;
+  value: number;
+  label: string;
+  tone: "neutral" | "warn";
+}) {
+  const warn = tone === "warn";
+  return (
+    <div className={"flex flex-col gap-1.5 rounded-[12px] px-3 py-2.5 " + (warn ? "bg-warn-bg" : "bg-card")}>
+      <span
+        className={
+          "grid h-[24px] w-[24px] place-items-center rounded-[7px] " +
+          (warn ? "bg-warn-fg/10 text-warn-fg" : "bg-chip text-accent")
+        }
+      >
+        <Icon className="h-[15px] w-[15px]" strokeWidth={2.3} />
+      </span>
+      <span>
+        <span className={"block text-[20px] font-bold leading-none tabular-nums " + (warn ? "text-warn-fg" : "text-foreground")}>
+          {value}
+        </span>
+        <span className={"mt-0.5 block text-[12px] " + (warn ? "text-warn-fg" : "text-muted")}>{label}</span>
+      </span>
     </div>
   );
 }
