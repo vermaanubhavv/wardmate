@@ -2,7 +2,8 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PAPER_KINDS, type PaperKind } from "@/lib/read-paper";
+import { Camera, Check, CircleAlert, FlaskConical, LoaderCircle, TriangleAlert } from "lucide-react";
+import type { PaperKind } from "@/lib/read-paper";
 
 type LabValue = {
   label: string;
@@ -38,6 +39,8 @@ type Page = {
   include: boolean;
 };
 
+const MAX_PER_BATCH = 10;
+
 /**
  * Prepare discharge: the papers in, read, checked by the resident, then stored.
  *
@@ -52,11 +55,20 @@ export default function Prepare({ patientId }: { patientId: string }) {
   const [pages, setPages] = useState<Page[]>([]);
   const [storing, setStoring] = useState(false);
   const [storeError, setStoreError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   async function addFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
+    // Every photo is a paid read. A cap per batch stops one enthusiastic pile of thirty from
+    // becoming a bill; the rest can be added in the next batch, on purpose.
+    const chosen = Array.from(files).slice(0, MAX_PER_BATCH);
+    setNotice(
+      files.length > MAX_PER_BATCH
+        ? `Only the first ${MAX_PER_BATCH} photos were read. Add the rest in another batch.`
+        : null
+    );
 
-    const fresh: Page[] = Array.from(files).map((file) => ({
+    const fresh: Page[] = chosen.map((file) => ({
       id: crypto.randomUUID(),
       fileName: file.name,
       status: "reading",
@@ -77,9 +89,10 @@ export default function Prepare({ patientId }: { patientId: string }) {
 
     // One request per page, so a page that fails fails alone and the rest keep going.
     await Promise.all(
-      Array.from(files).map(async (file, i) => {
+      chosen.map(async (file, i) => {
         const body = new FormData();
         body.append("photo", file);
+        body.append("labOnly", "1");
         try {
           const res = await fetch(`/api/patients/${patientId}/prepare-discharge/read`, {
             method: "POST",
@@ -120,7 +133,11 @@ export default function Prepare({ patientId }: { patientId: string }) {
     );
   }
 
-  const ready = pages.filter((p) => p.status === "read" && p.include);
+  // Only investigation reports go into the record from this screen. Anything else the model
+  // recognises is shown, left out, and never stored — the case sheet and OT note already have
+  // their own routes in, and storing them here would be extra work nobody asked for.
+  const isInvestigation = (p: Page) => p.kind === "lab_report";
+  const ready = pages.filter((p) => p.status === "read" && p.include && isInvestigation(p));
 
   async function store() {
     setStoring(true);
@@ -136,10 +153,7 @@ export default function Prepare({ patientId }: { patientId: string }) {
             photoPath: p.photoPath,
             labValues: p.kind === "lab_report" ? p.labValues : null,
             model: p.model,
-            markOperated:
-              p.kind === "ot_note" && p.markOperated && p.procedure && p.surgeryDate
-                ? { procedure: p.procedure, surgeryDate: p.surgeryDate }
-                : null,
+            markOperated: null,
           })),
         }),
       });
@@ -179,28 +193,56 @@ export default function Prepare({ patientId }: { patientId: string }) {
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink"
+        className="flex items-center justify-center gap-2 rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink"
       >
-        {pages.length === 0 ? "Add the papers" : "Add more papers"}
+        <Camera className="h-5 w-5" strokeWidth={2.2} />
+        {pages.length === 0 ? "Add investigation reports" : "Add more reports"}
       </button>
+
+      {notice && <p className="text-[13px] leading-relaxed text-warn-fg">{notice}</p>}
 
       {pages.length === 0 && (
         <p className="text-[13px] leading-relaxed text-muted">
-          Photograph the case sheet, the OT note, the lab reports, the prescription — all of them,
-          in any order. Each page is read on its own and shown to you before anything is stored.
+          Photograph the investigation reports — blood tests and the like. Each page is read on its
+          own and shown to you before anything is stored. Other kinds of paper are left out.
         </p>
       )}
 
       {pages.map((page) => (
-        <div key={page.id} className="ios-group p-4">
+        <div key={page.id} className={"p-4 " + (page.status === "failed" ? "rounded-[12px] bg-critical-bg" : "ios-group")}>
           <div className="flex items-baseline justify-between gap-3">
             <span className="truncate text-[13px] text-muted">{page.fileName}</span>
-            {page.status === "reading" && <span className="shrink-0 text-[13px] text-muted">Reading…</span>}
-            {page.status === "failed" && <span className="shrink-0 text-[13px] text-orange-700">Could not read</span>}
+            {page.status === "reading" && (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-chip px-2 py-0.5 text-[12px] font-semibold text-muted">
+                <LoaderCircle className="h-3 w-3 animate-spin" strokeWidth={2.6} />
+                Reading…
+              </span>
+            )}
+            {page.status === "failed" && (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-critical-bg px-2 py-0.5 text-[12px] font-semibold text-critical-fg">
+                <TriangleAlert className="h-3 w-3" strokeWidth={2.6} />
+                Could not read
+              </span>
+            )}
+            {page.status === "read" && (
+              <span
+                className={
+                  "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-semibold " +
+                  (isInvestigation(page) ? "bg-good-bg text-good-fg" : "bg-warn-bg text-warn-fg")
+                }
+              >
+                {isInvestigation(page) ? (
+                  <Check className="h-3 w-3" strokeWidth={3} />
+                ) : (
+                  <CircleAlert className="h-3 w-3" strokeWidth={2.6} />
+                )}
+                {isInvestigation(page) ? "Read" : "Not a report"}
+              </span>
+            )}
           </div>
 
           {page.status === "failed" && page.error && (
-            <p className="mt-2 text-[13px] leading-relaxed text-orange-700">{page.error}</p>
+            <p className="mt-2 text-[13px] leading-relaxed text-critical-fg">{page.error}</p>
           )}
 
           {page.status === "read" && (
@@ -210,7 +252,7 @@ export default function Prepare({ patientId }: { patientId: string }) {
                   This page is {page.kindConfidence === "low" && "— I am not sure —"}
                 </span>
                 <select
-                  value={page.kind}
+                  value={isInvestigation(page) ? "lab_report" : "other"}
                   onChange={(e) =>
                     setPages((prev) =>
                       prev.map((p) => (p.id === page.id ? { ...p, kind: e.target.value as PaperKind } : p))
@@ -218,47 +260,20 @@ export default function Prepare({ patientId }: { patientId: string }) {
                   }
                   className="h-12 w-full rounded-[10px] border border-line bg-card px-3 text-[17px] outline-none focus:border-accent"
                 >
-                  {PAPER_KINDS.map((k) => (
-                    <option key={k.kind} value={k.kind}>
-                      {k.label}
-                    </option>
-                  ))}
+                  <option value="lab_report">An investigation report</option>
+                  <option value="other">Something else — leave it out</option>
                 </select>
               </label>
 
               {page.unreadable && (
-                <p className="mt-2 text-[13px] leading-relaxed text-orange-700">
+                <p className="mt-2 text-[13px] leading-relaxed text-warn-fg">
                   Not read on this page: {page.unreadable}
                 </p>
               )}
 
-              {/* The one thing on this screen that changes the patient rather than adding to
-                  the record, so it is the one thing that asks. Only offered when the note
-                  printed both an operation and an unambiguous date. */}
-              {page.kind === "ot_note" && page.procedure && page.surgeryDate && (
-                <label className="mt-3 flex items-start gap-2 rounded-[10px] border border-line p-3 text-[13px] leading-relaxed">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5"
-                    checked={page.markOperated}
-                    onChange={(e) =>
-                      setPages((prev) =>
-                        prev.map((p) =>
-                          p.id === page.id ? { ...p, markOperated: e.target.checked } : p
-                        )
-                      )
-                    }
-                  />
-                  <span>
-                    This note is <span className="font-medium">{page.procedure}</span> on{" "}
-                    <span className="font-medium">{page.surgeryDate}</span>. Mark the patient
-                    post-operative from that date.
-                  </span>
-                </label>
-              )}
-
               {page.kind === "lab_report" && page.labValues && (
-                <p className="mt-2 text-[13px] text-muted">
+                <p className="mt-2 flex items-center gap-1.5 text-[13px] text-muted">
+                  <FlaskConical className="h-3.5 w-3.5 text-good-fg" strokeWidth={2.2} />
                   {page.labValues.length} values read, with the ranges printed beside them.
                 </p>
               )}
@@ -272,6 +287,7 @@ export default function Prepare({ patientId }: { patientId: string }) {
                 </pre>
               </details>
 
+              {isInvestigation(page) && (
               <label className="mt-3 flex items-center gap-2 text-[13px] text-muted">
                 <input
                   type="checkbox"
@@ -284,6 +300,7 @@ export default function Prepare({ patientId }: { patientId: string }) {
                 />
                 Use this page
               </label>
+              )}
             </>
           )}
         </div>
@@ -295,11 +312,11 @@ export default function Prepare({ patientId }: { patientId: string }) {
             type="button"
             disabled={storing}
             onClick={() => void store()}
-            className="rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink disabled:opacity-60"
+            className="flex items-center justify-center gap-2 rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink disabled:opacity-60"
           >
             {storing
               ? "Adding…"
-              : `Add ${ready.length} ${ready.length === 1 ? "page" : "pages"} and open the discharge`}
+              : `Add ${ready.length} ${ready.length === 1 ? "report" : "reports"} and open the discharge`}
           </button>
           <p className="text-[13px] leading-relaxed text-muted">
             Everything read off a photograph is marked for you to confirm — a photograph has no
@@ -309,7 +326,7 @@ export default function Prepare({ patientId }: { patientId: string }) {
         </>
       )}
 
-      {storeError && <p className="text-[13px] leading-relaxed text-orange-700">{storeError}</p>}
+      {storeError && <p className="text-[13px] leading-relaxed text-warn-fg">{storeError}</p>}
     </div>
   );
 }

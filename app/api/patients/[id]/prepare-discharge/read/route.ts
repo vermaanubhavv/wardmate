@@ -63,22 +63,48 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const bytes = Buffer.from(await photo.arrayBuffer());
   const base64 = bytes.toString("base64");
 
+  // The investigations-only screen sends labOnly: one call to the lab reader instead of two.
+  // Every lab report used to be read twice — once to learn what kind of paper it was, again for
+  // its values — and on a screen that accepts nothing else the first read is a fee for
+  // information the second one already answers: a page with no values is not a report.
   let read;
-  try {
-    read = await readPaper(base64, mediaType);
-  } catch (e) {
-    return NextResponse.json(
-      { error: plainAiError(e) },
-      { status: 502 }
-    );
+  let labValuesEarly: Awaited<ReturnType<typeof readLabPhoto>>["values"] | null = null;
+  if (form.get("labOnly") === "1") {
+    let lab;
+    try {
+      lab = await readLabPhoto(base64, mediaType);
+    } catch (e) {
+      return NextResponse.json({ error: plainAiError(e) }, { status: 502 });
+    }
+    const found = lab.values.length > 0;
+    read = {
+      kind: (found ? "lab_report" : "other") as "lab_report" | "other",
+      kindConfidence: "high" as const,
+      // The lines as printed, each already a verbatim quote — nothing composed.
+      transcript: lab.values.map((v) => v.source_quote).join("\n"),
+      unreadable: found ? null : "No investigation values were found on this page.",
+      procedure: null,
+      surgeryDate: null,
+      model: lab.model,
+    };
+    labValuesEarly = found ? lab.values : null;
+  } else {
+    try {
+      read = await readPaper(base64, mediaType);
+    } catch (e) {
+      return NextResponse.json(
+        { error: plainAiError(e) },
+        { status: 502 }
+      );
+    }
   }
 
   // A lab report is read a second time by the reader built for it. That one returns each value
   // with the reference range PRINTED BESIDE IT on the page, which no transcript can carry and
   // no table this app ships could be as authoritative about — same laboratory, same assay,
   // same page as the number. See lib/read-lab-photo.ts.
-  let labValues: Awaited<ReturnType<typeof readLabPhoto>>["values"] | null = null;
-  if (read.kind === "lab_report") {
+  let labValues: Awaited<ReturnType<typeof readLabPhoto>>["values"] | null = labValuesEarly ?? null;
+  if (read.kind === "lab_report" && !labValuesEarly) {
     try {
       labValues = (await readLabPhoto(base64, mediaType)).values;
     } catch {
