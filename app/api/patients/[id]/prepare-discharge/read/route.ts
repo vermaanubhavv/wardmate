@@ -3,6 +3,7 @@ import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
 import { readPaper } from "@/lib/read-paper";
 import { readLabPhoto } from "@/lib/read-lab-photo";
+import { claimPhotoRead } from "@/lib/photo-cap";
 
 const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp"] as const;
 const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
@@ -38,7 +39,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // not on the ward for simply is not found.
   const { data: patient } = await supabase
     .from("current_patients")
-    .select("id")
+    .select("id, ward_id")
     .eq("id", patientId)
     .maybeSingle();
   if (!patient) return NextResponse.json({ error: "Patient not found." }, { status: 404 });
@@ -59,6 +60,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       { status: 415 }
     );
   }
+
+  const capped = await claimPhotoRead(supabase, patient.ward_id);
+  if (capped) return NextResponse.json({ error: capped }, { status: 429 });
 
   const bytes = Buffer.from(await photo.arrayBuffer());
   const base64 = bytes.toString("base64");

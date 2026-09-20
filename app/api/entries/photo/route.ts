@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { readLabPhoto } from "@/lib/read-lab-photo";
+import { claimPhotoRead } from "@/lib/photo-cap";
 import { canonicalLabName } from "@/lib/lab-ranges";
 
 const ALLOWED = ["image/jpeg", "image/png", "image/webp"] as const;
@@ -50,6 +51,9 @@ export async function POST(request: Request) {
     .eq("id", patientId)
     .maybeSingle();
   if (!patient) return NextResponse.json({ error: "Patient not found." }, { status: 404 });
+
+  const capped = await claimPhotoRead(supabase, patient.ward_id);
+  if (capped) return NextResponse.json({ error: capped }, { status: 429 });
 
   // Create the entry first so the stored file can be named after it, keeping the photo and
   // the record that points at it tied together by construction.

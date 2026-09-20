@@ -3,6 +3,8 @@ import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
 import { readPaper } from "@/lib/read-paper";
 import { readLabPhoto } from "@/lib/read-lab-photo";
+import { getCurrentWard } from "@/lib/ward";
+import { claimPhotoRead } from "@/lib/photo-cap";
 
 const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp"] as const;
 const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
@@ -39,6 +41,10 @@ export async function POST(request: Request) {
       { status: 415 }
     );
   }
+
+  const { ward } = await getCurrentWard();
+  const capped = await claimPhotoRead(supabase, ward?.id);
+  if (capped) return NextResponse.json({ error: capped }, { status: 429 });
 
   const base64 = Buffer.from(await photo.arrayBuffer()).toString("base64");
 
