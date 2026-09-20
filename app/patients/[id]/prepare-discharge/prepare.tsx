@@ -39,6 +39,8 @@ type Page = {
   include: boolean;
 };
 
+const MAX_PER_BATCH = 10;
+
 /**
  * Prepare discharge: the papers in, read, checked by the resident, then stored.
  *
@@ -53,11 +55,20 @@ export default function Prepare({ patientId }: { patientId: string }) {
   const [pages, setPages] = useState<Page[]>([]);
   const [storing, setStoring] = useState(false);
   const [storeError, setStoreError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   async function addFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
+    // Every photo is a paid read. A cap per batch stops one enthusiastic pile of thirty from
+    // becoming a bill; the rest can be added in the next batch, on purpose.
+    const chosen = Array.from(files).slice(0, MAX_PER_BATCH);
+    setNotice(
+      files.length > MAX_PER_BATCH
+        ? `Only the first ${MAX_PER_BATCH} photos were read. Add the rest in another batch.`
+        : null
+    );
 
-    const fresh: Page[] = Array.from(files).map((file) => ({
+    const fresh: Page[] = chosen.map((file) => ({
       id: crypto.randomUUID(),
       fileName: file.name,
       status: "reading",
@@ -78,9 +89,10 @@ export default function Prepare({ patientId }: { patientId: string }) {
 
     // One request per page, so a page that fails fails alone and the rest keep going.
     await Promise.all(
-      Array.from(files).map(async (file, i) => {
+      chosen.map(async (file, i) => {
         const body = new FormData();
         body.append("photo", file);
+        body.append("labOnly", "1");
         try {
           const res = await fetch(`/api/patients/${patientId}/prepare-discharge/read`, {
             method: "POST",
@@ -186,6 +198,8 @@ export default function Prepare({ patientId }: { patientId: string }) {
         <Camera className="h-5 w-5" strokeWidth={2.2} />
         {pages.length === 0 ? "Add investigation reports" : "Add more reports"}
       </button>
+
+      {notice && <p className="text-[13px] leading-relaxed text-warn-fg">{notice}</p>}
 
       {pages.length === 0 && (
         <p className="text-[13px] leading-relaxed text-muted">
