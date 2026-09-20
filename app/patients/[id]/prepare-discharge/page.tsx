@@ -33,7 +33,7 @@ export default async function PrepareDischargePage({
       <Link href={`/patients/${id}/discharge`} className="text-[17px] text-accent">
         ‹ Discharge summary
       </Link>
-      <h1 className="mt-3 ios-large-title text-[28px] leading-tight">Read in the paper file</h1>
+      <h1 className="mt-3 ios-large-title text-[28px] leading-tight">Add investigation reports</h1>
       <p className="mt-1 text-[15px] text-muted">
         {patient.display_name}
         {patient.bed ? ` · bed ${patient.bed}` : ""}
