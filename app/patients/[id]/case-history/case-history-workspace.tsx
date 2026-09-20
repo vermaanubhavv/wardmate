@@ -78,6 +78,21 @@ const COMPLAINT_CHIPS = [
 
 const PAST_CHIPS = ["DM", "HTN", "TB (Koch's)", "IHD", "Asthma / COPD", "Thyroid", "Seizure", "CKD"];
 
+/** Personal / addiction history — the standard Indian case-sheet section past history does not
+ *  itself answer (a patient K/C/O nothing can still be a chronic smoker). No "K/C/O" prefix —
+ *  see historyCard's chipPrefix option — these read as plain statements, not declared history. */
+const PERSONAL_CHIPS = [
+  "Non-smoker",
+  "Smoker",
+  "Ex-smoker",
+  "Alcohol — occasional",
+  "Alcohol — regular",
+  "Tobacco chewing",
+  "Gutka / paan chewing",
+  "Vegetarian diet",
+  "Normal bowel & bladder",
+];
+
 const MED_CHIPS = [
   "Antihypertensive",
   "Oral hypoglycaemic",
@@ -369,6 +384,7 @@ type StepId =
   | "complaints"
   | "hopi"
   | "past"
+  | "personal"
   | "family"
   | "medication"
   | "surgical"
@@ -494,6 +510,7 @@ export default function CaseHistoryWorkspace({
   const [oncoMucosaLine, setOncoMucosaLine] = useState(() => examValue(["mucosa, skin and vascular access"]));
 
   const [past, setPast] = useState(() => seedHistory("past"));
+  const [personal, setPersonal] = useState(() => seedHistory("personal"));
   const [family, setFamily] = useState(() => seedHistory("family"));
   const [surgical, setSurgical] = useState(() => seedHistory("surgical"));
 
@@ -609,6 +626,7 @@ export default function CaseHistoryWorkspace({
     ...complaintList.map((c, i) => ({ id: `hopi` as StepId, title: `HOPI — ${c}`, _c: c, _i: i })),
     ...(hasDiagnosisForNegatives ? [{ id: "negatives" as StepId, title: "Relevant negatives" }] : []),
     { id: "past", title: "Past history" },
+    { id: "personal", title: "Personal history" },
     { id: "family", title: "Family history" },
     { id: "medication", title: "Medication history" },
     { id: "surgical", title: "Surgical history" },
@@ -674,6 +692,7 @@ export default function CaseHistoryWorkspace({
       );
     else if (id === "negatives") res = await applyRelevantNegatives(patientId, negatives.text);
     else if (id === "past") res = await replaceCaseHistorySection(patientId, "past history", "note", composeHistory(past));
+    else if (id === "personal") res = await replaceCaseHistorySection(patientId, "personal history", "note", composeHistory(personal));
     else if (id === "family") res = await replaceCaseHistorySection(patientId, "family history", "note", composeHistory(family));
     else if (id === "surgical") res = await replaceCaseHistorySection(patientId, "surgical history", "note", composeHistory(surgical));
     else if (id === "medication")
@@ -866,8 +885,11 @@ export default function CaseHistoryWorkspace({
     state: { mode: Mode; text: string },
     setState: (s: { mode: Mode; text: string }) => void,
     id: StepId,
-    opts?: { chips?: string[]; placeholder?: string }
+    opts?: { chips?: string[]; placeholder?: string; chipPrefix?: string }
   ) {
+    // "K/C/O " reads right for a declared medical history ("K/C/O DM"); personal-history chips
+    // ("Non-smoker", "Tobacco chewing") are plain statements and take no prefix at all.
+    const prefix = opts?.chipPrefix ?? "K/C/O ";
     return (
       <>
         <div className="flex flex-col gap-2">
@@ -890,7 +912,7 @@ export default function CaseHistoryWorkspace({
                       const has = new RegExp(`\\b${c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(state.text);
                       const text = has
                         ? state.text
-                        : (state.text ? `${state.text.replace(/[;\s]+$/, "")}; ` : "") + `K/C/O ${c}`;
+                        : (state.text ? `${state.text.replace(/[;\s]+$/, "")}; ` : "") + `${prefix}${c}`;
                       setState({ ...state, text });
                       mark(id);
                     }}
@@ -1023,6 +1045,12 @@ export default function CaseHistoryWorkspace({
     }
 
     if (id === "past") return historyCard(past, (s) => setPast(s), "past", { chips: PAST_CHIPS, placeholder: "e.g. K/C/O DM since 2019, on Metformin" });
+    if (id === "personal")
+      return historyCard(personal, (s) => setPersonal(s), "personal", {
+        chips: PERSONAL_CHIPS,
+        chipPrefix: "",
+        placeholder: "e.g. non-smoker, occasional alcohol, normal bowel and bladder",
+      });
     if (id === "family") return historyCard(family, (s) => setFamily(s), "family", { placeholder: "e.g. Father — carcinoma colon" });
     if (id === "surgical") return historyCard(surgical, (s) => setSurgical(s), "surgical", { placeholder: "e.g. Appendicectomy 2015" });
 

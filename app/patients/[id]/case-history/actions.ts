@@ -203,6 +203,7 @@ export async function applyCompiledCaseHistory(
     // durations) and a prose rewrite does not round-trip back into the Complaints card.
     "history of presenting illness",
     "past history",
+    "personal history",
     "family history",
     "medication history",
     "surgical history",

@@ -45,6 +45,7 @@ Sections:
 - "complaints" — a presenting complaint and its duration ("pain in the right iliac fossa for two days")
 - "hopi" — detail about how one complaint began and progressed; set "complaint" to which one
 - "past" — past medical history, known comorbidities ("diabetic for ten years")
+- "personal" — diet, appetite, bowel and bladder habits, sleep, and addictions: smoking, alcohol, tobacco or gutka/paan/areca-nut chewing — quantity and duration if said ("smokes ten cigarettes a day for twenty years", "occasional alcohol", "chews gutka twice a day", "non-smoker, no alcohol", "normal bowel and bladder")
 - "family" — family history
 - "medication" — drugs the patient takes at home
 - "surgical" — previous operations
