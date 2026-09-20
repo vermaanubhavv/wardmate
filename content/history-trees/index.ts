@@ -10,6 +10,15 @@ import { headacheV1 } from "@/content/history-trees/headache.v1";
 import { alteredSensoriumV1 } from "@/content/history-trees/altered-sensorium.v1";
 import { limbWeaknessV1 } from "@/content/history-trees/limb-weakness.v1";
 import { diarrhoeaV1 } from "@/content/history-trees/diarrhoea.v1";
+import { generalisedWeaknessV1 } from "@/content/history-trees/generalised-weakness.v1";
+import { giddinessV1 } from "@/content/history-trees/giddiness.v1";
+import { decreasedUrineOutputV1 } from "@/content/history-trees/decreased-urine-output.v1";
+import { constipationV1 } from "@/content/history-trees/constipation.v1";
+import { abdominalDistensionV1 } from "@/content/history-trees/abdominal-distension.v1";
+import { lumpV1 } from "@/content/history-trees/lump.v1";
+import { bleedingPerRectumV1 } from "@/content/history-trees/bleeding-per-rectum.v1";
+import { burningMicturitionV1 } from "@/content/history-trees/burning-micturition.v1";
+import { lossOfWeightAppetiteV1 } from "@/content/history-trees/loss-of-weight-appetite.v1";
 
 /**
  * Every complaint tree the app ships, every version. Adding a complaint is a new file beside
@@ -30,4 +39,13 @@ export const HISTORY_TREES: readonly HistoryTree[] = [
   alteredSensoriumV1,
   limbWeaknessV1,
   diarrhoeaV1,
+  generalisedWeaknessV1,
+  giddinessV1,
+  decreasedUrineOutputV1,
+  constipationV1,
+  abdominalDistensionV1,
+  lumpV1,
+  bleedingPerRectumV1,
+  burningMicturitionV1,
+  lossOfWeightAppetiteV1,
 ];

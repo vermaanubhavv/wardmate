@@ -70,8 +70,10 @@ triggered it. Numeric values render amber with "(unconfirmed)"; there is no conf
 
 ### Trees — `content/history-trees/`
 
-Eleven complaints: fever, chest pain, breathlessness, abdominal pain, jaundice, cough, oedema,
-headache, altered sensorium / seizures, limb weakness, diarrhoea / vomiting. Shared
+Twenty complaints: fever, chest pain, breathlessness, abdominal pain, jaundice, cough, oedema,
+headache, altered sensorium / seizures, limb weakness, diarrhoea / vomiting, generalised
+weakness, giddiness, decreased urine output, constipation, abdominal distension, lump, bleeding
+per rectum, burning micturition, loss of weight / appetite. Shared
 constructors are in `_helpers.ts` (`yn`, `val`, `commonHpi`, `IMMUNOCOMPROMISE`, `PREGNANCY`,
 `rce`, textbook references). Schema in `lib/history-check/types.ts`, validator in
 `lib/history-check/schema.ts`.
