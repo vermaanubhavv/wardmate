@@ -77,7 +77,12 @@ per rectum, burning micturition, loss of weight / appetite, palpitations, joint 
 haematemesis, polyuria / polydipsia, low back pain, sore throat, fever with rash, poisoning /
 snake bite, dysphagia, groin swelling, breast lump, anorectal pain, leg ulcer, and scrotal
 swelling, head injury, shock, and four paediatric complaints (fever, diarrhoea, cough or
-difficult breathing, and seizure).
+difficult breathing, and seizure), bleeding per vaginum, vaginal discharge, labour pains and
+leaking, fever on chemotherapy, blood in the urine, and limb injury.
+
+Forty trees in all, spanning general medicine, general surgery, emergency medicine,
+paediatrics, medical oncology, obstetrics and gynaecology, orthopaedics, urology and
+neurosurgery — the specialty order set by the product owner.
 
 Paediatric trees add `paedBackground()` from `_helpers.ts`: birth history, immunisation,
 development, feeding and growth. Age is deliberately not a slot — it comes from the patient
