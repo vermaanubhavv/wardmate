@@ -68,6 +68,23 @@ const COMPLAINT_CHIPS_MEDICAL_ONCOLOGY = [
   "Bleeding",
 ];
 
+// An O&G admission's own presenting words — obstetric emergencies and labour first, then the
+// gynaecological complaints. The current pregnancy's own detail (gravida/para, LMP/EDD/POG)
+// is captured as free text on the existing "menstrual and obstetric history" card, not here.
+const COMPLAINT_CHIPS_OBSTETRICS_GYNAECOLOGY = [
+  "Labour pains",
+  "Leaking per vaginum",
+  "Bleeding per vaginum",
+  "Decreased fetal movements",
+  "Pain abdomen",
+  "Headache / blurring of vision",
+  "Swelling of legs",
+  "Amenorrhoea",
+  "Vaginal discharge",
+  "Mass per abdomen",
+  "Postmenopausal bleeding",
+];
+
 const PAST_CHIPS_GENERAL_SURGERY = [
   "DM",
   "HTN",
@@ -96,16 +113,33 @@ const PAST_CHIPS_INTERNAL_MEDICINE = [
 
 const PAST_CHIPS_MEDICAL_ONCOLOGY = PAST_CHIPS_INTERNAL_MEDICINE;
 
+// The fitness-relevant comorbidities a pregnancy or a gynaecological operation is actually
+// weighed against — GDM and a prior PIH/pre-eclampsia lead, because they are the two that
+// change how this pregnancy is watched, not just whether the patient is fit for anaesthesia.
+const PAST_CHIPS_OBSTETRICS_GYNAECOLOGY = [
+  "GDM (previous pregnancy)",
+  "PIH / pre-eclampsia (previous pregnancy)",
+  "DM",
+  "HTN",
+  "Hypothyroid",
+  "Asthma",
+  "Rh negative",
+  "Previous LSCS",
+  "Anaemia",
+];
+
 const COMPLAINT_CHIPS_BY_SPECIALTY: Record<string, string[]> = {
   general_surgery: COMPLAINT_CHIPS_GENERAL_SURGERY,
   internal_medicine: COMPLAINT_CHIPS_INTERNAL_MEDICINE,
   medical_oncology: COMPLAINT_CHIPS_MEDICAL_ONCOLOGY,
+  obstetrics_gynaecology: COMPLAINT_CHIPS_OBSTETRICS_GYNAECOLOGY,
 };
 
 const PAST_CHIPS_BY_SPECIALTY: Record<string, string[]> = {
   general_surgery: PAST_CHIPS_GENERAL_SURGERY,
   internal_medicine: PAST_CHIPS_INTERNAL_MEDICINE,
   medical_oncology: PAST_CHIPS_MEDICAL_ONCOLOGY,
+  obstetrics_gynaecology: PAST_CHIPS_OBSTETRICS_GYNAECOLOGY,
 };
 
 /** Unknown or missing specialty (including "patch not run yet") degrades to the surgical set —

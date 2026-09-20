@@ -49,7 +49,8 @@ export type Specialty =
   | "surgical-gastroenterology"
   | "vascular-surgery"
   | "medical-oncology"
-  | "internal-medicine";
+  | "internal-medicine"
+  | "obstetrics-gynaecology";
 
 export type NoteType =
   | "ward-round"

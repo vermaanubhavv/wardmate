@@ -4,6 +4,7 @@ import {
   generalSurgeryPack,
   medicalOncologyPack,
   internalMedicinePack,
+  obstetricsGynaecologyPack,
   listSpecialties,
 } from "@/lib/specialty";
 import { buildSystemPrompt } from "@/lib/extract";
@@ -26,6 +27,7 @@ describe("getSpecialtyPack — degrade, don't crash", () => {
   it("is case- and whitespace-insensitive about a real key", () => {
     expect(getSpecialtyPack("  Medical_Oncology ").key).toBe("medical_oncology");
     expect(getSpecialtyPack(" INTERNAL_MEDICINE ").key).toBe("internal_medicine");
+    expect(getSpecialtyPack(" Obstetrics_Gynaecology ").key).toBe("obstetrics_gynaecology");
   });
 
   it("offers every pack to the picker", () => {
@@ -33,6 +35,7 @@ describe("getSpecialtyPack — degrade, don't crash", () => {
       "general_surgery",
       "medical_oncology",
       "internal_medicine",
+      "obstetrics_gynaecology",
     ]);
   });
 });
@@ -175,6 +178,52 @@ describe("internal medicine counts by the hospital day", () => {
     for (const t of [...p.dischargeTemplates, p.genericDischargeTemplate]) {
       expect(t.scaffold.medications).toEqual([]);
     }
+  });
+});
+
+describe("obstetrics & gynaecology counts like a surgical unit, not a medicine one", () => {
+  const p = obstetricsGynaecologyPack;
+
+  it("an operated or delivered patient reads POD; everyone else reads the admission day", () => {
+    expect(p.dayCount(surgical)).toEqual({ clock: "post_op", n: 2, text: "POD 2" });
+    expect(p.dayCount(preOp)).toEqual({ clock: "admission", n: 1, text: "Day 1" });
+    // POD 0 (delivered/operated today) must not collapse to the admission day.
+    expect(p.dayCount({ post_op_day: 0, admission_day: 1 })).toEqual({
+      clock: "post_op",
+      n: 0,
+      text: "POD 0",
+    });
+  });
+
+  it("its extraction prompt is an O&G resident's note and keeps every shared safety rule", () => {
+    const prompt = buildSystemPrompt(p);
+    expect(prompt.startsWith("You convert an obstetrics and gynaecology resident's")).toBe(true);
+    expect(prompt).toContain("Never output a clinical value that is not present in the transcript");
+    expect(prompt).toContain("source_quote that is copied VERBATIM");
+    expect(prompt).toContain("GRAVIDA/PARA");
+    expect(prompt).toContain("Do not decide PIH versus pre-eclampsia versus eclampsia yourself");
+  });
+
+  it("offers no surgical or medicine scoring pathway — none are built yet", () => {
+    expect(p.scoringKeys).toEqual([]);
+  });
+
+  it("keeps the OT notes slot — unlike internal medicine, this ward operates", () => {
+    expect(p.formatKinds).toContain("ot_notes");
+  });
+
+  it("anchors its (not-yet-seeded) checklist on the operation/delivery, the surgical model", () => {
+    expect(p.checklistAnchor).toBe("post_op");
+  });
+
+  it("ships only the generic discharge template — condition-specific set deferred, same as medicine's pre-alpha state", () => {
+    expect(p.dischargeTemplates).toEqual([]);
+    expect(listDischargeTemplatesFor(p).map((t) => t.key)).toEqual([p.genericDischargeTemplate.key]);
+    expect(p.genericDischargeTemplate.scaffold.medications).toEqual([]);
+  });
+
+  it("uses its own lexicon core, not the surgical or medicine one", () => {
+    expect(p.lexiconSpecialty).toBe("obstetrics-gynaecology");
   });
 });
 

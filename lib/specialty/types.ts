@@ -26,6 +26,7 @@ export const SPECIALTY_KEYS = [
   "general_surgery",
   "medical_oncology",
   "internal_medicine",
+  "obstetrics_gynaecology",
 ] as const;
 export type SpecialtyKey = (typeof SPECIALTY_KEYS)[number];
 
