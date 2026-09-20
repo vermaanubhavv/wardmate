@@ -88,3 +88,10 @@ describe("citation integrity", () => {
     }
   });
 });
+
+describe("registry size", () => {
+  it("keeps the docs honest about how many trees ship", () => {
+    // docs/history-check.md states this number; update both together.
+    expect(listTrees().length).toBe(46);
+  });
+});

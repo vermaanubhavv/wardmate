@@ -70,7 +70,7 @@ triggered it. Numeric values render amber with "(unconfirmed)"; there is no conf
 
 ### Trees — `content/history-trees/`
 
-Twenty-eight complaints: fever, chest pain, breathlessness, abdominal pain, jaundice, cough,
+Forty-six complaints: fever, chest pain, breathlessness, abdominal pain, jaundice, cough,
 oedema, headache, altered sensorium / seizures, limb weakness, diarrhoea / vomiting, generalised
 weakness, giddiness, decreased urine output, constipation, abdominal distension, lump, bleeding
 per rectum, burning micturition, loss of weight / appetite, palpitations, joint pain,
@@ -80,7 +80,7 @@ swelling, head injury, shock, and four paediatric complaints (fever, diarrhoea, 
 difficult breathing, and seizure), bleeding per vaginum, vaginal discharge, labour pains and
 leaking, fever on chemotherapy, blood in the urine, and limb injury.
 
-Forty trees in all, spanning general medicine, general surgery, emergency medicine,
+Forty-six trees in all, spanning general medicine, general surgery, emergency medicine,
 paediatrics, medical oncology, obstetrics and gynaecology, orthopaedics, urology and
 neurosurgery — the specialty order set by the product owner.
 
