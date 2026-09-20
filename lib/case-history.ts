@@ -4,9 +4,12 @@
  *
  * Two conventions from the ward, and they are opposite conventions on purpose:
  *
- *   Past history is ALWAYS shown. Silence there is itself information — "NR" says nobody
- *   recorded it, "NAD" says somebody looked and there was nothing. Those are different facts
- *   and collapsing them would lose the one that matters before an anaesthetic.
+ *   Past history — and personal history alongside it — is ALWAYS shown. Silence there is
+ *   itself information — "NR" says nobody recorded it, "NAD" says somebody looked and there
+ *   was nothing. Those are different facts and collapsing them would lose the one that matters
+ *   before an anaesthetic. Personal history carries the addiction/habit record (smoking,
+ *   alcohol, tobacco or gutka/paan chewing) that a general "past history" denial does not
+ *   itself answer — a patient can be K/C/O nothing and still be a chronic smoker.
  *
  *   Family history is shown ONLY when positive. A negative family history is the overwhelming
  *   default and printing it on every patient is noise nobody reads.
@@ -27,6 +30,7 @@ export type HistorySection = {
     | "chief"
     | "hopi"
     | "past"
+    | "personal"
     | "family"
     | "medication"
     | "surgical"
@@ -81,6 +85,15 @@ const SECTIONS: {
       "past history", "past medical history", "medical history", "comorbidities", "comorbidity",
       "co-morbidities", "co morbidities", "known case of", "k/c/o", "past illness",
       "previous illness",
+    ],
+    alwaysShow: true,
+  },
+  {
+    key: "personal",
+    label: "Personal history",
+    aliases: [
+      "personal history", "habits", "habit history", "addiction history",
+      "history of addiction", "history of addictions", "addictions",
     ],
     alwaysShow: true,
   },

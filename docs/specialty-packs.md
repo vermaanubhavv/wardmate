@@ -1,8 +1,10 @@
 # Specialty packs — extending WardMate beyond general surgery
 
 **Status: BUILT for MEDICAL ONCOLOGY (§7) and INTERNAL MEDICINE (§8), behind the
-`SPECIALTY_PACKS` flag.** Written 2026-09-02 for the user (a general-surgery resident, not a
-programmer). Shipping model: **one WardMate, each unit picks its specialty at setup** — not a fork.
+`SPECIALTY_PACKS` flag. OBSTETRICS & GYNAECOLOGY (§10) built to Phase 0+1 — seam and core only,
+checklists/scores/condition discharge templates deliberately deferred.** Written 2026-09-02 for
+the user (a general-surgery resident, not a programmer). Shipping model: **one WardMate, each
+unit picks its specialty at setup** — not a fork.
 
 The seam (Phase 0) shipped with the oncology pack on 2026-09-03. The internal-medicine pack
 followed on 2026-09-04 — §2a is its brief, §8 is what got built. Phases 0–4 for medicine are
@@ -520,3 +522,92 @@ scores suite, up from 20). `next build` not run this session.
 **Still true from §8**: all of this is inert in production until 0066/0067 are run in Supabase
 and the code is deployed (`npx vercel --prod --yes` from inside `coreresident/`). The discharge
 condition-templates are still the one deliberate hold-back.
+
+---
+
+## 10. Fourth pack — obstetrics & gynaecology (Phase 0+1 only)
+
+Added on request, following the exact rollout discipline §7/§8 established: seam + core only,
+clinical content (checklists, scores, condition-specific discharge templates) explicitly
+deferred until a unit read-through, not half-built.
+
+### Patch
+
+| Patch | What it does |
+|---|---|
+| `0078_obstetrics_gynaecology.sql` | Widens `wards_specialty_check` and the two-argument `create_ward_for_current_user` guard to allow `obstetrics_gynaecology`. That is the whole seam patch — an O&G unit needs no new patient columns: like general surgery, an operated or delivered patient counts from `post_op_day`; everyone else from `admission_day`. Both already exist on every patient. |
+
+### Code
+
+`lib/specialty/obstetrics-gynaecology.ts` — the pack. Plus `obstetrics_gynaecology` added to
+`SPECIALTY_KEYS` / the registry, and `"obstetrics-gynaecology"` added to the lexicon `Specialty`
+union.
+
+What the O&G pack changes, and where:
+
+- **Day numbering** — general surgery's exact `dayCount` logic (operated/delivered patients
+  read POD, everyone else the admission day), not internal medicine's admission-only one. An
+  O&G ward genuinely operates (LSCS, laparoscopy, hysterectomy), unlike a medicine ward.
+- **Terminology** — `dayLabel` "POD" (shared with surgery), `admissionNoun` "case" — the ward's
+  own word for an antenatal or a gynaecology admission.
+- **Dictation** — the extraction prompt's role line becomes "an obstetrics and gynaecology
+  resident's", plus ward guidance: gravida/para notation and LMP/EDD/POG recorded exactly as
+  said and never recomputed; a completed delivery or operation is `procedure_done` with
+  `needs_confirmation` always true (the same post-op-flip risk surgery's prompt already
+  documents); PIH/pre-eclampsia/eclampsia are never graded by the model, only recorded as said.
+  **Every safety rule and the verbatim-quote check are shared and untouched.**
+- **Keyterms** — `lib/transcription/lexicon/obstetrics-gynaecology.ts`: the gravidity/parity
+  record, LSCS/VBAC and their indications, the hypertensive and haemorrhagic emergencies
+  (PIH/pre-eclampsia/eclampsia, PPH/APH), fetal wellbeing terms, and the gynaecological
+  procedure names. **Found and fixed while writing it**: several short aliases (`ANC`, `NST`,
+  `GA`, `PROM`, `IOL`, `APH`, `AFI`, `VH`, `PID`, plus the word `induced` and the bare form
+  `anti-D`) substring-collided with unrelated terms already in the master lexicon (`ANC` inside
+  "pancreatitis", `NST` inside "NSTEMI", `GA` inside "organ damage" — the same collision class
+  as the `RA`/`ALA` fix in §9). Fixed the same way: the file's own `entry()` helper now drops
+  any auto-derived trigger under 5 characters, and the two riskiest bare short forms were
+  removed outright, with a regression test
+  (`lib/transcription/lexicon/__tests__/obstetrics-gynaecology-collisions.test.ts`) pinning zero
+  collisions against the rest of the master lexicon going forward.
+- **Case-history chips** — `lib/case-history-chips.ts` gained its own complaint and
+  past-history chip sets for this specialty (labour pains, leaking/bleeding per vaginum,
+  decreased fetal movements; GDM/PIH in a previous pregnancy, Rh negative, previous LSCS),
+  the same specialty-aware chips internal medicine and oncology got.
+- **Discharge** — `lib/discharge-templates-obgyn.ts`: the generic template only.
+  `OBGYN_DISCHARGE_TEMPLATES` is `[]` on purpose — a condition-keyed set (normal delivery, LSCS,
+  pre-eclampsia/eclampsia, PPH, ectopic, MTP, hysterectomy) is real clinical content pending the
+  unit's own read-through, the same hold-back medicine's condition templates went through
+  before their alpha release.
+- **Scores** — `scoringKeys: []`. No pathway (surgical or medical) can ever trigger on an O&G
+  unit; a modified obstetric early-warning score is a plausible future addition, not one made
+  without sign-off.
+- **Checklists** — none seeded. A PPH drill checklist, a pre-eclampsia checklist and a post-LSCS
+  checklist are the obvious next candidates (`checklistAnchor` is set to `post_op`, the correct
+  value for when one is written) but are clinical content, not yet written.
+- **Formats** — keeps the OT notes slot, unlike internal medicine — this ward operates.
+- **What is NOT captured as structured data**: LMP/EDD/gravida-para/POG are clerking text under
+  "menstrual and obstetric history" (a section every specialty already has), not new patient
+  columns. Turning that into queryable fields (so a ward list could show "G2P1, 32+4 weeks" the
+  way it shows "POD 2") is a bigger schema change than a seam patch and is deliberately left for
+  a later, explicitly scoped piece of work.
+
+### Verified
+
+`tsc --noEmit` clean, `eslint` clean, `next build` clean, `vitest` **282/282** (specialty.test.ts
+grew to 49, plus new collision-regression and chip-set test files).
+
+### Activation
+
+Behind `SPECIALTY_PACKS`, same as every other pack — off by default, unreachable until a unit is
+piloted on it. Not yet run in Supabase; `0078_obstetrics_gynaecology.sql` needs pasting into the
+SQL Editor before any unit can pick this specialty.
+
+### Known rough edges, for a future pilot
+
+1. **No checklists, no scores, no condition-specific discharge templates** — all deliberately
+   deferred, as above. The pack is genuinely useful for dictation and the generic clerking/
+   discharge flow today, not yet for the O&G-specific safety nets the other packs are building
+   toward.
+2. **LMP/EDD/gravida-para stay as free text** — see "What is NOT captured as structured data"
+   above.
+3. **The checklist picker still calls itself a procedure picker** — same Phase 4 wording sweep
+   named for oncology and medicine, not yet done, and moot here until a checklist actually ships.

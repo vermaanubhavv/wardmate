@@ -60,6 +60,19 @@ export const INDIA: MedicalLexiconEntry[] = [
   entry("junior resident", ["JR", "junior resident on call"]),
   entry("senior resident", ["SR", "senior resident on call"]),
 
+  // --- Personal / addiction history ------------------------------------------------
+  // The habit vocabulary an Indian clerking records under "personal history" — smoking,
+  // alcohol, and the chewed-tobacco forms specific to this population, which a general model
+  // has no reason to know and mishears as ordinary words ("gutka" heard as "good car").
+  entry("bidi", ["beedi"], ["smoking", "smoker"]),
+  entry("gutka", ["gutkha"], ["chewing", "tobacco"]),
+  entry("khaini", ["khaini tobacco"], ["chewing", "tobacco"]),
+  entry("paan", ["pan masala", "betel quid"], ["chewing"]),
+  entry("areca nut", ["betel nut", "supari"], ["chewing"]),
+  entry("chewing tobacco", ["tobacco chewing", "smokeless tobacco"]),
+  entry("country liquor", ["desi liquor", "local liquor"], ["alcohol"]),
+  entry("pack-years", ["pack years", "pack year history"], ["smoking"]),
+
   // --- B. Daily surgical ward-round terms -----------------------------------------
   round("pre-op", ["preoperative", "pre operative"]),
   round("post-op", ["postoperative", "post operative"]),

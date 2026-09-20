@@ -11,6 +11,7 @@ import { MEDICATIONS } from "./medications";
 import { SCORES } from "./scores";
 import { ONCOLOGY } from "./oncology";
 import { INTERNAL_MEDICINE } from "./internal-medicine";
+import { OBSTETRICS_GYNAECOLOGY } from "./obstetrics-gynaecology";
 
 export * from "./types";
 
@@ -34,6 +35,7 @@ export const MASTER_LEXICON: readonly MedicalLexiconEntry[] = Object.freeze([
   ...SCORES,
   ...ONCOLOGY,
   ...INTERNAL_MEDICINE,
+  ...OBSTETRICS_GYNAECOLOGY,
 ]);
 
 /**

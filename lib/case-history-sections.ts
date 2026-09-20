@@ -9,6 +9,7 @@ export const ROUTABLE_SECTIONS = [
   "complaints",
   "hopi",
   "past",
+  "personal",
   "family",
   "medication",
   "surgical",
@@ -45,6 +46,7 @@ export type RoutedSegment = {
 export const HISTORY_SECTION_LABEL: Record<string, string> = {
   complaints: "chief complaints",
   past: "past history",
+  personal: "personal history",
   family: "family history",
   medication: "medication history",
   surgical: "surgical history",

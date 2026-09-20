@@ -1,15 +1,17 @@
 import { generalSurgeryPack } from "./general-surgery";
 import { internalMedicinePack } from "./internal-medicine";
 import { medicalOncologyPack } from "./medical-oncology";
+import { obstetricsGynaecologyPack } from "./obstetrics-gynaecology";
 import { SPECIALTY_KEYS, type SpecialtyKey, type SpecialtyPack } from "./types";
 
 export * from "./types";
-export { generalSurgeryPack, medicalOncologyPack, internalMedicinePack };
+export { generalSurgeryPack, medicalOncologyPack, internalMedicinePack, obstetricsGynaecologyPack };
 
 const PACKS: Record<SpecialtyKey, SpecialtyPack> = {
   general_surgery: generalSurgeryPack,
   medical_oncology: medicalOncologyPack,
   internal_medicine: internalMedicinePack,
+  obstetrics_gynaecology: obstetricsGynaecologyPack,
 };
 
 /**

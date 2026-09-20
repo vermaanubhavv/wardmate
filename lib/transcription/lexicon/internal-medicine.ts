@@ -154,12 +154,12 @@ export const INTERNAL_MEDICINE: MedicalLexiconEntry[] = [
 
   // --- Antimicrobials: generic + Indian brands ----------------------------------------
   drug("ceftriaxone", ["cef triaxone"]),
-  brand("Monocef", ["monocef", "ceftriaxone monocef"], ["ceftriaxone"]),
+  brand("Monocef", ["ceftriaxone monocef"], ["ceftriaxone"]),
   drug("piperacillin-tazobactam", ["pip-tazo", "pip taz", "tazobactam"]),
-  brand("Piptaz", ["piptaz", "zosyn", "tazact"], ["piperacillin"]),
-  brand("Magnex", ["magnex", "cefoperazone sulbactam", "sulbactomax"], ["cefoperazone"]),
+  brand("Piptaz", ["zosyn", "tazact"], ["piperacillin"]),
+  brand("Magnex", ["cefoperazone sulbactam", "sulbactomax"], ["cefoperazone"]),
   drug("meropenem", ["mero"]),
-  brand("Meronem", ["meronem", "meromac"], ["meropenem"]),
+  brand("Meronem", ["meromac"], ["meropenem"]),
   drug("doxycycline", ["doxy"], ["scrub typhus", "rickettsia", "leptospirosis"]),
   drug("azithromycin", ["azithro"], ["scrub typhus", "enteric fever"]),
   drug("artesunate", ["IV artesunate", "artemisinin"], ["malaria"]),
@@ -171,7 +171,7 @@ export const INTERNAL_MEDICINE: MedicalLexiconEntry[] = [
   drug("labetalol", ["labetalol infusion"], ["hypertensive emergency"]),
   drug("nitroglycerin infusion", ["GTN drip", "NTG infusion", "nitroglycerine"], ["hypertensive emergency"]),
   drug("telmisartan", ["telma", "telmisartan amlodipine", "telma-am"], ["hypertension"]),
-  drug("amlodipine", ["amlong", "amlodipine"], ["hypertension"]),
+  drug("amlodipine", ["amlong"], ["hypertension"]),
   drug("hydrocortisone", ["IV hydrocortisone", "efcorlin"], ["sepsis", "adrenal"]),
 
   // --- Haematology / ward vocabulary -------------------------------------------------

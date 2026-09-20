@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { caseHistorySectionOf } from "@/lib/case-history";
+import { complaintChipsFor, pastChipsFor } from "@/lib/case-history-chips";
 import DictationOverlay from "./dictation-overlay";
 import type { Observation } from "@/lib/patient-state";
 import type { WardRanges } from "@/lib/exam-summary";
@@ -60,23 +61,25 @@ function splitDuration(stored: string): { name: string; duration: string } {
 export type WorkspaceObs = { id: string; kind: string; label: string; value: string | null };
 
 // --- the clerking, card by card ----------------------------------------------------------
+//
+// Complaint and past-history chips are chosen per specialty (lib/case-history-chips.ts) — see
+// `complaintChips` / `pastChips` below, computed from the `specialty` prop. Medication chips
+// stay shared: DM/HTN/CKD drug classes are equally relevant on a surgical or a medicine ward.
 
-const COMPLAINT_CHIPS = [
-  "Pain abdomen",
-  "Vomiting",
-  "Fever",
-  "Jaundice",
-  "Lump",
-  "Abdominal distension",
-  "Constipation",
-  "Loose stools",
-  "Bleeding per rectum",
-  "Burning micturition",
-  "Loss of appetite",
-  "Loss of weight",
+/** Personal / addiction history — the standard Indian case-sheet section past history does not
+ *  itself answer (a patient K/C/O nothing can still be a chronic smoker). No "K/C/O" prefix —
+ *  see historyCard's chipPrefix option — these read as plain statements, not declared history. */
+const PERSONAL_CHIPS = [
+  "Non-smoker",
+  "Smoker",
+  "Ex-smoker",
+  "Alcohol — occasional",
+  "Alcohol — regular",
+  "Tobacco chewing",
+  "Gutka / paan chewing",
+  "Vegetarian diet",
+  "Normal bowel & bladder",
 ];
-
-const PAST_CHIPS = ["DM", "HTN", "TB (Koch's)", "IHD", "Asthma / COPD", "Thyroid", "Seizure", "CKD"];
 
 const MED_CHIPS = [
   "Antihypertensive",
@@ -369,6 +372,7 @@ type StepId =
   | "complaints"
   | "hopi"
   | "past"
+  | "personal"
   | "family"
   | "medication"
   | "surgical"
@@ -410,6 +414,8 @@ export default function CaseHistoryWorkspace({
   specialty?: string;
 }) {
   const oncology = specialty === "medical_oncology";
+  const complaintChips = useMemo(() => complaintChipsFor(specialty), [specialty]);
+  const pastChips = useMemo(() => pastChipsFor(specialty), [specialty]);
   const router = useRouter();
   const searchParams = useSearchParams();
   const liveDictationOn = process.env.NEXT_PUBLIC_LIVE_DICTATION === "1";
@@ -494,6 +500,7 @@ export default function CaseHistoryWorkspace({
   const [oncoMucosaLine, setOncoMucosaLine] = useState(() => examValue(["mucosa, skin and vascular access"]));
 
   const [past, setPast] = useState(() => seedHistory("past"));
+  const [personal, setPersonal] = useState(() => seedHistory("personal"));
   const [family, setFamily] = useState(() => seedHistory("family"));
   const [surgical, setSurgical] = useState(() => seedHistory("surgical"));
 
@@ -609,6 +616,7 @@ export default function CaseHistoryWorkspace({
     ...complaintList.map((c, i) => ({ id: `hopi` as StepId, title: `HOPI — ${c}`, _c: c, _i: i })),
     ...(hasDiagnosisForNegatives ? [{ id: "negatives" as StepId, title: "Relevant negatives" }] : []),
     { id: "past", title: "Past history" },
+    { id: "personal", title: "Personal history" },
     { id: "family", title: "Family history" },
     { id: "medication", title: "Medication history" },
     { id: "surgical", title: "Surgical history" },
@@ -674,6 +682,7 @@ export default function CaseHistoryWorkspace({
       );
     else if (id === "negatives") res = await applyRelevantNegatives(patientId, negatives.text);
     else if (id === "past") res = await replaceCaseHistorySection(patientId, "past history", "note", composeHistory(past));
+    else if (id === "personal") res = await replaceCaseHistorySection(patientId, "personal history", "note", composeHistory(personal));
     else if (id === "family") res = await replaceCaseHistorySection(patientId, "family history", "note", composeHistory(family));
     else if (id === "surgical") res = await replaceCaseHistorySection(patientId, "surgical history", "note", composeHistory(surgical));
     else if (id === "medication")
@@ -866,8 +875,11 @@ export default function CaseHistoryWorkspace({
     state: { mode: Mode; text: string },
     setState: (s: { mode: Mode; text: string }) => void,
     id: StepId,
-    opts?: { chips?: string[]; placeholder?: string }
+    opts?: { chips?: string[]; placeholder?: string; chipPrefix?: string }
   ) {
+    // "K/C/O " reads right for a declared medical history ("K/C/O DM"); personal-history chips
+    // ("Non-smoker", "Tobacco chewing") are plain statements and take no prefix at all.
+    const prefix = opts?.chipPrefix ?? "K/C/O ";
     return (
       <>
         <div className="flex flex-col gap-2">
@@ -890,7 +902,7 @@ export default function CaseHistoryWorkspace({
                       const has = new RegExp(`\\b${c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(state.text);
                       const text = has
                         ? state.text
-                        : (state.text ? `${state.text.replace(/[;\s]+$/, "")}; ` : "") + `K/C/O ${c}`;
+                        : (state.text ? `${state.text.replace(/[;\s]+$/, "")}; ` : "") + `${prefix}${c}`;
                       setState({ ...state, text });
                       mark(id);
                     }}
@@ -919,7 +931,7 @@ export default function CaseHistoryWorkspace({
         <>
           <p className="text-[12px] leading-[1.45] text-muted">Tap every complaint the patient came in with. Add anything not listed, then say how long each one has been going on.</p>
           <div className="flex flex-wrap gap-1.5">
-            {[...new Set([...COMPLAINT_CHIPS, ...complaints])].map((c) => (
+            {[...new Set([...complaintChips, ...complaints])].map((c) => (
               <SelChip key={c} selected={complaints.includes(c)} onClick={() => { toggleInList(complaints, c, setComplaints); mark("complaints"); }}>
                 {c}
               </SelChip>
@@ -1022,7 +1034,13 @@ export default function CaseHistoryWorkspace({
       );
     }
 
-    if (id === "past") return historyCard(past, (s) => setPast(s), "past", { chips: PAST_CHIPS, placeholder: "e.g. K/C/O DM since 2019, on Metformin" });
+    if (id === "past") return historyCard(past, (s) => setPast(s), "past", { chips: pastChips, placeholder: "e.g. K/C/O DM since 2019, on Metformin" });
+    if (id === "personal")
+      return historyCard(personal, (s) => setPersonal(s), "personal", {
+        chips: PERSONAL_CHIPS,
+        chipPrefix: "",
+        placeholder: "e.g. non-smoker, occasional alcohol, normal bowel and bladder",
+      });
     if (id === "family") return historyCard(family, (s) => setFamily(s), "family", { placeholder: "e.g. Father — carcinoma colon" });
     if (id === "surgical") return historyCard(surgical, (s) => setSurgical(s), "surgical", { placeholder: "e.g. Appendicectomy 2015" });
 
