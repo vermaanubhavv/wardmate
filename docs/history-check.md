@@ -74,8 +74,14 @@ Twenty-eight complaints: fever, chest pain, breathlessness, abdominal pain, jaun
 oedema, headache, altered sensorium / seizures, limb weakness, diarrhoea / vomiting, generalised
 weakness, giddiness, decreased urine output, constipation, abdominal distension, lump, bleeding
 per rectum, burning micturition, loss of weight / appetite, palpitations, joint pain,
-haematemesis, polyuria / polydipsia, low back pain, sore throat, fever with rash, and poisoning /
-snake bite.
+haematemesis, polyuria / polydipsia, low back pain, sore throat, fever with rash, poisoning /
+snake bite, dysphagia, groin swelling, breast lump, anorectal pain, leg ulcer, and scrotal
+swelling.
+
+Some complaints legitimately match more than one tree — "breast lump" suggests both the generic
+`lump` tree and `breast_lump`, and a bite suggests both `poisoning_snakebite` and any tree its
+symptoms match. `suggestTrees` returns all of them in registry order; the card is built to show
+more than one.
 
 Every PubMed id in a tree's `references` has been checked against PubMed — title, journal and
 year all match the cited record. Two reference constructors exist because the JAMA "Rational

@@ -5,7 +5,7 @@ describe("tree registry", () => {
   it("lists every shipped complaint once and resolves by id and version", () => {
     const trees = listTrees();
     const ids = trees.map((t) => t.id);
-    for (const want of ["fever", "chest_pain", "breathlessness", "abdominal_pain", "jaundice", "cough", "oedema", "headache", "altered_sensorium", "limb_weakness", "diarrhoea", "generalised_weakness", "giddiness", "decreased_urine_output", "constipation", "abdominal_distension", "lump", "bleeding_per_rectum", "burning_micturition", "loss_of_weight_appetite", "palpitations", "joint_pain", "haematemesis", "polyuria", "low_back_pain", "sore_throat", "fever_with_rash", "poisoning_snakebite"]) {
+    for (const want of ["fever", "chest_pain", "breathlessness", "abdominal_pain", "jaundice", "cough", "oedema", "headache", "altered_sensorium", "limb_weakness", "diarrhoea", "generalised_weakness", "giddiness", "decreased_urine_output", "constipation", "abdominal_distension", "lump", "bleeding_per_rectum", "burning_micturition", "loss_of_weight_appetite", "palpitations", "joint_pain", "haematemesis", "polyuria", "low_back_pain", "sore_throat", "fever_with_rash", "poisoning_snakebite", "dysphagia", "groin_swelling", "breast_lump", "anorectal_pain", "leg_ulcer", "scrotal_swelling"]) {
       expect(ids).toContain(want);
     }
     expect(new Set(ids).size).toBe(ids.length);
