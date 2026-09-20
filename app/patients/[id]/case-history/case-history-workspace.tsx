@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { caseHistorySectionOf } from "@/lib/case-history";
+import { complaintChipsFor, pastChipsFor } from "@/lib/case-history-chips";
 import DictationOverlay from "./dictation-overlay";
 import type { Observation } from "@/lib/patient-state";
 import type { WardRanges } from "@/lib/exam-summary";
@@ -60,23 +61,10 @@ function splitDuration(stored: string): { name: string; duration: string } {
 export type WorkspaceObs = { id: string; kind: string; label: string; value: string | null };
 
 // --- the clerking, card by card ----------------------------------------------------------
-
-const COMPLAINT_CHIPS = [
-  "Pain abdomen",
-  "Vomiting",
-  "Fever",
-  "Jaundice",
-  "Lump",
-  "Abdominal distension",
-  "Constipation",
-  "Loose stools",
-  "Bleeding per rectum",
-  "Burning micturition",
-  "Loss of appetite",
-  "Loss of weight",
-];
-
-const PAST_CHIPS = ["DM", "HTN", "TB (Koch's)", "IHD", "Asthma / COPD", "Thyroid", "Seizure", "CKD"];
+//
+// Complaint and past-history chips are chosen per specialty (lib/case-history-chips.ts) — see
+// `complaintChips` / `pastChips` below, computed from the `specialty` prop. Medication chips
+// stay shared: DM/HTN/CKD drug classes are equally relevant on a surgical or a medicine ward.
 
 /** Personal / addiction history — the standard Indian case-sheet section past history does not
  *  itself answer (a patient K/C/O nothing can still be a chronic smoker). No "K/C/O" prefix —
@@ -426,6 +414,8 @@ export default function CaseHistoryWorkspace({
   specialty?: string;
 }) {
   const oncology = specialty === "medical_oncology";
+  const complaintChips = useMemo(() => complaintChipsFor(specialty), [specialty]);
+  const pastChips = useMemo(() => pastChipsFor(specialty), [specialty]);
   const router = useRouter();
   const searchParams = useSearchParams();
   const liveDictationOn = process.env.NEXT_PUBLIC_LIVE_DICTATION === "1";
@@ -941,7 +931,7 @@ export default function CaseHistoryWorkspace({
         <>
           <p className="text-[12px] leading-[1.45] text-muted">Tap every complaint the patient came in with. Add anything not listed, then say how long each one has been going on.</p>
           <div className="flex flex-wrap gap-1.5">
-            {[...new Set([...COMPLAINT_CHIPS, ...complaints])].map((c) => (
+            {[...new Set([...complaintChips, ...complaints])].map((c) => (
               <SelChip key={c} selected={complaints.includes(c)} onClick={() => { toggleInList(complaints, c, setComplaints); mark("complaints"); }}>
                 {c}
               </SelChip>
@@ -1044,7 +1034,7 @@ export default function CaseHistoryWorkspace({
       );
     }
 
-    if (id === "past") return historyCard(past, (s) => setPast(s), "past", { chips: PAST_CHIPS, placeholder: "e.g. K/C/O DM since 2019, on Metformin" });
+    if (id === "past") return historyCard(past, (s) => setPast(s), "past", { chips: pastChips, placeholder: "e.g. K/C/O DM since 2019, on Metformin" });
     if (id === "personal")
       return historyCard(personal, (s) => setPersonal(s), "personal", {
         chips: PERSONAL_CHIPS,
