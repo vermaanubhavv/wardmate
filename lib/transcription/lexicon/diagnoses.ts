@@ -12,12 +12,12 @@ import { PRIORITY } from "./types";
  */
 export const DIAGNOSES: MedicalLexiconEntry[] = [
   // --- G. Hepatobiliary --------------------------------------------------------------
-  dx("cholelithiasis", ["gallstone disease", "gall stone disease", "GB calculus", "cholelithiasis"], ["cholelithiasis", "gallstone", "gall stone", "gb calculus", "biliary"]),
+  dx("cholelithiasis", ["gallstone disease", "gall stone disease", "GB calculus"], ["cholelithiasis", "gallstone", "gall stone", "gb calculus", "biliary"]),
   dx("acute cholecystitis", ["ac cholecystitis", "acute calculous cholecystitis"], ["cholecystitis", "biliary"]),
   dx("chronic cholecystitis", ["chr cholecystitis"], ["cholecystitis", "biliary"]),
   dx("mucocele gallbladder", ["mucocoele of gallbladder", "GB mucocele"], ["mucocele", "gallbladder", "biliary"]),
   dx("empyema gallbladder", ["empyema of gallbladder", "GB empyema", "pyocele gallbladder"], ["empyema gallbladder", "gallbladder", "biliary"]),
-  dx("choledocholithiasis", ["CBD stone", "common bile duct stone", "CBD calculus", "choledocholithiasis"], ["choledocholithiasis", "cbd stone", "cbd calculus", "biliary", "obstructive jaundice"]),
+  dx("choledocholithiasis", ["CBD stone", "common bile duct stone", "CBD calculus"], ["choledocholithiasis", "cbd stone", "cbd calculus", "biliary", "obstructive jaundice"]),
   dx("acute cholangitis", ["ascending cholangitis", "cholangitis"], ["cholangitis", "biliary", "obstructive jaundice"]),
   dx("obstructive jaundice", ["surgical jaundice", "biliary obstruction"], ["obstructive jaundice", "biliary", "jaundice"]),
   dx("benign biliary stricture", ["biliary stricture", "post cholecystectomy stricture", "BBS"], ["biliary stricture", "biliary"]),
@@ -26,7 +26,7 @@ export const DIAGNOSES: MedicalLexiconEntry[] = [
   dx("cholangiocarcinoma", ["Klatskin tumour", "hilar cholangiocarcinoma", "bile duct cancer"], ["cholangiocarcinoma", "biliary", "malignancy", "obstructive jaundice"]),
 
   // --- H. Pancreas ------------------------------------------------------------------
-  dx("acute pancreatitis", ["ac pancreatitis", "acute pancreatitis"], ["pancreatitis", "pancreatic"]),
+  dx("acute pancreatitis", ["ac pancreatitis"], ["pancreatitis", "pancreatic"]),
   dx("gallstone pancreatitis", ["biliary pancreatitis", "gall stone pancreatitis"], ["pancreatitis", "pancreatic", "biliary"]),
   dx("alcoholic pancreatitis", ["alcohol induced pancreatitis"], ["pancreatitis", "pancreatic"]),
   dx("necrotizing pancreatitis", ["necrotising pancreatitis", "severe acute pancreatitis", "SAP"], ["pancreatitis", "pancreatic", "necrosis"]),
@@ -36,7 +36,7 @@ export const DIAGNOSES: MedicalLexiconEntry[] = [
   dx("chronic pancreatitis", ["chr pancreatitis", "calcific pancreatitis"], ["pancreatitis", "pancreatic"]),
 
   // --- I. Appendix ----------------------------------------------------------------
-  dx("acute appendicitis", ["ac appendicitis", "acute appendicitis"], ["appendicitis", "appendicular", "appendix"]),
+  dx("acute appendicitis", ["ac appendicitis"], ["appendicitis", "appendicular", "appendix"]),
   dx("appendicular lump", ["appendicular mass", "appendix lump"], ["appendicitis", "appendicular", "appendix", "lump", "mass"]),
   dx("appendicular abscess", ["appendix abscess", "peri-appendicular abscess"], ["appendicitis", "appendicular", "appendix", "abscess"]),
   dx("perforated appendicitis", ["appendicular perforation", "ruptured appendix"], ["appendicitis", "appendicular", "appendix", "perforation"]),
@@ -57,7 +57,7 @@ export const DIAGNOSES: MedicalLexiconEntry[] = [
   dx("fecal peritonitis", ["faecal peritonitis", "biliary peritonitis", "four quadrant peritonitis"], ["peritonitis", "perforation"]),
 
   // --- K. Hernias ---------------------------------------------------------------
-  dx("inguinal hernia", ["direct inguinal hernia", "indirect inguinal hernia", "bilateral inguinal hernia", "IH", "inguinal hernia"], ["hernia", "inguinal", "groin"]),
+  dx("inguinal hernia", ["direct inguinal hernia", "indirect inguinal hernia", "bilateral inguinal hernia", "IH"], ["hernia", "inguinal", "groin"]),
   dx("incarcerated hernia", ["irreducible hernia", "obstructed hernia", "strangulated hernia"], ["hernia", "incarcerat", "irreducible", "obstructed hernia", "strangulated hernia"]),
   dx("femoral hernia", ["femoral hernia right", "femoral hernia left"], ["hernia", "femoral"]),
   dx("umbilical hernia", ["paraumbilical hernia", "para-umbilical hernia", "supraumbilical hernia"], ["hernia", "umbilical"]),

@@ -65,13 +65,13 @@ function onc(
 
 export const ONCOLOGY: MedicalLexiconEntry[] = [
   // --- Regimens, spoken as one word ------------------------------------------------------
-  regimen("FOLFOX", ["folfox", "mFOLFOX6", "folfox six"], ["carcinoma colon", "colorectal", "gastric"]),
-  regimen("FOLFIRI", ["folfiri"], ["colorectal", "carcinoma colon", "carcinoma rectum"]),
-  regimen("CAPOX", ["capox", "XELOX", "xelox"], ["colorectal", "gastric"]),
-  regimen("R-CHOP", ["RCHOP", "R CHOP", "CHOP", "chop"], ["lymphoma", "DLBCL", "non-hodgkin"]),
-  regimen("ABVD", ["abvd"], ["hodgkin", "lymphoma"]),
-  regimen("BEACOPP", ["beacopp"], ["hodgkin", "lymphoma"]),
-  regimen("VRd", ["VRD", "bortezomib lenalidomide dexamethasone", "velcade revlimid dex"], ["myeloma"]),
+  regimen("FOLFOX", ["mFOLFOX6", "folfox six"], ["carcinoma colon", "colorectal", "gastric"]),
+  regimen("FOLFIRI", [], ["colorectal", "carcinoma colon", "carcinoma rectum"]),
+  regimen("CAPOX", ["XELOX"], ["colorectal", "gastric"]),
+  regimen("R-CHOP", ["RCHOP", "R CHOP", "CHOP"], ["lymphoma", "DLBCL", "non-hodgkin"]),
+  regimen("ABVD", [], ["hodgkin", "lymphoma"]),
+  regimen("BEACOPP", [], ["hodgkin", "lymphoma"]),
+  regimen("VRd", ["bortezomib lenalidomide dexamethasone", "velcade revlimid dex"], ["myeloma"]),
   regimen("DaraVRd", ["dara VRd", "daratumumab VRd"], ["myeloma"]),
   regimen("BEP", ["bleomycin etoposide cisplatin"], ["germ cell", "testicular"]),
   regimen("AC-T", ["AC T", "adriamycin cyclophosphamide taxol", "AC followed by taxol"], ["carcinoma breast", "breast"]),
