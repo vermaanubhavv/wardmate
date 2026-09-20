@@ -369,6 +369,7 @@ const DENIAL = /^(no|nil|not|none|nad|nr|negative|unremarkable|insignificant|abs
 const readsDenial = (s: string) => DENIAL.test(s.trim()) || /no relevant|not relevant|nil relevant/i.test(s);
 
 type StepId =
+  | "demographics"
   | "complaints"
   | "hopi"
   | "past"
@@ -399,6 +400,7 @@ type StepId =
 export default function CaseHistoryWorkspace({
   patientId,
   sex,
+  demographics,
   primaryDiagnosis,
   observations,
   fullObservations,
@@ -407,6 +409,8 @@ export default function CaseHistoryWorkspace({
 }: {
   patientId: string;
   sex: string | null;
+  /** Read-only identity for the first screen: name, age, sex and bed are all that identify a patient. */
+  demographics: { name: string; age: number | null; bed: string | null };
   primaryDiagnosis: string | null;
   observations: WorkspaceObs[];
   fullObservations: Observation[];
@@ -618,6 +622,7 @@ export default function CaseHistoryWorkspace({
   // the "add patient" card sets, or one generated later in this workspace.
   const hasDiagnosisForNegatives = (primaryDiagnosis ?? "").trim().length > 0 || diagnosis.text.trim().length > 0;
   const STEPS: { id: StepId; title: string }[] = [
+    { id: "demographics", title: "Demographics" },
     { id: "complaints", title: "Complaints" },
     ...complaintList.map((c, i) => ({ id: `hopi` as StepId, title: `HOPI — ${c}`, _c: c, _i: i })),
     ...(hasDiagnosisForNegatives ? [{ id: "negatives" as StepId, title: "Relevant negatives" }] : []),
@@ -938,6 +943,16 @@ export default function CaseHistoryWorkspace({
 
   function body(): React.ReactNode {
     const id = current.id;
+    if (id === "demographics")
+      return (
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[15px]">
+          <dt className="text-muted">Name</dt><dd>{demographics.name}</dd>
+          <dt className="text-muted">Age</dt><dd>{demographics.age !== null ? `${demographics.age} years` : "Not recorded"}</dd>
+          <dt className="text-muted">Sex</dt><dd>{sex || "Not recorded"}</dd>
+          <dt className="text-muted">Bed</dt><dd>{demographics.bed || "Not recorded"}</dd>
+        </dl>
+      );
+
     if (id === "complaints")
       return (
         <>
@@ -952,9 +967,9 @@ export default function CaseHistoryWorkspace({
           {complaints.length > 0 && (
             <div className="flex flex-col gap-1.5">
               <span className="text-[12px] font-medium text-muted">How long has each been present?</span>
-              {complaints.map((c) => (
+              {complaints.map((c, i) => (
                 <div key={c} className="flex flex-wrap items-center gap-1.5">
-                  <span className="mr-auto text-[14px]">{c}</span>
+                  <span className="mr-auto text-[14px]">{i + 1}. {c}</span>
                   <div className="flex items-center gap-1">
                     {DURATION_QUICK.map((d) => (
                       <button
