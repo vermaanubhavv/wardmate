@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { readAdmissionPaper } from "@/lib/read-admission-paper";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWard, getWardSpecialtyStored } from "@/lib/ward";
+import { claimPhotoRead } from "@/lib/photo-cap";
 
 const ALLOWED = ["image/jpeg", "image/png", "image/webp"] as const;
 const MAX_BYTES = 12 * 1024 * 1024;
@@ -35,6 +36,8 @@ export async function POST(request: Request) {
   // day-care sheet prints a regimen and a cycle where an admission sheet prints an operation —
   // never a rule about what may be returned.
   const { ward } = await getCurrentWard();
+  const capped = await claimPhotoRead(supabase, ward?.id);
+  if (capped) return NextResponse.json({ error: capped }, { status: 429 });
   const specialty = ward ? await getWardSpecialtyStored(ward.id) : null;
 
   try {

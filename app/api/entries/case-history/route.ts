@@ -6,6 +6,7 @@ import { getPatientDictationKeyterms } from "@/lib/transcription/patient-context
 import { correctTranscript } from "@/lib/glossary";
 import { readCaseSheet } from "@/lib/read-case-sheet";
 import { extractObservations } from "@/lib/extract";
+import { claimPhotoRead } from "@/lib/photo-cap";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { getTemplateForPatient } from "@/lib/templates";
 import { applyProcedureDone } from "@/lib/apply-procedure-done";
@@ -101,6 +102,8 @@ export async function POST(request: Request) {
     if (photo.size > MAX_PHOTO_BYTES) {
       return NextResponse.json({ error: "That photo is too large." }, { status: 413 });
     }
+    const capped = await claimPhotoRead(supabase, patient.ward_id);
+    if (capped) return NextResponse.json({ error: capped }, { status: 429 });
     const mediaType = ALLOWED_IMAGE.find((t) => photo.type === t);
     if (!mediaType) {
       return NextResponse.json(
