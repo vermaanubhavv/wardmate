@@ -27,12 +27,17 @@ import UrgencyDot from "./urgency-dot";
 import { ChevronIcon } from "../../icons";
 import {
   Activity,
+  Check,
+  ClipboardList,
   ClipboardX,
   CircleAlert,
   Droplets,
   HeartPulse,
   ListChecks,
+  MessageSquareText,
   Pill,
+  Ruler,
+  ShieldCheck,
   Stethoscope,
   Thermometer,
   type LucideIcon,
@@ -350,8 +355,11 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 // stored, both are computed from the calendar as it stands right now. See
                 // lib/urgency.ts describeWhen.
                 const jobText = describeWhen(o.value_text ?? o.label, o.recorded_at);
+                // The row's left edge repeats the dot's colour, so a red job reads as red from
+                // arm's length; an ungraded job keeps a bare edge rather than looking decided.
+                const edge = TODO_EDGE[effectiveUrgency(o).urgency ?? "none"];
                 return (
-                <li key={o.id} className="flex items-start gap-3 px-4 py-3">
+                <li key={o.id} className={"flex items-start gap-3 border-l-[3px] py-3 pl-3 pr-4 " + edge}>
                   <Tick
                     observationId={o.id}
                     patientId={patient.id}
@@ -400,7 +408,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
           {doneTasks.length > 0 && (
             <details className="border-t border-line px-4 py-3">
-              <summary className="text-[13px] text-muted cursor-pointer">
+              <summary className="flex cursor-pointer items-center gap-1.5 text-[13px] text-good-fg">
+                <Check className="h-3.5 w-3.5" strokeWidth={3} />
                 {doneTasks.length} done
               </summary>
               <ul className="mt-2 flex flex-col gap-1.5">
@@ -452,6 +461,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           <details open className="ios-group [&[open]_.chev]:rotate-90">
             <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 active:bg-chip [&::-webkit-details-marker]:hidden">
               <span className="chev shrink-0 text-[11px] text-muted transition-transform">▶</span>
+              <ClipboardList className="h-4 w-4 shrink-0 text-accent" strokeWidth={2.2} />
               <span className="text-[15px] font-semibold">SOAP</span>
               {template && (
                 <span className="ml-auto min-w-0 truncate text-[13px] text-muted">
@@ -473,9 +483,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
               const rows = matchedItems.filter((m) => !m.pertinentNegative);
               return (
               <div key={section} className="mb-3 last:mb-0">
-                <p className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-muted">
-                  {label}
-                </p>
+                <SoapHeading section={section} label={label} />
                 {section === "objective" ? (
                   <ObjectiveBlock
                     matchedItems={rows}
@@ -1002,9 +1010,7 @@ function DaySoap({
     <div className="px-4 py-3">
       {groups.map(({ section, label, items }) => (
         <div key={section} className="mb-3 last:mb-0">
-          <p className="mb-0.5 text-[12px] font-semibold uppercase tracking-wide text-muted">
-            {label}
-          </p>
+          <SoapHeading section={section} label={label} />
           {section === "objective" ? (
             <ObjectiveSummaryView
               summary={summariseObjective(
@@ -1393,6 +1399,35 @@ function kindToSoapSection(kind: string): (typeof SOAP_ORDER)[number] {
     default:
       return "checks";
   }
+}
+
+/** Left-edge colour per urgency, keyed by what effectiveUrgency returns (null → "none"). */
+const TODO_EDGE: Record<string, string> = {
+  red: "border-l-critical-dot",
+  yellow: "border-l-warn-dot",
+  green: "border-l-good-dot",
+  none: "border-l-transparent",
+};
+
+const SOAP_LOOK: Record<(typeof SOAP_ORDER)[number], { icon: LucideIcon; chip: string }> = {
+  subjective: { icon: MessageSquareText, chip: "bg-chip text-accent" },
+  objective: { icon: Ruler, chip: "bg-good-bg text-good-fg" },
+  assessment: { icon: Stethoscope, chip: "bg-warn-bg text-warn-fg" },
+  plan: { icon: ListChecks, chip: "bg-chip text-accent" },
+  checks: { icon: ShieldCheck, chip: "bg-chip text-muted" },
+};
+
+/** A SOAP section's heading: a small coloured icon chip beside the label, one line tall. */
+function SoapHeading({ section, label }: { section: (typeof SOAP_ORDER)[number]; label: string }) {
+  const { icon: Icon, chip } = SOAP_LOOK[section];
+  return (
+    <p className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-wide text-muted">
+      <span className={"grid h-[18px] w-[18px] place-items-center rounded-[5px] " + chip}>
+        <Icon className="h-[11px] w-[11px]" strokeWidth={2.6} />
+      </span>
+      {label}
+    </p>
+  );
 }
 
 /**
