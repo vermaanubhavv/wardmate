@@ -70,10 +70,19 @@ triggered it. Numeric values render amber with "(unconfirmed)"; there is no conf
 
 ### Trees — `content/history-trees/`
 
-Twenty complaints: fever, chest pain, breathlessness, abdominal pain, jaundice, cough, oedema,
-headache, altered sensorium / seizures, limb weakness, diarrhoea / vomiting, generalised
+Twenty-eight complaints: fever, chest pain, breathlessness, abdominal pain, jaundice, cough,
+oedema, headache, altered sensorium / seizures, limb weakness, diarrhoea / vomiting, generalised
 weakness, giddiness, decreased urine output, constipation, abdominal distension, lump, bleeding
-per rectum, burning micturition, loss of weight / appetite. Shared
+per rectum, burning micturition, loss of weight / appetite, palpitations, joint pain,
+haematemesis, polyuria / polydipsia, low back pain, sore throat, fever with rash, and poisoning /
+snake bite.
+
+Every PubMed id in a tree's `references` has been checked against PubMed — title, journal and
+year all match the cited record. Two reference constructors exist because the JAMA "Rational
+Clinical Examination" series and the Annals of Emergency Medicine "Evidence-Based EM / Rational
+Clinical Examination abstract" series are different journals: use `rce()` for the former and
+`ebem()` for the latter, and never relabel one as the other. Where no indexed source was
+verified, the tree cites the textbooks alone rather than a plausible-looking citation. Shared
 constructors are in `_helpers.ts` (`yn`, `val`, `commonHpi`, `IMMUNOCOMPROMISE`, `PREGNANCY`,
 `rce`, textbook references). Schema in `lib/history-check/types.ts`, validator in
 `lib/history-check/schema.ts`.

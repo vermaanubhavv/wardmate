@@ -54,5 +54,22 @@ export const rce = (title: string, year: number, pmid?: string): Reference => ({
   ...(pmid ? { pmid } : {}),
 });
 
+/** The Annals of Emergency Medicine "Evidence-Based Emergency Medicine / Rational Clinical
+ *  Examination abstract" series — a different journal from the JAMA series above, so it is
+ *  labelled as its own source rather than folded into rce(). */
+export const ebem = (title: string, year: number, pmid?: string): Reference => ({
+  title,
+  source: "Annals of Emergency Medicine (Evidence-Based EM / Rational Clinical Examination abstract)",
+  year,
+  ...(pmid ? { pmid } : {}),
+});
+
+/** WHO South-East Asia regional guidance. Snakebite is a north-Indian ward reality that the
+ *  Anglo-American textbooks barely cover. No year or URL recorded — neither was verified. */
+export const WHO_SNAKEBITE: Reference = {
+  title: "Guidelines for the management of snakebites",
+  source: "WHO Regional Office for South-East Asia (guideline)",
+};
+
 export const MACLEODS: Reference = { title: "Macleod's Clinical Examination — history taking and the presenting complaint", source: "Elsevier (textbook)" };
 export const HUTCHISONS: Reference = { title: "Hutchison's Clinical Methods — the history and general examination", source: "Elsevier (textbook)" };

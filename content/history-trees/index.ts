@@ -19,6 +19,14 @@ import { lumpV1 } from "@/content/history-trees/lump.v1";
 import { bleedingPerRectumV1 } from "@/content/history-trees/bleeding-per-rectum.v1";
 import { burningMicturitionV1 } from "@/content/history-trees/burning-micturition.v1";
 import { lossOfWeightAppetiteV1 } from "@/content/history-trees/loss-of-weight-appetite.v1";
+import { palpitationsV1 } from "@/content/history-trees/palpitations.v1";
+import { jointPainV1 } from "@/content/history-trees/joint-pain.v1";
+import { haematemesisV1 } from "@/content/history-trees/haematemesis.v1";
+import { polyuriaV1 } from "@/content/history-trees/polyuria.v1";
+import { lowBackPainV1 } from "@/content/history-trees/low-back-pain.v1";
+import { soreThroatV1 } from "@/content/history-trees/sore-throat.v1";
+import { feverWithRashV1 } from "@/content/history-trees/fever-with-rash.v1";
+import { poisoningSnakebiteV1 } from "@/content/history-trees/poisoning-snakebite.v1";
 
 /**
  * Every complaint tree the app ships, every version. Adding a complaint is a new file beside
@@ -48,4 +56,12 @@ export const HISTORY_TREES: readonly HistoryTree[] = [
   bleedingPerRectumV1,
   burningMicturitionV1,
   lossOfWeightAppetiteV1,
+  palpitationsV1,
+  jointPainV1,
+  haematemesisV1,
+  polyuriaV1,
+  lowBackPainV1,
+  soreThroatV1,
+  feverWithRashV1,
+  poisoningSnakebiteV1,
 ];
