@@ -68,7 +68,7 @@ export default function TermsPage() {
 
         <Clause n={6} title="How long data is kept">
           An active patient stays on the record for as long as you keep them there. Removing a
-          patient moves them to Trash for 7 days — recoverable the whole time — after which the
+          patient moves them to Trash for 48 hours — recoverable the whole time — after which the
           record and any photo or audio evidence tied to it is permanently deleted.
         </Clause>
 

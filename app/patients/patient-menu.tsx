@@ -176,7 +176,7 @@ export default function PatientMenu({
                 onClick={(e) => {
                   if (
                     !confirm(
-                      `Delete ${patientName}?\n\nThey will move to the trash bin now, remain recoverable for 7 days, and then be permanently deleted automatically.`
+                      `Delete ${patientName}?\n\nThey will move to the trash bin now, remain recoverable for 48 hours, and then be permanently deleted automatically.`
                     )
                   ) {
                     e.preventDefault();

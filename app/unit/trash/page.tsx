@@ -14,16 +14,16 @@ type TrashedPatient = {
   trashed_at: string | null;
 };
 
-const TRASH_DAYS = 7;
+const TRASH_HOURS = 48;
 
 /** The moment before which a trashed patient has expired. Kept out of the component body so
  *  the clock read is not treated as part of render. */
 function expiryCutoff(): string {
-  return new Date(Date.now() - TRASH_DAYS * 86_400_000).toISOString();
+  return new Date(Date.now() - TRASH_HOURS * 3_600_000).toISOString();
 }
 
 /**
- * Patients deleted from the ward, recoverable until seven days after they landed here.
+ * Patients deleted from the ward, recoverable until 48 hours after they landed here.
  */
 export default async function TrashPage() {
   const { ward, error } = await getCurrentWard();
@@ -83,7 +83,7 @@ export default async function TrashPage() {
         </Link>
         <h1 className="mt-3 ios-large-title">Trash</h1>
         <p className="mt-0.5 text-[15px] text-muted">
-          Deleted from the ward. Kept here for {TRASH_DAYS} days in case that was a mistake,
+          Deleted from the ward. Kept here for {TRASH_HOURS} hours in case that was a mistake,
           then deleted permanently.
         </p>
       </header>
@@ -99,15 +99,15 @@ export default async function TrashPage() {
   );
 }
 
-function daysLeft(trashedAt: string | null): number {
-  if (!trashedAt) return TRASH_DAYS;
+function hoursLeft(trashedAt: string | null): number {
+  if (!trashedAt) return TRASH_HOURS;
   const elapsedMs = Date.now() - new Date(trashedAt).getTime();
-  const remaining = TRASH_DAYS - elapsedMs / 86_400_000;
+  const remaining = TRASH_HOURS - elapsedMs / 3_600_000;
   return Math.max(0, Math.ceil(remaining));
 }
 
 function TrashCard({ patient }: { patient: TrashedPatient }) {
-  const left = daysLeft(patient.trashed_at);
+  const left = hoursLeft(patient.trashed_at);
 
   return (
     <div className="ios-group p-4">
@@ -123,7 +123,7 @@ function TrashCard({ patient }: { patient: TrashedPatient }) {
       <p className="mt-1 text-[13px] text-orange-700">
         {left === 0
           ? "Deleted for good very soon."
-          : `${left} ${left === 1 ? "day" : "days"} left to recover this patient.`}
+          : `${left} ${left === 1 ? "hour" : "hours"} left to recover this patient.`}
       </p>
 
       <form action={restoreFromTrash} className="mt-3">

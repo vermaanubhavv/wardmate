@@ -219,7 +219,7 @@ export async function restorePatient(formData: FormData) {
  * Move a patient into the trash. Nothing is destroyed here — see
  * supabase/patches/0029_patient_trash.sql for the full shape this is one step of.
  *
- * Starts a seven-day deletion window from the active ward. The menu calls this “Delete
+ * Starts a 48-hour deletion window from the active ward. The menu calls this “Delete
  * permanently” because that is the intended outcome, but its first action is a recoverable
  * move to trash so an accidental tap never destroys a clinical record immediately.
  */
