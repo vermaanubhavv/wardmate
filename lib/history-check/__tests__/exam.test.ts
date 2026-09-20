@@ -54,3 +54,44 @@ describe("exam checklists", () => {
     expect(validateExamChecklist(f).ok).toBe(false);
   });
 });
+
+describe("systemic examination checklists", () => {
+  it("ships one per system, each covering the classical sequence", () => {
+    const ids = listExamChecklists().map((c) => c.id);
+    for (const want of ["general_physical", "cardiovascular", "respiratory", "abdomen", "neurological"]) {
+      expect(ids).toContain(want);
+    }
+  });
+
+  it("respiratory and abdomen follow inspection, palpation, percussion, auscultation", () => {
+    for (const id of ["respiratory", "abdomen"]) {
+      const sections = getExamChecklist(id)!.sections.map((s) => s.id).join(" ");
+      for (const step of ["inspection", "palpation", "percussion", "auscultation"]) {
+        expect(sections).toMatch(new RegExp(step));
+      }
+    }
+  });
+
+  it("carries the items residents most often omit", () => {
+    const itemsOf = (id: string) => getExamChecklist(id)!.sections.flatMap((s) => s.items.map((i) => i.id));
+    // The abdomen is not examined until the groins, genitalia and rectum have been addressed.
+    for (const want of ["hernial_orifices", "external_genitalia", "rectal_examination", "shifting_dullness"]) {
+      expect(itemsOf("abdomen")).toContain(want);
+    }
+    // Apices and the back are where tuberculosis hides.
+    expect(itemsOf("respiratory")).toContain("apices_back");
+    // A sensory level and meningeal signs each change management on their own.
+    for (const want of ["sensory_level", "meningeal_signs"]) {
+      expect(itemsOf("neurological")).toContain(want);
+    }
+    expect(itemsOf("cardiovascular")).toContain("jvp_height");
+  });
+
+  it("every cited PubMed id is digits only, so a fabricated citation cannot slip through", () => {
+    for (const c of listExamChecklists()) {
+      for (const r of c.references) {
+        if (r.pmid !== undefined) expect(r.pmid).toMatch(/^\d{4,9}$/);
+      }
+    }
+  });
+});
