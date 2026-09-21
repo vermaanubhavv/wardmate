@@ -26,7 +26,7 @@ export default async function CaseHistoryWorkspacePage({
 
   const { data: patient } = await supabase
     .from("current_patients")
-    .select("id, ward_id, display_name, bed, sex, primary_diagnosis")
+    .select("id, ward_id, display_name, bed, sex, age_years, primary_diagnosis")
     .eq("id", id)
     .maybeSingle();
   if (!patient) notFound();
@@ -77,6 +77,7 @@ export default async function CaseHistoryWorkspacePage({
       <CaseHistoryWorkspace
         patientId={id}
         sex={patient.sex}
+        demographics={{ name: stripPatientHonorific(patient.display_name), age: patient.age_years, bed: patient.bed }}
         primaryDiagnosis={patient.primary_diagnosis}
         observations={observations}
         fullObservations={fullObservations}

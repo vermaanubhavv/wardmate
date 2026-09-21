@@ -31,7 +31,14 @@ export type GapBand = {
   gaps: Gap[];
 };
 
-export type LeadingDifferential = { id: string; name: string; score: number };
+export type LeadingDifferential = {
+  id: string;
+  name: string;
+  score: number;
+  /** The POSITIVE pointer slots that raised this differential — the "why" behind its place in
+   *  the ordering. Facts already in the history, never a claim about what the patient has. */
+  supportedBy: string[];
+};
 
 export type GapList = {
   leading: LeadingDifferential[];
@@ -56,7 +63,10 @@ export function buildGapList(
   );
 
   const scored = applicable
-    .map((d) => ({ id: d.id, name: d.name, score: d.pointers.filter((p) => state.get(p) === "positive").length }))
+    .map((d) => {
+      const supportedBy = d.pointers.filter((p) => state.get(p) === "positive");
+      return { id: d.id, name: d.name, score: supportedBy.length, supportedBy };
+    })
     .filter((d) => d.score > 0)
     .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
   const leading = scored.slice(0, MAX_LEADING);

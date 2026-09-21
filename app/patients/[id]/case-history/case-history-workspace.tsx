@@ -369,6 +369,7 @@ const DENIAL = /^(no|nil|not|none|nad|nr|negative|unremarkable|insignificant|abs
 const readsDenial = (s: string) => DENIAL.test(s.trim()) || /no relevant|not relevant|nil relevant/i.test(s);
 
 type StepId =
+  | "demographics"
   | "complaints"
   | "hopi"
   | "past"
@@ -377,6 +378,8 @@ type StepId =
   | "medication"
   | "surgical"
   | "obstetric"
+  | "dietary"
+  | "environmental"
   | "negatives"
   | "onco_disease"
   | "onco_treatment"
@@ -397,6 +400,7 @@ type StepId =
 export default function CaseHistoryWorkspace({
   patientId,
   sex,
+  demographics,
   primaryDiagnosis,
   observations,
   fullObservations,
@@ -405,6 +409,8 @@ export default function CaseHistoryWorkspace({
 }: {
   patientId: string;
   sex: string | null;
+  /** Read-only identity for the first screen: name, age, sex and bed are all that identify a patient. */
+  demographics: { name: string; age: number | null; bed: string | null };
   primaryDiagnosis: string | null;
   observations: WorkspaceObs[];
   fullObservations: Observation[];
@@ -522,6 +528,10 @@ export default function CaseHistoryWorkspace({
   const [obstetric, setObstetric] = useState<string>(() =>
     ((bySection.obstetric ?? [])[0]?.value ?? "").trim()
   );
+  const [dietary, setDietary] = useState<string>(() => ((bySection.dietary ?? [])[0]?.value ?? "").trim());
+  const [environmental, setEnvironmental] = useState<string>(() =>
+    ((bySection.environmental ?? [])[0]?.value ?? "").trim()
+  );
 
   const [piccle, setPiccle] = useState<Record<string, { state: SignState; note: string }>>(() => {
     const out: Record<string, { state: SignState; note: string }> = {};
@@ -612,6 +622,7 @@ export default function CaseHistoryWorkspace({
   // the "add patient" card sets, or one generated later in this workspace.
   const hasDiagnosisForNegatives = (primaryDiagnosis ?? "").trim().length > 0 || diagnosis.text.trim().length > 0;
   const STEPS: { id: StepId; title: string }[] = [
+    { id: "demographics", title: "Demographics" },
     { id: "complaints", title: "Complaints" },
     ...complaintList.map((c, i) => ({ id: `hopi` as StepId, title: `HOPI — ${c}`, _c: c, _i: i })),
     ...(hasDiagnosisForNegatives ? [{ id: "negatives" as StepId, title: "Relevant negatives" }] : []),
@@ -620,6 +631,8 @@ export default function CaseHistoryWorkspace({
     { id: "family", title: "Family history" },
     { id: "medication", title: "Medication history" },
     { id: "surgical", title: "Surgical history" },
+    { id: "dietary", title: "Dietary history" },
+    { id: "environmental", title: "Environmental history" },
     ...(sex && /^f/i.test(sex) ? [{ id: "obstetric" as StepId, title: "Menstrual & obstetric" }] : []),
     // The disease, then what has been given for it, then what is running now, then what the
     // last cycle did — the order an oncologist actually asks in. They sit after the general
@@ -692,6 +705,10 @@ export default function CaseHistoryWorkspace({
         "note",
         medication.none ? ["None"] : medication.text.split("\n").map((s) => s.trim()).filter(Boolean)
       );
+    else if (id === "dietary")
+      res = await replaceCaseHistorySection(patientId, "dietary history", "note", dietary.trim() ? [dietary.trim()] : []);
+    else if (id === "environmental")
+      res = await replaceCaseHistorySection(patientId, "environmental history", "note", environmental.trim() ? [environmental.trim()] : []);
     else if (id === "obstetric")
       res = await replaceCaseHistorySection(patientId, "menstrual and obstetric history", "note", obstetric.trim() ? [obstetric.trim()] : []);
     else if (id === "onco_disease")
@@ -926,6 +943,16 @@ export default function CaseHistoryWorkspace({
 
   function body(): React.ReactNode {
     const id = current.id;
+    if (id === "demographics")
+      return (
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[15px]">
+          <dt className="text-muted">Name</dt><dd>{demographics.name}</dd>
+          <dt className="text-muted">Age</dt><dd>{demographics.age !== null ? `${demographics.age} years` : "Not recorded"}</dd>
+          <dt className="text-muted">Sex</dt><dd>{sex || "Not recorded"}</dd>
+          <dt className="text-muted">Bed</dt><dd>{demographics.bed || "Not recorded"}</dd>
+        </dl>
+      );
+
     if (id === "complaints")
       return (
         <>
@@ -940,9 +967,9 @@ export default function CaseHistoryWorkspace({
           {complaints.length > 0 && (
             <div className="flex flex-col gap-1.5">
               <span className="text-[12px] font-medium text-muted">How long has each been present?</span>
-              {complaints.map((c) => (
+              {complaints.map((c, i) => (
                 <div key={c} className="flex flex-wrap items-center gap-1.5">
-                  <span className="mr-auto text-[14px]">{c}</span>
+                  <span className="mr-auto text-[14px]">{i + 1}. {c}</span>
                   <div className="flex items-center gap-1">
                     {DURATION_QUICK.map((d) => (
                       <button
@@ -1095,6 +1122,22 @@ export default function CaseHistoryWorkspace({
               />
             </>
           )}
+        </>
+      );
+
+    if (id === "dietary")
+      return (
+        <>
+          <p className="text-[12px] leading-[1.45] text-muted">What the patient eats: vegetarian or mixed, meals a day, appetite, recent change — only what was said.</p>
+          <DictateArea value={dietary} onChange={(v) => { setDietary(v); mark("dietary"); }} placeholder="e.g. mixed diet, three meals a day, appetite reduced for two weeks" rows={4} />
+        </>
+      );
+
+    if (id === "environmental")
+      return (
+        <>
+          <p className="text-[12px] leading-[1.45] text-muted">Housing, water source, sanitation, occupational or travel exposure — only what was said.</p>
+          <DictateArea value={environmental} onChange={(v) => { setEnvironmental(v); mark("environmental"); }} placeholder="e.g. borewell water, works in a stone quarry, no recent travel" rows={4} />
         </>
       );
 
@@ -1570,6 +1613,8 @@ export default function CaseHistoryWorkspace({
     medication: medication.none || medication.text.trim().length > 0,
     surgical: surgical.mode !== "unset",
     obstetric: obstetric.trim().length > 0,
+    dietary: dietary.trim().length > 0,
+    environmental: environmental.trim().length > 0,
     examination: PICCLE_SIGNS.some((s) => piccle[s.label].state !== "unset") || VITALS.some((v) => (vitals[v.key] ?? "").trim()),
     abdomen: abdomen.trim().length > 0,
     chest: chest.trim().length > 0,

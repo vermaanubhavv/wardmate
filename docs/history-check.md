@@ -70,8 +70,35 @@ triggered it. Numeric values render amber with "(unconfirmed)"; there is no conf
 
 ### Trees — `content/history-trees/`
 
-Eleven complaints: fever, chest pain, breathlessness, abdominal pain, jaundice, cough, oedema,
-headache, altered sensorium / seizures, limb weakness, diarrhoea / vomiting. Shared
+Forty-six complaints: fever, chest pain, breathlessness, abdominal pain, jaundice, cough,
+oedema, headache, altered sensorium / seizures, limb weakness, diarrhoea / vomiting, generalised
+weakness, giddiness, decreased urine output, constipation, abdominal distension, lump, bleeding
+per rectum, burning micturition, loss of weight / appetite, palpitations, joint pain,
+haematemesis, polyuria / polydipsia, low back pain, sore throat, fever with rash, poisoning /
+snake bite, dysphagia, groin swelling, breast lump, anorectal pain, leg ulcer, and scrotal
+swelling, head injury, shock, and four paediatric complaints (fever, diarrhoea, cough or
+difficult breathing, and seizure), bleeding per vaginum, vaginal discharge, labour pains and
+leaking, fever on chemotherapy, blood in the urine, and limb injury.
+
+Forty-six trees in all, spanning general medicine, general surgery, emergency medicine,
+paediatrics, medical oncology, obstetrics and gynaecology, orthopaedics, urology and
+neurosurgery — the specialty order set by the product owner.
+
+Paediatric trees add `paedBackground()` from `_helpers.ts`: birth history, immunisation,
+development, feeding and growth. Age is deliberately not a slot — it comes from the patient
+record, and only name, age, sex and bed identify a patient.
+
+Some complaints legitimately match more than one tree — "breast lump" suggests both the generic
+`lump` tree and `breast_lump`, and a bite suggests both `poisoning_snakebite` and any tree its
+symptoms match. `suggestTrees` returns all of them in registry order; the card is built to show
+more than one.
+
+Every PubMed id in a tree's `references` has been checked against PubMed — title, journal and
+year all match the cited record. Two reference constructors exist because the JAMA "Rational
+Clinical Examination" series and the Annals of Emergency Medicine "Evidence-Based EM / Rational
+Clinical Examination abstract" series are different journals: use `rce()` for the former and
+`ebem()` for the latter, and never relabel one as the other. Where no indexed source was
+verified, the tree cites the textbooks alone rather than a plausible-looking citation. Shared
 constructors are in `_helpers.ts` (`yn`, `val`, `commonHpi`, `IMMUNOCOMPROMISE`, `PREGNANCY`,
 `rce`, textbook references). Schema in `lib/history-check/types.ts`, validator in
 `lib/history-check/schema.ts`.
