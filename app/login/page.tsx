@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Mark from "@/app/mark";
 import InstallHint from "@/app/install-hint";
+import { Mail, KeyRound, TriangleAlert } from "lucide-react";
 
 /**
  * Sign-in is a 6-digit code sent by email, not a "click this link" email.
@@ -149,17 +150,20 @@ export default function LoginPage() {
         <form onSubmit={sendCode} className="flex flex-col gap-4">
           <label className="flex flex-col gap-2">
             <span className="text-[15px] text-muted">Your email</span>
-            <input
-              type="email"
-              required
-              autoFocus
-              autoComplete="email"
-              inputMode="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@hospital.in"
-              className="ios-group px-4 py-4 text-base outline-none focus:border-accent"
-            />
+            <span className="relative">
+              <Mail className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted" strokeWidth={2} />
+              <input
+                type="email"
+                required
+                autoFocus
+                autoComplete="email"
+                inputMode="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@hospital.in"
+                className="ios-group w-full py-4 pl-11 pr-4 text-base outline-none focus:border-accent"
+              />
+            </span>
           </label>
           <button
             type="submit"
@@ -175,18 +179,21 @@ export default function LoginPage() {
             We sent a code to <span className="text-foreground">{email}</span>. It
             expires in an hour.
           </p>
-          <input
-            required
-            autoFocus
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            pattern="[0-9]*"
-            maxLength={10}
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-            placeholder="the code from the email"
-            className="ios-group px-4 py-4 text-center text-xl tracking-[0.25em] outline-none focus:border-accent"
-          />
+          <span className="relative block">
+            <KeyRound className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted" strokeWidth={2} />
+            <input
+              required
+              autoFocus
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]*"
+              maxLength={10}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+              placeholder="the code from the email"
+              className="ios-group w-full py-4 pl-11 pr-4 text-center text-xl tracking-[0.25em] outline-none focus:border-accent"
+            />
+          </span>
           <button
             type="submit"
             disabled={busy || code.length === 0}
@@ -209,7 +216,8 @@ export default function LoginPage() {
       )}
 
       {failed && !error && (
-        <p className="ios-group px-4 py-3 text-[15px] text-orange-700">
+        <p className="flex items-start gap-2 rounded-[10px] bg-warn-bg px-4 py-3 text-[15px] text-warn-fg">
+          <TriangleAlert className="mt-0.5 h-[17px] w-[17px] shrink-0" strokeWidth={2.2} />
           {failed === "cancelled"
             ? "Google sign-in was cancelled. Use the code instead, or try again."
             : "Google sign-in did not complete. Use the code below instead."}
@@ -217,7 +225,8 @@ export default function LoginPage() {
       )}
 
       {error && (
-        <p className="ios-group px-4 py-3 text-[15px] text-orange-700">
+        <p className="flex items-start gap-2 rounded-[10px] bg-warn-bg px-4 py-3 text-[15px] text-warn-fg">
+          <TriangleAlert className="mt-0.5 h-[17px] w-[17px] shrink-0" strokeWidth={2.2} />
           {error}
         </p>
       )}

@@ -273,7 +273,7 @@ Absolute rules:
 3. Do not resolve a contradiction and do not fill a silence. If the notes say nothing about something, your prose says nothing about it. Put anything genuinely ambiguous or self-contradictory in uncertain_points.
 4. Expand ward shorthand where it is unambiguous — "RIF" to "right iliac fossa", "K/C/O" to "known case of", "H/O" to "history of" — but keep abbreviations a clinician expects to read (BP, PR, USG).
 5. Third person, past tense. One tight paragraph per section — history of presenting illness may run to a few sentences, the rest are usually one or two.
-6. Return one entry per section that actually has content. Omit a section entirely if there is nothing for it. Allowed section labels, exactly: "history of presenting illness", "past history", "personal history", "family history", "medication history", "surgical history", "menstrual and obstetric history", "oncological history", "treatment received", "current cycle", "toxicity since last cycle". The last four apply only on an oncology unit and only when the notes contain that content — never invent them.
+6. Return one entry per section that actually has content. Omit a section entirely if there is nothing for it. Allowed section labels, exactly: "history of presenting illness", "past history", "personal history", "family history", "medication history", "surgical history", "menstrual and obstetric history", "dietary history", "environmental history", "oncological history", "treatment received", "current cycle", "toxicity since last cycle". The last four apply only on an oncology unit and only when the notes contain that content — never invent them.
 7. Do NOT return a "chief complaints" section — the complaints list stays as it was recorded.
 8. For "history of presenting illness" open with the duration of the principal complaint before describing it, e.g. "The patient presented with a 3-day history of pain in the right iliac fossa..." or "She was apparently well 3 days ago, when she developed...". Only use a duration the notes actually give.
 9. A duration may be written in the notes as "pain abdomen x 3 days", "pain abdomen × 3 days" or "vomiting: (1 day) ..." — read all of these as the duration of that complaint and render it as natural prose ("a 3-day history of...").
@@ -309,6 +309,8 @@ const COMPILE_LABELS = new Set([
   "medication history",
   "surgical history",
   "menstrual and obstetric history",
+  "dietary history",
+  "environmental history",
   // Medical oncology — only ever emitted on an oncology unit, where the digest carries them.
   "oncological history",
   "treatment received",

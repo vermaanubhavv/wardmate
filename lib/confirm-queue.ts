@@ -2,12 +2,12 @@ import { createClient } from "@/lib/supabase/server";
 import { compareBeds, stripPatientHonorific } from "@/lib/patients";
 
 /**
- * Everything still waiting to be confirmed across the whole unit — the numbers, drug names and
- * bed references a mis-hearing could get dangerously wrong, from every active patient at once.
- *
- * The patient page already shows each patient's own pending list; this is the end-of-round
- * version of the same question — "what have I not checked yet, anywhere" — so it can all be
- * cleared from one screen instead of opening thirty records.
+ * Every real conflict across the whole unit — two recordings that actually disagree
+ * (`conflict_note` set), not the broader "a mis-hearing could get this wrong" set that
+ * `needs_confirmation` alone marks. That broader queue stays exactly where it was, on each
+ * patient's own page (app/patients/[id]/confirm-dictation.tsx) — it just no longer drives
+ * this ward-wide screen or its nav badge, which is for the smaller, more pressing case: two
+ * different values on record for the same thing, and nobody has said which one is right.
  */
 export type PendingConfirm = {
   id: string;
@@ -43,6 +43,7 @@ export async function getWardPendingConfirmations(wardId: string): Promise<Pendi
     )
     .eq("needs_confirmation", true)
     .is("confirmed_at", null)
+    .not("conflict_note", "is", null)
     .order("recorded_at", { ascending: false });
 
   return (rows ?? [])
@@ -65,7 +66,8 @@ export async function getWardPendingConfirmations(wardId: string): Promise<Pendi
     .sort((a, b) => compareBeds(a.bed, b.bed) || a.recorded_at.localeCompare(b.recorded_at));
 }
 
-/** Just the count, for the badge on the ward screen's "Confirm" tile. */
+/** Just the count, for the badge on the ward screen's "Confirm" tile — conflicts only, the
+ *  same narrower scope getWardPendingConfirmations reads above. */
 export async function countWardPendingConfirmations(wardId: string): Promise<number> {
   const supabase = await createClient();
   const { data: patients } = await supabase
@@ -83,7 +85,8 @@ export async function countWardPendingConfirmations(wardId: string): Promise<num
       patients.map((p) => p.id)
     )
     .eq("needs_confirmation", true)
-    .is("confirmed_at", null);
+    .is("confirmed_at", null)
+    .not("conflict_note", "is", null);
 
   return count ?? 0;
 }

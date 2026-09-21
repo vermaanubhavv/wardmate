@@ -157,7 +157,33 @@ export type ScoringTask = {
   responsibleRole: string;
   status: string;
   dueAt: string | null;
+  /** The pathway that suggested this — "Acute pancreatitis", "HEART score" — so it reads
+   *  as a recommendation from something specific rather than an unattributed "score input".
+   *  Null only if the instance's own definition can no longer be resolved (a version bump
+   *  gone missing from the registry). */
+  pathwayTitle: string | null;
 };
+
+/** instance_id → the definition's own title, one query for however many distinct pathway
+ *  instances the caller's tasks reference. */
+async function pathwayTitlesByInstance(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  instanceIds: string[]
+): Promise<Map<string, string>> {
+  const ids = [...new Set(instanceIds)];
+  if (ids.length === 0) return new Map();
+  const { data } = await supabase
+    .from("pathway_instances")
+    .select("id, pathway_id, pathway_version")
+    .in("id", ids);
+
+  const out = new Map<string, string>();
+  for (const row of data ?? []) {
+    const def = getDefinition(row.pathway_id, row.pathway_version);
+    if (def) out.set(row.id, def.title);
+  }
+  return out;
+}
 
 export async function getPatientScoringTasks(patientId: string): Promise<ScoringTask[]> {
   if (!scoringEngineGloballyEnabled()) return [];
@@ -167,12 +193,13 @@ export async function getPatientScoringTasks(patientId: string): Promise<Scoring
 
   const { data } = await supabase
     .from("pathway_tasks")
-    .select("id, patient_id, action, reason, priority, responsible_role, status, due_at")
+    .select("id, patient_id, instance_id, action, reason, priority, responsible_role, status, due_at")
     .eq("patient_id", patientId)
     .in("status", OPEN)
     .order("priority", { ascending: false });
 
-  return (data ?? []).map(mapTask);
+  const titles = await pathwayTitlesByInstance(supabase, (data ?? []).map((r) => r.instance_id));
+  return (data ?? []).map((r) => mapTask(r, titles));
 }
 
 /** patientId → open scoring tasks, for the ward-wide /todo screen. */
@@ -183,13 +210,15 @@ export async function getWardScoringTasks(wardId: string): Promise<Map<string, S
 
   const { data } = await supabase
     .from("pathway_tasks")
-    .select("id, patient_id, action, reason, priority, responsible_role, status, due_at")
+    .select("id, patient_id, instance_id, action, reason, priority, responsible_role, status, due_at")
     .eq("ward_id", wardId)
     .in("status", OPEN);
 
+  const titles = await pathwayTitlesByInstance(supabase, (data ?? []).map((r) => r.instance_id));
+
   const out = new Map<string, ScoringTask[]>();
   for (const row of data ?? []) {
-    const t = mapTask(row);
+    const t = mapTask(row, titles);
     const list = out.get(t.patientId) ?? [];
     list.push(t);
     out.set(t.patientId, list);
@@ -197,16 +226,20 @@ export async function getWardScoringTasks(wardId: string): Promise<Map<string, S
   return out;
 }
 
-function mapTask(row: {
-  id: string;
-  patient_id: string;
-  action: string;
-  reason: string;
-  priority: string;
-  responsible_role: string;
-  status: string;
-  due_at: string | null;
-}): ScoringTask {
+function mapTask(
+  row: {
+    id: string;
+    patient_id: string;
+    instance_id: string;
+    action: string;
+    reason: string;
+    priority: string;
+    responsible_role: string;
+    status: string;
+    due_at: string | null;
+  },
+  titles: Map<string, string>
+): ScoringTask {
   return {
     id: row.id,
     patientId: row.patient_id,
@@ -216,5 +249,6 @@ function mapTask(row: {
     responsibleRole: row.responsible_role,
     status: row.status,
     dueAt: row.due_at,
+    pathwayTitle: titles.get(row.instance_id) ?? null,
   };
 }

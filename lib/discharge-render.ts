@@ -148,11 +148,17 @@ export function buildDischargeDocument(
   if (draft.conditionAtDischarge.freeText?.trim()) conditionParts.push(draft.conditionAtDischarge.freeText.trim());
 
   return {
-    letterheadLines: (context.letterhead ?? "")
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean),
-    logoUrl: context.logoUrl,
+    // The logo and letterhead print only for the ESIC Medical College Faridabad pilot — see
+    // DischargeContext.isEsicFaridabad. Every other unit gets the generic document with no
+    // hospital branding at the top, whatever text or file happens to be saved against the ward;
+    // the unit name below is not hospital branding and still prints.
+    letterheadLines: context.isEsicFaridabad
+      ? (context.letterhead ?? "")
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean)
+      : [],
+    logoUrl: context.isEsicFaridabad ? context.logoUrl : null,
     unitName: (context.wardName ?? "").trim() || null,
     patient: {
       name: stripPatientHonorific(patient.display_name),

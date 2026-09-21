@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentWard, getMyWards, getWardConsultantStored } from "@/lib/ward";
+import { getCurrentWard, getMyWards, getWardConsultantStored, getWardIsEsicFaridabad } from "@/lib/ward";
 import { consultantForWard } from "@/lib/unit-consultants";
 import CodeBox from "./code-box";
 import JoinForm from "./join-form";
@@ -10,12 +10,14 @@ import FormularyImport from "./formulary-import";
 import InviteShare from "./invite-share";
 import CopySetup from "./copy-setup";
 import ClaimName from "./claim-name";
+import EsicTemplateToggle from "./esic-template-toggle";
 import { getExpectedMembers } from "@/lib/expected-members";
 import CreateUnitForm from "../onboarding/create-unit-form";
 import { getFormularySize } from "@/lib/formulary";
 import { DESIGNATION_CHOICES } from "@/lib/patients";
 import { ChecklistIcon, DocumentIcon, MicIcon } from "../icons";
 import { listSpecialties, specialtyPacksEnabled } from "@/lib/specialty";
+import { getFinalisedDischargeMap, visibleDischargedFilter } from "@/lib/discharged";
 
 /**
  * The unit: who is on it, how to join it, and which one the app is showing.
@@ -69,11 +71,23 @@ export default async function UnitPage() {
       supabase.rpc("is_protocol_publisher"),
     ]);
 
+  // The same "saved, or still inside the 48-hour undo window" count app/unit/discharged
+  // itself lists by — never the raw count of everyone ever discharged, which is exactly
+  // the ever-growing number this link was moved here to get away from.
+  const finalisedMap = await getFinalisedDischargeMap(supabase, ward.id);
+  const { count: dischargedCount } = await supabase
+    .from("patients")
+    .select("id", { count: "exact", head: true })
+    .eq("ward_id", ward.id)
+    .eq("status", "discharged")
+    .or(visibleDischargedFilter([...finalisedMap.keys()]));
+
   const formularySize = await getFormularySize(ward.id);
   const { rows: expected, missing: rosterMissing } = await getExpectedMembers(ward.id);
   // What the field shows: the stored value if the column exists and is set, otherwise the
   // seeded default for this unit's number — so the box is never blank for units 1–4.
   const consultantInCharge = consultantForWard(await getWardConsultantStored(ward.id), ward.name);
+  const isEsicFaridabad = await getWardIsEsicFaridabad(ward.id);
 
   const isOwner = ward.owner_id === user?.id;
 
@@ -443,6 +457,27 @@ export default async function UnitPage() {
         </section>
       )}
 
+      {isOwner && (
+        <section className="px-6 pb-6">
+          <div className="flex items-center justify-between ios-group px-4 py-3">
+            <div className="pr-4">
+              <p className="text-[15px]">ESIC Medical College Faridabad</p>
+              <p className="mt-0.5 text-[13px] text-muted">
+                {isEsicFaridabad
+                  ? "On — today’s note prints on the pilot’s own sheet."
+                  : "Off — today’s note prints the generic SOAP layout."}
+              </p>
+            </div>
+            <EsicTemplateToggle wardId={ward.id} initial={isEsicFaridabad} />
+          </div>
+          <p className="mt-2 text-[13px] text-muted">
+            Which printable layout Today&rsquo;s note uses. Leave this on for the ESIC Faridabad
+            pilot&rsquo;s own sheet; switch it off for any other hospital&rsquo;s unit, which
+            gets a generic Subjective / Objective / Assessment / Plan sheet instead.
+          </p>
+        </section>
+      )}
+
       <section className="px-6 pb-6">
         <Link
           href="/protocols"
@@ -513,8 +548,23 @@ export default async function UnitPage() {
         </section>
       )}
 
-      {/* Kept at the end, away from routine profile and unit controls. It remains hidden when
-          empty, so it never creates a destination without something recoverable in it. */}
+      {/* Kept at the end, away from routine profile and unit controls. Both remain hidden
+          when empty, so neither creates a destination without something recoverable in
+          it — moved here from the ward page's own header for the same reason Formats and
+          Protocols were: not something reached for on every round. */}
+      {Boolean(dischargedCount) && (
+        <section className="px-6 pb-3">
+          <Link
+            href="/unit/discharged"
+            className="flex items-center justify-between rounded-[10px] bg-card px-4 py-3 text-[15px]"
+          >
+            <span>Discharged</span>
+            <span className="text-muted">
+              {dischargedCount} {dischargedCount === 1 ? "patient" : "patients"} ›
+            </span>
+          </Link>
+        </section>
+      )}
       {Boolean(trashCount) && (
         <section className="px-6 pb-16">
           <Link

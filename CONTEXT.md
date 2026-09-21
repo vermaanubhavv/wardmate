@@ -158,11 +158,17 @@ per bed), `app/api/patients/parse` (spoken new patient). The round route also ac
 ## 7. Routes
 
 - `/` — landing: name, designation, department, unit, counts by ward/ICU/emergency
-- `/ward` — the ward list (this was `/` until recently; check link targets if something 404s)
+- `/ward` — the ward list (this was `/` until recently; check link targets if something 404s).
+  As of the visual-refresh work (§12), also carries a Patients/Critical/Dischargeable stat row
+  and a top-3 to-do preview under the unit card.
 - `/patients/[id]` — one patient: to-dos, unconfirmed, "where things stand" (collapsed), record
-  by day (collapsible), discharge
-- `/patients/new`, `/todo`, `/handover`, `/unit`, `/formats`, `/removed`, `/round/[id]`,
-  `/register/[id]`, `/login`, `/auth/callback`
+  by day (collapsible), discharge. **Not yet visually refreshed — see §12, this is next.**
+- `/patients/new`, `/todo` (now has a "By urgency / By type" toggle), `/handover` (renamed
+  "Update" in the UI — same route), `/confirm` (narrowed to real dictation conflicts only,
+  `conflict_note` set — the broader "might be misheard" queue lives per-patient), `/unit`,
+  `/unit/discharged` (opt-in saved-summary list, 48h undo window — **`/removed` no longer
+  exists, replaced by this**), `/unit/trash`, `/formats`, `/round/[id]`, `/register/[id]`,
+  `/login`, `/auth/callback`
 
 ---
 
@@ -203,6 +209,17 @@ default; editing is a mode (pencil toggle per record). One chip per patient row,
 Reference sections fold; actionable ones do not. Do not add permanent chrome to serve a rare
 action — that mistake has been made and reverted twice.
 
+**Newer direction (as of the visual-refresh work, §12): the flatness went too far.** Interns
+called the app boring — nothing helped a resident tell "fine" from "needs attention" at a
+glance. The fix was additive, not a re-theme: `lucide-react` for icons (previously zero icon
+library; brand-specific marks like the wordmark/mic stay in `app/icons.tsx`), plus semantic
+colour tokens in `app/globals.css` — `--critical-bg`/`--critical-fg`/`--critical-dot`,
+`--warn-bg`/`--warn-fg`/`--warn-dot`, `--good-bg`/`--good-fg`/`--good-dot` (Tailwind utilities:
+`bg-critical-bg`, `text-warn-fg`, etc.) — so a new screen reaches for a token instead of
+re-typing a raw Tailwind shade. Same single-fixed-light-theme, iOS-chrome philosophy as above;
+this is about purposeful colour/icons on top of it, not a rewrite. `app/ward/page.tsx` is the
+reference implementation — its `StatTile` and `Badge` components are the pattern to copy.
+
 ---
 
 ## 10. Open issues
@@ -225,9 +242,12 @@ action — that mistake has been made and reverted twice.
 3. **0021 / 0022 unconfirmed** — ask before assuming a feature is broken.
 4. **`getPromptGlossary()` is unwired** — intentional, see §6. Delete it or wire it, don't
    half-do it.
-5. **No tests, no CI.** Verification so far is `tsc --noEmit`, `eslint`, `next build`, plus
-   node scripts for pure logic (correction rules, date maths) — that pattern has caught real
-   bugs and is worth continuing.
+5. **No tests, no CI** *(stale as of the visual-refresh work, §12)* **— this has since changed.**
+   There is now a real Vitest suite (`npm run test`, 378 tests as of this writing) under
+   `lib/**/__tests__/`, and GitHub PRs get a real Vercel deployment check (`npm run build`
+   equivalent, in Vercel's own environment) — wait for that check to report success before
+   merging, it has caught things a local build alone would not. Keep writing tests for new pure
+   functions in `lib/` in this same pattern; don't let this regress back to "no tests."
 
 ---
 
@@ -245,3 +265,60 @@ action — that mistake has been made and reverted twice.
   Match that.
 - **Say what was not verified.** Screens behind a login could not be visually confirmed by the
   previous agent; it said so each time rather than implying otherwise. Keep doing that.
+
+---
+
+## 12. Next up — visual-refresh rollout, Phase 3
+
+The interns-called-it-boring visual refresh (§9) is being rolled out screen by screen, in
+separate PRs, because doing the whole app in one pass on an unreviewed, no-live-data sandbox
+is reckless for a production app with real patients. Progress so far, each already merged to
+`main`:
+
+- **Phase 1** (PRs #15, #16): the ward page — Patients/Critical/Dischargeable stat row, a
+  top-3 to-do preview, nav tiles redefined (dropped "To do", renamed "Ward round" → "Update"
+  with a same-day summary + editable WhatsApp draft, narrowed "Confirm" to real conflicts,
+  moved "Discharged" to `/unit` with a 48h undo window). Also: `/todo`'s "By urgency / By
+  type" toggle, and fixing a bug where every scoring-engine suggestion was mislabeled "For the
+  BISAP score" regardless of which pathway actually suggested it.
+- **Phase 2** (PR #17): `/login`, `/` (front door), `/onboarding`, `/patients/new` — same icon
+  set and colour tokens applied to the screens before a doctor ever reaches a patient.
+
+**Phase 3 — not started, this is the next piece:** `app/patients/[id]/page.tsx`, ~1,400 lines,
+the single most-used screen in the app (a resident opens it every bed, every round). Deserves
+the same care the ward page got, not a rushed pass:
+
+1. **Read the whole file first** — it has sections for to-dos, unconfirmed values, "where
+   things stand" against the operation's checklist, the day-by-day record, scoring cards
+   (`app/patients/[id]/scoring/`), and the discharge/case-history entry points. Understand what
+   each section already does before touching it — this file has had a lot of careful, deliberate
+   design decisions (see its own comments) that a visual pass must not accidentally undo.
+2. **Reuse, don't reinvent**: the semantic colour tokens (`--critical-*`/`--warn-*`/`--good-*`
+   in `app/globals.css`) and the icon conventions from `app/ward/page.tsx` (`StatTile`, `Badge`)
+   and `app/login/page.tsx` (leading icons on inputs). Pick `lucide-react` icons for whatever
+   this page needs; check the exact export name exists first (`ls node_modules/lucide-react/
+   dist/esm/icons | grep ...`) — icon names get renamed across lucide versions (e.g.
+   `CheckCircle2` → `CircleCheckBig`) and importing a nonexistent one fails the build.
+3. **Mockup first, for a page this size and this central to daily use** — same process Phase 1
+   used: an HTML/Artifact mockup of the redesigned layout, reviewed and approved before writing
+   any real code. Don't skip this step just because the pattern is now established; this page
+   is bigger and higher-stakes than anything redesigned so far.
+4. **Ship it the same way**: `git fetch origin main && git checkout -B claude/blissful-sagan-c3mbge origin/main`
+   first if the branch's last PR was already merged (check `git log` — squash-merges mean the
+   local branch and `main` diverge every time), then build/lint/test locally, commit, push
+   `--force-with-lease`, open a PR, wait ~30-45s for the Vercel deployment check via
+   `mcp__github__pull_request_read` (`method: "get_status"`) before merging — a `pending`
+   Vercel status means it's still building, don't merge on `mergeable_state: "unstable"`.
+5. **Standing limitation**: this sandbox has no Supabase credentials and no network access to
+   the Vercel preview URL (proxy policy blocks `*.vercel.app`) — verification is
+   build+lint+test+real-Vercel-CI-check only. Say this plainly rather than implying a live
+   click-through happened; the user still needs to check it against real ward data themselves.
+
+**Phase 4, further out**: discharge/case-history flows, `prepare-discharge`, `formats`,
+`protocols`, `round/[id]`, `register/[id]`, `tools/transcribe`, `learn/*`, and the admin panel
+(lowest priority — internal tooling, not a resident-facing screen).
+
+Also noted but explicitly deferred by the user: **new scoring-engine pathways** beyond the 17
+already in `lib/scoring/definitions/` — the existing engine (§ design language, `StatTile`
+etc. aside) already auto-triggers investigation suggestions off `primary_diagnosis`; adding
+*more* diseases/pathways is separate, future work the user will scope in its own session.

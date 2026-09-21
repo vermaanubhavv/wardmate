@@ -1,6 +1,7 @@
 "use client";
 
 import { useOptimistic, useTransition } from "react";
+import { Flag } from "lucide-react";
 import { cycleUrgency } from "./actions";
 import { effectiveUrgency, nextUrgency, URGENCY_META, type Urgency } from "@/lib/urgency";
 
@@ -70,12 +71,13 @@ export default function UrgencyDot({
         // shouting louder than the job it belongs to.
         className="-m-1 p-1 active:opacity-60"
       >
-        <span
-          className={
-            "block h-3 w-3 rounded-full " +
-            (meta ? meta.dot : "border-2 border-dashed border-muted/60")
-          }
-        />
+        {meta ? (
+          <span className={"block h-3 w-3 rounded-full " + meta.dot} />
+        ) : (
+          // A flag rather than a bare dashed ring: it reads as "set a priority here", which is
+          // what a tap on it does.
+          <Flag className="h-4 w-4 text-muted/70" strokeWidth={2} />
+        )}
       </button>
     </form>
   );

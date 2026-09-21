@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentWard, getWardSpecialtyStored } from "@/lib/ward";
+import { getCurrentWard, getWardSpecialtyStored, getWardIsEsicFaridabad } from "@/lib/ward";
 import { getWardFormats } from "@/lib/formats";
 import { getFormularyMappings } from "@/lib/formulary";
 import { correctTranscript } from "@/lib/glossary";
@@ -134,9 +134,10 @@ export async function POST(request: Request) {
       return true;
     });
 
-  const [formats, formularyMappings] = await Promise.all([
+  const [formats, formularyMappings, isEsicFaridabad] = await Promise.all([
     ward ? getWardFormats(ward.id) : Promise.resolve(new Map()),
     ward ? getFormularyMappings(ward.id) : Promise.resolve(new Map<string, string>()),
+    ward ? getWardIsEsicFaridabad(ward.id) : Promise.resolve(true),
   ]);
 
   // Which department’s templates this unit gets. An oncology unit is never offered "Lap chole".
@@ -150,7 +151,8 @@ export async function POST(request: Request) {
     observations,
     patientState,
     medications,
-    pack
+    pack,
+    isEsicFaridabad
   );
 
   // The diagnosis template: an explicit "no template" wins; then the resident's explicit

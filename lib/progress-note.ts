@@ -28,6 +28,11 @@ export type ProgressNote = {
     /** Split out from ageSex, for a form whose "Age" and "Sex" are separate boxes. */
     age: string;
     sex: string;
+    /** Never recorded anywhere in this app — patients are held by age, not date of birth — so
+     *  this is always the blank placeholder. Exists purely for a form (SOAP) whose own printed
+     *  box asks for one, the same "the label prints, the value doesn't" rule as everything else
+     *  here that was never said. */
+    dob: string;
     uhid: string | null;
     doa: string;
     unit: string | null;
@@ -37,12 +42,24 @@ export type ProgressNote = {
   /** "Case seen by {department} {unit} team" — the note's own heading, spanning the full page
    *  above the Observation/Investigation split rather than sitting inside either column. */
   caseSeenBy: string;
+  /** The signed-in doctor's own name, for a form that asks the practitioner to print it next to
+   *  their signature. Blank when their profile has none — never guessed. */
+  practitionerName: string | null;
   dateTime: string;
   diagnosis: string | null;
-  /** The Observation column — items 1 through 8 of the fixed structure below. */
+  /** The Observation column — items 1 through 8 of the fixed structure below. Kept exactly as
+   *  before: this is what the ESIC sheet and the copy-to-clipboard text print. */
   observation: string[];
   /** The Investigation/Treatment/Management column: Plan first, then Advice. */
   plan: string[];
+  /** The same facts as `observation`, split three ways for a SOAP-format sheet instead of the
+   *  ESIC sheet's fixed 11-line column — patient-reported complaints, examined/measured
+   *  findings, and the round's own judgement. Every heading still prints even when nothing was
+   *  said today, the same rule `observation` follows; only the pure spacer blank lines (room to
+   *  write more by hand on the ESIC sheet) are dropped, since a SOAP box already is that room. */
+  subjective: string[];
+  objective: string[];
+  assessment: string[];
 };
 
 const istDay = (iso: string) =>
@@ -120,6 +137,9 @@ export function buildProgressNote(
      *  values only. Empty / omitted when no scoring pathway is active. Printed as its own
      *  item just above Issues; never invented, marked "so far" while inputs are missing. */
     scoreLines?: string[];
+    /** The signed-in doctor's own name, for the SOAP sheet's "Practitioner's name" line. Blank,
+     *  never guessed, when nobody has set one on their profile. */
+    practitionerName?: string | null;
   }
 ): ProgressNote {
   const now = new Date();
@@ -332,6 +352,18 @@ export function buildProgressNote(
   plan.push("Advice:");
   plan.push(...(medLines.length > 0 ? medLines.map((m, i) => `${i + 1}. ${m}`) : [""]));
 
+  // The same facts as `observation`, regrouped for a SOAP-format sheet — see ProgressNote.
+  // subjective/objective/assessment above. Every substantive heading from `observation` lands in
+  // exactly one bucket; only the pure "" spacer lines (blank room to write more on the ESIC
+  // sheet) are dropped, since a SOAP box is already that room.
+  const subjective = [line3];
+  const objective = [
+    line4, line5, line5b,
+    ...(line5c ? [line5c] : []),
+    line6, line7, line7c, line9,
+  ];
+  const assessment = [line2, line8, ...scoreLines];
+
   return {
     header: {
       name: stripPatientHonorific(patient.display_name).toUpperCase(),
@@ -341,6 +373,7 @@ export function buildProgressNote(
           .join(" / ") || "",
       age: patient.age_years !== null ? `${patient.age_years}` : "",
       sex: sexWord(patient.sex),
+      dob: BLANK,
       uhid: patient.uhid_ip_no,
       doa: istDay(patient.admitted_on),
       unit: options?.wardName ?? null,
@@ -348,6 +381,7 @@ export function buildProgressNote(
       ipd: patient.mrd_no,
     },
     caseSeenBy,
+    practitionerName: options?.practitionerName?.trim() || null,
     dateTime: now.toLocaleString("en-IN", {
       timeZone: "Asia/Kolkata",
       day: "2-digit",
@@ -359,6 +393,9 @@ export function buildProgressNote(
     diagnosis,
     observation,
     plan,
+    subjective,
+    objective,
+    assessment,
   };
 }
 
