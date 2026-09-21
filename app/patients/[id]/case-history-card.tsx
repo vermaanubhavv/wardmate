@@ -1,7 +1,7 @@
 import { summariseCaseHistory } from "@/lib/case-history";
 
 /** "a" · "a and b" · "a, b and c" — a plain-English list for a sentence, no Oxford comma. */
-export function formatList(items: string[]): string {
+function formatList(items: string[]): string {
   if (items.length <= 1) return items.join("");
   return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 }

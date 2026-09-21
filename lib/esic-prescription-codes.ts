@@ -17,14 +17,14 @@
  * dose units. The subset below is what a general-surgery discharge actually uses.
  */
 
-export type EsicOption = { text: string; value: string };
+type EsicOption = { text: string; value: string };
 
 /**
  * ddlFrequency. The option value encodes the schedule as `id:perDay:durationUnit` — "120:3:3"
  * is TDS, three times, per day (3 = Days in ddlDuration). Stored whole, exactly as the page
  * has it, rather than rebuilt from parts.
  */
-export const ESIC_FREQUENCY: Record<string, EsicOption> = {
+const ESIC_FREQUENCY: Record<string, EsicOption> = {
   OD: { text: "OD - Once a Day", value: "53:1:3" },
   BD: { text: "BD - 2 times a day", value: "43:2:3" },
   TDS: { text: "TDS - 3 times a day", value: "120:3:3" },
@@ -43,7 +43,7 @@ export const ESIC_FREQUENCY: Record<string, EsicOption> = {
  * chosen — that is what the unit's own filled prescriptions show ("ORAL / BY MOUTH",
  * "OPHTHALMIC / EYE"), so it matches what a pharmacist there is used to reading.
  */
-export const ESIC_ROUTE: Record<string, EsicOption> = {
+const ESIC_ROUTE: Record<string, EsicOption> = {
   PO: { text: "ORAL / BY MOUTH", value: "26" },
   IV: { text: "INTRA-VENOUS", value: "40" },
   IM: { text: "INTRA-MUSCULAR", value: "43" },
@@ -64,7 +64,7 @@ export const ESIC_ROUTE: Record<string, EsicOption> = {
  * are each a different thing an inhaler could mean. An inhaler dose therefore prints its unit
  * blank on the ESIC column for a human to choose, rather than this file picking one.
  */
-export const ESIC_DOSE_UNIT: Record<string, EsicOption> = {
+const ESIC_DOSE_UNIT: Record<string, EsicOption> = {
   tablet: { text: "Tablet(s)", value: "213" },
   capsule: { text: "Capsule(s)", value: "183" },
   drop: { text: "Drop(s)", value: "496" },
@@ -84,23 +84,12 @@ export const ESIC_DOSE_UNIT: Record<string, EsicOption> = {
 };
 
 /** ddlDuration — the unit beside the number, not the number itself. */
-export const ESIC_DURATION_UNIT: Record<string, EsicOption> = {
+const ESIC_DURATION_UNIT: Record<string, EsicOption> = {
   day: { text: "Days", value: "3" },
   week: { text: "Weeks", value: "7" },
   month: { text: "Months", value: "2" },
   year: { text: "Years", value: "1" },
 };
-
-/** The dropdown element ids on the page, for whatever later fills them. */
-export const ESIC_FIELD_IDS = {
-  medicationsTable: "gdvMedications",
-  addMedication: "btnADDM",
-  dose: "ddlDrugDose",
-  duration: "ddlDuration",
-  frequency: "ddlFrequency",
-  quantityUom: "ddlQuantityUOM",
-  route: "ddlAdminRoute",
-} as const;
 
 export const esicFrequency = (code: string | null) => (code ? (ESIC_FREQUENCY[code] ?? null) : null);
 export const esicRoute = (code: string | null) => (code ? (ESIC_ROUTE[code] ?? null) : null);

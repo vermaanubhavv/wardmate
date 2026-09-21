@@ -1,7 +1,7 @@
 import type { RegisterRow } from "@/lib/read-register";
 import { stripPatientHonorific } from "@/lib/patients";
 
-export type MatchStatus = "matched" | "bed_mismatch" | "no_match" | "ambiguous";
+type MatchStatus = "matched" | "bed_mismatch" | "no_match" | "ambiguous";
 
 export type MatchedRow = {
   row: RegisterRow;

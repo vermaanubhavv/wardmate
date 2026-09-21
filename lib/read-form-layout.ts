@@ -18,7 +18,7 @@ import { AI_MODEL } from "@/lib/model";
  * better result with no code change needed.
  */
 
-export const FORM_ZONE_ROLES = [
+const FORM_ZONE_ROLES = [
   "name",
   "uhid",
   "age",

@@ -86,7 +86,7 @@ export type MissingReason =
   | "requires_verification"
   | "insufficient_inputs";
 
-export type ComponentStatus =
+type ComponentStatus =
   | "satisfied"
   | "not_satisfied"
   | "unknown"
@@ -129,7 +129,7 @@ export type ComponentResult = {
 // Card results
 // ---------------------------------------------------------------------------
 
-export type CardType = "calculator" | "structured_classification" | "documentation_only";
+type CardType = "calculator" | "structured_classification" | "documentation_only";
 
 export type CardState =
   | "not_started"
@@ -178,9 +178,8 @@ export type CardResult = {
 // Tasks
 // ---------------------------------------------------------------------------
 
-export type TaskStatus = "suggested" | "linked" | "accepted" | "declined" | "completed";
-export type TaskPriority = "routine" | "soon" | "urgent";
-export type ResponsibleRole = "resident" | "nursing" | "senior" | "radiology";
+type TaskPriority = "routine" | "soon" | "urgent";
+type ResponsibleRole = "resident" | "nursing" | "senior" | "radiology";
 
 export type GeneratedTask = {
   cardId: string | null;
@@ -310,7 +309,7 @@ export type ComponentInput = {
   tier?: string;
 };
 
-export type CardCalculation =
+type CardCalculation =
   | { kind: "sum_points" }
   /** The card total is the HIGHEST sub-score, not the sum — KDIGO AKI stage, where the stage
    *  is the worst of the creatinine, urine-output and RRT criteria, never their total. */
@@ -331,7 +330,7 @@ export type CardCalculation =
       tierThresholds?: Record<string, number>;
     };
 
-export type CardInterpretationBand = {
+type CardInterpretationBand = {
   /** Inclusive lower bound on the total (calculators). */
   min: number;
   max?: number;
@@ -364,7 +363,7 @@ export type CardDefinition = {
   requiresConfirmation?: boolean;
 };
 
-export type RecomputeEvent =
+type RecomputeEvent =
   | "new_lab"
   | "new_observation"
   | "new_imaging"
@@ -372,7 +371,7 @@ export type RecomputeEvent =
   | "deterioration"
   | "manual";
 
-export type DiagnosisTrigger = {
+type DiagnosisTrigger = {
   /** Local diagnosis codes, if the ward ever configures a coding system. */
   codes: string[];
   /** Case-insensitive phrases matched against `primary_diagnosis` / diagnosis observations. */
@@ -394,7 +393,7 @@ export type GeneratedTaskDefinition = Omit<GeneratedTask, "dedupKey" | "dueAt" |
   linkKey?: string;
 };
 
-export type PathwayStatus = "active" | "draft" | "unavailable" | "retired";
+type PathwayStatus = "active" | "draft" | "unavailable" | "retired";
 
 export type PathwayDefinition = {
   pathwayId: string;
@@ -420,29 +419,11 @@ export type PathwayDefinition = {
 // Pathway instance (runtime state, one per patient + pathway version)
 // ---------------------------------------------------------------------------
 
-export type PathwayInstanceStatus = "suggested" | "active" | "dismissed" | "resolved";
-
 export type TriggerSource =
   | "diagnosis_text"
   | "diagnosis_code"
   | "manual_activation"
   | "problem_list_change";
-
-export type PathwayInstance = {
-  id: string;
-  patientId: string;
-  wardId: string;
-  pathwayId: string;
-  pathwayVersion: string;
-  status: PathwayInstanceStatus;
-  triggerSource: TriggerSource;
-  triggeredAt: Instant;
-  triggerDiagnosis: string;
-  activatedBy: string | null;
-  activatedAt: Instant | null;
-  dismissedReason: string | null;
-  nextCheckpointAt: Instant | null;
-};
 
 /** Anchor instants an instance is evaluated against. */
 export type InstanceClock = {

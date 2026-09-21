@@ -32,7 +32,7 @@ export type Observation = {
 export type PacVerdict = "fit" | "fit_with_conditions" | "unfit" | "pending" | null;
 
 /** An outstanding job, with how many earlier sayings of it are folded underneath. */
-export type OpenTask = Observation & { repeats: number };
+type OpenTask = Observation & { repeats: number };
 
 export type PatientState = {
   matched: MatchedItem[];
@@ -145,7 +145,7 @@ export function derivePatientState(
   };
 }
 
-export const SITTING_GAP_MS = 30 * 60 * 1000;
+const SITTING_GAP_MS = 30 * 60 * 1000;
 
 /**
  * A single visit to a bedside usually produces several entries a minute apart — you speak,

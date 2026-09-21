@@ -1,4 +1,4 @@
-export type BedMatchStatus = "matched" | "ambiguous" | "no_match" | "free";
+type BedMatchStatus = "matched" | "ambiguous" | "no_match" | "free";
 
 export type BedMatch = {
   status: BedMatchStatus;

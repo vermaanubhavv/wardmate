@@ -46,7 +46,7 @@ export function resolveWindow(
 }
 
 /** True when `at` falls inside the resolved window (start inclusive, end inclusive). */
-export function inWindow(at: Instant, rw: ResolvedWindow): boolean {
+function inWindow(at: Instant, rw: ResolvedWindow): boolean {
   if (rw.startMs === null) return false;
   const t = Date.parse(at);
   if (Number.isNaN(t)) return false;
@@ -80,7 +80,7 @@ export function firstAvailable(inputs: EngineInput[], key: string, rw: ResolvedW
   return valuesInWindow(inputs, key, rw)[0] ?? null;
 }
 
-export function highestValue(inputs: EngineInput[], key: string, rw: ResolvedWindow): EngineInput | null {
+function highestValue(inputs: EngineInput[], key: string, rw: ResolvedWindow): EngineInput | null {
   const vs = valuesInWindow(inputs, key, rw).filter((v) => v.value != null);
   if (vs.length === 0) return null;
   return vs.reduce((best, v) => ((v.value as number) > (best.value as number) ? v : best));

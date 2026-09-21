@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { applyCorrections, type Correction } from "@/lib/corrections";
 
-export type GlossaryTerm = {
+type GlossaryTerm = {
   wrong_term: string;
   correct_term: string;
   category: string | null;
@@ -18,7 +18,7 @@ export type GlossaryTerm = {
  * transcription, it is not required for it, and a unit that has not run the patch must still be
  * able to record a round.
  */
-export async function getGlossary(limit = 80): Promise<GlossaryTerm[]> {
+async function getGlossary(limit = 80): Promise<GlossaryTerm[]> {
   try {
     const supabase = await createClient();
     const { data, error } = await supabase

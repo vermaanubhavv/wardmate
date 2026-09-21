@@ -5,7 +5,7 @@ import { isIdentifierLabel } from "@/lib/patients";
 import { extractClinicalEntities } from "@/lib/clinical-ner";
 import { generalSurgeryPack, getSpecialtyPack, type SpecialtyPack } from "@/lib/specialty";
 
-export const OBSERVATION_KINDS = [
+const OBSERVATION_KINDS = [
   "diagnosis",
   "day_number",
   "planned_procedure",
@@ -21,9 +21,9 @@ export const OBSERVATION_KINDS = [
   "note",
 ] as const;
 
-export const URGENCIES = ["red", "yellow", "green"] as const;
+const URGENCIES = ["red", "yellow", "green"] as const;
 
-export const PAC_VERDICTS = ["fit", "fit_with_conditions", "unfit", "pending"] as const;
+const PAC_VERDICTS = ["fit", "fit_with_conditions", "unfit", "pending"] as const;
 
 export type ExtractedObservation = {
   kind: (typeof OBSERVATION_KINDS)[number];

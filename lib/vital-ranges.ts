@@ -9,7 +9,7 @@
  * means, and nothing downstream is allowed to either.
  */
 
-export type VitalFlag = "high" | "low" | null;
+type VitalFlag = "high" | "low" | null;
 
 export type VitalComponent = {
   label: string;

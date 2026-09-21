@@ -21,7 +21,7 @@ function client(): Anthropic {
 /** The department phrasing every case-history prompt is reframed to. Defaults to the exact
  *  wording the prompts were written with, so a general-surgery unit is byte-for-byte unchanged
  *  (and its prompt cache stays warm). A pack supplies its own — see SpecialtyPack.admissionPhrase. */
-export const DEFAULT_ADMISSION_PHRASE = "a general-surgery admission";
+const DEFAULT_ADMISSION_PHRASE = "a general-surgery admission";
 
 /** Reframe a prompt written for general surgery to the unit's department. No-op for surgery. */
 function forDept(systemText: string, admissionPhrase: string): string {
