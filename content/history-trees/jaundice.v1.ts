@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * JAUNDICE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * JAUNDICE — v1.1.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
  * Adult medicine ward, north India. Differentials: acute viral hepatitis (A/E, B), alcoholic
  * hepatitis, drug-induced liver injury (including anti-tubercular drugs), obstructive jaundice
  * (stone, malignancy), decompensated cirrhosis, haemolysis (including malaria), leptospirosis,
@@ -10,7 +10,7 @@ import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "
  */
 export const jaundiceV1: HistoryTree = {
   id: "jaundice",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Jaundice",
   triggers: ["jaundice", "yellowish discolouration", "yellow discoloration", "yellowness of eyes", "yellow eyes", "icterus", "yellow urine"],
   setting: "Adult medicine ward, north India",
@@ -31,6 +31,8 @@ export const jaundiceV1: HistoryTree = {
     yn("hpi", "dark_urine", "Dark urine", "Is the urine dark or high-coloured?", ["dark urine", "dark coloured urine", "high coloured urine", "high colored urine", "cola coloured", "tea coloured", "yellow urine"]),
     yn("hpi", "pale_stools", "Pale stools", "Are the stools pale or clay-coloured?", ["pale stools", "clay coloured", "clay colored", "white stools", "chalky"]),
     yn("hpi", "pruritus", "Itching", "Any itching?", ["itching", "pruritus", "itch", "scratching"]),
+    val("hpi", "fluctuation", "Whether the jaundice fluctuates", "Has the yellowness come and gone, or has it only deepened since it began?", ["comes and goes", "came and went", "fluctuating", "on and off", "decreased then increased", "deepening", "only increasing", "progressively increasing", "same throughout"]),
+    yn("hpi", "pain_before_jaundice", "Pain before the yellowness", "Did abdominal pain come before the yellowness, and how long before?", ["pain before", "pain first", "pain preceded", "before the jaundice", "days before", "painless jaundice", "no pain before", "yellowness first"]),
     yn("associated", "fever", "Fever / chills", "Any fever, chills or rigors?", ["fever", "febrile", "temperature", "chills", "rigors"]),
     yn("associated", "abdominal_pain", "Abdominal pain", "Any abdominal pain, and where?", ["abdominal pain", "pain abdomen", "right hypochondrium", "right upper", "epigastric", "pain in abdomen"]),
     yn("associated", "nausea_vomiting", "Nausea / vomiting", "Any nausea or vomiting?", ["nausea", "vomiting", "vomit", "vomited"]),
@@ -53,6 +55,7 @@ export const jaundiceV1: HistoryTree = {
     IMMUNOCOMPROMISE,
     // Exposures
     yn("exposure", "water_food", "Unsafe water / outside food / contacts", "Any outside food, unsafe drinking water, or similar jaundice in family or locality?", ["outside food", "street food", "unsafe water", "contaminated water", "similar cases", "jaundice in family", "others at home", "locality", "outbreak"]),
+    yn("exposure", "biliary_intervention", "Previous biliary operation or procedure", "Has the gall bladder ever been removed, or the bile duct stented, or an endoscopy of the bile duct done before?", ["gall bladder removed", "cholecystectomy", "lap chole", "ercp", "stent", "stenting", "bile duct", "biliary", "operated for stones", "pigtail", "drain in the liver"], { teach: "What has already been done to the biliary tree changes what a new episode of jaundice can be and what an ultrasound will show." }),
     yn("exposure", "blood_sexual", "Blood / needle / sexual exposure", "Any transfusion, injections, tattoo, dialysis, needle sharing, or unprotected sexual exposure?", ["transfusion", "blood transfusion", "injection", "injections", "needle", "tattoo", "dialysis", "sexual", "unprotected", "multiple partners", "iv drug", "surgery", "dental"]),
     yn("exposure", "travel_water", "Travel / flood water / rodents", "Any travel, wading through flood water, or rodent exposure?", ["travel", "travelled", "flood", "flood water", "rain water", "wading", "sewage", "rat", "rats", "rodent", "farm", "paddy"], { tier: "detailed" }),
     yn("exposure", "family_history", "Family history of liver disease / anaemia", "Any family history of jaundice, liver disease, or anaemia (haemolytic disorders)?", ["family history", "family", "sibling", "parents", "thalassaemia", "thalassemia", "sickle", "g6pd", "anaemia in family"], { tier: "detailed" }),
@@ -61,7 +64,7 @@ export const jaundiceV1: HistoryTree = {
     { id: "viral_hepatitis", name: "Acute viral hepatitis", pointers: ["prodrome", "appetite", "nausea_vomiting", "water_food", "fever"], discriminators: ["prodrome", "appetite", "nausea_vomiting", "water_food", "blood_sexual", "fever", "dark_urine"] },
     { id: "alcoholic", name: "Alcoholic hepatitis", pointers: ["alcohol", "fever", "abdominal_pain"], discriminators: ["alcohol", "fever", "abdominal_pain", "abdominal_distension", "altered_sensorium"] },
     { id: "dili", name: "Drug-induced liver injury (incl. ATT)", pointers: ["hepatotoxic_drugs"], discriminators: ["hepatotoxic_drugs", "prodrome", "pruritus", "joint_pain_rash"] },
-    { id: "obstructive", name: "Obstructive jaundice (stone / malignancy)", pointers: ["pale_stools", "pruritus", "abdominal_pain", "weight_loss"], discriminators: ["pale_stools", "pruritus", "abdominal_pain", "weight_loss", "fever_with_rigors_pain", "progression"] },
+    { id: "obstructive", name: "Obstructive jaundice (stone / malignancy)", pointers: ["pale_stools", "pruritus", "abdominal_pain", "weight_loss", "pain_before_jaundice"], discriminators: ["pale_stools", "pruritus", "abdominal_pain", "weight_loss", "fever_with_rigors_pain", "progression", "fluctuation", "pain_before_jaundice", "biliary_intervention"] },
     { id: "cirrhosis", name: "Decompensated chronic liver disease", pointers: ["abdominal_distension", "previous_jaundice", "gi_bleed", "altered_sensorium"], discriminators: ["abdominal_distension", "previous_jaundice", "gi_bleed", "altered_sensorium", "alcohol", "bleeding_tendency"] },
     { id: "haemolysis", name: "Haemolysis (incl. malaria)", pointers: ["fever", "family_history", "dark_urine"], discriminators: ["fever", "family_history", "dark_urine", "pale_stools", "travel_water", "hepatotoxic_drugs"] },
     { id: "leptospirosis", name: "Leptospirosis", pointers: ["travel_water", "calf_pain_red_eyes", "fever", "urine_output"], discriminators: ["travel_water", "calf_pain_red_eyes", "fever", "urine_output", "bleeding_manifestations"] },
@@ -70,6 +73,6 @@ export const jaundiceV1: HistoryTree = {
   ],
   output: {
     durationSlot: "duration",
-    hpiOrder: ["onset", "duration", "onset_mode", "first_noticed", "prodrome", "dark_urine", "pale_stools", "pruritus", "progression", "prior_treatment", "prior_investigations"],
+    hpiOrder: ["onset", "duration", "onset_mode", "first_noticed", "prodrome", "pain_before_jaundice", "dark_urine", "pale_stools", "pruritus", "fluctuation", "progression", "prior_treatment", "prior_investigations"],
   },
 };

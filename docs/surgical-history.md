@@ -222,9 +222,15 @@ after an operation), though `appliesWhen: "post_op"` already exists in the diffe
 4. New trees only if the unit wants them: `obstructive_jaundice`, `thyroid_swelling`,
    `post_op_problem`, `burns`.
 
-Steps 1-3 are built. The twelve surgical trees carry `surgicalBackground()`, the six per-tree
+Steps 1-4 are built. The twelve surgical trees carry `surgicalBackground()`, the six per-tree
 gaps in §7 are closed, the surgical texts are cited, and all twelve are `reviewStatus:
-"reviewed"` (Dr Anubhav Verma, 2026-09-22) at version 1.1.0. Step 4 is not built — say the word.
+"reviewed"` (Dr Anubhav Verma, 2026-09-22) at version 1.1.0. Step 4 added three trees — `thyroid_swelling`, `post_op_problem` and `burns` — and closed the
+obstructive-jaundice gap inside the existing `jaundice` tree rather than as a separate tree: a
+second tree triggering on the same word would have shown the resident two overlapping question
+lists for one complaint. `jaundice` v1.1.0 gains whether the jaundice fluctuates, whether pain
+came before the yellowness, and any previous biliary operation or procedure; it already asked
+stool colour (`pale_stools`) and itching. The three new trees are
+`pending_clinician_review` — the 2026-09-22 sign-off covered the twelve trees that existed then.
 
 One deliberate deviation from §6: last food and fluid sits in `exposure`, not `red_flag`. A
 red-flag positive raises the safety level of the whole history, and a patient who has eaten is a
