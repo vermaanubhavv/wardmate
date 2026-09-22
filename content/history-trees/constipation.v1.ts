@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, val, yn } from "@/content/history-trees/_helpers";
+import { commonHpi, BAILEY_LOVE, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * CONSTIPATION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * CONSTIPATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult surgical / medicine ward, north India. Separates the constipation of a functional or
  * dietary cause from obstruction and from a colorectal lesion. Differentials: functional /
  * low-fibre, drug-induced, hypothyroidism and hypercalcaemia, colorectal cancer, large-bowel
@@ -10,13 +10,13 @@ import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, val, yn } from "@/content/h
  */
 export const constipationV1: HistoryTree = {
   id: "constipation",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Constipation",
   triggers: ["constipation", "not passing stools", "hard stools", "difficulty passing stools", "unable to pass stools", "infrequent stools", "obstipation"],
   setting: "Adult surgical / medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
-  references: [MACLEODS, HUTCHISONS],
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
+  references: [MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
   slots: [
     ...commonHpi("constipation"),
     val("hpi", "frequency", "Frequency", "How often are stools passed now, and how often were they passed before?", ["once in", "every", "times a week", "days", "daily", "usual", "earlier", "before", "frequency"]),
@@ -42,6 +42,7 @@ export const constipationV1: HistoryTree = {
     yn("exposure", "constipating_drugs", "Constipating drugs", "Any opioids, iron, calcium, antacids, anticholinergics, or antidepressants?", ["opioid", "tramadol", "iron", "calcium", "antacid", "anticholinergic", "antidepressant", "verapamil", "codeine", "morphine"]),
     yn("exposure", "neuro_immobility", "Immobility / neurological disease", "Any immobility, spinal problem, stroke, diabetes, or Parkinson's disease?", ["immobile", "bedridden", "spinal", "stroke", "diabetes", "parkinson", "neuropathy", "paraplegia"], { tier: "detailed" }),
     yn("exposure", "abdominal_surgery", "Previous abdominal surgery", "Any previous abdominal or pelvic surgery, or hernia?", ["surgery", "operation", "laparotomy", "hernia", "adhesions", "hysterectomy"], { tier: "detailed" }),
+    ...surgicalBackground(),
   ],
   differentials: [
     { id: "functional", name: "Functional / low-fibre constipation", pointers: ["fluid_diet", "straining"], discriminators: ["fluid_diet", "straining", "consistency", "frequency", "onset_mode"] },

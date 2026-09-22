@@ -1,21 +1,21 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, val, yn } from "@/content/history-trees/_helpers";
+import { commonHpi, BROWSE, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LUMP / SWELLING (a localised lump) — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * LUMP / SWELLING (a localised lump) — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult surgical ward, north India. Generic lump history to be read alongside the site-specific
  * one (breast, neck, groin, abdominal wall). Differentials: lipoma or cyst, abscess, hernia,
  * lymph node (reactive, tuberculous, malignant), soft-tissue tumour, thyroid swelling, vascular.
  */
 export const lumpV1: HistoryTree = {
   id: "lump",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Lump",
   triggers: ["lump", "swelling in", "mass", "growth", "nodule", "lump in", "lump neck", "lump breast", "lump groin", "swelling neck", "inguinal swelling"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
-  references: [MACLEODS, HUTCHISONS],
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
+  references: [MACLEODS, HUTCHISONS, BROWSE, SABISTON],
   slots: [
     ...commonHpi("lump"),
     val("hpi", "site", "Site", "Where exactly is the lump — which region of the body, and is it on one side?", ["neck", "breast", "groin", "axilla", "abdomen", "scalp", "back", "thigh", "arm", "left side", "right side", "one side", "site"]),
@@ -23,6 +23,8 @@ export const lumpV1: HistoryTree = {
     val("hpi", "growth", "Growth", "Has it grown, and how fast — over weeks, months or years?", ["grown", "increasing", "size increased", "static", "same size", "rapid", "slow", "weeks", "months", "years"], { numeric: true }),
     yn("hpi", "pain", "Pain / tenderness", "Is it painful or tender?", ["pain", "painful", "tender", "painless", "ache"]),
     yn("hpi", "variation", "Variation in size", "Does it change in size — on standing, coughing, straining, lying down, or with periods?", ["standing", "coughing", "straining", "lying down", "reducible", "disappears", "periods", "cough impulse", "varies"]),
+    val("hpi", "previous_aspiration", "Treated or aspirated before", "Has the lump ever been aspirated, drained or operated on before, and did it come back?", ["aspirated", "aspiration", "drained", "incised", "operated", "removed", "came back", "recurred", "never treated"]),
+    val("hpi", "patient_concern", "What the patient thinks it is", "What does the patient think the lump is, and what are they most worried about?", ["worried", "afraid", "thinks", "cancer", "tumour", "gaanth", "someone said", "not worried"], { tier: "detailed" }),
     yn("associated", "skin_changes", "Skin change / discharge", "Any redness, warmth, skin change, ulceration, or discharge over it?", ["redness", "warmth", "ulceration", "discharge", "pus", "skin change", "inflamed"]),
     yn("associated", "fever", "Fever", "Any fever with it?", ["fever", "chills", "night sweats"]),
     yn("associated", "other_lumps", "Other lumps elsewhere", "Any other lumps in the neck, armpit, groin or elsewhere?", ["other lumps", "multiple", "neck", "axilla", "groin", "lymph nodes", "swellings"]),
@@ -39,6 +41,7 @@ export const lumpV1: HistoryTree = {
     yn("exposure", "tb_contact", "TB contact / past TB", "Any past tuberculosis or contact with tuberculosis?", ["tb", "tuberculosis", "koch", "att", "akt", "tb contact"]),
     yn("exposure", "tobacco_alcohol", "Tobacco / gutka / alcohol", "Any smoking, tobacco or gutka chewing, or alcohol use?", ["smoking", "tobacco", "gutka", "paan", "alcohol", "chewing"], { tier: "detailed" }),
     yn("exposure", "animals_travel", "Animal contact / travel", "Any animal contact (cat scratch, cattle), unpasteurised milk, or travel?", ["cat scratch", "cattle", "unpasteurised milk", "travel", "animals", "dogs"], { tier: "detailed" }),
+    ...surgicalBackground(),
   ],
   differentials: [
     { id: "cyst_lipoma", name: "Lipoma / cyst / soft-tissue benign lump", pointers: ["growth", "pain"], discriminators: ["growth", "pain", "first_noticed", "variation", "skin_changes"] },

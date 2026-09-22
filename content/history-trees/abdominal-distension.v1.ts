@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, val, yn } from "@/content/history-trees/_helpers";
+import { commonHpi, BAILEY_LOVE, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ABDOMINAL DISTENSION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * ABDOMINAL DISTENSION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult surgical / medicine ward, north India. The classical "five Fs": fluid, flatus, faeces,
  * fat, foetus (and a mass). Differentials: ascites (portal hypertension, tuberculous, malignant,
  * cardiac, nephrotic), intestinal obstruction, organomegaly or a mass, urinary retention,
@@ -10,13 +10,13 @@ import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, val, yn } from "@/content/h
  */
 export const abdominalDistensionV1: HistoryTree = {
   id: "abdominal_distension",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Abdominal distension",
   triggers: ["abdominal distension", "distension of abdomen", "distended abdomen", "swelling of abdomen", "abdominal swelling", "bloating", "bloated", "increased abdominal girth", "swollen abdomen", "belly swelling"],
   setting: "Adult surgical / medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
-  references: [MACLEODS, HUTCHISONS],
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
+  references: [MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
   slots: [
     ...commonHpi("abdominal distension"),
     val("hpi", "pattern", "Constant or intermittent", "Is the distension constant, or does it come and go with meals or through the day?", ["constant", "intermittent", "after meals", "worse in evening", "comes and goes", "throughout the day", "gradual"]),
@@ -44,6 +44,7 @@ export const abdominalDistensionV1: HistoryTree = {
     yn("exposure", "tb_contact", "TB contact / past TB", "Any past tuberculosis or contact with tuberculosis?", ["tb", "tuberculosis", "koch", "att", "akt", "tb contact"]),
     yn("exposure", "cardiac_renal", "Known heart or kidney disease", "Any known heart failure, kidney disease, or nephrotic syndrome?", ["heart failure", "cardiac", "kidney disease", "ckd", "nephrotic", "renal", "protein in urine"], { tier: "detailed" }),
     yn("exposure", "previous_surgery", "Previous abdominal surgery", "Any previous abdominal surgery or hernia?", ["surgery", "operation", "laparotomy", "hernia", "adhesions"], { tier: "detailed" }),
+    ...surgicalBackground({ acute: true }),
   ],
   differentials: [
     { id: "ascites_portal", name: "Ascites (portal hypertension)", pointers: ["alcohol_liver", "jaundice", "leg_swelling", "gi_bleed"], discriminators: ["alcohol_liver", "jaundice", "leg_swelling", "gi_bleed", "confusion", "appetite_weight"] },

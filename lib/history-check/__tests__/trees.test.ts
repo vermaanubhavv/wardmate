@@ -15,11 +15,26 @@ describe("tree registry", () => {
     expect(getTree("no_such_complaint")).toBeNull();
   });
 
-  it("every tree is pending clinician review with at least one reference", () => {
+  it("every tree has at least one reference, and only a named reviewer can mark one reviewed", () => {
     for (const t of listTrees()) {
-      expect(t.reviewStatus).toBe("pending_clinician_review");
       expect(t.references.length).toBeGreaterThan(0);
+      if (t.reviewStatus === "reviewed") expect(t.reviewedBy, `${t.id} is reviewed by nobody`).toBeTruthy();
+      else {
+        expect(t.reviewStatus).toBe("pending_clinician_review");
+        expect(t.reviewedBy).toBeNull();
+      }
     }
+  });
+
+  it("pins exactly which trees a clinician has signed off", () => {
+    // A tree must not drift into "reviewed" as a side effect of an edit — the chip on the card
+    // is the only thing telling a resident whether the content was read by a clinician.
+    const reviewed = listTrees().filter((t) => t.reviewStatus === "reviewed").map((t) => t.id).sort();
+    expect(reviewed).toEqual([
+      "abdominal_distension", "abdominal_pain", "anorectal_pain", "bleeding_per_rectum",
+      "breast_lump", "constipation", "dysphagia", "groin_swelling", "haematemesis",
+      "leg_ulcer", "lump", "scrotal_swelling",
+    ]);
   });
 });
 

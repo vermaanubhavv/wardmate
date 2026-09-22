@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
+import { commonHpi, BAILEY_LOVE, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ANORECTAL PAIN AND PERIANAL COMPLAINT — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * ANORECTAL PAIN AND PERIANAL COMPLAINT — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult surgical ward, north India. The relationship of the pain to passing stool separates most
  * of this list: pain during and after defaecation with bright bleeding is a fissure, constant
  * throbbing pain with fever is a collection. Differentials: anal fissure, perianal or
@@ -11,13 +11,13 @@ import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/co
  */
 export const anorectalPainV1: HistoryTree = {
   id: "anorectal_pain",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Anal pain / perianal swelling",
   triggers: ["anal pain", "pain in anus", "perianal swelling", "perianal pain", "painful defaecation", "pain while passing stool", "perianal abscess", "fissure", "fistula", "piles", "haemorrhoids", "pilonidal", "swelling near anus", "discharge near anus"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
-  references: [MACLEODS, HUTCHISONS],
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
+  references: [MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
   slots: [
     ...commonHpi("anal pain"),
     val("hpi", "relation_to_defaecation", "Relation to passing stool", "Is the pain during passing stool, after it, or unrelated to it, and how long does it last?", ["during", "while passing", "after passing", "hours after", "unrelated", "constant", "all the time", "minutes", "lasts", "before"]),
@@ -47,6 +47,7 @@ export const anorectalPainV1: HistoryTree = {
     yn("exposure", "anal_intercourse_sti", "Anal intercourse / sexually transmitted infection", "Any history of anal intercourse, a sexually transmitted infection, or genital warts?", ["anal intercourse", "anal sex", "sti", "warts", "hiv", "sexually transmitted", "unprotected"], { tier: "detailed" }),
     yn("exposure", "previous_anal_surgery", "Previous anal surgery or procedure", "Any previous operation, banding, or injection for piles, fissure, or fistula?", ["previous surgery", "operation", "banding", "injection", "piles", "fissure", "fistula", "sclerotherapy", "stapler"], { tier: "detailed" }),
     yn("exposure", "diet_fibre", "Diet and fluid intake", "How much water, fruit, vegetables and fibre are taken daily?", ["water", "fluids", "fruit", "vegetables", "fibre", "diet", "low fibre", "spicy"], { tier: "detailed" }),
+    ...surgicalBackground({ acute: true }),
   ],
   differentials: [
     { id: "fissure", name: "Anal fissure", pointers: ["relation_to_defaecation", "character_severity", "bleeding", "constipation_straining"], discriminators: ["relation_to_defaecation", "character_severity", "bleeding", "constipation_straining", "swelling", "fever", "discharge"] },

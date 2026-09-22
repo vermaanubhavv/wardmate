@@ -92,3 +92,48 @@ export const MACLEODS: Reference = { title: "Macleod's Clinical Examination — 
 export const HUTCHISONS: Reference = { title: "Hutchison's Clinical Methods — the history and general examination", source: "Elsevier (textbook)" };
 
 export const BATES: Reference = { title: "Bates' Guide to Physical Examination and History Taking", source: "Wolters Kluwer (textbook)" };
+
+/**
+ * The surgical texts. Cited as textbooks, with no PubMed id claimed for any of them —
+ * docs/surgical-history.md §1 records what each one is used for.
+ */
+export const BROWSE: Reference = { title: "Browse's Introduction to the Symptoms and Signs of Surgical Disease", source: "CRC Press (textbook)" };
+export const BAILEY_LOVE: Reference = { title: "Bailey & Love's Short Practice of Surgery", source: "CRC Press (textbook)" };
+export const HAMILTON_BAILEY: Reference = { title: "Hamilton Bailey's Demonstrations of Physical Signs in Clinical Surgery", source: "CRC Press (textbook)" };
+export const DAS_CLINICAL_SURGERY: Reference = { title: "A Manual on Clinical Surgery — the surgical long case", source: "S. Das (textbook)" };
+export const SABISTON: Reference = { title: "Sabiston Textbook of Surgery — preoperative assessment", source: "Elsevier (textbook)" };
+export const SCHWARTZ: Reference = { title: "Schwartz's Principles of Surgery — preoperative evaluation and risk", source: "McGraw Hill (textbook)" };
+export const ATLS: Reference = { title: "Advanced Trauma Life Support — the AMPLE history", source: "American College of Surgeons (course manual)" };
+
+/**
+ * The background a surgical history carries and a medical one does not: what has already been
+ * operated on, what happened when it was, and what would have to be known before anyone could
+ * take this patient to theatre (docs/surgical-history.md §5).
+ *
+ * All `exposure` — this is background that changes how the presentation reads, not part of the
+ * story of the complaint. Ids are prefixed `surg_` so a tree can carry both these and its own
+ * site-specific "previous hernia surgery" question without a clash.
+ *
+ * `acute` marks the trees where a patient may go to theatre the same day: it promotes the
+ * last-meal question from the long case to the ward round. Last meal is deliberately NOT a
+ * red flag — a red-flag positive raises the safety level of the whole history, and a patient
+ * who has eaten is not a danger signal, only a timing one.
+ *
+ * Smoking and alcohol are not here: most surgical trees already ask them in their own words,
+ * and a second identical question would show up as its own gap.
+ */
+export function surgicalBackground({ acute = false }: { acute?: boolean } = {}): Slot[] {
+  const whenEating: Extra = acute ? {} : { tier: "detailed" };
+  return [
+    val("exposure", "surg_previous_operations", "Previous operations", "What operations has the patient had before, when, and for what?", ["operation", "operated", "surgery", "laparotomy", "laparoscopy", "appendix removed", "gall bladder removed", "hernia repair", "caesarean", "lscs", "no previous surgery", "never operated"]),
+    yn("exposure", "surg_operation_trouble", "Trouble with a previous operation", "Was there any problem during or after a previous operation — heavy bleeding, a second operation, a wound that did not heal, or a stay in intensive care?", ["heavy bleeding", "re operation", "reoperation", "second operation", "wound infection", "wound did not heal", "icu", "intensive care", "ventilator", "prolonged stay", "complication", "no complications"], { tier: "detailed" }),
+    yn("exposure", "surg_anaesthetic_problem", "Trouble with anaesthesia", "Was there any trouble with a previous anaesthetic — slow waking, severe vomiting afterwards, or a difficulty the anaesthetist mentioned — or the same in a blood relative?", ["anaesthesia", "anaesthetic", "anesthesia", "did not wake", "delayed recovery", "difficult intubation", "vomiting after surgery", "family", "blood relative", "no problem with anaesthesia"], { teach: "Anaesthetic trouble in the patient or a blood relative changes what the anaesthetist needs to know before the patient goes to theatre." }),
+    yn("exposure", "surg_transfusion", "Previous transfusion", "Has the patient ever been given blood, and was there any reaction to it?", ["transfusion", "blood transfusion", "blood given", "packed cells", "reaction", "chills after blood", "no transfusion", "never received blood"]),
+    yn("exposure", "surg_blood_thinners", "Blood-thinning or platelet medicine", "Is the patient taking any blood-thinning or platelet medicine?", ["blood thinner", "blood thinners", "anticoagulant", "antiplatelet", "warfarin", "acitrom", "aspirin", "clopidogrel", "heparin", "not on blood thinners"], { teach: "Whether the blood is thinned is asked early because it changes the timing of anything invasive and the reading of any bleeding." }),
+    val("exposure", "surg_regular_drugs", "Regular medicines", "What medicines are taken regularly — for sugar, blood pressure, heart, breathing, thyroid or hormones — and any traditional or herbal preparation?", ["regular medicines", "insulin", "metformin", "bp medicine", "blood pressure medicine", "heart medicine", "inhaler", "thyroid", "steroid", "steroids", "hormone", "contraceptive", "ayurvedic", "herbal", "homeopathic", "no regular medicines"]),
+    yn("exposure", "surg_allergy", "Drug allergy", "Is the patient allergic to any medicine, and what happened with it?", ["allergy", "allergic", "rash after", "reaction to", "penicillin", "sulpha", "no allergy", "no known allergy"]),
+    val("exposure", "surg_exercise_tolerance", "Exercise tolerance", "How much can the patient do without becoming breathless — how many stairs, how far on level ground — and has that changed recently?", ["stairs", "flights", "climbs", "walks", "breathless on walking", "housework", "field work", "reduced", "same as before", "bedbound", "no limitation"], { numeric: true }),
+    yn("exposure", "surg_implants", "Implant or device", "Is there any implant or device in the body — a mesh, a joint replacement, a stent, a pacemaker, or metal from an earlier injury?", ["mesh", "implant", "joint replacement", "stent", "pacemaker", "plate", "screws", "metal", "prosthesis", "no implants"], { tier: "detailed" }),
+    val("exposure", "surg_last_meal", "Last food and fluid", "When did the patient last eat, and last drink anything?", ["last meal", "last ate", "last food", "last drink", "nil orally", "npo", "empty stomach", "since morning", "hours ago", "nothing since"], { ...whenEating }),
+  ];
+}

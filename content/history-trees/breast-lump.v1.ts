@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
+import { commonHpi, BROWSE, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, rce, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BREAST LUMP OR BREAST COMPLAINT — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * BREAST LUMP OR BREAST COMPLAINT — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult surgical ward, north India. Age drives the differential more than any single feature:
  * a mobile rubbery lump in a woman of twenty and a hard fixed lump in a woman of fifty-five are
  * different problems from the first sentence. Differentials: fibroadenoma, fibrocystic change,
@@ -11,13 +11,15 @@ import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, rce, val, yn } from "@/cont
  */
 export const breastLumpV1: HistoryTree = {
   id: "breast_lump",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Breast lump",
   triggers: ["breast lump", "lump in breast", "breast swelling", "breast mass", "nipple discharge", "breast pain", "mastalgia", "lump in the breast", "breast complaint", "gynaecomastia"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
+    BROWSE,
+    SABISTON,
     rce("The rational clinical examination. Does this patient have breast cancer? The screening clinical breast examination: should it be done? How?", 1999, "10517431"),
     MACLEODS,
     HUTCHISONS,
@@ -30,6 +32,7 @@ export const breastLumpV1: HistoryTree = {
     val("hpi", "consistency_mobility", "Feel and mobility", "Does it feel soft, rubbery or hard, and does it move freely under the fingers?", ["soft", "rubbery", "firm", "hard", "stony", "mobile", "moves freely", "slips away", "fixed", "does not move", "irregular", "smooth"]),
     yn("hpi", "pain", "Pain or tenderness", "Is the lump painful or tender?", ["pain", "painful", "tender", "painless", "ache", "sore"]),
     yn("hpi", "cyclical_variation", "Change with the menstrual cycle", "Does the lump or the pain change with the periods — worse before, better after?", ["cyclical", "before periods", "after periods", "with the cycle", "premenstrual", "no change", "varies with periods"]),
+    val("hpi", "lactation_history", "Breastfeeding history", "Is the patient breastfeeding now, or when did breastfeeding last stop, and for how long did it go on?", ["breastfeeding", "lactating", "feeding the baby", "stopped feeding", "weaned", "months", "years", "never breastfed"], { numeric: true }),
     yn("associated", "nipple_discharge", "Nipple discharge", "Any discharge from the nipple, and what colour — milky, green, or blood-stained?", ["discharge", "milky", "green", "yellow", "blood stained", "bloody", "clear", "from one duct", "spontaneous", "on squeezing"]),
     yn("associated", "nipple_skin_change", "Nipple or skin change", "Any pulling in of the nipple, dimpling of the skin, orange-peel appearance, ulceration, or eczema of the nipple?", ["nipple retraction", "pulled in", "inversion", "dimpling", "puckering", "orange peel", "peau d orange", "ulceration", "eczema", "scaly nipple", "redness"]),
     yn("associated", "axillary_lump", "Lump in the armpit", "Any lump or swelling in the armpit or above the collar bone?", ["armpit", "axilla", "axillary", "lump in armpit", "collar bone", "supraclavicular", "gland"]),
@@ -51,6 +54,7 @@ export const breastLumpV1: HistoryTree = {
     yn("exposure", "previous_breast_problem", "Previous breast lump, biopsy or surgery", "Any previous breast lump, biopsy, aspiration, or breast surgery?", ["previous lump", "biopsy", "fnac", "aspiration", "surgery", "excised", "removed", "same breast", "other breast"]),
     yn("exposure", "radiation_drugs", "Chest radiotherapy / hormone or other drugs", "Any radiotherapy to the chest, or long-term hormone, anti-ulcer or heart medicines?", ["radiotherapy", "radiation", "chest", "hormone", "spironolactone", "anti ulcer", "digoxin", "steroids", "long term"], { tier: "detailed" }),
     yn("exposure", "tb_contact", "TB contact / past TB", "Any past tuberculosis or contact with tuberculosis?", ["tb", "tuberculosis", "koch", "att", "akt", "tb contact", "discharging sinus"], { tier: "detailed" }),
+    ...surgicalBackground(),
   ],
   differentials: [
     { id: "fibroadenoma", name: "Fibroadenoma", pointers: ["consistency_mobility", "pain", "size_change"], discriminators: ["consistency_mobility", "pain", "size_change", "age_new_lump", "cyclical_variation", "hard_fixed_lump"] },
