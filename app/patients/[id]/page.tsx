@@ -295,7 +295,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     caseHistoryEntries
       .flatMap((e) => e.observations)
       .filter((o) => /chief complaint|presenting complaint/i.test(o.label))
-      .map((o) => o.value_text ?? o.label)
+      .map((o) => o.value_text ?? o.label),
+    pack.historyTreeIds
   );
 
   // Latest of each drug recorded, for the discharge brief. Taken from the same observations

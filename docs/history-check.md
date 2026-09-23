@@ -70,7 +70,7 @@ triggered it. Numeric values render amber with "(unconfirmed)"; there is no conf
 
 ### Trees — `content/history-trees/`
 
-Forty-six complaints: fever, chest pain, breathlessness, abdominal pain, jaundice, cough,
+Fifty-nine complaints: fever, chest pain, breathlessness, abdominal pain, jaundice, cough,
 oedema, headache, altered sensorium / seizures, limb weakness, diarrhoea / vomiting, generalised
 weakness, giddiness, decreased urine output, constipation, abdominal distension, lump, bleeding
 per rectum, burning micturition, loss of weight / appetite, palpitations, joint pain,
@@ -78,11 +78,34 @@ haematemesis, polyuria / polydipsia, low back pain, sore throat, fever with rash
 snake bite, dysphagia, groin swelling, breast lump, anorectal pain, leg ulcer, and scrotal
 swelling, head injury, shock, and four paediatric complaints (fever, diarrhoea, cough or
 difficult breathing, and seizure), bleeding per vaginum, vaginal discharge, labour pains and
-leaking, fever on chemotherapy, blood in the urine, and limb injury.
+leaking, fever on chemotherapy, blood in the urine, and limb injury; then ear discharge /
+hearing loss, bleeding from the nose, hoarseness of voice, red eye, loss of vision, skin rash /
+itching, low mood / self-harm, abnormal behaviour, burns, leg pain on walking / cold painful
+limb, toothache / facial swelling, coughing blood, and snoring / daytime sleepiness.
 
-Forty-six trees in all, spanning general medicine, general surgery, emergency medicine,
+Fifty-nine trees in all, spanning general medicine, general surgery, emergency medicine,
 paediatrics, medical oncology, obstetrics and gynaecology, orthopaedics, urology and
-neurosurgery — the specialty order set by the product owner.
+neurosurgery — the specialty order set by the product owner — and then the departments that
+had no tree at all: ENT, ophthalmology, dermatology, psychiatry, burns and plastic surgery,
+vascular surgery, dentistry and pulmonary medicine, so that every department can start a
+history on this app.
+
+Three of these overlap deliberately with medicine trees rather than replacing them.
+`skin_lesion` is the rash brought for its own sake, where `fever_with_rash` is the febrile
+illness that also has a rash; `altered_behaviour` starts from a patient who is behaving, where
+`altered_sensorium` starts from one who is not rousable; `haemoptysis` is the blood brought as
+the complaint, where `cough` carries it as one red flag among many. `suggestTrees` will return
+both where the words fit both.
+
+Pulmonary medicine — the same department as chest medicine and respiratory medicine, named
+that way everywhere here — is otherwise served by the medicine trees: cough, breathlessness,
+chest pain and fever. The two added for it are the ones those trees cannot hold: blood coughed
+up, where the volume and the source drive the whole history, and snoring with daytime sleepiness,
+where the history belongs to whoever shares the room rather than to the patient.
+
+The psychiatry trees ask about self-harm directly, and `low_mood` carries its risk questions as
+red flags for the same reason every other tree does: a question never asked must never read as a
+negative. Nothing in them is scored, ranked, or turned into a disposition.
 
 Paediatric trees add `paedBackground()` from `_helpers.ts`: birth history, immunisation,
 development, feeding and growth. Age is deliberately not a slot — it comes from the patient
@@ -132,6 +155,14 @@ worded as "questions that would help separate X / Y". It is never shown as a dia
 
 To change a shipped tree, bump `version`; old versions stay in the index so stored runs render
 with the version they were run against.
+
+**Which trees a unit sees first**
+
+The picker shows the trees the dictated chief complaint suggests, then the unit's own
+complaints from its specialty pack (`SpecialtyPack.historyTreeIds`, in the pack's order), then
+every other tree in registry order. It is a sort, never a filter — all 59 stay reachable from
+every unit, and a unit with no recognised specialty gets exactly the order the picker had
+before packs existed. See `docs/specialty-packs.md` §11.
 
 ### Examination checklists — `content/examination/`
 

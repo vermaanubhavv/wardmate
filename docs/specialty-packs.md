@@ -611,3 +611,82 @@ SQL Editor before any unit can pick this specialty.
    above.
 3. **The checklist picker still calls itself a procedure picker** — same Phase 4 wording sweep
    named for oncology and medicine, not yet done, and moot here until a checklist actually ships.
+
+## 11. Department-ordered history trees (all packs)
+
+`SpecialtyPack.historyTreeIds` — the complaints a department starts a history from, in its own
+order (`content/history-trees/` ids).
+
+**It is a sort, never a filter.** `loadHistoryCheckCard()` puts what the dictated chief
+complaint suggests first, then the unit's own complaints in pack order, then every other tree
+in registry order. All 59 trees stay reachable from every unit, because a chest pain on an ENT
+ward is still a chest pain. An id naming no registered tree is ignored, and an empty list
+restores exactly the order the picker had before the field existed — an unrecognised specialty
+or `SPECIALTY_PACKS` off therefore changes nothing.
+
+Order inside a pack is a clinical statement, not alphabetical: oncology leads with fever on
+chemotherapy, pulmonary medicine with blood in the cough, obstetrics with labour pains.
+`lib/__tests__/specialty.test.ts` fails if a pack names a complaint that does not ship, or the
+same one twice.
+
+## 12. Fifth pack — pulmonary medicine (Phase 0+1 only)
+
+Chest medicine, respiratory medicine, pulmonary medicine: one department, three names,
+`pulmonary_medicine` everywhere in code and database. Same rollout discipline as §10 — seam and
+core only, clinical content deferred until a unit read-through.
+
+### Patch
+
+| Patch | What it does |
+|---|---|
+| `0081_pulmonary_medicine.sql` | Widens `wards_specialty_check` and the two-argument `create_ward_for_current_user` guard to allow `pulmonary_medicine`. The whole seam patch — a chest unit needs no new patient columns: like internal medicine it counts from `admission_day`. Saturation with its delivery device, the blood gas, drain column and air leak, and the anti-tubercular regimen are all ordinary observations and existing drain fields, captured as dictated. |
+
+### Code
+
+`lib/specialty/pulmonary-medicine.ts` — the pack. Plus `pulmonary_medicine` in `SPECIALTY_KEYS`
+and the registry, `"pulmonary-medicine"` in the lexicon `Specialty` union, and
+`lib/transcription/lexicon/pulmonary-medicine.ts` — the keyterm core: TB programme shorthand
+(CBNAAT, HRZE, NTEP, line probe assay), oxygen and ventilation (NIV, BiPAP, HFNC, ABG), the
+bedside procedures (pleural tap, drain, bronchoscopy, pleurodesis), the Indian inhaler brands
+(Foracort, Duolin, Seroflo, Budecort, Asthalin) and the sleep-study vocabulary.
+
+Two history trees were written for this pack and ship with it: `haemoptysis` and
+`snoring_sleepiness` (see `docs/history-check.md`). The rest of the chest casemix is already
+served by the medicine trees.
+
+### What it borrows on purpose
+
+- **Discharge templates** are the medicine ones — they already carry pulmonary tuberculosis and
+  community-acquired pneumonia. A chest unit's own (COPD exacerbation, asthma, effusion after
+  drainage, post-tubercular lung disease) is the first thing to add past pilot, in a
+  `lib/discharge-templates-pulmonary.ts` beside the medicine one.
+- **Scores** are `curb_65`, `qsofa`, `wells_pe`, `wells_dvt` — the four already built, reviewed
+  and active. Nothing respiratory-specific (BAP-65, PESI, GOLD grading) is offered, because
+  offering a score this app has not built would be worse than offering none.
+
+### Lexicon collisions
+
+`lib/transcription/lexicon/__tests__/pulmonary-medicine-collisions.test.ts` is the obstetrics
+guard with one deliberate difference: it asserts no trigger fires *inside an unrelated word*
+rather than no trigger is a substring at all. Chest vocabulary genuinely shares words with
+general medicine — "fever", "chest", "tuberculosis" are meant to be context triggers and each
+sits inside a longer legitimate phrase. What the test still catches is the real bug class, and
+it caught two while this file was written: "asthma" inside "status asthmaticus" and "oedema"
+inside "papilloedema", both fixed by changing the trigger word rather than the test.
+
+### Activation
+
+Not yet piloted on a real unit. Runtime gating is unchanged: `SPECIALTY_PACKS=on` for the
+picker, the scoring engine's own flag plus a per-ward `ward_scoring_engine` row for scores, and
+`0081_pulmonary_medicine.sql` run in the SQL Editor before any unit can pick this specialty.
+
+### Known rough edges, for a future pilot
+
+1. **Discharge templates are medicine's**, as above — correct for TB and pneumonia, generic for
+   everything else this ward discharges.
+2. **No checklists** — no chest-specific protocol ships. The obvious first ones (sputum sent
+   before the first antibiotic dose, saturation recorded with its delivery device) are
+   admission-anchored conditions the existing trigger engine already supports; they need the
+   unit's read-through, not new code.
+3. **Clinical content is `pending_clinician_review`** — the two trees, the lexicon and the
+   extraction guidance, as with every other pack at this stage.

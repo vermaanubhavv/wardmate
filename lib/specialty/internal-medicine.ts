@@ -112,4 +112,7 @@ Internal medicine ward — what the words mean here:
   pickerPhase: "before_surgery",
 
   lexiconSpecialty: "internal-medicine",
+
+  // The medicine casemix in the unit's own order: infection first, then the rest.
+  historyTreeIds: ["fever", "fever_with_rash", "breathlessness", "chest_pain", "cough", "altered_sensorium", "limb_weakness", "headache", "jaundice", "diarrhoea", "haematemesis", "decreased_urine_output", "oedema", "generalised_weakness", "giddiness", "palpitations", "polyuria", "joint_pain", "poisoning_snakebite", "shock", "haemoptysis", "altered_behaviour", "skin_lesion", "loss_of_weight_appetite", "low_back_pain"],
 };

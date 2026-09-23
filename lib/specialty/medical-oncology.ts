@@ -95,4 +95,7 @@ Medical oncology ward — what the words mean here:
   pickerPhase: "before_surgery",
 
   lexiconSpecialty: "medical-oncology",
+
+  // Fever on chemotherapy first: it is the one complaint on this ward counted in minutes.
+  historyTreeIds: ["febrile_neutropenia", "loss_of_weight_appetite", "lump", "breast_lump", "haemoptysis", "dysphagia", "abdominal_pain", "generalised_weakness", "oedema", "breathlessness", "low_back_pain"],
 };

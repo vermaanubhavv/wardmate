@@ -27,6 +27,7 @@ export const SPECIALTY_KEYS = [
   "medical_oncology",
   "internal_medicine",
   "obstetrics_gynaecology",
+  "pulmonary_medicine",
 ] as const;
 export type SpecialtyKey = (typeof SPECIALTY_KEYS)[number];
 
@@ -126,4 +127,16 @@ export type SpecialtyPack = {
 
   /** The keyterm lexicon core this unit's dictation is boosted with. */
   lexiconSpecialty: LexiconSpecialty;
+
+  /**
+   * The complaints this department starts a history from, in its own order
+   * (`content/history-trees/` ids).
+   *
+   * THIS IS A SORT, NOT A FILTER. The History check picker shows the trees the dictated chief
+   * complaint suggests first, then these, then every other tree — all 59 stay reachable from
+   * every unit, because a chest pain on an ENT ward is still a chest pain. An id that names no
+   * registered tree is ignored (a pack may be ahead of the content), and an empty list simply
+   * means "no department order", which is what the picker did before this field existed.
+   */
+  historyTreeIds: string[];
 };

@@ -115,4 +115,7 @@ Obstetrics and gynaecology ward — what the words mean here:
   pickerPhase: "after_surgery",
 
   lexiconSpecialty: "obstetrics-gynaecology",
+
+  // Obstetric complaints first, then the gynaecological ones.
+  historyTreeIds: ["labour_pains", "bleeding_pv", "vaginal_discharge", "abdominal_pain", "burning_micturition", "oedema", "fever", "breast_lump"],
 };

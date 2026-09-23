@@ -25,14 +25,30 @@ export type HistoryCheckCardData = {
 export async function loadHistoryCheckCard(
   supabase: Supa,
   patient: { id: string; display_name: string; bed: string | null; age_years: number | null; sex: string | null; surgery_date: string | null },
-  chiefComplaintTexts: string[]
+  chiefComplaintTexts: string[],
+  /**
+   * The unit's own complaints, from its specialty pack (`historyTreeIds`). A sort, never a
+   * filter: every registered tree stays in the picker. Empty — an unrecognised specialty, or
+   * the packs flag off — restores the pre-pack order exactly.
+   */
+  departmentTreeIds: string[] = []
 ): Promise<HistoryCheckCardData | null> {
   if (!historyCheckEnabled()) return null;
 
   const suggested = new Set(suggestTrees(chiefComplaintTexts).map((t) => t.id));
   const trees: TreeChoice[] = listTrees().map((t) => ({ id: t.id, complaint: t.complaint, suggested: suggested.has(t.id) }));
-  // Suggested first, then the rest in registry order.
-  trees.sort((a, b) => Number(b.suggested) - Number(a.suggested));
+  // What the resident dictated comes first, then what this department admits, then everything
+  // else in registry order. Within the department band the pack's own order is kept, because
+  // that order is a clinical statement (fever on chemotherapy leads the oncology list).
+  // Array.prototype.sort is stable, so the untouched bands keep registry order.
+  const deptRank = new Map(departmentTreeIds.map((id, i) => [id, i]));
+  const band = (t: TreeChoice) => (t.suggested ? 0 : deptRank.has(t.id) ? 1 : 2);
+  trees.sort((a, b) => {
+    const d = band(a) - band(b);
+    if (d !== 0) return d;
+    if (band(a) === 1) return (deptRank.get(a.id) ?? 0) - (deptRank.get(b.id) ?? 0);
+    return 0;
+  });
 
   const [sources, { data: rows }] = await Promise.all([
     loadSources(supabase, patient.id),

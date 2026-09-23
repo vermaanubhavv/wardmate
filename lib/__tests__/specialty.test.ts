@@ -1,3 +1,4 @@
+import { listTrees } from "@/lib/history-check/trees";
 import { describe, it, expect } from "vitest";
 import {
   getSpecialtyPack,
@@ -28,6 +29,7 @@ describe("getSpecialtyPack — degrade, don't crash", () => {
     expect(getSpecialtyPack("  Medical_Oncology ").key).toBe("medical_oncology");
     expect(getSpecialtyPack(" INTERNAL_MEDICINE ").key).toBe("internal_medicine");
     expect(getSpecialtyPack(" Obstetrics_Gynaecology ").key).toBe("obstetrics_gynaecology");
+    expect(getSpecialtyPack(" Pulmonary_Medicine ").key).toBe("pulmonary_medicine");
   });
 
   it("offers every pack to the picker", () => {
@@ -36,7 +38,20 @@ describe("getSpecialtyPack — degrade, don't crash", () => {
       "medical_oncology",
       "internal_medicine",
       "obstetrics_gynaecology",
+      "pulmonary_medicine",
     ]);
+  });
+
+  it("every pack's history trees name trees that actually ship", () => {
+    // A pack may lead its picker with the complaints its ward admits, but it cannot invent a
+    // complaint: an id here with no tree behind it would silently sort nothing.
+    const ids = new Set(listTrees().map((t) => t.id));
+    for (const pack of listSpecialties()) {
+      for (const id of pack.historyTreeIds) {
+        expect({ pack: pack.key, id, known: ids.has(id) }).toEqual({ pack: pack.key, id, known: true });
+      }
+      expect(new Set(pack.historyTreeIds).size).toBe(pack.historyTreeIds.length);
+    }
   });
 });
 
