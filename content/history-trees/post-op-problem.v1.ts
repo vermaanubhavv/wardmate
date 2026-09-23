@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, IMMUNOCOMPROMISE, MACLEODS, SABISTON, SCHWARTZ, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * PROBLEM AFTER AN OPERATION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * PROBLEM AFTER AN OPERATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult surgical ward, north India. The one presentation where the post-operative day and the
  * operation itself are half the history: the same fever means different things on day two and
  * day seven. Differentials: surgical site infection, anastomotic leak, intra-abdominal
@@ -20,8 +20,8 @@ export const postOpProblemV1: HistoryTree = {
   complaint: "Problem after an operation",
   triggers: ["post op", "post-op", "postoperative", "post operative", "after surgery", "after the operation", "after operation", "fever after surgery", "wound discharge", "wound gaping", "not passed flatus", "drain output", "operated on day"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [BAILEY_LOVE, SABISTON, SCHWARTZ, MACLEODS],
   slots: [
     ...commonHpi("problem"),

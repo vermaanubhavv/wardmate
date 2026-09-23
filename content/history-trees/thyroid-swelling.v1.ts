@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, BROWSE, commonHpi, HAMILTON_BAILEY, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * NECK SWELLING (THYROID) — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * NECK SWELLING (THYROID) — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult surgical ward, north India. The generic `lump` tree also fires on a neck swelling and
  * the card is built to show both; this one adds what the texts ask only of a thyroid — whether
  * it moves on swallowing, what it presses on, and whether the gland is working too hard or too
@@ -15,8 +15,8 @@ export const thyroidSwellingV1: HistoryTree = {
   complaint: "Neck swelling (thyroid)",
   triggers: ["thyroid", "thyroid swelling", "goitre", "goiter", "swelling in front of neck", "swelling in the neck", "neck swelling", "front of neck", "gale me sujan"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [BROWSE, BAILEY_LOVE, HAMILTON_BAILEY, SABISTON, MACLEODS],
   slots: [
     ...commonHpi("neck swelling"),

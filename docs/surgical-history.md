@@ -229,8 +229,9 @@ obstructive-jaundice gap inside the existing `jaundice` tree rather than as a se
 second tree triggering on the same word would have shown the resident two overlapping question
 lists for one complaint. `jaundice` v1.1.0 gains whether the jaundice fluctuates, whether pain
 came before the yellowness, and any previous biliary operation or procedure; it already asked
-stool colour (`pale_stools`) and itching. The three new trees are
-`pending_clinician_review` — the 2026-09-22 sign-off covered the twelve trees that existed then.
+stool colour (`pale_stools`) and itching. All three are `reviewed` (Dr Anubhav Verma, 2026-09-23), bringing the signed-off set to fifteen.
+`jaundice` stays pending: it is a medicine-ward tree that now carries the obstructive questions,
+and a physician should read it.
 
 One deliberate deviation from §6: last food and fluid sits in `exposure`, not `red_flag`. A
 red-flag positive raises the safety level of the whole history, and a patient who has eaten is a

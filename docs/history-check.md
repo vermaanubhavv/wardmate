@@ -14,11 +14,12 @@ Clinical content (the trees, the examination checklist, the teaching lines) is m
 `pending_clinician_review` and shows that chip on the card and the learning pages until a
 clinician sets `reviewStatus: "reviewed"` and `reviewedBy` in the file.
 
-The twelve general-surgery trees (abdominal pain, abdominal distension, anorectal pain, bleeding
-per rectum, breast lump, constipation, dysphagia, groin swelling, haematemesis, leg ulcer, lump,
-scrotal swelling) are `reviewed` as of 2026-09-22, signed off by Dr Anubhav Verma; every other
-tree is still pending — including the three surgical trees written after that sign-off (thyroid
-swelling, problem after an operation, burns), which need their own review. `trees.test.ts` pins that list, so a tree cannot drift into "reviewed" as
+The fifteen general-surgery trees (abdominal pain, abdominal distension, anorectal pain, bleeding
+per rectum, breast lump, burns, constipation, dysphagia, groin swelling, haematemesis, leg ulcer,
+lump, problem after an operation, scrotal swelling, neck swelling (thyroid)) are `reviewed`,
+signed off by Dr Anubhav Verma — the first twelve on 2026-09-22, the last three on 2026-09-23.
+Every other tree is still pending, including `jaundice`, which is a medicine-ward tree even
+though it now carries the obstructive questions. `trees.test.ts` pins that list, so a tree cannot drift into "reviewed" as
 a side effect of an edit.
 
 ## Pipeline

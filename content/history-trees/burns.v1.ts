@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { ATLS, BAILEY_LOVE, commonHpi, MACLEODS, PREGNANCY, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BURNS — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * BURNS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Burns / emergency ward, north India. What happened, in what space, and how long ago decides
  * almost everything that follows, so the mechanism questions come before the burn itself. The
  * differentials here are not diseases but the things the history separates: an airway that will
@@ -19,8 +19,8 @@ export const burnsV1: HistoryTree = {
   complaint: "Burns",
   triggers: ["burn", "burns", "burnt", "scald", "scalded", "flame burn", "electric burn", "electrical burn", "chemical burn", "jal gaya", "jal gayi", "stove burst", "hot water fell"],
   setting: "Burns / emergency ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [ATLS, BAILEY_LOVE, SABISTON, MACLEODS],
   slots: [
     ...commonHpi("burn"),

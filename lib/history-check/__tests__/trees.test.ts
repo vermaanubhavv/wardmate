@@ -33,8 +33,8 @@ describe("tree registry", () => {
     const reviewed = listTrees().filter((t) => t.reviewStatus === "reviewed").map((t) => t.id).sort();
     expect(reviewed).toEqual([
       "abdominal_distension", "abdominal_pain", "anorectal_pain", "bleeding_per_rectum",
-      "breast_lump", "constipation", "dysphagia", "groin_swelling", "haematemesis",
-      "leg_ulcer", "lump", "scrotal_swelling",
+      "breast_lump", "burns", "constipation", "dysphagia", "groin_swelling", "haematemesis",
+      "leg_ulcer", "lump", "post_op_problem", "scrotal_swelling", "thyroid_swelling",
     ]);
   });
 });
