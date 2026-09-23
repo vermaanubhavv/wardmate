@@ -16,6 +16,7 @@ import { PULMONARY_MEDICINE } from "./pulmonary-medicine";
 import { ENT_LEXICON } from "./ent";
 import { PSYCHIATRY } from "./psychiatry";
 import { OPHTHALMOLOGY } from "./ophthalmology";
+import { DERMATOLOGY } from "./dermatology";
 
 export * from "./types";
 
@@ -44,6 +45,7 @@ export const MASTER_LEXICON: readonly MedicalLexiconEntry[] = Object.freeze([
   ...ENT_LEXICON,
   ...PSYCHIATRY,
   ...OPHTHALMOLOGY,
+  ...DERMATOLOGY,
 ]);
 
 /**

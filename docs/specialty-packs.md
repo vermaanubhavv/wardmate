@@ -774,3 +774,37 @@ Scores: **none**. Nothing ophthalmic has been built and reviewed, and an eye uni
 offered a surgical or medical pathway because it exists. Discharge templates borrow the surgical
 ones; cataract / trabeculectomy / vitrectomy / keratoplasty templates with their drop schedules
 are the first thing to add past pilot.
+
+## 15. Ninth pack — dermatology (Phase 0+1 only)
+
+| Patch | What it does |
+|---|---|
+| `0084_dermatology.sql` | Widens `wards_specialty_check` and the `create_ward_for_current_user` guard to allow `dermatology`. No new patient column — hospital-day clock, `admission_day`, which every patient has. |
+
+**Why there is no body-surface-area column**, although a percentage decides how ill a patient
+with a peeling rash is: that percentage is a bedside estimate a clinician makes and states. A
+column invites a number nobody said, and a number in a column invites a severity grade nobody
+reviewed. It is recorded as spoken or not at all.
+
+### Code
+
+`lib/specialty/dermatology.ts` and `lib/transcription/lexicon/dermatology.ts` — the morphology
+the round is actually dictated in (annular scaly plaque, flaccid bullae, Nikolsky, distribution),
+the north-Indian casemix (recalcitrant dermatophytosis, scabies, leprosy under the national
+programme, severe drug reactions, the STIs seen in the same clinic), the bedside tests (KOH,
+Tzanck, slit skin smear, DIF) and the drugs by name including the over-the-counter combination
+creams.
+
+### What the guidance pins
+
+- **Morphology is the observation; the diagnosis is not.** "Annular scaly plaque with central
+  clearing" is what was seen — "tinea" is a separate statement the resident makes or does not.
+  A description is never promoted into a disease.
+- **The drug timeline is the drug named and the interval said** — never reconstructed, never
+  inferred from what the patient is on now, and "some tablets from a shop" stays those words.
+- **A patch that has lost sensation is a finding**, and its absence from the dictation is not a
+  normal sensation.
+
+Scores: **none**. SCORTEN, PASI and the BSA indices are real instruments this app has not built
+or reviewed, and it does not compute them. Discharge templates borrow medicine's; severe drug
+reaction, pemphigus, erythroderma and leprosy-with-monthly-follow-up are the first to add.

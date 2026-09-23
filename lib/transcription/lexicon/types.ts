@@ -54,7 +54,8 @@ export type Specialty =
   | "pulmonary-medicine"
   | "ent"
   | "psychiatry"
-  | "ophthalmology";
+  | "ophthalmology"
+  | "dermatology";
 
 export type NoteType =
   | "ward-round"
