@@ -741,3 +741,36 @@ depression with a risk review / alcohol detoxification — are the first thing t
 Neither is piloted. `SPECIALTY_PACKS=on` for the picker, `0082_ent_psychiatry.sql` run in the
 SQL Editor, and for psychiatry's CIWA-Ar the scoring engine's flag plus a per-ward
 `ward_scoring_engine` row. Clinical content is `pending_clinician_review` throughout.
+
+## 14. Eighth pack — ophthalmology (Phase 0+1 only)
+
+| Patch | What it does |
+|---|---|
+| `0083_ophthalmology.sql` | Widens `wards_specialty_check` and the `create_ward_for_current_user` guard to allow `ophthalmology`. No new patient column — a surgical department counting from `post_op_day`, else `admission_day`. |
+
+**Why there is no laterality column**, although almost every finding here belongs to one eye:
+the eye is part of the *observation*, not a property of the patient. One round can carry a
+vision in each eye, an operation on one and a pressure in both. A per-patient column would force
+one of those to be dropped or guessed — and guessing a side is exactly the harm this pack's
+guidance exists to prevent.
+
+### Code
+
+`lib/specialty/ophthalmology.ts` and `lib/transcription/lexicon/ophthalmology.ts` (cataract and
+its operations in shorthand, glaucoma and its instruments, the diabetic eye and its lasers,
+cornea and ocular-surface infection, lids/orbit/squint/trauma, and the acuity notation).
+
+### What the guidance pins
+
+- **The eye is part of the value.** No side is ever inferred — not from the operation, not from
+  an earlier entry, not from which eye is commoner.
+- **Acuity is a notation, never converted.** `6/12`, counting fingers, hand movements and
+  perception of light do not convert into one another, and unaided / best-corrected / pinhole
+  are three different measurements of the same eye.
+- **Pressure carries its instrument.** Applanation and non-contact are not interchangeable, and
+  "digital tension" is words, not a number.
+
+Scores: **none**. Nothing ophthalmic has been built and reviewed, and an eye unit must not be
+offered a surgical or medical pathway because it exists. Discharge templates borrow the surgical
+ones; cataract / trabeculectomy / vitrectomy / keratoplasty templates with their drop schedules
+are the first thing to add past pilot.

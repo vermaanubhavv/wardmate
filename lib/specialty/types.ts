@@ -30,6 +30,7 @@ export const SPECIALTY_KEYS = [
   "pulmonary_medicine",
   "ent",
   "psychiatry",
+  "ophthalmology",
 ] as const;
 export type SpecialtyKey = (typeof SPECIALTY_KEYS)[number];
 

@@ -5,6 +5,7 @@ import { obstetricsGynaecologyPack } from "./obstetrics-gynaecology";
 import { pulmonaryMedicinePack } from "./pulmonary-medicine";
 import { entPack } from "./ent";
 import { psychiatryPack } from "./psychiatry";
+import { ophthalmologyPack } from "./ophthalmology";
 import { SPECIALTY_KEYS, type SpecialtyKey, type SpecialtyPack } from "./types";
 
 export * from "./types";
@@ -16,6 +17,7 @@ export {
   pulmonaryMedicinePack,
   entPack,
   psychiatryPack,
+  ophthalmologyPack,
 };
 
 const PACKS: Record<SpecialtyKey, SpecialtyPack> = {
@@ -26,6 +28,7 @@ const PACKS: Record<SpecialtyKey, SpecialtyPack> = {
   pulmonary_medicine: pulmonaryMedicinePack,
   ent: entPack,
   psychiatry: psychiatryPack,
+  ophthalmology: ophthalmologyPack,
 };
 
 /**

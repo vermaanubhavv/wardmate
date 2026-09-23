@@ -32,6 +32,7 @@ describe("getSpecialtyPack — degrade, don't crash", () => {
     expect(getSpecialtyPack(" Pulmonary_Medicine ").key).toBe("pulmonary_medicine");
     expect(getSpecialtyPack(" ENT ").key).toBe("ent");
     expect(getSpecialtyPack(" Psychiatry ").key).toBe("psychiatry");
+    expect(getSpecialtyPack(" Ophthalmology ").key).toBe("ophthalmology");
   });
 
   it("offers every pack to the picker", () => {
@@ -43,6 +44,7 @@ describe("getSpecialtyPack — degrade, don't crash", () => {
       "pulmonary_medicine",
       "ent",
       "psychiatry",
+      "ophthalmology",
     ]);
   });
 

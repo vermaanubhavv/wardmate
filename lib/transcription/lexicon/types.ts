@@ -53,7 +53,8 @@ export type Specialty =
   | "obstetrics-gynaecology"
   | "pulmonary-medicine"
   | "ent"
-  | "psychiatry";
+  | "psychiatry"
+  | "ophthalmology";
 
 export type NoteType =
   | "ward-round"
