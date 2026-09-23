@@ -30,6 +30,8 @@ describe("getSpecialtyPack — degrade, don't crash", () => {
     expect(getSpecialtyPack(" INTERNAL_MEDICINE ").key).toBe("internal_medicine");
     expect(getSpecialtyPack(" Obstetrics_Gynaecology ").key).toBe("obstetrics_gynaecology");
     expect(getSpecialtyPack(" Pulmonary_Medicine ").key).toBe("pulmonary_medicine");
+    expect(getSpecialtyPack(" ENT ").key).toBe("ent");
+    expect(getSpecialtyPack(" Psychiatry ").key).toBe("psychiatry");
   });
 
   it("offers every pack to the picker", () => {
@@ -39,6 +41,8 @@ describe("getSpecialtyPack — degrade, don't crash", () => {
       "internal_medicine",
       "obstetrics_gynaecology",
       "pulmonary_medicine",
+      "ent",
+      "psychiatry",
     ]);
   });
 

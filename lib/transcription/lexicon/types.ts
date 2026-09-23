@@ -51,7 +51,9 @@ export type Specialty =
   | "medical-oncology"
   | "internal-medicine"
   | "obstetrics-gynaecology"
-  | "pulmonary-medicine";
+  | "pulmonary-medicine"
+  | "ent"
+  | "psychiatry";
 
 export type NoteType =
   | "ward-round"

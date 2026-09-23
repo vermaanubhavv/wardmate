@@ -28,6 +28,8 @@ export const SPECIALTY_KEYS = [
   "internal_medicine",
   "obstetrics_gynaecology",
   "pulmonary_medicine",
+  "ent",
+  "psychiatry",
 ] as const;
 export type SpecialtyKey = (typeof SPECIALTY_KEYS)[number];
 

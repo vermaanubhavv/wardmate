@@ -690,3 +690,54 @@ picker, the scoring engine's own flag plus a per-ward `ward_scoring_engine` row 
    unit's read-through, not new code.
 3. **Clinical content is `pending_clinician_review`** — the two trees, the lexicon and the
    extraction guidance, as with every other pack at this stage.
+
+## 13. Sixth and seventh packs — ENT and psychiatry (Phase 0+1 only)
+
+Same discipline as §10 and §12: seam and core only, clinical content deferred until a unit
+read-through. Both are Phase 0+1 — they make a unit of that department possible and make its
+dictation and history work; they do not yet carry its checklists or its own discharge templates.
+
+### Patch
+
+| Patch | What it does |
+|---|---|
+| `0082_ent_psychiatry.sql` | Widens `wards_specialty_check` and the two-argument `create_ward_for_current_user` guard to allow `ent` and `psychiatry`. Neither needs a new patient column: ENT counts from `post_op_day` when there is an operation, psychiatry from `admission_day`, and both columns exist on every patient today. |
+
+**No risk column, deliberately.** Psychiatry's risk statements are captured as dictated text,
+with who said them. A structured risk field would invite a value nobody said and a score nobody
+reviewed, against the app's own guarantee that a stored value can be quoted from the transcript.
+Silence stays silence — an unasked risk question is never stored as a denial, the same rule the
+`low_mood` history tree keeps.
+
+### Code
+
+| File | What it carries |
+|---|---|
+| `lib/specialty/ent.ts` | Surgical clock (POD, unchanged from general surgery), airway- and laterality-first extraction guidance, operation names stored as spoken, all six format slots including OT notes. |
+| `lib/specialty/psychiatry.ts` | Hospital-day clock, informant kept inside every observation, the mental state examination stored as described and never assembled into a diagnosis, risk recorded and never inferred, ECT as a procedure that does not start a post-op clock. |
+| `lib/transcription/lexicon/ent.ts` | Ear / nose / throat / head-and-neck vocabulary: the operations in shorthand (tympanoplasty, MRM, FESS, SMR, adenotonsillectomy, tracheostomy), examination shorthand (otoscopy, DNE, IDL, Rinne and Weber), audiology (PTA, air-bone gap, tympanogram, BERA) and the tobacco/areca casemix. |
+| `lib/transcription/lexicon/psychiatry.ts` | The mental state examination in dictation order, the drugs by name, the withdrawal and de-addiction vocabulary, and the Mental Healthcare Act language an Indian admission carries. Carries no risk-scoring vocabulary, on purpose. |
+
+Both lexicons ship with the word-boundary collision test described in §12. It earned its keep
+again here: `"trauma"` fired inside `"polytrauma"` and `"therapy"` inside `"chemotherapy"`, both
+fixed by changing the trigger word rather than the test.
+
+### Scores
+
+| Pack | Offered | Why |
+|---|---|---|
+| ENT | *nothing* | No ENT pathway has been built and reviewed. An empty list is a clinical statement — an ENT unit must not be shown Ranson's or CURB-65 because they happen to exist. |
+| Psychiatry | `ciwa_ar` | Alcohol withdrawal, already built, reviewed and active, and managed daily on this ward. No mood, psychosis or risk scale is offered, because none has been built here. |
+
+### Discharge templates
+
+ENT borrows the general-surgery templates (an ENT discharge is operative in shape); psychiatry
+borrows the medicine ones (problem, course, what was started, follow-up). Their own —
+tympanoplasty / FESS / tonsillectomy / tracheostomy care, and first-episode psychosis / mania /
+depression with a risk review / alcohol detoxification — are the first thing to add past pilot.
+
+### Activation
+
+Neither is piloted. `SPECIALTY_PACKS=on` for the picker, `0082_ent_psychiatry.sql` run in the
+SQL Editor, and for psychiatry's CIWA-Ar the scoring engine's flag plus a per-ward
+`ward_scoring_engine` row. Clinical content is `pending_clinician_review` throughout.
