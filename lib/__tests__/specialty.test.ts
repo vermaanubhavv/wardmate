@@ -1,3 +1,4 @@
+import { burnsPlasticSurgeryPack } from "@/lib/specialty/burns-plastic-surgery";
 import { listTrees } from "@/lib/history-check/trees";
 import { describe, it, expect } from "vitest";
 import {
@@ -34,6 +35,7 @@ describe("getSpecialtyPack — degrade, don't crash", () => {
     expect(getSpecialtyPack(" Psychiatry ").key).toBe("psychiatry");
     expect(getSpecialtyPack(" Ophthalmology ").key).toBe("ophthalmology");
     expect(getSpecialtyPack(" Dermatology ").key).toBe("dermatology");
+    expect(getSpecialtyPack(" Burns_Plastic_Surgery ").key).toBe("burns_plastic_surgery");
   });
 
   it("offers every pack to the picker", () => {
@@ -47,6 +49,7 @@ describe("getSpecialtyPack — degrade, don't crash", () => {
       "psychiatry",
       "ophthalmology",
       "dermatology",
+      "burns_plastic_surgery",
     ]);
   });
 
@@ -84,6 +87,45 @@ describe("phase 0 is a no-op for a surgical unit", () => {
 
   it("chemotherapy fields on a surgical patient change nothing", () => {
     expect(dayLabel({ ...surgical, cycle_day: 3, cycle_number: 2 })).toBe("POD 2");
+  });
+});
+
+describe("burns counts from the burn, which happened before the admission", () => {
+  const p = burnsPlasticSurgeryPack;
+
+  it("counts post-burn days from 1 — the day of the injury is PBD 1", () => {
+    expect(p.dayCount({ post_op_day: null, admission_day: 1, burn_day: 1 })).toEqual({
+      clock: "burn",
+      n: 1,
+      text: "PBD 1",
+    });
+  });
+
+  it("the burn clock leads even after grafting, and both numbers stay themselves", () => {
+    // Burned on the 1st, grafted on the 12th: PBD 14 and POD 3 of the graft on the same day.
+    // The ward speaks the first; the label names its clock so neither can be read as the other.
+    expect(p.dayCount({ post_op_day: 3, admission_day: 13, burn_day: 14 }).text).toBe("PBD 14");
+  });
+
+  it("a plastic-surgery patient who was never burned counts post-operatively", () => {
+    // A flap, a contracture release, a cleft: same unit, no burn date, surgical clock.
+    expect(p.dayCount({ post_op_day: 2, admission_day: 4 })).toEqual({
+      clock: "post_op",
+      n: 2,
+      text: "POD 2",
+    });
+  });
+
+  it("with neither, it is the hospital day", () => {
+    expect(p.dayCount({ post_op_day: null, admission_day: 5 }).text).toBe("Day 5");
+  });
+
+  it("a burn date that arrives as null changes nothing — the app counts as it always did", () => {
+    expect(p.dayCount({ post_op_day: null, admission_day: 7, burn_day: null }).text).toBe("Day 7");
+  });
+
+  it("offers no score: the burns severity indices are not built or reviewed here", () => {
+    expect(p.scoringKeys).toEqual([]);
   });
 });
 

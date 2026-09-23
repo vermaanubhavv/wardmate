@@ -808,3 +808,47 @@ creams.
 Scores: **none**. SCORTEN, PASI and the BSA indices are real instruments this app has not built
 or reviewed, and it does not compute them. Discharge templates borrow medicine's; severe drug
 reaction, pemphigus, erythroderma and leprosy-with-monthly-follow-up are the first to add.
+
+## 16. Tenth pack — burns & plastic surgery (Phase 0+1, and the first new clock since oncology)
+
+Every department added since medical oncology counted days on a clock that already existed: the
+operation, the cycle, or the admission. A burns unit counts from **the burn**, which usually
+happened before the patient reached the hospital. A patient burned on Tuesday who arrives on
+Thursday is on post-burn day 3, and a note that says day 1 is wrong about the only number this
+ward navigates by. That is a fact the app would otherwise have to guess, so it gets a column.
+
+| Patch | What it does |
+|---|---|
+| `0085_burns_plastic_surgery.sql` | Allows `burns_plastic_surgery`; adds `patients.burn_date`; rebuilds `current_patients` with `burn_day` beside `post_op_day` and `cycle_day`. Every existing patient gets a null burn date, and a null burn date means "count the way you always did". |
+
+`burn_day` is **1-based like `cycle_day`, not 0-based like `post_op_day`** — a burns unit calls
+the day of the injury post-burn day 1, the way an oncologist calls the day the drugs go up
+Day 1. The label always names its clock, so `PBD 3` and `POD 3` can never be confused on
+adjacent beds.
+
+**Two clocks on one patient.** A grafted patient is PBD 14 and POD 3 of the graft at once. The
+pack prefers the burn, falls back to the operation, then to admission — so a plastic-surgery
+patient who was never burned (a flap, a contracture release, a cleft) counts post-operatively,
+exactly as general surgery does. Pinned in `lib/__tests__/specialty.test.ts`.
+
+### What is deliberately NOT stored
+
+- **No TBSA column.** A percentage is a bedside estimate, revised as the burn declares itself,
+  and it is the input to a fluid calculation this app does not make. A column invites a number
+  nobody said, and a number in a column invites a calculation nobody reviewed. It is dictated
+  as spoken, with whose estimate it is.
+- **No time-of-injury column, only the date.** The hour matters enormously in the first day and
+  is captured by the `burns` history tree's own `time_of_injury` slot, where it carries a source
+  quote. A date drives a day counter; an hour would drive arithmetic. That is the line.
+- **No score.** The burns severity indices are exactly the kind of number that would be read as
+  a prognosis at a bedside. None is built or reviewed here.
+
+### Wiring
+
+| File | Change |
+|---|---|
+| `lib/specialty/burns-plastic-surgery.ts` | The pack: PBD → POD → Day, and guidance that records fluids as given and never calculates a resuscitation. |
+| `lib/transcription/lexicon/burns-plastic-surgery.ts` | Depth and area vocabulary, escharotomy/excision/grafting/flap monitoring, dressings, urine output. **No fluid-formula terms** — Parkland and its relatives are absent on purpose. |
+| `app/patients/new/patient-form.tsx`, `app/patients/edit-identity.tsx` | A "Date of burn" field, shown on a burns unit only, exactly as the chemotherapy fields are shown on an oncology one. |
+| `app/patients/actions.ts` | `readBurnDate` — a past date is normal and unquestioned (that is the point of the field); a future date is refused; an empty box stores null. |
+| `lib/ward.ts`, `lib/handover.ts`, `app/patients/[id]/page.tsx` | The burn columns are asked for **only on a burns unit**, because a unit can only be one if 0085 has run. The patient page learns its pack *after* its main select, so it reads them in a second tiny query rather than naming a column that a not-yet-migrated database would reject — which would take every patient page down, not just a burns one. |

@@ -22,6 +22,10 @@ export type WardPatient = {
   regimen?: string | null;
   cycle_number?: number | null;
   cycle_day?: number | null;
+  /** Burns: the date of the injury and the days since it, 1-based (the day of the burn is
+   *  PBD 1). Null on every patient who is not a burns admission. See patch 0085. */
+  burn_date?: string | null;
+  burn_day?: number | null;
   last_entry_at: string | null;
   template_family: string | null;
   template_variant: string | null;

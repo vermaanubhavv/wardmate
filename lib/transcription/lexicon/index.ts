@@ -17,6 +17,7 @@ import { ENT_LEXICON } from "./ent";
 import { PSYCHIATRY } from "./psychiatry";
 import { OPHTHALMOLOGY } from "./ophthalmology";
 import { DERMATOLOGY } from "./dermatology";
+import { BURNS_PLASTIC_SURGERY } from "./burns-plastic-surgery";
 
 export * from "./types";
 
@@ -46,6 +47,7 @@ export const MASTER_LEXICON: readonly MedicalLexiconEntry[] = Object.freeze([
   ...PSYCHIATRY,
   ...OPHTHALMOLOGY,
   ...DERMATOLOGY,
+  ...BURNS_PLASTIC_SURGERY,
 ]);
 
 /**

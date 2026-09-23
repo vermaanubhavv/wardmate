@@ -43,6 +43,7 @@ export default function PatientForm({
   specialty?: string;
 }) {
   const oncology = specialty === "medical_oncology";
+  const burns = specialty === "burns_plastic_surgery";
   const [state, formAction, pending] = useActionState<AddPatientState, FormData>(addPatient, {
     error: null,
   });
@@ -68,6 +69,7 @@ export default function PatientForm({
     regimen: "",
     cycle_number: "",
     cycle_started_on: "",
+    burn_date: "",
   });
 
   // Admission date is controlled separately: it starts at today's date and a paper may
@@ -97,6 +99,7 @@ export default function PatientForm({
       regimen: f.regimen,
       cycle_number: f.cycle_number,
       cycle_started_on: f.cycle_started_on,
+      burn_date: f.burn_date,
     }));
   }
 
@@ -403,6 +406,22 @@ export default function PatientForm({
             </div>
           )}
         </>
+      )}
+
+      {burns && (
+        <Field
+          label="Date of burn"
+          hint="The day the burn happened, which is often before admission. The ward list counts PBD from here — day 1 is the day of the injury"
+        >
+          <input
+            type="date"
+            name="burn_date"
+            max={localToday}
+            value={fields.burn_date}
+            onChange={(e) => set("burn_date")(e.target.value)}
+            className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+          />
+        </Field>
       )}
 
       {state.error && (

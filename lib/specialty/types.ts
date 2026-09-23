@@ -32,6 +32,7 @@ export const SPECIALTY_KEYS = [
   "psychiatry",
   "ophthalmology",
   "dermatology",
+  "burns_plastic_surgery",
 ] as const;
 export type SpecialtyKey = (typeof SPECIALTY_KEYS)[number];
 
@@ -44,6 +45,12 @@ export type DayCountPatient = {
   post_op_day: number | null;
   /** Days since the current chemotherapy cycle started, 1-based. See patch 0060. */
   cycle_day?: number | null;
+  /**
+   * Days since the burn, 1-based — the day of the injury is post-burn day 1. See patch 0085.
+   * Null for every patient who is not a burns admission, which is what every patient outside a
+   * burns unit is.
+   */
+  burn_day?: number | null;
   cycle_number?: number | null;
   regimen?: string | null;
 };
@@ -55,7 +62,7 @@ export type DayCountPatient = {
  * different things on two adjacent beds is exactly the ambiguity this app exists to remove.
  */
 type DayCount = {
-  clock: "post_op" | "cycle" | "admission";
+  clock: "post_op" | "cycle" | "burn" | "admission";
   n: number;
   text: string;
 };
