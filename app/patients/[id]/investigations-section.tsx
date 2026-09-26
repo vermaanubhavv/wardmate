@@ -3,6 +3,26 @@ import { groupInvestigations } from "@/lib/investigations";
 import type { Observation } from "@/lib/patient-state";
 import type { WardRanges } from "@/lib/exam-summary";
 
+/** How one result is judged: the range printed on its own report, then this ward's learned
+ *  range. Neither invented — with neither, classifyLab falls back to its built-in table, and
+ *  where it has none it returns null and the value prints plain. Shared with the printed
+ *  case-history sheet so paper and screen flag the same values. */
+export function labReading(value: Observation, sex: string | null, wardRanges: WardRanges) {
+  let supplied: SuppliedRange | null = null;
+  if (value.ref_low != null || value.ref_high != null) {
+    supplied = {
+      low: value.ref_low ?? null,
+      high: value.ref_high ?? null,
+      text: value.ref_text ?? null,
+      source: "report",
+    };
+  } else {
+    const ward = wardRanges.get(canonicalLabName(value.label));
+    if (ward) supplied = { ...ward, source: "ward" };
+  }
+  return classifyLab(value.label, value.value_text, sex, supplied);
+}
+
 /**
  * Everything ever sent on this patient, one line per report.
  *
@@ -69,24 +89,7 @@ export default function InvestigationsSection({
 
               <ul className="divide-y divide-line border-t border-line">
                 {report.values.map((value) => {
-                  // The range printed on this very report, then this ward's own learned range.
-                  // Neither invented: with no range from either, classifyLab falls back to its
-                  // built-in table, and where it has none it returns null and the value prints
-                  // plain.
-                  let supplied: SuppliedRange | null = null;
-                  if (value.ref_low != null || value.ref_high != null) {
-                    supplied = {
-                      low: value.ref_low ?? null,
-                      high: value.ref_high ?? null,
-                      text: value.ref_text ?? null,
-                      source: "report",
-                    };
-                  } else {
-                    const ward = wardRanges.get(canonicalLabName(value.label));
-                    if (ward) supplied = { ...ward, source: "ward" };
-                  }
-
-                  const reading = classifyLab(value.label, value.value_text, sex, supplied);
+                  const reading = labReading(value, sex, wardRanges);
 
                   return (
                     <li key={value.id} className="flex items-baseline gap-3 px-4 py-2.5">

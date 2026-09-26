@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { caseHistorySectionOf } from "@/lib/case-history";
 import { complaintChipsFor, pastChipsFor } from "@/lib/case-history-chips";
+import { leadsFor, readField, writeField } from "@/lib/case-history-departments";
 import DictationOverlay from "./dictation-overlay";
 import type { Observation } from "@/lib/patient-state";
 import type { WardRanges } from "@/lib/exam-summary";
@@ -621,30 +622,51 @@ export default function CaseHistoryWorkspace({
   // The pertinent-negatives card appears the moment a provisional diagnosis exists — the one
   // the "add patient" card sets, or one generated later in this workspace.
   const hasDiagnosisForNegatives = (primaryDiagnosis ?? "").trim().length > 0 || diagnosis.text.trim().length > 0;
+  const leads = leadsFor(specialty);
+  const leadFirst = (cards: { id: StepId; title: string }[]) => {
+    const lead = leads.map((l) => cards.find((c) => c.id === l.key)).filter((c) => !!c);
+    return [...lead, ...cards.filter((c) => !lead.includes(c))];
+  };
+  // The cards whose text a department prompt can write into. Answering a prompt counts as
+  // recording something, so a yes/no card flips to "Significant".
+  const promptText: Partial<Record<StepId, [string, (v: string) => void]>> = {
+    past: [past.text, (v) => setPast({ mode: "significant", text: v })],
+    personal: [personal.text, (v) => setPersonal({ mode: "significant", text: v })],
+    family: [family.text, (v) => setFamily({ mode: "significant", text: v })],
+    environmental: [environmental, setEnvironmental],
+    obstetric: [obstetric, setObstetric],
+  };
+
   const STEPS: { id: StepId; title: string }[] = [
     { id: "demographics", title: "Demographics" },
     { id: "complaints", title: "Complaints" },
     ...complaintList.map((c, i) => ({ id: `hopi` as StepId, title: `HOPI — ${c}`, _c: c, _i: i })),
     ...(hasDiagnosisForNegatives ? [{ id: "negatives" as StepId, title: "Relevant negatives" }] : []),
-    { id: "past", title: "Past history" },
-    { id: "personal", title: "Personal history" },
-    { id: "family", title: "Family history" },
-    { id: "medication", title: "Medication history" },
-    { id: "surgical", title: "Surgical history" },
-    { id: "dietary", title: "Dietary history" },
-    { id: "environmental", title: "Environmental history" },
-    ...(sex && /^f/i.test(sex) ? [{ id: "obstetric" as StepId, title: "Menstrual & obstetric" }] : []),
-    // The disease, then what has been given for it, then what is running now, then what the
-    // last cycle did — the order an oncologist actually asks in. They sit after the general
-    // background because that is where a clerking reaches the cancer itself.
-    ...(oncology
-      ? [
-          { id: "onco_disease" as StepId, title: "Oncological history" },
-          { id: "onco_treatment" as StepId, title: "Treatment received" },
-          { id: "onco_cycle" as StepId, title: "Current cycle" },
-          { id: "onco_toxicity" as StepId, title: "Toxicity since last cycle" },
-        ]
-      : []),
+    // The department's lead cards come straight after the presenting illness — an obstetric
+    // history is most of an OBG clerking — then the rest in their usual order. Same order the
+    // printed sheet uses (lib/case-history-departments.ts).
+    ...leadFirst([
+      { id: "past", title: "Past history" },
+      { id: "personal", title: "Personal history" },
+      { id: "family", title: "Family history" },
+      { id: "medication", title: "Medication history" },
+      { id: "surgical", title: "Surgical history" },
+      { id: "dietary", title: "Dietary history" },
+      { id: "environmental", title: "Environmental history" },
+      ...((sex && /^f/i.test(sex)) || specialty === "obstetrics_gynaecology"
+        ? [{ id: "obstetric" as StepId, title: "Menstrual & obstetric" }]
+        : []),
+      // The disease, then what has been given for it, then what is running now, then what the
+      // last cycle did — the order an oncologist actually asks in.
+      ...(oncology
+        ? [
+            { id: "onco_disease" as StepId, title: "Oncological history" },
+            { id: "onco_treatment" as StepId, title: "Treatment received" },
+            { id: "onco_cycle" as StepId, title: "Current cycle" },
+            { id: "onco_toxicity" as StepId, title: "Toxicity since last cycle" },
+          ]
+        : []),
+    ]),
     ...(oncology
       ? [
           { id: "performance" as StepId, title: "Performance status" },
@@ -938,6 +960,40 @@ export default function CaseHistoryWorkspace({
           </>
         )}
       </>
+    );
+  }
+
+  /** The department's questions for a lead card — each a labelled field writing
+   *  "<field>: <answer>" into the card's own text, so the text box below shows it too. A table
+   *  on the printed sheet is offered here as the shape each line should take. */
+  function departmentPrompts(): React.ReactNode {
+    const lead = leads.find((l) => l.key === current.id);
+    if (!lead?.table) return null;
+    const binding = promptText[current.id];
+    const { fields, columns, recordedInRows } = lead.table;
+    return (
+      <div className="flex flex-col gap-2 rounded-[10px] bg-chip/50 p-2.5">
+        {fields && binding && (
+          <div className="grid grid-cols-2 gap-2">
+            {fields.map((f) => (
+              <label key={f} className="flex flex-col gap-0.5">
+                <span className="text-[12px] font-medium text-muted">{f}</span>
+                <input
+                  value={readField(binding[0], f)}
+                  onChange={(e) => {
+                    binding[1](writeField(binding[0], f, e.target.value));
+                    mark(current.id);
+                  }}
+                  className="rounded-[8px] border border-line bg-card px-2 py-1.5 text-[14px]"
+                />
+              </label>
+            ))}
+          </div>
+        )}
+        {columns && recordedInRows && (
+          <p className="text-[12px] text-muted">Record each one separately: {columns.join(" · ").replace(" (as recorded)", "")}</p>
+        )}
+      </div>
     );
   }
 
@@ -1667,7 +1723,10 @@ export default function CaseHistoryWorkspace({
         <div className="h-[3px] bg-[#e2e2e9]">
           <div className="h-full bg-accent transition-all" style={{ width: `${pct}%` }} />
         </div>
-        <div className="flex flex-col gap-3 px-4 py-4">{body()}</div>
+        <div className="flex flex-col gap-3 px-4 py-4">
+          {departmentPrompts()}
+          {body()}
+        </div>
       </div>
 
       <button type="button" onClick={() => setMenuOpen((o) => !o)} className="self-center text-[13px] font-medium text-accent">
