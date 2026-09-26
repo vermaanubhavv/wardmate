@@ -1,16 +1,16 @@
 "use client";
 
 /**
- * The three hands-on pieces of /home. Each one lets a visitor do the thing the section is
- * about, instead of reading about it: merge the scattered sources, triage a round, flip
- * through the app.
+ * The hands-on pieces of /home. Each one lets a visitor do the thing the section is about,
+ * instead of reading about it: triage a round, flip through the app. (The scattered sources
+ * merging into one is pure CSS, scrubbed by scroll, in landing.css.)
  *
  * Movement uses the browser's own View Transitions (elements with the same
  * view-transition-name morph between states). Browsers without it, and anyone who has asked
  * for reduced motion, just get the new state instantly.
  */
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { flushSync } from "react-dom";
 
 function transition(update: () => void) {
@@ -51,71 +51,6 @@ function Segmented({
           {o}
         </button>
       ))}
-    </div>
-  );
-}
-
-/* ---------------- scattered sources → one place ---------------- */
-
-type Fragment = { icon: ReactNode; label: string; desc: string };
-const TILT = [-1.6, 1.2, -0.8, 1.8, -1.1];
-
-export function FragmentMerge({ items, logo }: { items: Fragment[]; logo: ReactNode }) {
-  const [unified, setUnified] = useState(false);
-
-  return (
-    <div>
-      <Segmented
-        label="Where patient information lives"
-        options={["Today", "With WardMate"]}
-        value={unified ? 1 : 0}
-        onChange={(i) => transition(() => setUnified(i === 1))}
-      />
-
-      {!unified ? (
-        <>
-          <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-            {items.map((it, i) => (
-              <div
-                key={it.label}
-                className={`ios-group flex items-start gap-3 px-4 py-3.5 ${i === 4 ? "sm:col-span-2" : ""}`}
-                style={vt(`frag-${i}`, { rotate: `${TILT[i]}deg` })}
-              >
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[9px] bg-accent/10 text-accent">{it.icon}</span>
-                <p className="text-[14.5px] leading-snug">
-                  <span className="block font-semibold">{it.label}</span>
-                  <span className="text-muted">{it.desc}</span>
-                </p>
-              </div>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={() => transition(() => setUnified(true))}
-            className="mt-4 text-[14px] font-semibold text-accent"
-          >
-            Five places to look. Tap to bring them together →
-          </button>
-        </>
-      ) : (
-        <div className="wm-glow-border mt-4 px-5 py-5 shadow-[0_24px_50px_-28px_var(--accent)]" style={vt("frag-card")}>
-          <div className="flex items-center gap-3">
-            {logo}
-            <p className="text-[17px] font-semibold leading-snug">
-              <span className="text-accent">One place.</span> Running the ward has never been easier.
-            </p>
-          </div>
-          <div className="mt-4 flex flex-col">
-            {items.map((it, i) => (
-              <div key={it.label} className="flex items-center gap-3 border-t border-line py-2.5" style={vt(`frag-${i}`)}>
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-[8px] bg-accent/10 text-accent">{it.icon}</span>
-                <span className="text-[14.5px] font-semibold">{it.label}</span>
-                <span className="ml-auto shrink-0 whitespace-nowrap text-[12.5px] font-semibold text-good-fg">✓ in WardMate</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
