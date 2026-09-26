@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, HUTCHISONS, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
+import { commonHpi, BROWSE, HUTCHISONS, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * GROIN SWELLING — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * GROIN SWELLING — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult surgical ward, north India. The history separates a hernia from everything else that
  * sits in the groin, and then asks the only question that changes the timing: does it still go
  * back. Differentials: inguinal hernia, femoral hernia, inguinal lymphadenopathy (reactive,
@@ -11,19 +11,20 @@ import { commonHpi, HUTCHISONS, MACLEODS, val, yn } from "@/content/history-tree
  */
 export const groinSwellingV1: HistoryTree = {
   id: "groin_swelling",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Groin swelling",
   triggers: ["groin swelling", "swelling in groin", "inguinal swelling", "inguinal hernia", "hernia", "lump in groin", "groin lump", "swelling in the groin", "bulge in groin", "femoral swelling"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
-  references: [MACLEODS, HUTCHISONS],
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
+  references: [MACLEODS, HUTCHISONS, BROWSE, SABISTON],
   slots: [
     ...commonHpi("groin swelling"),
     val("hpi", "side", "Which side", "Which side — left, right, or both?", ["left", "right", "both", "one side", "bilateral"]),
     val("hpi", "position", "Exact position", "Is the swelling above the groin crease, below it, or does it extend into the scrotum or labium?", ["above", "below", "groin crease", "inguinal", "femoral", "scrotum", "labium", "extends", "medial", "lateral", "thigh"]),
     val("hpi", "size_and_growth", "Size and change over time", "How big is it, and has it grown since it was first noticed?", ["size", "small", "large", "grown", "increased", "same", "lemon", "orange", "gradually", "over years"], { numeric: true }),
     yn("hpi", "reducibility", "Whether it goes back", "Does the swelling go back on lying down or on pushing it, and has that changed recently?", ["goes back", "reduces", "disappears", "on lying down", "on pushing", "no longer goes back", "irreducible", "stays out", "changed recently"]),
+    yn("hpi", "previously_stuck", "Has been stuck before and gone back", "Has the swelling ever failed to go back for a while and then gone back on its own or with help?", ["stuck", "did not go back", "would not reduce", "went back later", "pushed back", "reduced with help", "never got stuck"]),
     yn("hpi", "cough_impulse_strain", "Appears on coughing or straining", "Does it appear or get bigger on coughing, straining, lifting, or standing for long?", ["coughing", "straining", "lifting", "standing", "gets bigger", "appears", "bearing down", "at work", "end of day"]),
     yn("hpi", "pain_dragging", "Pain or dragging sensation", "Is there pain or a dragging sensation, and when is it worst?", ["pain", "dragging", "heaviness", "ache", "end of day", "on lifting", "painless", "discomfort", "on walking"]),
     yn("associated", "bowel_symptoms", "Constipation / vomiting / distension", "Any constipation, vomiting, abdominal distension, or failure to pass flatus?", ["constipation", "vomiting", "distension", "flatus", "not passing", "colicky", "obstipation", "abdominal pain"]),
@@ -45,6 +46,7 @@ export const groinSwellingV1: HistoryTree = {
     yn("exposure", "previous_hernia_surgery", "Previous hernia or groin surgery", "Any previous hernia repair or other surgery in the groin or lower abdomen?", ["previous hernia", "repair", "mesh", "surgery", "operation", "appendicectomy", "recurrence", "same side"]),
     yn("exposure", "tb_contact", "TB contact / past TB", "Any past tuberculosis or contact with tuberculosis?", ["tb", "tuberculosis", "koch", "att", "akt", "tb contact"]),
     yn("exposure", "sexual_exposure", "Sexual exposure / genital ulcer", "Any recent unprotected sexual contact, genital ulcer, or urethral discharge?", ["unprotected", "sexual contact", "genital ulcer", "urethral discharge", "sti", "new partner"], { tier: "detailed" }),
+    ...surgicalBackground({ acute: true }),
   ],
   differentials: [
     { id: "inguinal_hernia", name: "Inguinal hernia", pointers: ["reducibility", "cough_impulse_strain", "position", "occupation_straining"], discriminators: ["reducibility", "cough_impulse_strain", "position", "femoral_position", "pain_dragging", "irreducible_painful", "previous_hernia_surgery"] },

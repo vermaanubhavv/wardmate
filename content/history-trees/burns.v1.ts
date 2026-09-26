@@ -1,5 +1,5 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { BAILEY_LOVE, commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, val, yn } from "@/content/history-trees/_helpers";
+import { ATLS, BAILEY_LOVE, commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
  * BURNS — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
@@ -19,7 +19,7 @@ export const burnsV1: HistoryTree = {
   setting: "Burns and plastic surgery unit, north India",
   reviewStatus: "pending_clinician_review",
   reviewedBy: null,
-  references: [BAILEY_LOVE, MACLEODS, HUTCHISONS],
+  references: [BAILEY_LOVE, MACLEODS, HUTCHISONS, ATLS],
   slots: [
     ...commonHpi("burn"),
     val("hpi", "time_of_injury", "Exact time of the burn", "At what time did the burn happen, and how many hours have passed since?", ["time", "hours ago", "this morning", "last night", "am", "pm", "since", "o'clock", "minutes ago"], { numeric: true, teach: "Every calculation that follows a burn is counted from the time of injury, not from the time of arrival." }),
@@ -42,6 +42,10 @@ export const burnsV1: HistoryTree = {
     yn("red_flag", "large_area_extremes_of_age", "Large area burnt / very young or very old", "Does the burn cover a large part of the body, and is the patient a young child or an elderly person?", ["large area", "most of body", "half", "extensive", "child", "infant", "elderly", "old", "years"], { teach: "The same area of burn is tolerated differently at the extremes of age, and the area is estimated rather than guessed at from the history alone." }),
     yn("red_flag", "chemical_ongoing", "Chemical still on the skin", "If a chemical caused the burn, what was it, and has it been washed off with running water?", ["acid", "alkali", "lime", "chuna", "cement", "detergent", "washed", "not washed", "still on skin", "clothes soaked", "burning continues"], { teach: "A chemical keeps burning until washed away, so the contact time matters more than the appearance of the skin." }),
     yn("red_flag", "inconsistent_account", "Account that does not fit the injury", "Does the account of how it happened fit the pattern of the burn, and has the account changed between informants?", ["does not fit", "changed", "different account", "delay in bringing", "child", "elderly", "unwitnessed", "consistent", "unclear"], { teach: "An account that changes between informants, or a delay in coming, is recorded as a fact of the history rather than an interpretation of it." }),
+    // A burn goes to theatre for escharotomy or debridement on the day it arrives, so the
+    // pre-operative background is asked acute: last food and fluid is a ward-round question
+    // here, not a long-case one.
+    ...surgicalBackground({ acute: true }),
     PREGNANCY,
   ],
   differentials: [

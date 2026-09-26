@@ -18,6 +18,8 @@ import type { SourceEntry } from "@/lib/history-check/sources";
 export type EvalCase = {
   id: string;
   title: string;
+  /** Which tree to run this case against. Defaults to "fever", which most cases use. */
+  treeId?: string;
   patient: { bed: string | null; age_years: number | null; sex: string | null };
   entries: SourceEntry[];
   expect: Partial<Record<string, SlotState>>;
@@ -239,6 +241,103 @@ export const EVAL_CASES: EvalCase[] = [
       rash: "unasked",
     },
     note: "'No discharge from the wound' is a negative for a sub-item but port-site pain makes local_infection positive; either positive or negative for that slot is defensible, only positive is scored here.",
+  },
+  {
+    id: "thyroid-swelling",
+    title: "Neck swelling, surgical ward",
+    treeId: "thyroid_swelling",
+    patient: { bed: "SW-3", age_years: 38, sex: "female" },
+    entries: [
+      voice(
+        "e1",
+        "Chief complaint swelling in front of the neck since 2 years. Swelling moves up on swallowing. Gradually increasing, no sudden increase. No pain. No difficulty in swallowing, no difficulty in breathing, voice is normal. Complains of palpitations and weight loss despite eating well, cannot tolerate heat. No radiation to the neck ever."
+      ),
+    ],
+    expect: {
+      duration: "positive",
+      moves_on_swallowing: "positive",
+      size_change: "positive",
+      pain: "negative",
+      pressure_symptoms: "negative",
+      voice_change: "negative",
+      overactive_features: "positive",
+      neck_radiation: "negative",
+      underactive_features: "unasked",
+      eye_symptoms: "unasked",
+      family_thyroid_cancer: "unasked",
+      surg_previous_operations: "unasked",
+    },
+    note: "Checks that the thyroid-specific questions are read (movement on swallowing, pressure symptoms) and that the surgical background stays unasked rather than being assumed absent.",
+  },
+  {
+    id: "post-op-leak",
+    title: "Problem after an operation, day five",
+    treeId: "post_op_problem",
+    patient: { bed: "SW-11", age_years: 48, sex: "male" },
+    entries: [
+      voice(
+        "e1",
+        "Post operative day 5 of emergency laparotomy with resection anastomosis for perforation. Since yesterday fever with chills. Abdomen distended and painful all over, worse than the wound. Drain output has become greenish and increased. Has not passed flatus since the operation. Vomited twice, bilious. No cough, no breathlessness. Urine output reduced since morning. Not on any blood thinners."
+      ),
+    ],
+    expect: {
+      which_operation: "positive",
+      day_of_onset: "positive",
+      fever: "positive",
+      drain_change: "positive",
+      flatus_stool: "positive",
+      abdominal_pain_distension: "positive",
+      vomiting: "positive",
+      bilious_faeculent_discharge: "positive",
+      fever_with_rigors_late: "positive",
+      urine_output_fall: "positive",
+      breathing_cough: "negative",
+      surg_blood_thinners: "negative",
+      calf_leg: "unasked",
+      wound_gaping_gush: "unasked",
+      confusion_drowsiness: "unasked",
+    },
+    note: "The post-operative day and the operation carry half the history. 'No cough, no breathlessness' is a negative; the wound and the calf were never mentioned and must stay unasked.",
+  },
+  {
+    id: "burns-inhalation",
+    title: "Flame burn in a closed room",
+    treeId: "burns",
+    patient: { bed: "BW-2", age_years: 27, sex: "female" },
+    entries: [
+      voice(
+        "e1",
+        "Brought with flame burns sustained about 4 hours back, stove burst inside a closed kitchen, clothes caught fire, rolled on the ground. Burns over face, neck, chest and both arms. Voice is hoarse, soot present in the mouth, nasal hair singed. Was not unconscious at the scene. Only cold water was poured at home, nothing else applied. Has not passed urine since the burn. Attendant says it was accidental, account is the same from the patient."
+      ),
+    ],
+    expect: {
+      time_of_injury: "positive",
+      agent: "positive",
+      circumstances: "positive",
+      body_areas: "positive",
+      closed_space: "positive",
+      duration_contact: "positive",
+      first_aid: "positive",
+      airway_symptoms: "positive",
+      // "was not unconscious at the scene" is an explicit denial of one of this slot's terms.
+      other_injuries: "negative",
+      // "has not passed urine since the burn" reads as a negative for the slot ("passing urine")
+      // and is the most alarming line in the dictation. The state is right; what it means is not
+      // this module's to say.
+      urine_output: "negative",
+      breathing_difficulty: "unasked",
+      circumferential_burn: "unasked",
+      electrical_high_voltage: "unasked",
+      chemical_ongoing: "unasked",
+      large_area_extremes_of_age: "unasked",
+      pain_sensation: "unasked",
+      tetanus_status: "unasked",
+      comorbidity: "unasked",
+      // "account is the same from the patient" carries no negation word before a term, so the
+      // validator cannot turn it into a negative and must leave the slot unasked.
+      inconsistent_account: "unasked",
+    },
+    note: "The airway questions must come out of the words that carry them (hoarse, soot, singed) and the chemical and electrical branches must stay unasked for a flame burn.",
   },
   {
     id: "empty-ish",

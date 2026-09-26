@@ -14,6 +14,14 @@ Clinical content (the trees, the examination checklist, the teaching lines) is m
 `pending_clinician_review` and shows that chip on the card and the learning pages until a
 clinician sets `reviewStatus: "reviewed"` and `reviewedBy` in the file.
 
+The fifteen general-surgery trees (abdominal pain, abdominal distension, anorectal pain, bleeding
+per rectum, breast lump, burns, constipation, dysphagia, groin swelling, haematemesis, leg ulcer,
+lump, problem after an operation, scrotal swelling, neck swelling (thyroid)) are `reviewed`,
+signed off by Dr Anubhav Verma — the first twelve on 2026-09-22, the last three on 2026-09-23.
+Every other tree is still pending, including `jaundice`, which is a medicine-ward tree even
+though it now carries the obstructive questions. `trees.test.ts` pins that list, so a tree cannot drift into "reviewed" as
+a side effect of an edit.
+
 ## Pipeline
 
 ```
@@ -70,7 +78,7 @@ triggered it. Numeric values render amber with "(unconfirmed)"; there is no conf
 
 ### Trees — `content/history-trees/`
 
-Fifty-nine complaints: fever, chest pain, breathlessness, abdominal pain, jaundice, cough,
+Sixty-one complaints: fever, chest pain, breathlessness, abdominal pain, jaundice, cough,
 oedema, headache, altered sensorium / seizures, limb weakness, diarrhoea / vomiting, generalised
 weakness, giddiness, decreased urine output, constipation, abdominal distension, lump, bleeding
 per rectum, burning micturition, loss of weight / appetite, palpitations, joint pain,
@@ -81,9 +89,10 @@ difficult breathing, and seizure), bleeding per vaginum, vaginal discharge, labo
 leaking, fever on chemotherapy, blood in the urine, and limb injury; then ear discharge /
 hearing loss, bleeding from the nose, hoarseness of voice, red eye, loss of vision, skin rash /
 itching, low mood / self-harm, abnormal behaviour, burns, leg pain on walking / cold painful
-limb, toothache / facial swelling, coughing blood, and snoring / daytime sleepiness.
+limb, toothache / facial swelling, coughing blood, snoring / daytime sleepiness,
+swelling in front of the neck, and a problem after an operation.
 
-Fifty-nine trees in all, spanning general medicine, general surgery, emergency medicine,
+Sixty-one trees in all, spanning general medicine, general surgery, emergency medicine,
 paediatrics, medical oncology, obstetrics and gynaecology, orthopaedics, urology and
 neurosurgery — the specialty order set by the product owner — and then the departments that
 had no tree at all: ENT, ophthalmology, dermatology, psychiatry, burns and plastic surgery,
@@ -106,6 +115,15 @@ where the history belongs to whoever shares the room rather than to the patient.
 The psychiatry trees ask about self-harm directly, and `low_mood` carries its risk questions as
 red flags for the same reason every other tree does: a question never asked must never read as a
 negative. Nothing in them is scored, ranked, or turned into a disposition.
+
+Surgical trees add `surgicalBackground()` from `_helpers.ts`: previous operations and what went
+wrong with them, anaesthetic and transfusion history, blood thinners, regular medicines, allergy,
+exercise tolerance, implants, and last food and fluid. All `exposure`, ids prefixed `surg_` so a
+tree can carry both these and its own "previous hernia surgery". `surgicalBackground({ acute:
+true })` promotes the last-meal question from the long case to the ward round. Last food and
+fluid is deliberately not a red flag: a red-flag positive raises the safety level of the whole
+history, and a patient who has eaten is a timing question, not a danger signal.
+`docs/surgical-history.md` is where the content came from.
 
 Paediatric trees add `paedBackground()` from `_helpers.ts`: birth history, immunisation,
 development, feeding and growth. Age is deliberately not a slot — it comes from the patient
@@ -177,7 +195,7 @@ dose / diagnosis rules), registry in `content/examination/index.ts`, test in
 ## Evals
 
 `lib/history-check/evals/cases.ts` holds synthetic dictations with expected slot states,
-including adversarial ones (silence only, "no X, Y present", attendant-vs-patient contradiction,
+each naming the tree it runs against (`treeId`, default `fever`), including adversarial ones (silence only, "no X, Y present", attendant-vs-patient contradiction,
 two entries that disagree, a wrong-patient sentence, typed workspace input, post-op). No real
 patient data, ever.
 

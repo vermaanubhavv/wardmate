@@ -1,11 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { getTree, listTrees, suggestTrees } from "../trees";
+import { EVAL_CASES } from "../evals/cases";
 
 describe("tree registry", () => {
   it("lists every shipped complaint once and resolves by id and version", () => {
     const trees = listTrees();
     const ids = trees.map((t) => t.id);
-    for (const want of ["fever", "chest_pain", "breathlessness", "abdominal_pain", "jaundice", "cough", "oedema", "headache", "altered_sensorium", "limb_weakness", "diarrhoea", "generalised_weakness", "giddiness", "decreased_urine_output", "constipation", "abdominal_distension", "lump", "bleeding_per_rectum", "burning_micturition", "loss_of_weight_appetite", "palpitations", "joint_pain", "haematemesis", "polyuria", "low_back_pain", "sore_throat", "fever_with_rash", "poisoning_snakebite", "dysphagia", "groin_swelling", "breast_lump", "anorectal_pain", "leg_ulcer", "scrotal_swelling", "head_injury", "shock", "paediatric_fever", "paediatric_diarrhoea", "paediatric_breathing", "paediatric_seizure", "bleeding_pv", "vaginal_discharge", "labour_pains", "febrile_neutropenia", "haematuria", "limb_injury"]) {
+    for (const want of ["fever", "chest_pain", "breathlessness", "abdominal_pain", "jaundice", "cough", "oedema", "headache", "altered_sensorium", "limb_weakness", "diarrhoea", "generalised_weakness", "giddiness", "decreased_urine_output", "constipation", "abdominal_distension", "lump", "bleeding_per_rectum", "burning_micturition", "loss_of_weight_appetite", "palpitations", "joint_pain", "haematemesis", "polyuria", "low_back_pain", "sore_throat", "fever_with_rash", "poisoning_snakebite", "dysphagia", "groin_swelling", "breast_lump", "anorectal_pain", "leg_ulcer", "scrotal_swelling", "head_injury", "shock", "paediatric_fever", "paediatric_diarrhoea", "paediatric_breathing", "paediatric_seizure", "bleeding_pv", "vaginal_discharge", "labour_pains", "febrile_neutropenia", "haematuria", "limb_injury", "thyroid_swelling", "post_op_problem", "burns"]) {
       expect(ids).toContain(want);
     }
     expect(new Set(ids).size).toBe(ids.length);
@@ -15,11 +16,28 @@ describe("tree registry", () => {
     expect(getTree("no_such_complaint")).toBeNull();
   });
 
-  it("every tree is pending clinician review with at least one reference", () => {
+  it("every tree has at least one reference, and only a named reviewer can mark one reviewed", () => {
     for (const t of listTrees()) {
-      expect(t.reviewStatus).toBe("pending_clinician_review");
       expect(t.references.length).toBeGreaterThan(0);
+      if (t.reviewStatus === "reviewed") expect(t.reviewedBy, `${t.id} is reviewed by nobody`).toBeTruthy();
+      else {
+        expect(t.reviewStatus).toBe("pending_clinician_review");
+        expect(t.reviewedBy).toBeNull();
+      }
     }
+  });
+
+  it("pins exactly which trees a clinician has signed off", () => {
+    // A tree must not drift into "reviewed" as a side effect of an edit — the chip on the card
+    // is the only thing telling a resident whether the content was read by a clinician.
+    // `burns` is deliberately absent: the reviewed burns tree was this branch's own, and main's
+    // independently-written one won the merge, so it carries no sign-off for its content.
+    const reviewed = listTrees().filter((t) => t.reviewStatus === "reviewed").map((t) => t.id).sort();
+    expect(reviewed).toEqual([
+      "abdominal_distension", "abdominal_pain", "anorectal_pain", "bleeding_per_rectum",
+      "breast_lump", "constipation", "dysphagia", "groin_swelling", "haematemesis",
+      "leg_ulcer", "lump", "post_op_problem", "scrotal_swelling", "thyroid_swelling",
+    ]);
   });
 });
 
@@ -89,9 +107,49 @@ describe("citation integrity", () => {
   });
 });
 
+describe("eval cases", () => {
+  it("names only slots its tree actually has, so an eval never fails on a typo", () => {
+    for (const c of EVAL_CASES) {
+      const tree = getTree(c.treeId ?? "fever");
+      expect(tree, `${c.id}: no tree '${c.treeId ?? "fever"}'`).toBeTruthy();
+      const ids = new Set(tree!.slots.map((s) => s.id));
+      for (const slotId of [...Object.keys(c.expect), ...(c.expectConflict ?? [])]) {
+        expect(ids.has(slotId), `${c.id}: ${tree!.id} has no slot '${slotId}'`).toBe(true);
+      }
+    }
+  });
+});
+
+describe("the surgical complaints", () => {
+  it("each has its own trigger words", () => {
+    expect(suggestTrees(["burns since 4 hours"]).map((t) => t.id)).toContain("burns");
+    expect(suggestTrees(["swelling in front of neck x 2 years"]).map((t) => t.id)).toContain("thyroid_swelling");
+    expect(suggestTrees(["post op day 5, fever"]).map((t) => t.id)).toContain("post_op_problem");
+    // "burning micturition" is not a burn, and the burns tree must not fire on it.
+    expect(suggestTrees(["burning micturition x 2 days"]).map((t) => t.id)).not.toContain("burns");
+  });
+
+  it("asks the obstructive questions of a patient with jaundice", () => {
+    const ids = getTree("jaundice")!.slots.map((s) => s.id);
+    for (const want of ["pale_stools", "fluctuation", "pain_before_jaundice", "biliary_intervention"]) {
+      expect(ids, `jaundice is missing ${want}`).toContain(want);
+    }
+  });
+
+  it("every general-surgery tree carries the pre-operative background", () => {
+    const surgical = ["abdominal_pain", "abdominal_distension", "anorectal_pain", "bleeding_per_rectum", "breast_lump", "constipation", "dysphagia", "groin_swelling", "haematemesis", "leg_ulcer", "lump", "scrotal_swelling", "thyroid_swelling", "post_op_problem", "burns"];
+    for (const id of surgical) {
+      const ids = getTree(id)!.slots.map((s) => s.id);
+      for (const want of ["surg_previous_operations", "surg_anaesthetic_problem", "surg_transfusion", "surg_blood_thinners", "surg_allergy", "surg_exercise_tolerance", "surg_last_meal"]) {
+        expect(ids, `${id} is missing ${want}`).toContain(want);
+      }
+    }
+  });
+});
+
 describe("registry size", () => {
   it("keeps the docs honest about how many trees ship", () => {
     // docs/history-check.md states this number; update both together.
-    expect(listTrees().length).toBe(59);
+    expect(listTrees().length).toBe(61);
   });
 });

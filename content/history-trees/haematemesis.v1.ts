@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
+import { commonHpi, BAILEY_LOVE, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, rce, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * HAEMATEMESIS / UPPER GI BLEEDING — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * HAEMATEMESIS / UPPER GI BLEEDING — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult medicine / surgical ward, north India. Two questions run in parallel: how much has been
  * lost and is the patient compensating, and where is it coming from. Differentials: peptic
  * ulcer, oesophageal or gastric varices, Mallory-Weiss tear, erosive gastritis (painkillers,
@@ -10,13 +10,15 @@ import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, rce, val, yn } from "@/cont
  */
 export const haematemesisV1: HistoryTree = {
   id: "haematemesis",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Vomiting of blood",
   triggers: ["haematemesis", "hematemesis", "vomiting blood", "vomited blood", "blood in vomit", "coffee ground vomit", "coffee ground", "khoon ki ulti", "upper gi bleed", "blood in vomitus"],
   setting: "Adult medicine / surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
+    BAILEY_LOVE,
+    SABISTON,
     rce("The rational clinical examination. Is this patient hypovolemic?", 1999, "10086438"),
     rce("The rational clinical examination. Physical examination of the liver", 1994, "8196144"),
     MACLEODS,
@@ -47,6 +49,7 @@ export const haematemesisV1: HistoryTree = {
     yn("exposure", "alcohol", "Alcohol", "How much alcohol, and when was the last drink?", ["alcohol", "drinking", "last drink", "daily", "binge", "desi", "whisky", "quarter"]),
     yn("exposure", "h_pylori_family_cancer", "Family history of ulcer or stomach cancer", "Any family history of peptic ulcer or stomach cancer?", ["family history", "ulcer", "stomach cancer", "gastric cancer", "father", "mother", "sibling"], { tier: "detailed" }),
     yn("exposure", "caustic_traditional", "Corrosive or traditional remedies", "Any corrosive substance swallowed, or traditional or herbal remedies taken?", ["corrosive", "acid", "caustic", "herbal", "ayurvedic", "traditional", "desi dawa", "swallowed"], { tier: "detailed" }),
+    ...surgicalBackground({ acute: true }),
   ],
   differentials: [
     { id: "peptic_ulcer", name: "Peptic ulcer", pointers: ["abdominal_pain", "nsaid_steroid_anticoagulant", "previous_bleed_ulcer", "melaena"], discriminators: ["abdominal_pain", "nsaid_steroid_anticoagulant", "previous_bleed_ulcer", "appearance", "h_pylori_family_cancer"] },

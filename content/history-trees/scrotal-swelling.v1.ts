@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, HUTCHISONS, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
+import { commonHpi, BROWSE, HUTCHISONS, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SCROTAL SWELLING OR PAIN — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * SCROTAL SWELLING OR PAIN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult surgical / urology ward, north India. One question dominates: how suddenly did the pain
  * start, and in whom. Sudden severe pain in an adolescent or young adult is torsion until
  * excluded, and the testis is salvageable only for a few hours. Differentials: testicular
@@ -11,13 +11,13 @@ import { commonHpi, HUTCHISONS, MACLEODS, val, yn } from "@/content/history-tree
  */
 export const scrotalSwellingV1: HistoryTree = {
   id: "scrotal_swelling",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Scrotal swelling or pain",
   triggers: ["scrotal swelling", "scrotum swelling", "swelling of scrotum", "testicular pain", "testis pain", "pain in testis", "scrotal pain", "swollen testicle", "testicular swelling", "hydrocele", "varicocele"],
   setting: "Adult surgical / urology ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
-  references: [MACLEODS, HUTCHISONS],
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
+  references: [MACLEODS, HUTCHISONS, BROWSE, SABISTON],
   slots: [
     ...commonHpi("scrotal swelling"),
     val("hpi", "side", "Which side", "Which side is affected — left, right, or both?", ["left", "right", "both", "one side", "bilateral", "unilateral"]),
@@ -45,6 +45,7 @@ export const scrotalSwellingV1: HistoryTree = {
     yn("exposure", "undescended_testis", "Undescended testis / previous scrotal surgery", "Was either testis ever undescended, or has there been previous surgery on the groin or scrotum?", ["undescended", "not descended", "orchidopexy", "previous surgery", "hernia repair", "childhood surgery", "empty scrotum"]),
     yn("exposure", "mumps_tb", "Mumps / tuberculosis", "Any recent mumps, parotid swelling, or past tuberculosis?", ["mumps", "parotid", "swelling of cheek", "tuberculosis", "tb", "koch", "att"], { tier: "detailed" }),
     yn("exposure", "filaria_endemic", "Living in a filaria-endemic area", "Does the patient live in or come from an area where filaria is common?", ["filaria", "endemic", "village", "area", "mosquito", "elephantiasis", "recurrent attacks"], { tier: "detailed" }),
+    ...surgicalBackground({ acute: true }),
   ],
   differentials: [
     { id: "torsion", name: "Testicular torsion", pointers: ["sudden_severe_pain", "high_riding_horizontal", "previous_similar_episodes", "nausea_vomiting"], discriminators: ["sudden_severe_pain", "high_riding_horizontal", "previous_similar_episodes", "nausea_vomiting", "fever", "urinary_symptoms", "pain_severity"] },

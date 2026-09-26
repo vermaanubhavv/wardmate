@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
+import { commonHpi, BAILEY_LOVE, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * DYSPHAGIA — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * DYSPHAGIA — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult surgical / medicine ward, north India. Three questions carry most of the weight: solids
  * or liquids, progressive or intermittent, and at what level food sticks. Solids-then-liquids
  * progressing over weeks with weight loss is a mechanical narrowing until shown otherwise.
@@ -12,19 +12,20 @@ import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/co
  */
 export const dysphagiaV1: HistoryTree = {
   id: "dysphagia",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Difficulty swallowing",
   triggers: ["dysphagia", "difficulty swallowing", "difficulty in swallowing", "food sticking", "food gets stuck", "cannot swallow", "unable to swallow", "trouble swallowing", "nigalne me dikkat", "odynophagia"],
   setting: "Adult surgical / medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
-  references: [MACLEODS, HUTCHISONS],
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
+  references: [MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
   slots: [
     ...commonHpi("difficulty swallowing"),
     val("hpi", "solids_liquids", "Solids or liquids", "Is the difficulty with solid food, with liquids, or with both?", ["solids", "solid food", "liquids", "water", "both", "roti", "rice", "only solids", "even water", "semi solids"]),
     val("hpi", "progression_pattern", "Progressive or intermittent", "Has it steadily worsened from solids to liquids, or does it come and go?", ["progressive", "steadily", "worsened", "solids then liquids", "intermittent", "comes and goes", "on and off", "same since", "sudden"]),
     val("hpi", "level", "Where food sticks", "Where does the food seem to stick — in the throat, behind the upper chest, or lower down?", ["throat", "neck", "upper chest", "behind the breastbone", "retrosternal", "lower chest", "epigastrium", "level", "points to"]),
     yn("hpi", "odynophagia", "Pain on swallowing", "Is swallowing painful, and where is the pain felt?", ["painful swallowing", "odynophagia", "pain on swallowing", "burning on swallowing", "hurts to swallow"]),
+    yn("hpi", "foreign_body_impaction", "Food or foreign body stuck before", "Has food, a bone or a tablet ever become stuck and needed help to clear it?", ["stuck", "impacted", "bone stuck", "tablet stuck", "foreign body", "endoscopy to remove", "cleared on its own", "never stuck"]),
     yn("hpi", "regurgitation", "Bringing food back up", "Does undigested food or liquid come back up, and how long after eating?", ["regurgitation", "comes back", "undigested", "brings up", "after eating", "at night", "on lying down", "vomits food", "hours later"]),
     yn("hpi", "nocturnal_cough_aspiration", "Coughing or choking with swallowing", "Any coughing, choking, or food going into the wind-pipe while swallowing, or coughing at night?", ["coughing", "choking", "goes into windpipe", "aspiration", "at night", "wakes coughing", "nasal regurgitation", "comes out of nose"]),
     yn("associated", "weight_appetite", "Weight loss / appetite", "Any weight loss, and how much over what period?", ["weight loss", "lost weight", "clothes loose", "appetite", "kg", "over months"]),
@@ -47,6 +48,7 @@ export const dysphagiaV1: HistoryTree = {
     yn("exposure", "family_cancer", "Family history of gastrointestinal cancer", "Any family history of cancer of the food pipe or stomach?", ["family history", "oesophageal cancer", "stomach cancer", "gastric", "father", "mother", "sibling"], { tier: "detailed" }),
     yn("exposure", "hot_beverages_diet", "Very hot drinks / diet", "Any habit of very hot tea, or a diet low in fruit and vegetables?", ["hot tea", "very hot", "scalding", "diet", "fruit", "vegetables", "pickles", "smoked food"], { tier: "detailed" }),
     yn("exposure", "previous_surgery_radiation", "Previous neck or chest surgery / radiotherapy", "Any previous surgery or radiotherapy to the neck or chest?", ["surgery", "radiotherapy", "radiation", "neck", "chest", "operation", "thyroid surgery"], { tier: "detailed" }),
+    ...surgicalBackground(),
   ],
   differentials: [
     { id: "carcinoma", name: "Oesophageal or gastro-oesophageal carcinoma", pointers: ["progressive_solids_to_liquids", "weight_loss_significant", "tobacco_alcohol", "hoarseness_with_dysphagia"], discriminators: ["progressive_solids_to_liquids", "weight_loss_significant", "tobacco_alcohol", "hoarseness_with_dysphagia", "solids_liquids", "level", "neck_swelling", "family_cancer"] },

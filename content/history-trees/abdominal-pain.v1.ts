@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
+import { commonHpi, BAILEY_LOVE, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, SABISTON, rce, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ABDOMINAL PAIN — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * ABDOMINAL PAIN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult medicine / surgery ward, north India. Differentials: acute appendicitis, acute
  * cholecystitis / biliary colic, acute pancreatitis, peptic ulcer / perforation, intestinal
  * obstruction, renal colic / pyelonephritis, acute gastroenteritis, abdominal tuberculosis,
@@ -10,13 +10,15 @@ import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "
  */
 export const abdominalPainV1: HistoryTree = {
   id: "abdominal_pain",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Abdominal pain",
   triggers: ["abdominal pain", "pain abdomen", "pain in abdomen", "stomach pain", "pain in stomach", "epigastric pain", "acute abdomen", "abdomen pain"],
   setting: "Adult medicine / general surgery ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
+    BAILEY_LOVE,
+    SABISTON,
     rce("Does this patient have appendicitis?", 1996, "8918857"),
     rce("Does this patient have acute cholecystitis?", 2003, "12503981"),
     rce("Does this woman have an ectopic pregnancy? The Rational Clinical Examination systematic review", 2013, "23613077"),
@@ -30,6 +32,7 @@ export const abdominalPainV1: HistoryTree = {
     val("hpi", "site", "Site", "Where is the pain — which quadrant or region?", ["right iliac fossa", "rif", "right lower", "left lower", "epigastric", "epigastrium", "periumbilical", "umbilical", "right hypochondrium", "right upper", "left upper", "flank", "loin", "suprapubic", "lower abdomen", "upper abdomen", "generalised", "diffuse", "whole abdomen", "site"]),
     val("hpi", "migration", "Shift of pain", "Did the pain start somewhere else and shift (for example umbilicus to right iliac fossa)?", ["shifted", "shifting", "migrated", "migration", "started around the umbilicus", "moved to", "then localised", "localised to"]),
     val("hpi", "character", "Character", "Is the pain colicky (comes in waves), constant, burning, or dull?", ["colicky", "colic", "waves", "constant", "continuous", "burning", "dull", "aching", "sharp", "stabbing", "cramping", "gripping"]),
+    val("hpi", "character_change", "Change in the character of the pain", "Has the pain changed in character since it began — from coming in waves to constant, or from one place to all over?", ["became constant", "now constant", "was colicky", "changed", "all over", "spread", "more severe", "no change in character", "same character"]),
     val("hpi", "radiation", "Radiation", "Does the pain go to the back, shoulder, groin, or chest?", ["radiating", "radiates", "radiation", "to the back", "to back", "shoulder", "right shoulder", "scapula", "groin", "testis", "loin to groin", "chest", "band like"]),
     val("hpi", "severity", "Severity", "How severe is the pain?", ["severe", "mild", "moderate", "worst", "10/10", "out of 10", "severity", "excruciating", "unbearable"], { numeric: true }),
     val("hpi", "aggravating_relieving", "Aggravating / relieving factors", "What makes it worse or better — food, fasting, movement, lying still, passing stool or flatus, vomiting, antacids?", ["worse after food", "after food", "after meals", "on eating", "empty stomach", "fasting", "relieved by food", "movement", "lying still", "still", "passing stool", "passing flatus", "relieved by vomiting", "antacid", "relieved by", "aggravated by", "worse on", "better on"]),
@@ -62,6 +65,7 @@ export const abdominalPainV1: HistoryTree = {
     yn("exposure", "water_food", "Outside food / unsafe water", "Any outside food, street food, or unsafe drinking water, or similar illness in contacts?", ["outside food", "street food", "unsafe water", "contaminated water", "hotel food", "similar complaints", "others at home", "food poisoning"]),
     yn("exposure", "tb_contact", "TB contact / past TB", "Any past tuberculosis or contact with a TB patient?", ["tb", "tuberculosis", "koch", "att", "akt", "dots", "tb contact", "past tb"], { tier: "detailed" }),
     yn("exposure", "rash", "Rash over the painful area", "Any vesicular rash in a band over the painful area?", ["rash", "vesicles", "blisters", "herpes", "zoster", "band"], { tier: "detailed" }),
+    ...surgicalBackground({ acute: true }),
   ],
   differentials: [
     { id: "appendicitis", name: "Acute appendicitis", pointers: ["migration", "site", "fever", "appetite_weight"], discriminators: ["migration", "site", "fever", "nausea_vomiting", "appetite_weight", "peritonism_symptoms", "menstrual"] },
@@ -77,6 +81,6 @@ export const abdominalPainV1: HistoryTree = {
   ],
   output: {
     durationSlot: "duration",
-    hpiOrder: ["onset", "duration", "onset_mode", "site", "migration", "character", "radiation", "severity", "aggravating_relieving", "relation_to_meals_bowel", "progression", "prior_treatment", "prior_investigations"],
+    hpiOrder: ["onset", "duration", "onset_mode", "site", "migration", "character", "character_change", "radiation", "severity", "aggravating_relieving", "relation_to_meals_bowel", "progression", "prior_treatment", "prior_investigations"],
   },
 };
