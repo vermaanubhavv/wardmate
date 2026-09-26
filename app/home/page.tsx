@@ -129,20 +129,6 @@ const SCREENS = [
   ["/home/phone-patient-chart.png", "Patient chart", "Wardmate patient chart screen with vitals, a to-do checklist, Tap to speak and Photograph a report"],
 ] as const;
 
-const MARQUEE = [
-  "Ward list",
-  "Triaged to-dos",
-  "Ward rounds",
-  "Handover",
-  "Discharge summaries",
-  "BISAP",
-  "Ranson's criteria",
-  "ATLS primary survey",
-  "Heart failure GDMT",
-  "Tap to speak",
-  "Photograph a report",
-] as const;
-
 /** Staggered entrance delay, for the wm-in keyframe. */
 const d = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
 
@@ -172,19 +158,17 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* ---- hero: text + a real, featured screenshot with floating chips ---- */}
+      {/* ---- hero: text + one real, featured screenshot and a single callout ---- */}
       <section className="wm-hero">
-        <div className="wm-blob wm-blob-a" />
-        <div className="wm-blob wm-blob-b" />
-        <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 pt-16 pb-20 lg:grid-cols-[1.05fr_0.95fr] lg:pt-24">
+        <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 pt-20 pb-24 lg:grid-cols-[1.05fr_0.95fr] lg:pt-28">
           <div>
             <span className="wm-pill wm-in">
-              <span className="wm-live-dot" />
+              <span className="wm-live-dot" aria-hidden />
               Your AI residency companion
             </span>
             <h1 className="wm-in mt-5 max-w-[13ch] text-[44px] font-bold leading-[1.02] tracking-[-0.03em] sm:text-[60px]" style={d(120)}>
               Less clerical.{" "}
-              <span className="wm-gradient-text">More clinical.</span>
+              <span className="wm-accent-text">More clinical.</span>
             </h1>
             <p className="wm-in mt-6 max-w-[50ch] text-[17.5px] leading-snug text-muted" style={d(240)}>
               WardMate&rsquo;s AI drafts the ward list and the round from what&rsquo;s already
@@ -210,7 +194,7 @@ export default function HomePage() {
               className="pointer-events-none absolute -inset-10 -z-10 rounded-full"
               style={{ background: "radial-gradient(55% 55% at 50% 45%, color-mix(in srgb, var(--accent) 26%, transparent), transparent)" }}
             />
-            <div className="wm-float">
+            <div>
               {/* eslint-disable-next-line @next/next/no-img-element -- fixed marketing asset */}
               <img
                 src="/home/phone-ward-round.png"
@@ -219,36 +203,15 @@ export default function HomePage() {
               />
             </div>
             <div className="wm-chip wm-chip-a">
-              <span className="wm-ping h-2.5 w-2.5 rounded-full bg-critical-dot" style={{ "--ping": "var(--critical-dot)" } as React.CSSProperties} />
+              <span className="h-2.5 w-2.5 rounded-full bg-critical-dot" />
               <span>
                 <span className="block font-semibold text-critical-fg">Needs attention now</span>
                 <span className="text-muted">Bed 7 · Temp 102°F</span>
               </span>
             </div>
-            <div className="wm-chip wm-chip-b">
-              <span className="grid h-6 w-6 place-items-center rounded-full bg-accent text-accent-ink">
-                <Svg className="h-3.5 w-3.5">{Icon.check}</Svg>
-              </span>
-              <span>
-                <span className="block font-semibold">Handover ready</span>
-                <span className="text-muted">Copied for WhatsApp</span>
-              </span>
-            </div>
           </div>
         </div>
       </section>
-
-      {/* ---- ticker ---- */}
-      <div className="wm-marquee border-y border-line bg-card py-4" aria-hidden>
-        <div className="wm-marquee-track">
-          {[...MARQUEE, ...MARQUEE].map((t, i) => (
-            <span key={i} className="flex items-center gap-10 whitespace-nowrap text-[14px] font-medium text-muted">
-              {t}
-              <span className="h-1.5 w-1.5 rounded-full bg-accent/60" />
-            </span>
-          ))}
-        </div>
-      </div>
 
       {/* ---- fragmentation → one place ---- */}
       <section id="about" className="mx-auto max-w-6xl scroll-mt-16 px-6 py-20">
@@ -352,10 +315,7 @@ export default function HomePage() {
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-[14.5px] font-semibold">{who}</p>
                       {critical && (
-                        <span
-                          className="wm-ping shrink-0 rounded-[5px] bg-critical-fg px-2 py-0.5 text-[10.5px] font-bold text-white"
-                          style={{ "--ping": "var(--critical-dot)" } as React.CSSProperties}
-                        >
+                        <span className="shrink-0 rounded-[5px] bg-critical-fg px-2 py-0.5 text-[10.5px] font-bold text-white">
                           CRITICAL
                         </span>
                       )}
@@ -401,8 +361,7 @@ export default function HomePage() {
       </section>
 
       {/* ---- phone screens ---- */}
-      <section className="wm-hero border-y border-line bg-card py-20">
-        <div className="wm-blob wm-blob-a" />
+      <section className="border-y border-line bg-card py-20">
         <div className="mx-auto max-w-6xl px-6">
           <div className="wm-reveal text-center">
             <Eyebrow>The product</Eyebrow>
@@ -436,7 +395,7 @@ export default function HomePage() {
           <Eyebrow>The person behind it</Eyebrow>
           <h2 className="mt-1 text-[26px] font-semibold tracking-tight">Built by the resident who needed it</h2>
           <div className="mt-5 flex items-start gap-5">
-            <span className="grid h-[72px] w-[72px] shrink-0 place-items-center rounded-full bg-gradient-to-br from-accent to-sky-400 text-[24px] font-semibold text-white shadow-[0_12px_28px_-12px_var(--accent)]">
+            <span className="grid h-[72px] w-[72px] shrink-0 place-items-center rounded-full bg-accent text-[24px] font-semibold text-white shadow-[0_12px_28px_-12px_var(--accent)]">
               AV
             </span>
             <div>
