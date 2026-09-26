@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Mark from "@/app/mark";
 import WaitlistForm from "@/app/waitlist/waitlist-form";
 import ContactForm from "@/app/home/contact-form";
+import "./landing.css";
 
 /**
  * The full marketing page — About, the academic pitch, the founder, real product screens —
@@ -37,10 +38,6 @@ export const metadata: Metadata = {
     images: ["https://wardmate.in/icon-512.png"],
   },
 };
-
-function Divider() {
-  return <div className="border-t border-line" />;
-}
 
 function Eyebrow({ children }: { children: string }) {
   return <p className="ios-group-header text-accent">{children}</p>;
@@ -83,6 +80,9 @@ const Icon = {
         <line x1="16.6" y1="7.4" x2="18.7" y2="5.3" />
       </g>
     </>
+  ),
+  check: (
+    <path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
   ),
   handoff: (
     <path d="M7 6l5 6-5 6M13 6l5 6-5 6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -129,124 +129,201 @@ const SCREENS = [
   ["/home/phone-patient-chart.png", "Patient chart", "Wardmate patient chart screen with vitals, a to-do checklist, Tap to speak and Photograph a report"],
 ] as const;
 
+const MARQUEE = [
+  "Ward list",
+  "Triaged to-dos",
+  "Ward rounds",
+  "Handover",
+  "Discharge summaries",
+  "BISAP",
+  "Ranson's criteria",
+  "ATLS primary survey",
+  "Heart failure GDMT",
+  "Tap to speak",
+  "Photograph a report",
+] as const;
+
+/** Staggered entrance delay, for the wm-in keyframe. */
+const d = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
+
 export default function HomePage() {
   return (
     <main className="flex-1 w-full">
       {/* ---- header ---- */}
-      <header className="sticky top-0 z-10 top-bar border-b border-line bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-          <span className="flex items-center gap-2">
+      <header className="sticky top-0 z-20 top-bar border-b border-line bg-background/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <a href="#" className="flex items-center gap-2">
             <Mark className="h-7 w-7" />
             <span className="text-[17px] font-semibold tracking-tight">
               ward<span className="text-accent">mate</span>
             </span>
-          </span>
-          <a
-            href="#waitlist"
-            className="rounded-[10px] bg-accent px-4 py-2 text-[14px] font-semibold text-accent-ink"
-          >
-            Join the waitlist
           </a>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <a href="/login" className="whitespace-nowrap rounded-[10px] px-2 py-2 text-[14px] font-semibold text-muted hover:text-foreground sm:px-3">
+              Log in
+            </a>
+            <a
+              href="#waitlist"
+              className="whitespace-nowrap rounded-[10px] bg-accent px-3 py-2 text-[14px] font-semibold text-accent-ink shadow-[0_8px_20px_-10px_var(--accent)] sm:px-4"
+            >
+              Join the waitlist
+            </a>
+          </div>
         </div>
       </header>
 
-      {/* ---- hero: text + a real, featured screenshot ---- */}
-      <section className="mx-auto max-w-6xl px-6 pt-14 pb-14">
-        <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+      {/* ---- hero: text + a real, featured screenshot with floating chips ---- */}
+      <section className="wm-hero">
+        <div className="wm-blob wm-blob-a" />
+        <div className="wm-blob wm-blob-b" />
+        <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 pt-16 pb-20 lg:grid-cols-[1.05fr_0.95fr] lg:pt-24">
           <div>
-            <p className="text-[15px] text-muted">Your AI residency companion</p>
-            <h1 className="ios-large-title mt-3 text-[40px] leading-[1.05] sm:text-[46px] max-w-[13ch]">
-              Less clerical. More clinical.
+            <span className="wm-pill wm-in">
+              <span className="wm-live-dot" />
+              Your AI residency companion
+            </span>
+            <h1 className="wm-in mt-5 max-w-[13ch] text-[44px] font-bold leading-[1.02] tracking-[-0.03em] sm:text-[60px]" style={d(120)}>
+              Less clerical.{" "}
+              <span className="wm-gradient-text">More clinical.</span>
             </h1>
-            <p className="mt-5 max-w-[50ch] text-[17px] leading-snug text-muted">
+            <p className="wm-in mt-6 max-w-[50ch] text-[17.5px] leading-snug text-muted" style={d(240)}>
               WardMate&rsquo;s AI drafts the ward list and the round from what&rsquo;s already
               in front of you, and flags what the guidelines say you shouldn&rsquo;t miss — so
               training time goes to the patient, not the paperwork. Built by a resident
               who&rsquo;s done the on-call nights, not just studied them.
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <a href="#waitlist" className="rounded-[10px] bg-accent px-5 py-3 text-[15px] font-semibold text-accent-ink">
-                Join the waitlist
+            <div className="wm-in mt-8 flex flex-wrap gap-3" style={d(360)}>
+              <a
+                href="#waitlist"
+                className="wm-card rounded-[12px] bg-accent px-6 py-3.5 text-[15px] font-semibold text-accent-ink shadow-[0_14px_30px_-14px_var(--accent)]"
+              >
+                Join the waitlist →
               </a>
-              <a href="#contact" className="rounded-[10px] border border-line px-5 py-3 text-[15px] font-semibold">
-                Contact us
+              <a href="#about" className="wm-card rounded-[12px] border border-line bg-card/70 px-6 py-3.5 text-[15px] font-semibold backdrop-blur">
+                See how it works
               </a>
             </div>
           </div>
-          <div className="relative mx-auto w-full max-w-[300px] lg:max-w-none">
+
+          <div className="wm-in relative mx-auto w-full max-w-[300px] lg:max-w-[340px]" style={d(200)}>
             <div
-              className="pointer-events-none absolute -inset-x-6 -inset-y-8 -z-10 rounded-[40px] opacity-70 lg:-inset-x-10"
-              style={{ background: "radial-gradient(60% 60% at 50% 40%, color-mix(in srgb, var(--accent) 16%, transparent), transparent)" }}
+              className="pointer-events-none absolute -inset-10 -z-10 rounded-full"
+              style={{ background: "radial-gradient(55% 55% at 50% 45%, color-mix(in srgb, var(--accent) 26%, transparent), transparent)" }}
             />
-            {/* eslint-disable-next-line @next/next/no-img-element -- fixed marketing asset */}
-            <img
-              src="/home/phone-ward-round.png"
-              alt="Wardmate ward round screen, triaged most urgent first, with a critical fever flagged ahead of routine patients"
-              className="mx-auto w-full max-w-[280px] rounded-[18px] shadow-[0_24px_60px_-20px_rgba(0,0,0,0.35)] lg:max-w-[320px]"
-            />
+            <div className="wm-float">
+              {/* eslint-disable-next-line @next/next/no-img-element -- fixed marketing asset */}
+              <img
+                src="/home/phone-ward-round.png"
+                alt="Wardmate ward round screen, triaged most urgent first, with a critical fever flagged ahead of routine patients"
+                className="mx-auto w-full rounded-[22px] ring-1 ring-black/5 shadow-[0_40px_80px_-30px_rgba(0,0,0,0.45)]"
+              />
+            </div>
+            <div className="wm-chip wm-chip-a">
+              <span className="wm-ping h-2.5 w-2.5 rounded-full bg-critical-dot" style={{ "--ping": "var(--critical-dot)" } as React.CSSProperties} />
+              <span>
+                <span className="block font-semibold text-critical-fg">Needs attention now</span>
+                <span className="text-muted">Bed 7 · Temp 102°F</span>
+              </span>
+            </div>
+            <div className="wm-chip wm-chip-b">
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-accent text-accent-ink">
+                <Svg className="h-3.5 w-3.5">{Icon.check}</Svg>
+              </span>
+              <span>
+                <span className="block font-semibold">Handover ready</span>
+                <span className="text-muted">Copied for WhatsApp</span>
+              </span>
+            </div>
           </div>
         </div>
       </section>
 
-      <Divider />
-
-      {/* ---- fragmentation ---- */}
-      <section id="about" className="mx-auto max-w-3xl px-6 py-14">
-        <Eyebrow>The problem</Eyebrow>
-        <h2 className="mt-1 text-[26px] font-semibold tracking-tight">Built between call shifts</h2>
-        <p className="mt-4 max-w-[62ch] text-[16px] leading-snug text-muted">
-          A patient&rsquo;s information gets fragmented fast — investigations ordered and lost
-          track of, reports that never make it back to the file. Updates to the consultant end
-          up incomplete, because nobody has the full picture in one place. And somewhere in
-          between chasing all of it down, the actual care waits. Right now, that story is split
-          across:
-        </p>
-        <div className="ios-group mt-5 max-w-[62ch]">
-          {FRAGMENTS.map(([icon, label, desc]) => (
-            <div key={label} className="ios-row flex items-start gap-3 px-4 py-3.5">
-              <Svg className="mt-0.5 shrink-0 text-accent">{Icon[icon as keyof typeof Icon]}</Svg>
-              <p className="text-[15px] leading-snug">
-                <span className="font-semibold">{label}</span>{" "}
-                <span className="text-muted">— {desc}</span>
-              </p>
-            </div>
+      {/* ---- ticker ---- */}
+      <div className="wm-marquee border-y border-line bg-card py-4" aria-hidden>
+        <div className="wm-marquee-track">
+          {[...MARQUEE, ...MARQUEE].map((t, i) => (
+            <span key={i} className="flex items-center gap-10 whitespace-nowrap text-[14px] font-medium text-muted">
+              {t}
+              <span className="h-1.5 w-1.5 rounded-full bg-accent/60" />
+            </span>
           ))}
         </div>
-        <p className="mt-5 max-w-[62ch] text-[19px] font-semibold text-accent">
-          We&rsquo;re unifying all of it into one place. Running the ward has never been
-          easier.
-        </p>
-        <p className="mt-6 max-w-[62ch] text-[16px] leading-snug text-muted">
-          Two things carry most of that weight. The <span className="font-semibold text-foreground">to-do list</span> is
-          triaged, most urgent first — a fever that&rsquo;s not settling sits above routine
-          bloodwork, not buried in it. The <span className="font-semibold text-foreground">handover</span> is a
-          ward-round summary, ready to copy across on WhatsApp instead of a photo of a paper
-          list. Around those two: <span className="font-semibold text-foreground">rounds</span>, where
-          one-liners and active issues are pulled together before the consultant&rsquo;s rounds
-          instead of assembled mid-presentation; and <span className="font-semibold text-foreground">guideline
-          prompts</span>, pulled from standard references, so a missing lab or a forgotten
-          criterion doesn&rsquo;t slip through.
-        </p>
+      </div>
+
+      {/* ---- fragmentation → one place ---- */}
+      <section id="about" className="mx-auto max-w-6xl scroll-mt-16 px-6 py-20">
+        <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
+          <div className="wm-reveal">
+            <Eyebrow>The problem</Eyebrow>
+            <h2 className="mt-1 text-[30px] font-semibold leading-tight tracking-tight sm:text-[34px]">Built between call shifts</h2>
+            <p className="mt-4 max-w-[56ch] text-[16px] leading-snug text-muted">
+              A patient&rsquo;s information gets fragmented fast — investigations ordered and lost
+              track of, reports that never make it back to the file. Updates to the consultant end
+              up incomplete, because nobody has the full picture in one place. And somewhere in
+              between chasing all of it down, the actual care waits.
+            </p>
+            <p className="mt-5 max-w-[56ch] text-[16px] leading-snug text-muted">
+              Two things carry most of that weight. The <span className="font-semibold text-foreground">to-do list</span> is
+              triaged, most urgent first — a fever that&rsquo;s not settling sits above routine
+              bloodwork, not buried in it. The <span className="font-semibold text-foreground">handover</span> is a
+              ward-round summary, ready to copy across on WhatsApp instead of a photo of a paper
+              list. Around those two: <span className="font-semibold text-foreground">rounds</span>, where
+              one-liners and active issues are pulled together before the consultant&rsquo;s rounds
+              instead of assembled mid-presentation; and <span className="font-semibold text-foreground">guideline
+              prompts</span>, pulled from standard references, so a missing lab or a forgotten
+              criterion doesn&rsquo;t slip through.
+            </p>
+          </div>
+
+          <div>
+            <p className="ios-group-header wm-reveal">Right now, that story is split across</p>
+            <div className="mt-2 grid gap-2.5 sm:grid-cols-2">
+              {FRAGMENTS.map(([icon, label, desc], i) => (
+                <div
+                  key={label}
+                  className={`ios-group wm-card wm-reveal flex items-start gap-3 px-4 py-3.5 ${i === 4 ? "sm:col-span-2" : ""}`}
+                >
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[9px] bg-accent/10 text-accent">
+                    <Svg>{Icon[icon as keyof typeof Icon]}</Svg>
+                  </span>
+                  <p className="text-[14.5px] leading-snug">
+                    <span className="block font-semibold">{label}</span>
+                    <span className="text-muted">{desc}</span>
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div className="wm-flowline" />
+            <div className="wm-glow-border wm-reveal flex items-center gap-4 px-5 py-5 shadow-[0_24px_50px_-28px_var(--accent)]">
+              <Mark className="h-11 w-11 shrink-0" />
+              <p className="text-[18px] font-semibold leading-snug">
+                <span className="text-accent">We&rsquo;re unifying all of it into one place.</span>{" "}
+                Running the ward has never been easier.
+              </p>
+            </div>
+          </div>
+        </div>
       </section>
 
-      <Divider />
-
       {/* ---- shift flow + triaged round, paired side by side on desktop ---- */}
-      <section className="bg-card py-14">
-        <div className="mx-auto grid max-w-6xl gap-10 px-6 lg:grid-cols-2">
+      <section className="border-y border-line bg-card py-20">
+        <div className="mx-auto grid max-w-6xl gap-14 px-6 lg:grid-cols-2">
           <div>
-            <Eyebrow>A day on service</Eyebrow>
-            <h2 className="mt-1 text-[26px] font-semibold tracking-tight">How the shift actually flows</h2>
-            <div className="mt-5 flex flex-col gap-0">
+            <div className="wm-reveal">
+              <Eyebrow>A day on service</Eyebrow>
+              <h2 className="mt-1 text-[30px] font-semibold tracking-tight">How the shift actually flows</h2>
+            </div>
+            <div className="wm-timeline mt-7 flex flex-col gap-7">
+              <div className="wm-timeline-fill" />
               {FLOW.map(([icon, time, title, body]) => (
-                <div key={time} className="flex gap-3 border-t border-line py-4 first:border-t-0 first:pt-1">
-                  <Svg className="mt-0.5 shrink-0 text-muted">{Icon[icon as keyof typeof Icon]}</Svg>
-                  <div>
-                    <p className="font-mono text-[12.5px] font-medium text-muted">{time}</p>
-                    <p className="mt-0.5 text-[15px] leading-snug">
-                      <span className="font-semibold">{title}</span>{" "}
-                      <span className="text-muted">— {body}</span>
-                    </p>
+                <div key={time} className="wm-reveal flex gap-4">
+                  <span className="wm-node">
+                    <Svg>{Icon[icon as keyof typeof Icon]}</Svg>
+                  </span>
+                  <div className="pt-1">
+                    <p className="font-mono text-[12.5px] font-medium text-accent">{time}</p>
+                    <p className="mt-0.5 text-[16px] font-semibold">{title}</p>
+                    <p className="mt-1 max-w-[46ch] text-[14.5px] leading-snug text-muted">{body}</p>
                   </div>
                 </div>
               ))}
@@ -254,34 +331,39 @@ export default function HomePage() {
           </div>
 
           <div>
-            <Eyebrow>Triaged, most urgent first</Eyebrow>
-            <h2 className="mt-1 text-[26px] font-semibold tracking-tight">Unit Alpha, this round</h2>
-            <p className="mt-2 max-w-[46ch] text-[14.5px] text-muted">The same list you&rsquo;d see in the app.</p>
-            <div className="mt-5 flex flex-col gap-3">
+            <div className="wm-reveal">
+              <Eyebrow>Triaged, most urgent first</Eyebrow>
+              <h2 className="mt-1 text-[30px] font-semibold tracking-tight">Unit Alpha, this round</h2>
+              <p className="mt-2 max-w-[46ch] text-[14.5px] text-muted">The same list you&rsquo;d see in the app.</p>
+            </div>
+            <div className="mt-6 flex flex-col gap-3">
               {ROUND_LINES.map(([bed, who, body, critical]) => (
                 <div
                   key={bed}
-                  className={critical ? "rounded-[10px] px-4 py-3.5 bg-critical-bg" : "ios-group rounded-[10px] px-4 py-3.5"}
+                  className={`wm-reveal wm-card flex gap-3 rounded-[14px] px-4 py-4 ${critical ? "bg-critical-bg" : "ios-group"}`}
                   style={critical ? { boxShadow: "inset 0 0 0 1px var(--critical-fg)" } : undefined}
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-[14.5px] font-semibold">{who}</p>
-                    {critical && (
-                      <span className="rounded-[5px] px-2 py-0.5 text-[10.5px] font-bold text-white bg-critical-fg">
-                        CRITICAL
-                      </span>
-                    )}
-                  </div>
-                  <p
-                    className={
-                      critical
-                        ? "mt-1 text-[13.5px] leading-snug text-critical-fg font-medium"
-                        : "mt-1 text-[13.5px] leading-snug"
-                    }
+                  <span
+                    className={`grid h-8 w-8 shrink-0 place-items-center rounded-[9px] font-mono text-[13px] font-semibold ${critical ? "bg-critical-fg text-white" : "bg-chip text-muted"}`}
                   >
-                    {!critical && <span className="text-muted">{body}</span>}
-                    {critical && body}
-                  </p>
+                    {bed}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[14.5px] font-semibold">{who}</p>
+                      {critical && (
+                        <span
+                          className="wm-ping shrink-0 rounded-[5px] bg-critical-fg px-2 py-0.5 text-[10.5px] font-bold text-white"
+                          style={{ "--ping": "var(--critical-dot)" } as React.CSSProperties}
+                        >
+                          CRITICAL
+                        </span>
+                      )}
+                    </div>
+                    <p className={`mt-1 text-[13.5px] leading-snug ${critical ? "font-medium text-critical-fg" : "text-muted"}`}>
+                      {body}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -290,101 +372,100 @@ export default function HomePage() {
         </div>
       </section>
 
-      <Divider />
-
-      {/* ---- guideline prompts — a 3-up grid, not a stacked list ---- */}
-      <section className="mx-auto max-w-6xl px-6 py-14">
-        <Eyebrow>The academic half</Eyebrow>
-        <h2 className="mt-1 text-[26px] font-semibold tracking-tight">Learns the guidelines with you</h2>
-        <p className="mt-3 max-w-[70ch] text-[16px] leading-snug text-muted">
-          Every prompt says why — pulled from the standard texts and scoring systems your
-          consultant already expects you to know, attached to the patient in front of you. One
-          department&rsquo;s ward, or a dozen — the guideline comes with the patient.
-        </p>
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+      {/* ---- guideline prompts ---- */}
+      <section className="mx-auto max-w-6xl px-6 py-20">
+        <div className="wm-reveal text-center">
+          <Eyebrow>The academic half</Eyebrow>
+          <h2 className="mt-1 text-[30px] font-semibold tracking-tight sm:text-[34px]">Learns the guidelines with you</h2>
+          <p className="mx-auto mt-3 max-w-[62ch] text-[16px] leading-snug text-muted">
+            Every prompt says why — pulled from the standard texts and scoring systems your
+            consultant already expects you to know, attached to the patient in front of you. One
+            department&rsquo;s ward, or a dozen — the guideline comes with the patient.
+          </p>
+        </div>
+        <div className="mt-10 grid gap-5 sm:grid-cols-3">
           {GUIDELINES.map(([badge, dept, context, body]) => (
-            <div key={badge} className="ios-group flex flex-col gap-2.5 px-5 py-5">
+            <div key={badge} className="wm-glow-border wm-card wm-reveal flex flex-col gap-3 px-6 py-6">
               <div className="flex items-center justify-between">
-                <span className="rounded-[5px] bg-[color-mix(in_srgb,var(--accent)_14%,transparent)] px-2 py-0.5 font-mono text-[11px] font-semibold text-accent">
+                <span className="rounded-[6px] bg-accent/10 px-2.5 py-1 font-mono text-[12px] font-semibold text-accent">
                   {badge}
                 </span>
                 <span className="text-[11px] font-medium uppercase tracking-wide text-muted">{dept}</span>
               </div>
-              <p className="text-[14.5px] font-semibold leading-snug">{context}</p>
-              <p className="text-[13.5px] leading-snug text-muted">{body}</p>
+              <p className="text-[16px] font-semibold leading-snug">{context}</p>
+              <p className="text-[14px] leading-snug text-muted">{body}</p>
             </div>
           ))}
         </div>
-        <p className="mt-4 text-[13px] text-muted">3 prompts, 3 departments · pulled from standard references, not memory</p>
+        <p className="mt-5 text-center text-[13px] text-muted">3 prompts, 3 departments · pulled from standard references, not memory</p>
       </section>
 
-      <Divider />
-
       {/* ---- phone screens ---- */}
-      <section className="bg-card py-14">
+      <section className="wm-hero border-y border-line bg-card py-20">
+        <div className="wm-blob wm-blob-a" />
         <div className="mx-auto max-w-6xl px-6">
-          <Eyebrow>The product</Eyebrow>
-          <h2 className="mt-1 text-[26px] font-semibold tracking-tight">On your phone, between patients</h2>
-          <p className="mt-3 max-w-[62ch] text-[16px] leading-snug text-muted">
-            The to-do list and the round are the two you&rsquo;ll live in — both triaged, most
-            urgent first, so the patient who needs you now doesn&rsquo;t wait behind routine
-            bloodwork.
-          </p>
-          <div className="mt-8 grid grid-cols-1 gap-8 sm:grid-cols-3">
+          <div className="wm-reveal text-center">
+            <Eyebrow>The product</Eyebrow>
+            <h2 className="mt-1 text-[30px] font-semibold tracking-tight sm:text-[34px]">On your phone, between patients</h2>
+            <p className="mx-auto mt-3 max-w-[58ch] text-[16px] leading-snug text-muted">
+              The to-do list and the round are the two you&rsquo;ll live in — both triaged, most
+              urgent first, so the patient who needs you now doesn&rsquo;t wait behind routine
+              bloodwork.
+            </p>
+          </div>
+          <div className="mt-12 grid grid-cols-1 gap-10 sm:grid-cols-3 sm:gap-6">
             {SCREENS.map(([src, caption, alt]) => (
-              <figure key={src} className="m-0">
+              <figure key={src} className="wm-screen wm-reveal m-0">
                 {/* eslint-disable-next-line @next/next/no-img-element -- fixed marketing asset */}
                 <img
                   src={src}
                   alt={alt}
                   loading="lazy"
-                  className="w-full max-w-[260px] mx-auto rounded-[14px] shadow-[0_16px_40px_-16px_rgba(0,0,0,0.3)]"
+                  className="mx-auto w-full max-w-[260px] rounded-[18px] ring-1 ring-black/5 shadow-[0_24px_50px_-22px_rgba(0,0,0,0.35)]"
                 />
-                <figcaption className="mt-3 text-center text-[13.5px] font-medium text-muted">{caption}</figcaption>
+                <figcaption className="mt-6 text-center text-[14px] font-semibold">{caption}</figcaption>
               </figure>
             ))}
           </div>
         </div>
       </section>
 
-      <Divider />
-
       {/* ---- founder ---- */}
-      <section id="founder" className="mx-auto max-w-3xl px-6 py-14">
-        <Eyebrow>The person behind it</Eyebrow>
-        <h2 className="mt-1 text-[26px] font-semibold tracking-tight">Built by the resident who needed it</h2>
-        <div className="ios-group mt-5 flex max-w-[62ch] items-start gap-5 px-5 py-5">
-          <span className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--accent)_14%,transparent)] font-semibold text-[24px] text-accent">
-            AV
-          </span>
-          <div>
-            <p className="text-[17px] font-semibold">Dr. Anubhav Verma</p>
-            <p className="font-mono text-[12px] text-accent">JR-2 · General Surgery</p>
-            <p className="mt-2.5 text-[15px] leading-snug text-muted">
-              I&rsquo;m the one who built WardMate — still a second-year resident, still on
-              call. Every screen here started as something I needed on my own ward: a list
-              that didn&rsquo;t start from zero every morning, a round I could actually hand
-              off, guidelines that showed up before the consultant asked for them. I&rsquo;m
-              building this the way I practice — one ward round at a time.
-            </p>
-            <p className="mt-2.5 text-[13.5px] text-muted">
-              — Anubhav ·{" "}
-              <a href="mailto:anubhav@wardmate.in" className="text-foreground underline underline-offset-2">
-                anubhav@wardmate.in
-              </a>
-            </p>
+      <section id="founder" className="mx-auto max-w-3xl px-6 py-20">
+        <div className="wm-glow-border wm-reveal px-6 py-7 sm:px-8">
+          <Eyebrow>The person behind it</Eyebrow>
+          <h2 className="mt-1 text-[26px] font-semibold tracking-tight">Built by the resident who needed it</h2>
+          <div className="mt-5 flex items-start gap-5">
+            <span className="grid h-[72px] w-[72px] shrink-0 place-items-center rounded-full bg-gradient-to-br from-accent to-sky-400 text-[24px] font-semibold text-white shadow-[0_12px_28px_-12px_var(--accent)]">
+              AV
+            </span>
+            <div>
+              <p className="text-[17px] font-semibold">Dr. Anubhav Verma</p>
+              <p className="font-mono text-[12px] text-accent">JR-2 · General Surgery</p>
+              <p className="mt-2.5 text-[15px] leading-snug text-muted">
+                I&rsquo;m the one who built WardMate — still a second-year resident, still on
+                call. Every screen here started as something I needed on my own ward: a list
+                that didn&rsquo;t start from zero every morning, a round I could actually hand
+                off, guidelines that showed up before the consultant asked for them. I&rsquo;m
+                building this the way I practice — one ward round at a time.
+              </p>
+              <p className="mt-2.5 text-[13.5px] text-muted">
+                — Anubhav ·{" "}
+                <a href="mailto:anubhav@wardmate.in" className="text-foreground underline underline-offset-2">
+                  anubhav@wardmate.in
+                </a>
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      <Divider />
-
-      {/* ---- waitlist + contact, side by side on desktop ---- */}
-      <section className="bg-card py-14">
+      {/* ---- waitlist + contact ---- */}
+      <section className="wm-closing border-t border-line py-20">
         <div className="mx-auto grid max-w-4xl gap-10 px-6 sm:grid-cols-2">
-          <div id="waitlist">
+          <div id="waitlist" className="wm-reveal min-w-0 scroll-mt-20">
             <Eyebrow>Get early access</Eyebrow>
-            <h2 className="mt-1 text-[22px] font-semibold tracking-tight">Join the waitlist</h2>
+            <h2 className="mt-1 text-[24px] font-semibold tracking-tight">Join the waitlist</h2>
             <p className="mt-2 text-[14.5px] text-muted">
               We&rsquo;re onboarding residency programs in small cohorts as we build.
             </p>
@@ -393,9 +474,9 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div id="contact">
+          <div id="contact" className="wm-reveal min-w-0 scroll-mt-20">
             <Eyebrow>Get in touch</Eyebrow>
-            <h2 className="mt-1 text-[22px] font-semibold tracking-tight">Contact us</h2>
+            <h2 className="mt-1 text-[24px] font-semibold tracking-tight">Contact us</h2>
             <p className="mt-2 text-[14.5px] text-muted">
               Tell us about your program, or what&rsquo;s missing from how your team hands
               over.
@@ -414,7 +495,9 @@ export default function HomePage() {
       </section>
 
       <footer className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 border-t border-line px-6 py-8 bottom-bar text-[13px] text-muted">
-        <span>© 2026 WardMate</span>
+        <span className="flex items-center gap-2">
+          <Mark className="h-5 w-5" /> © 2026 WardMate
+        </span>
         <span>Built for the ones still running on chai and pattern recognition.</span>
       </footer>
     </main>

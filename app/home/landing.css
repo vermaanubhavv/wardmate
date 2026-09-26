@@ -1,0 +1,290 @@
+/* Motion and depth for the /home marketing page only. Every class is wm- prefixed so nothing
+ * leaks into the app. No JavaScript: entrances are keyframes, scroll reveals use the native
+ * scroll-driven timeline (browsers without it simply show the content, already in place).
+ * All movement sits behind prefers-reduced-motion: no-preference, so the static page is the
+ * default and motion is the enhancement. */
+
+/* ---------- static depth (always on) ---------- */
+
+.wm-hero {
+  position: relative;
+  overflow: clip;
+  isolation: isolate;
+}
+
+/* A faint dotted grid behind the hero, fading out toward the edges. */
+.wm-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background-image: radial-gradient(color-mix(in srgb, var(--accent) 28%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(70% 60% at 60% 40%, #000 20%, transparent 75%);
+}
+
+.wm-blob {
+  position: absolute;
+  z-index: -1;
+  border-radius: 999px;
+  filter: blur(60px);
+  pointer-events: none;
+}
+.wm-blob-a {
+  width: 420px;
+  height: 420px;
+  top: -120px;
+  right: -80px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.wm-blob-b {
+  width: 320px;
+  height: 320px;
+  bottom: -140px;
+  left: -100px;
+  background: color-mix(in srgb, #38bdf8 16%, transparent);
+}
+
+.wm-gradient-text {
+  background: linear-gradient(100deg, var(--accent) 0%, #0b7c76 35%, #22c3b9 55%, var(--accent) 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.wm-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 70%, transparent);
+  backdrop-filter: blur(8px);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.wm-live-dot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+/* Glassy chips that float over the hero phone. */
+.wm-chip {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--card) 82%, transparent);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 18px 40px -18px rgb(0 0 0 / 0.35);
+  font-size: 12.5px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+.wm-chip-a {
+  top: 4%;
+  left: -12%;
+}
+.wm-chip-b {
+  bottom: 10%;
+  right: -10%;
+}
+
+.wm-card {
+  transition: transform 300ms cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 300ms ease;
+}
+.wm-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 44px -24px color-mix(in srgb, var(--accent) 55%, rgb(0 0 0 / 0.4));
+}
+
+/* A card with a soft teal gradient hairline. */
+.wm-glow-border {
+  position: relative;
+  border-radius: 18px;
+  background:
+    linear-gradient(var(--card), var(--card)) padding-box,
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 70%, transparent), transparent 45%, color-mix(in srgb, #38bdf8 50%, transparent)) border-box;
+  border: 1px solid transparent;
+}
+
+/* The dotted line that carries the scattered sources into one place. */
+.wm-flowline {
+  width: 2px;
+  height: 56px;
+  margin: 10px auto;
+  background: repeating-linear-gradient(to bottom, var(--accent) 0 5px, transparent 5px 11px);
+  background-size: 2px 22px;
+  opacity: 0.7;
+}
+
+/* Timeline spine for the shift flow. */
+.wm-timeline {
+  position: relative;
+}
+.wm-timeline::before {
+  content: "";
+  position: absolute;
+  left: 17px;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: var(--line);
+}
+.wm-timeline-fill {
+  position: absolute;
+  left: 17px;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--accent), #38bdf8);
+  transform-origin: top;
+}
+.wm-node {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  color: var(--accent);
+}
+
+/* Ticker between the hero and the rest of the page. */
+.wm-marquee {
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+}
+.wm-marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 40px;
+  padding-right: 40px;
+}
+
+/* Fanned phone screenshots on wider screens. */
+.wm-screen img {
+  transition: transform 450ms cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 450ms ease;
+}
+@media (min-width: 640px) {
+  .wm-screen:nth-child(1) img {
+    transform: rotate(-4deg) translateY(18px);
+  }
+  .wm-screen:nth-child(3) img {
+    transform: rotate(4deg) translateY(18px);
+  }
+  .wm-screen:hover img {
+    transform: rotate(0) translateY(-8px) scale(1.02);
+    box-shadow: 0 30px 60px -24px rgb(0 0 0 / 0.45);
+  }
+}
+
+.wm-closing {
+  background:
+    radial-gradient(60% 80% at 0% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%),
+    radial-gradient(50% 70% at 100% 100%, color-mix(in srgb, #38bdf8 10%, transparent), transparent 70%),
+    var(--background);
+}
+
+/* ---------- motion (only when the viewer hasn't asked for less) ---------- */
+
+@keyframes wm-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes wm-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes wm-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-30px, 24px) scale(1.08); }
+}
+@keyframes wm-shimmer {
+  to { background-position: -220% 0; }
+}
+@keyframes wm-ping {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ping, var(--accent)) 55%, transparent); }
+  100% { box-shadow: 0 0 0 10px transparent; }
+}
+@keyframes wm-march {
+  to { background-position: 0 22px; }
+}
+@keyframes wm-marquee {
+  to { transform: translateX(-50%); }
+}
+@keyframes wm-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .wm-in {
+    animation: wm-rise 800ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: var(--d, 0ms);
+  }
+  .wm-float {
+    animation: wm-float 6s ease-in-out infinite;
+  }
+  .wm-chip-a {
+    animation: wm-rise 800ms 600ms both, wm-float 7s 1.4s ease-in-out infinite;
+  }
+  .wm-chip-b {
+    animation: wm-rise 800ms 850ms both, wm-float 8s 1.6s ease-in-out infinite reverse;
+  }
+  .wm-blob-a {
+    animation: wm-drift 14s ease-in-out infinite;
+  }
+  .wm-blob-b {
+    animation: wm-drift 18s ease-in-out infinite reverse;
+  }
+  .wm-gradient-text {
+    animation: wm-shimmer 6s linear infinite;
+  }
+  .wm-live-dot,
+  .wm-ping {
+    animation: wm-ping 1.8s ease-out infinite;
+  }
+  .wm-flowline {
+    animation: wm-march 1.2s linear infinite;
+  }
+  .wm-marquee-track {
+    animation: wm-marquee 40s linear infinite;
+  }
+  .wm-marquee:hover .wm-marquee-track {
+    animation-play-state: paused;
+  }
+
+  @supports (animation-timeline: view()) {
+    .wm-reveal {
+      animation: wm-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+    .wm-timeline-fill {
+      animation: wm-grow linear both;
+      animation-timeline: view();
+      animation-range: entry 30% cover 55%;
+    }
+  }
+}
