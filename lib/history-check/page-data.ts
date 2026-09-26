@@ -27,16 +27,26 @@ export async function loadHistoryCheckCard(
   patient: { id: string; display_name: string; bed: string | null; age_years: number | null; sex: string | null; surgery_date: string | null },
   chiefComplaintTexts: string[],
   /**
-   * The unit's own complaints, from its specialty pack (`historyTreeIds`). A sort, never a
-   * filter: every registered tree stays in the picker. Empty — an unrecognised specialty, or
-   * the packs flag off — restores the pre-pack order exactly.
+   * The unit's own complaints, from its specialty pack (`historyTreeIds`).
+   *
+   * It sorts AND it decides what the picker shows first — `department: true` below. What it
+   * still never does is make a tree unreachable: everything else is one "More…" away, because a
+   * chest pain on an ENT ward is still a chest pain and a tree a resident cannot reach is worse
+   * than a list that is too long. Empty — an unrecognised specialty, or the packs flag off —
+   * restores the pre-pack behaviour exactly: no department band, every chip shown at once.
    */
   departmentTreeIds: string[] = []
 ): Promise<HistoryCheckCardData | null> {
   if (!historyCheckEnabled()) return null;
 
   const suggested = new Set(suggestTrees(chiefComplaintTexts).map((t) => t.id));
-  const trees: TreeChoice[] = listTrees().map((t) => ({ id: t.id, complaint: t.complaint, suggested: suggested.has(t.id) }));
+  const isDepartment = new Set(departmentTreeIds);
+  const trees: TreeChoice[] = listTrees().map((t) => ({
+    id: t.id,
+    complaint: t.complaint,
+    suggested: suggested.has(t.id),
+    department: isDepartment.has(t.id),
+  }));
   // What the resident dictated comes first, then what this department admits, then everything
   // else in registry order. Within the department band the pack's own order is kept, because
   // that order is a clinical statement (fever on chemotherapy leads the oncology list).

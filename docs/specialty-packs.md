@@ -891,3 +891,58 @@ in `resolveProcedure()`'s lookup, so a typed "Dengue" on a surgical unit keeps t
 attaches no checklist rather than linking a medicine one. The specialty is read from the ward
 row, never from the form: which department's library a name may resolve against is the unit's
 fact, not something the browser gets to say.
+
+---
+
+## 14. Departments eleven to fifteen (2026-09-26)
+
+Orthopaedics, urology, neurosurgery, paediatrics and emergency medicine — five packs, one seam
+patch, `0086_five_more_departments.sql`. **Fifteen departments now exist.**
+
+Each of the five was chosen because its clinical content was ALREADY in the repo: all 59 history
+trees shipped before any of these packs did, and between them they already covered the limb
+injury, the joint, the back, the haematuria, the scrotal swelling, the head injury, the four
+paediatric presentations, the shock and the poisoning. The pack is what makes that content
+reachable as a department.
+
+| Pack | Clock | Scores offered, and why | Discharge templates |
+|---|---|---|---|
+| Orthopaedics | POD → Day | `wells_dvt`, `wells_pe` — VTE after a hip fracture or an arthroplasty is this ward's own risk. No fracture classification: Garden and Neer are read off an image by a surgeon, and a classification this app produced would be a diagnosis it may not make. | surgical |
+| Urology | POD → Day | `kdigo_aki` — post-obstructive AKI is the department's daily problem. Nothing prognostic. | surgical |
+| Neurosurgery | POD → Day | **none.** GCS is dictated and stored, never assembled by the app from remembered components; Marshall, Rotterdam, Hunt and Hess and WFNS are all prognostic. | surgical |
+| Paediatrics | Hospital day | **none, and this is the most important line in the pack.** Every pathway WardMate has built is validated in ADULTS. Offering CURB-65 or qSOFA on a children's ward because it exists would be the worst thing this seam could do. | medicine (condition-keyed) |
+| Emergency medicine | Day, from arrival | `heart_score`, `qsofa`, `wells_pe`, `wells_dvt`, `upper_gi_bleeding` — the five an emergency physician reaches for, all active. No triage category and no early-warning score: both drive an allocation decision this app does not make. | medicine (condition-keyed) |
+
+### The two rules these packs added to the extraction prompts
+
+- **A paediatric dose is never calculated.** "Ceftriaxone 100 per kg per day" is stored as spoken.
+  The app does not multiply by the weight, does not convert to millilitres and does not check a
+  dose against a range. A paediatric drug error is a decimal point, and a decimal point this app
+  moved would be indefensible. Patch 0086 deliberately adds **no weight column** for the same
+  reason: a column that holds "the weight" invites something to multiply a dose by it.
+- **An emergency note keeps its times and its hedging.** "ROSC at 10:46", "query intestinal
+  obstruction", "unknown male, around 40", "declared brought dead at 11:05". A query is never
+  promoted to a diagnosis and an unknown patient is never given an invented identity.
+
+### What the lexicon guards caught while this was written
+
+Five new keyterm cores, each with its own collision test. Between them the guards caught, and
+every one was fixed in the lexicon rather than by loosening a test:
+
+- a bare `drain` trigger on the external ventricular drain, which fired on **any** ward's drain
+- a bare `catheter` trigger on the Foley, which fired on any patient with one
+- `cystitis` firing inside `cholecystitis` — urology vocabulary pulled into a gallbladder round
+- `torsion` reaching from the gynaecological entry into `testicular torsion` (the one existing
+  trigger narrowed, following the precedent §12 set)
+- **four paediatric entries mistakenly filed under `core`** — the category sent on nearly every
+  dictation — so an adult surgical round was being handed a child's danger signs. This one also
+  broke the 20–50 keyterm budget test, which is how it was noticed.
+
+### The parity test
+
+`lib/__tests__/specialty-patch-parity.test.ts` pins `SPECIALTY_KEYS` against the newest seam
+patch's two lists. It exists because `create_ward_for_current_user` **clamps** an unrecognised
+specialty to `general_surgery` instead of raising — correct for an un-redeployed client, but it
+makes a code/database mismatch silent: the resident picks Paediatrics, the insert succeeds, and
+they get a general surgery unit with no error anywhere, discovered weeks later from a day counter
+reading POD. Adding a pack without adding it to the patch now fails in the suite instead.

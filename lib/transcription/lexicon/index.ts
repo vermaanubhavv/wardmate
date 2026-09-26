@@ -18,6 +18,11 @@ import { PSYCHIATRY } from "./psychiatry";
 import { OPHTHALMOLOGY } from "./ophthalmology";
 import { DERMATOLOGY } from "./dermatology";
 import { BURNS_PLASTIC_SURGERY } from "./burns-plastic-surgery";
+import { ORTHOPAEDICS } from "./orthopaedics";
+import { UROLOGY } from "./urology";
+import { NEUROSURGERY } from "./neurosurgery";
+import { PAEDIATRICS } from "./paediatrics";
+import { EMERGENCY_MEDICINE } from "./emergency-medicine";
 
 export * from "./types";
 
@@ -48,6 +53,11 @@ export const MASTER_LEXICON: readonly MedicalLexiconEntry[] = Object.freeze([
   ...OPHTHALMOLOGY,
   ...DERMATOLOGY,
   ...BURNS_PLASTIC_SURGERY,
+  ...ORTHOPAEDICS,
+  ...UROLOGY,
+  ...NEUROSURGERY,
+  ...PAEDIATRICS,
+  ...EMERGENCY_MEDICINE,
 ]);
 
 /**
