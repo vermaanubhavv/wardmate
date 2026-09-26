@@ -1,68 +1,63 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { ATLS, BAILEY_LOVE, commonHpi, MACLEODS, PREGNANCY, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { ATLS, BAILEY_LOVE, commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BURNS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
- * Burns / emergency ward, north India. What happened, in what space, and how long ago decides
- * almost everything that follows, so the mechanism questions come before the burn itself. The
- * differentials here are not diseases but the things the history separates: an airway that will
- * swell, a burn deeper than it looks, deep damage under intact skin after an electrical injury,
- * a chemical still in contact, an injury that came with the burn, a burn that was not an
- * accident, and a late presentation that has become infected.
- *
- * How the burn happened is asked neutrally and recorded in the informant's own words. A
- * deliberate burn is a question, never an inference from the injury.
+ * BURNS — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * Burns and plastic surgery unit, north India, where kitchen flame burns, kerosene stoves and
+ * electrical injuries dominate. The history is short and specific: what burned, for how long,
+ * in what space, what was poured on it afterwards, and the exact time it happened — that time
+ * anchors everything that follows. A burn in a closed space asks about the airway first.
+ * The circumstances are recorded as given, without comment, because that record matters later.
+ * Differentials: flame burn, scald, electrical injury, chemical burn, friction or contact burn,
+ * inhalational injury accompanying any of them.
  */
 export const burnsV1: HistoryTree = {
   id: "burns",
   version: "1.0.0",
   complaint: "Burns",
-  triggers: ["burn", "burns", "burnt", "scald", "scalded", "flame burn", "electric burn", "electrical burn", "chemical burn", "jal gaya", "jal gayi", "stove burst", "hot water fell"],
-  setting: "Burns / emergency ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
-  references: [ATLS, BAILEY_LOVE, SABISTON, MACLEODS],
+  triggers: ["burn", "burns", "burnt", "scald", "flame burn", "fire", "electric burn", "electrocution", "chemical burn", "acid", "jal gaya", "stove burst", "kerosene", "boiling water"],
+  setting: "Burns and plastic surgery unit, north India",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
+  references: [BAILEY_LOVE, MACLEODS, HUTCHISONS, ATLS],
   slots: [
     ...commonHpi("burn"),
-    val("hpi", "time_since_injury", "Time since the burn", "At what time did the burn happen, and how long ago was that?", ["hours ago", "hour ago", "this morning", "last night", "yesterday", "days ago", "at about", "time of injury", "brought immediately"], { numeric: true }),
-    val("hpi", "mechanism", "How the burn happened", "How did the burn happen — flame, hot liquid, a hot object, electricity, a chemical, or a blast?", ["flame", "fire", "stove", "kerosene", "lpg", "cylinder", "hot water", "scald", "hot oil", "hot object", "electric", "electricity", "current", "chemical", "acid", "alkali", "blast", "cracker"]),
-    val("hpi", "where_it_happened", "Where it happened", "Where did it happen — inside a closed room, in the open, or at work?", ["closed room", "inside the house", "kitchen", "in the open", "outdoors", "at work", "factory", "field", "vehicle", "locked", "door closed"]),
-    yn("hpi", "clothes_caught_fire", "Clothes caught fire", "Did the clothes catch fire, and how were the flames put out?", ["clothes caught fire", "saree caught", "dupatta", "synthetic", "rolled on the ground", "water poured", "blanket", "clothes removed", "clothes stuck"]),
-    val("hpi", "area_involved", "Which parts of the body", "Which parts of the body are burnt — face, neck, chest, back, arms, legs, hands, feet, or the genital area?", ["face", "neck", "chest", "back", "abdomen", "arms", "hands", "legs", "feet", "genital", "perineum", "both", "one side", "whole body"]),
-    yn("hpi", "circumferential", "Burn going all the way round", "Does the burn go all the way around a limb, the chest or the neck, and does the skin feel tight there?", ["all the way round", "circumferential", "whole arm", "whole leg", "around the chest", "around the neck", "tight", "constricting", "swelling of the hand"]),
-    yn("hpi", "blisters_sensation", "Blisters and sensation", "Are there blisters, and is the burnt skin painful to touch or has it gone numb?", ["blisters", "blister", "peeling", "raw", "painful to touch", "very painful", "numb", "no sensation", "white", "charred", "leathery", "dry"]),
-    val("hpi", "first_aid", "What was done first", "What was put on the burn or done for it before reaching hospital?", ["cold water", "running water", "ice", "toothpaste", "haldi", "turmeric", "oil", "ghee", "ointment", "cloth", "nothing applied", "local doctor", "dressing done", "fluids given"]),
-    yn("associated", "smoke_exposure", "Smoke in a closed space", "Was the patient in smoke or in a closed space with the fire, and for how long?", ["smoke", "closed space", "trapped", "could not get out", "locked room", "thick smoke", "inhaled smoke", "unconscious at the scene", "got out immediately"]),
-    yn("associated", "fall_blast_jump", "A fall, blast or jump with the burn", "Did the patient also fall, jump from a height, or get thrown by a blast?", ["fell", "fall", "jumped", "from a height", "blast", "thrown", "hit by", "road accident", "no fall"]),
-    yn("associated", "urine_colour", "Colour of the urine", "Has the patient passed urine since the burn, and what colour was it?", ["passed urine", "not passed urine", "dark urine", "cola coloured", "red urine", "brown urine", "normal colour", "very little"]),
-    yn("associated", "thirst_vomiting", "Thirst, vomiting or restlessness", "Is the patient very thirsty, vomiting, or restless?", ["very thirsty", "thirst", "asking for water", "vomiting", "restless", "agitated", "irritable", "calm"], { tier: "detailed" }),
-    val("exposure", "tetanus_status", "Tetanus cover", "When was the last tetanus injection, and is anything known about it?", ["tetanus", "tt", "injection taken", "last taken", "years ago", "not taken", "not known", "immunised"], { tier: "detailed" }),
-    yn("exposure", "electrical_details", "Details of an electrical injury", "For an electrical injury: was it a household or a high-tension line, was the patient thrown or held on, and where did the current go in and come out?", ["household", "high tension", "ht line", "eleven kv", "thrown", "held on", "could not let go", "entry", "exit", "hand", "foot", "wet"]),
-    yn("exposure", "chemical_details", "Details of a chemical burn", "For a chemical burn: what was the substance, how long was it in contact, and was it washed off?", ["acid", "alkali", "lime", "cement", "cleaning agent", "battery", "thrown on", "splashed", "washed off", "how long in contact", "still on the skin"]),
+    val("hpi", "time_of_injury", "Exact time of the burn", "At what time did the burn happen, and how many hours have passed since?", ["time", "hours ago", "this morning", "last night", "am", "pm", "since", "o'clock", "minutes ago"], { numeric: true, teach: "Every calculation that follows a burn is counted from the time of injury, not from the time of arrival." }),
+    val("hpi", "agent", "What caused the burn", "What caused the burn — flame, hot liquid, electricity, a chemical, or a hot surface?", ["flame", "fire", "stove", "kerosene", "lpg", "hot water", "boiling", "oil", "scald", "electric", "current", "wire", "acid", "alkali", "chemical", "hot surface", "exhaust"]),
+    val("hpi", "circumstances", "How it happened, as described", "How did it happen, in the words of the patient or the attendant, and who else was present?", ["cooking", "stove burst", "lamp", "cylinder", "clothes caught", "fell into", "poured", "quarrel", "alone", "who was present", "own words", "accidental"], { teach: "The circumstances are recorded as they are given, in the informant's words, because this account is read again long after the admission." }),
+    val("hpi", "body_areas", "Which parts of the body are burnt", "Which parts of the body are burnt, and are the face, hands, feet or genitals involved?", ["face", "neck", "chest", "abdomen", "back", "arms", "hands", "legs", "feet", "genitals", "front", "back of", "circumferential", "both"]),
+    yn("hpi", "closed_space", "Burnt in a closed room or vehicle", "Did the burn happen in a closed room, a vehicle, or anywhere with smoke that could not escape?", ["closed room", "locked", "vehicle", "smoke", "could not escape", "open place", "outdoors", "trapped", "door closed"], { teach: "A burn in an enclosed space raises injury to the airway from hot gases and smoke, which develops over hours after the skin injury is treated." }),
+    val("hpi", "duration_contact", "How long the burning continued", "How long did the burning continue, and how were the flames put out or the clothes removed?", ["seconds", "minutes", "rolled", "water", "blanket", "clothes removed", "clothes stuck", "synthetic", "put out by", "kept burning"], { tier: "detailed" }),
+    yn("hpi", "first_aid", "What was done immediately after", "What was applied or done immediately afterwards — cool running water, or something else put on the burn?", ["water", "running water", "cooled", "ice", "toothpaste", "oil", "ghee", "ink", "turmeric", "haldi", "cloth", "nothing", "bandaged"], { teach: "What was applied before arrival changes what is found on the surface, and household applications are given only if the question is asked without reproach." }),
+    yn("associated", "pain_sensation", "Pain in the burnt areas", "Are the burnt areas painful, or is any part numb and painless?", ["painful", "severe pain", "burning pain", "numb", "painless", "no sensation", "less pain", "white areas"], { tier: "detailed", teach: "An area that is painless within a painful burn asks whether the burn has gone deeper than the skin's nerve endings." }),
+    yn("associated", "other_injuries", "Fall, jump, blast or injury besides the burn", "Was there any fall, jump from a height, blast, or road accident along with the burn?", ["fall", "jumped", "height", "blast", "explosion", "road accident", "hit", "fracture", "head injury", "unconscious"]),
+    yn("associated", "urine_output", "Passing urine since the burn", "Has urine been passed since the burn, how much, and what colour?", ["passed urine", "not passed", "how much", "less", "dark", "cola coloured", "red", "tea coloured", "clear"], { teach: "Dark or cola coloured urine after a burn, particularly an electrical one, asks about muscle breakdown reaching the kidneys." }),
+    yn("associated", "comorbidity", "Diabetes, epilepsy, heart or lung disease", "Any diabetes, epilepsy, heart or lung disease, or long-term medicines?", ["diabetes", "epilepsy", "fits", "heart disease", "lung disease", "asthma", "copd", "long term", "elderly", "tablets"], { tier: "detailed" }),
+    yn("exposure", "tetanus_status", "Tetanus immunisation", "When was the last tetanus immunisation, and is it known at all?", ["tetanus", "tt", "injection", "years ago", "not known", "recent", "childhood", "not taken"]),
     // Red flags
-    yn("red_flag", "airway_features", "Voice, breathing, soot and singed hair", "Is the voice hoarse, is the breathing noisy or difficult, or is there soot in the mouth or nose, singed nasal hair, or burns around the mouth?", ["hoarse", "voice change", "noisy breathing", "stridor", "difficulty breathing", "soot", "black sputum", "singed", "nasal hair", "burns around the mouth", "swollen lips", "coughing black"], { teach: "The questions about voice, soot and singed hair are asked first in any burn because an airway that is going to swell gives its warning in the history before it does on examination." }),
-    yn("red_flag", "closed_space_unconscious", "Closed space or loss of consciousness", "Was the patient trapped in a closed space, or unconscious at any point at the scene?", ["trapped", "closed space", "locked", "unconscious", "found unconscious", "confused at the scene", "could not get out", "pulled out"], { teach: "Being trapped in smoke, or any loss of consciousness at the scene, changes what the burn alone would suggest." }),
-    yn("red_flag", "breathing_difficulty_now", "Difficulty breathing now", "Is there any difficulty breathing, wheeze or cough at present?", ["difficulty breathing", "breathless", "wheeze", "cough", "chest tightness", "breathing fast", "comfortable"], { teach: "Breathing difficulty at any point after a burn is asked about separately from the airway questions, because it can begin hours after the injury." }),
-    yn("red_flag", "dark_urine_high_voltage", "Dark urine after an electrical or deep burn", "Has the urine been dark, red or brown since the burn?", ["dark urine", "red urine", "brown urine", "cola coloured", "tea coloured", "blood in urine", "clear urine"], { teach: "Dark urine after a deep or electrical burn is asked about because what colours it comes from muscle, not from the kidney." }),
-    yn("red_flag", "reduced_urine", "Little or no urine", "Has the patient passed very little urine, or none, since the burn?", ["not passed urine", "very little", "reduced urine", "no urine", "once only", "passing well"], { teach: "How much urine has been passed since the burn is the simplest question the history can ask about how the circulation has coped." }),
-    yn("red_flag", "deliberate_or_assault", "Whether the burn was deliberate", "Does the patient or the attendant give any account of the burn being self-inflicted or caused by someone else, and does the account of how it happened stay the same?", ["deliberate", "self inflicted", "poured on herself", "poured on himself", "set fire", "someone poured", "quarrel", "dowry", "assault", "accidental", "account changed", "different account"], { teach: "How the burn happened is asked of the patient and the attendant separately and recorded in their own words; a burn that was not an accident changes who else needs to be involved, and nothing else in the record captures how the burn happened." }),
-    yn("red_flag", "late_presentation_infection", "Late presentation with fever or smell", "For a burn that is several days old: is there fever, a smell from the wound, or a change in its colour?", ["days old", "several days", "fever", "smell", "foul smell", "discharge", "colour change", "green", "black", "dressing outside", "not healing"], { teach: "A burn brought in days later asks a different set of questions from one brought in within the hour." }),
-    PREGNANCY,
+    yn("red_flag", "airway_symptoms", "Hoarse voice, cough with black sputum, singed face", "Any hoarseness, noisy breathing, cough with black spit, or singed hair on the face and inside the nose?", ["hoarse", "voice change", "noisy breathing", "stridor", "black sputum", "soot", "singed", "eyebrows", "nasal hair", "burnt face", "difficulty breathing"], { teach: "Hoarseness, soot in the spit and singed facial hair after a burn in a closed space raise an airway that will swell over the next hours." }),
+    yn("red_flag", "breathing_difficulty", "Breathlessness or chest tightness", "Any breathlessness, chest tightness, or wheeze since the burn?", ["breathless", "difficulty breathing", "chest tightness", "wheeze", "fast breathing", "cannot lie flat", "cyanosis", "smoke"], { teach: "Breathlessness after smoke exposure can mean injury to the lung below the voice box even when the airway itself looks clear." }),
+    yn("red_flag", "circumferential_burn", "Burn going right around a limb, the neck or the chest", "Does the burn go right around an arm, leg, the neck, or the chest?", ["circumferential", "all around", "whole limb", "around the arm", "around the leg", "neck", "chest wall", "tight", "swollen"], { teach: "A burn encircling a limb or the chest tightens as swelling develops, restricting blood flow or breathing without any new event." }),
+    yn("red_flag", "electrical_high_voltage", "Electrical injury, entry and exit points", "Was this an electrical injury, from a high tension line or household supply, and where did the current enter and leave?", ["electric", "current", "high tension", "wire", "pole", "household", "entry", "exit", "thrown", "unconscious", "palpitations"], { teach: "An electrical burn destroys tissue along the path of the current, so the skin wounds understate the injury between the entry and exit points." }),
+    yn("red_flag", "large_area_extremes_of_age", "Large area burnt / very young or very old", "Does the burn cover a large part of the body, and is the patient a young child or an elderly person?", ["large area", "most of body", "half", "extensive", "child", "infant", "elderly", "old", "years"], { teach: "The same area of burn is tolerated differently at the extremes of age, and the area is estimated rather than guessed at from the history alone." }),
+    yn("red_flag", "chemical_ongoing", "Chemical still on the skin", "If a chemical caused the burn, what was it, and has it been washed off with running water?", ["acid", "alkali", "lime", "chuna", "cement", "detergent", "washed", "not washed", "still on skin", "clothes soaked", "burning continues"], { teach: "A chemical keeps burning until washed away, so the contact time matters more than the appearance of the skin." }),
+    yn("red_flag", "inconsistent_account", "Account that does not fit the injury", "Does the account of how it happened fit the pattern of the burn, and has the account changed between informants?", ["does not fit", "changed", "different account", "delay in bringing", "child", "elderly", "unwitnessed", "consistent", "unclear"], { teach: "An account that changes between informants, or a delay in coming, is recorded as a fact of the history rather than an interpretation of it." }),
+    // A burn goes to theatre for escharotomy or debridement on the day it arrives, so the
+    // pre-operative background is asked acute: last food and fluid is a ward-round question
+    // here, not a long-case one.
     ...surgicalBackground({ acute: true }),
+    PREGNANCY,
   ],
   differentials: [
-    { id: "inhalation", name: "Inhalation injury / threatened airway", pointers: ["airway_features", "closed_space_unconscious", "smoke_exposure", "breathing_difficulty_now"], discriminators: ["airway_features", "closed_space_unconscious", "smoke_exposure", "breathing_difficulty_now", "where_it_happened", "mechanism"] },
-    { id: "deep_burn", name: "Burn deeper than it first appears", pointers: ["blisters_sensation", "mechanism", "clothes_caught_fire"], discriminators: ["blisters_sensation", "mechanism", "clothes_caught_fire", "time_since_injury", "first_aid", "area_involved"] },
-    { id: "circumferential_burn", name: "Circumferential burn with a tightening effect", pointers: ["circumferential", "area_involved"], discriminators: ["circumferential", "area_involved", "blisters_sensation", "breathing_difficulty_now"] },
-    { id: "electrical", name: "Electrical injury with deep tissue damage", pointers: ["electrical_details", "dark_urine_high_voltage", "fall_blast_jump"], discriminators: ["electrical_details", "dark_urine_high_voltage", "fall_blast_jump", "urine_colour", "blisters_sensation", "reduced_urine"] },
-    { id: "chemical", name: "Chemical burn still in contact", pointers: ["chemical_details", "first_aid"], discriminators: ["chemical_details", "first_aid", "blisters_sensation", "time_since_injury", "area_involved"] },
-    { id: "associated_trauma", name: "Injury sustained along with the burn", pointers: ["fall_blast_jump", "closed_space_unconscious"], discriminators: ["fall_blast_jump", "closed_space_unconscious", "mechanism", "where_it_happened"] },
-    { id: "non_accidental", name: "A burn that was not an accident", pointers: ["deliberate_or_assault"], discriminators: ["deliberate_or_assault", "mechanism", "where_it_happened", "clothes_caught_fire", "informant"] },
-    { id: "late_infected", name: "Late presentation, wound infected", pointers: ["late_presentation_infection", "time_since_injury"], discriminators: ["late_presentation_infection", "time_since_injury", "first_aid", "blisters_sensation", "area_involved"] },
-    { id: "hypovolaemia", name: "Circulation not keeping up with the burn", pointers: ["reduced_urine", "thirst_vomiting", "area_involved"], discriminators: ["reduced_urine", "thirst_vomiting", "area_involved", "urine_colour", "time_since_injury", "first_aid"] },
+    { id: "flame_burn", name: "Flame burn", pointers: ["agent", "closed_space", "body_areas"], discriminators: ["agent", "closed_space", "airway_symptoms", "duration_contact", "body_areas"] },
+    { id: "scald", name: "Scald", pointers: ["agent", "duration_contact"], discriminators: ["agent", "duration_contact", "body_areas", "circumstances", "first_aid"] },
+    { id: "electrical", name: "Electrical injury", pointers: ["electrical_high_voltage", "urine_output"], discriminators: ["electrical_high_voltage", "urine_output", "other_injuries", "body_areas", "pain_sensation"] },
+    { id: "chemical", name: "Chemical burn", pointers: ["chemical_ongoing", "agent"], discriminators: ["chemical_ongoing", "agent", "first_aid", "body_areas", "time_of_injury"] },
+    { id: "contact_friction", name: "Contact or friction burn", pointers: ["agent", "body_areas"], discriminators: ["agent", "body_areas", "duration_contact", "other_injuries", "circumstances"] },
+    { id: "inhalational", name: "Inhalational injury", pointers: ["airway_symptoms", "closed_space", "breathing_difficulty"], discriminators: ["airway_symptoms", "closed_space", "breathing_difficulty", "agent", "time_of_injury"] },
   ],
   output: {
     durationSlot: "duration",
-    hpiOrder: ["onset", "duration", "time_since_injury", "mechanism", "where_it_happened", "clothes_caught_fire", "area_involved", "circumferential", "blisters_sensation", "first_aid", "progression", "prior_treatment", "prior_investigations"],
+    hpiOrder: ["onset", "time_of_injury", "duration", "agent", "circumstances", "body_areas", "closed_space", "first_aid", "prior_treatment", "prior_investigations"],
   },
 };

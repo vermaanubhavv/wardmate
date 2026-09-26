@@ -48,6 +48,12 @@ import type { SpecialtyPack } from "./types";
  *   written on a paper case sheet today. Turning it into structured, queryable fields (so a
  *   ward list could show "G2P1, 32+4 weeks" the way it shows "POD 2") is a bigger schema change
  *   than a seam patch, deliberately left for a later, explicitly scoped piece of work.
+ *
+ * CLINICIAN SIGNED OFF FOR PILOT USE 2026-09-26 (Dr. Anubhav), product owner and general-surgery
+ * resident, on his own direction. It covers what this pack HAS — the day counter, the extraction
+ * guidance, the lexicon and the history-tree order. It cannot cover the checklists, scores and
+ * condition discharge templates listed above, because those do not exist yet; the empty lists
+ * stay empty until they are written.
  */
 export const obstetricsGynaecologyPack: SpecialtyPack = {
   key: "obstetrics_gynaecology",
@@ -114,5 +120,14 @@ Obstetrics and gynaecology ward — what the words mean here:
 
   pickerPhase: "after_surgery",
 
+  // Empty, deliberately, like scoringKeys above — and no longer the unclaimed (surgical) list:
+  // an O&G unit's operations are LSCS, hysterectomy and laparoscopy, none of which are in
+  // general surgery's library, so offering that library offered the wrong department's work.
+  // A PPH / pre-eclampsia / post-LSCS checklist replaces this the day it is written.
+  checklistFamilies: [],
+
   lexiconSpecialty: "obstetrics-gynaecology",
+
+  // Obstetric complaints first, then the gynaecological ones.
+  historyTreeIds: ["labour_pains", "bleeding_pv", "vaginal_discharge", "abdominal_pain", "burning_micturition", "oedema", "fever", "breast_lump"],
 };

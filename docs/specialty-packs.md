@@ -85,6 +85,7 @@ lib/specialty/
 | `extractPrompt` | the role line + which observation kinds matter | "surgical resident… procedure_done flips post-op status" | "physician… problem list, drug titration, pending diagnostics; no post-op concept" |
 | `checklistTriggerSet` | which auto-task pack applies | POD-anchored | admission-anchored (VTE assessment, culture-before-antibiotic, antibiotic review at 48–72 h, …) |
 | `dischargeFamilies` | template families offered | operation-keyed | condition-keyed (CAP, AECOPD, CHF decompensation, DKA, AKI, CVA, sepsis) |
+| `checklistFamilies` | which `care_templates.family` rows the checklist picker offers | `null` — every family no other pack claims (its operations live in the table, where a unit corrects them) | its 22 condition rows from patches 0064/0067, and nothing else |
 | `scoringKeys` | which pathway definitions show in the picker | pancreatitis, cholangitis, cholecystitis, appendicitis-AIR, UGIB-GBS | CURB-65, qSOFA, Wells (DVT + PE), CHA₂DS₂-VASc, HAS-BLED, MELD-Na, Child-Pugh |
 | `formatKinds` | which document slots the `/formats` page shows | all six incl. `ot_notes` | hides `ot_notes`; keeps discharge / notes / investigation / interdepartmental / logo |
 | `lexicon` | dictation keyterm base list | `core` + `surgery` | `core` + `medicine` (new file, mirrors `lib/transcription/lexicon/surgery.ts`) |
@@ -611,3 +612,365 @@ SQL Editor before any unit can pick this specialty.
    above.
 3. **The checklist picker still calls itself a procedure picker** — same Phase 4 wording sweep
    named for oncology and medicine, not yet done, and moot here until a checklist actually ships.
+
+## 11. Department-ordered history trees (all packs)
+
+`SpecialtyPack.historyTreeIds` — the complaints a department starts a history from, in its own
+order (`content/history-trees/` ids).
+
+**It is a sort, never a filter.** `loadHistoryCheckCard()` puts what the dictated chief
+complaint suggests first, then the unit's own complaints in pack order, then every other tree
+in registry order. All 59 trees stay reachable from every unit, because a chest pain on an ENT
+ward is still a chest pain. An id naming no registered tree is ignored, and an empty list
+restores exactly the order the picker had before the field existed — an unrecognised specialty
+or `SPECIALTY_PACKS` off therefore changes nothing.
+
+Order inside a pack is a clinical statement, not alphabetical: oncology leads with fever on
+chemotherapy, pulmonary medicine with blood in the cough, obstetrics with labour pains.
+`lib/__tests__/specialty.test.ts` fails if a pack names a complaint that does not ship, or the
+same one twice.
+
+## 12. Fifth pack — pulmonary medicine (Phase 0+1 only)
+
+Chest medicine, respiratory medicine, pulmonary medicine: one department, three names,
+`pulmonary_medicine` everywhere in code and database. Same rollout discipline as §10 — seam and
+core only, clinical content deferred until a unit read-through.
+
+### Patch
+
+| Patch | What it does |
+|---|---|
+| `0081_pulmonary_medicine.sql` | Widens `wards_specialty_check` and the two-argument `create_ward_for_current_user` guard to allow `pulmonary_medicine`. The whole seam patch — a chest unit needs no new patient columns: like internal medicine it counts from `admission_day`. Saturation with its delivery device, the blood gas, drain column and air leak, and the anti-tubercular regimen are all ordinary observations and existing drain fields, captured as dictated. |
+
+### Code
+
+`lib/specialty/pulmonary-medicine.ts` — the pack. Plus `pulmonary_medicine` in `SPECIALTY_KEYS`
+and the registry, `"pulmonary-medicine"` in the lexicon `Specialty` union, and
+`lib/transcription/lexicon/pulmonary-medicine.ts` — the keyterm core: TB programme shorthand
+(CBNAAT, HRZE, NTEP, line probe assay), oxygen and ventilation (NIV, BiPAP, HFNC, ABG), the
+bedside procedures (pleural tap, drain, bronchoscopy, pleurodesis), the Indian inhaler brands
+(Foracort, Duolin, Seroflo, Budecort, Asthalin) and the sleep-study vocabulary.
+
+Two history trees were written for this pack and ship with it: `haemoptysis` and
+`snoring_sleepiness` (see `docs/history-check.md`). The rest of the chest casemix is already
+served by the medicine trees.
+
+### What it borrows on purpose
+
+- **Discharge templates** are the medicine ones — they already carry pulmonary tuberculosis and
+  community-acquired pneumonia. A chest unit's own (COPD exacerbation, asthma, effusion after
+  drainage, post-tubercular lung disease) is the first thing to add past pilot, in a
+  `lib/discharge-templates-pulmonary.ts` beside the medicine one.
+- **Scores** are `curb_65`, `qsofa`, `wells_pe`, `wells_dvt` — the four already built, reviewed
+  and active. Nothing respiratory-specific (BAP-65, PESI, GOLD grading) is offered, because
+  offering a score this app has not built would be worse than offering none.
+
+### Lexicon collisions
+
+`lib/transcription/lexicon/__tests__/pulmonary-medicine-collisions.test.ts` is the obstetrics
+guard with one deliberate difference: it asserts no trigger fires *inside an unrelated word*
+rather than no trigger is a substring at all. Chest vocabulary genuinely shares words with
+general medicine — "fever", "chest", "tuberculosis" are meant to be context triggers and each
+sits inside a longer legitimate phrase. What the test still catches is the real bug class, and
+it caught two while this file was written: "asthma" inside "status asthmaticus" and "oedema"
+inside "papilloedema", both fixed by changing the trigger word rather than the test.
+
+### Activation
+
+Not yet piloted on a real unit. Runtime gating is unchanged: `SPECIALTY_PACKS=on` for the
+picker, the scoring engine's own flag plus a per-ward `ward_scoring_engine` row for scores, and
+`0081_pulmonary_medicine.sql` run in the SQL Editor before any unit can pick this specialty.
+
+### Known rough edges, for a future pilot
+
+1. **Discharge templates are medicine's**, as above — correct for TB and pneumonia, generic for
+   everything else this ward discharges.
+2. **No checklists** — no chest-specific protocol ships. The obvious first ones (sputum sent
+   before the first antibiotic dose, saturation recorded with its delivery device) are
+   admission-anchored conditions the existing trigger engine already supports; they need the
+   unit's read-through, not new code.
+3. **Clinical content is `pending_clinician_review`** — the two trees, the lexicon and the
+   extraction guidance, as with every other pack at this stage.
+
+## 13. Sixth and seventh packs — ENT and psychiatry (Phase 0+1 only)
+
+Same discipline as §10 and §12: seam and core only, clinical content deferred until a unit
+read-through. Both are Phase 0+1 — they make a unit of that department possible and make its
+dictation and history work; they do not yet carry its checklists or its own discharge templates.
+
+### Patch
+
+| Patch | What it does |
+|---|---|
+| `0082_ent_psychiatry.sql` | Widens `wards_specialty_check` and the two-argument `create_ward_for_current_user` guard to allow `ent` and `psychiatry`. Neither needs a new patient column: ENT counts from `post_op_day` when there is an operation, psychiatry from `admission_day`, and both columns exist on every patient today. |
+
+**No risk column, deliberately.** Psychiatry's risk statements are captured as dictated text,
+with who said them. A structured risk field would invite a value nobody said and a score nobody
+reviewed, against the app's own guarantee that a stored value can be quoted from the transcript.
+Silence stays silence — an unasked risk question is never stored as a denial, the same rule the
+`low_mood` history tree keeps.
+
+### Code
+
+| File | What it carries |
+|---|---|
+| `lib/specialty/ent.ts` | Surgical clock (POD, unchanged from general surgery), airway- and laterality-first extraction guidance, operation names stored as spoken, all six format slots including OT notes. |
+| `lib/specialty/psychiatry.ts` | Hospital-day clock, informant kept inside every observation, the mental state examination stored as described and never assembled into a diagnosis, risk recorded and never inferred, ECT as a procedure that does not start a post-op clock. |
+| `lib/transcription/lexicon/ent.ts` | Ear / nose / throat / head-and-neck vocabulary: the operations in shorthand (tympanoplasty, MRM, FESS, SMR, adenotonsillectomy, tracheostomy), examination shorthand (otoscopy, DNE, IDL, Rinne and Weber), audiology (PTA, air-bone gap, tympanogram, BERA) and the tobacco/areca casemix. |
+| `lib/transcription/lexicon/psychiatry.ts` | The mental state examination in dictation order, the drugs by name, the withdrawal and de-addiction vocabulary, and the Mental Healthcare Act language an Indian admission carries. Carries no risk-scoring vocabulary, on purpose. |
+
+Both lexicons ship with the word-boundary collision test described in §12. It earned its keep
+again here: `"trauma"` fired inside `"polytrauma"` and `"therapy"` inside `"chemotherapy"`, both
+fixed by changing the trigger word rather than the test.
+
+### Scores
+
+| Pack | Offered | Why |
+|---|---|---|
+| ENT | *nothing* | No ENT pathway has been built and reviewed. An empty list is a clinical statement — an ENT unit must not be shown Ranson's or CURB-65 because they happen to exist. |
+| Psychiatry | `ciwa_ar` | Alcohol withdrawal, already built, reviewed and active, and managed daily on this ward. No mood, psychosis or risk scale is offered, because none has been built here. |
+
+### Discharge templates
+
+ENT borrows the general-surgery templates (an ENT discharge is operative in shape); psychiatry
+borrows the medicine ones (problem, course, what was started, follow-up). Their own —
+tympanoplasty / FESS / tonsillectomy / tracheostomy care, and first-episode psychosis / mania /
+depression with a risk review / alcohol detoxification — are the first thing to add past pilot.
+
+### Activation
+
+Neither is piloted. `SPECIALTY_PACKS=on` for the picker, `0082_ent_psychiatry.sql` run in the
+SQL Editor, and for psychiatry's CIWA-Ar the scoring engine's flag plus a per-ward
+`ward_scoring_engine` row. Clinical content is `pending_clinician_review` throughout.
+
+## 14. Eighth pack — ophthalmology (Phase 0+1 only)
+
+| Patch | What it does |
+|---|---|
+| `0083_ophthalmology.sql` | Widens `wards_specialty_check` and the `create_ward_for_current_user` guard to allow `ophthalmology`. No new patient column — a surgical department counting from `post_op_day`, else `admission_day`. |
+
+**Why there is no laterality column**, although almost every finding here belongs to one eye:
+the eye is part of the *observation*, not a property of the patient. One round can carry a
+vision in each eye, an operation on one and a pressure in both. A per-patient column would force
+one of those to be dropped or guessed — and guessing a side is exactly the harm this pack's
+guidance exists to prevent.
+
+### Code
+
+`lib/specialty/ophthalmology.ts` and `lib/transcription/lexicon/ophthalmology.ts` (cataract and
+its operations in shorthand, glaucoma and its instruments, the diabetic eye and its lasers,
+cornea and ocular-surface infection, lids/orbit/squint/trauma, and the acuity notation).
+
+### What the guidance pins
+
+- **The eye is part of the value.** No side is ever inferred — not from the operation, not from
+  an earlier entry, not from which eye is commoner.
+- **Acuity is a notation, never converted.** `6/12`, counting fingers, hand movements and
+  perception of light do not convert into one another, and unaided / best-corrected / pinhole
+  are three different measurements of the same eye.
+- **Pressure carries its instrument.** Applanation and non-contact are not interchangeable, and
+  "digital tension" is words, not a number.
+
+Scores: **none**. Nothing ophthalmic has been built and reviewed, and an eye unit must not be
+offered a surgical or medical pathway because it exists. Discharge templates borrow the surgical
+ones; cataract / trabeculectomy / vitrectomy / keratoplasty templates with their drop schedules
+are the first thing to add past pilot.
+
+## 15. Ninth pack — dermatology (Phase 0+1 only)
+
+| Patch | What it does |
+|---|---|
+| `0084_dermatology.sql` | Widens `wards_specialty_check` and the `create_ward_for_current_user` guard to allow `dermatology`. No new patient column — hospital-day clock, `admission_day`, which every patient has. |
+
+**Why there is no body-surface-area column**, although a percentage decides how ill a patient
+with a peeling rash is: that percentage is a bedside estimate a clinician makes and states. A
+column invites a number nobody said, and a number in a column invites a severity grade nobody
+reviewed. It is recorded as spoken or not at all.
+
+### Code
+
+`lib/specialty/dermatology.ts` and `lib/transcription/lexicon/dermatology.ts` — the morphology
+the round is actually dictated in (annular scaly plaque, flaccid bullae, Nikolsky, distribution),
+the north-Indian casemix (recalcitrant dermatophytosis, scabies, leprosy under the national
+programme, severe drug reactions, the STIs seen in the same clinic), the bedside tests (KOH,
+Tzanck, slit skin smear, DIF) and the drugs by name including the over-the-counter combination
+creams.
+
+### What the guidance pins
+
+- **Morphology is the observation; the diagnosis is not.** "Annular scaly plaque with central
+  clearing" is what was seen — "tinea" is a separate statement the resident makes or does not.
+  A description is never promoted into a disease.
+- **The drug timeline is the drug named and the interval said** — never reconstructed, never
+  inferred from what the patient is on now, and "some tablets from a shop" stays those words.
+- **A patch that has lost sensation is a finding**, and its absence from the dictation is not a
+  normal sensation.
+
+Scores: **none**. SCORTEN, PASI and the BSA indices are real instruments this app has not built
+or reviewed, and it does not compute them. Discharge templates borrow medicine's; severe drug
+reaction, pemphigus, erythroderma and leprosy-with-monthly-follow-up are the first to add.
+
+## 16. Tenth pack — burns & plastic surgery (Phase 0+1, and the first new clock since oncology)
+
+Every department added since medical oncology counted days on a clock that already existed: the
+operation, the cycle, or the admission. A burns unit counts from **the burn**, which usually
+happened before the patient reached the hospital. A patient burned on Tuesday who arrives on
+Thursday is on post-burn day 3, and a note that says day 1 is wrong about the only number this
+ward navigates by. That is a fact the app would otherwise have to guess, so it gets a column.
+
+| Patch | What it does |
+|---|---|
+| `0085_burns_plastic_surgery.sql` | Allows `burns_plastic_surgery`; adds `patients.burn_date`; rebuilds `current_patients` with `burn_day` beside `post_op_day` and `cycle_day`. Every existing patient gets a null burn date, and a null burn date means "count the way you always did". |
+
+`burn_day` is **1-based like `cycle_day`, not 0-based like `post_op_day`** — a burns unit calls
+the day of the injury post-burn day 1, the way an oncologist calls the day the drugs go up
+Day 1. The label always names its clock, so `PBD 3` and `POD 3` can never be confused on
+adjacent beds.
+
+**Two clocks on one patient.** A grafted patient is PBD 14 and POD 3 of the graft at once. The
+pack prefers the burn, falls back to the operation, then to admission — so a plastic-surgery
+patient who was never burned (a flap, a contracture release, a cleft) counts post-operatively,
+exactly as general surgery does. Pinned in `lib/__tests__/specialty.test.ts`.
+
+### What is deliberately NOT stored
+
+- **No TBSA column.** A percentage is a bedside estimate, revised as the burn declares itself,
+  and it is the input to a fluid calculation this app does not make. A column invites a number
+  nobody said, and a number in a column invites a calculation nobody reviewed. It is dictated
+  as spoken, with whose estimate it is.
+- **No time-of-injury column, only the date.** The hour matters enormously in the first day and
+  is captured by the `burns` history tree's own `time_of_injury` slot, where it carries a source
+  quote. A date drives a day counter; an hour would drive arithmetic. That is the line.
+- **No score.** The burns severity indices are exactly the kind of number that would be read as
+  a prognosis at a bedside. None is built or reviewed here.
+
+### Wiring
+
+| File | Change |
+|---|---|
+| `lib/specialty/burns-plastic-surgery.ts` | The pack: PBD → POD → Day, and guidance that records fluids as given and never calculates a resuscitation. |
+| `lib/transcription/lexicon/burns-plastic-surgery.ts` | Depth and area vocabulary, escharotomy/excision/grafting/flap monitoring, dressings, urine output. **No fluid-formula terms** — Parkland and its relatives are absent on purpose. |
+| `app/patients/new/patient-form.tsx`, `app/patients/edit-identity.tsx` | A "Date of burn" field, shown on a burns unit only, exactly as the chemotherapy fields are shown on an oncology one. |
+| `app/patients/actions.ts` | `readBurnDate` — a past date is normal and unquestioned (that is the point of the field); a future date is refused; an empty box stores null. |
+| `lib/ward.ts`, `lib/handover.ts`, `app/patients/[id]/page.tsx` | The burn columns are asked for **only on a burns unit**, because a unit can only be one if 0085 has run. The patient page learns its pack *after* its main select, so it reads them in a second tiny query rather than naming a column that a not-yet-migrated database would reject — which would take every patient page down, not just a burns one. |
+
+---
+
+## 13. The checklist picker follows the department (2026-09-26)
+
+**Why this was needed.** The picker filtered on `care_templates.phase` alone, and phase cannot
+separate departments. A medicine patient and an oncology patient both have no operation date, so
+`phaseFor()` files both under `before_surgery` — which meant a chemotherapy unit was offered
+dengue, DKA and enteric fever, and a medicine unit was offered febrile neutropenia and lymphoma
+chemo. Invisible while `SPECIALTY_PACKS` was off, because every unit was general surgery; live
+the moment the flag went on.
+
+**The rule.** Each pack declares `checklistFamilies`, and `offersChecklistFamily()` in
+`lib/specialty/index.ts` is the single gate. Three cases, each a deliberate statement:
+
+| Value | Meaning | Who |
+|---|---|---|
+| `null` | every family no other pack claims | general surgery only — its operations live in `care_templates`, are unit-editable, and are never listed in code |
+| a list | exactly those | medical oncology (7 rows, patch 0061), internal medicine (22 rows, 0064/0067), pulmonary medicine (medicine's pneumonia, TB and VTE rows — its casemix, borrowed on the same terms as the discharge templates) |
+| `[]` | this department has none yet | O&G, ENT, ophthalmology, dermatology, psychiatry, burns & plastics — the same statement `scoringKeys: []` makes |
+
+**Two packs may claim the same family.** Pulmonary medicine and internal medicine both claim
+`cap`, `pulmonary_tb` and `vte_suspected`. That is intended, and the `null` fallback still works:
+a family claimed by anyone is excluded from it.
+
+**`[]` rather than the surgical list, for a department that operates.** An O&G unit's operations
+are LSCS, hysterectomy and laparoscopy; an eye unit's are cataract and vitrectomy. None of those
+are in general surgery's library, so falling back to it offered the wrong department's work — the
+same complaint that started this. The operation is still typed freely and kept exactly as typed;
+only the checklist behind it is absent until that department's own rows are seeded, which is one
+patch plus this field.
+
+**Applied in both places the list is built** — `listTemplateChoices()` (which now takes the
+unit's specialty rather than a bare phase) and `toChoices()` on the `ward_screen` RPC path — and
+in `resolveProcedure()`'s lookup, so a typed "Dengue" on a surgical unit keeps the wording and
+attaches no checklist rather than linking a medicine one. The specialty is read from the ward
+row, never from the form: which department's library a name may resolve against is the unit's
+fact, not something the browser gets to say.
+
+---
+
+## 14. Departments eleven to fifteen (2026-09-26)
+
+Orthopaedics, urology, neurosurgery, paediatrics and emergency medicine — five packs, one seam
+patch, `0086_five_more_departments.sql`. **Fifteen departments now exist.**
+
+Each of the five was chosen because its clinical content was ALREADY in the repo: all 59 history
+trees shipped before any of these packs did, and between them they already covered the limb
+injury, the joint, the back, the haematuria, the scrotal swelling, the head injury, the four
+paediatric presentations, the shock and the poisoning. The pack is what makes that content
+reachable as a department.
+
+| Pack | Clock | Scores offered, and why | Discharge templates |
+|---|---|---|---|
+| Orthopaedics | POD → Day | `wells_dvt`, `wells_pe` — VTE after a hip fracture or an arthroplasty is this ward's own risk. No fracture classification: Garden and Neer are read off an image by a surgeon, and a classification this app produced would be a diagnosis it may not make. | surgical |
+| Urology | POD → Day | `kdigo_aki` — post-obstructive AKI is the department's daily problem. Nothing prognostic. | surgical |
+| Neurosurgery | POD → Day | **none.** GCS is dictated and stored, never assembled by the app from remembered components; Marshall, Rotterdam, Hunt and Hess and WFNS are all prognostic. | surgical |
+| Paediatrics | Hospital day | **none, and this is the most important line in the pack.** Every pathway WardMate has built is validated in ADULTS. Offering CURB-65 or qSOFA on a children's ward because it exists would be the worst thing this seam could do. | medicine (condition-keyed) |
+| Emergency medicine | Day, from arrival | `heart_score`, `qsofa`, `wells_pe`, `wells_dvt`, `upper_gi_bleeding` — the five an emergency physician reaches for, all active. No triage category and no early-warning score: both drive an allocation decision this app does not make. | medicine (condition-keyed) |
+
+### The two rules these packs added to the extraction prompts
+
+- **A paediatric dose is never calculated.** "Ceftriaxone 100 per kg per day" is stored as spoken.
+  The app does not multiply by the weight, does not convert to millilitres and does not check a
+  dose against a range. A paediatric drug error is a decimal point, and a decimal point this app
+  moved would be indefensible. Patch 0086 deliberately adds **no weight column** for the same
+  reason: a column that holds "the weight" invites something to multiply a dose by it.
+- **An emergency note keeps its times and its hedging.** "ROSC at 10:46", "query intestinal
+  obstruction", "unknown male, around 40", "declared brought dead at 11:05". A query is never
+  promoted to a diagnosis and an unknown patient is never given an invented identity.
+
+### What the lexicon guards caught while this was written
+
+Five new keyterm cores, each with its own collision test. Between them the guards caught, and
+every one was fixed in the lexicon rather than by loosening a test:
+
+- a bare `drain` trigger on the external ventricular drain, which fired on **any** ward's drain
+- a bare `catheter` trigger on the Foley, which fired on any patient with one
+- `cystitis` firing inside `cholecystitis` — urology vocabulary pulled into a gallbladder round
+- `torsion` reaching from the gynaecological entry into `testicular torsion` (the one existing
+  trigger narrowed, following the precedent §12 set)
+- **four paediatric entries mistakenly filed under `core`** — the category sent on nearly every
+  dictation — so an adult surgical round was being handed a child's danger signs. This one also
+  broke the 20–50 keyterm budget test, which is how it was noticed.
+
+### The parity test
+
+`lib/__tests__/specialty-patch-parity.test.ts` pins `SPECIALTY_KEYS` against the newest seam
+patch's two lists. It exists because `create_ward_for_current_user` **clamps** an unrecognised
+specialty to `general_surgery` instead of raising — correct for an un-redeployed client, but it
+makes a code/database mismatch silent: the resident picks Paediatrics, the insert succeeds, and
+they get a general surgery unit with no error anywhere, discovered weeks later from a day counter
+reading POD. Adding a pack without adding it to the patch now fails in the suite instead.
+
+---
+
+## 15. Clinician sign-off, all fifteen packs (2026-09-26)
+
+**Signed off for pilot use on 2026-09-26 by Dr. Anubhav** — product owner and general-surgery
+resident — on his own direction, recorded in each pack's header.
+
+What the sign-off covers, per pack: the extraction guidance, the day counter, the keyterm lexicon,
+the history-tree order and the scoring list, **including what each pack deliberately refuses to
+offer** (no score at all for neurosurgery and for paediatrics; no fracture classification for
+orthopaedics; no triage or early-warning score for emergency medicine; no prognostic model
+anywhere).
+
+Two packs already carried their own, earlier records and keep them: general surgery and internal
+medicine (batch sign-offs 2026-09-07, alpha publication 2026-09-13). Medical oncology's header
+previously read "NOT CLINICALLY SIGNED OFF" — this supersedes it, discharge templates included.
+
+**What sign-off is not.** It is permission to pilot, not evidence of one. Eleven of the fifteen
+have still never run on a real unit, and saying so in the same breath is the point. Nor can it
+cover content that does not exist: obstetrics & gynaecology, ENT, ophthalmology, dermatology,
+psychiatry, burns & plastics, orthopaedics, urology, neurosurgery, paediatrics and emergency
+medicine all still declare `checklistFamilies: []`, and an empty list stays empty until somebody
+writes what goes in it. That is the next session's work, and nothing here pre-approves it.
+
+Runtime gating is unchanged throughout: `SPECIALTY_PACKS=on` for the picker, the scoring engine's
+own flag plus a per-ward row for any score, and the department's seam patch applied before a unit
+can be created as it.

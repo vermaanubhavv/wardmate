@@ -93,12 +93,19 @@ export const HUTCHISONS: Reference = { title: "Hutchison's Clinical Methods — 
 
 export const BATES: Reference = { title: "Bates' Guide to Physical Examination and History Taking", source: "Wolters Kluwer (textbook)" };
 
+/** Specialty texts the ENT, eye, skin, psychiatry and dental trees are built from. No year or
+ *  URL recorded — an edition number would date faster than the questions do. */
+export const DHINGRA: Reference = { title: "Diseases of Ear, Nose and Throat & Head and Neck Surgery — history taking", source: "Dhingra, Elsevier (textbook)" };
+export const PARSONS_EYE: Reference = { title: "Parsons' Diseases of the Eye — symptoms and clinical assessment", source: "Elsevier (textbook)" };
+export const IADVL: Reference = { title: "IADVL Textbook of Dermatology — approach to the patient with a skin lesion", source: "Bhalani (textbook)" };
+export const KAPLAN_SADOCK: Reference = { title: "Kaplan & Sadock's Synopsis of Psychiatry — the psychiatric interview and risk assessment", source: "Wolters Kluwer (textbook)" };
+export const BAILEY_LOVE: Reference = { title: "Bailey & Love's Short Practice of Surgery — history and examination of the surgical patient", source: "CRC Press (textbook)" };
+
 /**
  * The surgical texts. Cited as textbooks, with no PubMed id claimed for any of them —
  * docs/surgical-history.md §1 records what each one is used for.
  */
 export const BROWSE: Reference = { title: "Browse's Introduction to the Symptoms and Signs of Surgical Disease", source: "CRC Press (textbook)" };
-export const BAILEY_LOVE: Reference = { title: "Bailey & Love's Short Practice of Surgery", source: "CRC Press (textbook)" };
 export const HAMILTON_BAILEY: Reference = { title: "Hamilton Bailey's Demonstrations of Physical Signs in Clinical Surgery", source: "CRC Press (textbook)" };
 export const DAS_CLINICAL_SURGERY: Reference = { title: "A Manual on Clinical Surgery — the surgical long case", source: "S. Das (textbook)" };
 export const SABISTON: Reference = { title: "Sabiston Textbook of Surgery — preoperative assessment", source: "Elsevier (textbook)" };

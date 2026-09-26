@@ -30,10 +30,12 @@ describe("tree registry", () => {
   it("pins exactly which trees a clinician has signed off", () => {
     // A tree must not drift into "reviewed" as a side effect of an edit — the chip on the card
     // is the only thing telling a resident whether the content was read by a clinician.
+    // `burns` is deliberately absent: the reviewed burns tree was this branch's own, and main's
+    // independently-written one won the merge, so it carries no sign-off for its content.
     const reviewed = listTrees().filter((t) => t.reviewStatus === "reviewed").map((t) => t.id).sort();
     expect(reviewed).toEqual([
       "abdominal_distension", "abdominal_pain", "anorectal_pain", "bleeding_per_rectum",
-      "breast_lump", "burns", "constipation", "dysphagia", "groin_swelling", "haematemesis",
+      "breast_lump", "constipation", "dysphagia", "groin_swelling", "haematemesis",
       "leg_ulcer", "lump", "post_op_problem", "scrotal_swelling", "thyroid_swelling",
     ]);
   });
@@ -50,7 +52,7 @@ describe("suggestTrees", () => {
   it("does not suggest from a negated mention, an unrelated complaint, or nothing at all", () => {
     expect(suggestTrees(["no fever, pain abdomen x 3 days"]).map((t) => t.id)).toEqual(["abdominal_pain"]);
     expect(suggestTrees(["afebrile, pain abdomen"]).map((t) => t.id)).toEqual(["abdominal_pain"]);
-    expect(suggestTrees(["itching all over"])).toEqual([]);
+    expect(suggestTrees(["hiccups since morning"])).toEqual([]);
     expect(suggestTrees([])).toEqual([]);
   });
 
@@ -148,6 +150,6 @@ describe("the surgical complaints", () => {
 describe("registry size", () => {
   it("keeps the docs honest about how many trees ship", () => {
     // docs/history-check.md states this number; update both together.
-    expect(listTrees().length).toBe(49);
+    expect(listTrees().length).toBe(61);
   });
 });

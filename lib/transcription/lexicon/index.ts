@@ -12,6 +12,17 @@ import { SCORES } from "./scores";
 import { ONCOLOGY } from "./oncology";
 import { INTERNAL_MEDICINE } from "./internal-medicine";
 import { OBSTETRICS_GYNAECOLOGY } from "./obstetrics-gynaecology";
+import { PULMONARY_MEDICINE } from "./pulmonary-medicine";
+import { ENT_LEXICON } from "./ent";
+import { PSYCHIATRY } from "./psychiatry";
+import { OPHTHALMOLOGY } from "./ophthalmology";
+import { DERMATOLOGY } from "./dermatology";
+import { BURNS_PLASTIC_SURGERY } from "./burns-plastic-surgery";
+import { ORTHOPAEDICS } from "./orthopaedics";
+import { UROLOGY } from "./urology";
+import { NEUROSURGERY } from "./neurosurgery";
+import { PAEDIATRICS } from "./paediatrics";
+import { EMERGENCY_MEDICINE } from "./emergency-medicine";
 
 export * from "./types";
 
@@ -36,6 +47,17 @@ export const MASTER_LEXICON: readonly MedicalLexiconEntry[] = Object.freeze([
   ...ONCOLOGY,
   ...INTERNAL_MEDICINE,
   ...OBSTETRICS_GYNAECOLOGY,
+  ...PULMONARY_MEDICINE,
+  ...ENT_LEXICON,
+  ...PSYCHIATRY,
+  ...OPHTHALMOLOGY,
+  ...DERMATOLOGY,
+  ...BURNS_PLASTIC_SURGERY,
+  ...ORTHOPAEDICS,
+  ...UROLOGY,
+  ...NEUROSURGERY,
+  ...PAEDIATRICS,
+  ...EMERGENCY_MEDICINE,
 ]);
 
 /**

@@ -116,6 +116,25 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // checklist rows the picker offers, and whether the edit dialog shows chemotherapy fields.
   const pack = getSpecialtyPack(await getWardSpecialtyStored(patient.ward_id));
 
+  // The burn columns (patch 0085) are read in a second, tiny query instead of being named in
+  // the select above, and only for a burns unit. The select above runs for EVERY patient on
+  // every ward: naming a column there that a not-yet-migrated database does not have would
+  // reject the whole query and take every patient page down with it. A unit can only be a
+  // burns unit if 0085 has run, so asking here is always safe. Same reasoning as includeChemo
+  // in lib/ward.ts, arrived at the other way round — there the pack is known before the query,
+  // here it is only known after it.
+  const burns =
+    pack.key === "burns_plastic_surgery"
+      ? (
+          await supabase
+            .from("current_patients")
+            .select("burn_date, burn_day")
+            .eq("id", patient.id)
+            .maybeSingle()
+        ).data
+      : null;
+  const patientWithBurn = { ...patient, ...(burns ?? {}) };
+
   // The next bed in walking order, so finishing one patient and starting the next is one tap
   // rather than a trip back through the ward list.
   const [
@@ -127,7 +146,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     { data: dischargeRow },
     wardRanges,
   ] = await Promise.all([
-      getActivePatients(patient.ward_id, pack.key !== "general_surgery"),
+      getActivePatients(patient.ward_id, pack.key !== "general_surgery", pack.key === "burns_plastic_surgery"),
       supabase
         .from("entries")
         .select(
@@ -135,8 +154,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         )
         .eq("patient_id", id)
         .order("recorded_at", { ascending: false }),
-      getProcedureLabels(),
-      listTemplateChoices(pack.pickerPhase),
+      getProcedureLabels(pack.key),
+      listTemplateChoices(pack.key),
       // Needs only fields already in hand from the patient row, so it was queueing behind the
       // batch for nothing.
       getTemplateForPatient(patient),
@@ -214,7 +233,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // entries: the case history is excluded from the day-by-day record but not from what decides
   // the to-do list and "where things stand" — a plan is a plan whichever way it was captured.
   const allObservations = allEntries.flatMap((e) => e.observations);
-  const day = pack.dayCount(patient);
+  const day = pack.dayCount(patientWithBurn);
   const patientState = derivePatientState(
     allObservations,
     template,
@@ -295,7 +314,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     caseHistoryEntries
       .flatMap((e) => e.observations)
       .filter((o) => /chief complaint|presenting complaint/i.test(o.label))
-      .map((o) => o.value_text ?? o.label)
+      .map((o) => o.value_text ?? o.label),
+    pack.historyTreeIds
   );
 
   // Latest of each drug recorded, for the discharge brief. Taken from the same observations
@@ -761,7 +781,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             )}
           </div>
           <div className="shrink-0">
-            <EditIdentity patient={patient} templateChoices={templateChoices} specialty={pack.key} />
+            <EditIdentity patient={patientWithBurn} templateChoices={templateChoices} specialty={pack.key} />
           </div>
         </div>
 

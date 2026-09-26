@@ -25,9 +25,10 @@ import type { SpecialtyPack } from "./types";
  *    A port inserted on cycle 2 day 1 does not make the patient "POD 0". That is enforced by
  *    dayCount below reading the cycle and the admission, never surgery_date.
  *
- * NOT CLINICALLY SIGNED OFF. The discharge templates this pack points at are drafted from
- * standard practice and are waiting on the unit's review — see the header of
- * lib/discharge-templates-oncology.ts.
+ * CLINICIAN SIGNED OFF FOR PILOT USE 2026-09-26 (Dr. Anubhav), product owner and general-surgery
+ * resident, on his own direction, superseding the "not clinically signed off" note this header
+ * carried. It covers this pack's clinical content, the discharge templates included — see the
+ * header of lib/discharge-templates-oncology.ts, which describes how they were drafted.
  */
 export const medicalOncologyPack: SpecialtyPack = {
   key: "medical_oncology",
@@ -94,5 +95,19 @@ Medical oncology ward — what the words mean here:
 
   pickerPhase: "before_surgery",
 
+  // The seven seeded by patch 0061, and only those. A chemotherapy unit is not offered dengue.
+  checklistFamilies: [
+    "chemo_cycle",
+    "febrile_neutropenia",
+    "chemo_toxicity",
+    "leukaemia_induction",
+    "lymphoma_chemo",
+    "myeloma",
+    "transfusion_support",
+  ],
+
   lexiconSpecialty: "medical-oncology",
+
+  // Fever on chemotherapy first: it is the one complaint on this ward counted in minutes.
+  historyTreeIds: ["febrile_neutropenia", "loss_of_weight_appetite", "lump", "breast_lump", "haemoptysis", "dysphagia", "abdominal_pain", "generalised_weakness", "oedema", "breathlessness", "low_back_pain"],
 };

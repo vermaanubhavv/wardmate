@@ -50,7 +50,18 @@ export type Specialty =
   | "vascular-surgery"
   | "medical-oncology"
   | "internal-medicine"
-  | "obstetrics-gynaecology";
+  | "obstetrics-gynaecology"
+  | "pulmonary-medicine"
+  | "ent"
+  | "psychiatry"
+  | "ophthalmology"
+  | "dermatology"
+  | "burns_plastic_surgery"
+  | "orthopaedics"
+  | "urology"
+  | "neurosurgery"
+  | "paediatrics"
+  | "emergency-medicine";
 
 export type NoteType =
   | "ward-round"

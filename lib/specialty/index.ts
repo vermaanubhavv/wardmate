@@ -2,16 +2,54 @@ import { generalSurgeryPack } from "./general-surgery";
 import { internalMedicinePack } from "./internal-medicine";
 import { medicalOncologyPack } from "./medical-oncology";
 import { obstetricsGynaecologyPack } from "./obstetrics-gynaecology";
+import { pulmonaryMedicinePack } from "./pulmonary-medicine";
+import { entPack } from "./ent";
+import { psychiatryPack } from "./psychiatry";
+import { ophthalmologyPack } from "./ophthalmology";
+import { dermatologyPack } from "./dermatology";
+import { burnsPlasticSurgeryPack } from "./burns-plastic-surgery";
+import { orthopaedicsPack } from "./orthopaedics";
+import { urologyPack } from "./urology";
+import { neurosurgeryPack } from "./neurosurgery";
+import { paediatricsPack } from "./paediatrics";
+import { emergencyMedicinePack } from "./emergency-medicine";
 import { SPECIALTY_KEYS, type SpecialtyKey, type SpecialtyPack } from "./types";
 
 export * from "./types";
-export { generalSurgeryPack, medicalOncologyPack, internalMedicinePack, obstetricsGynaecologyPack };
+export {
+  generalSurgeryPack,
+  medicalOncologyPack,
+  internalMedicinePack,
+  obstetricsGynaecologyPack,
+  pulmonaryMedicinePack,
+  entPack,
+  psychiatryPack,
+  ophthalmologyPack,
+  dermatologyPack,
+  burnsPlasticSurgeryPack,
+  orthopaedicsPack,
+  urologyPack,
+  neurosurgeryPack,
+  paediatricsPack,
+  emergencyMedicinePack,
+};
 
 const PACKS: Record<SpecialtyKey, SpecialtyPack> = {
   general_surgery: generalSurgeryPack,
   medical_oncology: medicalOncologyPack,
   internal_medicine: internalMedicinePack,
   obstetrics_gynaecology: obstetricsGynaecologyPack,
+  pulmonary_medicine: pulmonaryMedicinePack,
+  ent: entPack,
+  psychiatry: psychiatryPack,
+  ophthalmology: ophthalmologyPack,
+  dermatology: dermatologyPack,
+  burns_plastic_surgery: burnsPlasticSurgeryPack,
+  orthopaedics: orthopaedicsPack,
+  urology: urologyPack,
+  neurosurgery: neurosurgeryPack,
+  paediatrics: paediatricsPack,
+  emergency_medicine: emergencyMedicinePack,
 };
 
 /**
@@ -24,6 +62,18 @@ const PACKS: Record<SpecialtyKey, SpecialtyPack> = {
 export function getSpecialtyPack(key: string | null | undefined): SpecialtyPack {
   const k = (key ?? "").trim().toLowerCase();
   return PACKS[k as SpecialtyKey] ?? generalSurgeryPack;
+}
+
+/**
+ * Does this unit's picker offer this checklist family?
+ *
+ * A pack with a list offers exactly that list. A pack with `null` offers every family no other
+ * pack has claimed — so seeding a new department's checklists takes them out of the surgical
+ * picker by adding them to that pack, with nothing else to keep in step.
+ */
+export function offersChecklistFamily(pack: SpecialtyPack, family: string): boolean {
+  if (pack.checklistFamilies) return pack.checklistFamilies.includes(family);
+  return !Object.values(PACKS).some((p) => p.checklistFamilies?.includes(family));
 }
 
 export function isSpecialtyKey(key: string | null | undefined): key is SpecialtyKey {
