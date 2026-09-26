@@ -93,11 +93,21 @@
 }
 .wm-chip-a {
   top: 4%;
-  left: -12%;
+  left: -4%;
+}
+@media (min-width: 1024px) {
+  .wm-chip-a {
+    left: -12%;
+  }
 }
 .wm-chip-b {
   bottom: 10%;
-  right: -10%;
+  right: -4%;
+}
+@media (min-width: 1024px) {
+  .wm-chip-b {
+    right: -10%;
+  }
 }
 
 .wm-card {
@@ -116,16 +126,6 @@
     linear-gradient(var(--card), var(--card)) padding-box,
     linear-gradient(135deg, color-mix(in srgb, var(--accent) 70%, transparent), transparent 45%, color-mix(in srgb, #38bdf8 50%, transparent)) border-box;
   border: 1px solid transparent;
-}
-
-/* The dotted line that carries the scattered sources into one place. */
-.wm-flowline {
-  width: 2px;
-  height: 56px;
-  margin: 10px auto;
-  background: repeating-linear-gradient(to bottom, var(--accent) 0 5px, transparent 5px 11px);
-  background-size: 2px 22px;
-  opacity: 0.7;
 }
 
 /* Timeline spine for the shift flow. */
@@ -176,28 +176,47 @@
   padding-right: 40px;
 }
 
-/* Fanned phone screenshots on wider screens. */
-.wm-screen img {
-  transition: transform 450ms cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 450ms ease;
-}
-@media (min-width: 640px) {
-  .wm-screen:nth-child(1) img {
-    transform: rotate(-4deg) translateY(18px);
-  }
-  .wm-screen:nth-child(3) img {
-    transform: rotate(4deg) translateY(18px);
-  }
-  .wm-screen:hover img {
-    transform: rotate(0) translateY(-8px) scale(1.02);
-    box-shadow: 0 30px 60px -24px rgb(0 0 0 / 0.45);
-  }
-}
-
 .wm-closing {
   background:
     radial-gradient(60% 80% at 0% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%),
     radial-gradient(50% 70% at 100% 100%, color-mix(in srgb, #38bdf8 10%, transparent), transparent 70%),
     var(--background);
+}
+
+/* Reading progress, along the bottom edge of the sticky header. */
+.wm-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), #38bdf8);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+@keyframes wm-progress {
+  to { transform: scaleX(1); }
+}
+@supports (animation-timeline: scroll()) {
+  .wm-progress {
+    animation: wm-progress linear both;
+    animation-timeline: scroll(root);
+  }
+}
+
+/* Morphs between states in the interactive demos (View Transitions). */
+::view-transition-group(*) {
+  animation-duration: 480ms;
+  animation-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 /* ---------- motion (only when the viewer hasn't asked for less) ---------- */
@@ -226,9 +245,6 @@
 @keyframes wm-ping {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ping, var(--accent)) 55%, transparent); }
   100% { box-shadow: 0 0 0 10px transparent; }
-}
-@keyframes wm-march {
-  to { background-position: 0 22px; }
 }
 @keyframes wm-marquee {
   to { transform: translateX(-50%); }
@@ -264,9 +280,6 @@
   .wm-live-dot,
   .wm-ping {
     animation: wm-ping 1.8s ease-out infinite;
-  }
-  .wm-flowline {
-    animation: wm-march 1.2s linear infinite;
   }
   .wm-marquee-track {
     animation: wm-marquee 40s linear infinite;
