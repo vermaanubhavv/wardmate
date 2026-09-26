@@ -2,7 +2,18 @@
  * leaks into the app. No JavaScript: entrances are keyframes, scroll reveals use the native
  * scroll-driven timeline (browsers without it simply show the content, already in place).
  * All movement sits behind prefers-reduced-motion: no-preference, so the static page is the
- * default and motion is the enhancement. */
+ * default and motion is the enhancement.
+ *
+ * Restraint is the brief: one accent (teal) plus neutrals, one easing curve, and every motion
+ * plays once and settles. Nothing loops, so the key object in each section is never competing
+ * with the background. */
+
+.wm-hero,
+.wm-in,
+.wm-reveal,
+.wm-card {
+  --wm-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
 
 /* ---------- static depth (always on) ---------- */
 
@@ -12,45 +23,8 @@
   isolation: isolate;
 }
 
-/* A faint dotted grid behind the hero, fading out toward the edges. */
-.wm-hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -2;
-  background-image: radial-gradient(color-mix(in srgb, var(--accent) 28%, transparent) 1px, transparent 1px);
-  background-size: 22px 22px;
-  mask-image: radial-gradient(70% 60% at 60% 40%, #000 20%, transparent 75%);
-}
-
-.wm-blob {
-  position: absolute;
-  z-index: -1;
-  border-radius: 999px;
-  filter: blur(60px);
-  pointer-events: none;
-}
-.wm-blob-a {
-  width: 420px;
-  height: 420px;
-  top: -120px;
-  right: -80px;
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
-}
-.wm-blob-b {
-  width: 320px;
-  height: 320px;
-  bottom: -140px;
-  left: -100px;
-  background: color-mix(in srgb, #38bdf8 16%, transparent);
-}
-
-.wm-gradient-text {
-  background: linear-gradient(100deg, var(--accent) 0%, #0b7c76 35%, #22c3b9 55%, var(--accent) 100%);
-  background-size: 220% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.wm-accent-text {
+  color: var(--accent);
 }
 
 .wm-pill {
@@ -86,7 +60,7 @@
   border-radius: 14px;
   background: color-mix(in srgb, var(--card) 82%, transparent);
   backdrop-filter: blur(12px);
-  box-shadow: 0 18px 40px -18px rgb(0 0 0 / 0.35);
+  box-shadow: 0 18px 40px -18px rgb(0 0 0 / 0.3);
   font-size: 12.5px;
   line-height: 1.25;
   white-space: nowrap;
@@ -100,22 +74,12 @@
     left: -12%;
   }
 }
-.wm-chip-b {
-  bottom: 10%;
-  right: -4%;
-}
-@media (min-width: 1024px) {
-  .wm-chip-b {
-    right: -10%;
-  }
-}
-
 .wm-card {
-  transition: transform 300ms cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 300ms ease;
+  transition: transform 400ms var(--wm-ease), box-shadow 400ms var(--wm-ease);
 }
 .wm-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 22px 44px -24px color-mix(in srgb, var(--accent) 55%, rgb(0 0 0 / 0.4));
+  transform: translateY(-2px);
+  box-shadow: 0 22px 44px -28px rgb(0 0 0 / 0.3);
 }
 
 /* A card with a soft teal gradient hairline. */
@@ -124,7 +88,7 @@
   border-radius: 18px;
   background:
     linear-gradient(var(--card), var(--card)) padding-box,
-    linear-gradient(135deg, color-mix(in srgb, var(--accent) 70%, transparent), transparent 45%, color-mix(in srgb, #38bdf8 50%, transparent)) border-box;
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 55%, transparent), var(--line) 45%) border-box;
   border: 1px solid transparent;
 }
 
@@ -147,7 +111,7 @@
   top: 12px;
   bottom: 12px;
   width: 2px;
-  background: linear-gradient(to bottom, var(--accent), #38bdf8);
+  background: var(--accent);
   transform-origin: top;
 }
 .wm-node {
@@ -164,22 +128,9 @@
   color: var(--accent);
 }
 
-/* Ticker between the hero and the rest of the page. */
-.wm-marquee {
-  overflow: hidden;
-  mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
-}
-.wm-marquee-track {
-  display: flex;
-  width: max-content;
-  gap: 40px;
-  padding-right: 40px;
-}
-
 .wm-closing {
   background:
-    radial-gradient(60% 80% at 0% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%),
-    radial-gradient(50% 70% at 100% 100%, color-mix(in srgb, #38bdf8 10%, transparent), transparent 70%),
+    radial-gradient(60% 80% at 50% 0%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%),
     var(--background);
 }
 
@@ -190,7 +141,7 @@
   right: 0;
   bottom: -1px;
   height: 2px;
-  background: linear-gradient(90deg, var(--accent), #38bdf8);
+  background: var(--accent);
   transform: scaleX(0);
   transform-origin: left;
 }
@@ -206,8 +157,8 @@
 
 /* Morphs between states in the interactive demos (View Transitions). */
 ::view-transition-group(*) {
-  animation-duration: 480ms;
-  animation-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1);
+  animation-duration: 560ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html {
@@ -224,30 +175,12 @@ html {
 @keyframes wm-rise {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(24px);
   }
   to {
     opacity: 1;
     transform: none;
   }
-}
-@keyframes wm-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-@keyframes wm-drift {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-30px, 24px) scale(1.08); }
-}
-@keyframes wm-shimmer {
-  to { background-position: -220% 0; }
-}
-@keyframes wm-ping {
-  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ping, var(--accent)) 55%, transparent); }
-  100% { box-shadow: 0 0 0 10px transparent; }
-}
-@keyframes wm-marquee {
-  to { transform: translateX(-50%); }
 }
 @keyframes wm-grow {
   from { transform: scaleY(0); }
@@ -255,47 +188,23 @@ html {
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  /* The hero takes its time; everything after it arrives quicker as you scroll. */
   .wm-in {
-    animation: wm-rise 800ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation: wm-rise 1100ms var(--wm-ease) both;
     animation-delay: var(--d, 0ms);
   }
-  .wm-float {
-    animation: wm-float 6s ease-in-out infinite;
-  }
   .wm-chip-a {
-    animation: wm-rise 800ms 600ms both, wm-float 7s 1.4s ease-in-out infinite;
-  }
-  .wm-chip-b {
-    animation: wm-rise 800ms 850ms both, wm-float 8s 1.6s ease-in-out infinite reverse;
-  }
-  .wm-blob-a {
-    animation: wm-drift 14s ease-in-out infinite;
-  }
-  .wm-blob-b {
-    animation: wm-drift 18s ease-in-out infinite reverse;
-  }
-  .wm-gradient-text {
-    animation: wm-shimmer 6s linear infinite;
-  }
-  .wm-live-dot,
-  .wm-ping {
-    animation: wm-ping 1.8s ease-out infinite;
-  }
-  .wm-marquee-track {
-    animation: wm-marquee 40s linear infinite;
-  }
-  .wm-marquee:hover .wm-marquee-track {
-    animation-play-state: paused;
+    animation: wm-rise 900ms 900ms var(--wm-ease) both;
   }
 
   @supports (animation-timeline: view()) {
     .wm-reveal {
-      animation: wm-rise linear both;
+      animation: wm-rise var(--wm-ease) both;
       animation-timeline: view();
-      animation-range: entry 0% entry 55%;
+      animation-range: entry 0% entry 60%;
     }
     .wm-timeline-fill {
-      animation: wm-grow linear both;
+      animation: wm-grow var(--wm-ease) both;
       animation-timeline: view();
       animation-range: entry 30% cover 55%;
     }

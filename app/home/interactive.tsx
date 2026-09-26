@@ -177,10 +177,7 @@ export function TriageDemo({ lines }: { lines: readonly Line[] }) {
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[14.5px] font-semibold">{who}</p>
                 {critical && (
-                  <span
-                    className="wm-ping shrink-0 rounded-[5px] bg-critical-fg px-2 py-0.5 text-[10.5px] font-bold text-white"
-                    style={{ "--ping": "var(--critical-dot)" } as CSSProperties}
-                  >
+                  <span className="shrink-0 rounded-[5px] bg-critical-fg px-2 py-0.5 text-[10.5px] font-bold text-white">
                     CRITICAL
                   </span>
                 )}
