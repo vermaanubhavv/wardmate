@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * POLYURIA / POLYDIPSIA — v1.0.0. CLINICAL CONTENT: REVIEWED.
+ * POLYURIA / POLYDIPSIA — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult medicine ward, north India. The first separation is true polyuria (large volumes) from
  * frequency (small volumes, often), because the two lead in entirely different directions.
  * Differentials: diabetes mellitus, diabetes insipidus (cranial or nephrogenic), hypercalcaemia,
@@ -16,7 +16,7 @@ export const polyuriaV1: HistoryTree = {
   triggers: ["polyuria", "polydipsia", "excess thirst", "increased thirst", "passing urine often", "frequent urination", "increased urine output", "excess urine", "drinking a lot of water", "urinating frequently", "nocturia"],
   setting: "Adult medicine ward, north India",
   reviewStatus: "reviewed",
-  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
+  reviewedBy: "Dr Anubhav Verma",
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("increased urine and thirst"),

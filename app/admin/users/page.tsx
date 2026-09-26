@@ -1,5 +1,6 @@
 import { getUsers } from "@/lib/admin";
 import { Cell, Empty, ErrorNote, Row, Section, Table, ago } from "../ui";
+import FeedbackRecipients from "./feedback-recipients";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,13 @@ export default async function AdminUsersPage() {
 
   return (
     <>
+      <Section
+        title="Feedback outreach"
+        subtitle="Export recipients to send your feedback form from your email tool."
+      >
+        <FeedbackRecipients users={rows} />
+      </Section>
+
       <Section
         title={`${rows.length} users`}
         subtitle={`${quiet.length} have never dictated · sorted by last activity`}

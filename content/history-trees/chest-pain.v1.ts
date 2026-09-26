@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * CHEST PAIN — v1.0.0. CLINICAL CONTENT: REVIEWED.
+ * CHEST PAIN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult medicine ward, north India. Differentials a resident is expected to weigh at the
  * bedside: acute coronary syndrome, aortic dissection, pulmonary embolism, pericarditis,
  * pneumonia / pleurisy, pneumothorax, oesophageal / peptic, musculoskeletal, herpes zoster.
@@ -15,7 +15,7 @@ export const chestPainV1: HistoryTree = {
   triggers: ["chest pain", "pain in chest", "chest discomfort", "chest heaviness", "retrosternal pain", "angina"],
   setting: "Adult medicine ward, north India",
   reviewStatus: "reviewed",
-  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("Does this patient with chest pain have acute coronary syndrome? The Rational Clinical Examination systematic review", 2015, "26547467"),
     rce("Does this patient have an acute thoracic aortic dissection?", 2002, "11980527"),

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * WEAKNESS OF LIMBS — v1.0.0. CLINICAL CONTENT: REVIEWED.
+ * WEAKNESS OF LIMBS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult medicine ward, north India. Differentials: stroke (hemiparesis), Guillain-Barré
  * syndrome, compressive myelopathy (Pott's spine, tumour, disc), transverse myelitis,
  * hypokalaemic periodic paralysis, myasthenia gravis, peripheral neuropathy, myopathy,
@@ -15,7 +15,7 @@ export const limbWeaknessV1: HistoryTree = {
   triggers: ["weakness", "weakness of limbs", "hemiparesis", "hemiplegia", "paraparesis", "paraplegia", "quadriparesis", "unable to walk", "cannot walk", "not able to walk", "limb weakness", "paralysis", "difficulty walking", "unable to move"],
   setting: "Adult medicine ward, north India",
   reviewStatus: "reviewed",
-  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("Is this patient having a stroke?", 2005, "15900010"),
     { title: "Diagnosis and management of Guillain-Barré syndrome in ten steps", source: "Nat Rev Neurol", year: 2019, pmid: "31541214" },

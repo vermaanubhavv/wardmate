@@ -13,10 +13,10 @@ return 404, and nothing under `lib/history-check/` is queried. Off by default.
 Clinical content carries `reviewStatus` and `reviewedBy`, and the card and learning pages show
 a chip for each: amber "Pending clinician review", or green "Reviewed · <reviewer>".
 
-**All forty-six trees, all five examination checklists and the safety-level thresholds were
-reviewed and signed off on 2026-09-26** (Dr. Anubhav, General Surgery). As with the scoring
-pathways, that is a single-clinician sign-off covering content that spans nine specialties;
-departmental review is still outstanding.
+**Forty-seven of the sixty-one trees, all five examination checklists and the safety-level
+thresholds are reviewed and signed off by Dr Anubhav Verma.** As with the scoring pathways, that
+is a single-clinician sign-off covering content that spans nine specialties; departmental review
+is still outstanding.
 
 For the safety level specifically, read the sign-off narrowly: `safety.ts` says the number is
 not a validated instrument and no published one was used to derive it, and **that stays true
@@ -24,6 +24,19 @@ after review** — a clinician agreeing the mapping is sensible is a different c
 number having been validated against outcomes. Anything that comes to render the level must
 render `SAFETY_LEVEL_REVIEW_STATUS` beside it. Nothing renders the level at all today: `view.ts`
 computes `assessSafety` and the card does not read it.
+
+`trees.test.ts` pins the exact list, so a tree cannot drift into "reviewed" as a side effect of
+an edit. Fourteen trees are **not** on it:
+
+- `jaundice` — reviewed at v1.0.0, then gained four obstructive questions at v1.1.0. The review
+  covered the older content, so the tree is pending again. Re-signing it means reading the four
+  new slots, not editing the list.
+- `burns` — the reviewed burns tree and the shipped one are two independently written files; the
+  shipped one won a merge, and a sign-off does not transfer between two pieces of content.
+- the twelve ENT, ophthalmology, dermatology, psychiatry, vascular, dental and chest trees
+  (ear discharge, epistaxis, hoarseness, red eye, loss of vision, skin lesion, low mood,
+  abnormal behaviour, limb ischaemia, toothache, haemoptysis, snoring) — not yet read by a
+  clinician at all.
 
 ## Pipeline
 
@@ -81,7 +94,7 @@ triggered it. Numeric values render amber with "(unconfirmed)"; there is no conf
 
 ### Trees — `content/history-trees/`
 
-Forty-six complaints: fever, chest pain, breathlessness, abdominal pain, jaundice, cough,
+Sixty-one complaints: fever, chest pain, breathlessness, abdominal pain, jaundice, cough,
 oedema, headache, altered sensorium / seizures, limb weakness, diarrhoea / vomiting, generalised
 weakness, giddiness, decreased urine output, constipation, abdominal distension, lump, bleeding
 per rectum, burning micturition, loss of weight / appetite, palpitations, joint pain,
@@ -89,11 +102,44 @@ haematemesis, polyuria / polydipsia, low back pain, sore throat, fever with rash
 snake bite, dysphagia, groin swelling, breast lump, anorectal pain, leg ulcer, and scrotal
 swelling, head injury, shock, and four paediatric complaints (fever, diarrhoea, cough or
 difficult breathing, and seizure), bleeding per vaginum, vaginal discharge, labour pains and
-leaking, fever on chemotherapy, blood in the urine, and limb injury.
+leaking, fever on chemotherapy, blood in the urine, and limb injury; then ear discharge /
+hearing loss, bleeding from the nose, hoarseness of voice, red eye, loss of vision, skin rash /
+itching, low mood / self-harm, abnormal behaviour, burns, leg pain on walking / cold painful
+limb, toothache / facial swelling, coughing blood, snoring / daytime sleepiness,
+swelling in front of the neck, and a problem after an operation.
 
-Forty-six trees in all, spanning general medicine, general surgery, emergency medicine,
+Sixty-one trees in all, spanning general medicine, general surgery, emergency medicine,
 paediatrics, medical oncology, obstetrics and gynaecology, orthopaedics, urology and
-neurosurgery — the specialty order set by the product owner.
+neurosurgery — the specialty order set by the product owner — and then the departments that
+had no tree at all: ENT, ophthalmology, dermatology, psychiatry, burns and plastic surgery,
+vascular surgery, dentistry and pulmonary medicine, so that every department can start a
+history on this app.
+
+Three of these overlap deliberately with medicine trees rather than replacing them.
+`skin_lesion` is the rash brought for its own sake, where `fever_with_rash` is the febrile
+illness that also has a rash; `altered_behaviour` starts from a patient who is behaving, where
+`altered_sensorium` starts from one who is not rousable; `haemoptysis` is the blood brought as
+the complaint, where `cough` carries it as one red flag among many. `suggestTrees` will return
+both where the words fit both.
+
+Pulmonary medicine — the same department as chest medicine and respiratory medicine, named
+that way everywhere here — is otherwise served by the medicine trees: cough, breathlessness,
+chest pain and fever. The two added for it are the ones those trees cannot hold: blood coughed
+up, where the volume and the source drive the whole history, and snoring with daytime sleepiness,
+where the history belongs to whoever shares the room rather than to the patient.
+
+The psychiatry trees ask about self-harm directly, and `low_mood` carries its risk questions as
+red flags for the same reason every other tree does: a question never asked must never read as a
+negative. Nothing in them is scored, ranked, or turned into a disposition.
+
+Surgical trees add `surgicalBackground()` from `_helpers.ts`: previous operations and what went
+wrong with them, anaesthetic and transfusion history, blood thinners, regular medicines, allergy,
+exercise tolerance, implants, and last food and fluid. All `exposure`, ids prefixed `surg_` so a
+tree can carry both these and its own "previous hernia surgery". `surgicalBackground({ acute:
+true })` promotes the last-meal question from the long case to the ward round. Last food and
+fluid is deliberately not a red flag: a red-flag positive raises the safety level of the whole
+history, and a patient who has eaten is a timing question, not a danger signal.
+`docs/surgical-history.md` is where the content came from.
 
 Paediatric trees add `paedBackground()` from `_helpers.ts`: birth history, immunisation,
 development, feeding and growth. Age is deliberately not a slot — it comes from the patient
@@ -133,9 +179,9 @@ worded as "questions that would help separate X / Y". It is never shown as a dia
 1. Copy `content/history-trees/headache.v1.ts` to `<complaint>.v1.ts`; keep one symptom per
    slot; put every must-not-miss question in `red_flag`; give every tree at least one
    reference. **Reset `reviewStatus` to `pending_clinician_review` and `reviewedBy` to
-   `null`** — every shipped tree is now `reviewed`, so a copied template arrives carrying a
-   sign-off that was never given for your content. `trees.test.ts` asserts the opposite (every
-   tree reviewed and named), so it will not catch this for you; it is on the author.
+   `null`** — `headache.v1.ts` is `reviewed`, so a copied template arrives carrying a sign-off
+   that was never given for your content. The pinned list in `trees.test.ts` fails if you leave
+   it, which is the point of pinning it.
 2. Add it to `content/history-trees/index.ts`.
 3. `npm test -- lib/history-check` — the schema test validates every registered tree and prints
    the failing path. Common rejections: an uppercase term, a question without "?", a question
@@ -146,6 +192,14 @@ worded as "questions that would help separate X / Y". It is never shown as a dia
 
 To change a shipped tree, bump `version`; old versions stay in the index so stored runs render
 with the version they were run against.
+
+**Which trees a unit sees first**
+
+The picker shows the trees the dictated chief complaint suggests, then the unit's own
+complaints from its specialty pack (`SpecialtyPack.historyTreeIds`, in the pack's order), then
+every other tree in registry order. It is a sort, never a filter — all 59 stay reachable from
+every unit, and a unit with no recognised specialty gets exactly the order the picker had
+before packs existed. See `docs/specialty-packs.md` §11.
 
 ### Examination checklists — `content/examination/`
 
@@ -161,13 +215,14 @@ examinations. Every item carries `how` (shown behind the (i) on
 registry in `content/examination/index.ts`, test in `__tests__/exam.test.ts`.
 
 Adding one: same rule as the trees — **reset `reviewStatus` to `pending_clinician_review` and
-`reviewedBy` to `null`**, because every shipped checklist is now `reviewed` and a copied file
-arrives carrying a sign-off nobody gave for your content.
+`reviewedBy` to `null`**, because every shipped checklist is `reviewed` and a copied file
+arrives carrying a sign-off nobody gave for your content. `exam.test.ts` asserts every shipped
+checklist is reviewed, so it will not catch this for you; it is on the author.
 
 ## Evals
 
 `lib/history-check/evals/cases.ts` holds synthetic dictations with expected slot states,
-including adversarial ones (silence only, "no X, Y present", attendant-vs-patient contradiction,
+each naming the tree it runs against (`treeId`, default `fever`), including adversarial ones (silence only, "no X, Y present", attendant-vs-patient contradiction,
 two entries that disagree, a wrong-patient sentence, typed workspace input, post-op). No real
 patient data, ever.
 

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * GIDDINESS — v1.0.0. CLINICAL CONTENT: REVIEWED.
+ * GIDDINESS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult medicine ward, north India. Giddiness means different things to different patients;
  * the first job is to separate a spinning sensation, a feeling of about to faint, and
  * unsteadiness. Differentials: benign positional vertigo, vestibular neuritis, posterior
@@ -15,7 +15,7 @@ export const giddinessV1: HistoryTree = {
   triggers: ["giddiness", "dizziness", "vertigo", "light headed", "lightheaded", "spinning", "presyncope", "syncope", "fainting", "blackout"],
   setting: "Adult medicine ward, north India",
   reviewStatus: "reviewed",
-  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("The rational clinical examination. Is this patient having a stroke?", 2005, "15900010"),
     MACLEODS,

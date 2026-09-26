@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, paedBackground, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SEIZURE IN A CHILD — v1.0.0. CLINICAL CONTENT: REVIEWED.
+ * SEIZURE IN A CHILD — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Paediatric ward, north India. Almost all of this history comes from whoever watched the
  * event, and the description of the event itself carries more than any test that follows.
  * Neurocysticercosis is a leading cause of new focal seizures in Indian children and belongs
@@ -18,7 +18,7 @@ export const paediatricSeizureV1: HistoryTree = {
   triggers: ["seizure in child", "child fits", "convulsion child", "child seizure", "febrile seizure", "jerking child", "fits in baby", "paediatric seizure", "daura", "child convulsion"],
   setting: "Paediatric ward, north India",
   reviewStatus: "reviewed",
-  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("The rational clinical examination. Does this adult patient have acute meningitis?", 1999, "10411200"),
     MACLEODS,

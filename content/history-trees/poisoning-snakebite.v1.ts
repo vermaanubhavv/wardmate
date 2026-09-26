@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, val, WHO_SNAKEBITE, yn } from "@/content/history-trees/_helpers";
 
 /**
- * POISONING AND SNAKE BITE — v1.0.0. CLINICAL CONTENT: REVIEWED.
+ * POISONING AND SNAKE BITE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult medicine / emergency ward, north India. An exposure-led history rather than a
  * symptom-led one: what, how much, when, and what has happened since. The north-Indian casemix
  * makes aluminium phosphide, organophosphate and snake envenomation the dominant three.
@@ -21,7 +21,7 @@ export const poisoningSnakebiteV1: HistoryTree = {
   triggers: ["poisoning", "poison", "consumed poison", "ingestion", "overdose", "snake bite", "snakebite", "bitten by snake", "scorpion sting", "sting", "insecticide", "pesticide", "celphos", "sulphas", "phosphide", "organophosphate", "self harm", "suicidal attempt", "zeher"],
   setting: "Adult medicine / emergency ward, north India",
   reviewStatus: "reviewed",
-  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
+  reviewedBy: "Dr Anubhav Verma",
   references: [WHO_SNAKEBITE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("exposure"),

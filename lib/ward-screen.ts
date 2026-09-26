@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { compareBeds, type WardPatient } from "@/lib/patients";
 import { getCurrentWard, getActivePatients, getRemovedCount, getWardSpecialtyStored } from "@/lib/ward";
 import { getProcedureLabels, listTemplateChoices, type TemplateChoice } from "@/lib/templates";
-import { getSpecialtyPack, type SpecialtyPack } from "@/lib/specialty";
+import { getSpecialtyPack, offersChecklistFamily, type SpecialtyPack } from "@/lib/specialty";
 
 export type Ward = {
   id: string;
@@ -38,16 +38,20 @@ type RpcShape = {
 /**
  * "Lap chole — after surgery" is the template's name; the choice is the operation itself.
  *
- * `phase` filters to the rows this unit's department actually uses. It is optional because a
+ * The pack filters to the rows this unit's department actually uses — its phase, and its own
+ * checklist families within that phase. It is optional because a
  * database still on the pre-0060 ward_screen() returns rows without it — those are already
  * only the after-surgery ones, which is exactly what a surgical unit wants, so an absent
  * phase is kept rather than discarded.
  */
-function toChoices(rows: RpcShape["procedures"], phase: string): TemplateChoice[] {
+function toChoices(rows: RpcShape["procedures"], pack: SpecialtyPack): TemplateChoice[] {
   const seen = new Set<string>();
   const out: TemplateChoice[] = [];
   for (const t of rows ?? []) {
-    if (t.phase && t.phase !== phase) continue;
+    if (t.phase && t.phase !== pack.pickerPhase) continue;
+    // Phase is not enough: oncology and medicine checklists are both filed under
+    // before_surgery, so the department has to say which of them are its own.
+    if (!offersChecklistFamily(pack, t.family)) continue;
     const key = `${t.family}|${t.variant ?? ""}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -83,7 +87,7 @@ export async function getWardScreen(): Promise<WardScreen> {
   if (!error && data) {
     const payload = data as RpcShape;
     const pack = getSpecialtyPack(payload.ward?.specialty);
-    const choices = toChoices(payload.procedures ?? [], pack.pickerPhase);
+    const choices = toChoices(payload.procedures ?? [], pack);
 
     return {
       ward: payload.ward,
@@ -120,9 +124,9 @@ export async function getWardScreen(): Promise<WardScreen> {
   const pack = getSpecialtyPack(specialty);
 
   const [{ patients }, procedures, templateChoices, removedCount] = await Promise.all([
-    getActivePatients(ward.id, pack.key !== "general_surgery"),
-    getProcedureLabels(),
-    listTemplateChoices(pack.pickerPhase),
+    getActivePatients(ward.id, pack.key !== "general_surgery", pack.key === "burns_plastic_surgery"),
+    getProcedureLabels(pack.key),
+    listTemplateChoices(pack.key),
     getRemovedCount(ward.id),
   ]);
 

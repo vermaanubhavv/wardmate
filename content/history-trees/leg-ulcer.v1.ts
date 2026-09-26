@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, ebem, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
+import { commonHpi, BROWSE, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, SABISTON, ebem, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LEG ULCER / NON-HEALING WOUND — v1.0.0. CLINICAL CONTENT: REVIEWED.
+ * LEG ULCER / NON-HEALING WOUND — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult surgical ward, north India. Site, pain and the state of the circulation separate most of
  * this list: an ulcer above the medial malleolus in a heavy aching leg is venous, a painful
  * punched-out ulcer on the toes with rest pain is arterial, and a painless ulcer under the
@@ -12,13 +12,15 @@ import { commonHpi, ebem, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from
  */
 export const legUlcerV1: HistoryTree = {
   id: "leg_ulcer",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Leg ulcer / non-healing wound",
   triggers: ["leg ulcer", "ulcer", "non healing wound", "wound not healing", "foot ulcer", "diabetic foot", "sore on leg", "wound on foot", "chronic ulcer", "ghaav", "gangrene", "blackening of toes"],
   setting: "Adult surgical ward, north India",
   reviewStatus: "reviewed",
-  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
+    BROWSE,
+    SABISTON,
     ebem("Does the clinical examination predict lower extremity peripheral arterial disease?", 2009, "19185391"),
     ebem("The evidence-based diagnosis of deep venous thrombosis", 2009, "19135283"),
     MACLEODS,
@@ -28,8 +30,10 @@ export const legUlcerV1: HistoryTree = {
     ...commonHpi("ulcer"),
     val("hpi", "site", "Site", "Where exactly is the ulcer — above the inner ankle, on the toes or heel, under the sole, or over a bony point?", ["inner ankle", "medial malleolus", "above the ankle", "toes", "heel", "sole", "under the foot", "metatarsal", "shin", "over the bone", "pressure point", "buttock", "sacrum"]),
     val("hpi", "how_it_started", "How it began", "Did it start after an injury, a blister, a boil, or did it appear on its own?", ["injury", "trauma", "blister", "boil", "thorn", "burn", "footwear", "on its own", "spontaneous", "insect bite", "scratched"]),
+    yn("hpi", "healed_and_broke_down", "Healed and broke down again", "Has the ulcer ever healed completely and then broken down again at the same place?", ["healed", "closed", "broke down", "broke open", "came back", "recurred", "same place", "never healed"]),
     val("hpi", "size_progression", "Size and whether it is growing", "How big is it, and is it getting bigger, staying the same, or slowly healing?", ["size", "getting bigger", "increasing", "same", "healing", "deeper", "spreading", "cm", "inch"], { numeric: true }),
     val("hpi", "pain_character", "Pain", "Is the ulcer painful, and is the pain worse on walking, on lying down, or on raising the leg?", ["painful", "painless", "no pain", "on walking", "on lying down", "at night", "on raising", "relieved by hanging", "severe", "burning"]),
+    yn("associated", "night_pain_hanging_leg", "Night pain relieved by hanging the leg", "Is the pain worse at night in bed, and better on hanging the leg over the edge of the bed?", ["worse at night", "night pain", "hanging the leg", "hangs the leg", "out of bed", "better on hanging", "sleeps in a chair"]),
     val("hpi", "discharge_smell", "Discharge and smell", "What comes out of it — clear fluid, pus, or blood, and is there a foul smell?", ["clear", "serous", "pus", "purulent", "blood", "foul", "smell", "offensive", "copious", "scanty", "soaking"]),
     val("hpi", "edge_floor", "Appearance of the ulcer", "What do the edges and the base look like — sloping, punched out, rolled or everted, and is bone or tendon visible?", ["sloping", "punched out", "rolled", "everted", "undermined", "base", "slough", "granulation", "black", "bone visible", "tendon"]),
     yn("associated", "claudication_rest_pain", "Calf pain on walking / pain at rest", "Any cramping pain in the calf after walking a set distance, or pain in the foot at rest, especially at night?", ["calf pain", "cramping", "after walking", "distance", "metres", "rest pain", "at night", "hangs the leg down", "stops to rest", "claudication"]),
@@ -55,6 +59,7 @@ export const legUlcerV1: HistoryTree = {
     yn("exposure", "footwear_occupation", "Footwear and work", "What footwear is worn, and does the work involve walking barefoot, standing for long, or exposure to water?", ["footwear", "barefoot", "chappal", "slippers", "standing", "walking", "water", "field", "farmer", "ill fitting"]),
     yn("exposure", "tb_contact", "TB contact / past TB", "Any past tuberculosis or contact with tuberculosis?", ["tb", "tuberculosis", "koch", "att", "akt", "tb contact"], { tier: "detailed" }),
     yn("exposure", "leprosy_contact", "Loss of sensation elsewhere / patches on skin", "Any pale or numb patches on the skin, thickened nerves, or deformity of the hands?", ["pale patch", "numb patch", "hypopigmented", "thickened nerve", "claw hand", "leprosy", "deformity", "loss of sensation"], { tier: "detailed" }),
+    ...surgicalBackground(),
   ],
   differentials: [
     { id: "venous", name: "Venous ulcer", pointers: ["site", "leg_swelling_varicose", "pain_character", "dvt_history"], discriminators: ["site", "leg_swelling_varicose", "pain_character", "dvt_history", "edge_floor", "claudication_rest_pain", "discharge_smell"] },

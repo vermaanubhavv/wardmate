@@ -3,7 +3,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 /**
  * FEVER — complaint tree v1.0.0.
  *
- * CLINICAL CONTENT: REVIEWED. Written for an adult medicine / surgery ward in
+ * CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma). Written for an adult medicine / surgery ward in
  * north India, conservatively: the differentials are the ones a resident there is expected to
  * keep in mind (dengue, enteric fever, malaria, scrub typhus, sepsis / pneumonia, tuberculosis,
  * hepatitis, urinary infection, leptospirosis, meningitis, post-operative fever). It carries no
@@ -37,7 +37,7 @@ export const feverV1: HistoryTree = {
   triggers: ["fever", "febrile", "pyrexia", "temperature", "high temperature", "pyrexial", "puo"],
   setting: "Adult medicine / general surgery ward, north India",
   reviewStatus: "reviewed",
-  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
+  reviewedBy: "Dr Anubhav Verma",
 
   references: [
     { title: "National Guidelines for Clinical Management of Dengue Fever 2023", source: "NCVBDC, Ministry of Health and Family Welfare, India", year: 2023, url: "https://ncvbdc.mohfw.gov.in/Doc/National%20Guidelines%20for%20Clinical%20Management%20of%20Dengue%20Fever%202023.pdf" },

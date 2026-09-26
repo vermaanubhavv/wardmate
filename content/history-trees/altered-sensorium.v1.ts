@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ALTERED SENSORIUM / SEIZURES — v1.0.0. CLINICAL CONTENT: REVIEWED.
+ * ALTERED SENSORIUM / SEIZURES — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult medicine ward, north India. Differentials: meningitis / encephalitis (incl.
  * tuberculous, Japanese encephalitis), stroke, hypoglycaemia / metabolic (uraemia, hepatic,
  * hyponatraemia), sepsis-associated encephalopathy, poisoning / alcohol withdrawal,
@@ -16,7 +16,7 @@ export const alteredSensoriumV1: HistoryTree = {
   triggers: ["altered sensorium", "unconscious", "unconsciousness", "drowsy", "drowsiness", "confusion", "confused", "irrelevant talk", "seizure", "seizures", "fit", "fits", "convulsion", "convulsions", "loss of consciousness", "not responding", "unresponsive", "coma"],
   setting: "Adult medicine ward, north India",
   reviewStatus: "reviewed",
-  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("The rational clinical examination. Does this adult patient have acute meningitis?", 1999, "10411200"),
     rce("Is this patient having a stroke?", 2005, "15900010"),

@@ -29,9 +29,6 @@ const model = arg("model") ?? "claude-haiku-4-5";
 const maxCalls = Number(arg("max-calls") ?? 12);
 const only = arg("only")?.split(",").map((s) => s.trim()).filter(Boolean);
 
-const tree = getTree("fever");
-if (!tree) throw new Error("fever tree not found");
-
 const cases = only ? EVAL_CASES.filter((c) => only.includes(c.id)) : EVAL_CASES;
 if (cases.length > maxCalls) {
   console.log(`Capped: ${cases.length} cases but --max-calls ${maxCalls}. Running the first ${maxCalls}.`);
@@ -44,10 +41,13 @@ let slotPasses = 0;
 let casesPassed = 0;
 const failures: string[] = [];
 
-console.log(`model: ${model}   tree: ${tree.id}@${tree.version}   cases: ${Math.min(cases.length, maxCalls)}\n`);
+console.log(`model: ${model}   cases: ${Math.min(cases.length, maxCalls)}\n`);
 
 for (const c of cases.slice(0, maxCalls)) {
-  console.log(`=== ${c.id} — ${c.title}`);
+  // Most cases run against fever; a tree-specific case names its own.
+  const tree = getTree(c.treeId ?? "fever");
+  if (!tree) throw new Error(`${c.id}: tree '${c.treeId ?? "fever"}' not found`);
+  console.log(`=== ${c.id} — ${c.title}  [${tree.id}@${tree.version}]`);
   console.log(`    ${c.note}`);
   const sources = buildSources(c.entries);
   const t0 = Date.now();

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * FEVER IN A PATIENT ON CHEMOTHERAPY — v1.0.0. PENDING CLINICIAN REVIEW.
+ * FEVER IN A PATIENT ON CHEMOTHERAPY — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Medical oncology ward, north India. Fever in the days after chemotherapy is treated as
  * neutropenic until the count says otherwise, because the usual signs of infection are absent
  * when there are no neutrophils to make them. The single most decision-changing number in this
@@ -17,7 +17,7 @@ export const febrileNeutropeniaV1: HistoryTree = {
   triggers: ["fever on chemotherapy", "febrile neutropenia", "fever after chemo", "neutropenic fever", "fever post chemo", "fever after cycle", "low counts fever", "chemo fever"],
   setting: "Medical oncology ward, north India",
   reviewStatus: "reviewed",
-  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("Does this patient have clubbing?", 2001, "11466101"),
     MACLEODS,

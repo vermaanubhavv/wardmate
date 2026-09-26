@@ -20,7 +20,14 @@ import type { AnsweredView, BandView, ConflictView, RunView } from "@/lib/histor
  * connection the button is disabled and says so, exactly as the other generate buttons do.
  */
 
-export type TreeChoice = { id: string; complaint: string; suggested: boolean };
+export type TreeChoice = {
+  id: string;
+  complaint: string;
+  /** Named by the chief complaints the resident actually dictated. */
+  suggested: boolean;
+  /** One of this unit's own department's complaints — see the specialty pack's historyTreeIds. */
+  department: boolean;
+};
 export type CheckMode = "ward" | "academic";
 
 const MODE_KEY = "wardmate.historyCheck.mode";
@@ -89,7 +96,13 @@ export default function HistoryCheckCard({
 
   const run = runs[treeId];
   const suggested = trees.filter((t) => t.suggested);
-  const visible = showAll || suggested.length === 0 ? trees : trees.filter((t) => t.suggested || t.id === treeId);
+  // What this unit is shown: what was dictated, then its own department's complaints. Everything
+  // else is behind "More…" — never removed, because an O&G patient can still have chest pain and
+  // a tree nobody can reach would be a worse failure than a long list. A unit whose department
+  // names no complaints (an unrecognised specialty, or the packs flag off) sees them all, which
+  // is exactly what every unit saw before.
+  const own = trees.filter((t) => t.suggested || t.department);
+  const visible = showAll || own.length === 0 ? trees : trees.filter((t) => t.suggested || t.department || t.id === treeId);
 
   async function check() {
     if (!navigator.onLine) {
@@ -130,7 +143,11 @@ export default function HistoryCheckCard({
 
         <div className="border-t border-line px-4 py-3">
           <p className="mb-2 text-[12px] text-muted">
-            {suggested.length > 0 ? "Complaint (suggested from the chief complaints)" : "Complaint"}
+            {suggested.length > 0
+              ? "Complaint (suggested from the chief complaints)"
+              : !showAll && own.length > 0
+                ? "Complaint (this unit's own)"
+                : "Complaint"}
           </p>
           <div className="flex flex-wrap gap-2">
             {visible.map((t) => (

@@ -2,7 +2,7 @@ import type { ExamChecklist, ExamItem } from "@/lib/history-check/exam-types";
 import { BATES, ebem, HUTCHISONS, MACLEODS, rce } from "@/content/history-trees/_helpers";
 
 /**
- * ABDOMINAL EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED.
+ * ABDOMINAL EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Inspection, palpation (superficial then deep then organs), percussion, auscultation, and then
  * the parts residents skip: hernial orifices, external genitalia and the rectal examination.
@@ -28,7 +28,7 @@ export const abdomenV1: ExamChecklist = {
   title: "Abdominal examination",
   setting: "Adult medicine and surgical ward, north India",
   reviewStatus: "reviewed",
-  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("Does this patient have ascites? How to divine fluid in the abdomen", 1992, "1573754"),
     rce("Physical examination of the liver", 1994, "8196144"),

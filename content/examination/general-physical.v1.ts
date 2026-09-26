@@ -2,7 +2,7 @@ import type { ExamChecklist, ExamItem } from "@/lib/history-check/exam-types";
 import { HUTCHISONS, MACLEODS, rce } from "@/content/history-trees/_helpers";
 
 /**
- * GENERAL PHYSICAL EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED.
+ * GENERAL PHYSICAL EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * The head-to-toe survey done before any system examination, in the order it is taught in
  * Indian medical colleges (Hutchison's / Macleod's / bedside long-case format). Each item
@@ -25,7 +25,7 @@ export const generalPhysicalV1: ExamChecklist = {
   title: "General physical examination",
   setting: "Adult medicine ward, north India",
   reviewStatus: "reviewed",
-  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     HUTCHISONS,
     MACLEODS,

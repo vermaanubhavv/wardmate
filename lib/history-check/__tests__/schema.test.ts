@@ -80,7 +80,7 @@ describe("history tree schema", () => {
     const t = clone();
     t.reviewStatus = "reviewed";
     // Set explicitly rather than relying on the cloned fixture's own value — the fixture is a
-    // shipped tree and has been reviewed since 2026-09-26, so it already names a reviewer.
+    // shipped tree and is reviewed, so it already names a reviewer.
     t.reviewedBy = null;
     expect(validateHistoryTree(t).issues.some((i) => i.path === "$.reviewedBy")).toBe(true);
   });

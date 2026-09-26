@@ -19,3 +19,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Migrations are additive, hand-numbered under `supabase/patches/` and applied by `npm run db:push`.
 - History check (trees, validator, Ward/Academic toggle, examination checklist, evals):
   `docs/history-check.md`.
+- What the standard surgical texts prescribe for a general-surgery history, and the gap against
+  the shipped trees: `docs/surgical-history.md`.

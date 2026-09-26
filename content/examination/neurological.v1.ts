@@ -2,7 +2,7 @@ import type { ExamChecklist, ExamItem } from "@/lib/history-check/exam-types";
 import { BATES, HUTCHISONS, MACLEODS, rce } from "@/content/history-trees/_helpers";
 
 /**
- * NERVOUS SYSTEM EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED.
+ * NERVOUS SYSTEM EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Higher functions, cranial nerves, motor, sensory, reflexes, coordination, gait and meningeal
  * signs, in the order of the Indian long case. The purpose of this examination is to localise
@@ -28,7 +28,7 @@ export const neurologicalV1: ExamChecklist = {
   title: "Nervous system examination",
   setting: "Adult medicine ward, north India",
   reviewStatus: "reviewed",
-  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("Is this patient having a stroke?", 2005, "15900010"),
     rce("The rational clinical examination. Does this adult patient have acute meningitis?", 1999, "10411200"),

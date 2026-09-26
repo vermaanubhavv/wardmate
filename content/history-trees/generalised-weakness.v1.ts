@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * GENERALISED WEAKNESS / FATIGUE — v1.0.0. CLINICAL CONTENT: REVIEWED.
+ * GENERALISED WEAKNESS / FATIGUE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult medicine ward, north India. Differentials: anaemia, electrolyte disturbance
  * (hypokalaemia, hyponatraemia), infection including tuberculosis, hypothyroidism, diabetes
  * (hyperglycaemia or hypoglycaemia), chronic kidney or liver disease, depression, malignancy,
@@ -15,7 +15,7 @@ export const generalisedWeaknessV1: HistoryTree = {
   triggers: ["generalised weakness", "generalized weakness", "general weakness", "fatigue", "tiredness", "lethargy", "easy fatigability", "malaise", "body ache and weakness"],
   setting: "Adult medicine ward, north India",
   reviewStatus: "reviewed",
-  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
+  reviewedBy: "Dr Anubhav Verma",
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("weakness"),

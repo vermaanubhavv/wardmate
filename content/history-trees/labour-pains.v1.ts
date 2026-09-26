@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LABOUR PAINS AND LEAKING PER VAGINUM — v1.0.0. PENDING CLINICIAN REVIEW.
+ * LABOUR PAINS AND LEAKING PER VAGINUM — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Obstetrics ward, north India. One admission history covering the woman who arrives in
  * labour or with leaking, because the two arrive together and are assessed together. The
  * gestational age decides almost everything that follows. Differentials: term labour, preterm
@@ -16,7 +16,7 @@ export const labourPainsV1: HistoryTree = {
   triggers: ["labour pains", "labor pains", "in labour", "leaking per vaginum", "leaking pv", "water broke", "membranes ruptured", "prom", "pains since", "dard", "full term pains", "contractions"],
   setting: "Obstetrics ward, north India",
   reviewStatus: "reviewed",
-  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
+  reviewedBy: "Dr Anubhav Verma",
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("labour pains"),

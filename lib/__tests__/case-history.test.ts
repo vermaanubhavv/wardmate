@@ -84,3 +84,17 @@ describe("dietary and environmental sections", () => {
     expect(stated.sections.find((s) => s.key === "dietary")!.lines.map((l) => l.text)).toEqual(["Vegetarian, three meals a day"]);
   });
 });
+
+describe("showAll (the printed sheet)", () => {
+  it("prints a positive-only card as NR when unasked and NAD when denied, instead of hiding it", () => {
+    const unasked = summariseCaseHistory([obs("1", "past history", "K/C/O DM")], { showAll: true });
+    const familyNr = unasked.sections.find((s) => s.key === "family")!;
+    expect(familyNr).toMatchObject({ hidden: false, note: "NR" });
+
+    const denied = summariseCaseHistory([obs("1", "family history", "nil")], { showAll: true });
+    expect(denied.sections.find((s) => s.key === "family")).toMatchObject({ hidden: false, note: "NAD" });
+
+    // The screen keeps its convention.
+    expect(summariseCaseHistory([obs("1", "family history", "nil")]).sections.find((s) => s.key === "family")!.hidden).toBe(true);
+  });
+});

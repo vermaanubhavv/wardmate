@@ -45,6 +45,21 @@ import { labourPainsV1 } from "@/content/history-trees/labour-pains.v1";
 import { febrileNeutropeniaV1 } from "@/content/history-trees/febrile-neutropenia.v1";
 import { haematuriaV1 } from "@/content/history-trees/haematuria.v1";
 import { limbInjuryV1 } from "@/content/history-trees/limb-injury.v1";
+import { earDischargeV1 } from "@/content/history-trees/ear-discharge.v1";
+import { epistaxisV1 } from "@/content/history-trees/epistaxis.v1";
+import { hoarsenessV1 } from "@/content/history-trees/hoarseness.v1";
+import { redEyeV1 } from "@/content/history-trees/red-eye.v1";
+import { visionLossV1 } from "@/content/history-trees/vision-loss.v1";
+import { skinLesionV1 } from "@/content/history-trees/skin-lesion.v1";
+import { lowMoodV1 } from "@/content/history-trees/low-mood.v1";
+import { alteredBehaviourV1 } from "@/content/history-trees/altered-behaviour.v1";
+import { burnsV1 } from "@/content/history-trees/burns.v1";
+import { limbIschaemiaV1 } from "@/content/history-trees/limb-ischaemia.v1";
+import { toothacheV1 } from "@/content/history-trees/toothache.v1";
+import { haemoptysisV1 } from "@/content/history-trees/haemoptysis.v1";
+import { snoringSleepinessV1 } from "@/content/history-trees/snoring-sleepiness.v1";
+import { thyroidSwellingV1 } from "@/content/history-trees/thyroid-swelling.v1";
+import { postOpProblemV1 } from "@/content/history-trees/post-op-problem.v1";
 
 /**
  * Every complaint tree the app ships, every version. Adding a complaint is a new file beside
@@ -100,4 +115,19 @@ export const HISTORY_TREES: readonly HistoryTree[] = [
   febrileNeutropeniaV1,
   haematuriaV1,
   limbInjuryV1,
+  earDischargeV1,
+  epistaxisV1,
+  hoarsenessV1,
+  redEyeV1,
+  visionLossV1,
+  skinLesionV1,
+  lowMoodV1,
+  alteredBehaviourV1,
+  burnsV1,
+  limbIschaemiaV1,
+  toothacheV1,
+  haemoptysisV1,
+  snoringSleepinessV1,
+  thyroidSwellingV1,
+  postOpProblemV1,
 ];

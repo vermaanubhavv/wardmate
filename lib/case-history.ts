@@ -265,7 +265,12 @@ export const caseHistorySectionOf = sectionFor;
 
 export function summariseCaseHistory<
   T extends { id: string; kind: string; label: string; value_text: string | null },
->(observations: T[]): CaseHistoryView<T> {
+>(
+  observations: T[],
+  /** The printed sheet prints every card, so a family history nobody took reads "NR" on paper
+   *  rather than vanishing — the screen keeps hiding it. */
+  opts: { showAll?: boolean } = {}
+): CaseHistoryView<T> {
   const buckets = new Map<HistorySection["key"], { id: string; text: string; normal: boolean }[]>();
   const other: T[] = [];
   // The pertinent negatives (1–2 sentences) are recorded once, under their own label, but they
@@ -305,7 +310,7 @@ export function summariseCaseHistory<
     // The pertinent negatives ride at the tail of the history of presenting illness.
     if (def.key === "hopi") lines.push(...relevantNegatives);
 
-    if (!def.alwaysShow) {
+    if (!def.alwaysShow && !opts.showAll) {
       // Family history: only when there is something positive to say.
       return { key: def.key, label: def.label, lines, note: null, hidden: lines.length === 0 };
     }

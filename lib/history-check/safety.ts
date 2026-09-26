@@ -11,7 +11,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
  * chosen by the app. It must never be rendered as a severity score, a priority, or an
  * instruction to act.
  *
- * The thresholds were reviewed and signed off on 2026-09-26 (see
+ * The thresholds were reviewed and signed off by Dr Anubhav Verma (see
  * `SAFETY_LEVEL_REVIEW_STATUS`). READ THAT NARROWLY: a clinician agreeing the mapping is
  * sensible is not the same claim as the number having been validated against outcomes, and
  * nothing here has been. The paragraph above survives the sign-off unchanged — it describes
@@ -47,7 +47,7 @@ export const SAFETY_LEVEL_MAX = 4;
  * is built.
  */
 export const SAFETY_LEVEL_REVIEW_STATUS = "reviewed" as const;
-export const SAFETY_LEVEL_REVIEWED_BY = "Dr. Anubhav, General Surgery — 2026-09-26";
+export const SAFETY_LEVEL_REVIEWED_BY = "Dr Anubhav Verma";
 
 export type SafetyLevel = 0 | 1 | 2 | 3 | 4;
 

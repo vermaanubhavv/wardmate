@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, val, yn } from "@/content/history-trees/_helpers";
+import { commonHpi, BAILEY_LOVE, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BLEEDING PER RECTUM — v1.0.0. CLINICAL CONTENT: REVIEWED.
+ * BLEEDING PER RECTUM — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult surgical ward, north India. Separates anorectal bleeding (bright red, on the paper or
  * pan, after stool) from colonic bleeding (mixed, dark) and from upper-gastrointestinal
  * bleeding (black, tarry). Differentials: haemorrhoids, anal fissure, rectal or colonic cancer,
@@ -10,13 +10,13 @@ import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, val, yn } from "@/content/h
  */
 export const bleedingPerRectumV1: HistoryTree = {
   id: "bleeding_per_rectum",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Bleeding per rectum",
   triggers: ["bleeding per rectum", "bleeding pr", "rectal bleeding", "blood per rectum", "passing blood", "bloody stools", "hematochezia", "haematochezia", "melaena", "melena", "black stools", "bright red blood"],
   setting: "Adult surgical ward, north India",
   reviewStatus: "reviewed",
-  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
-  references: [MACLEODS, HUTCHISONS],
+  reviewedBy: "Dr Anubhav Verma",
+  references: [MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
   slots: [
     ...commonHpi("bleeding per rectum"),
     val("hpi", "colour", "Colour of blood", "Is the blood bright red, dark, maroon, or black and tarry?", ["bright red", "dark", "maroon", "black", "tarry", "melaena", "malena", "red", "fresh blood"]),
@@ -43,6 +43,7 @@ export const bleedingPerRectumV1: HistoryTree = {
     yn("exposure", "family_bowel", "Family history of bowel cancer / IBD", "Any family history of bowel cancer, polyps, or inflammatory bowel disease?", ["family history", "bowel cancer", "polyps", "ibd", "colitis", "crohn"], { tier: "detailed" }),
     yn("exposure", "recent_infection_travel", "Recent gastroenteritis / travel / antibiotics", "Any recent gastroenteritis, travel, or antibiotic course?", ["gastroenteritis", "travel", "antibiotics", "diarrhoea", "food poisoning"], { tier: "detailed" }),
     yn("exposure", "anal_intercourse_hiv", "Anal sex / sexually transmitted infection / HIV", "Any history of anal intercourse, a sexually transmitted infection, or HIV?", ["anal sex", "anal intercourse", "sti", "hiv", "sexually transmitted"], { tier: "detailed" }),
+    ...surgicalBackground({ acute: true }),
   ],
   differentials: [
     { id: "haemorrhoids", name: "Haemorrhoids", pointers: ["colour", "relation_to_stool", "prolapse"], discriminators: ["colour", "relation_to_stool", "prolapse", "pain", "amount", "pattern"] },

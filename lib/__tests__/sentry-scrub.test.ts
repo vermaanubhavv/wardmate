@@ -8,6 +8,34 @@ const run = (event: Partial<ErrorEvent>) =>
 const UUID = "3f2504e0-4f89-11d3-9a0c-0305e82c3301";
 
 describe("scrubEvent — nothing that identifies a patient leaves the machine", () => {
+  it("drops Next.js's transient router-initialisation invariant", () => {
+    expect(
+      scrubEvent({
+        exception: {
+          values: [
+            {
+              type: "Error",
+              value: "Internal Next.js error: Router action dispatched before initialization.",
+            },
+          ],
+        },
+      } as ErrorEvent)
+    ).toBeNull();
+  });
+
+  it("keeps a real exception even when a framework invariant is also present", () => {
+    expect(
+      scrubEvent({
+        exception: {
+          values: [
+            { type: "Error", value: "Internal Next.js error: Router action dispatched before initialization." },
+            { type: "Error", value: "contact form failed" },
+          ],
+        },
+      } as ErrorEvent)
+    ).not.toBeNull();
+  });
+
   it("collapses patient ids in the request url and drops the query string", () => {
     const out = run({
       request: {

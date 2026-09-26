@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * DECREASED URINE OUTPUT — v1.0.0. CLINICAL CONTENT: REVIEWED.
+ * DECREASED URINE OUTPUT — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult medicine ward, north India. Organised as pre-renal (fluid loss, low pressure), renal
  * (sepsis, drugs, glomerular, pigment) and post-renal (obstruction). Differentials: pre-renal
  * injury, acute tubular injury, glomerulonephritis, obstructive uropathy, hepatorenal, chronic
@@ -15,7 +15,7 @@ export const decreasedUrineOutputV1: HistoryTree = {
   triggers: ["decreased urine output", "reduced urine output", "decreased urine", "less urine", "oliguria", "anuria", "not passing urine", "no urine", "urine output decreased"],
   setting: "Adult medicine ward, north India",
   reviewStatus: "reviewed",
-  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
+  reviewedBy: "Dr Anubhav Verma",
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("reduction in urine"),

@@ -21,7 +21,7 @@ repo to Vercel for deploys — everything past this point assumes that has happe
 | Database | **Supabase** (Postgres) | Project ref `zrisashumxmiiwffhezc` → `https://zrisashumxmiiwffhezc.supabase.co`. Also provides auth and file storage. |
 | AI | **Anthropic API** (`claude-opus-5`) | Structures spoken/typed notes into clinical values; reads photographed lab reports and the ward register. |
 | Speech-to-text | Pluggable — **OpenAI**, **Sarvam** or **Deepgram** | Behind `lib/stt/`, selected by the `STT_PROVIDER` env var. Swappable without touching anything else; the point of that seam is comparing engines on Indian-accented medical speech. Deepgram runs `nova-3-medical` in `en-IN` with a per-patient keyterm list — see `docs/medical-dictation-keyterms.md`. |
-| Outbound email | **Resend**, via Supabase's SMTP integration | Sends the sign-in codes. |
+| Outbound email | **Resend**, via Supabase's SMTP integration | Sends the sign-in codes. Outreach check-ins (waitlist / quiet / active) go out daily at 10:00 IST from pg_cron via Resend's API; key in Supabase Vault as `resend_api_key` — see `supabase/patches/0081_outreach_emails.sql`. |
 | Monitoring | **Sentry** (`@sentry/nextjs`) | Crash reports + 10%-sampled performance traces, browser and server. Dormant unless `NEXT_PUBLIC_SENTRY_DSN` is set. See "Sentry" below. |
 | Styling | Tailwind, hand-rolled iOS-style components | No component library. |
 | No ORM | Raw `@supabase/supabase-js` queries throughout | |

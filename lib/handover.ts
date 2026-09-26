@@ -88,6 +88,11 @@ const BASE_PATIENT_COLUMNS =
  *  reject the query on a database that has not been migrated. */
 const CHEMO_PATIENT_COLUMNS = ", regimen, cycle_number, cycle_day";
 
+/** The burn columns patch 0085 adds, asked for on a burns unit only — same reasoning as the
+ *  chemotherapy ones above. Without them a burns handover would print hospital days beside
+ *  patients the ward counts in post-burn days. */
+const BURN_PATIENT_COLUMNS = ", burn_date, burn_day";
+
 /** The row those columns come back as. Written out because the column list is chosen at
  *  runtime, which is more than the Supabase client's select-string typing can follow. */
 type HandoverRow = {
@@ -107,6 +112,8 @@ type HandoverRow = {
   regimen?: string | null;
   cycle_number?: number | null;
   cycle_day?: number | null;
+  burn_date?: string | null;
+  burn_day?: number | null;
 };
 
 export async function getWardHandover(ward: { id: string; name: string }): Promise<WardHandover> {
@@ -115,7 +122,9 @@ export async function getWardHandover(ward: { id: string; name: string }): Promi
 
   const pack = getSpecialtyPack(await getWardSpecialtyStored(ward.id));
   const PATIENT_COLUMNS =
-    BASE_PATIENT_COLUMNS + (pack.key === "general_surgery" ? "" : CHEMO_PATIENT_COLUMNS);
+    BASE_PATIENT_COLUMNS +
+    (pack.key === "general_surgery" ? "" : CHEMO_PATIENT_COLUMNS) +
+    (pack.key === "burns_plastic_surgery" ? BURN_PATIENT_COLUMNS : "");
 
   const { data: patients } = await supabase
     .from("current_patients")

@@ -6,6 +6,19 @@ import { useEffect } from "react";
 export default function RegisterSW() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
+
+    // Under `next dev` chunk names are stable across edits, so the worker's cache-first
+    // /_next/static/ rule would pin stale CSS/JS. Drop any worker a dev tab picked up.
+    if (process.env.NODE_ENV !== "production") {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((regs) => Promise.all(regs.map((r) => r.unregister())))
+        .then(() => caches.keys())
+        .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+        .catch(() => {});
+      return;
+    }
+
     navigator.serviceWorker.register("/sw.js").catch(() => {
       // Not being installable is not worth breaking the page over.
     });

@@ -111,5 +111,34 @@ Internal medicine ward — what the words mean here:
 
   pickerPhase: "before_surgery",
 
+  // Patches 0064 and 0067, and only those — never the oncology families, which share this phase.
+  checklistFamilies: [
+    "febrile_illness",
+    "sepsis",
+    "enteric_fever",
+    "dengue",
+    "malaria",
+    "scrub_typhus",
+    "cap",
+    "pyelonephritis",
+    "cellulitis",
+    "pulmonary_tb",
+    "dka",
+    "hhs",
+    "uncontrolled_diabetes",
+    "hypertensive_emergency",
+    "uncontrolled_hypertension",
+    "anaemia_evaluation",
+    "thrombocytopenia",
+    "pancytopenia",
+    "sle_flare",
+    "hiv_oi",
+    "acute_febrile_encephalopathy",
+    "vte_suspected",
+  ],
+
   lexiconSpecialty: "internal-medicine",
+
+  // The medicine casemix in the unit's own order: infection first, then the rest.
+  historyTreeIds: ["fever", "fever_with_rash", "breathlessness", "chest_pain", "cough", "altered_sensorium", "limb_weakness", "headache", "jaundice", "diarrhoea", "haematemesis", "decreased_urine_output", "oedema", "generalised_weakness", "giddiness", "palpitations", "polyuria", "joint_pain", "poisoning_snakebite", "shock", "haemoptysis", "altered_behaviour", "skin_lesion", "loss_of_weight_appetite", "low_back_pain"],
 };

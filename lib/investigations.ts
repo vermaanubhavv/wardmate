@@ -105,7 +105,7 @@ function modalityOf(label: string): string | null {
   return MODALITIES.find((m) => m.test.test(label))?.name ?? null;
 }
 
-function isImaging(observation: Observation): boolean {
+export function isImaging(observation: Observation): boolean {
   return modalityOf(observation.label) !== null || RADIOLOGY_LABEL.test(observation.label);
 }
 

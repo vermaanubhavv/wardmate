@@ -2,7 +2,7 @@ import type { ExamChecklist, ExamItem } from "@/lib/history-check/exam-types";
 import { BATES, ebem, HUTCHISONS, MACLEODS, rce } from "@/content/history-trees/_helpers";
 
 /**
- * RESPIRATORY SYSTEM EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED.
+ * RESPIRATORY SYSTEM EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Inspection, palpation, percussion, auscultation, done front and back and always comparing
  * side with side at the same level. Tuberculosis is the background against which every chronic
@@ -28,7 +28,7 @@ export const respiratoryV1: ExamChecklist = {
   title: "Respiratory system examination",
   setting: "Adult medicine ward, north India",
   reviewStatus: "reviewed",
-  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     ebem("Diagnosing pneumonia by medical history and physical examination", 2005, "16278969"),
     rce("Does this patient have an exudative pleural effusion? The Rational Clinical Examination systematic review", 2014, "24938565"),

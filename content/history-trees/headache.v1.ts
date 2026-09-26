@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * HEADACHE — v1.0.0. CLINICAL CONTENT: REVIEWED.
+ * HEADACHE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult medicine ward, north India. Differentials: migraine, tension-type headache,
  * meningitis / encephalitis (including tuberculous), subarachnoid haemorrhage, raised
  * intracranial pressure (mass, hydrocephalus, venous sinus thrombosis), hypertensive
@@ -15,7 +15,7 @@ export const headacheV1: HistoryTree = {
   triggers: ["headache", "head ache", "head pain", "pain in head", "migraine"],
   setting: "Adult medicine ward, north India",
   reviewStatus: "reviewed",
-  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("Does this patient with headache have a migraine or need neuroimaging?", 2006, "16968852"),
     rce("The rational clinical examination. Does this adult patient have acute meningitis?", 1999, "10411200"),

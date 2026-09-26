@@ -9,7 +9,7 @@ describe("exam checklists", () => {
   it("every shipped checklist validates, is clinician-reviewed, and names its reviewer", () => {
     for (const c of listExamChecklists()) {
       expect(validateExamChecklist(c).ok).toBe(true);
-      // Reviewed 2026-09-26. A NEW checklist starts pending — copying a shipped file carries
+      // Reviewed by Dr Anubhav Verma. A NEW checklist starts pending — copying a shipped file carries
       // this field forward, so reset it; this assertion is what catches you if you forget.
       expect(c.reviewStatus).toBe("reviewed");
       expect(c.reviewedBy).toBeTruthy();

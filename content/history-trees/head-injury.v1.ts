@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * HEAD INJURY — v1.0.0. CLINICAL CONTENT: REVIEWED.
+ * HEAD INJURY — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Emergency / neurosurgical setting, north India. The history decides who needs imaging, and
  * the published decision rules are built almost entirely from history items: age, mechanism,
  * vomiting, amnesia, and any fall in conscious level. Road traffic injury and falls from
@@ -17,7 +17,7 @@ export const headInjuryV1: HistoryTree = {
   triggers: ["head injury", "head trauma", "fall from height", "road traffic accident", "rta", "hit on head", "blow to head", "injury to head", "assault", "sar me chot", "trauma head"],
   setting: "Emergency / neurosurgical unit, north India",
   reviewStatus: "reviewed",
-  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("Will neuroimaging reveal a severe intracranial injury in this adult with minor head trauma? The Rational Clinical Examination systematic review", 2015, "26717031"),
     rce("Is this patient having a stroke?", 2005, "15900010"),

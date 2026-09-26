@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { listTemplateChoices, resolveProcedure } from "@/lib/templates";
+import { getWardSpecialtyStored } from "@/lib/ward";
 import { stripPatientHonorific } from "@/lib/patients";
 import { syncPatientPathways } from "@/lib/scoring/store";
 
@@ -43,6 +44,11 @@ export async function addPatient(
   // the cycle identically.
   const chemo = formData.has("regimen") ? readChemotherapy(formData) : null;
   if (chemo && "error" in chemo) return chemo;
+
+  // The burn date, on a burns unit only — the same reasoning as the chemo fields above: a form
+  // that does not carry the field must leave whatever is stored alone.
+  const burn = formData.has("burn_date") ? readBurnDate(formData) : null;
+  if (burn && "error" in burn) return burn;
 
   if (!wardId) return { error: "No ward selected." };
   if (!bed) return { error: "Bed is required." };
@@ -100,8 +106,14 @@ export async function addPatient(
       primary_diagnosis: diagnosis || null,
       admitted_on: admittedOn,
       ...dates,
-      ...resolveProcedure(String(formData.get("procedure") ?? ""), await listTemplateChoices()),
+      // Scoped to this unit's department, so a typed name can only link a checklist its own
+      // picker offers — never one belonging to another specialty that happens to share a phase.
+      ...resolveProcedure(
+        String(formData.get("procedure") ?? ""),
+        await listTemplateChoices(await getWardSpecialtyStored(wardId))
+      ),
       ...(chemo && !("error" in chemo) ? chemo : {}),
+      ...(burn && !("error" in burn) ? burn : {}),
       created_by: user.id,
     })
     .select("id")
@@ -297,6 +309,27 @@ export type EditPatientState = { error: string | null; ok?: boolean };
  * the day count would go negative before the surgery has actually taken place.
  */
 /**
+ * The burn date, read off a burns unit's form.
+ *
+ * ONE FIELD, AND IT IS A DATE IN THE PAST BY DEFINITION. The burn almost always happened
+ * before the patient reached the ward — that is the whole reason the column exists (patch
+ * 0085). So, unlike the operation date, a date earlier than the admission is NORMAL here and
+ * is not questioned. A date in the FUTURE is refused: it would print a post-burn day of zero
+ * or less beside a patient who is already lying on the ward.
+ *
+ * Nothing is inferred. An empty box means the resident has not said, and stores null — which
+ * makes the patient count post-operative or hospital days, exactly as before.
+ */
+function readBurnDate(formData: FormData): { burn_date: string | null } | { error: string } {
+  const raw = String(formData.get("burn_date") ?? "").trim();
+  if (!raw) return { burn_date: null };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return { error: "Date of burn is not a valid date." };
+  const today = new Date().toISOString().slice(0, 10);
+  if (raw > today) return { error: "The date of burn is in the future. Check it." };
+  return { burn_date: raw };
+}
+
+/**
  * The three chemotherapy fields, read off an oncology unit's edit dialog.
  *
  * All three move together on purpose. `cycle_started_on` is what the cycle-day counter counts
@@ -363,6 +396,9 @@ export async function updatePatientIdentity(
   const chemo = formData.has("regimen") ? readChemotherapy(formData) : null;
   if (chemo && "error" in chemo) return chemo;
 
+  const burn = formData.has("burn_date") ? readBurnDate(formData) : null;
+  if (burn && "error" in burn) return burn;
+
   if (!id) return { error: "No patient." };
   if (!name) return { error: "Name cannot be empty." };
   if (!bed) return { error: "Bed cannot be empty." };
@@ -375,9 +411,18 @@ export async function updatePatientIdentity(
 
   // Typed freely. Matching a name the library knows brings its template along; anything else
   // is kept as the unit's own wording, with no template applied.
+  // Read from the row rather than the form: which department's checklist library a typed name
+  // may resolve against is the unit's fact, not something the browser gets to say.
+  const { data: owning } = await supabase
+    .from("patients")
+    .select("ward_id")
+    .eq("id", id)
+    .maybeSingle();
   const procedure = resolveProcedure(
     String(formData.get("procedure") ?? ""),
-    await listTemplateChoices()
+    await listTemplateChoices(
+      owning?.ward_id ? await getWardSpecialtyStored(owning.ward_id) : null
+    )
   );
 
   // The dropdown is the authority on which dates a patient may hold, so every branch states
@@ -413,6 +458,7 @@ export async function updatePatientIdentity(
       ...dates,
       ...procedure,
       ...(chemo ?? {}),
+      ...(burn ?? {}),
     })
     .eq("id", id);
 

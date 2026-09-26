@@ -138,3 +138,17 @@ export type EventSummary = {
   last_seen: string;
 };
 export const getEventSummary = () => callRows<EventSummary>("admin_event_summary");
+
+export type FeedbackResponse = {
+  id: string;
+  discovered: string;
+  usage: string;
+  experience: string;
+  improvement: string;
+  would_return: string;
+  talk: string;
+  open_feedback: string | null;
+  contact: string | null;
+  created_at: string;
+};
+export const getFeedbackResponses = () => callRows<FeedbackResponse>("admin_feedback_responses");

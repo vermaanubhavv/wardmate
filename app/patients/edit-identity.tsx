@@ -28,6 +28,7 @@ type Patient = {
   regimen?: string | null;
   cycle_number?: number | null;
   cycle_started_on?: string | null;
+  burn_date?: string | null;
 };
 
 /** Regimens the box suggests. A list of suggestions, never a restriction — every unit writes
@@ -392,6 +393,23 @@ export default function EditIdentity({
                 list counts from — &ldquo;C2 D3&rdquo;.
               </span>
             </>
+          )}
+
+          {specialty === "burns_plastic_surgery" && (
+            <label className="flex flex-col gap-2">
+              <span className="text-[15px] text-muted">Date of burn</span>
+              <input
+                type="date"
+                name="burn_date"
+                defaultValue={patient.burn_date ?? ""}
+                className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+              />
+              <span className="text-[13px] text-muted">
+                Often before the admission — that is the point of the field. The ward list counts
+                from here: the day of the burn is PBD 1. Clearing it counts operative or hospital
+                days again.
+              </span>
+            </label>
           )}
 
           {state.error && (
