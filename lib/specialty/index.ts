@@ -8,6 +8,11 @@ import { psychiatryPack } from "./psychiatry";
 import { ophthalmologyPack } from "./ophthalmology";
 import { dermatologyPack } from "./dermatology";
 import { burnsPlasticSurgeryPack } from "./burns-plastic-surgery";
+import { orthopaedicsPack } from "./orthopaedics";
+import { urologyPack } from "./urology";
+import { neurosurgeryPack } from "./neurosurgery";
+import { paediatricsPack } from "./paediatrics";
+import { emergencyMedicinePack } from "./emergency-medicine";
 import { SPECIALTY_KEYS, type SpecialtyKey, type SpecialtyPack } from "./types";
 
 export * from "./types";
@@ -22,6 +27,11 @@ export {
   ophthalmologyPack,
   dermatologyPack,
   burnsPlasticSurgeryPack,
+  orthopaedicsPack,
+  urologyPack,
+  neurosurgeryPack,
+  paediatricsPack,
+  emergencyMedicinePack,
 };
 
 const PACKS: Record<SpecialtyKey, SpecialtyPack> = {
@@ -35,6 +45,11 @@ const PACKS: Record<SpecialtyKey, SpecialtyPack> = {
   ophthalmology: ophthalmologyPack,
   dermatology: dermatologyPack,
   burns_plastic_surgery: burnsPlasticSurgeryPack,
+  orthopaedics: orthopaedicsPack,
+  urology: urologyPack,
+  neurosurgery: neurosurgeryPack,
+  paediatrics: paediatricsPack,
+  emergency_medicine: emergencyMedicinePack,
 };
 
 /**

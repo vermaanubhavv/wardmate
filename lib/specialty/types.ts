@@ -33,6 +33,11 @@ export const SPECIALTY_KEYS = [
   "ophthalmology",
   "dermatology",
   "burns_plastic_surgery",
+  "orthopaedics",
+  "urology",
+  "neurosurgery",
+  "paediatrics",
+  "emergency_medicine",
 ] as const;
 export type SpecialtyKey = (typeof SPECIALTY_KEYS)[number];
 
