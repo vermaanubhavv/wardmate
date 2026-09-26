@@ -26,6 +26,18 @@ export function getSpecialtyPack(key: string | null | undefined): SpecialtyPack 
   return PACKS[k as SpecialtyKey] ?? generalSurgeryPack;
 }
 
+/**
+ * Does this unit's picker offer this checklist family?
+ *
+ * A pack with a list offers exactly that list. A pack with `null` offers every family no other
+ * pack has claimed — so seeding a new department's checklists takes them out of the surgical
+ * picker by adding them to that pack, with nothing else to keep in step.
+ */
+export function offersChecklistFamily(pack: SpecialtyPack, family: string): boolean {
+  if (pack.checklistFamilies) return pack.checklistFamilies.includes(family);
+  return !Object.values(PACKS).some((p) => p.checklistFamilies?.includes(family));
+}
+
 export function isSpecialtyKey(key: string | null | undefined): key is SpecialtyKey {
   return SPECIALTY_KEYS.includes((key ?? "") as SpecialtyKey);
 }

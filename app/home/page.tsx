@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Mark from "@/app/mark";
 import WaitlistForm from "@/app/waitlist/waitlist-form";
 import ContactForm from "@/app/home/contact-form";
+import { FragmentMerge, ScreenTour, TriageDemo } from "@/app/home/interactive";
 import "./landing.css";
 
 /**
@@ -124,9 +125,17 @@ const GUIDELINES = [
 ] as const;
 
 const SCREENS = [
-  ["/home/phone-ward-list.png", "Ward list", "Wardmate ward list screen for Unit Alpha, with each patient's diagnosis and outstanding to-dos"],
-  ["/home/phone-todo.png", "To-do, triaged", "Wardmate to-do screen, a critical fever flagged under Needs attention now, ahead of routine tasks"],
-  ["/home/phone-patient-chart.png", "Patient chart", "Wardmate patient chart screen with vitals, a to-do checklist, Tap to speak and Photograph a report"],
+  ["/home/phone-ward-list.png", "Ward list", "Wardmate ward list screen for Unit Alpha, with each patient's diagnosis and outstanding to-dos", "Every patient on the unit, with the diagnosis and what's still outstanding, at a glance."],
+  ["/home/phone-todo.png", "To-do", "Wardmate to-do screen, a critical fever flagged under Needs attention now, ahead of routine tasks", "Needs attention now sits above routine work: a 102°F fever before a pre-op panel."],
+  ["/home/phone-patient-chart.png", "Chart", "Wardmate patient chart screen with vitals, a to-do checklist, Tap to speak and Photograph a report", "Vitals and a checklist per patient. Tap to speak, or photograph a report, instead of typing."],
+] as const;
+
+const NAV = [
+  ["#about", "Why"],
+  ["#round", "Triage"],
+  ["#guidelines", "Guidelines"],
+  ["#product", "App"],
+  ["#contact", "Contact"],
 ] as const;
 
 /** Staggered entrance delay, for the wm-in keyframe. */
@@ -144,6 +153,17 @@ export default function HomePage() {
               ward<span className="text-accent">mate</span>
             </span>
           </a>
+          <nav aria-label="Sections" className="hidden items-center gap-1 md:flex">
+            {NAV.map(([href, label]) => (
+              <a
+                key={href}
+                href={href}
+                className="rounded-[9px] px-3 py-1.5 text-[14px] font-medium text-muted transition-colors hover:bg-accent/10 hover:text-accent"
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
           <div className="flex items-center gap-1 sm:gap-2">
             <a href="/login" className="whitespace-nowrap rounded-[10px] px-2 py-2 text-[14px] font-semibold text-muted hover:text-foreground sm:px-3">
               Log in
@@ -156,6 +176,7 @@ export default function HomePage() {
             </a>
           </div>
         </div>
+        <div className="wm-progress" aria-hidden />
       </header>
 
       {/* ---- hero: text + one real, featured screenshot and a single callout ---- */}
@@ -238,38 +259,24 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div>
-            <p className="ios-group-header wm-reveal">Right now, that story is split across</p>
-            <div className="mt-2 grid gap-2.5 sm:grid-cols-2">
-              {FRAGMENTS.map(([icon, label, desc], i) => (
-                <div
-                  key={label}
-                  className={`ios-group wm-card wm-reveal flex items-start gap-3 px-4 py-3.5 ${i === 4 ? "sm:col-span-2" : ""}`}
-                >
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[9px] bg-accent/10 text-accent">
-                    <Svg>{Icon[icon as keyof typeof Icon]}</Svg>
-                  </span>
-                  <p className="text-[14.5px] leading-snug">
-                    <span className="block font-semibold">{label}</span>
-                    <span className="text-muted">{desc}</span>
-                  </p>
-                </div>
-              ))}
-            </div>
-            <div className="wm-flowline" />
-            <div className="wm-glow-border wm-reveal flex items-center gap-4 px-5 py-5 shadow-[0_24px_50px_-28px_var(--accent)]">
-              <Mark className="h-11 w-11 shrink-0" />
-              <p className="text-[18px] font-semibold leading-snug">
-                <span className="text-accent">We&rsquo;re unifying all of it into one place.</span>{" "}
-                Running the ward has never been easier.
-              </p>
+          <div className="wm-reveal">
+            <p className="ios-group-header">Right now, that story is split across</p>
+            <div className="mt-2">
+              <FragmentMerge
+                logo={<Mark className="h-10 w-10 shrink-0" />}
+                items={FRAGMENTS.map(([icon, label, desc]) => ({
+                  icon: <Svg>{Icon[icon as keyof typeof Icon]}</Svg>,
+                  label,
+                  desc,
+                }))}
+              />
             </div>
           </div>
         </div>
       </section>
 
       {/* ---- shift flow + triaged round, paired side by side on desktop ---- */}
-      <section className="border-y border-line bg-card py-20">
+      <section id="round" className="scroll-mt-16 border-y border-line bg-card py-20">
         <div className="mx-auto grid max-w-6xl gap-14 px-6 lg:grid-cols-2">
           <div>
             <div className="wm-reveal">
@@ -297,43 +304,17 @@ export default function HomePage() {
             <div className="wm-reveal">
               <Eyebrow>Triaged, most urgent first</Eyebrow>
               <h2 className="mt-1 text-[30px] font-semibold tracking-tight">Unit Alpha, this round</h2>
-              <p className="mt-2 max-w-[46ch] text-[14.5px] text-muted">The same list you&rsquo;d see in the app.</p>
+              <p className="mt-2 max-w-[46ch] text-[14.5px] text-muted">The same list you&rsquo;d see in the app. Flip it between bed order and triaged.</p>
             </div>
-            <div className="mt-6 flex flex-col gap-3">
-              {ROUND_LINES.map(([bed, who, body, critical]) => (
-                <div
-                  key={bed}
-                  className={`wm-reveal wm-card flex gap-3 rounded-[14px] px-4 py-4 ${critical ? "bg-critical-bg" : "ios-group"}`}
-                  style={critical ? { boxShadow: "inset 0 0 0 1px var(--critical-fg)" } : undefined}
-                >
-                  <span
-                    className={`grid h-8 w-8 shrink-0 place-items-center rounded-[9px] font-mono text-[13px] font-semibold ${critical ? "bg-critical-fg text-white" : "bg-chip text-muted"}`}
-                  >
-                    {bed}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-[14.5px] font-semibold">{who}</p>
-                      {critical && (
-                        <span className="shrink-0 rounded-[5px] bg-critical-fg px-2 py-0.5 text-[10.5px] font-bold text-white">
-                          CRITICAL
-                        </span>
-                      )}
-                    </div>
-                    <p className={`mt-1 text-[13.5px] leading-snug ${critical ? "font-medium text-critical-fg" : "text-muted"}`}>
-                      {body}
-                    </p>
-                  </div>
-                </div>
-              ))}
+            <div className="wm-reveal mt-6">
+              <TriageDemo lines={ROUND_LINES} />
             </div>
-            <p className="mt-3 text-[13px] text-muted">Handed over · ready to copy for WhatsApp</p>
           </div>
         </div>
       </section>
 
       {/* ---- guideline prompts ---- */}
-      <section className="mx-auto max-w-6xl px-6 py-20">
+      <section id="guidelines" className="scroll-mt-16 mx-auto max-w-6xl px-6 py-20">
         <div className="wm-reveal text-center">
           <Eyebrow>The academic half</Eyebrow>
           <h2 className="mt-1 text-[30px] font-semibold tracking-tight sm:text-[34px]">Learns the guidelines with you</h2>
@@ -361,7 +342,7 @@ export default function HomePage() {
       </section>
 
       {/* ---- phone screens ---- */}
-      <section className="border-y border-line bg-card py-20">
+      <section id="product" className="scroll-mt-16 border-y border-line bg-card py-20">
         <div className="mx-auto max-w-6xl px-6">
           <div className="wm-reveal text-center">
             <Eyebrow>The product</Eyebrow>
@@ -372,19 +353,8 @@ export default function HomePage() {
               bloodwork.
             </p>
           </div>
-          <div className="mt-12 grid grid-cols-1 gap-10 sm:grid-cols-3 sm:gap-6">
-            {SCREENS.map(([src, caption, alt]) => (
-              <figure key={src} className="wm-screen wm-reveal m-0">
-                {/* eslint-disable-next-line @next/next/no-img-element -- fixed marketing asset */}
-                <img
-                  src={src}
-                  alt={alt}
-                  loading="lazy"
-                  className="mx-auto w-full max-w-[260px] rounded-[18px] ring-1 ring-black/5 shadow-[0_24px_50px_-22px_rgba(0,0,0,0.35)]"
-                />
-                <figcaption className="mt-6 text-center text-[14px] font-semibold">{caption}</figcaption>
-              </figure>
-            ))}
+          <div className="wm-reveal mt-12">
+            <ScreenTour screens={SCREENS} />
           </div>
         </div>
       </section>

@@ -68,5 +68,9 @@ export const generalSurgeryPack: SpecialtyPack = {
 
   pickerPhase: "after_surgery",
 
+  // null, not a list: the operations live in care_templates and units correct them there. This
+  // pack offers whatever no other pack has claimed, which is what it always offered.
+  checklistFamilies: null,
+
   lexiconSpecialty: "general-surgery",
 };

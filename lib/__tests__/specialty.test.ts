@@ -6,6 +6,7 @@ import {
   internalMedicinePack,
   obstetricsGynaecologyPack,
   listSpecialties,
+  offersChecklistFamily,
 } from "@/lib/specialty";
 import { buildSystemPrompt } from "@/lib/extract";
 import { dayLabel } from "@/lib/patients";
@@ -419,5 +420,28 @@ describe("the oncology examination cards", () => {
     // Not one of the four HistorySection keys, so it comes back in `other` for the exam
     // summary to render, not silently dropped.
     expect(view.other.some((o) => o.label === "lymph node survey")).toBe(true);
+  });
+});
+
+describe("offersChecklistFamily — the picker follows the department chosen at unit setup", () => {
+  it("keeps oncology and medicine apart, though both are filed under before_surgery", () => {
+    expect(offersChecklistFamily(medicalOncologyPack, "chemo_cycle")).toBe(true);
+    expect(offersChecklistFamily(medicalOncologyPack, "dengue")).toBe(false);
+    expect(offersChecklistFamily(internalMedicinePack, "dengue")).toBe(true);
+    expect(offersChecklistFamily(internalMedicinePack, "febrile_neutropenia")).toBe(false);
+  });
+
+  it("gives a pack with no list of its own every family no other pack claims", () => {
+    // The operations, which live only in care_templates and are never listed in a pack.
+    expect(offersChecklistFamily(generalSurgeryPack, "lap_chole")).toBe(true);
+    expect(offersChecklistFamily(obstetricsGynaecologyPack, "lap_chole")).toBe(true);
+    // A claimed one is not on offer here, even by fallback.
+    expect(offersChecklistFamily(generalSurgeryPack, "dka")).toBe(false);
+    expect(offersChecklistFamily(obstetricsGynaecologyPack, "chemo_cycle")).toBe(false);
+  });
+
+  it("claims no family twice", () => {
+    const claimed = listSpecialties().flatMap((p) => p.checklistFamilies ?? []);
+    expect(new Set(claimed).size).toBe(claimed.length);
   });
 });

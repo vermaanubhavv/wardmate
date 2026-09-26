@@ -135,8 +135,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         )
         .eq("patient_id", id)
         .order("recorded_at", { ascending: false }),
-      getProcedureLabels(),
-      listTemplateChoices(pack.pickerPhase),
+      getProcedureLabels(pack.key),
+      listTemplateChoices(pack.key),
       // Needs only fields already in hand from the patient row, so it was queueing behind the
       // batch for nothing.
       getTemplateForPatient(patient),

@@ -111,5 +111,31 @@ Internal medicine ward — what the words mean here:
 
   pickerPhase: "before_surgery",
 
+  // Patches 0064 and 0067, and only those — never the oncology families, which share this phase.
+  checklistFamilies: [
+    "febrile_illness",
+    "sepsis",
+    "enteric_fever",
+    "dengue",
+    "malaria",
+    "scrub_typhus",
+    "cap",
+    "pyelonephritis",
+    "cellulitis",
+    "pulmonary_tb",
+    "dka",
+    "hhs",
+    "uncontrolled_diabetes",
+    "hypertensive_emergency",
+    "uncontrolled_hypertension",
+    "anaemia_evaluation",
+    "thrombocytopenia",
+    "pancytopenia",
+    "sle_flare",
+    "hiv_oi",
+    "acute_febrile_encephalopathy",
+    "vte_suspected",
+  ],
+
   lexiconSpecialty: "internal-medicine",
 };

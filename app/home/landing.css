@@ -11,8 +11,7 @@
 .wm-hero,
 .wm-in,
 .wm-reveal,
-.wm-card,
-.wm-screen {
+.wm-card {
   --wm-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -24,12 +23,8 @@
   isolation: isolate;
 }
 
-wm-accent-text {
-  background: linear-gradient(100deg, var(--accent) 0%, #0b7c76 35%, #22c3b9 55%, var(--accent) 100%);
-  background-size: 220% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.wm-accent-text {
+  color: var(--accent);
 }
 
 .wm-pill {
@@ -72,7 +67,12 @@ wm-accent-text {
 }
 .wm-chip-a {
   top: 4%;
-  left: -12%;
+  left: -4%;
+}
+@media (min-width: 1024px) {
+  .wm-chip-a {
+    left: -12%;
+  }
 }
 .wm-card {
   transition: transform 400ms var(--wm-ease), box-shadow 400ms var(--wm-ease);
@@ -90,15 +90,6 @@ wm-accent-text {
     linear-gradient(var(--card), var(--card)) padding-box,
     linear-gradient(135deg, color-mix(in srgb, var(--accent) 55%, transparent), var(--line) 45%) border-box;
   border: 1px solid transparent;
-}
-
-/* The dotted line that carries the scattered sources into one place. */
-.wm-flowline {
-  width: 2px;
-  height: 56px;
-  margin: 10px auto;
-  background: linear-gradient(to bottom, transparent, var(--accent));
-  opacity: 0.5;
 }
 
 /* Timeline spine for the shift flow. */
@@ -137,19 +128,46 @@ wm-accent-text {
   color: var(--accent);
 }
 
-/* Phone screenshots: level and centred, a quiet lift on hover. */
-.wm-screen img {
-  transition: transform 500ms var(--wm-ease), box-shadow 500ms var(--wm-ease);
-}
-.wm-screen:hover img {
-  transform: translateY(-4px);
-  box-shadow: 0 30px 60px -28px rgb(0 0 0 / 0.4);
-}
-
 .wm-closing {
   background:
     radial-gradient(60% 80% at 50% 0%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%),
     var(--background);
+}
+
+/* Reading progress, along the bottom edge of the sticky header. */
+.wm-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+@keyframes wm-progress {
+  to { transform: scaleX(1); }
+}
+@supports (animation-timeline: scroll()) {
+  .wm-progress {
+    animation: wm-progress linear both;
+    animation-timeline: scroll(root);
+  }
+}
+
+/* Morphs between states in the interactive demos (View Transitions). */
+::view-transition-group(*) {
+  animation-duration: 560ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 /* ---------- motion (only when the viewer hasn't asked for less) ---------- */
