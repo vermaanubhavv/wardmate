@@ -92,3 +92,11 @@ export const MACLEODS: Reference = { title: "Macleod's Clinical Examination — 
 export const HUTCHISONS: Reference = { title: "Hutchison's Clinical Methods — the history and general examination", source: "Elsevier (textbook)" };
 
 export const BATES: Reference = { title: "Bates' Guide to Physical Examination and History Taking", source: "Wolters Kluwer (textbook)" };
+
+/** Specialty texts the ENT, eye, skin, psychiatry and dental trees are built from. No year or
+ *  URL recorded — an edition number would date faster than the questions do. */
+export const DHINGRA: Reference = { title: "Diseases of Ear, Nose and Throat & Head and Neck Surgery — history taking", source: "Dhingra, Elsevier (textbook)" };
+export const PARSONS_EYE: Reference = { title: "Parsons' Diseases of the Eye — symptoms and clinical assessment", source: "Elsevier (textbook)" };
+export const IADVL: Reference = { title: "IADVL Textbook of Dermatology — approach to the patient with a skin lesion", source: "Bhalani (textbook)" };
+export const KAPLAN_SADOCK: Reference = { title: "Kaplan & Sadock's Synopsis of Psychiatry — the psychiatric interview and risk assessment", source: "Wolters Kluwer (textbook)" };
+export const BAILEY_LOVE: Reference = { title: "Bailey & Love's Short Practice of Surgery — history and examination of the surgical patient", source: "CRC Press (textbook)" };

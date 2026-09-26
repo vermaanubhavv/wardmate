@@ -34,7 +34,7 @@ describe("suggestTrees", () => {
   it("does not suggest from a negated mention, an unrelated complaint, or nothing at all", () => {
     expect(suggestTrees(["no fever, pain abdomen x 3 days"]).map((t) => t.id)).toEqual(["abdominal_pain"]);
     expect(suggestTrees(["afebrile, pain abdomen"]).map((t) => t.id)).toEqual(["abdominal_pain"]);
-    expect(suggestTrees(["itching all over"])).toEqual([]);
+    expect(suggestTrees(["hiccups since morning"])).toEqual([]);
     expect(suggestTrees([])).toEqual([]);
   });
 
@@ -92,6 +92,6 @@ describe("citation integrity", () => {
 describe("registry size", () => {
   it("keeps the docs honest about how many trees ship", () => {
     // docs/history-check.md states this number; update both together.
-    expect(listTrees().length).toBe(46);
+    expect(listTrees().length).toBe(59);
   });
 });

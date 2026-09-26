@@ -114,7 +114,11 @@ export async function getActivePatients(
   /** Ask for the chemotherapy columns patch 0060 adds. Only true for an oncology unit — and a
    *  unit can only BE an oncology unit if 0060 has run, so this can never name a column the
    *  database does not have and reject the whole select. */
-  includeChemo = false
+  includeChemo = false,
+  /** Ask for the burn columns patch 0085 adds. Only true for a burns unit — and a unit can only
+   *  BE a burns unit if 0085 has run, so this can never name a column the database does not
+   *  have and reject the whole select. Same reasoning as includeChemo above. */
+  includeBurn = false
 ) {
   const supabase = await createClient();
 
@@ -127,7 +131,8 @@ export async function getActivePatients(
       .from("current_patients")
       .select(
         "id, display_name, age_years, sex, bed, uhid_ip_no, mrd_no, primary_diagnosis, admitted_on, surgery_date, planned_surgery_date, post_op_day, admission_day, last_entry_at, template_family, template_variant, procedure_text, management, location" +
-          (includeChemo ? ", regimen, cycle_number, cycle_day" : "")
+          (includeChemo ? ", regimen, cycle_number, cycle_day" : "") +
+          (includeBurn ? ", burn_date, burn_day" : "")
       )
       .eq("ward_id", wardId)
       .eq("status", "active"),

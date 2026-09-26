@@ -124,7 +124,7 @@ export async function getWardScreen(): Promise<WardScreen> {
   const pack = getSpecialtyPack(specialty);
 
   const [{ patients }, procedures, templateChoices, removedCount] = await Promise.all([
-    getActivePatients(ward.id, pack.key !== "general_surgery"),
+    getActivePatients(ward.id, pack.key !== "general_surgery", pack.key === "burns_plastic_surgery"),
     getProcedureLabels(pack.key),
     listTemplateChoices(pack.key),
     getRemovedCount(ward.id),

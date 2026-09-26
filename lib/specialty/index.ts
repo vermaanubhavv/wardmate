@@ -2,16 +2,39 @@ import { generalSurgeryPack } from "./general-surgery";
 import { internalMedicinePack } from "./internal-medicine";
 import { medicalOncologyPack } from "./medical-oncology";
 import { obstetricsGynaecologyPack } from "./obstetrics-gynaecology";
+import { pulmonaryMedicinePack } from "./pulmonary-medicine";
+import { entPack } from "./ent";
+import { psychiatryPack } from "./psychiatry";
+import { ophthalmologyPack } from "./ophthalmology";
+import { dermatologyPack } from "./dermatology";
+import { burnsPlasticSurgeryPack } from "./burns-plastic-surgery";
 import { SPECIALTY_KEYS, type SpecialtyKey, type SpecialtyPack } from "./types";
 
 export * from "./types";
-export { generalSurgeryPack, medicalOncologyPack, internalMedicinePack, obstetricsGynaecologyPack };
+export {
+  generalSurgeryPack,
+  medicalOncologyPack,
+  internalMedicinePack,
+  obstetricsGynaecologyPack,
+  pulmonaryMedicinePack,
+  entPack,
+  psychiatryPack,
+  ophthalmologyPack,
+  dermatologyPack,
+  burnsPlasticSurgeryPack,
+};
 
 const PACKS: Record<SpecialtyKey, SpecialtyPack> = {
   general_surgery: generalSurgeryPack,
   medical_oncology: medicalOncologyPack,
   internal_medicine: internalMedicinePack,
   obstetrics_gynaecology: obstetricsGynaecologyPack,
+  pulmonary_medicine: pulmonaryMedicinePack,
+  ent: entPack,
+  psychiatry: psychiatryPack,
+  ophthalmology: ophthalmologyPack,
+  dermatology: dermatologyPack,
+  burns_plastic_surgery: burnsPlasticSurgeryPack,
 };
 
 /**
