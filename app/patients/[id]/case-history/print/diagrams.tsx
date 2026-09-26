@@ -277,7 +277,7 @@ const DIAGRAMS: Record<string, { figures: React.ReactNode[]; note?: string }> = 
   ophthalmology: { figures: [<Eye key="r" side="Right" />, <Eye key="l" side="Left" />] },
   emergency_medicine: {
     figures: BODY_BOTH,
-    note: "Mechanism of injury: ____________________   GCS: E__ V__ M__",
+    note: "GCS: E__ V__ M__",
   },
   urology: { figures: [<Abdomen key="a" regions />, <KUB key="k" />] },
   neurosurgery: {
