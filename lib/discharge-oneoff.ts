@@ -30,7 +30,11 @@ export function oneOffContext(
   medications: Observation[],
   /** The unit's specialty pack. Defaults to general surgery, so an older caller behaves the
    *  way this function always did. */
-  pack: SpecialtyPack = generalSurgeryPack
+  pack: SpecialtyPack = generalSurgeryPack,
+  /** See DischargeContext.isEsicFaridabad. Defaults true — the same fallback
+   *  getWardIsEsicFaridabad uses when a ward's own value cannot be read — so an older caller
+   *  keeps printing the letterhead it always has. */
+  isEsicFaridabad = true
 ): DischargeContext {
   const age = Number(identity.age);
   const admitted = identity.admittedOn?.trim() || new Date().toISOString().slice(0, 10);
@@ -60,6 +64,7 @@ export function oneOffContext(
     wardConsultant: consultantForWard(ward?.consultant_in_charge ?? null, ward?.name),
     letterhead: ward?.letterhead ?? null,
     logoUrl,
+    isEsicFaridabad,
     doctor: null,
     observations,
     admissionObservations: [],

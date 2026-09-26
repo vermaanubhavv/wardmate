@@ -76,6 +76,27 @@ export async function getWardConsultantStored(wardId: string): Promise<string | 
   return ((data as { consultant_in_charge?: string | null } | null)?.consultant_in_charge) ?? null;
 }
 
+/**
+ * Whether this ward prints its progress notes on the ESIC Medical College Faridabad pilot's own
+ * sheet (patch 0078, `wards.is_esic_faridabad`) rather than the generic SOAP layout.
+ *
+ * A separate guarded read for the same reason getWardSpecialtyStored is one: until 0078 has run,
+ * naming the column in a select makes PostgREST reject the whole query. Defaults true on any
+ * error — every ward in this app predates the SOAP layout and is the ESIC pilot, so a database
+ * that has not been migrated yet must keep printing the sheet it already prints, not silently
+ * switch a live unit onto a template nobody there has seen.
+ */
+export async function getWardIsEsicFaridabad(wardId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("wards")
+    .select("is_esic_faridabad")
+    .eq("id", wardId)
+    .maybeSingle();
+  if (error) return true;
+  return ((data as { is_esic_faridabad?: boolean | null } | null)?.is_esic_faridabad) ?? true;
+}
+
 /** Every unit this doctor belongs to, for the switcher. */
 export async function getMyWards() {
   const supabase = await createClient();

@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * Score-input to-do items across the whole unit, shown at the top of /todo. These are things a
- * clinical score needs before it can be calculated — kept in the same list the round is worked
- * from, not a separate screen.
+ * One scoring-engine suggestion — a score input or a recommended investigation, from a
+ * matched clinical pathway. Rendered by both /todo views: the default "By urgency" view's
+ * "Recommended" section (app/todo/todo-lists.tsx's ByUrgency) and the "By type" view's
+ * per-category sections (ByType) — one row component, two groupings of the same jobs.
  */
 
 import Link from "next/link";
@@ -11,29 +12,9 @@ import { useState, useTransition } from "react";
 import type { ScoringTask } from "@/lib/scoring/read";
 import { completeScoringTask, declineScoringTask } from "../patients/[id]/scoring/actions";
 
-const AMBER = "#a8560b";
-
 export type WardScoringTask = ScoringTask & { bed: string; name: string };
 
-export default function ScoringSection({ tasks }: { tasks: WardScoringTask[] }) {
-  if (tasks.length === 0) return null;
-  return (
-    <div>
-      <div className="mb-2 flex items-baseline gap-2">
-        <span className="h-2.5 w-2.5 rounded-full" style={{ background: AMBER }} aria-hidden />
-        <p className="text-[17px] font-medium">Score inputs · {tasks.length}</p>
-      </div>
-      <p className="mb-2 text-[13px] text-muted">Needed to complete a clinical score</p>
-      <ul className="divide-y divide-line rounded-[10px] border border-line bg-card">
-        {tasks.map((t) => (
-          <Row key={t.id} t={t} />
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function Row({ t }: { t: WardScoringTask }) {
+export function Row({ t }: { t: WardScoringTask }) {
   const [pending, start] = useTransition();
   const [declining, setDeclining] = useState(false);
   const [reason, setReason] = useState("");
@@ -56,7 +37,9 @@ function Row({ t }: { t: WardScoringTask }) {
           <span className="rounded bg-chip px-1 font-mono tabular-nums text-muted">{t.bed}</span>
           {t.name}
         </Link>
-        <p className="mt-0.5 text-[13px] text-muted">For the BISAP score · {t.reason}</p>
+        <p className="mt-0.5 text-[13px] text-muted">
+          {t.pathwayTitle ? `Suggested by ${t.pathwayTitle}` : "Suggested"} · {t.reason}
+        </p>
         {!declining ? (
           <button
             onClick={() => setDeclining(true)}
@@ -81,7 +64,7 @@ function Row({ t }: { t: WardScoringTask }) {
             </button>
           </div>
         )}
-        {err && <p className="mt-1 text-[13px]" style={{ color: AMBER }}>{err}</p>}
+        {err && <p className="mt-1 text-[13px] text-warn-fg">{err}</p>}
       </div>
     </li>
   );

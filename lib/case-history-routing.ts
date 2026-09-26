@@ -45,11 +45,13 @@ Sections:
 - "complaints" — a presenting complaint and its duration ("pain in the right iliac fossa for two days")
 - "hopi" — detail about how one complaint began and progressed; set "complaint" to which one
 - "past" — past medical history, known comorbidities ("diabetic for ten years")
-- "personal" — diet, appetite, bowel and bladder habits, sleep, and addictions: smoking, alcohol, tobacco or gutka/paan/areca-nut chewing — quantity and duration if said ("smokes ten cigarettes a day for twenty years", "occasional alcohol", "chews gutka twice a day", "non-smoker, no alcohol", "normal bowel and bladder")
+- "personal" — appetite, bowel and bladder habits, sleep, and addictions: smoking, alcohol, tobacco or gutka/paan/areca-nut chewing — quantity and duration if said ("smokes ten cigarettes a day for twenty years", "occasional alcohol", "chews gutka twice a day", "non-smoker, no alcohol", "normal bowel and bladder")
 - "family" — family history
 - "medication" — drugs the patient takes at home
 - "surgical" — previous operations
 - "obstetric" — menstrual and obstetric history
+- "dietary" — what the patient eats: vegetarian or mixed diet, meals per day, food intolerance (appetite and bowel habit stay in "personal")
+- "environmental" — housing, water source, sanitation, occupational or travel exposure
 - "abdomen" — per-abdomen examination findings
 - "chest" — chest / respiratory examination findings
 - "local" — local examination of a lump, wound, limb, perianal region

@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 import ProfessionalForm from "./professional-form";
 import { listSpecialties, specialtyPacksEnabled } from "@/lib/specialty";
+import { LogIn, UserPlus } from "lucide-react";
 
 /** The only first-run decision: join the team already working, or start a new one. */
 export default async function OnboardingPage() {
@@ -37,7 +38,10 @@ export default async function OnboardingPage() {
         {!hasProfessionalAccess ? <ProfessionalForm /> : <>
 
         <section className="mt-8">
-          <h2 className="mb-2 text-[17px] font-semibold">Join an existing unit</h2>
+          <h2 className="mb-2 flex items-center gap-2 text-[17px] font-semibold">
+            <LogIn className="h-[18px] w-[18px] text-accent" strokeWidth={2.2} />
+            Join an existing unit
+          </h2>
           <p className="mb-3 text-[13px] leading-relaxed text-muted">
             Ask a colleague for the eight-character unit code.
           </p>
@@ -51,7 +55,10 @@ export default async function OnboardingPage() {
         </div>
 
         <section>
-          <h2 className="mb-2 text-[17px] font-semibold">Create a new unit</h2>
+          <h2 className="mb-2 flex items-center gap-2 text-[17px] font-semibold">
+            <UserPlus className="h-[18px] w-[18px] text-accent" strokeWidth={2.2} />
+            Create a new unit
+          </h2>
           <p className="mb-3 text-[13px] leading-relaxed text-muted">
             You will be its owner and can share its code with your team.
           </p>

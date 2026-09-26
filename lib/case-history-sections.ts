@@ -14,6 +14,8 @@ export const ROUTABLE_SECTIONS = [
   "medication",
   "surgical",
   "obstetric",
+  "dietary",
+  "environmental",
   // Medical oncology. A surgical or medicine unit never shows these cards and its routing
   // prompt is never told about them, so nothing can be filed into one there.
   "onco_disease",
@@ -51,6 +53,8 @@ export const HISTORY_SECTION_LABEL: Record<string, string> = {
   medication: "medication history",
   surgical: "surgical history",
   obstetric: "menstrual and obstetric history",
+  dietary: "dietary history",
+  environmental: "environmental history",
   onco_disease: "oncological history",
   onco_treatment: "treatment received",
   onco_cycle: "current cycle",

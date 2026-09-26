@@ -163,6 +163,23 @@ export async function saveConsultant(formData: FormData) {
   revalidatePath("/ward");
 }
 
+/**
+ * Which printable layout this unit's progress notes print on — the ESIC Medical College
+ * Faridabad pilot's own sheet, or the generic SOAP layout (see patch 0078,
+ * lib/ward.ts getWardIsEsicFaridabad, and app/patients/[id]/note/page.tsx). Owner only, like
+ * renaming and the heading: the wards update policy permits nobody else.
+ */
+export async function setProgressNoteTemplate(wardId: string, isEsicFaridabad: boolean) {
+  if (!wardId) return;
+
+  const supabase = await createClient();
+  await supabase.from("wards").update({ is_esic_faridabad: isEsicFaridabad }).eq("id", wardId);
+
+  revalidatePath("/unit");
+  revalidatePath("/");
+  revalidatePath("/ward");
+}
+
 /** Switch which unit the app is showing. */
 export async function switchWard(formData: FormData) {
   const wardId = String(formData.get("ward_id") ?? "");

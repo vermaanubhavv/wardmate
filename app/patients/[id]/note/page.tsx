@@ -8,11 +8,13 @@ import { syncPatientPathways } from "@/lib/scoring/store";
 import { getScoreNoteLines } from "@/lib/scoring/read";
 import { getWardFormats } from "@/lib/formats";
 import { getWardLabRanges } from "@/lib/ward-lab-ranges";
+import { getWardIsEsicFaridabad } from "@/lib/ward";
 import { MANAGEMENT_CHOICES } from "@/lib/patients";
 import { getProcedureLabels, procedureFor } from "@/lib/templates";
 import CopyNoteButton from "./copy-button";
 import PrintButton from "./print-button";
 import OverlayNote from "./overlay-note";
+import SoapNote from "./soap-note";
 import { renderNoteLine } from "./note-line";
 
 /**
@@ -40,7 +42,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
 
   if (!patient) notFound();
 
-  const [{ data: wardRow }, { data: entriesData }, wardFormats, { data: profile }, procedures, wardRanges] =
+  const [{ data: wardRow }, { data: entriesData }, wardFormats, { data: profile }, procedures, wardRanges, isEsicFaridabad] =
     await Promise.all([
       supabase.from("wards").select("name").eq("id", patient.ward_id).maybeSingle(),
       supabase
@@ -53,14 +55,19 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
         // exact order, the same way derivePatientState does on the main patient page.
         .order("recorded_at", { ascending: false }),
       getWardFormats(patient.ward_id),
-      // The rounding doctor's own department, for "Case seen by". Pinned by id: profiles_ward_read
-      // (0018) makes co-members' profiles readable, so an unfiltered .maybeSingle() throws on a
-      // shared unit. getUser() is request-cached.
-      getUser().then((u) => supabase.from("profiles").select("department").eq("id", u?.id ?? "").maybeSingle()),
+      // The rounding doctor's own department and name, for "Case seen by" and the SOAP sheet's
+      // "Practitioner's name" line. Pinned by id: profiles_ward_read (0018) makes co-members'
+      // profiles readable, so an unfiltered .maybeSingle() throws on a shared unit. getUser() is
+      // request-cached.
+      getUser().then((u) =>
+        supabase.from("profiles").select("department, display_name").eq("id", u?.id ?? "").maybeSingle()
+      ),
       getProcedureLabels(),
       // This ward's own learned lab ranges, for judging a deranged result that has no printed
       // range of its own — see lib/ward-lab-ranges.ts, same source Current progress reads.
       getWardLabRanges(patient.ward_id),
+      // Which printable layout this ward gets — see lib/ward.ts.
+      getWardIsEsicFaridabad(patient.ward_id),
     ]);
 
   // The unit's own uploaded progress-note form, with its fields detected — see
@@ -117,6 +124,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
     procedure: procedureFor(patient, procedures),
     wardRanges,
     scoreLines,
+    practitionerName: profile?.display_name ?? null,
   });
   const noteText = formatProgressNoteText(note);
 
@@ -161,6 +169,12 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
         {canOverlay && notesFormat?.url ? (
           <div className="ios-group overflow-hidden print:rounded-none print:border-0 print:shadow-none">
             <OverlayNote note={note} formatUrl={notesFormat.url} zones={overlayZones} />
+          </div>
+        ) : !isEsicFaridabad ? (
+          // Every ward that is not the ESIC Medical College Faridabad pilot prints the generic
+          // SOAP layout instead of the sheet below — see lib/ward.ts getWardIsEsicFaridabad.
+          <div className="ios-group overflow-hidden print:rounded-none print:border-0 print:shadow-none">
+            <SoapNote note={note} />
           </div>
         ) : (
           <div className="ios-group px-5 py-5 text-[16px] leading-relaxed text-black print:rounded-none print:border-0 print:p-0 print:shadow-none">

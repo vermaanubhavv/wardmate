@@ -208,6 +208,8 @@ export async function applyCompiledCaseHistory(
     "medication history",
     "surgical history",
     "menstrual and obstetric history",
+    "dietary history",
+    "environmental history",
     // Medical oncology. Only reachable on an oncology unit, where the workspace is the only
     // thing that writes these labels.
     "oncological history",

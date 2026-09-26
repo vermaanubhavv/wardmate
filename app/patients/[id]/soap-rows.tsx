@@ -138,7 +138,7 @@ export default function SoapRows({
         {g.value ? (
           <span className="mt-0.5 block text-[15px] leading-snug">{g.value}</span>
         ) : (
-          <span className={"mt-0.5 block text-[15px] " + (g.missing ? "text-orange-700" : "text-muted/50")}>
+          <span className={"mt-0.5 block text-[15px] " + (g.missing ? "text-warn-fg" : "text-muted/50")}>
             not recorded
           </span>
         )}
@@ -170,7 +170,7 @@ export default function SoapRows({
       )}
       {editing && negatives.some((n) => n.label === editing) &&
         editor([editing], `e.g. ${editing} present since morning`, null)}
-      {error && <p className="mt-1 text-[13px] text-orange-700">{error}</p>}
+      {error && <p className="mt-1 text-[13px] text-warn-fg">{error}</p>}
     </>
   );
 }
