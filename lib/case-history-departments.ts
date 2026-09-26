@@ -85,7 +85,6 @@ const DEPARTMENT_LEAD: Record<SpecialtyKey, Lead[]> = {
     },
     { key: "family", table: { fields: ["Psychiatric illness", "Substance use", "Suicide"] } },
   ],
-  // Pending clinician review.
   orthopaedics: [
     {
       key: "surgical",
@@ -112,7 +111,6 @@ const DEPARTMENT_LEAD: Record<SpecialtyKey, Lead[]> = {
     { key: "family", table: { fields: ["Consanguinity", "Similar illness in family", "Siblings"] } },
   ],
   // AMPLE, less the parts other cards already carry; the event is asked on the HOPI card.
-  // Pending clinician review.
   emergency_medicine: [
     { key: "hopi", table: { fields: ["Time of injury / onset", "Mechanism of injury"] } },
     { key: "past", table: { fields: ["Allergies", "Last meal (time)", "Tetanus immunisation", "Anticoagulants / antiplatelets"] } },
