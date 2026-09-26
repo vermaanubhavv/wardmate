@@ -48,6 +48,12 @@ import type { SpecialtyPack } from "./types";
  *   written on a paper case sheet today. Turning it into structured, queryable fields (so a
  *   ward list could show "G2P1, 32+4 weeks" the way it shows "POD 2") is a bigger schema change
  *   than a seam patch, deliberately left for a later, explicitly scoped piece of work.
+ *
+ * CLINICIAN SIGNED OFF FOR PILOT USE 2026-09-26 (Dr. Anubhav), product owner and general-surgery
+ * resident, on his own direction. It covers what this pack HAS — the day counter, the extraction
+ * guidance, the lexicon and the history-tree order. It cannot cover the checklists, scores and
+ * condition discharge templates listed above, because those do not exist yet; the empty lists
+ * stay empty until they are written.
  */
 export const obstetricsGynaecologyPack: SpecialtyPack = {
   key: "obstetrics_gynaecology",

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Mark from "@/app/mark";
 import WaitlistForm from "@/app/waitlist/waitlist-form";
 import ContactForm from "@/app/home/contact-form";
-import { FragmentMerge, ScreenTour, TriageDemo } from "@/app/home/interactive";
+import { ScreenTour, TriageDemo } from "@/app/home/interactive";
 import "./landing.css";
 
 /**
@@ -98,12 +98,21 @@ function Svg({ children, className = "" }: { children: React.ReactNode; classNam
   );
 }
 
+/* The same fever, as it lives today: five places, five different answers. Positions are the
+ * scattered offsets from the centre of the stage; the scroll pulls each one back to 0. */
 const FRAGMENTS = [
-  ["file", "The file", "updated when someone remembers to"],
-  ["register", "The round register", "a line per patient, rarely complete"],
-  ["paper", "Random pieces of paper", "the sticky note, the back of a lab slip"],
-  ["chat", "WhatsApp", "where the real handover actually happens"],
-  ["memory", "The resident's memory", "the part nobody wrote down"],
+  ["file", "The file", "Temp 99.4°F · 18:00 yesterday", "mono", "-30vw", "-24svh", "-7deg"],
+  ["register", "The round register", "7 — pancreatitis — stable ✓", "", "28vw", "-22svh", "5deg"],
+  ["paper", "A sticky note", "7 → CRP?? lactate? ask sir", "hand", "-33vw", "20svh", "4deg"],
+  ["chat", "WhatsApp, 03:12", "bed 7 spiking again. 102", "chat", "30vw", "21svh", "-5deg"],
+  ["memory", "Someone's memory", "…was it 101 or 102?", "memory", "0vw", "-33svh", "2deg"],
+] as const;
+
+/* The same fever in WardMate: one card, and every value says where it came from. */
+const UNIFIED = [
+  ["Temp 102°F", "03:12, from the night JR's message"],
+  ["CRP, lactate", "not yet sent, from the sticky note"],
+  ["Last charted 99.4°F", "18:00 yesterday, from the file"],
 ] as const;
 
 const FLOW = [
@@ -236,7 +245,7 @@ export default function HomePage() {
 
       {/* ---- fragmentation → one place ---- */}
       <section id="about" className="mx-auto max-w-6xl scroll-mt-16 px-6 py-20">
-        <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
+        <div className="max-w-3xl">
           <div className="wm-reveal">
             <Eyebrow>The problem</Eyebrow>
             <h2 className="mt-1 text-[30px] font-semibold leading-tight tracking-tight sm:text-[34px]">Built between call shifts</h2>
@@ -258,18 +267,52 @@ export default function HomePage() {
               criterion doesn&rsquo;t slip through.
             </p>
           </div>
+        </div>
+      </section>
 
-          <div className="wm-reveal">
-            <p className="ios-group-header">Right now, that story is split across</p>
-            <div className="mt-2">
-              <FragmentMerge
-                logo={<Mark className="h-10 w-10 shrink-0" />}
-                items={FRAGMENTS.map(([icon, label, desc]) => ({
-                  icon: <Svg>{Icon[icon as keyof typeof Icon]}</Svg>,
-                  label,
-                  desc,
-                }))}
-              />
+      {/* ---- the same fever in five places, pulled into one as you scroll ---- */}
+      <section className="wm-merge" aria-label="One patient's fever, scattered across five places, brought into one">
+        <div className="wm-merge-stage">
+          <div className="wm-merge-titles">
+            <h2 className="wm-merge-t1 text-[30px] font-semibold leading-tight tracking-tight sm:text-[44px]">
+              Bed 7&rsquo;s fever lives in five places.
+              <span className="block text-muted">None of them agree.</span>
+            </h2>
+            <h2 className="wm-merge-t2 text-[30px] font-semibold leading-tight tracking-tight sm:text-[44px]">
+              <span className="text-accent">Now it lives in one.</span>
+              <span className="block text-muted">And says where each value came from.</span>
+            </h2>
+          </div>
+
+          {FRAGMENTS.map(([icon, label, text, kind, x, y, r], i) => (
+            <div
+              key={label}
+              className={`wm-frag wm-frag-${kind || "plain"}`}
+              style={{ "--x": x, "--y": y, "--r": r, "--i": i } as React.CSSProperties}
+            >
+              <p className="flex items-center gap-1.5 text-[11.5px] font-semibold uppercase tracking-wide text-muted">
+                <Svg className="h-3.5 w-3.5">{Icon[icon as keyof typeof Icon]}</Svg>
+                {label}
+              </p>
+              <p className="wm-frag-text mt-1.5">{text}</p>
+            </div>
+          ))}
+
+          <div className="wm-merge-card wm-glow-border px-5 py-5 shadow-[0_30px_60px_-30px_var(--accent)]">
+            <div className="flex items-center gap-3">
+              <Mark className="h-9 w-9 shrink-0" />
+              <p className="text-[15px] leading-snug">
+                <span className="block font-semibold">Bed 7 · Shikha, 25/F</span>
+                <span className="text-muted">Day 5, acute pancreatitis</span>
+              </p>
+            </div>
+            <div className="mt-3">
+              {UNIFIED.map(([value, source]) => (
+                <p key={value} className="border-t border-line py-2.5 text-[14.5px] leading-snug">
+                  <span className="block font-semibold">{value}</span>
+                  <span className="text-[12.5px] text-muted">{source}</span>
+                </p>
+              ))}
             </div>
           </div>
         </div>
@@ -363,20 +406,31 @@ export default function HomePage() {
       <section id="founder" className="mx-auto max-w-3xl px-6 py-20">
         <div className="wm-glow-border wm-reveal px-6 py-7 sm:px-8">
           <Eyebrow>The person behind it</Eyebrow>
-          <h2 className="mt-1 text-[26px] font-semibold tracking-tight">Built by the resident who needed it</h2>
+          <h2 className="mt-1 text-[26px] font-semibold tracking-tight">Built by a resident who still wants to learn</h2>
           <div className="mt-5 flex items-start gap-5">
-            <span className="grid h-[72px] w-[72px] shrink-0 place-items-center rounded-full bg-accent text-[24px] font-semibold text-white shadow-[0_12px_28px_-12px_var(--accent)]">
-              AV
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element -- fixed marketing asset */}
+            <img
+              src="/home/founder.jpg"
+              alt="Dr. Anubhav Verma"
+              width={72}
+              height={72}
+              className="h-[72px] w-[72px] shrink-0 rounded-full object-cover ring-1 ring-black/5 shadow-[0_12px_28px_-12px_var(--accent)]"
+            />
             <div>
               <p className="text-[17px] font-semibold">Dr. Anubhav Verma</p>
               <p className="font-mono text-[12px] text-accent">JR-2 · General Surgery</p>
               <p className="mt-2.5 text-[15px] leading-snug text-muted">
-                I&rsquo;m the one who built WardMate — still a second-year resident, still on
-                call. Every screen here started as something I needed on my own ward: a list
-                that didn&rsquo;t start from zero every morning, a round I could actually hand
-                off, guidelines that showed up before the consultant asked for them. I&rsquo;m
-                building this the way I practice — one ward round at a time.
+                I&rsquo;m a second-year surgery resident, still on call. Residency was meant to
+                be where I learned medicine from the patient in front of me. Most days, the
+                paperwork got there first. By the time the list was written and the handover
+                sent, the reading I meant to do on the case — the scoring system, the guideline,
+                the why behind the plan — waited for a day off that never came.
+              </p>
+              <p className="mt-2.5 text-[15px] leading-snug text-muted">
+                WardMate is my way of putting that back: the clerical half handled, and the
+                academic half sitting next to the patient, while you&rsquo;re still at the bed
+                and the case is still yours. I&rsquo;m building it the way I practice — one ward
+                round at a time.
               </p>
               <p className="mt-2.5 text-[13.5px] text-muted">
                 — Anubhav ·{" "}
