@@ -94,5 +94,16 @@ Medical oncology ward — what the words mean here:
 
   pickerPhase: "before_surgery",
 
+  // The seven seeded by patch 0061, and only those. A chemotherapy unit is not offered dengue.
+  checklistFamilies: [
+    "chemo_cycle",
+    "febrile_neutropenia",
+    "chemo_toxicity",
+    "leukaemia_induction",
+    "lymphoma_chemo",
+    "myeloma",
+    "transfusion_support",
+  ],
+
   lexiconSpecialty: "medical-oncology",
 };

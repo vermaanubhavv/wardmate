@@ -24,7 +24,7 @@ export default async function NewPatientPage() {
 
   const [suggestions, templateChoices] = await Promise.all([
     getDiagnosisSuggestions(ward.id),
-    listTemplateChoices(pack.pickerPhase),
+    listTemplateChoices(pack.key),
   ]);
 
   return (

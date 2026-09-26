@@ -114,5 +114,10 @@ Obstetrics and gynaecology ward — what the words mean here:
 
   pickerPhase: "after_surgery",
 
+  // null for now — no O&G checklists are seeded (see the file header), and an O&G unit does
+  // operate, so it keeps being offered the unclaimed (surgical) families rather than nothing.
+  // Becomes an explicit list the day a PPH / pre-eclampsia / post-LSCS checklist is written.
+  checklistFamilies: null,
+
   lexiconSpecialty: "obstetrics-gynaecology",
 };

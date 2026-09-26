@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { listTemplateChoices, resolveProcedure } from "@/lib/templates";
+import { getWardSpecialtyStored } from "@/lib/ward";
 import { stripPatientHonorific } from "@/lib/patients";
 import { syncPatientPathways } from "@/lib/scoring/store";
 
@@ -100,7 +101,12 @@ export async function addPatient(
       primary_diagnosis: diagnosis || null,
       admitted_on: admittedOn,
       ...dates,
-      ...resolveProcedure(String(formData.get("procedure") ?? ""), await listTemplateChoices()),
+      // Scoped to this unit's department, so a typed name can only link a checklist its own
+      // picker offers — never one belonging to another specialty that happens to share a phase.
+      ...resolveProcedure(
+        String(formData.get("procedure") ?? ""),
+        await listTemplateChoices(await getWardSpecialtyStored(wardId))
+      ),
       ...(chemo && !("error" in chemo) ? chemo : {}),
       created_by: user.id,
     })
@@ -375,9 +381,18 @@ export async function updatePatientIdentity(
 
   // Typed freely. Matching a name the library knows brings its template along; anything else
   // is kept as the unit's own wording, with no template applied.
+  // Read from the row rather than the form: which department's checklist library a typed name
+  // may resolve against is the unit's fact, not something the browser gets to say.
+  const { data: owning } = await supabase
+    .from("patients")
+    .select("ward_id")
+    .eq("id", id)
+    .maybeSingle();
   const procedure = resolveProcedure(
     String(formData.get("procedure") ?? ""),
-    await listTemplateChoices()
+    await listTemplateChoices(
+      owning?.ward_id ? await getWardSpecialtyStored(owning.ward_id) : null
+    )
   );
 
   // The dropdown is the authority on which dates a patient may hold, so every branch states
