@@ -11,12 +11,16 @@ const PAGE_W_MM = 178;
 const MIN_ZOOM = 0.6;
 
 /**
- * One side of the history sheet, held to exactly one A4 page.
+ * One side of the history sheet, as a fixed A4 frame.
  *
- * Laid out at the printed width on screen too, so what is measured here is what prints. When
- * the content runs taller than the page, the whole side is zoomed down just enough to fit —
- * and widened by the same factor, so it still fills the page edge to edge. Nothing is cut:
- * a side that cannot fit even at MIN_ZOOM is left to spill over.
+ * The side is exactly one page tall and lays its content out as a column, so the ruled writing
+ * areas inside it (`flex-1`) stretch to take up whatever the recorded content leaves — a sparse
+ * patient gets more room to write, never a half-empty page. When the content is taller than the
+ * page even with those areas at their minimum, the whole side is zoomed down just enough to fit,
+ * and enlarged by the same factor so it still fills the page edge to edge. Nothing is cut: a
+ * side that cannot fit even at MIN_ZOOM spills onto a second page.
+ *
+ * Laid out at the printed size on screen too, so what is measured here is what prints.
  */
 export default function FitPage({ children, breakAfter = false }: { children: React.ReactNode; breakAfter?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -25,24 +29,19 @@ export default function FitPage({ children, breakAfter = false }: { children: Re
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
+    const size = (z: number) => {
+      el.style.zoom = String(z);
+      el.style.width = `${PAGE_W_MM / z}mm`;
+      el.style.height = `${PAGE_H_MM / z}mm`;
+    };
+    // Both heights are in the element's own units, so the comparison holds at any zoom.
+    const overflows = () => el.scrollHeight > el.clientHeight + 1;
     const fit = () => {
-      // Measure at zoom 1 and full width: a millimetre probe gives the page height in CSS px.
-      el.style.zoom = "1";
-      el.style.width = `${PAGE_W_MM}mm`;
-      const probe = document.createElement("div");
-      probe.style.height = `${PAGE_H_MM}mm`;
-      document.body.appendChild(probe);
-      const budget = probe.getBoundingClientRect().height;
-      probe.remove();
       let z = 1;
-      // Zooming and widening reflows the text into fewer lines, so step down until it fits.
-      for (let i = 0; i < 8; i++) {
-        el.style.zoom = String(z);
-        el.style.width = `${PAGE_W_MM / z}mm`;
-        // The rendered (zoomed) height — what lands on paper.
-        const h = el.getBoundingClientRect().height;
-        if (h <= budget || z <= MIN_ZOOM) break;
-        z = Math.max(MIN_ZOOM, z * Math.min(0.97, budget / h));
+      size(z);
+      for (let i = 0; i < 10 && overflows() && z > MIN_ZOOM; i++) {
+        z = Math.max(MIN_ZOOM, z * Math.min(0.97, el.clientHeight / el.scrollHeight));
+        size(z);
       }
       setZoom(z);
     };
@@ -55,8 +54,13 @@ export default function FitPage({ children, breakAfter = false }: { children: Re
   return (
     <div
       ref={ref}
-      style={{ zoom, width: `${PAGE_W_MM / zoom}mm`, breakAfter: breakAfter ? "page" : undefined }}
-      className="mx-auto bg-white print:mx-0"
+      style={{
+        zoom,
+        width: `${PAGE_W_MM / zoom}mm`,
+        height: `${PAGE_H_MM / zoom}mm`,
+        breakAfter: breakAfter ? "page" : undefined,
+      }}
+      className="flex flex-col overflow-hidden bg-white shadow-[0_0_0_12mm_white,0_2px_16px_12mm_rgba(0,0,0,0.12)] print:overflow-visible print:shadow-none"
     >
       {children}
     </div>

@@ -85,6 +85,38 @@ const DEPARTMENT_LEAD: Record<SpecialtyKey, Lead[]> = {
     },
     { key: "family", table: { fields: ["Psychiatric illness", "Substance use", "Suicide"] } },
   ],
+  // Pending clinician review.
+  orthopaedics: [
+    {
+      key: "surgical",
+      ifRecorded: true,
+      table: { columns: ["Fracture / procedure (as recorded)", "Year", "Implant", "Complications"], rows: 2, recordedInRows: true },
+    },
+    { key: "personal", table: { fields: ["Occupation", "Handedness", "Activity level / sport", "Smoking"] } },
+  ],
+  urology: [
+    SURGICAL,
+    { key: "past", table: { fields: ["Renal / ureteric stones", "Previous catheterisation", "Recurrent UTI", "DM / CKD"] } },
+  ],
+  neurosurgery: [
+    SURGICAL,
+    { key: "past", table: { fields: ["Seizures", "Previous head injury", "Hypertension", "Anticoagulants / antiplatelets"] } },
+  ],
+  // No birth, developmental or immunisation card exists yet, so a child's history asks them
+  // inside personal history — the card a paediatric clerking already fills first.
+  paediatrics: [
+    {
+      key: "personal",
+      table: { fields: ["Birth history (term / preterm, weight)", "Feeding history", "Developmental milestones", "Immunisation"] },
+    },
+    { key: "family", table: { fields: ["Consanguinity", "Similar illness in family", "Siblings"] } },
+  ],
+  // AMPLE, less the parts other cards already carry; the event is asked on the HOPI card.
+  // Pending clinician review.
+  emergency_medicine: [
+    { key: "hopi", table: { fields: ["Time of injury / onset", "Mechanism of injury"] } },
+    { key: "past", table: { fields: ["Allergies", "Last meal (time)", "Tetanus immunisation", "Anticoagulants / antiplatelets"] } },
+  ],
   dermatology: [
     {
       key: "medication",

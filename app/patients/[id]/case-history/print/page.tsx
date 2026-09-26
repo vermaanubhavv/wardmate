@@ -14,7 +14,7 @@ import type { Observation } from "@/lib/patient-state";
 import { labReading } from "../../investigations-section";
 import PrintButton from "../../note/print-button";
 import FitPage from "./fit-page";
-import { ExamDiagrams } from "./diagrams";
+import { ExamDiagrams, hasExamDiagram } from "./diagrams";
 
 /**
  * The printable patient history sheet — one A4 sheet, front and back, for every patient.
@@ -53,18 +53,38 @@ const ONCO_EXAM = [
   { label: "mucosa, skin and vascular access", heading: "Mucosa, skin & line" },
 ];
 
-/** How many reports the back has room for. Older ones stay on WardMate and the sheet says so. */
-const MAX_REPORTS = 8;
+/** How many reports of each kind the back has room for — capped separately, so a run of daily
+ *  bloods can never push the one CT off the sheet. Older ones stay on WardMate and the sheet
+ *  says so. */
+const MAX_BLOOD = 8;
+const MAX_IMAGING = 4;
 
 const norm = (s: string) => s.toLowerCase().trim();
 const unconfirmed = (o: Observation) => o.needs_confirmation && !o.confirmed_at;
 const cell = "border border-black/60 px-1 py-px";
 
-function Block({ heading, children }: { heading: string; children: React.ReactNode }) {
+/** Section heading as a light band — how a printed case sheet separates its sections. */
+const band = "bg-black/[0.07] px-1 py-[1px] text-[9.5px] font-bold uppercase tracking-wide";
+const body = "text-[11px] leading-[1.35]";
+
+function Block({ heading, children, className = "" }: { heading: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className="mt-1.5 break-inside-avoid">
-      <p className="border-b border-black/40 text-[9.5px] font-bold uppercase tracking-wide">{heading}</p>
-      <div className="mt-0.5 text-[10.5px] leading-snug">{children}</div>
+    <div className={"mt-1.5 break-inside-avoid " + className}>
+      <p className={band}>{heading}</p>
+      <div className={"mt-0.5 px-1 " + body}>{children}</div>
+    </div>
+  );
+}
+
+/** Ruled lines to write on, filling whatever height the page leaves it (never less than `min`).
+ *  Real bordered rows rather than a background gradient: a hairline gradient drops out
+ *  unpredictably when a printer rasterises it. Rows past the available height are clipped. */
+function Ruled({ min = 14, className = "" }: { min?: number; className?: string }) {
+  return (
+    <div className={"min-h-0 flex-1 overflow-hidden " + className} style={{ minHeight: `${min}mm` }}>
+      {Array.from({ length: 40 }).map((_, i) => (
+        <div key={i} className="h-[7mm] border-b border-black/35" />
+      ))}
     </div>
   );
 }
@@ -80,16 +100,6 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 const NR = () => <span className="text-black/60">NR</span>;
 
-function WriteLines({ count }: { count: number }) {
-  return (
-    <div>
-      {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="h-5 border-b border-dotted border-black/50" />
-      ))}
-    </div>
-  );
-}
-
 function SectionLines({ section }: { section: HistorySection }) {
   return section.lines.length > 0 ? section.lines.map((l) => <p key={l.id}>{l.text}</p>) : <p>{section.note}</p>;
 }
@@ -104,9 +114,9 @@ function LeadBlock({ section, table }: { section: HistorySection; table: Lead["t
   const above = inRows.length > 0 ? [] : rest;
   const blankRows = table?.columns ? Math.max((table.rows ?? 1) - inRows.length, 1) : 0;
   return (
-    <div className="mt-2 break-inside-avoid border border-black px-1.5 py-1">
-      <p className="text-[11px] font-bold uppercase tracking-wide">{section.label}</p>
-      <div className="text-[10.5px] leading-snug">
+    <div className="mt-2 break-inside-avoid border border-black">
+      <p className={band + " border-b border-black text-[10.5px]"}>{section.label}</p>
+      <div className={"px-1.5 py-1 " + body}>
         {above.length > 0
           ? above.map((t, i) => <p key={i}>{t}</p>)
           : inRows.length === 0 && Object.keys(answers).length === 0 && <p>{section.note ?? "NR"}</p>}
@@ -125,7 +135,7 @@ function LeadBlock({ section, table }: { section: HistorySection; table: Lead["t
           </div>
         )}
         {table?.columns && (
-          <table className="mt-1 w-full border-collapse text-[9.5px]">
+          <table className="mt-1 w-full border-collapse text-[10px]">
             <thead>
               <tr>
                 {table.columns.map((c) => (
@@ -145,7 +155,7 @@ function LeadBlock({ section, table }: { section: HistorySection; table: Lead["t
                 </tr>
               ))}
               {Array.from({ length: blankRows }).map((_, i) => (
-                <tr key={i} className="h-4">
+                <tr key={i} className="h-5">
                   {table.columns!.map((c) => (
                     <td key={c} className={cell} />
                   ))}
@@ -154,7 +164,7 @@ function LeadBlock({ section, table }: { section: HistorySection; table: Lead["t
             </tbody>
           </table>
         )}
-        {!table && <WriteLines count={2} />}
+        {!table && <Ruled min={14} className="h-[14mm] flex-none" />}
       </div>
     </div>
   );
@@ -248,7 +258,12 @@ export default async function CaseHistoryPrintPage({
   // Complaints and their story first, then the department's lead cards, then the rest — the
   // rest two to a row, since most are a line or an "NR".
   const [opening, remainder] = [cards.slice(0, 2), cards.slice(2)];
-  const leadCards = [...lead.keys()].map((k) => cards.find((c) => c.key === k)).filter((c) => !!c);
+  // A lead that is one of the opening cards (the presenting illness) stays in its place and is
+  // simply drawn as a lead block there.
+  const leadCards = [...lead.keys()]
+    .filter((k) => !opening.some((c) => c.key === k))
+    .map((k) => cards.find((c) => c.key === k))
+    .filter((c) => !!c);
   const restCards = remainder.filter((c) => !lead.has(c.key));
 
   // ---- Back: examination -----------------------------------------------------------------
@@ -279,9 +294,11 @@ export default async function CaseHistoryPrintPage({
 
   // ---- Back: investigations, oldest first -----------------------------------------------
   const allReports = groupInvestigations(allObservations);
-  const latest = allReports.slice(0, MAX_REPORTS).reverse();
-  const blood = latest.filter((r) => !isImaging(r.values[0]));
-  const imaging = latest.filter((r) => isImaging(r.values[0]));
+  const allImaging = allReports.filter((r) => isImaging(r.values[0]));
+  const allBlood = allReports.filter((r) => !isImaging(r.values[0]));
+  const blood = allBlood.slice(0, MAX_BLOOD).reverse();
+  const imaging = allImaging.slice(0, MAX_IMAGING).reverse();
+  const hiddenReports = allReports.length - blood.length - imaging.length;
 
   // ---- Back: summary and management ------------------------------------------------------
   const differential =
@@ -302,7 +319,8 @@ export default async function CaseHistoryPrintPage({
   const name = stripPatientHonorific(patient.display_name);
   const chief = byKey.get("chief")!;
   const past = byKey.get("past")!;
-  const sub = "text-[9px] font-semibold uppercase";
+  const sub = "text-[9.5px] font-semibold uppercase";
+  const ageSex = `${patient.age_years != null ? `${patient.age_years} yrs` : "NR"} / ${patient.sex ?? "NR"}`;
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col bg-background print:max-w-none print:bg-white">
@@ -327,50 +345,57 @@ export default async function CaseHistoryPrintPage({
       </header>
 
       {/* Shown at its printed size, so scroll sideways on a phone. */}
-      <section className="overflow-x-auto pb-4 print:overflow-visible">
-        <div className="flex w-max flex-col gap-4 px-4 text-black print:w-auto print:gap-0 print:px-0">
+      <section className="overflow-x-auto pb-6 print:overflow-visible print:pb-0">
+        <div className="flex w-max flex-col gap-[30mm] px-[16mm] py-[14mm] text-black print:w-auto print:gap-0 print:p-0">
           {/* ---- Front ---- */}
           <FitPage breakAfter>
             {/* The unit's uploaded logo (the same one its discharge summary uses); an empty box
                 marks the spot until one is uploaded on the unit's formats page. */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 border-b-2 border-black pb-1.5">
               {logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- ward-uploaded logo via a short-lived signed link.
-                <img src={logoUrl} alt="" className="h-14 w-14 shrink-0 object-contain" />
+                <img src={logoUrl} alt="" className="h-[17mm] w-[17mm] shrink-0 object-contain" />
               ) : (
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center border border-dashed border-black/50 text-center text-[8px] leading-tight text-black/50">
+                <div className="flex h-[17mm] w-[17mm] shrink-0 items-center justify-center border border-dashed border-black/50 text-center text-[8px] leading-tight text-black/50">
                   Hospital logo
                 </div>
               )}
               <div className="flex-1 text-center">
-                {ward?.name && <p className="text-[13px] font-bold">{ward.name}</p>}
-                <p className="mt-0.5 border border-black py-0.5 text-[13px] font-bold uppercase">
-                  Patient history sheet
-                </p>
+                {ward?.name && <p className="text-[14px] font-bold">{ward.name}</p>}
+                <p className="text-[10px] uppercase tracking-wide">Department of {pack.label}</p>
+                <p className="mt-1 text-[15px] font-bold uppercase tracking-[0.12em]">Patient history sheet</p>
               </div>
-              <div className="h-14 w-14 shrink-0" aria-hidden />
+              <div className="h-[17mm] w-[17mm] shrink-0" aria-hidden />
             </div>
 
-            <Block heading="Demographics & hospital identifiers">
-              <div className="grid grid-cols-4 gap-x-3">
-                <Row label="Name">{name}</Row>
-                <Row label="Age / Sex">
-                  {patient.age_years != null ? `${patient.age_years} yrs` : <NR />} / {patient.sex ?? <NR />}
-                </Row>
-                <Row label="Bed">{patient.bed ?? <NR />}</Row>
-                <Row label="Admitted">{patient.admitted_on?.slice(0, 10) ?? <NR />}</Row>
-                <Row label="UHID / IP No">{patient.uhid_ip_no ?? <NR />}</Row>
-                <Row label="MRD No">{patient.mrd_no ?? <NR />}</Row>
-                <Row label="Department">{pack.label}</Row>
-                <Row label="Unit">{ward?.name ?? <NR />}</Row>
-              </div>
-            </Block>
+            {/* Identifiers as a ruled grid, the way a hospital sheet prints them. */}
+            <div className={"mt-1.5 grid grid-cols-4 border-l border-t border-black/60 " + body}>
+              {[
+                ["Name", name],
+                ["Age / Sex", ageSex],
+                ["Bed", patient.bed],
+                ["Date of admission", patient.admitted_on?.slice(0, 10)],
+                ["UHID / IP No", patient.uhid_ip_no],
+                ["MRD No", patient.mrd_no],
+                ["Department", pack.label],
+                ["Unit", ward?.name],
+              ].map(([k, v]) => (
+                <div key={k} className="border-b border-r border-black/60 px-1 py-0.5">
+                  <p className="text-[8.5px] uppercase text-black/70">{k}</p>
+                  <p className="min-h-[1.35em] font-semibold">{v ?? <NR />}</p>
+                </div>
+              ))}
+            </div>
 
-            {opening.map((s) => (
-              <Block key={s.key} heading={s.label}>
-                <SectionLines section={s} />
-              </Block>
-            ))}
+            {opening.map((s) =>
+              lead.has(s.key) ? (
+                <LeadBlock key={s.key} section={s} table={lead.get(s.key)!.table} />
+              ) : (
+                <Block key={s.key} heading={s.label}>
+                  <SectionLines section={s} />
+                </Block>
+              )
+            )}
 
             {leadCards.map((s) => (
               <LeadBlock key={s.key} section={s} table={lead.get(s.key)!.table} />
@@ -383,10 +408,26 @@ export default async function CaseHistoryPrintPage({
                 </Block>
               ))}
             </div>
+
+            {/* Whatever the page has left, to write the history not yet recorded. */}
+            <div className="mt-1.5 flex min-h-0 flex-1 flex-col">
+              <p className={band}>Additional history</p>
+              <Ruled min={14} />
+            </div>
           </FitPage>
 
           {/* ---- Back ---- */}
           <FitPage>
+            {/* The back is a separate side of paper: it carries who it belongs to. */}
+            <div className="flex items-baseline justify-between border-b-2 border-black pb-1 text-[10.5px]">
+              <p className="font-bold uppercase tracking-wide">Patient history sheet — examination &amp; management</p>
+              <p>
+                <span className="font-semibold">{name}</span> · {ageSex}
+                {patient.uhid_ip_no && ` · ${patient.uhid_ip_no}`}
+                {patient.bed && ` · Bed ${patient.bed}`}
+              </p>
+            </div>
+
             <div className="grid grid-cols-2 gap-x-4">
               <Block heading="Examination — general physical">
                 <Row label="Vitals">
@@ -431,10 +472,17 @@ export default async function CaseHistoryPrintPage({
               </Block>
             </div>
 
-            <ExamDiagrams specialty={pack.key} />
+            {hasExamDiagram(pack.key) && (
+              <div className="mt-1.5 break-inside-avoid border border-black/60">
+                <p className={band + " border-b border-black/60"}>Diagram — mark findings</p>
+                <div className="px-1 py-1">
+                  <ExamDiagrams specialty={pack.key} />
+                </div>
+              </div>
+            )}
 
             <Block heading="Latest investigations">
-              {latest.length === 0 ? (
+              {allReports.length === 0 ? (
                 <p>None recorded.</p>
               ) : (
                 <>
@@ -454,9 +502,9 @@ export default async function CaseHistoryPrintPage({
                       ))}
                     </>
                   )}
-                  {allReports.length > MAX_REPORTS && (
+                  {hiddenReports > 0 && (
                     <p className="text-[9px] italic">
-                      {allReports.length - MAX_REPORTS} earlier report(s) not shown — see WardMate.
+                      {hiddenReports} earlier report(s) not shown — see WardMate.
                     </p>
                   )}
                 </>
@@ -472,8 +520,10 @@ export default async function CaseHistoryPrintPage({
               {differential.length > 0 && <Row label="Differential diagnosis">{differential.join("; ")}</Row>}
             </Block>
 
-            <Block heading="Management & treatment">
-              <div className="grid grid-cols-2 gap-x-4">
+            {/* Management takes the rest of the page: what is recorded, then lines for orders. */}
+            <div className="mt-1.5 flex min-h-0 flex-1 flex-col">
+              <p className={band}>Management &amp; treatment</p>
+              <div className={"mt-0.5 grid grid-cols-2 gap-x-4 px-1 " + body}>
                 <div>
                   <p className={sub}>Plan</p>
                   {planItems.length > 0 ? planItems.map((p, i) => <p key={i}>• {p}</p>) : <NR />}
@@ -492,11 +542,11 @@ export default async function CaseHistoryPrintPage({
                   )}
                 </div>
               </div>
-              <WriteLines count={planItems.length + currentMeds.length > 6 ? 2 : 4} />
-            </Block>
+              <Ruled min={21} />
+            </div>
 
-            <div className="mt-3 flex break-inside-avoid gap-4 text-[10.5px]">
-              <div className="grid flex-1 grid-cols-2 gap-x-4 gap-y-3">
+            <div className={"mt-2 flex break-inside-avoid gap-4 border-t-2 border-black pt-2 " + body}>
+              <div className="grid flex-1 grid-cols-2 gap-x-4 gap-y-3.5">
                 {["Doctor's name", "Designation", "Signature", "Date & time"].map((l) => (
                   <p key={l} className="flex items-end gap-1.5">
                     <span className="shrink-0 font-semibold">{l}:</span>
@@ -504,7 +554,7 @@ export default async function CaseHistoryPrintPage({
                   </p>
                 ))}
               </div>
-              <div className="flex h-20 w-32 items-start justify-center border border-black/60 pt-0.5 text-[9px] text-black/60">
+              <div className="flex h-[22mm] w-[38mm] items-start justify-center border border-black/60 pt-0.5 text-[9px] text-black/60">
                 Stamp
               </div>
             </div>

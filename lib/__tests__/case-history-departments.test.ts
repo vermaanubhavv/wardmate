@@ -22,6 +22,7 @@ describe("department prompts", () => {
   it("gives every department a lead, and nothing to an unknown one", () => {
     expect(leadsFor("obstetrics_gynaecology")[0].key).toBe("obstetric");
     expect(leadsFor("psychiatry").map((l) => l.key)).toEqual(["personal", "family"]);
+    expect(leadsFor("emergency_medicine").map((l) => l.key)).toEqual(["hopi", "past"]);
     expect(leadsFor("nonsense")).toEqual([]);
   });
 });

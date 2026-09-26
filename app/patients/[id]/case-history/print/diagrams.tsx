@@ -3,173 +3,286 @@
  * conventionally marks findings on by hand. Outlines only: nothing is ever drawn onto them from
  * the record, so a diagram can never show a finding nobody made.
  *
- * Plain inline SVG in black line, so they print crisply at any zoom FitPage applies. Sides are
- * labelled from the patient's point of view — on a front view the patient's right is on the
- * viewer's left.
+ * Inline SVG in black line with a non-scaling stroke, so every drawing has the same line weight
+ * whatever its size or the zoom FitPage applies. The outlines are smooth curves generated from
+ * anatomical contour points (the path constants at the bottom of this file).
+ *
+ * ORIENTATION, which is where a diagram is most easily wrong:
+ *   - Front views face the reader: the patient's right is on the viewer's LEFT. Back views and
+ *     the head seen from above are the other way round. Every view carries its R and L.
+ *   - Tympanic membrane, as seen down the otoscope: the handle of the malleus points up and
+ *     forward and the cone of light sits antero-inferiorly — 1 and 5 o'clock in the right ear,
+ *     11 and 7 o'clock in the left.
+ *   - Fundus, as seen with the ophthalmoscope: the optic disc is nasal — on the viewer's right in
+ *     the right eye, the viewer's left in the left eye; the macula temporal to it.
  */
 
-const line = { fill: "none", stroke: "black", strokeWidth: 0.8 } as const;
-const faint = { fill: "none", stroke: "black", strokeWidth: 0.5, strokeDasharray: "2 1.5" } as const;
-const label = { fontSize: 7, fontFamily: "sans-serif", fill: "black" } as const;
-const small = { ...label, fontSize: 5 } as const;
+const line = { fill: "none", stroke: "black", strokeWidth: 1, vectorEffect: "non-scaling-stroke" } as const;
+const thin = { ...line, strokeWidth: 0.6 } as const;
+const guide = { ...line, strokeWidth: 0.6, strokeDasharray: "3 2.5" } as const;
 
-function Figure({ caption, viewBox, children }: { caption: string; viewBox: string; children: React.ReactNode }) {
+function Figure({
+  caption,
+  viewBox,
+  height = 44,
+  children,
+}: {
+  caption: string;
+  viewBox: string;
+  /** Printed height in millimetres. */
+  height?: number;
+  children: React.ReactNode;
+}) {
   return (
-    <figure className="flex flex-col items-center">
-      <svg viewBox={viewBox} className="h-[38mm] w-auto" role="img" aria-label={caption}>
+    <figure className="m-0 flex flex-col items-center">
+      <svg viewBox={viewBox} style={{ height: `${height}mm` }} className="w-auto" role="img" aria-label={caption}>
         {children}
       </svg>
-      <figcaption className="text-[8.5px] font-semibold uppercase">{caption}</figcaption>
+      <figcaption className="mt-0.5 text-[8.5px] font-semibold uppercase tracking-wide">{caption}</figcaption>
     </figure>
   );
 }
 
-// ---- Human body, front and back ------------------------------------------------------------
+/** A text label; `size` is in the diagram's own units. */
+function T({ x, y, size, children, anchor = "middle" }: { x: number; y: number; size: number; children: React.ReactNode; anchor?: "start" | "middle" | "end" }) {
+  return (
+    <text x={x} y={y} fontSize={size} textAnchor={anchor} fontFamily="Helvetica, Arial, sans-serif" fill="black">
+      {children}
+    </text>
+  );
+}
 
-/** Head apart; trunk and legs as one outline; each arm hanging clear of the trunk. */
-const TRUNK =
-  "M44 30 L44 36 Q32 38 28 44 L28 100 Q28 120 30 128 L32 200 Q32 210 40 212 L46 212 L47 204 L49 136 L50 130 L51 136 L53 204 L54 212 L60 212 Q68 210 68 200 L70 128 Q72 120 72 100 L72 44 Q68 38 56 36 L56 30";
-const ARMS = [
-  "M28 46 Q19 47 17 58 L11 104 Q9 112 13 116 L17 115 L20 102 L25 64 L28 60",
-  "M72 46 Q81 47 83 58 L89 104 Q91 112 87 116 L83 115 L80 102 L75 64 L72 60",
-];
+// ---- Human body ------------------------------------------------------------------------------
 
 function Body({ back }: { back?: boolean }) {
   return (
-    <Figure caption={back ? "Back" : "Front"} viewBox="0 0 100 222">
-      <circle cx={50} cy={18} r={12} {...line} />
-      <path d={TRUNK} {...line} />
-      {ARMS.map((d) => (
-        <path key={d} d={d} {...line} />
-      ))}
-      {back && <path d="M50 38 L50 128" {...faint} />}
-      <text x={0} y={40} {...label}>{back ? "L" : "R"}</text>
-      <text x={94} y={40} {...label}>{back ? "R" : "L"}</text>
+    <Figure caption={back ? "Back" : "Front"} viewBox="-10 0 220 440" height={60}>
+      <path d={P_BODY} {...line} />
+      {back ? (
+        <>
+          <path d={P_BODY_SPINE} {...guide} />
+          <path d={P_BODY_SCAP} {...thin} />
+          <path d={P_BODY_GLUT} {...thin} />
+        </>
+      ) : (
+        <>
+          <path d={P_BODY_CLAV} {...thin} />
+          <circle cx={100} cy={196} r={2.2} {...thin} />
+        </>
+      )}
+      <T x={4} y={110} size={16}>{back ? "L" : "R"}</T>
+      <T x={196} y={110} size={16}>{back ? "R" : "L"}</T>
     </Figure>
   );
 }
 
-// ---- Abdomen -------------------------------------------------------------------------------
+// ---- Abdomen ---------------------------------------------------------------------------------
 
-/** The costal margins, rising from each flank to meet at the xiphisternum. */
-const COSTAL = "M12 34 Q40 12 60 4 Q80 12 108 34";
-/** Torso from the costal margin to the groin, both sides. */
-const ABDOMEN_OUTLINE = "M12 4 L10 112 Q60 136 110 112 L108 4";
-
-function AbdomenRegions() {
+function Abdomen({ regions }: { regions: boolean }) {
   const names = [
-    ["R hypochond.", "Epigastrium", "L hypochond."],
+    ["R hypochondrium", "Epigastric", "L hypochondrium"],
     ["R lumbar", "Umbilical", "L lumbar"],
-    ["R iliac", "Hypogastrium", "L iliac"],
+    ["R iliac fossa", "Hypogastric", "L iliac fossa"],
   ];
   return (
-    <Figure caption="Abdomen — nine regions" viewBox="0 0 120 130">
-      <path d={ABDOMEN_OUTLINE} {...line} />
-      <path d={COSTAL} {...line} />
-      <path d="M43 6 L43 122 M77 6 L77 122 M11 42 L109 42 M10 82 L110 82" {...faint} />
-      <circle cx={60} cy={62} r={1.4} {...line} />
-      {names.map((row, r) =>
-        row.map((n, c) => (
-          <text key={n} x={[27, 60, 93][c]} y={[39, 74, 100][r]} textAnchor="middle" {...small}>
-            {n}
-          </text>
-        ))
+    <Figure caption={regions ? "Abdomen — nine regions" : "Abdomen — fundal height, scars"} viewBox="0 -6 240 280" height={52}>
+      <path d={P_TRUNK} {...line} />
+      <path d={P_COSTAL} {...thin} />
+      <path d={P_CREST} {...thin} />
+      <path d={P_INGUINAL} {...thin} />
+      <circle cx={120} cy={150} r={3} {...thin} />
+      {regions ? (
+        <>
+          <path d="M82 36 L82 256 M158 36 L158 256 M32 110 L208 110 M30 184 L210 184" {...guide} />
+          {names.map((row, r) =>
+            row.map((n, c) => (
+              <T key={n} x={[56, 120, 184][c]} y={[98, 138, 212][r]} size={7.5}>
+                {n}
+              </T>
+            ))
+          )}
+        </>
+      ) : (
+        <>
+          <path d="M70 50 L170 50 M60 150 L180 150 M84 236 L156 236" {...guide} />
+          <T x={120} y={44} size={10}>Xiphisternum</T>
+          <T x={120} y={143} size={10}>Umbilicus</T>
+          <T x={120} y={230} size={10}>Symphysis pubis</T>
+        </>
       )}
-      <text x={1} y={70} {...label}>R</text>
-      <text x={113} y={70} {...label}>L</text>
+      <T x={10} y={70} size={14}>R</T>
+      <T x={230} y={70} size={14}>L</T>
     </Figure>
   );
 }
 
-function AbdomenLandmarks() {
-  return (
-    <Figure caption="Abdomen — mark fundal height, scars" viewBox="0 0 120 130">
-      <path d={ABDOMEN_OUTLINE} {...line} />
-      <path d={COSTAL} {...line} />
-      <circle cx={60} cy={62} r={1.4} {...line} />
-      <path d="M40 8 L80 8 M20 62 L100 62 M30 112 L90 112" {...faint} />
-      <text x={60} y={16} textAnchor="middle" {...small}>Xiphisternum</text>
-      <text x={60} y={59} textAnchor="middle" {...small}>Umbilicus</text>
-      <text x={60} y={109} textAnchor="middle" {...small}>Symphysis pubis</text>
-      <text x={1} y={70} {...label}>R</text>
-      <text x={113} y={70} {...label}>L</text>
-    </Figure>
-  );
-}
-
-// ---- Chest ---------------------------------------------------------------------------------
+// ---- Chest -----------------------------------------------------------------------------------
 
 function Chest({ back }: { back?: boolean }) {
-  // Two plain lungs; on the front view the left lung (viewer's right) carries the cardiac notch.
-  const viewerLeft = "M42 18 Q30 20 24 44 Q18 70 18 96 Q30 100 44 96 L46 24 Q45 18 42 18 Z";
-  const viewerRight = back
-    ? "M78 18 Q90 20 96 44 Q102 70 102 96 Q90 100 76 96 L74 24 Q75 18 78 18 Z"
-    : "M78 18 Q90 20 96 44 Q102 70 102 96 Q92 100 80 98 Q72 84 66 80 Q72 70 74 60 L74 24 Q75 18 78 18 Z";
   return (
-    <Figure caption={back ? "Chest — back" : "Chest — front"} viewBox="0 0 120 112">
-      <path d="M36 4 Q20 8 10 14 L8 108 L112 108 L110 14 Q100 8 84 4" {...line} />
-      <path d={viewerLeft} {...line} />
-      <path d={viewerRight} {...line} />
-      {back && <path d="M60 6 L60 106" {...faint} />}
-      <path d="M14 44 L106 44 M14 72 L106 72" {...faint} />
-      <text x={2} y={40} {...small}>Upper</text>
-      <text x={2} y={68} {...small}>Mid</text>
-      <text x={2} y={94} {...small}>Lower</text>
-      <text x={112} y={30} {...label}>{back ? "R" : "L"}</text>
-      <text x={3} y={30} {...label}>{back ? "L" : "R"}</text>
+    <Figure caption={back ? "Chest — back" : "Chest — front"} viewBox="0 -4 240 244" height={50}>
+      <path d={P_CHEST} {...line} />
+      {back ? (
+        <>
+          <path d={P_LUNG_BACK} {...line} />
+          <path d={P_FISSURES_BACK} {...guide} />
+          <path d={P_CHEST_SCAP} {...thin} />
+          <path d="M120 0 L120 236" {...guide} />
+        </>
+      ) : (
+        <>
+          <path d={P_CHEST_CLAV} {...thin} />
+          <path d={P_STERNUM} {...thin} />
+          <path d={P_TRACHEA} {...thin} />
+          <path d={P_LUNG_R} {...line} />
+          <path d={P_LUNG_L} {...line} />
+          <path d={P_FISSURES_FRONT} {...guide} />
+        </>
+      )}
+      <T x={14} y={30} size={14}>{back ? "L" : "R"}</T>
+      <T x={226} y={30} size={14}>{back ? "R" : "L"}</T>
     </Figure>
   );
 }
 
-// ---- Ear, eye ------------------------------------------------------------------------------
+// ---- Tympanic membrane -----------------------------------------------------------------------
 
 function TympanicMembrane({ side }: { side: "Right" | "Left" }) {
-  // Handle of malleus runs from the umbo up and forward — toward the face, which is the
-  // viewer's left for the right ear seen through an otoscope, the right for the left ear.
-  const up = side === "Right" ? "M50 50 L42 18" : "M50 50 L58 18";
+  // Everything is drawn for the right ear and mirrored for the left.
+  const flip = side === "Left" ? "translate(100 0) scale(-1 1)" : undefined;
   return (
-    <Figure caption={`${side} ear — TM`} viewBox="0 0 100 100">
-      <circle cx={50} cy={50} r={40} {...line} />
-      <path d="M10 50 L90 50 M50 10 L50 90" {...faint} />
-      <path d={up} {...line} />
-      <circle cx={50} cy={50} r={1.5} {...line} />
+    <Figure caption={`${side} tympanic membrane`} viewBox="-12 0 124 100" height={40}>
+      <g transform={flip}>
+        <ellipse cx={50} cy={50} rx={42} ry={44} {...line} />
+        <ellipse cx={50} cy={50} rx={38} ry={40} {...thin} />
+        {/* Anterior and posterior malleolar folds bounding the pars flaccida. */}
+        <path d="M58 22 Q46 16 34 14 M58 22 Q66 14 72 12" {...thin} />
+        {/* Handle of malleus: lateral process at 1 o'clock down to the umbo. */}
+        <path d="M58 22 L51 52" {...line} strokeWidth={1.6} />
+        <circle cx={58} cy={22} r={2.2} {...thin} />
+        <circle cx={51} cy={53} r={1.6} {...thin} />
+        {/* Cone of light, antero-inferior. */}
+        <path d="M53 57 L78 80 L66 88 Z" {...guide} />
+      </g>
+      <T x={side === "Right" ? 106 : -6} y={53} size={9}>A</T>
+      <T x={side === "Right" ? -6 : 106} y={53} size={9}>P</T>
     </Figure>
   );
 }
+
+// ---- Eye and fundus --------------------------------------------------------------------------
 
 function Eye({ side }: { side: "Right" | "Left" }) {
+  const lid = "M6 30 Q50 -2 94 30 Q50 58 6 30 Z";
+  const clip = `eyelid-${side}`;
+  // The disc is nasal: viewer's right for the right eye, left for the left.
+  const disc = side === "Right" ? 68 : 32;
+  const mac = side === "Right" ? 40 : 60;
+  const dir = side === "Right" ? -1 : 1; // toward the temporal side
   return (
-    <Figure caption={`${side} eye`} viewBox="0 0 100 108">
-      <path d="M8 34 Q50 4 92 34 Q50 64 8 34 Z" {...line} />
-      <circle cx={50} cy={34} r={15} {...line} />
-      <circle cx={50} cy={34} r={5} {...line} />
-      <circle cx={50} cy={78} r={20} {...line} />
-      {/* The optic disc sits nasal to the macula: toward the viewer's left for the right eye. */}
-      <circle cx={side === "Right" ? 42 : 58} cy={78} r={4} {...line} />
-      <text x={50} y={106} textAnchor="middle" {...small}>Fundus</text>
+    <div className="flex flex-col items-center gap-1">
+      <Figure caption={`${side} eye`} viewBox="0 0 100 60" height={20}>
+        <defs>
+          <clipPath id={clip}>
+            <path d={lid} />
+          </clipPath>
+        </defs>
+        <path d="M10 22 Q50 -8 90 22" {...thin} />
+        <path d={lid} {...line} />
+        <g clipPath={`url(#${clip})`}>
+          <circle cx={50} cy={30} r={17} {...line} />
+          <circle cx={50} cy={30} r={6.5} {...line} />
+        </g>
+        {[20, 30, 40, 50, 60, 70, 80].map((x) => (
+          <path key={x} d={`M${x} ${30 - 24 * (1 - ((x - 50) / 44) ** 2) + 2} l${(x - 50) / 14} -5`} {...thin} />
+        ))}
+      </Figure>
+      <Figure caption={`${side} fundus`} viewBox="0 0 100 100" height={28}>
+        <circle cx={50} cy={50} r={46} {...line} />
+        <circle cx={disc} cy={50} r={7} {...line} />
+        <circle cx={disc} cy={50} r={3} {...thin} />
+        {/* Vascular arcades from the disc, arching around the macula. */}
+        <path d={`M${disc} 45 C${disc + dir * 10} 22 ${mac + dir * 8} 18 ${mac + dir * 26} 24`} {...thin} />
+        <path d={`M${disc} 55 C${disc + dir * 10} 78 ${mac + dir * 8} 82 ${mac + dir * 26} 76`} {...thin} />
+        <path d={`M${disc} 46 C${disc - dir * 6} 34 ${disc - dir * 12} 30 ${disc - dir * 18} 28`} {...thin} />
+        <path d={`M${disc} 54 C${disc - dir * 6} 66 ${disc - dir * 12} 70 ${disc - dir * 18} 72`} {...thin} />
+        <circle cx={mac} cy={50} r={5} {...guide} />
+      </Figure>
+    </div>
+  );
+}
+
+// ---- Urinary tract ---------------------------------------------------------------------------
+
+function KUB() {
+  return (
+    <Figure caption="Kidneys, ureters, bladder" viewBox="30 16 180 246" height={52}>
+      <path d={P_SPINE_KUB} {...thin} />
+      <path d={P_RIB12} {...thin} />
+      {/* The patient's right kidney sits a little lower, under the liver. */}
+      <path d={P_KIDNEY_R} {...line} />
+      <path d={P_KIDNEY_L} {...line} />
+      <path d={P_PELVIS_R} {...line} />
+      <path d={P_PELVIS_L} {...line} />
+      <path d={P_URETER_R} {...line} />
+      <path d={P_URETER_L} {...line} />
+      <path d={P_BLADDER} {...line} />
+      <T x={36} y={40} size={14} anchor="start">R</T>
+      <T x={204} y={40} size={14} anchor="end">L</T>
     </Figure>
   );
 }
 
-// ---- Which department draws what ------------------------------------------------------------
+// ---- Head ------------------------------------------------------------------------------------
+
+function HeadTop() {
+  // Seen from above with the face at the top: the patient's right is on the viewer's right.
+  return (
+    <Figure caption="Head — from above" viewBox="-16 0 232 216" height={44}>
+      <path d={P_HEAD_TOP} {...line} />
+      <path d={P_NOSE_TOP} {...line} />
+      <path d={P_EARS_TOP} {...line} />
+      <path d="M100 26 L100 204 M36 100 Q100 88 164 100" {...guide} />
+      <T x={132} y={16} size={11} anchor="start">Front</T>
+      <T x={-6} y={112} size={14}>L</T>
+      <T x={206} y={112} size={14}>R</T>
+    </Figure>
+  );
+}
+
+function HeadSide() {
+  // Facing the viewer's right, which shows the patient's right side.
+  return (
+    <Figure caption="Head — right side" viewBox="20 16 190 216" height={44}>
+      <path d={P_HEAD_SIDE} {...line} />
+      <path d={P_EAR_SIDE} {...line} />
+      <path d={P_EYE_SIDE} {...line} />
+    </Figure>
+  );
+}
+
+// ---- Which department draws what -------------------------------------------------------------
 
 const BODY_BOTH = [<Body key="f" />, <Body key="b" back />];
 
 const DIAGRAMS: Record<string, { figures: React.ReactNode[]; note?: string }> = {
   // General surgery takes the trauma admissions here, so it gets the body chart beside the abdomen.
-  general_surgery: { figures: [<AbdomenRegions key="a" />, ...BODY_BOTH] },
-  obstetrics_gynaecology: { figures: [<AbdomenLandmarks key="a" />] },
+  general_surgery: { figures: [<Abdomen key="a" regions />, ...BODY_BOTH] },
+  obstetrics_gynaecology: { figures: [<Abdomen key="a" regions={false} />] },
   burns_plastic_surgery: { figures: BODY_BOTH, note: "TBSA %: ________   Depth: ________" },
   dermatology: { figures: BODY_BOTH },
   medical_oncology: { figures: BODY_BOTH },
   pulmonary_medicine: { figures: [<Chest key="f" />, <Chest key="b" back />] },
   ent: { figures: [<TympanicMembrane key="r" side="Right" />, <TympanicMembrane key="l" side="Left" />] },
   ophthalmology: { figures: [<Eye key="r" side="Right" />, <Eye key="l" side="Left" />] },
-  // Not departments yet — no pack exists for either (lib/specialty). Keyed here so the sheet
-  // draws them the day a unit is created under one.
   emergency_medicine: {
     figures: BODY_BOTH,
     note: "Mechanism of injury: ____________________   GCS: E__ V__ M__",
+  },
+  urology: { figures: [<Abdomen key="a" regions />, <KUB key="k" />] },
+  neurosurgery: {
+    figures: [<HeadTop key="t" />, <HeadSide key="s" />, ...BODY_BOTH],
+    note: "GCS: E__ V__ M__    Pupils: R ___ mm  L ___ mm",
   },
   orthopaedics: {
     figures: BODY_BOTH,
@@ -177,15 +290,88 @@ const DIAGRAMS: Record<string, { figures: React.ReactNode[]; note?: string }> = 
   },
 };
 
-/** The department's diagram block, or nothing for a department that does not draw one. */
+export const hasExamDiagram = (specialty: string) => specialty in DIAGRAMS;
+
+/** The department's diagrams, or nothing for a department that does not draw one. */
 export function ExamDiagrams({ specialty }: { specialty: string }) {
   const d = DIAGRAMS[specialty];
   if (!d) return null;
   return (
-    <div className="mt-1.5 break-inside-avoid">
-      <p className="border-b border-black/40 text-[9.5px] font-bold uppercase tracking-wide">Diagram — mark findings</p>
-      <div className="mt-1 flex items-end justify-center gap-8">{d.figures}</div>
+    <div>
+      <div className="flex items-end justify-evenly gap-4">{d.figures}</div>
       {d.note && <p className="mt-1 text-center text-[10.5px]">{d.note}</p>}
     </div>
   );
 }
+
+// ---- Outlines --------------------------------------------------------------------------------
+// Smooth curves through anatomical contour points (Catmull-Rom, converted to cubic Beziers).
+
+const P_BODY =
+  "M100.0 6.0 C104.3 6.0 109.5 6.2 113.0 8.0 C116.5 9.8 119.3 13.3 121.0 17.0 C122.7 20.7 122.8 25.7 123.0 30.0 C123.2 34.3 122.8 38.8 122.0 43.0 C121.2 47.2 119.7 51.7 118.0 55.0 C116.3 58.3 113.3 60.7 112.0 63.0 C110.7 65.3 110.2 66.7 110.0 69.0 C109.8 71.3 109.3 74.7 111.0 77.0 C112.7 79.3 115.8 81.2 120.0 83.0 C124.2 84.8 131.3 86.2 136.0 88.0 C140.7 89.8 145.0 91.3 148.0 94.0 C151.0 96.7 152.7 100.0 154.0 104.0 C155.3 108.0 155.5 112.3 156.0 118.0 C156.5 123.7 156.5 131.0 157.0 138.0 C157.5 145.0 158.2 153.0 159.0 160.0 C159.8 167.0 160.8 172.7 162.0 180.0 C163.2 187.3 164.7 196.3 166.0 204.0 C167.3 211.7 168.8 220.7 170.0 226.0 C171.2 231.3 171.8 232.7 173.0 236.0 C174.2 239.3 176.2 242.0 177.0 246.0 C177.8 250.0 178.5 255.7 178.0 260.0 C177.5 264.3 175.7 269.5 174.0 272.0 C172.3 274.5 169.7 275.7 168.0 275.0 C166.3 274.3 164.7 271.5 164.0 268.0 C163.3 264.5 164.5 258.7 164.0 254.0 C163.5 249.3 162.2 245.3 161.0 240.0 C159.8 234.7 158.5 229.0 157.0 222.0 C155.5 215.0 153.5 205.7 152.0 198.0 C150.5 190.3 149.2 183.7 148.0 176.0 C146.8 168.3 146.2 160.0 145.0 152.0 C143.8 144.0 142.2 129.7 141.0 128.0 C139.8 126.3 138.7 136.0 138.0 142.0 C137.3 148.0 137.7 156.7 137.0 164.0 C136.3 171.3 134.2 179.0 134.0 186.0 C133.8 193.0 134.8 199.3 136.0 206.0 C137.2 212.7 139.8 219.7 141.0 226.0 C142.2 232.3 142.8 236.3 143.0 244.0 C143.2 251.7 142.7 262.7 142.0 272.0 C141.3 281.3 140.0 291.0 139.0 300.0 C138.0 309.0 136.7 318.7 136.0 326.0 C135.3 333.3 135.2 337.7 135.0 344.0 C134.8 350.3 135.3 356.7 135.0 364.0 C134.7 371.3 133.8 380.3 133.0 388.0 C132.2 395.7 130.3 404.7 130.0 410.0 C129.7 415.3 129.8 417.0 131.0 420.0 C132.2 423.0 135.8 425.7 137.0 428.0 C138.2 430.3 139.8 432.7 138.0 434.0 C136.2 435.3 129.8 436.2 126.0 436.0 C122.2 435.8 117.2 435.3 115.0 433.0 C112.8 430.7 113.3 426.8 113.0 422.0 C112.7 417.2 113.3 411.0 113.0 404.0 C112.7 397.0 111.2 388.3 111.0 380.0 C110.8 371.7 112.0 361.3 112.0 354.0 C112.0 346.7 111.7 344.0 111.0 336.0 C110.3 328.0 109.0 316.7 108.0 306.0 C107.0 295.3 106.0 281.0 105.0 272.0 C104.0 263.0 102.8 256.0 102.0 252.0 C101.2 248.0 100.7 248.0 100.0 248.0 C99.3 248.0 98.8 248.0 98.0 252.0 C97.2 256.0 96.0 263.0 95.0 272.0 C94.0 281.0 93.0 295.3 92.0 306.0 C91.0 316.7 89.7 328.0 89.0 336.0 C88.3 344.0 88.0 346.7 88.0 354.0 C88.0 361.3 89.2 371.7 89.0 380.0 C88.8 388.3 87.3 397.0 87.0 404.0 C86.7 411.0 87.3 417.2 87.0 422.0 C86.7 426.8 87.2 430.7 85.0 433.0 C82.8 435.3 77.8 435.8 74.0 436.0 C70.2 436.2 63.8 435.3 62.0 434.0 C60.2 432.7 61.8 430.3 63.0 428.0 C64.2 425.7 67.8 423.0 69.0 420.0 C70.2 417.0 70.3 415.3 70.0 410.0 C69.7 404.7 67.8 395.7 67.0 388.0 C66.2 380.3 65.3 371.3 65.0 364.0 C64.7 356.7 65.2 350.3 65.0 344.0 C64.8 337.7 64.7 333.3 64.0 326.0 C63.3 318.7 62.0 309.0 61.0 300.0 C60.0 291.0 58.7 281.3 58.0 272.0 C57.3 262.7 56.8 251.7 57.0 244.0 C57.2 236.3 57.8 232.3 59.0 226.0 C60.2 219.7 62.8 212.7 64.0 206.0 C65.2 199.3 66.2 193.0 66.0 186.0 C65.8 179.0 63.7 171.3 63.0 164.0 C62.3 156.7 62.7 148.0 62.0 142.0 C61.3 136.0 60.2 126.3 59.0 128.0 C57.8 129.7 56.2 144.0 55.0 152.0 C53.8 160.0 53.2 168.3 52.0 176.0 C50.8 183.7 49.5 190.3 48.0 198.0 C46.5 205.7 44.5 215.0 43.0 222.0 C41.5 229.0 40.2 234.7 39.0 240.0 C37.8 245.3 36.5 249.3 36.0 254.0 C35.5 258.7 36.7 264.5 36.0 268.0 C35.3 271.5 33.7 274.3 32.0 275.0 C30.3 275.7 27.7 274.5 26.0 272.0 C24.3 269.5 22.5 264.3 22.0 260.0 C21.5 255.7 22.2 250.0 23.0 246.0 C23.8 242.0 25.8 239.3 27.0 236.0 C28.2 232.7 28.8 231.3 30.0 226.0 C31.2 220.7 32.7 211.7 34.0 204.0 C35.3 196.3 36.8 187.3 38.0 180.0 C39.2 172.7 40.2 167.0 41.0 160.0 C41.8 153.0 42.5 145.0 43.0 138.0 C43.5 131.0 43.5 123.7 44.0 118.0 C44.5 112.3 44.7 108.0 46.0 104.0 C47.3 100.0 49.0 96.7 52.0 94.0 C55.0 91.3 59.3 89.8 64.0 88.0 C68.7 86.2 75.8 84.8 80.0 83.0 C84.2 81.2 87.3 79.3 89.0 77.0 C90.7 74.7 90.2 71.3 90.0 69.0 C89.8 66.7 89.3 65.3 88.0 63.0 C86.7 60.7 83.7 58.3 82.0 55.0 C80.3 51.7 78.8 47.2 78.0 43.0 C77.2 38.8 76.8 34.3 77.0 30.0 C77.2 25.7 77.3 20.7 79.0 17.0 C80.7 13.3 83.5 9.8 87.0 8.0 C90.5 6.2 95.7 6.0 100.0 6.0 Z";
+const P_BODY_CLAV =
+  "M104.0 86.0 C106.3 85.7 113.7 83.7 118.0 84.0 C122.3 84.3 125.7 86.8 130.0 88.0 C134.3 89.2 141.7 90.5 144.0 91.0 M96.0 86.0 C93.7 85.7 86.3 83.7 82.0 84.0 C77.7 84.3 74.3 86.8 70.0 88.0 C65.7 89.2 58.3 90.5 56.0 91.0";
+const P_BODY_SCAP =
+  "M112.0 104.0 C115.7 103.3 129.7 99.3 134.0 100.0 C138.3 100.7 140.0 99.7 138.0 108.0 C136.0 116.3 126.0 146.0 122.0 150.0 C118.0 154.0 115.7 139.7 114.0 132.0 C112.3 124.3 112.3 108.7 112.0 104.0 M88.0 104.0 C84.3 103.3 70.3 99.3 66.0 100.0 C61.7 100.7 60.0 99.7 62.0 108.0 C64.0 116.3 74.0 146.0 78.0 150.0 C82.0 154.0 84.3 139.7 86.0 132.0 C87.7 124.3 87.7 108.7 88.0 104.0";
+const P_BODY_GLUT =
+  "M100.0 232.0 C100.0 235.0 100.0 247.0 100.0 250.0";
+const P_BODY_SPINE =
+  "M100 82 L100 226";
+const P_TRUNK =
+  "M208.0 0.0 C208.2 4.0 209.3 13.7 209.0 24.0 C208.7 34.3 207.5 48.7 206.0 62.0 C204.5 75.3 201.2 93.3 200.0 104.0 C198.8 114.7 198.3 117.3 199.0 126.0 C199.7 134.7 201.8 146.0 204.0 156.0 C206.2 166.0 210.2 176.7 212.0 186.0 C213.8 195.3 215.0 203.3 215.0 212.0 C215.0 220.7 213.5 229.3 212.0 238.0 C210.5 246.7 211.3 259.0 206.0 264.0 C200.7 269.0 189.0 268.3 180.0 268.0 C171.0 267.7 160.0 265.0 152.0 262.0 C144.0 259.0 137.3 253.0 132.0 250.0 C126.7 247.0 124.0 244.0 120.0 244.0 C116.0 244.0 113.3 247.0 108.0 250.0 C102.7 253.0 96.0 259.0 88.0 262.0 C80.0 265.0 69.0 267.7 60.0 268.0 C51.0 268.3 39.3 269.0 34.0 264.0 C28.7 259.0 29.5 246.7 28.0 238.0 C26.5 229.3 25.0 220.7 25.0 212.0 C25.0 203.3 26.2 195.3 28.0 186.0 C29.8 176.7 33.8 166.0 36.0 156.0 C38.2 146.0 40.3 134.7 41.0 126.0 C41.7 117.3 41.2 114.7 40.0 104.0 C38.8 93.3 35.5 75.3 34.0 62.0 C32.5 48.7 31.3 34.3 31.0 24.0 C30.7 13.7 31.8 4.0 32.0 0.0";
+const P_COSTAL =
+  "M120.0 48.0 C123.0 49.7 131.0 53.7 138.0 58.0 C145.0 62.3 154.3 68.3 162.0 74.0 C169.7 79.7 177.7 86.0 184.0 92.0 C190.3 98.0 197.3 107.0 200.0 110.0 M120.0 48.0 C117.0 49.7 109.0 53.7 102.0 58.0 C95.0 62.3 85.7 68.3 78.0 74.0 C70.3 79.7 62.3 86.0 56.0 92.0 C49.7 98.0 42.7 107.0 40.0 110.0";
+const P_CREST =
+  "M208.0 164.0 C206.7 166.0 203.0 172.0 200.0 176.0 C197.0 180.0 191.7 186.0 190.0 188.0 M32.0 164.0 C33.3 166.0 37.0 172.0 40.0 176.0 C43.0 180.0 48.3 186.0 50.0 188.0";
+const P_INGUINAL =
+  "M190.0 188.0 C186.3 191.3 175.3 201.7 168.0 208.0 C160.7 214.3 152.0 221.3 146.0 226.0 C140.0 230.7 134.3 234.3 132.0 236.0 M50.0 188.0 C53.7 191.3 64.7 201.7 72.0 208.0 C79.3 214.3 88.0 221.3 94.0 226.0 C100.0 230.7 105.7 234.3 108.0 236.0";
+const P_CHEST =
+  "M142.0 0.0 C142.3 2.7 141.0 11.7 144.0 16.0 C147.0 20.3 152.3 23.3 160.0 26.0 C167.7 28.7 180.7 29.3 190.0 32.0 C199.3 34.7 210.0 37.7 216.0 42.0 C222.0 46.3 224.7 52.0 226.0 58.0 C227.3 64.0 226.7 73.0 224.0 78.0 C221.3 83.0 212.7 79.3 210.0 88.0 C207.3 96.7 208.7 114.7 208.0 130.0 C207.3 145.3 206.7 162.3 206.0 180.0 C205.3 197.7 204.3 226.7 204.0 236.0 M98.0 0.0 C97.7 2.7 99.0 11.7 96.0 16.0 C93.0 20.3 87.7 23.3 80.0 26.0 C72.3 28.7 59.3 29.3 50.0 32.0 C40.7 34.7 30.0 37.7 24.0 42.0 C18.0 46.3 15.3 52.0 14.0 58.0 C12.7 64.0 13.3 73.0 16.0 78.0 C18.7 83.0 27.3 79.3 30.0 88.0 C32.7 96.7 31.3 114.7 32.0 130.0 C32.7 145.3 33.3 162.3 34.0 180.0 C34.7 197.7 35.7 226.7 36.0 236.0";
+const P_CHEST_CLAV =
+  "M130.0 44.0 C133.0 43.3 141.3 39.7 148.0 40.0 C154.7 40.3 161.7 45.7 170.0 46.0 C178.3 46.3 190.7 42.0 198.0 42.0 C205.3 42.0 211.3 45.3 214.0 46.0 M110.0 44.0 C107.0 43.3 98.7 39.7 92.0 40.0 C85.3 40.3 78.3 45.7 70.0 46.0 C61.7 46.3 49.3 42.0 42.0 42.0 C34.7 42.0 28.7 45.3 26.0 46.0";
+const P_STERNUM =
+  "M120.0 40.0 C117.8 40.3 108.8 38.7 107.0 42.0 C105.2 45.3 108.2 55.3 109.0 60.0 C109.8 64.7 111.5 55.7 112.0 70.0 C112.5 84.3 110.7 131.0 112.0 146.0 C113.3 161.0 117.3 160.0 120.0 160.0 C122.7 160.0 126.7 161.0 128.0 146.0 C129.3 131.0 127.5 84.3 128.0 70.0 C128.5 55.7 130.2 64.7 131.0 60.0 C131.8 55.3 134.8 45.3 133.0 42.0 C131.2 38.7 122.2 40.3 120.0 40.0";
+const P_TRACHEA =
+  "M114 0 L114 38 M126 0 L126 38";
+const P_LUNG_R =
+  "M94.0 30.0 C90.3 29.3 82.0 31.0 76.0 36.0 C70.0 41.0 63.3 49.3 58.0 60.0 C52.7 70.7 47.7 85.0 44.0 100.0 C40.3 115.0 37.7 134.0 36.0 150.0 C34.3 166.0 30.7 189.7 34.0 196.0 C37.3 202.3 48.3 190.7 56.0 188.0 C63.7 185.3 72.3 180.3 80.0 180.0 C87.7 179.7 97.7 191.0 102.0 186.0 C106.3 181.0 105.7 162.7 106.0 150.0 C106.3 137.3 104.7 123.3 104.0 110.0 C103.3 96.7 103.0 81.7 102.0 70.0 C101.0 58.3 99.3 46.7 98.0 40.0 C96.7 33.3 97.7 30.7 94.0 30.0 Z";
+const P_LUNG_L =
+  "M146.0 30.0 C149.7 29.3 158.0 31.0 164.0 36.0 C170.0 41.0 176.7 49.3 182.0 60.0 C187.3 70.7 192.3 85.0 196.0 100.0 C199.7 115.0 202.3 134.0 204.0 150.0 C205.7 166.0 209.3 189.3 206.0 196.0 C202.7 202.7 191.0 191.7 184.0 190.0 C177.0 188.3 169.0 189.0 164.0 186.0 C159.0 183.0 154.7 178.0 154.0 172.0 C153.3 166.0 161.3 156.0 160.0 150.0 C158.7 144.0 150.0 142.7 146.0 136.0 C142.0 129.3 137.3 121.0 136.0 110.0 C134.7 99.0 137.0 81.7 138.0 70.0 C139.0 58.3 140.7 46.7 142.0 40.0 C143.3 33.3 142.3 30.7 146.0 30.0 Z";
+const P_FISSURES_FRONT =
+  "M104.0 116.0 C100.0 116.3 87.7 118.0 80.0 118.0 C72.3 118.0 64.7 116.0 58.0 116.0 C51.3 116.0 43.0 117.7 40.0 118.0 M38.0 132.0 C40.7 135.0 48.3 144.0 54.0 150.0 C59.7 156.0 66.7 162.7 72.0 168.0 C77.3 173.3 83.7 179.7 86.0 182.0 M202.0 128.0 C199.3 131.3 191.0 141.3 186.0 148.0 C181.0 154.7 176.3 162.0 172.0 168.0 C167.7 174.0 162.0 181.3 160.0 184.0";
+const P_LUNG_BACK =
+  "M100.0 30.0 C96.0 26.0 86.7 31.0 80.0 36.0 C73.3 41.0 66.0 48.7 60.0 60.0 C54.0 71.3 48.0 87.3 44.0 104.0 C40.0 120.7 37.3 141.7 36.0 160.0 C34.7 178.3 31.3 206.3 36.0 214.0 C40.7 221.7 54.3 206.3 64.0 206.0 C73.7 205.7 87.3 218.0 94.0 212.0 C100.7 206.0 102.0 187.0 104.0 170.0 C106.0 153.0 106.0 128.3 106.0 110.0 C106.0 91.7 105.0 73.3 104.0 60.0 C103.0 46.7 104.0 34.0 100.0 30.0 Z M140.0 30.0 C144.0 26.0 153.3 31.0 160.0 36.0 C166.7 41.0 174.0 48.7 180.0 60.0 C186.0 71.3 192.0 87.3 196.0 104.0 C200.0 120.7 202.7 141.7 204.0 160.0 C205.3 178.3 208.7 206.3 204.0 214.0 C199.3 221.7 185.7 206.3 176.0 206.0 C166.3 205.7 152.7 218.0 146.0 212.0 C139.3 206.0 138.0 187.0 136.0 170.0 C134.0 153.0 134.0 128.3 134.0 110.0 C134.0 91.7 135.0 73.3 136.0 60.0 C137.0 46.7 136.0 34.0 140.0 30.0 Z";
+const P_CHEST_SCAP =
+  "M148.0 62.0 C154.0 61.0 177.0 55.3 184.0 56.0 C191.0 56.7 193.7 54.7 190.0 66.0 C186.3 77.3 168.3 117.7 162.0 124.0 C155.7 130.3 154.3 114.3 152.0 104.0 C149.7 93.7 148.7 69.0 148.0 62.0 M92.0 62.0 C86.0 61.0 63.0 55.3 56.0 56.0 C49.0 56.7 46.3 54.7 50.0 66.0 C53.7 77.3 71.7 117.7 78.0 124.0 C84.3 130.3 85.7 114.3 88.0 104.0 C90.3 93.7 91.3 69.0 92.0 62.0";
+const P_FISSURES_BACK =
+  "M102.0 70.0 C97.7 75.0 84.0 89.7 76.0 100.0 C68.0 110.3 60.3 122.0 54.0 132.0 C47.7 142.0 40.7 155.3 38.0 160.0 M138.0 70.0 C142.3 75.0 156.0 89.7 164.0 100.0 C172.0 110.3 179.7 122.0 186.0 132.0 C192.3 142.0 199.3 155.3 202.0 160.0";
+const P_KIDNEY_R =
+  "M74.0 54.0 C79.0 53.3 85.5 54.7 89.0 58.0 C92.5 61.3 95.2 69.5 95.0 74.0 C94.8 78.5 89.8 82.0 88.0 85.0 C86.2 88.0 84.0 89.7 84.0 92.0 C84.0 94.3 86.2 95.7 88.0 99.0 C89.8 102.3 95.0 107.5 95.0 112.0 C95.0 116.5 91.5 123.0 88.0 126.0 C84.5 129.0 78.8 130.3 74.0 130.0 C69.2 129.7 62.7 128.3 59.0 124.0 C55.3 119.7 53.2 111.3 52.0 104.0 C50.8 96.7 50.8 87.0 52.0 80.0 C53.2 73.0 55.3 66.3 59.0 62.0 C62.7 57.7 69.0 54.7 74.0 54.0 Z";
+const P_KIDNEY_L =
+  "M166.0 42.0 C161.0 41.3 154.5 42.7 151.0 46.0 C147.5 49.3 144.8 57.5 145.0 62.0 C145.2 66.5 150.2 70.0 152.0 73.0 C153.8 76.0 156.0 77.7 156.0 80.0 C156.0 82.3 153.8 83.7 152.0 87.0 C150.2 90.3 145.0 95.5 145.0 100.0 C145.0 104.5 148.5 111.0 152.0 114.0 C155.5 117.0 161.2 118.3 166.0 118.0 C170.8 117.7 177.3 116.3 181.0 112.0 C184.7 107.7 186.8 99.3 188.0 92.0 C189.2 84.7 189.2 75.0 188.0 68.0 C186.8 61.0 184.7 54.3 181.0 50.0 C177.3 45.7 171.0 42.7 166.0 42.0 Z";
+const P_PELVIS_R =
+  "M84.0 86.0 C85.3 87.3 89.7 90.3 92.0 94.0 C94.3 97.7 97.0 105.7 98.0 108.0 M84.0 98.0 C85.3 98.7 89.7 100.3 92.0 102.0 C94.3 103.7 97.0 107.0 98.0 108.0";
+const P_PELVIS_L =
+  "M156.0 74.0 C154.7 75.3 150.3 78.3 148.0 82.0 C145.7 85.7 143.0 93.7 142.0 96.0 M156.0 86.0 C154.7 86.7 150.3 88.3 148.0 90.0 C145.7 91.7 143.0 95.0 142.0 96.0";
+const P_URETER_R =
+  "M98.0 108.0 C98.7 113.3 101.3 128.7 102.0 140.0 C102.7 151.3 102.7 165.3 102.0 176.0 C101.3 186.7 97.0 195.7 98.0 204.0 C99.0 212.3 106.3 222.3 108.0 226.0";
+const P_URETER_L =
+  "M142.0 96.0 C141.3 103.3 138.7 126.7 138.0 140.0 C137.3 153.3 137.3 165.3 138.0 176.0 C138.7 186.7 143.0 195.7 142.0 204.0 C141.0 212.3 133.7 222.3 132.0 226.0";
+const P_BLADDER =
+  "M120.0 220.0 C126.7 220.0 135.0 221.0 140.0 224.0 C145.0 227.0 149.3 233.3 150.0 238.0 C150.7 242.7 149.0 249.0 144.0 252.0 C139.0 255.0 128.0 256.0 120.0 256.0 C112.0 256.0 101.0 255.0 96.0 252.0 C91.0 249.0 89.3 242.7 90.0 238.0 C90.7 233.3 95.0 227.0 100.0 224.0 C105.0 221.0 113.3 220.0 120.0 220.0 Z";
+const P_SPINE_KUB =
+  "M112 25 Q112 22 115 22 L125 22 Q128 22 128 25 L128 33 Q128 36 125 36 L115 36 Q112 36 112 33 Z M112 43 Q112 40 115 40 L125 40 Q128 40 128 43 L128 51 Q128 54 125 54 L115 54 Q112 54 112 51 Z M112 61 Q112 58 115 58 L125 58 Q128 58 128 61 L128 69 Q128 72 125 72 L115 72 Q112 72 112 69 Z M112 79 Q112 76 115 76 L125 76 Q128 76 128 79 L128 87 Q128 90 125 90 L115 90 Q112 90 112 87 Z M112 97 Q112 94 115 94 L125 94 Q128 94 128 97 L128 105 Q128 108 125 108 L115 108 Q112 108 112 105 Z M112 115 Q112 112 115 112 L125 112 Q128 112 128 115 L128 123 Q128 126 125 126 L115 126 Q112 126 112 123 Z M112 133 Q112 130 115 130 L125 130 Q128 130 128 133 L128 141 Q128 144 125 144 L115 144 Q112 144 112 141 Z M112 151 Q112 148 115 148 L125 148 Q128 148 128 151 L128 159 Q128 162 125 162 L115 162 Q112 162 112 159 Z M112 169 Q112 166 115 166 L125 166 Q128 166 128 169 L128 177 Q128 180 125 180 L115 180 Q112 180 112 177 Z M112 187 Q112 184 115 184 L125 184 Q128 184 128 187 L128 195 Q128 198 125 198 L115 198 Q112 198 112 195 Z";
+const P_RIB12 =
+  "M110.0 40.0 C107.0 41.0 98.0 43.0 92.0 46.0 C86.0 49.0 77.0 56.0 74.0 58.0 M130.0 40.0 C133.0 41.0 142.0 43.0 148.0 46.0 C154.0 49.0 163.0 56.0 166.0 58.0";
+const P_HEAD_TOP =
+  "M100.0 20.0 C113.3 20.0 129.0 20.0 140.0 26.0 C151.0 32.0 160.3 42.7 166.0 56.0 C171.7 69.3 173.7 89.3 174.0 106.0 C174.3 122.7 172.7 141.3 168.0 156.0 C163.3 170.7 157.3 185.3 146.0 194.0 C134.7 202.7 115.3 208.0 100.0 208.0 C84.7 208.0 65.3 202.7 54.0 194.0 C42.7 185.3 36.7 170.7 32.0 156.0 C27.3 141.3 25.7 122.7 26.0 106.0 C26.3 89.3 28.3 69.3 34.0 56.0 C39.7 42.7 49.0 32.0 60.0 26.0 C71.0 20.0 86.7 20.0 100.0 20.0 Z";
+const P_NOSE_TOP =
+  "M92 22 L100 6 L108 22";
+const P_EARS_TOP =
+  "M172.0 92.0 C173.7 92.7 180.0 92.7 182.0 96.0 C184.0 99.3 185.3 107.7 184.0 112.0 C182.7 116.3 175.7 120.3 174.0 122.0 M28.0 92.0 C26.3 92.7 20.0 92.7 18.0 96.0 C16.0 99.3 14.7 107.7 16.0 112.0 C17.3 116.3 24.3 120.3 26.0 122.0";
+const P_HEAD_SIDE =
+  "M64.0 226.0 C62.0 221.0 56.0 207.0 52.0 196.0 C48.0 185.0 42.7 173.0 40.0 160.0 C37.3 147.0 35.3 132.3 36.0 118.0 C36.7 103.7 38.3 87.0 44.0 74.0 C49.7 61.0 59.0 48.0 70.0 40.0 C81.0 32.0 96.7 27.3 110.0 26.0 C123.3 24.7 139.0 27.0 150.0 32.0 C161.0 37.0 170.0 47.0 176.0 56.0 C182.0 65.0 184.0 78.3 186.0 86.0 C188.0 93.7 185.7 96.0 188.0 102.0 C190.3 108.0 199.7 117.7 200.0 122.0 C200.3 126.3 191.7 125.7 190.0 128.0 C188.3 130.3 190.7 133.7 190.0 136.0 C189.3 138.3 186.2 140.0 186.0 142.0 C185.8 144.0 189.3 145.3 189.0 148.0 C188.7 150.7 185.5 154.3 184.0 158.0 C182.5 161.7 183.0 166.3 180.0 170.0 C177.0 173.7 171.3 177.0 166.0 180.0 C160.7 183.0 152.3 184.3 148.0 188.0 C143.7 191.7 142.3 195.7 140.0 202.0 C137.7 208.3 135.0 222.0 134.0 226.0";
+const P_EAR_SIDE =
+  "M104.0 104.0 C102.7 102.7 98.3 95.3 96.0 96.0 C93.7 96.7 90.7 102.7 90.0 108.0 C89.3 113.3 90.3 122.7 92.0 128.0 C93.7 133.3 97.7 139.0 100.0 140.0 C102.3 141.0 105.3 137.3 106.0 134.0 C106.7 130.7 104.3 122.3 104.0 120.0";
+const P_EYE_SIDE =
+  "M166.0 100.0 C167.3 99.3 171.3 96.0 174.0 96.0 C176.7 96.0 180.7 99.3 182.0 100.0";

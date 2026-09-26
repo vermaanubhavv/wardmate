@@ -7,6 +7,7 @@ import { caseHistorySectionOf } from "@/lib/case-history";
 import { complaintChipsFor, pastChipsFor } from "@/lib/case-history-chips";
 import { leadsFor, readField, writeField } from "@/lib/case-history-departments";
 import DictationOverlay from "./dictation-overlay";
+import { ExamDiagrams, hasExamDiagram } from "./print/diagrams";
 import type { Observation } from "@/lib/patient-state";
 import type { WardRanges } from "@/lib/exam-summary";
 import { CaseHistoryCard } from "../case-history-card";
@@ -969,8 +970,12 @@ export default function CaseHistoryWorkspace({
   function departmentPrompts(): React.ReactNode {
     const lead = leads.find((l) => l.key === current.id);
     if (!lead?.table) return null;
-    const binding = promptText[current.id];
+    // A presenting-illness card writes into that complaint's own narrative.
+    const c = current._c;
+    const binding: [string, (v: string) => void] | undefined =
+      current.id === "hopi" && c ? [hopi[c] ?? "", (v) => setHopi((h) => ({ ...h, [c]: v }))] : promptText[current.id];
     const { fields, columns, recordedInRows } = lead.table;
+    if (!(fields && binding) && !(columns && recordedInRows)) return null;
     return (
       <div className="flex flex-col gap-2 rounded-[10px] bg-chip/50 p-2.5">
         {fields && binding && (
@@ -1278,6 +1283,14 @@ export default function CaseHistoryWorkspace({
         <>
           <p className="text-[12px] leading-[1.45] text-muted">The examination of the presenting problem itself — the lump, the hernia, the wound, the perianal region.</p>
           <DictateArea value={local} onChange={(v) => { setLocal(v); mark("local"); }} placeholder="Site, size, tenderness, consistency, margins…" rows={6} />
+          {/* The department's diagram, as it prints on the back of the history sheet — marked by
+              hand there; describe here what gets drawn. */}
+          {hasExamDiagram(specialty) && (
+          <div className="rounded-[10px] border border-line bg-white p-2 text-black">
+            <ExamDiagrams specialty={specialty} />
+            <p className="mt-1 text-[12px] text-muted">Prints blank on the history sheet for marking by hand.</p>
+          </div>
+          )}
         </>
       );
 
