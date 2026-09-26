@@ -22,7 +22,7 @@ const preOp = { post_op_day: null, admission_day: 1 };
 
 describe("getSpecialtyPack — degrade, don't crash", () => {
   it("returns surgery for anything unrecognised, missing or empty", () => {
-    for (const input of [null, undefined, "", "  ", "orthopaedics", "GENERAL SURGERY!!"]) {
+    for (const input of [null, undefined, "", "  ", "radiodiagnosis", "GENERAL SURGERY!!"]) {
       expect(getSpecialtyPack(input as string | null).key).toBe("general_surgery");
     }
   });
@@ -37,6 +37,11 @@ describe("getSpecialtyPack — degrade, don't crash", () => {
     expect(getSpecialtyPack(" Ophthalmology ").key).toBe("ophthalmology");
     expect(getSpecialtyPack(" Dermatology ").key).toBe("dermatology");
     expect(getSpecialtyPack(" Burns_Plastic_Surgery ").key).toBe("burns_plastic_surgery");
+    expect(getSpecialtyPack(" Orthopaedics ").key).toBe("orthopaedics");
+    expect(getSpecialtyPack(" Urology ").key).toBe("urology");
+    expect(getSpecialtyPack(" Neurosurgery ").key).toBe("neurosurgery");
+    expect(getSpecialtyPack(" Paediatrics ").key).toBe("paediatrics");
+    expect(getSpecialtyPack(" Emergency_Medicine ").key).toBe("emergency_medicine");
   });
 
   it("offers every pack to the picker", () => {
@@ -51,6 +56,11 @@ describe("getSpecialtyPack — degrade, don't crash", () => {
       "ophthalmology",
       "dermatology",
       "burns_plastic_surgery",
+      "orthopaedics",
+      "urology",
+      "neurosurgery",
+      "paediatrics",
+      "emergency_medicine",
     ]);
   });
 

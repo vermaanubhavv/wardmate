@@ -56,7 +56,12 @@ export type Specialty =
   | "psychiatry"
   | "ophthalmology"
   | "dermatology"
-  | "burns_plastic_surgery";
+  | "burns_plastic_surgery"
+  | "orthopaedics"
+  | "urology"
+  | "neurosurgery"
+  | "paediatrics"
+  | "emergency-medicine";
 
 export type NoteType =
   | "ward-round"

@@ -153,7 +153,10 @@ export const OBSTETRICS_GYNAECOLOGY: MedicalLexiconEntry[] = [
   dx("PCOD", ["PCOS", "polycystic ovarian disease", "polycystic ovary syndrome"]),
   dx("fibroid uterus", ["uterine fibroid", "leiomyoma"], ["fibroid"]),
   dx("ovarian cyst", ["adnexal cyst", "ovarian mass"]),
-  dx("adnexal torsion", ["ovarian torsion"], ["torsion"]),
+  // "torsion" alone was the trigger, which fired inside "testicular torsion" once urology
+  // shipped — a gynaecological keyterm pulled into a scrotal dictation. Narrowed rather than
+  // the test loosened, the same fix the pulmonary collisions took.
+  dx("adnexal torsion", ["ovarian torsion"], ["torsion of ovary", "adnexal torsion"]),
   proc("TAH", ["total abdominal hysterectomy"]),
   proc("VH", ["vaginal hysterectomy"]),
   proc("laparoscopic hysterectomy", ["TLH", "total laparoscopic hysterectomy"]),
