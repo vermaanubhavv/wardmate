@@ -13,11 +13,17 @@ return 404, and nothing under `lib/history-check/` is queried. Off by default.
 Clinical content carries `reviewStatus` and `reviewedBy`, and the card and learning pages show
 a chip for each: amber "Pending clinician review", or green "Reviewed · <reviewer>".
 
-**All forty-six trees and all five examination checklists were reviewed and signed off on
-2026-09-26** (Dr. Anubhav, General Surgery). As with the scoring pathways, that is a
-single-clinician sign-off covering content that spans nine specialties; departmental review is
-still outstanding. **The safety-level thresholds are NOT covered by it** — `safety.ts` remains
-`pending_clinician_review`, and the card still shows that chip beside the number.
+**All forty-six trees, all five examination checklists and the safety-level thresholds were
+reviewed and signed off on 2026-09-26** (Dr. Anubhav, General Surgery). As with the scoring
+pathways, that is a single-clinician sign-off covering content that spans nine specialties;
+departmental review is still outstanding.
+
+For the safety level specifically, read the sign-off narrowly: `safety.ts` says the number is
+not a validated instrument and no published one was used to derive it, and **that stays true
+after review** — a clinician agreeing the mapping is sensible is a different claim from the
+number having been validated against outcomes. Anything that comes to render the level must
+render `SAFETY_LEVEL_REVIEW_STATUS` beside it. Nothing renders the level at all today: `view.ts`
+computes `assessSafety` and the card does not read it.
 
 ## Pipeline
 
