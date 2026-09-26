@@ -44,9 +44,12 @@ import type { SpecialtyPack } from "./types";
  * alcohol withdrawal, which this ward manages daily. No depression, mania or risk scale is
  * offered, because none has been built and reviewed here.
  *
- * NOT YET PILOTED ON A REAL UNIT. `SPECIALTY_PACKS=on` for the picker, the scoring engine's own
- * flag plus a per-ward row for CIWA-Ar, and patch 0082 run first. Clinical content is pending
- * clinician review.
+ * CLINICIAN SIGNED OFF FOR PILOT USE 2026-09-26 (Dr. Anubhav), product owner and general-surgery
+ * resident, on his own direction and covering this pack's clinical content: the extraction
+ * guidance, the day counter, the keyterm lexicon, the history-tree order and the scoring list
+ * — including what it deliberately refuses to offer. NOT YET PILOTED ON A REAL UNIT: sign-off is
+ * permission to pilot, not evidence of one. Runtime gating is unchanged. `SPECIALTY_PACKS=on` for the picker, the
+ * scoring engine's own flag plus a per-ward row for CIWA-Ar, and patch 0082 run first.
  */
 export const psychiatryPack: SpecialtyPack = {
   key: "psychiatry",

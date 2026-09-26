@@ -25,9 +25,10 @@ import type { SpecialtyPack } from "./types";
  *    A port inserted on cycle 2 day 1 does not make the patient "POD 0". That is enforced by
  *    dayCount below reading the cycle and the admission, never surgery_date.
  *
- * NOT CLINICALLY SIGNED OFF. The discharge templates this pack points at are drafted from
- * standard practice and are waiting on the unit's review — see the header of
- * lib/discharge-templates-oncology.ts.
+ * CLINICIAN SIGNED OFF FOR PILOT USE 2026-09-26 (Dr. Anubhav), product owner and general-surgery
+ * resident, on his own direction, superseding the "not clinically signed off" note this header
+ * carried. It covers this pack's clinical content, the discharge templates included — see the
+ * header of lib/discharge-templates-oncology.ts, which describes how they were drafted.
  */
 export const medicalOncologyPack: SpecialtyPack = {
   key: "medical_oncology",

@@ -946,3 +946,31 @@ specialty to `general_surgery` instead of raising — correct for an un-redeploy
 makes a code/database mismatch silent: the resident picks Paediatrics, the insert succeeds, and
 they get a general surgery unit with no error anywhere, discovered weeks later from a day counter
 reading POD. Adding a pack without adding it to the patch now fails in the suite instead.
+
+---
+
+## 15. Clinician sign-off, all fifteen packs (2026-09-26)
+
+**Signed off for pilot use on 2026-09-26 by Dr. Anubhav** — product owner and general-surgery
+resident — on his own direction, recorded in each pack's header.
+
+What the sign-off covers, per pack: the extraction guidance, the day counter, the keyterm lexicon,
+the history-tree order and the scoring list, **including what each pack deliberately refuses to
+offer** (no score at all for neurosurgery and for paediatrics; no fracture classification for
+orthopaedics; no triage or early-warning score for emergency medicine; no prognostic model
+anywhere).
+
+Two packs already carried their own, earlier records and keep them: general surgery and internal
+medicine (batch sign-offs 2026-09-07, alpha publication 2026-09-13). Medical oncology's header
+previously read "NOT CLINICALLY SIGNED OFF" — this supersedes it, discharge templates included.
+
+**What sign-off is not.** It is permission to pilot, not evidence of one. Eleven of the fifteen
+have still never run on a real unit, and saying so in the same breath is the point. Nor can it
+cover content that does not exist: obstetrics & gynaecology, ENT, ophthalmology, dermatology,
+psychiatry, burns & plastics, orthopaedics, urology, neurosurgery, paediatrics and emergency
+medicine all still declare `checklistFamilies: []`, and an empty list stays empty until somebody
+writes what goes in it. That is the next session's work, and nothing here pre-approves it.
+
+Runtime gating is unchanged throughout: `SPECIALTY_PACKS=on` for the picker, the scoring engine's
+own flag plus a per-ward row for any score, and the department's seam patch applied before a unit
+can be created as it.

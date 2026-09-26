@@ -42,9 +42,12 @@ import type { SpecialtyPack } from "./types";
  *   active. Nothing respiratory-specific (BAP-65, PESI, GOLD grading) is offered, because
  *   offering a score this app has not built and reviewed would be worse than offering none.
  *
- * NOT YET PILOTED ON A REAL UNIT. Runtime is gated exactly as the other packs are: the picker
- * needs `SPECIALTY_PACKS=on`, and the scoring engine needs its own flag plus a per-ward row.
- * Clinical content — the trees, the lexicon, the guidance below — is pending clinician review.
+ * CLINICIAN SIGNED OFF FOR PILOT USE 2026-09-26 (Dr. Anubhav), product owner and general-surgery
+ * resident, on his own direction and covering this pack's clinical content: the extraction
+ * guidance, the day counter, the keyterm lexicon, the history-tree order and the scoring list
+ * — including what it deliberately refuses to offer. NOT YET PILOTED ON A REAL UNIT: sign-off is
+ * permission to pilot, not evidence of one. Runtime gating is unchanged. The picker needs `SPECIALTY_PACKS=on`, and the
+ * scoring engine needs its own flag plus a per-ward row.
  */
 export const pulmonaryMedicinePack: SpecialtyPack = {
   key: "pulmonary_medicine",
