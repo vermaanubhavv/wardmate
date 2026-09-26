@@ -41,8 +41,12 @@ import type { SpecialtyPack } from "./types";
  * in a discharge summary at all, and those that do are usually an observation-ward discharge,
  * which is medicine in shape.
  *
- * NOT YET PILOTED ON A REAL UNIT. `SPECIALTY_PACKS=on` for the picker, patch 0086 before a unit
- * can pick it.
+ * CLINICIAN SIGNED OFF FOR PILOT USE 2026-09-26 (Dr. Anubhav), product owner and general-surgery
+ * resident, on his own direction and covering this pack's clinical content: the extraction
+ * guidance, the day counter, the keyterm lexicon, the history-tree order and the scoring list
+ * — including what it deliberately refuses to offer. NOT YET PILOTED ON A REAL UNIT: sign-off is
+ * permission to pilot, not evidence of one. Runtime gating is unchanged. `SPECIALTY_PACKS=on` for the picker, patch 0086
+ * before a unit can pick it.
  */
 export const emergencyMedicinePack: SpecialtyPack = {
   key: "emergency_medicine",

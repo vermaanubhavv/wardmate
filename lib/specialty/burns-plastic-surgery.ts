@@ -50,8 +50,11 @@ import type { SpecialtyPack } from "./types";
  * kind that would be read as a prognosis at a bedside. None has been built or reviewed here,
  * and an empty list is the honest state.
  *
- * NOT YET PILOTED. `SPECIALTY_PACKS=on` and patch 0085 first. Clinical content is pending
- * clinician review.
+ * CLINICIAN SIGNED OFF FOR PILOT USE 2026-09-26 (Dr. Anubhav), product owner and general-surgery
+ * resident, on his own direction and covering this pack's clinical content: the extraction
+ * guidance, the day counter, the keyterm lexicon, the history-tree order and the scoring list
+ * — including what it deliberately refuses to offer. NOT YET PILOTED ON A REAL UNIT: sign-off is
+ * permission to pilot, not evidence of one. Runtime gating is unchanged. `SPECIALTY_PACKS=on` and patch 0085 first.
  */
 export const burnsPlasticSurgeryPack: SpecialtyPack = {
   key: "burns_plastic_surgery",

@@ -37,9 +37,12 @@ import type { SpecialtyPack } from "./types";
  * clinical statement — an ENT unit must not be offered Ranson's or CURB-65 because they happen
  * to exist. Nothing is offered until something is built and reviewed.
  *
- * NOT YET PILOTED ON A REAL UNIT. Gated as every pack is: `SPECIALTY_PACKS=on` for the picker,
- * and patch 0082 run before a unit can pick this specialty. Clinical content is pending
- * clinician review.
+ * CLINICIAN SIGNED OFF FOR PILOT USE 2026-09-26 (Dr. Anubhav), product owner and general-surgery
+ * resident, on his own direction and covering this pack's clinical content: the extraction
+ * guidance, the day counter, the keyterm lexicon, the history-tree order and the scoring list
+ * — including what it deliberately refuses to offer. NOT YET PILOTED ON A REAL UNIT: sign-off is
+ * permission to pilot, not evidence of one. Runtime gating is unchanged. `SPECIALTY_PACKS=on` for the picker, and
+ * patch 0082 run before a unit can pick this specialty.
  */
 export const entPack: SpecialtyPack = {
   key: "ent",
