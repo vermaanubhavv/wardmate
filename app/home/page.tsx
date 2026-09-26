@@ -406,7 +406,7 @@ export default function HomePage() {
       <section id="founder" className="mx-auto max-w-3xl px-6 py-20">
         <div className="wm-glow-border wm-reveal px-6 py-7 sm:px-8">
           <Eyebrow>The person behind it</Eyebrow>
-          <h2 className="mt-1 text-[26px] font-semibold tracking-tight">Built by the resident who needed it</h2>
+          <h2 className="mt-1 text-[26px] font-semibold tracking-tight">Built by a resident who still wants to learn</h2>
           <div className="mt-5 flex items-start gap-5">
             {/* eslint-disable-next-line @next/next/no-img-element -- fixed marketing asset */}
             <img
@@ -420,11 +420,17 @@ export default function HomePage() {
               <p className="text-[17px] font-semibold">Dr. Anubhav Verma</p>
               <p className="font-mono text-[12px] text-accent">JR-2 · General Surgery</p>
               <p className="mt-2.5 text-[15px] leading-snug text-muted">
-                I&rsquo;m the one who built WardMate — still a second-year resident, still on
-                call. Every screen here started as something I needed on my own ward: a list
-                that didn&rsquo;t start from zero every morning, a round I could actually hand
-                off, guidelines that showed up before the consultant asked for them. I&rsquo;m
-                building this the way I practice — one ward round at a time.
+                I&rsquo;m a second-year surgery resident, still on call. Residency was meant to
+                be where I learned medicine from the patient in front of me. Most days, the
+                paperwork got there first. By the time the list was written and the handover
+                sent, the reading I meant to do on the case — the scoring system, the guideline,
+                the why behind the plan — waited for a day off that never came.
+              </p>
+              <p className="mt-2.5 text-[15px] leading-snug text-muted">
+                WardMate is my way of putting that back: the clerical half handled, and the
+                academic half sitting next to the patient, while you&rsquo;re still at the bed
+                and the case is still yours. I&rsquo;m building it the way I practice — one ward
+                round at a time.
               </p>
               <p className="mt-2.5 text-[13.5px] text-muted">
                 — Anubhav ·{" "}
