@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * TOOTHACHE / FACIAL SWELLING — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * TOOTHACHE / FACIAL SWELLING — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Dental and maxillofacial ward, north India. Most toothache is pulpal; the history exists to
  * find the dental infection that has left the tooth — spreading into the floor of the mouth,
  * the eye, or the neck — and the non-healing ulcer or loose tooth in a tobacco user that is
@@ -18,8 +18,8 @@ export const toothacheV1: HistoryTree = {
   complaint: "Toothache / facial swelling",
   triggers: ["toothache", "tooth pain", "dental pain", "facial swelling", "swelling of face", "cheek swelling", "gum swelling", "gum bleeding", "loose tooth", "wisdom tooth", "jaw pain", "cannot open mouth", "daant dard", "mouth ulcer not healing"],
   setting: "Dental and maxillofacial ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("tooth pain"),

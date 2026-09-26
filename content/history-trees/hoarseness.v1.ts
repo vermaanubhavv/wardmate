@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, DHINGRA, HUTCHISONS, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * HOARSENESS OF VOICE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * HOARSENESS OF VOICE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * ENT ward, north India, where tobacco and gutka are common and a change of voice is brought
  * late. The history exists to find the airway that is narrowing, and the hoarseness lasting
  * beyond three weeks in a tobacco user that must be looked at rather than treated as laryngitis.
@@ -16,8 +16,8 @@ export const hoarsenessV1: HistoryTree = {
   complaint: "Hoarseness of voice",
   triggers: ["hoarseness", "hoarse voice", "change in voice", "voice change", "husky voice", "loss of voice", "aphonia", "dysphonia", "awaz baithna", "cannot speak loudly"],
   setting: "ENT ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DHINGRA, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("change in voice"),

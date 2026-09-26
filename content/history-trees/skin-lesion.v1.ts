@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IADVL, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SKIN RASH / ITCHING — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * SKIN RASH / ITCHING — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Skin ward and OPD, north India. Separate from the fever-with-rash tree: this is the rash
  * brought for its own sake. The history exists to find scabies (which the whole family has),
  * the drug reaction that is about to peel, and the patch that has lost sensation.
@@ -16,8 +16,8 @@ export const skinLesionV1: HistoryTree = {
   complaint: "Skin rash / itching",
   triggers: ["rash", "skin rash", "itching", "itchy", "pruritus", "skin lesion", "skin patch", "eruption", "boils", "blisters", "scaling", "khujli", "daad", "white patch", "red patches", "dry skin"],
   setting: "Skin ward and outpatient, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [IADVL, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("rash"),

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, KAPLAN_SADOCK, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LOW MOOD / SELF-HARM — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * LOW MOOD / SELF-HARM — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Psychiatry ward and liaison referrals, north India, where low mood often arrives as body
  * symptoms and an attempt often arrives through casualty. The risk questions are in the tree
  * because asking them directly is the only way they get asked, and because an unasked risk
@@ -17,8 +17,8 @@ export const lowMoodV1: HistoryTree = {
   complaint: "Low mood / self-harm",
   triggers: ["low mood", "depressed", "depression", "sadness", "crying spells", "not interested", "loss of interest", "self harm", "suicidal", "suicide attempt", "attempted", "poisoning attempt", "wants to die", "hopeless", "udaasi", "man nahi lagta", "sleeplessness"],
   setting: "Psychiatry ward and liaison referrals, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [KAPLAN_SADOCK, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("low mood"),
