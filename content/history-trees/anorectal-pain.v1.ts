@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ANORECTAL PAIN AND PERIANAL COMPLAINT — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * ANORECTAL PAIN AND PERIANAL COMPLAINT — v1.0.0. CLINICAL CONTENT: REVIEWED.
  * Adult surgical ward, north India. The relationship of the pain to passing stool separates most
  * of this list: pain during and after defaecation with bright bleeding is a fissure, constant
  * throbbing pain with fever is a collection. Differentials: anal fissure, perianal or
@@ -15,8 +15,8 @@ export const anorectalPainV1: HistoryTree = {
   complaint: "Anal pain / perianal swelling",
   triggers: ["anal pain", "pain in anus", "perianal swelling", "perianal pain", "painful defaecation", "pain while passing stool", "perianal abscess", "fissure", "fistula", "piles", "haemorrhoids", "pilonidal", "swelling near anus", "discharge near anus"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("anal pain"),

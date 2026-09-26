@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * COUGH / HAEMOPTYSIS — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * COUGH / HAEMOPTYSIS — v1.0.0. CLINICAL CONTENT: REVIEWED.
  * Adult medicine ward, north India. Differentials: pulmonary tuberculosis, pneumonia,
  * COPD / asthma, bronchiectasis, lung malignancy, post-nasal drip / reflux / ACE-inhibitor
  * cough, heart failure, interstitial lung disease, pulmonary embolism (haemoptysis).
@@ -13,8 +13,8 @@ export const coughV1: HistoryTree = {
   complaint: "Cough",
   triggers: ["cough", "coughing", "expectoration", "haemoptysis", "hemoptysis", "blood in sputum"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
   references: [
     { title: "National TB Elimination Programme: presumptive TB definition (cough > 2 weeks, fever, weight loss, night sweats, contact)", source: "NTEP, Government of India", url: "https://journals.lww.com/ascp/fulltext/2022/10020/national_tb_elimination_program__ntep___at_a.1.aspx" },
     rce("Does this patient have community-acquired pneumonia? Diagnosing pneumonia by history and physical examination", 1997),

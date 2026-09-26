@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, ebem, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SORE THROAT — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * SORE THROAT — v1.0.0. CLINICAL CONTENT: REVIEWED.
  * Adult medicine / ENT ward, north India. Most sore throats are viral; the history exists to
  * find the airway emergency and the streptococcal infection that matters for its sequelae.
  * Diphtheria remains a real differential in an under-immunised north-Indian population.
@@ -16,8 +16,8 @@ export const soreThroatV1: HistoryTree = {
   complaint: "Sore throat",
   triggers: ["sore throat", "throat pain", "pain in throat", "painful swallowing", "odynophagia", "pharyngitis", "tonsillitis", "gala kharab", "throat infection", "scratchy throat"],
   setting: "Adult medicine / ENT ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
   references: [
     rce("The rational clinical examination. Does this patient have strep throat?", 2000, "11147989"),
     rce("Does this patient have infectious mononucleosis? The Rational Clinical Examination systematic review", 2016, "27115266"),

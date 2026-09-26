@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BREAST LUMP OR BREAST COMPLAINT — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * BREAST LUMP OR BREAST COMPLAINT — v1.0.0. CLINICAL CONTENT: REVIEWED.
  * Adult surgical ward, north India. Age drives the differential more than any single feature:
  * a mobile rubbery lump in a woman of twenty and a hard fixed lump in a woman of fifty-five are
  * different problems from the first sentence. Differentials: fibroadenoma, fibrocystic change,
@@ -15,8 +15,8 @@ export const breastLumpV1: HistoryTree = {
   complaint: "Breast lump",
   triggers: ["breast lump", "lump in breast", "breast swelling", "breast mass", "nipple discharge", "breast pain", "mastalgia", "lump in the breast", "breast complaint", "gynaecomastia"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
   references: [
     rce("The rational clinical examination. Does this patient have breast cancer? The screening clinical breast examination: should it be done? How?", 1999, "10517431"),
     MACLEODS,

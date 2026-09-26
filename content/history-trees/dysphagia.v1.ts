@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * DYSPHAGIA — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * DYSPHAGIA — v1.0.0. CLINICAL CONTENT: REVIEWED.
  * Adult surgical / medicine ward, north India. Three questions carry most of the weight: solids
  * or liquids, progressive or intermittent, and at what level food sticks. Solids-then-liquids
  * progressing over weeks with weight loss is a mechanical narrowing until shown otherwise.
@@ -16,8 +16,8 @@ export const dysphagiaV1: HistoryTree = {
   complaint: "Difficulty swallowing",
   triggers: ["dysphagia", "difficulty swallowing", "difficulty in swallowing", "food sticking", "food gets stuck", "cannot swallow", "unable to swallow", "trouble swallowing", "nigalne me dikkat", "odynophagia"],
   setting: "Adult surgical / medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("difficulty swallowing"),

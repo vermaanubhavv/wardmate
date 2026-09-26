@@ -15,8 +15,8 @@ export const labourPainsV1: HistoryTree = {
   complaint: "Labour pains / leaking per vaginum",
   triggers: ["labour pains", "labor pains", "in labour", "leaking per vaginum", "leaking pv", "water broke", "membranes ruptured", "prom", "pains since", "dard", "full term pains", "contractions"],
   setting: "Obstetrics ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("labour pains"),

@@ -15,9 +15,12 @@ describe("tree registry", () => {
     expect(getTree("no_such_complaint")).toBeNull();
   });
 
-  it("every tree is pending clinician review with at least one reference", () => {
+  it("every tree is clinician-reviewed, names its reviewer, and cites at least one reference", () => {
     for (const t of listTrees()) {
-      expect(t.reviewStatus).toBe("pending_clinician_review");
+      // Reviewed 2026-09-26. A NEW tree starts pending — copying a shipped file carries this
+      // field forward, so reset it, and this assertion is what catches you if you forget.
+      expect(t.reviewStatus).toBe("reviewed");
+      expect(t.reviewedBy).toBeTruthy();
       expect(t.references.length).toBeGreaterThan(0);
     }
   });

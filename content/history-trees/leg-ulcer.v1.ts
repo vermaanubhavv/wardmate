@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, ebem, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LEG ULCER / NON-HEALING WOUND — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * LEG ULCER / NON-HEALING WOUND — v1.0.0. CLINICAL CONTENT: REVIEWED.
  * Adult surgical ward, north India. Site, pain and the state of the circulation separate most of
  * this list: an ulcer above the medial malleolus in a heavy aching leg is venous, a painful
  * punched-out ulcer on the toes with rest pain is arterial, and a painless ulcer under the
@@ -16,8 +16,8 @@ export const legUlcerV1: HistoryTree = {
   complaint: "Leg ulcer / non-healing wound",
   triggers: ["leg ulcer", "ulcer", "non healing wound", "wound not healing", "foot ulcer", "diabetic foot", "sore on leg", "wound on foot", "chronic ulcer", "ghaav", "gangrene", "blackening of toes"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
   references: [
     ebem("Does the clinical examination predict lower extremity peripheral arterial disease?", 2009, "19185391"),
     ebem("The evidence-based diagnosis of deep venous thrombosis", 2009, "19135283"),

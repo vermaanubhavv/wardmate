@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BREATHLESSNESS — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * BREATHLESSNESS — v1.0.0. CLINICAL CONTENT: REVIEWED.
  * Adult medicine ward, north India. Differentials: heart failure, COPD / asthma exacerbation,
  * pneumonia, pulmonary embolism, pleural effusion, anaemia, pneumothorax, metabolic acidosis
  * (DKA, uraemia), tuberculosis, interstitial lung disease.
@@ -13,8 +13,8 @@ export const breathlessnessV1: HistoryTree = {
   complaint: "Breathlessness",
   triggers: ["breathlessness", "breathless", "shortness of breath", "dyspnoea", "dyspnea", "difficulty in breathing", "difficulty breathing", "sob"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
   references: [
     rce("Does this dyspneic patient in the emergency department have congestive heart failure?", 2005, "16234501"),
     rce("Does this patient have pulmonary embolism?", 2003, "14657070"),

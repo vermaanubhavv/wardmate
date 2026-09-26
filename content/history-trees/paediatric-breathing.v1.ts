@@ -15,8 +15,8 @@ export const paediatricBreathingV1: HistoryTree = {
   complaint: "Cough or difficult breathing in a child",
   triggers: ["cough in child", "child breathing difficulty", "fast breathing child", "child cough", "baby breathing", "wheeze child", "chest indrawing", "noisy breathing child", "paediatric cough", "saans"],
   setting: "Paediatric ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
   references: [
     rce("Does this child have pneumonia? The Rational Clinical Examination systematic review", 2017, "28763554"),
     rce("The rational clinical examination. Does this infant have pneumonia?", 1998, "9450716"),

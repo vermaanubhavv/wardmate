@@ -10,9 +10,14 @@ Feature flag: `NEXT_PUBLIC_HISTORY_CHECK=on` (env, Vercel + `.env.local`). With 
 card is not rendered, the API route returns 404, the server actions refuse, the `/learn` pages
 return 404, and nothing under `lib/history-check/` is queried. Off by default.
 
-Clinical content (the trees, the examination checklist, the teaching lines) is marked
-`pending_clinician_review` and shows that chip on the card and the learning pages until a
-clinician sets `reviewStatus: "reviewed"` and `reviewedBy` in the file.
+Clinical content carries `reviewStatus` and `reviewedBy`, and the card and learning pages show
+a chip for each: amber "Pending clinician review", or green "Reviewed · <reviewer>".
+
+**All forty-six trees were reviewed and signed off on 2026-09-26** (Dr. Anubhav, General
+Surgery). As with the scoring pathways, that is a single-clinician sign-off covering content
+that spans nine specialties; departmental review is still outstanding. **The examination
+checklists and the safety-level thresholds are NOT covered by it** — both remain
+`pending_clinician_review`.
 
 ## Pipeline
 
@@ -121,7 +126,10 @@ worded as "questions that would help separate X / Y". It is never shown as a dia
 
 1. Copy `content/history-trees/headache.v1.ts` to `<complaint>.v1.ts`; keep one symptom per
    slot; put every must-not-miss question in `red_flag`; give every tree at least one
-   reference.
+   reference. **Reset `reviewStatus` to `pending_clinician_review` and `reviewedBy` to
+   `null`** — every shipped tree is now `reviewed`, so a copied template arrives carrying a
+   sign-off that was never given for your content. `trees.test.ts` asserts the opposite (every
+   tree reviewed and named), so it will not catch this for you; it is on the author.
 2. Add it to `content/history-trees/index.ts`.
 3. `npm test -- lib/history-check` — the schema test validates every registered tree and prints
    the failing path. Common rejections: an uppercase term, a question without "?", a question

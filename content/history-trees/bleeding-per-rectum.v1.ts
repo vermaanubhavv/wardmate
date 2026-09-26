@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BLEEDING PER RECTUM — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * BLEEDING PER RECTUM — v1.0.0. CLINICAL CONTENT: REVIEWED.
  * Adult surgical ward, north India. Separates anorectal bleeding (bright red, on the paper or
  * pan, after stool) from colonic bleeding (mixed, dark) and from upper-gastrointestinal
  * bleeding (black, tarry). Differentials: haemorrhoids, anal fissure, rectal or colonic cancer,
@@ -14,8 +14,8 @@ export const bleedingPerRectumV1: HistoryTree = {
   complaint: "Bleeding per rectum",
   triggers: ["bleeding per rectum", "bleeding pr", "rectal bleeding", "blood per rectum", "passing blood", "bloody stools", "hematochezia", "haematochezia", "melaena", "melena", "black stools", "bright red blood"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("bleeding per rectum"),

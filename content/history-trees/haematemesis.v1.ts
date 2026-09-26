@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * HAEMATEMESIS / UPPER GI BLEEDING — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * HAEMATEMESIS / UPPER GI BLEEDING — v1.0.0. CLINICAL CONTENT: REVIEWED.
  * Adult medicine / surgical ward, north India. Two questions run in parallel: how much has been
  * lost and is the patient compensating, and where is it coming from. Differentials: peptic
  * ulcer, oesophageal or gastric varices, Mallory-Weiss tear, erosive gastritis (painkillers,
@@ -14,8 +14,8 @@ export const haematemesisV1: HistoryTree = {
   complaint: "Vomiting of blood",
   triggers: ["haematemesis", "hematemesis", "vomiting blood", "vomited blood", "blood in vomit", "coffee ground vomit", "coffee ground", "khoon ki ulti", "upper gi bleed", "blood in vomitus"],
   setting: "Adult medicine / surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
   references: [
     rce("The rational clinical examination. Is this patient hypovolemic?", 1999, "10086438"),
     rce("The rational clinical examination. Physical examination of the liver", 1994, "8196144"),

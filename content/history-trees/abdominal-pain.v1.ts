@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ABDOMINAL PAIN — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * ABDOMINAL PAIN — v1.0.0. CLINICAL CONTENT: REVIEWED.
  * Adult medicine / surgery ward, north India. Differentials: acute appendicitis, acute
  * cholecystitis / biliary colic, acute pancreatitis, peptic ulcer / perforation, intestinal
  * obstruction, renal colic / pyelonephritis, acute gastroenteritis, abdominal tuberculosis,
@@ -14,8 +14,8 @@ export const abdominalPainV1: HistoryTree = {
   complaint: "Abdominal pain",
   triggers: ["abdominal pain", "pain abdomen", "pain in abdomen", "stomach pain", "pain in stomach", "epigastric pain", "acute abdomen", "abdomen pain"],
   setting: "Adult medicine / general surgery ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
   references: [
     rce("Does this patient have appendicitis?", 1996, "8918857"),
     rce("Does this patient have acute cholecystitis?", 2003, "12503981"),

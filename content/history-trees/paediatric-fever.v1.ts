@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, ebem, HUTCHISONS, MACLEODS, paedBackground, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * FEVER IN A CHILD — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * FEVER IN A CHILD — v1.0.0. CLINICAL CONTENT: REVIEWED.
  * Paediatric ward, north India. The younger the child, the less the fever localises and the
  * lower the threshold for looking everywhere. A febrile infant under three months is a
  * different problem from a febrile five-year-old, and the history is where that distinction
@@ -15,8 +15,8 @@ export const paediatricFeverV1: HistoryTree = {
   complaint: "Fever in a child",
   triggers: ["fever in child", "child fever", "paediatric fever", "baby fever", "infant fever", "bukhar bachcha", "febrile child", "fever in infant", "febrile infant"],
   setting: "Paediatric ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
   references: [
     rce("Does this child have pneumonia? The Rational Clinical Examination systematic review", 2017, "28763554"),
     ebem("Does this child have a urinary tract infection?", 2008, "19380042"),

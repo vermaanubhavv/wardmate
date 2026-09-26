@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, ebem, HUTCHISONS, MACLEODS, paedBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * DIARRHOEA IN A CHILD — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * DIARRHOEA IN A CHILD — v1.0.0. CLINICAL CONTENT: REVIEWED.
  * Paediatric ward, north India. The history exists to answer one question first — how much
  * fluid has been lost and can the child still take fluid by mouth — and only then what caused
  * it. Nappy count, tears, feeding and alertness carry that answer better than any single sign.
@@ -16,8 +16,8 @@ export const paediatricDiarrhoeaV1: HistoryTree = {
   complaint: "Diarrhoea in a child",
   triggers: ["diarrhoea in child", "child loose stools", "loose motions child", "baby loose stools", "gastroenteritis child", "dehydration child", "paediatric diarrhoea", "child vomiting and loose stools", "dast"],
   setting: "Paediatric ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
   references: [
     ebem("Dehydration in infants and young children", 2008, "19231668"),
     MACLEODS,

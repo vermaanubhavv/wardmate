@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, ebem, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * JOINT PAIN — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * JOINT PAIN — v1.0.0. CLINICAL CONTENT: REVIEWED.
  * Adult medicine / orthopaedic ward, north India. The three questions that organise the whole
  * history: how many joints, which joints, and how long. A single hot joint is a different
  * problem from a symmetrical small-joint polyarthritis. Differentials: septic arthritis,
@@ -16,8 +16,8 @@ export const jointPainV1: HistoryTree = {
   complaint: "Joint pain",
   triggers: ["joint pain", "joint pains", "arthritis", "arthralgia", "pain in joints", "swollen joint", "joint swelling", "knee pain", "painful joints", "polyarthritis", "jodon me dard"],
   setting: "Adult medicine / orthopaedic ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr. Anubhav, General Surgery — 2026-09-26",
   references: [
     ebem("Septic arthritis in emergency department patients with joint pain: searching for the optimal diagnostic tool", 2008, "18294730"),
     rce("Does this patient with shoulder pain have rotator cuff disease? The Rational Clinical Examination systematic review", 2013, "23982370"),
