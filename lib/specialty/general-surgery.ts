@@ -73,4 +73,7 @@ export const generalSurgeryPack: SpecialtyPack = {
   checklistFamilies: null,
 
   lexiconSpecialty: "general-surgery",
+
+  // The complaints a surgical unit admits, in its own order. A sort only — see types.ts.
+  historyTreeIds: ["abdominal_pain", "abdominal_distension", "lump", "groin_swelling", "scrotal_swelling", "anorectal_pain", "bleeding_per_rectum", "haematemesis", "jaundice", "dysphagia", "constipation", "breast_lump", "leg_ulcer", "limb_injury", "head_injury", "shock", "burns"],
 };

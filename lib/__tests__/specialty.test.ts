@@ -1,3 +1,5 @@
+import { burnsPlasticSurgeryPack } from "@/lib/specialty/burns-plastic-surgery";
+import { listTrees } from "@/lib/history-check/trees";
 import { describe, it, expect } from "vitest";
 import {
   getSpecialtyPack,
@@ -29,6 +31,12 @@ describe("getSpecialtyPack — degrade, don't crash", () => {
     expect(getSpecialtyPack("  Medical_Oncology ").key).toBe("medical_oncology");
     expect(getSpecialtyPack(" INTERNAL_MEDICINE ").key).toBe("internal_medicine");
     expect(getSpecialtyPack(" Obstetrics_Gynaecology ").key).toBe("obstetrics_gynaecology");
+    expect(getSpecialtyPack(" Pulmonary_Medicine ").key).toBe("pulmonary_medicine");
+    expect(getSpecialtyPack(" ENT ").key).toBe("ent");
+    expect(getSpecialtyPack(" Psychiatry ").key).toBe("psychiatry");
+    expect(getSpecialtyPack(" Ophthalmology ").key).toBe("ophthalmology");
+    expect(getSpecialtyPack(" Dermatology ").key).toBe("dermatology");
+    expect(getSpecialtyPack(" Burns_Plastic_Surgery ").key).toBe("burns_plastic_surgery");
   });
 
   it("offers every pack to the picker", () => {
@@ -37,7 +45,25 @@ describe("getSpecialtyPack — degrade, don't crash", () => {
       "medical_oncology",
       "internal_medicine",
       "obstetrics_gynaecology",
+      "pulmonary_medicine",
+      "ent",
+      "psychiatry",
+      "ophthalmology",
+      "dermatology",
+      "burns_plastic_surgery",
     ]);
+  });
+
+  it("every pack's history trees name trees that actually ship", () => {
+    // A pack may lead its picker with the complaints its ward admits, but it cannot invent a
+    // complaint: an id here with no tree behind it would silently sort nothing.
+    const ids = new Set(listTrees().map((t) => t.id));
+    for (const pack of listSpecialties()) {
+      for (const id of pack.historyTreeIds) {
+        expect({ pack: pack.key, id, known: ids.has(id) }).toEqual({ pack: pack.key, id, known: true });
+      }
+      expect(new Set(pack.historyTreeIds).size).toBe(pack.historyTreeIds.length);
+    }
   });
 });
 
@@ -62,6 +88,45 @@ describe("phase 0 is a no-op for a surgical unit", () => {
 
   it("chemotherapy fields on a surgical patient change nothing", () => {
     expect(dayLabel({ ...surgical, cycle_day: 3, cycle_number: 2 })).toBe("POD 2");
+  });
+});
+
+describe("burns counts from the burn, which happened before the admission", () => {
+  const p = burnsPlasticSurgeryPack;
+
+  it("counts post-burn days from 1 — the day of the injury is PBD 1", () => {
+    expect(p.dayCount({ post_op_day: null, admission_day: 1, burn_day: 1 })).toEqual({
+      clock: "burn",
+      n: 1,
+      text: "PBD 1",
+    });
+  });
+
+  it("the burn clock leads even after grafting, and both numbers stay themselves", () => {
+    // Burned on the 1st, grafted on the 12th: PBD 14 and POD 3 of the graft on the same day.
+    // The ward speaks the first; the label names its clock so neither can be read as the other.
+    expect(p.dayCount({ post_op_day: 3, admission_day: 13, burn_day: 14 }).text).toBe("PBD 14");
+  });
+
+  it("a plastic-surgery patient who was never burned counts post-operatively", () => {
+    // A flap, a contracture release, a cleft: same unit, no burn date, surgical clock.
+    expect(p.dayCount({ post_op_day: 2, admission_day: 4 })).toEqual({
+      clock: "post_op",
+      n: 2,
+      text: "POD 2",
+    });
+  });
+
+  it("with neither, it is the hospital day", () => {
+    expect(p.dayCount({ post_op_day: null, admission_day: 5 }).text).toBe("Day 5");
+  });
+
+  it("a burn date that arrives as null changes nothing — the app counts as it always did", () => {
+    expect(p.dayCount({ post_op_day: null, admission_day: 7, burn_day: null }).text).toBe("Day 7");
+  });
+
+  it("offers no score: the burns severity indices are not built or reviewed here", () => {
+    expect(p.scoringKeys).toEqual([]);
   });
 });
 
@@ -431,17 +496,36 @@ describe("offersChecklistFamily — the picker follows the department chosen at 
     expect(offersChecklistFamily(internalMedicinePack, "febrile_neutropenia")).toBe(false);
   });
 
-  it("gives a pack with no list of its own every family no other pack claims", () => {
+  it("gives the one pack with no list of its own every family no other pack claims", () => {
     // The operations, which live only in care_templates and are never listed in a pack.
     expect(offersChecklistFamily(generalSurgeryPack, "lap_chole")).toBe(true);
-    expect(offersChecklistFamily(obstetricsGynaecologyPack, "lap_chole")).toBe(true);
     // A claimed one is not on offer here, even by fallback.
     expect(offersChecklistFamily(generalSurgeryPack, "dka")).toBe(false);
-    expect(offersChecklistFamily(obstetricsGynaecologyPack, "chemo_cycle")).toBe(false);
   });
 
-  it("claims no family twice", () => {
-    const claimed = listSpecialties().flatMap((p) => p.checklistFamilies ?? []);
-    expect(new Set(claimed).size).toBe(claimed.length);
+  it("offers nothing to a department whose own checklists are not written yet", () => {
+    // Every one of these operates or admits, and would have been handed another department's
+    // work by the old phase-only filter — an eye unit offered "Lap chole", an O&G unit offered
+    // appendicectomy. Empty is the deliberate answer until their own rows exist.
+    for (const pack of listSpecialties().filter((p) => p.checklistFamilies?.length === 0)) {
+      for (const family of ["lap_chole", "appendicectomy", "dka", "chemo_cycle"]) {
+        expect(offersChecklistFamily(pack, family)).toBe(false);
+      }
+    }
+    // And that set is not empty, so the loop above is really asserting something.
+    expect(listSpecialties().some((p) => p.checklistFamilies?.length === 0)).toBe(true);
+  });
+
+  it("lets a neighbouring department share rows on purpose, not by accident", () => {
+    const pulmonary = getSpecialtyPack("pulmonary_medicine");
+    // Its casemix, borrowed from medicine along with the discharge templates and Wells scores.
+    for (const family of ["cap", "pulmonary_tb", "vte_suspected"]) {
+      expect(offersChecklistFamily(pulmonary, family)).toBe(true);
+      expect(offersChecklistFamily(internalMedicinePack, family)).toBe(true);
+    }
+    // The rest of medicine's list is not a chest ward's.
+    for (const family of ["dka", "sle_flare", "enteric_fever"]) {
+      expect(offersChecklistFamily(pulmonary, family)).toBe(false);
+    }
   });
 });

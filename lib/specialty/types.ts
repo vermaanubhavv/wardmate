@@ -27,6 +27,12 @@ export const SPECIALTY_KEYS = [
   "medical_oncology",
   "internal_medicine",
   "obstetrics_gynaecology",
+  "pulmonary_medicine",
+  "ent",
+  "psychiatry",
+  "ophthalmology",
+  "dermatology",
+  "burns_plastic_surgery",
 ] as const;
 export type SpecialtyKey = (typeof SPECIALTY_KEYS)[number];
 
@@ -39,6 +45,12 @@ export type DayCountPatient = {
   post_op_day: number | null;
   /** Days since the current chemotherapy cycle started, 1-based. See patch 0060. */
   cycle_day?: number | null;
+  /**
+   * Days since the burn, 1-based — the day of the injury is post-burn day 1. See patch 0085.
+   * Null for every patient who is not a burns admission, which is what every patient outside a
+   * burns unit is.
+   */
+  burn_day?: number | null;
   cycle_number?: number | null;
   regimen?: string | null;
 };
@@ -50,7 +62,7 @@ export type DayCountPatient = {
  * different things on two adjacent beds is exactly the ambiguity this app exists to remove.
  */
 type DayCount = {
-  clock: "post_op" | "cycle" | "admission";
+  clock: "post_op" | "cycle" | "burn" | "admission";
   n: number;
   text: string;
 };
@@ -127,8 +139,14 @@ export type SpecialtyPack = {
   /**
    * Which `care_templates.family` rows this unit's checklist picker offers.
    *
-   * `null` means "every family no other pack claims" — the surgical answer, and what the picker
-   * did before this existed. A list means exactly those, nothing else.
+   * `null` means "every family no other pack claims" — general surgery's answer, and what the
+   * picker did before this existed: its operations live in care_templates, where a unit corrects
+   * them, and are never listed in code. A list means exactly those and nothing else, and `[]` is
+   * a deliberate "this department has none yet" rather than a gap — the same statement
+   * `scoringKeys: []` makes. A department is never handed another one's work to fill the space.
+   *
+   * Two packs MAY claim the same family: pulmonary medicine claims medicine's pneumonia, TB and
+   * VTE rows on purpose, because they are its casemix.
    *
    * Phase alone was doing this job and cannot: a medicine patient and an oncology patient both
    * have no operation date, so both their checklists are filed under `before_surgery`, and a
@@ -140,4 +158,16 @@ export type SpecialtyPack = {
 
   /** The keyterm lexicon core this unit's dictation is boosted with. */
   lexiconSpecialty: LexiconSpecialty;
+
+  /**
+   * The complaints this department starts a history from, in its own order
+   * (`content/history-trees/` ids).
+   *
+   * THIS IS A SORT, NOT A FILTER. The History check picker shows the trees the dictated chief
+   * complaint suggests first, then these, then every other tree — all 59 stay reachable from
+   * every unit, because a chest pain on an ENT ward is still a chest pain. An id that names no
+   * registered tree is ignored (a pack may be ahead of the content), and an empty list simply
+   * means "no department order", which is what the picker did before this field existed.
+   */
+  historyTreeIds: string[];
 };

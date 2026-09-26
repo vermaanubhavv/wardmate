@@ -114,10 +114,14 @@ Obstetrics and gynaecology ward — what the words mean here:
 
   pickerPhase: "after_surgery",
 
-  // null for now — no O&G checklists are seeded (see the file header), and an O&G unit does
-  // operate, so it keeps being offered the unclaimed (surgical) families rather than nothing.
-  // Becomes an explicit list the day a PPH / pre-eclampsia / post-LSCS checklist is written.
-  checklistFamilies: null,
+  // Empty, deliberately, like scoringKeys above — and no longer the unclaimed (surgical) list:
+  // an O&G unit's operations are LSCS, hysterectomy and laparoscopy, none of which are in
+  // general surgery's library, so offering that library offered the wrong department's work.
+  // A PPH / pre-eclampsia / post-LSCS checklist replaces this the day it is written.
+  checklistFamilies: [],
 
   lexiconSpecialty: "obstetrics-gynaecology",
+
+  // Obstetric complaints first, then the gynaecological ones.
+  historyTreeIds: ["labour_pains", "bleeding_pv", "vaginal_discharge", "abdominal_pain", "burning_micturition", "oedema", "fever", "breast_lump"],
 };
