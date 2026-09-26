@@ -61,30 +61,65 @@ const MAX_IMAGING = 4;
 
 const norm = (s: string) => s.toLowerCase().trim();
 const unconfirmed = (o: Observation) => o.needs_confirmation && !o.confirmed_at;
-const cell = "border border-black/60 px-1 py-px";
+const cell = "border border-black/60 px-1 py-0.5";
 
 /** Section heading as a light band — how a printed case sheet separates its sections. */
-const band = "bg-black/[0.07] px-1 py-[1px] text-[9.5px] font-bold uppercase tracking-wide";
-const body = "text-[11px] leading-[1.35]";
+const band = "border-b border-black/60 bg-black/[0.08] px-1.5 py-[2px] text-[10.5px] font-bold uppercase tracking-wide";
+const body = "text-[12px] leading-[1.4]";
 
-function Block({ heading, children, className = "" }: { heading: string; children: React.ReactNode; className?: string }) {
+/** Ruled lines filling whatever is left of a box, for writing by hand. Absolutely placed, so the
+ *  lines never add to the box's height — they only occupy space the page has already given it.
+ *  Real bordered rows rather than a background gradient, which printers drop unpredictably. */
+function Lines() {
   return (
-    <div className={"mt-1.5 break-inside-avoid " + className}>
-      <p className={band}>{heading}</p>
-      <div className={"mt-0.5 px-1 " + body}>{children}</div>
+    <div className="relative flex-1">
+      <div className="absolute inset-0 overflow-hidden px-1.5">
+        {Array.from({ length: 40 }).map((_, i) => (
+          <div key={i} className="h-[7mm] border-b border-black/30" />
+        ))}
+      </div>
     </div>
   );
 }
 
-/** Ruled lines to write on, filling whatever height the page leaves it (never less than `min`).
- *  Real bordered rows rather than a background gradient: a hairline gradient drops out
- *  unpredictably when a printer rasterises it. Rows past the available height are clipped. */
-function Ruled({ min = 14, className = "" }: { min?: number; className?: string }) {
+/**
+ * A section with its own dedicated space: heading band, what was recorded (or NR / NAD), then
+ * ruled space to write in. `grow` is its share of the page's spare height and `min` the least
+ * room it ever gets, in millimetres. It never shrinks below its content — a side that would
+ * overflow is scaled down by FitPage instead of squeezing one box into the next.
+ */
+function Box({
+  heading,
+  grow = 1,
+  min = 16,
+  strong = false,
+  className = "mt-1.5",
+  children,
+}: {
+  heading: string;
+  grow?: number;
+  min?: number;
+  strong?: boolean;
+  className?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className={"min-h-0 flex-1 overflow-hidden " + className} style={{ minHeight: `${min}mm` }}>
-      {Array.from({ length: 40 }).map((_, i) => (
-        <div key={i} className="h-[7mm] border-b border-black/35" />
-      ))}
+    <div
+      style={{ flex: `${grow} 0 auto`, minHeight: `${min}mm` }}
+      className={"flex break-inside-avoid flex-col border " + (strong ? "border-black " : "border-black/60 ") + className}
+    >
+      <p className={band + (strong ? " border-black text-[11px]" : "")}>{heading}</p>
+      <div className={"px-1.5 pt-1 " + body}>{children}</div>
+      <Lines />
+    </div>
+  );
+}
+
+/** Two boxes side by side, sharing one slice of the page's spare height. */
+function Pair({ grow = 1, min = 18, children }: { grow?: number; min?: number; children: React.ReactNode }) {
+  return (
+    <div style={{ flex: `${grow} 0 auto`, minHeight: `${min}mm` }} className="mt-1.5 grid grid-cols-2 gap-2">
+      {children}
     </div>
   );
 }
@@ -101,12 +136,21 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 const NR = () => <span className="text-black/60">NR</span>;
 
 function SectionLines({ section }: { section: HistorySection }) {
-  return section.lines.length > 0 ? section.lines.map((l) => <p key={l.id}>{l.text}</p>) : <p>{section.note}</p>;
+  return section.lines.length > 0 ? section.lines.map((l) => <p key={l.id}>{l.text}</p>) : <p>{section.note ?? "NR"}</p>;
 }
 
-/** A department's lead card: boxed, the recorded lines first, then its prompts — answered ones
- *  filled from the record, the rest blank — and a table to complete by hand. */
-function LeadBlock({ section, table }: { section: HistorySection; table: Lead["table"] }) {
+/** A history card in its own box, as recorded or NR / NAD. */
+function HistoryBox({ section, grow, min, className }: { section: HistorySection; grow?: number; min?: number; className?: string }) {
+  return (
+    <Box heading={section.label} grow={grow} min={min} className={className}>
+      <SectionLines section={section} />
+    </Box>
+  );
+}
+
+/** A department's lead card: a larger box, the recorded lines first, then its prompts —
+ *  answered ones filled from the record, the rest blank — and a table to complete by hand. */
+function LeadBox({ section, table, grow = 1.5, min = 24 }: { section: HistorySection; table: Lead["table"]; grow?: number; min?: number }) {
   const fields = table?.fields ?? [];
   const { answers, rest } = splitFields(section.lines.map((l) => l.text), fields);
   // One operation / condition / drug per row, however it was separated when recorded.
@@ -114,59 +158,55 @@ function LeadBlock({ section, table }: { section: HistorySection; table: Lead["t
   const above = inRows.length > 0 ? [] : rest;
   const blankRows = table?.columns ? Math.max((table.rows ?? 1) - inRows.length, 1) : 0;
   return (
-    <div className="mt-2 break-inside-avoid border border-black">
-      <p className={band + " border-b border-black text-[10.5px]"}>{section.label}</p>
-      <div className={"px-1.5 py-1 " + body}>
-        {above.length > 0
-          ? above.map((t, i) => <p key={i}>{t}</p>)
-          : inRows.length === 0 && Object.keys(answers).length === 0 && <p>{section.note ?? "NR"}</p>}
-        {fields.length > 0 && (
-          <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1">
-            {fields.map((f) => (
-              <p key={f} className="flex items-end gap-1.5">
-                <span className="shrink-0 font-semibold">{f}:</span>
-                {answers[f] ? (
-                  <span className="flex-1 border-b border-dotted border-black/50">{answers[f]}</span>
-                ) : (
-                  <span className="h-3.5 flex-1 border-b border-dotted border-black/50" />
-                )}
-              </p>
-            ))}
-          </div>
-        )}
-        {table?.columns && (
-          <table className="mt-1 w-full border-collapse text-[10px]">
-            <thead>
-              <tr>
-                {table.columns.map((c) => (
-                  <th key={c} className={cell + " text-left font-semibold"}>
-                    {c}
-                  </th>
+    <Box heading={section.label} grow={grow} min={min} strong>
+      {above.length > 0
+        ? above.map((t, i) => <p key={i}>{t}</p>)
+        : inRows.length === 0 && Object.keys(answers).length === 0 && <p>{section.note ?? "NR"}</p>}
+      {fields.length > 0 && (
+        <div className="mt-1 grid grid-cols-2 gap-x-5 gap-y-1.5">
+          {fields.map((f) => (
+            <p key={f} className="flex items-end gap-1.5">
+              <span className="shrink-0 font-semibold">{f}:</span>
+              {answers[f] ? (
+                <span className="flex-1 border-b border-dotted border-black/50">{answers[f]}</span>
+              ) : (
+                <span className="h-4 flex-1 border-b border-dotted border-black/50" />
+              )}
+            </p>
+          ))}
+        </div>
+      )}
+      {table?.columns && (
+        <table className="my-1 w-full border-collapse text-[11px]">
+          <thead>
+            <tr>
+              {table.columns.map((c) => (
+                <th key={c} className={cell + " text-left font-semibold"}>
+                  {c}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {inRows.map((t, i) => (
+              <tr key={`r${i}`}>
+                <td className={cell}>{t}</td>
+                {table.columns!.slice(1).map((c) => (
+                  <td key={c} className={cell} />
                 ))}
               </tr>
-            </thead>
-            <tbody>
-              {inRows.map((t, i) => (
-                <tr key={`r${i}`}>
-                  <td className={cell}>{t}</td>
-                  {table.columns!.slice(1).map((c) => (
-                    <td key={c} className={cell} />
-                  ))}
-                </tr>
-              ))}
-              {Array.from({ length: blankRows }).map((_, i) => (
-                <tr key={i} className="h-5">
-                  {table.columns!.map((c) => (
-                    <td key={c} className={cell} />
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-        {!table && <Ruled min={14} className="h-[14mm] flex-none" />}
-      </div>
-    </div>
+            ))}
+            {Array.from({ length: blankRows }).map((_, i) => (
+              <tr key={i} className="h-[6mm]">
+                {table.columns!.map((c) => (
+                  <td key={c} className={cell} />
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </Box>
   );
 }
 
@@ -319,7 +359,7 @@ export default async function CaseHistoryPrintPage({
   const name = stripPatientHonorific(patient.display_name);
   const chief = byKey.get("chief")!;
   const past = byKey.get("past")!;
-  const sub = "text-[9.5px] font-semibold uppercase";
+  const sub = "text-[10px] font-semibold uppercase";
   const ageSex = `${patient.age_years != null ? `${patient.age_years} yrs` : "NR"} / ${patient.sex ?? "NR"}`;
 
   return (
@@ -331,7 +371,7 @@ export default async function CaseHistoryPrintPage({
         @page { size: A4 portrait; margin: 12mm; }
         @page :right { margin-left: 20mm; }
         @page :left { margin-right: 20mm; }
-        @media print { html, body { width: 210mm; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+        @media print { html, body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
       `}</style>
       <header className="px-4 pb-3 pt-6 print:hidden">
         <Link href={`/patients/${id}/case-history`} className="text-[17px] text-accent">
@@ -351,7 +391,7 @@ export default async function CaseHistoryPrintPage({
           <FitPage breakAfter>
             {/* The unit's uploaded logo (the same one its discharge summary uses); an empty box
                 marks the spot until one is uploaded on the unit's formats page. */}
-            <div className="flex items-center gap-3 border-b-2 border-black pb-1.5">
+            <div className="flex flex-none items-center gap-3 border-b-2 border-black pb-1.5">
               {logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- ward-uploaded logo via a short-lived signed link.
                 <img src={logoUrl} alt="" className="h-[17mm] w-[17mm] shrink-0 object-contain" />
@@ -369,7 +409,7 @@ export default async function CaseHistoryPrintPage({
             </div>
 
             {/* Identifiers as a ruled grid, the way a hospital sheet prints them. */}
-            <div className={"mt-1.5 grid grid-cols-4 border-l border-t border-black/60 " + body}>
+            <div className={"mt-1.5 grid flex-none grid-cols-4 border-l border-t border-black/60 " + body}>
               {[
                 ["Name", name],
                 ["Age / Sex", ageSex],
@@ -387,39 +427,34 @@ export default async function CaseHistoryPrintPage({
               ))}
             </div>
 
+            {/* Complaints, then the presenting illness — the biggest space on the page. */}
             {opening.map((s) =>
               lead.has(s.key) ? (
-                <LeadBlock key={s.key} section={s} table={lead.get(s.key)!.table} />
+                <LeadBox key={s.key} section={s} table={lead.get(s.key)!.table} grow={s.key === "hopi" ? 3 : 1.5} min={s.key === "hopi" ? 40 : 24} />
               ) : (
-                <Block key={s.key} heading={s.label}>
-                  <SectionLines section={s} />
-                </Block>
+                <HistoryBox key={s.key} section={s} grow={s.key === "hopi" ? 3 : 1} min={s.key === "hopi" ? 40 : 18} />
               )
             )}
 
             {leadCards.map((s) => (
-              <LeadBlock key={s.key} section={s} table={lead.get(s.key)!.table} />
+              <LeadBox key={s.key} section={s} table={lead.get(s.key)!.table} />
             ))}
 
-            <div className="grid grid-cols-2 gap-x-4">
-              {restCards.map((s) => (
-                <Block key={s.key} heading={s.label}>
-                  <SectionLines section={s} />
-                </Block>
-              ))}
-            </div>
-
-            {/* Whatever the page has left, to write the history not yet recorded. */}
-            <div className="mt-1.5 flex min-h-0 flex-1 flex-col">
-              <p className={band}>Additional history</p>
-              <Ruled min={14} />
-            </div>
+            {/* Every other history, two to a row, each with its own box. */}
+            {Array.from({ length: Math.ceil(restCards.length / 2) }, (_, i) => restCards.slice(i * 2, i * 2 + 2)).map((pair) => (
+              <Pair key={pair[0].key}>
+                {pair.map((s) => (
+                  // A card left on its own takes the whole row rather than half of one.
+                  <HistoryBox key={s.key} section={s} className={pair.length === 1 ? "col-span-2" : ""} />
+                ))}
+              </Pair>
+            ))}
           </FitPage>
 
           {/* ---- Back ---- */}
           <FitPage>
             {/* The back is a separate side of paper: it carries who it belongs to. */}
-            <div className="flex items-baseline justify-between border-b-2 border-black pb-1 text-[10.5px]">
+            <div className="flex flex-none items-baseline justify-between border-b-2 border-black pb-1 text-[11px]">
               <p className="font-bold uppercase tracking-wide">Patient history sheet — examination &amp; management</p>
               <p>
                 <span className="font-semibold">{name}</span> · {ageSex}
@@ -428,8 +463,8 @@ export default async function CaseHistoryPrintPage({
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-x-4">
-              <Block heading="Examination — general physical">
+            <Pair grow={1.2} min={34}>
+              <Box heading="Examination — general physical" className="">
                 <Row label="Vitals">
                   {exam.vitals.length > 0 ? exam.vitals.map((v) => `${v.label} ${v.value}`).join(" · ") : <NR />}
                 </Row>
@@ -449,9 +484,9 @@ export default async function CaseHistoryPrintPage({
                     {performance.lines.length > 0 ? performance.lines.map((l) => l.text).join("; ") : <NR />}
                   </Row>
                 )}
-              </Block>
+              </Box>
 
-              <Block heading="Examination — systemic & local">
+              <Box heading="Examination — systemic & local" className="">
                 {examCards.map((c) => {
                   const values = other
                     .filter((o) => norm(o.label) === c.label)
@@ -469,21 +504,23 @@ export default async function CaseHistoryPrintPage({
                   </Row>
                 ))}
                 {exam.normalCount > 0 && <p>Rest — NAD</p>}
-              </Block>
-            </div>
+              </Box>
+            </Pair>
 
             {hasExamDiagram(pack.key) && (
-              <div className="mt-1.5 break-inside-avoid border border-black/60">
-                <p className={band + " border-b border-black/60"}>Diagram — mark findings</p>
+              <div className="mt-1.5 flex-none break-inside-avoid border border-black/60">
+                <p className={band}>Diagram — mark findings</p>
                 <div className="px-1 py-1">
                   <ExamDiagrams specialty={pack.key} />
                 </div>
               </div>
             )}
 
-            <Block heading="Latest investigations">
+            <Box heading="Latest investigations" grow={1} min={26}>
               {allReports.length === 0 ? (
-                <p>None recorded.</p>
+                <p>
+                  <NR />
+                </p>
               ) : (
                 <>
                   {blood.length > 0 && (
@@ -503,27 +540,25 @@ export default async function CaseHistoryPrintPage({
                     </>
                   )}
                   {hiddenReports > 0 && (
-                    <p className="text-[9px] italic">
+                    <p className="text-[10px] italic">
                       {hiddenReports} earlier report(s) not shown — see WardMate.
                     </p>
                   )}
                 </>
               )}
-            </Block>
+            </Box>
 
-            <Block heading="Summary">
+            <Box heading="Summary" grow={0.8} min={22}>
               <Row label="Presenting with">
                 {chief.lines.length > 0 ? chief.lines.map((l) => l.text).join("; ") : <NR />}
               </Row>
               <Row label="Past history">{past.lines.length > 0 ? past.lines.map((l) => l.text).join("; ") : past.note}</Row>
               <Row label="Provisional diagnosis">{patient.primary_diagnosis ?? <NR />}</Row>
               {differential.length > 0 && <Row label="Differential diagnosis">{differential.join("; ")}</Row>}
-            </Block>
+            </Box>
 
-            {/* Management takes the rest of the page: what is recorded, then lines for orders. */}
-            <div className="mt-1.5 flex min-h-0 flex-1 flex-col">
-              <p className={band}>Management &amp; treatment</p>
-              <div className={"mt-0.5 grid grid-cols-2 gap-x-4 px-1 " + body}>
+            <Box heading="Management & treatment" grow={2} min={40}>
+              <div className="grid grid-cols-2 gap-x-4">
                 <div>
                   <p className={sub}>Plan</p>
                   {planItems.length > 0 ? planItems.map((p, i) => <p key={i}>• {p}</p>) : <NR />}
@@ -542,10 +577,9 @@ export default async function CaseHistoryPrintPage({
                   )}
                 </div>
               </div>
-              <Ruled min={21} />
-            </div>
+            </Box>
 
-            <div className={"mt-2 flex break-inside-avoid gap-4 border-t-2 border-black pt-2 " + body}>
+            <div className={"mt-2 flex flex-none break-inside-avoid gap-4 border-t-2 border-black pt-2 " + body}>
               <div className="grid flex-1 grid-cols-2 gap-x-4 gap-y-3.5">
                 {["Doctor's name", "Designation", "Signature", "Date & time"].map((l) => (
                   <p key={l} className="flex items-end gap-1.5">
