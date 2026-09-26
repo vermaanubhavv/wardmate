@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, DHINGRA, HUTCHISONS, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BLEEDING FROM THE NOSE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * BLEEDING FROM THE NOSE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * ENT ward, north India. Most nose bleeds are anterior and local; the history exists to find
  * the posterior bleed that fills the throat, the bleeding disorder or anticoagulant behind a
  * trivial-looking bleed, and the young man whose recurrent bleeds come from a nasal mass.
@@ -16,8 +16,8 @@ export const epistaxisV1: HistoryTree = {
   complaint: "Bleeding from the nose",
   triggers: ["epistaxis", "nose bleed", "nosebleed", "bleeding from nose", "blood from nose", "nakseer", "nasal bleeding", "bleeding per nose"],
   setting: "ENT ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DHINGRA, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("nose bleed"),

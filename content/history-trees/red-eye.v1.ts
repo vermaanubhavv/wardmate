@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PARSONS_EYE, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * RED EYE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * RED EYE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Eye ward / casualty, north India. Most red eyes are conjunctivitis; the history exists to
  * pull out the four that threaten sight — angle closure, keratitis, uveitis and penetrating
  * injury — and the one question that separates them is whether vision has dropped.
@@ -16,8 +16,8 @@ export const redEyeV1: HistoryTree = {
   complaint: "Red eye",
   triggers: ["red eye", "redness of eye", "eye redness", "conjunctivitis", "pink eye", "watering eye", "eye pain", "eye discharge", "aankh lal", "sore eye", "irritation in eye"],
   setting: "Eye ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PARSONS_EYE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("redness of the eye"),

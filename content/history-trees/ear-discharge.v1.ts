@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, DHINGRA, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * EAR DISCHARGE / HEARING LOSS — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * EAR DISCHARGE / HEARING LOSS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * ENT ward, north India. A discharging ear is common and usually chronic; the history exists
  * to separate the safe chronic ear from the one eroding bone, and to catch the intracranial
  * spread and the malignant external otitis that arrive on a medical ward as headache or fever.
@@ -16,8 +16,8 @@ export const earDischargeV1: HistoryTree = {
   complaint: "Ear discharge / hearing loss",
   triggers: ["ear discharge", "discharge from ear", "ear pain", "earache", "otalgia", "otorrhoea", "otorrhea", "hearing loss", "decreased hearing", "hard of hearing", "deafness", "kaan behna", "pus from ear", "blocked ear", "ear infection"],
   setting: "ENT ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DHINGRA, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("ear discharge"),

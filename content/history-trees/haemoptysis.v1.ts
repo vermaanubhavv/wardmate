@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * COUGHING BLOOD — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * COUGHING BLOOD — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Pulmonary medicine ward, north India, where tuberculosis — active, or healed and leaving a
  * cavity behind — accounts for most of this complaint. Two questions run underneath the whole
  * history: is the blood really coming from the chest rather than the nose or the stomach, and
@@ -18,8 +18,8 @@ export const haemoptysisV1: HistoryTree = {
   complaint: "Coughing blood",
   triggers: ["haemoptysis", "hemoptysis", "coughing blood", "blood in sputum", "blood in cough", "blood stained sputum", "spitting blood", "khansi mein khoon", "blood while coughing", "streaks of blood"],
   setting: "Pulmonary medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     { title: "National TB Elimination Programme: presumptive TB definition", source: "NTEP, Government of India", url: "https://journals.lww.com/ascp/fulltext/2022/10020/national_tb_elimination_program__ntep___at_a.1.aspx" },
     { title: "Hemoptysis: evaluation and management", source: "American Family Physician (PubMed)", pmid: "25955625" },

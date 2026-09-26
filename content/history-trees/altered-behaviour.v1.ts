@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, KAPLAN_SADOCK, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ABNORMAL BEHAVIOUR — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * ABNORMAL BEHAVIOUR — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Psychiatry ward and casualty, north India. The history is almost always the attendant's.
  * Its first job is not to name the illness but to ask whether this is delirium: a medical
  * cause wearing a psychiatric face, fluctuating, with a clouded sensorium. Separate from the
@@ -17,8 +17,8 @@ export const alteredBehaviourV1: HistoryTree = {
   complaint: "Abnormal behaviour",
   triggers: ["abnormal behaviour", "abnormal behavior", "behaving oddly", "talking to self", "muttering", "irritable", "aggressive", "violent", "not sleeping", "restless", "suspicious", "psychosis", "mania", "confused", "pagal", "harkatein", "abusive", "wandering"],
   setting: "Psychiatry ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [KAPLAN_SADOCK, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("change in behaviour"),

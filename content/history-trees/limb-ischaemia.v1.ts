@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, HUTCHISONS, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LEG PAIN ON WALKING / COLD PAINFUL LIMB — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * LEG PAIN ON WALKING / COLD PAINFUL LIMB — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Vascular surgery, north India, where tobacco use starts young and Buerger's disease is not
  * rare. One question splits this history in two: did the pain come on over seconds and minutes,
  * or over months of walking. The acute limb is counted in hours; the chronic one is counted in
@@ -18,8 +18,8 @@ export const limbIschaemiaV1: HistoryTree = {
   complaint: "Leg pain on walking / cold painful limb",
   triggers: ["claudication", "pain on walking", "calf pain", "leg pain while walking", "cold limb", "cold leg", "cold foot", "pale limb", "blue toes", "gangrene", "blackening of toes", "no pulse", "rest pain", "limb pain at night", "non healing ulcer foot", "numb foot"],
   setting: "Vascular surgery, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("limb pain"),

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PARSONS_EYE, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LOSS OF VISION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * LOSS OF VISION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Eye ward / casualty, north India. Three questions carry most of this history: one eye or
  * both, sudden or gradual, painful or painless. The gradual painless losses are common and
  * treatable late; the sudden ones are counted in hours.
@@ -17,8 +17,8 @@ export const visionLossV1: HistoryTree = {
   complaint: "Loss of vision",
   triggers: ["loss of vision", "vision loss", "cannot see", "blurred vision", "blurring of vision", "decreased vision", "dimness of vision", "blindness", "sudden loss of vision", "black out", "floaters", "dikhai nahi deta", "curtain over eye"],
   setting: "Eye ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PARSONS_EYE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("loss of vision"),

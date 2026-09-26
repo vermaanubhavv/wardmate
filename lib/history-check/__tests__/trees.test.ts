@@ -31,11 +31,8 @@ describe("tree registry", () => {
     // A tree must not drift into "reviewed" as a side effect of an edit — the chip on the card
     // is the only thing telling a resident whether the content was read by a clinician.
     //
-    // Forty-eight of the sixty-one are signed off. Thirteen are not, and each for a reason:
-    //   - `burns` was reviewed as a different file. Main's independently-written burns tree won
-    //     the merge, and a sign-off does not transfer between two pieces of clinical content.
-    //   - the twelve ENT / eye / skin / psychiatry / vascular / dental / chest trees have not
-    //     been in front of a clinician at all.
+    // All sixty-one are signed off. `burns` was re-read as the shipped file (the earlier sign-off was of a
+    // different, independently-written burns tree and did not transfer).
     // `jaundice` IS here, at v1.1.0: it was signed off at v1.0.0, then gained four obstructive
     // questions, and the reviewer read those four and re-signed it rather than the list being
     // edited around them. That is the only way an id gets back onto this list after a version
@@ -43,17 +40,18 @@ describe("tree registry", () => {
     // Adding an id here is a claim that a named clinician read that tree. Nothing else is.
     const reviewed = listTrees().filter((t) => t.reviewStatus === "reviewed").map((t) => t.id).sort();
     expect(reviewed).toEqual([
-      "abdominal_distension", "abdominal_pain", "altered_sensorium", "anorectal_pain",
-      "bleeding_per_rectum", "bleeding_pv", "breast_lump", "breathlessness",
-      "burning_micturition", "chest_pain", "constipation", "cough", "decreased_urine_output",
-      "diarrhoea", "dysphagia", "febrile_neutropenia", "fever", "fever_with_rash",
-      "generalised_weakness", "giddiness", "groin_swelling", "haematemesis", "haematuria",
-      "head_injury", "headache", "jaundice", "joint_pain", "labour_pains", "leg_ulcer",
-      "limb_injury", "limb_weakness", "loss_of_weight_appetite", "low_back_pain", "lump",
-      "oedema",
-      "paediatric_breathing", "paediatric_diarrhoea", "paediatric_fever", "paediatric_seizure",
-      "palpitations", "poisoning_snakebite", "polyuria", "post_op_problem", "scrotal_swelling",
-      "shock", "sore_throat", "thyroid_swelling", "vaginal_discharge",
+      "abdominal_distension", "abdominal_pain", "altered_behaviour", "altered_sensorium",
+      "anorectal_pain", "bleeding_per_rectum", "bleeding_pv", "breast_lump", "breathlessness",
+      "burning_micturition", "burns", "chest_pain", "constipation", "cough",
+      "decreased_urine_output", "diarrhoea", "dysphagia", "ear_discharge", "epistaxis",
+      "febrile_neutropenia", "fever", "fever_with_rash", "generalised_weakness", "giddiness",
+      "groin_swelling", "haematemesis", "haematuria", "haemoptysis", "head_injury", "headache",
+      "hoarseness", "jaundice", "joint_pain", "labour_pains", "leg_ulcer", "limb_injury",
+      "limb_ischaemia", "limb_weakness", "loss_of_weight_appetite", "low_back_pain", "low_mood",
+      "lump", "oedema", "paediatric_breathing", "paediatric_diarrhoea", "paediatric_fever",
+      "paediatric_seizure", "palpitations", "poisoning_snakebite", "polyuria", "post_op_problem",
+      "red_eye", "scrotal_swelling", "shock", "skin_lesion", "snoring_sleepiness", "sore_throat",
+      "thyroid_swelling", "toothache", "vaginal_discharge", "vision_loss",
     ]);
   });
 });

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SNORING / DAYTIME SLEEPINESS — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * SNORING / DAYTIME SLEEPINESS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Pulmonary medicine outpatient and sleep clinic, north India. The patient is asleep for
  * everything that matters here, so the history belongs to whoever shares the room: the
  * witnessed pauses, the gasping, the restlessness. It is asked because the daytime cost —
@@ -18,8 +18,8 @@ export const snoringSleepinessV1: HistoryTree = {
   complaint: "Snoring / daytime sleepiness",
   triggers: ["snoring", "snores", "loud snoring", "daytime sleepiness", "sleepy in the day", "falling asleep", "stops breathing in sleep", "gasping at night", "choking in sleep", "sleep apnoea", "sleep apnea", "kharrate", "unrefreshing sleep", "morning headache"],
   setting: "Pulmonary medicine outpatient and sleep clinic, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("snoring"),
