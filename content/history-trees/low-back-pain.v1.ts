@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, ebem, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LOW BACK PAIN — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * LOW BACK PAIN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult medicine / orthopaedic ward, north India. Most back pain is mechanical; the history
  * exists to find the minority that is not. Tuberculous spondylitis is a live differential here
  * in a way it is not in the Anglo-American textbooks. Differentials: mechanical or muscular,
@@ -16,8 +16,8 @@ export const lowBackPainV1: HistoryTree = {
   complaint: "Low back pain",
   triggers: ["low back pain", "back pain", "backache", "back ache", "lumbar pain", "pain in back", "kamar dard", "lumbago", "pain in lower back", "sciatica"],
   setting: "Adult medicine / orthopaedic ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     ebem("Clinical assessment of low back pain", 2006, "16498707"),
     MACLEODS,

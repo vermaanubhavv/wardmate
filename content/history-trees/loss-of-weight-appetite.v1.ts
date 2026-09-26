@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LOSS OF WEIGHT / APPETITE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * LOSS OF WEIGHT / APPETITE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult medicine / surgical / oncology ward, north India. First job: is the weight loss real
  * and unintentional, and is the appetite lost (anorexia) or is eating painful or impossible?
  * Differentials: malignancy, tuberculosis and other chronic infection, HIV, diabetes,
@@ -14,8 +14,8 @@ export const lossOfWeightAppetiteV1: HistoryTree = {
   complaint: "Loss of weight / appetite",
   triggers: ["loss of weight", "weight loss", "loss of appetite", "reduced appetite", "anorexia", "decreased appetite", "not eating", "poor appetite", "wasting", "emaciation", "cachexia"],
   setting: "Adult medicine / surgical / oncology ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("loss of weight or appetite"),

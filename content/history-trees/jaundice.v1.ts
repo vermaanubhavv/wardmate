@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * JAUNDICE — v1.1.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * JAUNDICE — v1.1.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult medicine ward, north India. Differentials: acute viral hepatitis (A/E, B), alcoholic
  * hepatitis, drug-induced liver injury (including anti-tubercular drugs), obstructive jaundice
  * (stone, malignancy), decompensated cirrhosis, haemolysis (including malaria), leptospirosis,
@@ -14,8 +14,8 @@ export const jaundiceV1: HistoryTree = {
   complaint: "Jaundice",
   triggers: ["jaundice", "yellowish discolouration", "yellow discoloration", "yellowness of eyes", "yellow eyes", "icterus", "yellow urine"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("Does this patient with liver disease have cirrhosis?", 2012, "22357834"),
     rce("The rational clinical examination. Physical examination of the liver", 1994, "8196144"),

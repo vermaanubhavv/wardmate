@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, ebem, HUTCHISONS, MACLEODS, PREGNANCY, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * VAGINAL DISCHARGE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * VAGINAL DISCHARGE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Obstetrics and gynaecology ward, north India. The history separates a discharge arising in
  * the vagina from one arising above the cervix, because the second can scar the tubes.
  * Differentials: bacterial vaginosis, candidiasis, trichomoniasis, cervicitis (chlamydia or
@@ -15,8 +15,8 @@ export const vaginalDischargeV1: HistoryTree = {
   complaint: "Vaginal discharge",
   triggers: ["vaginal discharge", "discharge per vaginum", "white discharge", "foul discharge", "leucorrhoea", "safed pani", "itching private parts", "vaginal itching", "smelly discharge"],
   setting: "Obstetrics and gynaecology ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     ebem("Diagnostic utility of physical examination, history, and laboratory evaluation in emergency department patients with vaginal complaints", 2008, "18763318"),
     MACLEODS,

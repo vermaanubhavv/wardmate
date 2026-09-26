@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, ebem, HUTCHISONS, MACLEODS, paedBackground, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * COUGH AND DIFFICULT BREATHING IN A CHILD — v1.0.0. PENDING CLINICIAN REVIEW.
+ * COUGH AND DIFFICULT BREATHING IN A CHILD — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Paediatric ward, north India. Work of breathing and oxygenation matter more than the
  * respiratory rate or what can be heard through the stethoscope, which is where the published
  * evidence and bedside habit most often part company. Differentials: pneumonia, bronchiolitis,
@@ -15,8 +15,8 @@ export const paediatricBreathingV1: HistoryTree = {
   complaint: "Cough or difficult breathing in a child",
   triggers: ["cough in child", "child breathing difficulty", "fast breathing child", "child cough", "baby breathing", "wheeze child", "chest indrawing", "noisy breathing child", "paediatric cough", "saans"],
   setting: "Paediatric ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("Does this child have pneumonia? The Rational Clinical Examination systematic review", 2017, "28763554"),
     rce("The rational clinical examination. Does this infant have pneumonia?", 1998, "9450716"),

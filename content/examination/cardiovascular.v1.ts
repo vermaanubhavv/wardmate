@@ -2,7 +2,7 @@ import type { ExamChecklist, ExamItem } from "@/lib/history-check/exam-types";
 import { BATES, ebem, HUTCHISONS, MACLEODS, rce } from "@/content/history-trees/_helpers";
 
 /**
- * CARDIOVASCULAR SYSTEM EXAMINATION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * CARDIOVASCULAR SYSTEM EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * The long-case order taught in Indian medical colleges: peripheral signs, pulse, blood
  * pressure, jugular venous pressure, then the precordium by inspection, palpation and
@@ -28,8 +28,8 @@ export const cardiovascularV1: ExamChecklist = {
   version: "1.0.0",
   title: "Cardiovascular system examination",
   setting: "Adult medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("Does this patient have abnormal central venous pressure?", 1996, "8594245"),
     rce("Does this patient have aortic regurgitation?", 1999, "10376577"),

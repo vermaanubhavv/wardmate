@@ -5,11 +5,17 @@ import type { HistoryTree } from "@/lib/history-check/types";
  * SAFETY LEVEL 0-4 — how completely the must-not-miss questions have been covered, and how
  * many of them came back positive.
  *
- * WHAT THIS IS NOT. This is not a validated clinical score, it is not a triage category, and
- * it does not predict anything. No published instrument was used to derive the thresholds
- * below; they are a reading of the tree's own red-flag slots, chosen by the app and awaiting
- * clinician sign-off (see `SAFETY_LEVEL_REVIEW_STATUS`). It must never be rendered as a
- * severity score, a priority, or an instruction to act.
+ * WHAT THIS IS NOT, AND STILL IS NOT AFTER SIGN-OFF. This is not a validated clinical score,
+ * it is not a triage category, and it does not predict anything. No published instrument was
+ * used to derive the thresholds below; they are a reading of the tree's own red-flag slots,
+ * chosen by the app. It must never be rendered as a severity score, a priority, or an
+ * instruction to act.
+ *
+ * The thresholds were reviewed and signed off by Dr Anubhav Verma (see
+ * `SAFETY_LEVEL_REVIEW_STATUS`). READ THAT NARROWLY: a clinician agreeing the mapping is
+ * sensible is not the same claim as the number having been validated against outcomes, and
+ * nothing here has been. The paragraph above survives the sign-off unchanged — it describes
+ * what the number is, not what was pending about it.
  *
  * THE ONE RULE THAT MATTERS. "Not asked" is not reassurance. A level of 0 is reachable ONLY
  * when every red-flag slot in the tree has actually been asked and every one came back
@@ -32,8 +38,16 @@ import type { HistoryTree } from "@/lib/history-check/types";
 export const SAFETY_LEVEL_MIN = 0;
 export const SAFETY_LEVEL_MAX = 4;
 
-/** Mirrors the trees' own flag. The card shows it so nobody mistakes this for a validated tool. */
-export const SAFETY_LEVEL_REVIEW_STATUS = "pending_clinician_review" as const;
+/**
+ * Mirrors the trees' own flag. Anything that surfaces the level must surface this beside it,
+ * so a reader takes "reviewed" for what it is — see the header: reviewed is not validated.
+ *
+ * Nothing reads either const today; the card computes `assessSafety` through view.ts and does
+ * not render it. They are the record of the sign-off, and what a renderer must show when one
+ * is built.
+ */
+export const SAFETY_LEVEL_REVIEW_STATUS = "reviewed" as const;
+export const SAFETY_LEVEL_REVIEWED_BY = "Dr Anubhav Verma";
 
 export type SafetyLevel = 0 | 1 | 2 | 3 | 4;
 

@@ -10,17 +10,35 @@ Feature flag: `NEXT_PUBLIC_HISTORY_CHECK=on` (env, Vercel + `.env.local`). With 
 card is not rendered, the API route returns 404, the server actions refuse, the `/learn` pages
 return 404, and nothing under `lib/history-check/` is queried. Off by default.
 
-Clinical content (the trees, the examination checklist, the teaching lines) is marked
-`pending_clinician_review` and shows that chip on the card and the learning pages until a
-clinician sets `reviewStatus: "reviewed"` and `reviewedBy` in the file.
+Clinical content carries `reviewStatus` and `reviewedBy`, and the card and learning pages show
+a chip for each: amber "Pending clinician review", or green "Reviewed · <reviewer>".
 
-The fifteen general-surgery trees (abdominal pain, abdominal distension, anorectal pain, bleeding
-per rectum, breast lump, burns, constipation, dysphagia, groin swelling, haematemesis, leg ulcer,
-lump, problem after an operation, scrotal swelling, neck swelling (thyroid)) are `reviewed`,
-signed off by Dr Anubhav Verma — the first twelve on 2026-09-22, the last three on 2026-09-23.
-Every other tree is still pending, including `jaundice`, which is a medicine-ward tree even
-though it now carries the obstructive questions. `trees.test.ts` pins that list, so a tree cannot drift into "reviewed" as
-a side effect of an edit.
+**Forty-eight of the sixty-one trees, all five examination checklists and the safety-level
+thresholds are reviewed and signed off by Dr Anubhav Verma.** As with the scoring pathways, that
+is a single-clinician sign-off covering content that spans nine specialties; departmental review
+is still outstanding.
+
+For the safety level specifically, read the sign-off narrowly: `safety.ts` says the number is
+not a validated instrument and no published one was used to derive it, and **that stays true
+after review** — a clinician agreeing the mapping is sensible is a different claim from the
+number having been validated against outcomes. Anything that comes to render the level must
+render `SAFETY_LEVEL_REVIEW_STATUS` beside it. Nothing renders the level at all today: `view.ts`
+computes `assessSafety` and the card does not read it.
+
+`trees.test.ts` pins the exact list, so a tree cannot drift into "reviewed" as a side effect of
+an edit. Thirteen trees are **not** on it:
+
+- `burns` — the reviewed burns tree and the shipped one are two independently written files; the
+  shipped one won a merge, and a sign-off does not transfer between two pieces of content.
+- the twelve ENT, ophthalmology, dermatology, psychiatry, vascular, dental and chest trees
+  (ear discharge, epistaxis, hoarseness, red eye, loss of vision, skin lesion, low mood,
+  abnormal behaviour, limb ischaemia, toothache, haemoptysis, snoring) — not yet read by a
+  clinician at all.
+
+`jaundice` shows how a tree gets back on the list after its content changes: it was signed off
+at v1.0.0, PR #27 added four obstructive questions and bumped it to v1.1.0, which took it off,
+and it is on the list again because the reviewer read those four slots. A version bump is the
+prompt to re-read, not a formality to edit around.
 
 ## Pipeline
 
@@ -162,7 +180,10 @@ worded as "questions that would help separate X / Y". It is never shown as a dia
 
 1. Copy `content/history-trees/headache.v1.ts` to `<complaint>.v1.ts`; keep one symptom per
    slot; put every must-not-miss question in `red_flag`; give every tree at least one
-   reference.
+   reference. **Reset `reviewStatus` to `pending_clinician_review` and `reviewedBy` to
+   `null`** — `headache.v1.ts` is `reviewed`, so a copied template arrives carrying a sign-off
+   that was never given for your content. The pinned list in `trees.test.ts` fails if you leave
+   it, which is the point of pinning it.
 2. Add it to `content/history-trees/index.ts`.
 3. `npm test -- lib/history-check` — the schema test validates every registered tree and prints
    the failing path. Common rejections: an uppercase term, a question without "?", a question
@@ -184,13 +205,21 @@ before packs existed. See `docs/specialty-packs.md` §11.
 
 ### Examination checklists — `content/examination/`
 
-`general-physical.v1.ts` is the head-to-toe survey (preliminaries, vitals, anthropometry,
+Five checklists: `general-physical.v1.ts`, `cardiovascular.v1.ts`, `respiratory.v1.ts`,
+`abdomen.v1.ts` and `neurological.v1.ts`.
+
+General physical is the head-to-toe survey (preliminaries, vitals, anthropometry,
 pallor / icterus / cyanosis / clubbing / koilonychia / lymphadenopathy / oedema, hydration, skin
-and nails, head and mouth, neck, hands, trunk and limbs). Every item carries `how` (shown behind
-the (i) on `/learn/examination/general_physical`), `significance` ("seen in …") and optionally
-`normal`. Types in `lib/history-check/exam-types.ts`, validator in `exam-schema.ts` (same
-dose / diagnosis rules), registry in `content/examination/index.ts`, test in
-`__tests__/exam.test.ts`.
+and nails, head and mouth, neck, hands, trunk and limbs); the other four are the system
+examinations. Every item carries `how` (shown behind the (i) on
+`/learn/examination/<id>`), `significance` ("seen in …") and optionally `normal`. Types in
+`lib/history-check/exam-types.ts`, validator in `exam-schema.ts` (same dose / diagnosis rules),
+registry in `content/examination/index.ts`, test in `__tests__/exam.test.ts`.
+
+Adding one: same rule as the trees — **reset `reviewStatus` to `pending_clinician_review` and
+`reviewedBy` to `null`**, because every shipped checklist is `reviewed` and a copied file
+arrives carrying a sign-off nobody gave for your content. `exam.test.ts` asserts every shipped
+checklist is reviewed, so it will not catch this for you; it is on the author.
 
 ## Evals
 

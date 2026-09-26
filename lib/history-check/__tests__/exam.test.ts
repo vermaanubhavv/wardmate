@@ -6,13 +6,27 @@ import { generalPhysicalV1 } from "@/content/examination/general-physical.v1";
 const clone = () => JSON.parse(JSON.stringify(generalPhysicalV1)) as typeof generalPhysicalV1;
 
 describe("exam checklists", () => {
-  it("every shipped checklist validates and is pending review", () => {
+  it("every shipped checklist validates, is clinician-reviewed, and names its reviewer", () => {
     for (const c of listExamChecklists()) {
       expect(validateExamChecklist(c).ok).toBe(true);
-      expect(c.reviewStatus).toBe("pending_clinician_review");
+      // Reviewed by Dr Anubhav Verma. A NEW checklist starts pending — copying a shipped file carries
+      // this field forward, so reset it; this assertion is what catches you if you forget.
+      expect(c.reviewStatus).toBe("reviewed");
+      expect(c.reviewedBy).toBeTruthy();
     }
     expect(getExamChecklist("general_physical")?.title).toMatch(/General physical/);
     expect(getExamChecklist("nope")).toBeNull();
+  });
+
+  it("rejects a reviewed checklist with no reviewer named", () => {
+    // exam-schema.ts has carried this rule since it was written, with nothing exercising it.
+    // It matters more now every shipped checklist is reviewed: it is the only thing standing
+    // between a future one and shipping signed-off-by-nobody. Set both fields explicitly so
+    // the test reads the validator, not whatever the cloned fixture happens to hold.
+    const c = clone();
+    c.reviewStatus = "reviewed";
+    c.reviewedBy = null;
+    expect(validateExamChecklist(c).issues.some((i) => i.path === "$.reviewedBy")).toBe(true);
   });
 
   it("general physical examination is comprehensive: PICCLE, vitals, hydration, hands, neck", () => {

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BURNING MICTURITION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * BURNING MICTURITION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult medicine / surgical ward, north India. Separates a lower urinary tract infection from
  * an upper one and from an obstructive, sexually transmitted or non-infective cause.
  * Differentials: cystitis, pyelonephritis, prostatitis / epididymo-orchitis, urethritis (sexually
@@ -15,8 +15,8 @@ export const burningMicturitionV1: HistoryTree = {
   complaint: "Burning micturition",
   triggers: ["burning micturition", "burning urine", "dysuria", "painful urination", "pain on passing urine", "burning while passing urine", "frequency of urine", "urgency", "urinary frequency"],
   setting: "Adult medicine / surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("burning micturition"),

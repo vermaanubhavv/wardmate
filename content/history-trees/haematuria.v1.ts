@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BLOOD IN THE URINE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * BLOOD IN THE URINE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Urology ward, north India. Painless visible haematuria is a urothelial cancer until proven
  * otherwise, and that single rule organises the history. Where in the stream the blood appears
  * localises the source. Differentials: urinary tract infection, stone, bladder or renal
@@ -15,8 +15,8 @@ export const haematuriaV1: HistoryTree = {
   complaint: "Blood in the urine",
   triggers: ["haematuria", "hematuria", "blood in urine", "red urine", "bloody urine", "passing blood in urine", "clots in urine", "cola coloured urine", "peshab me khoon"],
   setting: "Urology ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("blood in the urine"),

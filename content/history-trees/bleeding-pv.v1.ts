@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, ebem, HUTCHISONS, MACLEODS, rce, val, yn } from "@/content/history-trees/_helpers";
+import { commonHpi, HUTCHISONS, MACLEODS, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BLEEDING PER VAGINUM — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * BLEEDING PER VAGINUM — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Obstetrics and gynaecology ward, north India. The first question is always whether the
  * patient could be pregnant, because that single fact splits the differential in two and puts
  * a ruptured ectopic at the top of one half. Differentials: ectopic pregnancy, miscarriage,
@@ -16,8 +16,8 @@ export const bleedingPvV1: HistoryTree = {
   complaint: "Bleeding per vaginum",
   triggers: ["bleeding per vaginum", "bleeding pv", "vaginal bleeding", "per vaginal bleeding", "spotting", "heavy periods", "menorrhagia", "postmenopausal bleeding", "bleeding after delivery", "postpartum haemorrhage", "khoon aana"],
   setting: "Obstetrics and gynaecology ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("Does this woman have an ectopic pregnancy? The Rational Clinical Examination systematic review", 2013, "23613077"),
     rce("The rational clinical examination. Is this patient hypovolemic?", 1999, "10086438"),

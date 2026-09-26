@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LIMB INJURY — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * LIMB INJURY — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Orthopaedic / emergency ward, north India. The mechanism predicts the injury, and the
  * questions that matter most afterwards are about the circulation, the nerves and the skin
  * over the fracture. Differentials: fracture, dislocation, ligament or tendon injury, soft
@@ -15,8 +15,8 @@ export const limbInjuryV1: HistoryTree = {
   complaint: "Limb injury",
   triggers: ["limb injury", "fracture", "broken bone", "injury to leg", "injury to arm", "dislocation", "twisted ankle", "fall on hand", "hadi toot", "deformity after fall", "cannot bear weight"],
   setting: "Orthopaedic / emergency ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("Does this patient with shoulder pain have rotator cuff disease? The Rational Clinical Examination systematic review", 2013, "23982370"),
     MACLEODS,

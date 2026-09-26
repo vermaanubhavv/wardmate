@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ACUTE DIARRHOEA / VOMITING — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * ACUTE DIARRHOEA / VOMITING — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult medicine ward, north India. Differentials: acute gastroenteritis (viral / bacterial),
  * cholera, dysentery (bacillary / amoebic), food poisoning, enteric fever, antibiotic-
  * associated diarrhoea, inflammatory bowel disease flare, drug / toxin ingestion,
@@ -14,8 +14,8 @@ export const diarrhoeaV1: HistoryTree = {
   complaint: "Diarrhoea / vomiting",
   triggers: ["diarrhoea", "diarrhea", "loose stools", "loose motions", "loose motion", "watery stools", "vomiting", "vomitings", "gastroenteritis", "dysentery", "blood in stool", "frequent stools"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("Is this patient hypovolemic?", 1999, "10086438"),
     { title: "Infectious Diseases Society of America clinical practice guidelines for the diagnosis and management of infectious diarrhea", source: "Clin Infect Dis", year: 2017, pmid: "29053792" },

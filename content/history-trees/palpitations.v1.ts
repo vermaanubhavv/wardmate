@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * PALPITATIONS — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * PALPITATIONS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Adult medicine ward, north India. The history does most of the work here: rate and regularity
  * tapped out by the patient, how it starts and stops, and what happened during the episode.
  * Differentials: sinus tachycardia (anaemia, fever, thyrotoxicosis, anxiety), atrial
@@ -15,8 +15,8 @@ export const palpitationsV1: HistoryTree = {
   complaint: "Palpitations",
   triggers: ["palpitations", "palpitation", "heart racing", "racing heart", "fluttering", "heart beating fast", "awareness of heartbeat", "thumping in chest", "irregular heartbeat", "dhadkan"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("Did this patient have cardiac syncope? The Rational Clinical Examination systematic review", 2019, "31237649"),
     rce("Does this patient with chest pain have acute coronary syndrome? The Rational Clinical Examination systematic review", 2015, "26547467"),

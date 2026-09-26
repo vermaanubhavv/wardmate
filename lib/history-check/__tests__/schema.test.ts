@@ -79,6 +79,9 @@ describe("history tree schema", () => {
   it("rejects a reviewed tree with no reviewer named", () => {
     const t = clone();
     t.reviewStatus = "reviewed";
+    // Set explicitly rather than relying on the cloned fixture's own value — the fixture is a
+    // shipped tree and is reviewed, so it already names a reviewer.
+    t.reviewedBy = null;
     expect(validateHistoryTree(t).issues.some((i) => i.path === "$.reviewedBy")).toBe(true);
   });
 
@@ -92,8 +95,9 @@ describe("history tree schema", () => {
 });
 
 describe("fever tree content", () => {
-  it("is marked pending clinician review, carries no doses, and names its setting", () => {
-    expect(feverV1.reviewStatus).toBe("pending_clinician_review");
+  it("is clinician-reviewed, carries no doses, and names its setting", () => {
+    expect(feverV1.reviewStatus).toBe("reviewed");
+    expect(feverV1.reviewedBy).toBeTruthy();
     expect(feverV1.setting).toMatch(/north India/);
     const text = JSON.stringify(feverV1);
     expect(text).not.toMatch(/\d+\s?(mg|ml|mcg)\b/i);
