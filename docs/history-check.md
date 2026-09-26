@@ -13,7 +13,7 @@ return 404, and nothing under `lib/history-check/` is queried. Off by default.
 Clinical content carries `reviewStatus` and `reviewedBy`, and the card and learning pages show
 a chip for each: amber "Pending clinician review", or green "Reviewed · <reviewer>".
 
-**Forty-seven of the sixty-one trees, all five examination checklists and the safety-level
+**Forty-eight of the sixty-one trees, all five examination checklists and the safety-level
 thresholds are reviewed and signed off by Dr Anubhav Verma.** As with the scoring pathways, that
 is a single-clinician sign-off covering content that spans nine specialties; departmental review
 is still outstanding.
@@ -26,17 +26,19 @@ render `SAFETY_LEVEL_REVIEW_STATUS` beside it. Nothing renders the level at all 
 computes `assessSafety` and the card does not read it.
 
 `trees.test.ts` pins the exact list, so a tree cannot drift into "reviewed" as a side effect of
-an edit. Fourteen trees are **not** on it:
+an edit. Thirteen trees are **not** on it:
 
-- `jaundice` — reviewed at v1.0.0, then gained four obstructive questions at v1.1.0. The review
-  covered the older content, so the tree is pending again. Re-signing it means reading the four
-  new slots, not editing the list.
 - `burns` — the reviewed burns tree and the shipped one are two independently written files; the
   shipped one won a merge, and a sign-off does not transfer between two pieces of content.
 - the twelve ENT, ophthalmology, dermatology, psychiatry, vascular, dental and chest trees
   (ear discharge, epistaxis, hoarseness, red eye, loss of vision, skin lesion, low mood,
   abnormal behaviour, limb ischaemia, toothache, haemoptysis, snoring) — not yet read by a
   clinician at all.
+
+`jaundice` shows how a tree gets back on the list after its content changes: it was signed off
+at v1.0.0, PR #27 added four obstructive questions and bumped it to v1.1.0, which took it off,
+and it is on the list again because the reviewer read those four slots. A version bump is the
+prompt to re-read, not a formality to edit around.
 
 ## Pipeline
 
