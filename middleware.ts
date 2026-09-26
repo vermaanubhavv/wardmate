@@ -80,8 +80,12 @@ export async function middleware(request: NextRequest) {
   if (
     path.startsWith("/waitlist") ||
     path.startsWith("/home") ||
+    path.startsWith("/feedback") ||
     path.startsWith("/api/waitlist") ||
-    path.startsWith("/api/contact")
+    path.startsWith("/api/contact") ||
+    path.startsWith("/api/feedback") ||
+    path.startsWith("/api/cron/feedback-email") ||
+    path.startsWith("/api/feedback/unsubscribe")
   ) {
     return NextResponse.next({ request });
   }

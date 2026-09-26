@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Mark from "@/app/mark";
 import WaitlistForm from "@/app/waitlist/waitlist-form";
 import ContactForm from "@/app/home/contact-form";
+import styles from "./home.module.css";
 
 /**
  * The full marketing page — About, the academic pitch, the founder, real product screens —
@@ -131,16 +133,22 @@ const SCREENS = [
 
 export default function HomePage() {
   return (
-    <main className="flex-1 w-full">
+    <main id="top" className="flex-1 w-full">
       {/* ---- header ---- */}
       <header className="sticky top-0 z-10 top-bar border-b border-line bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
+        <div className={styles.headerInner}>
           <span className="flex items-center gap-2">
             <Mark className="h-7 w-7" />
             <span className="text-[17px] font-semibold tracking-tight">
               ward<span className="text-accent">mate</span>
             </span>
           </span>
+          <nav className={styles.primaryNav} aria-label="Main navigation">
+            <a href="#top" aria-current="page">Home</a>
+            <a href="#about">About</a>
+            <a href="#contact">Contact</a>
+            <a href="/login">Login</a>
+          </nav>
           <a
             href="#waitlist"
             className="rounded-[10px] bg-accent px-4 py-2 text-[14px] font-semibold text-accent-ink"
@@ -344,29 +352,35 @@ export default function HomePage() {
       <Divider />
 
       {/* ---- founder ---- */}
-      <section id="founder" className="mx-auto max-w-3xl px-6 py-14">
-        <Eyebrow>The person behind it</Eyebrow>
-        <h2 className="mt-1 text-[26px] font-semibold tracking-tight">Built by the resident who needed it</h2>
-        <div className="ios-group mt-5 flex max-w-[62ch] items-start gap-5 px-5 py-5">
-          <span className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--accent)_14%,transparent)] font-semibold text-[24px] text-accent">
-            AV
-          </span>
-          <div>
-            <p className="text-[17px] font-semibold">Dr. Anubhav Verma</p>
-            <p className="font-mono text-[12px] text-accent">JR-2 · General Surgery</p>
-            <p className="mt-2.5 text-[15px] leading-snug text-muted">
-              I&rsquo;m the one who built WardMate — still a second-year resident, still on
-              call. Every screen here started as something I needed on my own ward: a list
-              that didn&rsquo;t start from zero every morning, a round I could actually hand
-              off, guidelines that showed up before the consultant asked for them. I&rsquo;m
-              building this the way I practice — one ward round at a time.
-            </p>
-            <p className="mt-2.5 text-[13.5px] text-muted">
-              — Anubhav ·{" "}
-              <a href="mailto:anubhav@wardmate.in" className="text-foreground underline underline-offset-2">
-                anubhav@wardmate.in
-              </a>
-            </p>
+      <section id="founder" className={styles.founder}>
+        <div className={styles.founderIntro}>
+          <Eyebrow>Why WardMate exists</Eyebrow>
+          <h2>Made on the ward, for the ward.</h2>
+        </div>
+        <div className={styles.founderStory}>
+          <p className={styles.founderLead}>
+            WardMate started with a familiar problem: the ward list was already out of date
+            by the time rounds began.
+          </p>
+          <p className={styles.founderBody}>
+            I&rsquo;m a second-year general surgery resident. I built the first version for my
+            own unit—to keep patient updates, jobs and handovers in one place, and to stop
+            rebuilding the same picture from scraps every morning. The product still grows
+            the same way: one real shift, one useful improvement at a time.
+          </p>
+          <div className={styles.founderByline}>
+            <Image
+              src="/home/anubhav-verma.jpg"
+              width={150}
+              height={150}
+              alt="Dr. Anubhav Verma"
+              className={styles.founderPhoto}
+            />
+            <span>
+              <strong>Dr. Anubhav Verma</strong>
+              <small>JR-2 · General Surgery</small>
+            </span>
+            <a href="mailto:anubhav@wardmate.in">anubhav@wardmate.in</a>
           </div>
         </div>
       </section>
@@ -374,9 +388,9 @@ export default function HomePage() {
       <Divider />
 
       {/* ---- waitlist + contact, side by side on desktop ---- */}
-      <section className="bg-card py-14">
-        <div className="mx-auto grid max-w-4xl gap-10 px-6 sm:grid-cols-2">
-          <div id="waitlist">
+      <section className={styles.connect}>
+        <div className={styles.connectGrid}>
+          <div id="waitlist" className={`${styles.formCard} ${styles.waitlistCard}`}>
             <Eyebrow>Get early access</Eyebrow>
             <h2 className="mt-1 text-[22px] font-semibold tracking-tight">Join the waitlist</h2>
             <p className="mt-2 text-[14.5px] text-muted">
@@ -387,7 +401,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div id="contact">
+          <div id="contact" className={styles.formCard}>
             <Eyebrow>Get in touch</Eyebrow>
             <h2 className="mt-1 text-[22px] font-semibold tracking-tight">Contact us</h2>
             <p className="mt-2 text-[14.5px] text-muted">
@@ -407,9 +421,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 border-t border-line px-6 py-8 bottom-bar text-[13px] text-muted">
+      <footer className="mx-auto w-full max-w-6xl border-t border-line px-6 py-8 bottom-bar text-[13px] text-muted">
         <span>© 2026 WardMate</span>
-        <span>Built for the ones still running on chai and pattern recognition.</span>
       </footer>
     </main>
   );

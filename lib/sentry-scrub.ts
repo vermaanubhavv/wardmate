@@ -16,6 +16,13 @@ import type { ErrorEvent } from "@sentry/nextjs";
 const UUID =
   /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 
+// Next 16 can dispatch a hash navigation while the App Router is still booting in development.
+// The framework throws this invariant before any WardMate code runs; Sentry should not turn that
+// recoverable framework race into an actionable product issue. Actual application exceptions
+// (including an event carrying another exception alongside this one) still go through.
+const NEXT_ROUTER_INITIALISATION_ERROR =
+  "Internal Next.js error: Router action dispatched before initialization.";
+
 function scrubUrl(value: string): string {
   // Drop any query string wholesale (it can carry names, bed numbers, free text) and
   // replace patient ids with :id.
@@ -61,6 +68,14 @@ export function scrubLog<T extends { message?: unknown; attributes?: Record<stri
 }
 
 export function scrubEvent(event: ErrorEvent): ErrorEvent | null {
+  const exceptions = event.exception?.values ?? [];
+  if (
+    exceptions.length > 0 &&
+    exceptions.every((exception) => exception.value === NEXT_ROUTER_INITIALISATION_ERROR)
+  ) {
+    return null;
+  }
+
   // Request metadata: keep the method and a de-identified path, drop the rest.
   if (event.request) {
     if (event.request.url) event.request.url = scrubUrl(event.request.url);
