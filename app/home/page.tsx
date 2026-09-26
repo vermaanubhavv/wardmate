@@ -498,7 +498,7 @@ export default function HomePage() {
         <span className="flex items-center gap-2">
           <Mark className="h-5 w-5" /> © 2026 WardMate
         </span>
-        <span>Built for the ones still running on chai and pattern recognition.</span>
+        <span>Built by a resident, for residents.</span>
       </footer>
     </main>
   );
