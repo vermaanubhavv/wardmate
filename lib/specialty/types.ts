@@ -124,6 +124,20 @@ export type SpecialtyPack = {
    */
   pickerPhase: "before_surgery" | "after_surgery";
 
+  /**
+   * Which `care_templates.family` rows this unit's checklist picker offers.
+   *
+   * `null` means "every family no other pack claims" — the surgical answer, and what the picker
+   * did before this existed. A list means exactly those, nothing else.
+   *
+   * Phase alone was doing this job and cannot: a medicine patient and an oncology patient both
+   * have no operation date, so both their checklists are filed under `before_surgery`, and a
+   * chemotherapy unit was being offered dengue and DKA while a medicine unit was offered
+   * febrile neutropenia. The department chosen at unit setup is the only thing that separates
+   * them.
+   */
+  checklistFamilies: readonly string[] | null;
+
   /** The keyterm lexicon core this unit's dictation is boosted with. */
   lexiconSpecialty: LexiconSpecialty;
 };

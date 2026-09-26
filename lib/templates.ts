@@ -8,6 +8,7 @@ import {
   type ItemTrigger,
   type TriggerContext,
 } from "@/lib/checklist-triggers";
+import { getSpecialtyPack, offersChecklistFamily } from "@/lib/specialty";
 
 type TemplateItem = {
   id: string;
@@ -182,22 +183,28 @@ export const getTemplateForPatient = cache(async function getTemplateForPatient(
   };
 })
 
-/** Everything a patient can be assigned to, for the add-patient screen. */
+/**
+ * Everything a patient can be assigned to, for the add-patient screen.
+ *
+ * Scoped to the department the unit picked when it was created: the pack decides which phase's
+ * rows to read and which families of that phase are its own. Passing nothing gives the surgical
+ * answer, exactly as this function always behaved.
+ */
 export const listTemplateChoices = cache(async function listTemplateChoices(
-  /** Which phase's rows to offer — the unit's pack decides. Defaults to the surgical answer,
-   *  so a caller that passes nothing behaves exactly as this function always did. */
-  phase: "before_surgery" | "after_surgery" = "after_surgery"
+  specialty?: string | null
 ): Promise<TemplateChoice[]> {
+  const pack = getSpecialtyPack(specialty);
   const supabase = await createClient();
   const { data } = await supabase
     .from("care_templates")
     .select("family, variant, name")
-    .eq("phase", phase)
+    .eq("phase", pack.pickerPhase)
     .order("family");
 
   const seen = new Set<string>();
   const out: TemplateChoice[] = [];
   for (const t of data ?? []) {
+    if (!offersChecklistFamily(pack, t.family)) continue;
     const key = `${t.family}|${t.variant ?? ""}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -225,8 +232,8 @@ function procedureKey(p: {
  * costs one query rather than thirty. The name shown is the one the resident chose from the
  * Operation picker — never anything inferred from the diagnosis.
  */
-export async function getProcedureLabels(): Promise<Map<string, string>> {
-  const choices = await listTemplateChoices();
+export async function getProcedureLabels(specialty?: string | null): Promise<Map<string, string>> {
+  const choices = await listTemplateChoices(specialty);
   return new Map(choices.map((c) => [`${c.family}|${c.variant ?? ""}`, c.label]));
 }
 
