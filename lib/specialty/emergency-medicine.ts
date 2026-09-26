@@ -31,7 +31,7 @@ import type { SpecialtyPack } from "./types";
  *    advice, left without being seen, shifted to ICU, died in the department. It is recorded as
  *    stated, because it is the one thing every emergency episode ends with.
  *
- * SCORING is the four adult pathways an emergency physician actually reaches for, all built,
+ * SCORING is the five adult pathways an emergency physician actually reaches for, all built,
  * reviewed and `status: "active"`: `heart_score` for undifferentiated chest pain, `qsofa` for the
  * septic patient at the door, `wells_pe` and `wells_dvt`, and `upper_gi_bleeding` for the
  * haematemesis that needs a triage decision now. Nothing else is offered — no triage category
@@ -83,7 +83,7 @@ Emergency department — what the words mean here:
   dischargeTemplates: MEDICINE_DISCHARGE_TEMPLATES,
   genericDischargeTemplate: MEDICINE_GENERIC_DISCHARGE_TEMPLATE,
 
-  // The four an emergency physician reaches for, all active. No triage category and no
+  // The five an emergency physician reaches for, all active. No triage category and no
   // early-warning score — see the header.
   scoringKeys: ["heart_score", "qsofa", "wells_pe", "wells_dvt", "upper_gi_bleeding"],
 
