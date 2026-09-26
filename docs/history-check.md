@@ -13,11 +13,11 @@ return 404, and nothing under `lib/history-check/` is queried. Off by default.
 Clinical content carries `reviewStatus` and `reviewedBy`, and the card and learning pages show
 a chip for each: amber "Pending clinician review", or green "Reviewed · <reviewer>".
 
-**All forty-six trees were reviewed and signed off on 2026-09-26** (Dr. Anubhav, General
-Surgery). As with the scoring pathways, that is a single-clinician sign-off covering content
-that spans nine specialties; departmental review is still outstanding. **The examination
-checklists and the safety-level thresholds are NOT covered by it** — both remain
-`pending_clinician_review`.
+**All forty-six trees and all five examination checklists were reviewed and signed off on
+2026-09-26** (Dr. Anubhav, General Surgery). As with the scoring pathways, that is a
+single-clinician sign-off covering content that spans nine specialties; departmental review is
+still outstanding. **The safety-level thresholds are NOT covered by it** — `safety.ts` remains
+`pending_clinician_review`, and the card still shows that chip beside the number.
 
 ## Pipeline
 
@@ -143,13 +143,20 @@ with the version they were run against.
 
 ### Examination checklists — `content/examination/`
 
-`general-physical.v1.ts` is the head-to-toe survey (preliminaries, vitals, anthropometry,
+Five checklists: `general-physical.v1.ts`, `cardiovascular.v1.ts`, `respiratory.v1.ts`,
+`abdomen.v1.ts` and `neurological.v1.ts`.
+
+General physical is the head-to-toe survey (preliminaries, vitals, anthropometry,
 pallor / icterus / cyanosis / clubbing / koilonychia / lymphadenopathy / oedema, hydration, skin
-and nails, head and mouth, neck, hands, trunk and limbs). Every item carries `how` (shown behind
-the (i) on `/learn/examination/general_physical`), `significance` ("seen in …") and optionally
-`normal`. Types in `lib/history-check/exam-types.ts`, validator in `exam-schema.ts` (same
-dose / diagnosis rules), registry in `content/examination/index.ts`, test in
-`__tests__/exam.test.ts`.
+and nails, head and mouth, neck, hands, trunk and limbs); the other four are the system
+examinations. Every item carries `how` (shown behind the (i) on
+`/learn/examination/<id>`), `significance` ("seen in …") and optionally `normal`. Types in
+`lib/history-check/exam-types.ts`, validator in `exam-schema.ts` (same dose / diagnosis rules),
+registry in `content/examination/index.ts`, test in `__tests__/exam.test.ts`.
+
+Adding one: same rule as the trees — **reset `reviewStatus` to `pending_clinician_review` and
+`reviewedBy` to `null`**, because every shipped checklist is now `reviewed` and a copied file
+arrives carrying a sign-off nobody gave for your content.
 
 ## Evals
 
