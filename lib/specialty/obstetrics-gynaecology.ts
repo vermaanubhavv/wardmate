@@ -32,14 +32,13 @@ import type { SpecialtyPack } from "./types";
  * (docs/specialty-packs.md §7–§8): the seam, day numbering, extraction prompt, lexicon and
  * quick-tap chips are built and safe to ship. Checklists, scores and condition-specific
  * discharge templates are real clinical content that need the unit's own sign-off before they
- * exist — the same reason `OBGYN_DISCHARGE_TEMPLATES` is `[]` and `scoringKeys` is empty here,
- * not a placeholder. Behind `SPECIALTY_PACKS`, unreachable until switched on for a pilot unit.
+ * exist — the same reason `scoringKeys` is empty here, not a placeholder. (The condition
+ * discharge templates were written 2026-09-28 — see lib/discharge-templates-obgyn.ts.) Behind `SPECIALTY_PACKS`, unreachable until switched on for a pilot unit.
  *
  * What is deliberately NOT shipped in this pack, and why:
  * - No checklist protocols (a PPH drill checklist, a pre-eclampsia checklist, a post-LSCS
  *   checklist are exactly the shape patches 0061/0064/0067 seeded for oncology and medicine —
  *   clinical content, not yet written or reviewed here).
- * - No condition-specific discharge templates (see lib/discharge-templates-obgyn.ts header).
  * - No scoring pathways (`scoringKeys: []` — a modified early-warning score for obstetrics is a
  *   plausible future addition, not one made without sign-off).
  * - No new patient columns for LMP/EDD/gravida/para. That information is captured as clerking
@@ -51,9 +50,9 @@ import type { SpecialtyPack } from "./types";
  *
  * CLINICIAN SIGNED OFF FOR PILOT USE 2026-09-26 (Dr. Anubhav), product owner and general-surgery
  * resident, on his own direction. It covers what this pack HAS — the day counter, the extraction
- * guidance, the lexicon and the history-tree order. It cannot cover the checklists, scores and
- * condition discharge templates listed above, because those do not exist yet; the empty lists
- * stay empty until they are written.
+ * guidance, the lexicon and the history-tree order. It cannot cover the checklists and scores
+ * listed above, because those do not exist yet; the empty lists stay empty until they are
+ * written. The condition discharge templates carry their own review line in their file.
  */
 export const obstetricsGynaecologyPack: SpecialtyPack = {
   key: "obstetrics_gynaecology",

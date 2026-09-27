@@ -1,4 +1,4 @@
-import { DISCHARGE_TEMPLATES, GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates";
+import { BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES, BURNS_PLASTIC_SURGERY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-burns-plastic-surgery";
 import type { FormatKind } from "@/lib/formats";
 import type { SpecialtyPack } from "./types";
 
@@ -42,9 +42,9 @@ import type { SpecialtyPack } from "./types";
  *    keeps the informant's words as the informant's words and adds nothing — no inference about
  *    how plausible an account is, and no judgement dressed up as a finding.
  *
- * WHAT THIS PACK BORROWS. The general-surgery discharge templates: a burns or flap discharge is
- * operative in shape. Its own (post-grafting care, donor-site care, contracture physiotherapy
- * and splinting, scar management) are the first thing to add past pilot.
+ * DISCHARGE TEMPLATES are this department's own, in `lib/discharge-templates-burns-plastic-surgery.ts` (added 2026-09-28, with
+ * typical medicines pre-filled on the product owner's direction). It no longer borrows the
+ * general-surgery or medicine set.
  *
  * SCORING IS EMPTY. The burns severity indices are real instruments — and they are exactly the
  * kind that would be read as a prognosis at a bedside. None has been built or reviewed here,
@@ -104,8 +104,8 @@ Burns and plastic surgery ward — what the words mean here:
   // post_op, cycle and admission. Grafting is what the checklists here will key to.
   checklistAnchor: "post_op",
 
-  dischargeTemplates: DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: GENERIC_DISCHARGE_TEMPLATE,
+  dischargeTemplates: BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES,
+  genericDischargeTemplate: BURNS_PLASTIC_SURGERY_GENERIC_DISCHARGE_TEMPLATE,
 
   // Empty on purpose: the burns severity indices are exactly the kind of number that would be
   // read as a prognosis at a bedside, and none has been built or reviewed here.

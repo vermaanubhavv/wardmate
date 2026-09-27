@@ -1,3 +1,4 @@
+import { SPECIALTY_KEYS } from "@/lib/specialty/types";
 import { burnsPlasticSurgeryPack } from "@/lib/specialty/burns-plastic-surgery";
 import { listTrees } from "@/lib/history-check/trees";
 import { describe, it, expect } from "vitest";
@@ -257,6 +258,53 @@ describe("internal medicine counts by the hospital day", () => {
   });
 });
 
+describe("every department's own discharge templates", () => {
+  const packs = SPECIALTY_KEYS.map((k) => getSpecialtyPack(k));
+
+  it("every department has condition templates and a generic that never auto-matches", () => {
+    for (const p of packs) {
+      expect(p.dischargeTemplates.length, p.key).toBeGreaterThan(0);
+      const keys = [...p.dischargeTemplates, p.genericDischargeTemplate].map((t) => t.key);
+      expect(new Set(keys).size, `${p.key} has a duplicate template key`).toBe(keys.length);
+      for (const probe of ["cataract", "tonsillectomy", "fever", "LSCS", "fracture", ""]) {
+        expect(p.genericDischargeTemplate.match.test(probe), `${p.key} generic matched "${probe}"`).toBe(false);
+      }
+    }
+  });
+
+  it("only general surgery and medicine share their sets — nobody borrows any more", () => {
+    const owners = new Map<unknown, string>();
+    for (const p of packs) {
+      const prior = owners.get(p.dischargeTemplates);
+      expect(prior, `${p.key} borrows ${prior}'s templates`).toBeUndefined();
+      owners.set(p.dischargeTemplates, p.key);
+    }
+  });
+
+  it("a paediatric (or infant) template never states a dose", () => {
+    const infant = [
+      ...getSpecialtyPack("paediatrics").dischargeTemplates,
+      ...getSpecialtyPack("neurosurgery").dischargeTemplates.filter((t) => /myelomeningocele/i.test(t.label)),
+      ...getSpecialtyPack("burns_plastic_surgery").dischargeTemplates.filter((t) => /cleft/i.test(t.label)),
+    ];
+    expect(infant.length).toBeGreaterThan(10);
+    for (const t of infant) {
+      for (const m of t.scaffold.medications) {
+        expect(`${m.strength ?? ""} ${m.dose ?? ""}`, `${t.key}: ${m.generic}`).not.toMatch(/\d/);
+      }
+    }
+  });
+
+  it("each department picks its own template for its commonest operation", () => {
+    const pick = (k: string, text: string) => matchDischargeTemplateFor(getSpecialtyPack(k), { procedureText: text })?.key;
+    expect(pick("ophthalmology", "SICS with PCIOL right eye")).toBe("eye_cataract");
+    expect(pick("ent", "Tonsillectomy")).toBe("ent_tonsillectomy");
+    expect(pick("urology", "TURP")).toBe("uro_turp");
+    expect(pick("orthopaedics", "Total knee replacement")).toBe("ortho_arthroplasty");
+    expect(pick("neurosurgery", "VP shunt")).toBe("ns_vp_shunt");
+  });
+});
+
 describe("obstetrics & gynaecology counts like a surgical unit, not a medicine one", () => {
   const p = obstetricsGynaecologyPack;
 
@@ -292,10 +340,11 @@ describe("obstetrics & gynaecology counts like a surgical unit, not a medicine o
     expect(p.checklistAnchor).toBe("post_op");
   });
 
-  it("ships only the generic discharge template — condition-specific set deferred, same as medicine's pre-alpha state", () => {
-    expect(p.dischargeTemplates).toEqual([]);
-    expect(listDischargeTemplatesFor(p).map((t) => t.key)).toEqual([p.genericDischargeTemplate.key]);
-    expect(p.genericDischargeTemplate.scaffold.medications).toEqual([]);
+  it("ships its own condition templates — LSCS is picked before a normal delivery", () => {
+    expect(p.dischargeTemplates.length).toBeGreaterThan(5);
+    expect(listDischargeTemplatesFor(p).map((t) => t.key)).toContain(p.genericDischargeTemplate.key);
+    expect(matchDischargeTemplateFor(p, { procedureText: "Emergency LSCS" })?.key).toBe("obg_lscs");
+    expect(matchDischargeTemplateFor(p, { procedureText: "Normal vaginal delivery" })?.key).toBe("obg_nvd");
   });
 
   it("uses its own lexicon core, not the surgical or medicine one", () => {

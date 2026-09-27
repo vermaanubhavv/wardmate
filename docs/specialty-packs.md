@@ -974,3 +974,34 @@ writes what goes in it. That is the next session's work, and nothing here pre-ap
 Runtime gating is unchanged throughout: `SPECIALTY_PACKS=on` for the picker, the scoring engine's
 own flag plus a per-ward row for any score, and the department's seam patch applied before a unit
 can be created as it.
+
+## 16. Every department's own discharge templates (2026-09-28)
+
+This supersedes every "borrows the general-surgery / medicine discharge templates" line above
+(§8, §9, §10, §14 and the per-pack headers). Each of the fifteen departments now has its own set
+in `lib/discharge-templates-<department>.ts`, plus its own generic template:
+
+| Department | File | Condition templates |
+|---|---|---|
+| General surgery | `discharge-templates.ts` | 11 (unchanged) |
+| Internal medicine | `discharge-templates-medicine.ts` | 14 (unchanged, still no default drugs) |
+| Medical oncology | `discharge-templates-oncology.ts` | 7 (unchanged) |
+| O&G | `discharge-templates-obgyn.ts` | 8 (was 0) |
+| Pulmonary | `discharge-templates-pulmonary.ts` | 10 |
+| Emergency | `discharge-templates-emergency.ts` | 10 |
+| ENT | `discharge-templates-ent.ts` | 8 |
+| Ophthalmology | `discharge-templates-ophthalmology.ts` | 8 |
+| Orthopaedics | `discharge-templates-orthopaedics.ts` | 8 |
+| Urology | `discharge-templates-urology.ts` | 9 |
+| Neurosurgery | `discharge-templates-neurosurgery.ts` | 8 |
+| Burns & plastics | `discharge-templates-burns-plastic-surgery.ts` | 8 |
+| Dermatology | `discharge-templates-dermatology.ts` | 9 |
+| Psychiatry | `discharge-templates-psychiatry.ts` | 8 |
+| Paediatrics | `discharge-templates-paediatrics.ts` | 12 |
+
+Typical discharge medicines are pre-filled, on the product owner's direction, as a starting set
+checked per patient. Where a dose is titrated or patient-specific — every psychotropic, steroid
+tapers, immunosuppressants, ATT and DR-TB regimens, antiepileptics, anticoagulation in renal
+impairment — the drug is named and the dose is a `[ … ]` blank. No paediatric or infant template
+states a dose (the paediatrics pack's rule); `specialty.test.ts` enforces that, that no department
+borrows another's set, and that no generic template auto-matches.

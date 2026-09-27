@@ -1,7 +1,4 @@
-import {
-  MEDICINE_DISCHARGE_TEMPLATES,
-  MEDICINE_GENERIC_DISCHARGE_TEMPLATE,
-} from "@/lib/discharge-templates-medicine";
+import { PAEDIATRICS_DISCHARGE_TEMPLATES, PAEDIATRICS_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-paediatrics";
 import type { FormatKind } from "@/lib/formats";
 import type { SpecialtyPack } from "./types";
 
@@ -35,11 +32,9 @@ import type { SpecialtyPack } from "./types";
  * ward because it happens to exist would be the worst thing this seam could do. Nothing is
  * offered until a paediatric pathway is built and reviewed for children.
  *
- * DISCHARGE TEMPLATES are the medicine ones, which are condition-keyed rather than operation-
- * keyed and so hold the right shape — but they carry adult wording, and paediatric templates
- * (bronchiolitis, pneumonia, acute gastroenteritis with a plan for the weight, febrile seizure,
- * severe acute malnutrition) are the first thing to add past pilot, in a
- * `lib/discharge-templates-paediatrics.ts`.
+ * DISCHARGE TEMPLATES are this department's own, in `lib/discharge-templates-paediatrics.ts` (added 2026-09-28, with
+ * typical medicines pre-filled on the product owner's direction). It no longer borrows the
+ * general-surgery or medicine set.
  *
  * CLINICIAN SIGNED OFF FOR PILOT USE 2026-09-26 (Dr. Anubhav), product owner and general-surgery
  * resident, on his own direction and covering this pack's clinical content: the extraction
@@ -86,8 +81,8 @@ Paediatric ward — what the words mean here:
   checklistAnchor: "admission",
 
   // Condition-keyed medicine templates, on adult wording — see the header for what replaces them.
-  dischargeTemplates: MEDICINE_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: MEDICINE_GENERIC_DISCHARGE_TEMPLATE,
+  dischargeTemplates: PAEDIATRICS_DISCHARGE_TEMPLATES,
+  genericDischargeTemplate: PAEDIATRICS_GENERIC_DISCHARGE_TEMPLATE,
 
   // EMPTY, AND DELIBERATELY SO. Every built pathway is validated in adults only. See the header:
   // this is the single most important line in this pack.
