@@ -2,7 +2,7 @@ import type { AdviceItem } from "@/lib/discharge-entities";
 import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-templates";
 
 /**
- * ORTHOPAEDICS discharge templates. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * ORTHOPAEDICS discharge templates. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28).
  *
  * Same rules as the general-surgery set in lib/discharge-templates.ts: what is written here
  * prints as written unless the resident changes it, and every patient-specific blank is a

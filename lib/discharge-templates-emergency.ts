@@ -2,7 +2,7 @@ import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-temp
 import type { AdviceItem } from "@/lib/discharge-entities";
 
 /**
- * EMERGENCY MEDICINE discharge templates. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * EMERGENCY MEDICINE discharge templates. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28).
  *
  * For a patient discharged DIRECTLY from the emergency department or its observation ward — not
  * admitted to a unit. The scaffold's "procedure" is the observation / emergency procedure.

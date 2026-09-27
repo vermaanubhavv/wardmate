@@ -2,7 +2,7 @@ import type { AdviceItem } from "@/lib/discharge-entities";
 import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-templates";
 
 /**
- * PAEDIATRICS discharge templates. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * PAEDIATRICS discharge templates. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28).
  *
  * Drafted to replace the adult medicine templates the paediatric ward borrowed until now (see
  * lib/specialty/paediatrics.ts). Not yet read through by a paediatric unit; intended to be

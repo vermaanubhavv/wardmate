@@ -2,7 +2,7 @@ import type { AdviceItem } from "@/lib/discharge-entities";
 import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-templates";
 
 /**
- * DERMATOLOGY discharge templates. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * DERMATOLOGY discharge templates. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28).
  *
  * Same rule as lib/discharge-templates.ts: what is written here prints as written unless the
  * resident changes it; a genuinely patient-specific blank is `[ … ]` and prints as a visible

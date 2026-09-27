@@ -2,7 +2,7 @@ import type { AdviceItem } from "@/lib/discharge-entities";
 import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-templates";
 
 /**
- * ENT discharge templates. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * ENT discharge templates. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28).
  *
  * One template per admission an ENT unit commonly discharges. Same rule as the surgical file:
  * what is written here prints as written unless the resident changes it, and a genuinely

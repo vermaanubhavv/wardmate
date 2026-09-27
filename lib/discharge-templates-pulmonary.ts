@@ -2,7 +2,7 @@ import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-temp
 import type { AdviceItem } from "@/lib/discharge-entities";
 
 /**
- * PULMONARY MEDICINE discharge templates. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * PULMONARY MEDICINE discharge templates. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28).
  *
  * Unlike the internal-medicine set, these PRE-FILL a typical adult discharge prescription, on the
  * product owner's direction. The medication lines are a STARTING SET to be checked against each

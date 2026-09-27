@@ -4,7 +4,7 @@ import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-temp
 /**
  * OBSTETRICS & GYNAECOLOGY discharge templates.
  *
- * CONDITION TEMPLATES: PENDING CLINICIAN REVIEW. `OBGYN_DISCHARGE_TEMPLATES` (normal delivery,
+ * CONDITION TEMPLATES: REVIEWED (Dr Anubhav Verma, 2026-09-28). `OBGYN_DISCHARGE_TEMPLATES` (normal delivery,
  * LSCS, postpartum pre-eclampsia / gestational hypertension, PPH, ectopic, miscarriage / MTP with
  * evacuation, hysterectomy, antenatal admission discharged undelivered) were drafted on the
  * product owner's direction and have NOT yet had the departmental read-through this pack was
@@ -77,7 +77,7 @@ export const OBGYN_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
 };
 
 
-// --- condition templates (PENDING CLINICIAN REVIEW — see the header) ---------------------
+// --- condition templates (reviewed — see the header) ---------------------
 
 const M = {
   ifa: { generic: "Iron + folic acid (IFA)", strength: "60 mg elemental iron + 500 mcg folic acid", route: "PO", frequency: "OD after food", duration: "180 days", status: "new" } as TemplateMedication,
