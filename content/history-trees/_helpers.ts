@@ -99,6 +99,10 @@ export const DHINGRA: Reference = { title: "Diseases of Ear, Nose and Throat & H
 export const PARSONS_EYE: Reference = { title: "Parsons' Diseases of the Eye — symptoms and clinical assessment", source: "Elsevier (textbook)" };
 export const IADVL: Reference = { title: "IADVL Textbook of Dermatology — approach to the patient with a skin lesion", source: "Bhalani (textbook)" };
 export const KAPLAN_SADOCK: Reference = { title: "Kaplan & Sadock's Synopsis of Psychiatry — the psychiatric interview and risk assessment", source: "Wolters Kluwer (textbook)" };
+export const DUTTA_OBSTETRICS: Reference = { title: "DC Dutta's Textbook of Obstetrics — history taking in obstetrics", source: "Jaypee (textbook)" };
+export const SHAW_GYNAECOLOGY: Reference = { title: "Shaw's Textbook of Gynaecology — the gynaecological history", source: "Elsevier (textbook)" };
+export const GHAI_PAEDIATRICS: Reference = { title: "Ghai Essential Pediatrics — history taking in children", source: "CBS (textbook)" };
+export const IMNCI: Reference = { title: "Integrated Management of Neonatal and Childhood Illness (IMNCI) — danger signs and assessment", source: "Ministry of Health and Family Welfare, India / WHO (guideline)" };
 export const BAILEY_LOVE: Reference = { title: "Bailey & Love's Short Practice of Surgery — history and examination of the surgical patient", source: "CRC Press (textbook)" };
 
 /**

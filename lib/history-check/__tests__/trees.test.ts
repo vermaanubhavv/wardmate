@@ -6,7 +6,7 @@ describe("tree registry", () => {
   it("lists every shipped complaint once and resolves by id and version", () => {
     const trees = listTrees();
     const ids = trees.map((t) => t.id);
-    for (const want of ["fever", "chest_pain", "breathlessness", "abdominal_pain", "jaundice", "cough", "oedema", "headache", "altered_sensorium", "limb_weakness", "diarrhoea", "generalised_weakness", "giddiness", "decreased_urine_output", "constipation", "abdominal_distension", "lump", "bleeding_per_rectum", "burning_micturition", "loss_of_weight_appetite", "palpitations", "joint_pain", "haematemesis", "polyuria", "low_back_pain", "sore_throat", "fever_with_rash", "poisoning_snakebite", "dysphagia", "groin_swelling", "breast_lump", "anorectal_pain", "leg_ulcer", "scrotal_swelling", "head_injury", "shock", "paediatric_fever", "paediatric_diarrhoea", "paediatric_breathing", "paediatric_seizure", "bleeding_pv", "vaginal_discharge", "labour_pains", "febrile_neutropenia", "haematuria", "limb_injury", "thyroid_swelling", "post_op_problem", "burns"]) {
+    for (const want of ["fever", "chest_pain", "breathlessness", "abdominal_pain", "jaundice", "cough", "oedema", "headache", "altered_sensorium", "limb_weakness", "diarrhoea", "generalised_weakness", "giddiness", "decreased_urine_output", "constipation", "abdominal_distension", "lump", "bleeding_per_rectum", "burning_micturition", "loss_of_weight_appetite", "palpitations", "joint_pain", "haematemesis", "polyuria", "low_back_pain", "sore_throat", "fever_with_rash", "poisoning_snakebite", "dysphagia", "groin_swelling", "breast_lump", "anorectal_pain", "leg_ulcer", "scrotal_swelling", "head_injury", "shock", "paediatric_fever", "paediatric_diarrhoea", "paediatric_breathing", "paediatric_seizure", "bleeding_pv", "vaginal_discharge", "labour_pains", "febrile_neutropenia", "haematuria", "limb_injury", "thyroid_swelling", "post_op_problem", "burns", "reduced_fetal_movements", "vomiting_in_pregnancy", "mass_per_vaginum", "sick_newborn", "poor_weight_gain", "paediatric_abdominal_pain", "nasal_obstruction", "earache", "foreign_body_ent", "double_vision", "eyelid_swelling", "eye_injury"]) {
       expect(ids).toContain(want);
     }
     expect(new Set(ids).size).toBe(ids.length);
@@ -31,8 +31,8 @@ describe("tree registry", () => {
     // A tree must not drift into "reviewed" as a side effect of an edit — the chip on the card
     // is the only thing telling a resident whether the content was read by a clinician.
     //
-    // All sixty-one are signed off. `burns` was re-read as the shipped file (the earlier sign-off was of a
-    // different, independently-written burns tree and did not transfer).
+    // All seventy-three are signed off. `burns` was re-read as the shipped file (the earlier
+    // sign-off was of a different, independently-written burns tree and did not transfer).
     // `jaundice` IS here, at v1.1.0: it was signed off at v1.0.0, then gained four obstructive
     // questions, and the reviewer read those four and re-signed it rather than the list being
     // edited around them. That is the only way an id gets back onto this list after a version
@@ -43,15 +43,18 @@ describe("tree registry", () => {
       "abdominal_distension", "abdominal_pain", "altered_behaviour", "altered_sensorium",
       "anorectal_pain", "bleeding_per_rectum", "bleeding_pv", "breast_lump", "breathlessness",
       "burning_micturition", "burns", "chest_pain", "constipation", "cough",
-      "decreased_urine_output", "diarrhoea", "dysphagia", "ear_discharge", "epistaxis",
-      "febrile_neutropenia", "fever", "fever_with_rash", "generalised_weakness", "giddiness",
-      "groin_swelling", "haematemesis", "haematuria", "haemoptysis", "head_injury", "headache",
-      "hoarseness", "jaundice", "joint_pain", "labour_pains", "leg_ulcer", "limb_injury",
-      "limb_ischaemia", "limb_weakness", "loss_of_weight_appetite", "low_back_pain", "low_mood",
-      "lump", "oedema", "paediatric_breathing", "paediatric_diarrhoea", "paediatric_fever",
-      "paediatric_seizure", "palpitations", "poisoning_snakebite", "polyuria", "post_op_problem",
-      "red_eye", "scrotal_swelling", "shock", "skin_lesion", "snoring_sleepiness", "sore_throat",
-      "thyroid_swelling", "toothache", "vaginal_discharge", "vision_loss",
+      "decreased_urine_output", "diarrhoea", "double_vision", "dysphagia", "ear_discharge",
+      "earache", "epistaxis", "eye_injury", "eyelid_swelling", "febrile_neutropenia", "fever",
+      "fever_with_rash", "foreign_body_ent", "generalised_weakness", "giddiness", "groin_swelling",
+      "haematemesis", "haematuria", "haemoptysis", "head_injury", "headache", "hoarseness",
+      "jaundice", "joint_pain", "labour_pains", "leg_ulcer", "limb_injury", "limb_ischaemia",
+      "limb_weakness", "loss_of_weight_appetite", "low_back_pain", "low_mood", "lump",
+      "mass_per_vaginum", "nasal_obstruction", "oedema", "paediatric_abdominal_pain",
+      "paediatric_breathing", "paediatric_diarrhoea", "paediatric_fever", "paediatric_seizure",
+      "palpitations", "poisoning_snakebite", "polyuria", "poor_weight_gain", "post_op_problem",
+      "red_eye", "reduced_fetal_movements", "scrotal_swelling", "shock", "sick_newborn",
+      "skin_lesion", "snoring_sleepiness", "sore_throat", "thyroid_swelling", "toothache",
+      "vaginal_discharge", "vision_loss", "vomiting_in_pregnancy",
     ]);
   });
 });
@@ -165,6 +168,6 @@ describe("the surgical complaints", () => {
 describe("registry size", () => {
   it("keeps the docs honest about how many trees ship", () => {
     // docs/history-check.md states this number; update both together.
-    expect(listTrees().length).toBe(61);
+    expect(listTrees().length).toBe(73);
   });
 });
