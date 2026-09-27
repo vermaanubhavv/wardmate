@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, KAPLAN_SADOCK, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ANXIETY / PANIC ATTACKS — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * ANXIETY / PANIC ATTACKS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Psychiatry ward and OPD, north India, where anxiety usually arrives as a body complaint —
  * ghabrahat, heart sinking, a choking feeling, "gas" rising to the chest — after a round of
  * normal ECGs. The tree asks what an attack is like, what it is tied to, and what the body
@@ -18,8 +18,8 @@ export const anxietyV1: HistoryTree = {
   complaint: "Anxiety / panic attacks",
   triggers: ["anxiety", "anxious", "panic", "panic attack", "panic attacks", "ghabrahat", "ghabrahat hona", "bechaini", "tension", "worry", "worrying", "excessive worry", "fear", "phobia", "nervousness", "dil baith raha", "dil dubna", "choking feeling", "ocd", "obsessions", "compulsions", "repeated hand washing"],
   setting: "Psychiatry ward and OPD, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [KAPLAN_SADOCK, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("anxiety"),

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IADVL, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * REDNESS AND SCALING OF THE WHOLE BODY — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * REDNESS AND SCALING OF THE WHOLE BODY — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Dermatology ward and OPD, north India. Once the whole skin is red the rash no longer shows its
  * cause, so the history carries the diagnosis: what skin disease was there before, what was
  * stopped (steroid tablets, injections or creams), what was started (a new medicine), and what
@@ -19,8 +19,8 @@ export const erythrodermaV1: HistoryTree = {
   complaint: "Redness and scaling of the whole body",
   triggers: ["erythroderma", "exfoliative dermatitis", "exfoliation", "red all over", "whole body red", "redness of whole body", "redness all over", "scaling all over", "skin shedding", "scales falling", "flakes falling", "poore sharir pe laali", "chamdi utar rahi"],
   setting: "Dermatology ward and OPD, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [IADVL, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("redness and scaling"),

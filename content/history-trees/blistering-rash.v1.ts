@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IADVL, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BLISTERS ON THE SKIN — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * BLISTERS ON THE SKIN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Dermatology ward and OPD, north India. The history exists first to find the drug reaction
  * that is about to peel (a new medicine in the last eight weeks, sore mouth and eyes, skin
  * slipping off), then to separate the blister that is fragile and breaks (pemphigus) from the
@@ -17,8 +17,8 @@ export const blisteringRashV1: HistoryTree = {
   complaint: "Blisters on the skin",
   triggers: ["blister", "blistering", "bullae", "bulla", "bullous", "vesicles", "fluid filled lesions", "water filled boils", "chhale", "phaphole", "skin coming off", "sjs", "stevens johnson", "pemphigus", "pemphigoid", "shingles", "herpes zoster", "fixed drug eruption"],
   setting: "Dermatology ward and OPD, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [IADVL, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("blisters"),

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, GRABB_SMITH, HUTCHISONS, MACLEODS, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SCAR TIGHTENING AFTER A BURN — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * SCAR TIGHTENING AFTER A BURN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Burns and plastic surgery unit, north India, where many burns heal at home without grafting or
  * splinting and arrive months or years later as tight bands across the neck, armpit, elbow,
  * hand or face. The history is about the old burn, what the tightness now stops the patient
@@ -17,8 +17,8 @@ export const postBurnContractureV1: HistoryTree = {
   complaint: "Scar tightening after a burn",
   triggers: ["post burn contracture", "burn contracture", "contracture", "burn scar", "old burn", "scar tightening", "tight scar", "scar pulling", "hypertrophic scar", "keloid", "raised scar", "neck contracture", "cannot raise arm after burn", "cannot open mouth after burn", "jale ka nishan", "khinchav"],
   setting: "Burns and plastic surgery unit, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [GRABB_SMITH, BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("scar tightening"),

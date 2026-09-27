@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IADVL, MACLEODS, NLEP, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LIGHT OR WHITE PATCH ON THE SKIN — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * LIGHT OR WHITE PATCH ON THE SKIN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Dermatology ward and OPD, north India. Leprosy is still found here, and a light patch is how
  * it is found: every patch is asked about sensation, sweating and the nerves, whatever else it
  * looks like. The rest of the history separates the milky white patch that spreads (vitiligo)
@@ -18,8 +18,8 @@ export const hypopigmentedPatchV1: HistoryTree = {
   complaint: "Light or white patch on the skin",
   triggers: ["hypopigmented patch", "hypopigmentation", "light patch", "light coloured patch", "depigmented patch", "depigmentation", "white spots", "safed daag", "safed dag", "leucoderma", "leukoderma", "vitiligo", "phulbehri", "leprosy", "kusht", "kushth rog", "numb patch", "loss of sensation over patch"],
   setting: "Dermatology ward and OPD, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [IADVL, NLEP, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("patch"),

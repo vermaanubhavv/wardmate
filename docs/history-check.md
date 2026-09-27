@@ -13,7 +13,7 @@ return 404, and nothing under `lib/history-check/` is queried. Off by default.
 Clinical content carries `reviewStatus` and `reviewedBy`, and the card and learning pages show
 a chip for each: amber "Pending clinician review", or green "Reviewed · <reviewer>".
 
-**Seventy-three of the eighty-two trees, all five examination checklists and the safety-level
+**All eighty-two trees, all five examination checklists and the safety-level
 thresholds are reviewed and signed off by Dr Anubhav Verma.** As with the scoring pathways, that
 is a single-clinician sign-off covering content that spans nine specialties; departmental review
 is still outstanding.
@@ -27,11 +27,9 @@ computes `assessSafety` and the card does not read it.
 
 `trees.test.ts` pins the exact list, so a tree cannot drift into "reviewed" as a side effect of
 an edit. `burns` is on it because the shipped file was re-read; the earlier sign-off was of a
-different, independently written burns tree and did not transfer. The twelve trees added later for
-obstetrics, paediatrics, ENT and ophthalmology are on it. The nine added after those for
-psychiatry, dermatology and burns (alcohol / substance use, anxiety / panic, forgetfulness,
-blisters, whole-body redness and scaling, light or white patch, hand injury, pressure sore, scar
-tightening after a burn) are **not**: not yet read by a clinician.
+different, independently written burns tree and did not transfer. Every tree is on it today,
+including the twenty-one added later for obstetrics, paediatrics, ENT, ophthalmology,
+psychiatry, dermatology and burns.
 
 `jaundice` shows how a tree gets back on the list after its content changes: it was signed off
 at v1.0.0, PR #27 added four obstructive questions and bumped it to v1.1.0, which took it off,

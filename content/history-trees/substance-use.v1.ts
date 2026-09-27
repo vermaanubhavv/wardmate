@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, KAPLAN_SADOCK, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ALCOHOL OR SUBSTANCE USE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * ALCOHOL OR SUBSTANCE USE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Psychiatry ward and OPD, north India, including the de-addiction clinic and patients
  * brought from medicine and surgery wards when they start withdrawing after admission. The
  * substances are the ones dictated here: daru and country liquor, smack and heroin, doda and
@@ -20,8 +20,8 @@ export const substanceUseV1: HistoryTree = {
   complaint: "Alcohol or substance use",
   triggers: ["alcohol", "alcoholic", "alcohol dependence", "alcohol withdrawal", "drinking problem", "daru", "sharab", "nasha", "de addiction", "deaddiction", "smack", "heroin", "doda", "poppy husk", "opium", "afeem", "bhang", "charas", "ganja", "cannabis", "substance use", "drug addiction", "addiction", "withdrawal", "delirium tremens", "sniffing", "solvent", "whitener"],
   setting: "Psychiatry ward and OPD, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [KAPLAN_SADOCK, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("substance use"),

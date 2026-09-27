@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, KAPLAN_SADOCK, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * FORGETFULNESS / MEMORY LOSS — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * FORGETFULNESS / MEMORY LOSS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Psychiatry ward and OPD, north India, often a geriatric referral where the family says
  * "bhoolne lage hain" and the patient says nothing is wrong. The history is the family's, and
  * its first job is to separate a slow decline over years from a change over days, because the
@@ -18,8 +18,8 @@ export const memoryLossV1: HistoryTree = {
   complaint: "Forgetfulness / memory loss",
   triggers: ["forgetfulness", "forgetful", "forgets things", "memory loss", "loss of memory", "poor memory", "memory problem", "memory decline", "dementia", "bhoolna", "bhool jana", "bhoolne lage", "yaad nahi rehta", "yaad nahi", "cognitive decline", "gets lost", "repeats questions"],
   setting: "Psychiatry ward and OPD, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [KAPLAN_SADOCK, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("memory loss"),

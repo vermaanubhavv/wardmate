@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, GRABB_SMITH, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BED SORE / PRESSURE SORE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * BED SORE / PRESSURE SORE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Burns and plastic surgery unit, north India, where most sores arrive from home after a spinal
  * injury, a stroke or a long illness, cared for by family with no air mattress and little help
  * with turning. The sore is the end of a story about immobility, lost sensation, wet skin and
@@ -18,8 +18,8 @@ export const pressureSoreV1: HistoryTree = {
   complaint: "Bed sore / pressure sore",
   triggers: ["bed sore", "bedsore", "bed sores", "pressure sore", "pressure ulcer", "pressure injury", "decubitus", "sacral sore", "sore on back", "sore on buttock", "heel sore", "sore over hip", "trochanteric sore", "ischial sore", "kamar par ghaav", "lete lete ghaav"],
   setting: "Burns and plastic surgery unit, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [GRABB_SMITH, BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("sore"),
