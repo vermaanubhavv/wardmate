@@ -191,11 +191,16 @@ function findLab(label: string): LabDef | null {
  * The first number in the recorded text. Deliberately simple: a result is written "8.2",
  * "8.2 g/dL" or "Hb 8.2", never as a sum. Returns null when there is no number to read, which
  * sends the result down the show-it-anyway path.
+ *
+ * Counts are written the Indian way too: "1,50,000" and "1.5 lakh" are both 150000. Without
+ * reading the separators, "1,50,000" came back as 1 — a normal platelet count read as a
+ * critically low one.
  */
-function firstNumber(value: string): number | null {
-  const m = value.match(/-?\d+(?:\.\d+)?/);
+export function firstNumber(value: string | null): number | null {
+  if (!value) return null;
+  const m = value.replace(/(\d),(?=\d)/g, "$1").match(/(-?\d+(?:\.\d+)?)\s*(lakhs?|lacs?|thousand)?/i);
   if (!m) return null;
-  const n = Number(m[0]);
+  const n = Number(m[1]) * (m[2] ? (/^l/i.test(m[2]) ? 100000 : 1000) : 1);
   return Number.isFinite(n) ? n : null;
 }
 
