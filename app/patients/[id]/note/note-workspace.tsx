@@ -254,7 +254,7 @@ export default function NoteWorkspace({
     if (id === "complaints")
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">Overnight events and any fresh complaint. Tap what fits, add the rest.</p>
+          <p className="text-caption leading-[1.45] text-muted">Overnight events and any fresh complaint. Tap what fits, add the rest.</p>
           <PillsAndText pills={noteConfig.complaintPills} value={complaints} onChange={(v) => { setComplaints(v); mark("complaints"); }} placeholder="Overnight in the patient's words" />
           <YesterdayButton text={yVal(["complaints", "c/o", "complaint"])} onUse={(v) => { setComplaints(v); mark("complaints"); }} />
         </>
@@ -315,7 +315,7 @@ export default function NoteWorkspace({
             { label: "Stool", val: stool, set: setStool },
           ].map((row) => (
             <div key={row.label} className="flex items-center gap-2">
-              <span className="w-16 text-[14px] font-medium">{row.label}</span>
+              <span className="w-16 text-subhead font-medium">{row.label}</span>
               {["Passed", "Not passed"].map((o) => (
                 <SelChip key={o} selected={row.val === o} onClick={() => { row.set(row.val === o ? "" : o); mark("bowel"); }}>
                   {o}
@@ -340,7 +340,7 @@ export default function NoteWorkspace({
       return (
         <>
           {assessmentPrefilled && assessment === suggestedAssessment && (
-            <p className="text-[12px] leading-[1.45] text-muted">
+            <p className="text-caption leading-[1.45] text-muted">
               Pre-filled from a routine round. Change it if it doesn&rsquo;t fit.
             </p>
           )}
@@ -357,7 +357,7 @@ export default function NoteWorkspace({
     if (id === "plan")
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">Today&rsquo;s jobs. Each tap adds a line; the AI can propose from the round.</p>
+          <p className="text-caption leading-[1.45] text-muted">Today&rsquo;s jobs. Each tap adds a line; the AI can propose from the round.</p>
           <div className="flex flex-wrap gap-1.5">
             {noteConfig.planPills.map((p) => {
               const on = planItems.includes(p);
@@ -374,18 +374,18 @@ export default function NoteWorkspace({
                 <input
                   value={it}
                   onChange={(e) => { setPlanItems(planItems.map((x, j) => (j === i ? e.target.value : x))); mark("plan"); }}
-                  className="h-11 flex-1 rounded-[10px] border border-line bg-card px-3 text-[15px] outline-none focus:border-accent"
+                  className="h-11 flex-1 rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
                 />
-                <button type="button" onClick={() => { setPlanItems(planItems.filter((_, j) => j !== i)); mark("plan"); }} className="shrink-0 px-2 text-[13px] text-muted">
+                <button type="button" onClick={() => { setPlanItems(planItems.filter((_, j) => j !== i)); mark("plan"); }} className="shrink-0 px-2 text-footnote text-muted">
                   Remove
                 </button>
               </div>
             ))}
             <div className="flex gap-3">
-              <button type="button" onClick={() => { setPlanItems([...planItems, ""]); mark("plan"); }} className="self-start text-[13px] font-medium text-accent">
+              <button type="button" onClick={() => { setPlanItems([...planItems, ""]); mark("plan"); }} className="self-start text-footnote font-medium text-accent">
                 + Add a line
               </button>
-              <button type="button" disabled={generating === "plan"} onClick={proposePlan} className="self-start text-[13px] font-medium text-accent disabled:opacity-50">
+              <button type="button" disabled={generating === "plan"} onClick={proposePlan} className="self-start text-footnote font-medium text-accent disabled:opacity-50">
                 {generating === "plan" ? "Thinking…" : "Propose with AI"}
               </button>
             </div>
@@ -396,7 +396,7 @@ export default function NoteWorkspace({
     if (id === "meds")
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">
+          <p className="text-caption leading-[1.45] text-muted">
             What the patient is on right now — carried over from the last note. Edit doses, drop
             what was stopped, add what was started. This becomes the drug list on today&rsquo;s sheet.
           </p>
@@ -408,21 +408,21 @@ export default function NoteWorkspace({
             ))}
           </div>
           <div className="flex flex-col gap-2">
-            {meds.length === 0 && <p className="text-[13px] text-muted">No medications recorded.</p>}
+            {meds.length === 0 && <p className="text-footnote text-muted">No medications recorded.</p>}
             {meds.map((it, i) => (
               <div key={i} className="flex gap-2">
                 <input
                   value={it}
                   onChange={(e) => { setMeds(meds.map((x, j) => (j === i ? e.target.value : x))); mark("meds"); }}
                   placeholder="Drug, dose, route, frequency"
-                  className="h-11 flex-1 rounded-[10px] border border-line bg-card px-3 text-[15px] outline-none focus:border-accent"
+                  className="h-11 flex-1 rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
                 />
-                <button type="button" onClick={() => { setMeds(meds.filter((_, j) => j !== i)); mark("meds"); }} className="shrink-0 px-2 text-[13px] text-muted">
+                <button type="button" onClick={() => { setMeds(meds.filter((_, j) => j !== i)); mark("meds"); }} className="shrink-0 px-2 text-footnote text-muted">
                   Stop
                 </button>
               </div>
             ))}
-            <button type="button" onClick={() => { setMeds([...meds, ""]); mark("meds"); }} className="self-start text-[13px] font-medium text-accent">
+            <button type="button" onClick={() => { setMeds([...meds, ""]); mark("meds"); }} className="self-start text-footnote font-medium text-accent">
               + Add a drug
             </button>
           </div>
@@ -432,7 +432,7 @@ export default function NoteWorkspace({
     // review
     return (
       <>
-        <p className="text-[12px] leading-[1.45] text-muted">
+        <p className="text-caption leading-[1.45] text-muted">
           Bind the round into the progress-sheet phrasing, then open the printable sheet — it prints onto your unit&rsquo;s own form.
         </p>
         <button type="button" disabled={generating === "compile" || pending} onClick={compile} className={genBtn}>
@@ -449,24 +449,24 @@ export default function NoteWorkspace({
             ].map(({ k, title }) =>
               compiled.fields[k] ? (
                 <div key={k} className="flex flex-col gap-1">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">{title}</span>
+                  <span className="text-caption2 font-semibold uppercase tracking-wide text-muted">{title}</span>
                   <input
                     value={compiled.fields[k]}
                     onChange={(e) => setCompiled({ ...compiled, fields: { ...compiled.fields, [k]: e.target.value } })}
-                    className="h-11 rounded-[10px] border border-line bg-card px-3 text-[15px] outline-none focus:border-accent"
+                    className="h-11 rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
                   />
                 </div>
               ) : null
             )}
             {compiled.plan.length > 0 && (
               <div className="flex flex-col gap-1">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">plan</span>
+                <span className="text-caption2 font-semibold uppercase tracking-wide text-muted">plan</span>
                 {compiled.plan.map((p, i) => (
                   <input
                     key={i}
                     value={p}
                     onChange={(e) => setCompiled({ ...compiled, plan: compiled.plan.map((x, j) => (j === i ? e.target.value : x)) })}
-                    className="h-10 rounded-[10px] border border-line bg-card px-3 text-[14px] outline-none focus:border-accent"
+                    className="h-10 rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
                   />
                 ))}
               </div>
@@ -476,8 +476,8 @@ export default function NoteWorkspace({
             </button>
           </>
         )}
-        {dirty.size > 0 && <p className="text-[13px] text-orange-700">{dirty.size} card(s) not yet saved — step back into them.</p>}
-        <Link href={`/patients/${patientId}/note`} className="mt-1 flex items-center justify-center rounded-[12px] bg-accent px-4 py-3 text-[16px] font-semibold text-accent-ink">
+        {dirty.size > 0 && <p className="text-footnote text-warn-fg">{dirty.size} card(s) not yet saved — step back into them.</p>}
+        <Link href={`/patients/${patientId}/note`} className="mt-1 flex items-center justify-center rounded-[12px] bg-accent px-4 py-3 text-callout font-semibold text-accent-ink">
           Open the printable sheet →
         </Link>
       </>
@@ -487,14 +487,14 @@ export default function NoteWorkspace({
   const pct = Math.round(((step + 1) / STEPS.length) * 100);
 
   return (
-    <div className="flex flex-col gap-3 px-4 pb-40">
+    <div className="flex flex-col gap-3 px-4 pb-[var(--bar-height)]">
       <div className="ios-group overflow-hidden">
         <div className="px-4 pt-4 pb-3">
-          <p className="text-[11.5px] font-semibold uppercase tracking-[0.03em] text-muted">
+          <p className="text-caption2 font-semibold uppercase tracking-[0.03em] text-muted">
             Today&rsquo;s note · {dateLabel} · {step + 1} of {STEPS.length}
           </p>
           <div className="mt-0.5 flex items-start justify-between gap-2">
-            <h2 className="text-[24px] font-bold leading-tight tracking-[-0.021em]">{current.title}</h2>
+            <h2 className="text-title1 font-bold leading-tight tracking-[-0.021em]">{current.title}</h2>
             {dirty.has(current.id) && statusChip("unsaved", "warn")}
           </div>
         </div>
@@ -504,7 +504,7 @@ export default function NoteWorkspace({
         <div className="flex flex-col gap-3 px-4 py-4">{body()}</div>
       </div>
 
-      <button type="button" onClick={() => setMenuOpen((o) => !o)} className="self-center text-[13px] font-medium text-accent">
+      <button type="button" onClick={() => setMenuOpen((o) => !o)} className="self-center text-footnote font-medium text-accent">
         {menuOpen ? "Hide cards" : "Jump to a card"}
       </button>
       {menuOpen && (
@@ -514,9 +514,9 @@ export default function NoteWorkspace({
               key={s.id}
               type="button"
               onClick={() => goTo(i)}
-              className={"flex items-center gap-2 rounded-[8px] px-2.5 py-2 text-left text-[14px] " + (i === step ? "bg-chip font-medium" : "")}
+              className={"flex items-center gap-2 rounded-[8px] px-2.5 py-2 text-left text-subhead " + (i === step ? "bg-chip font-medium" : "")}
             >
-              <span className={"h-2 w-2 shrink-0 rounded-full " + (dirty.has(s.id) ? "bg-orange-500" : "bg-line")} />
+              <span className={"h-2 w-2 shrink-0 rounded-full " + (dirty.has(s.id) ? "bg-warn-fg" : "bg-line")} />
               <span className="text-muted">{i + 1}.</span>
               <span className="flex-1">{s.title}</span>
             </button>
@@ -524,19 +524,19 @@ export default function NoteWorkspace({
         </div>
       )}
 
-      {message && <p className="text-[13px] text-muted">{message}</p>}
+      {message && <p className="text-footnote text-muted">{message}</p>}
 
-      <div className="fixed inset-x-0 bottom-0 z-10 mx-auto max-w-md border-t border-line bg-background/90 px-4 py-3 backdrop-blur-xl">
+      <div className="bottom-bar fixed inset-x-0 bottom-0 z-10 mx-auto max-w-md border-t border-line bg-background/90 px-4 pt-3 backdrop-blur-xl">
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => goTo(step - 1)} disabled={step === 0} className="rounded-[12px] border border-line px-5 py-3 text-[15px] font-semibold disabled:opacity-40">
+          <button type="button" onClick={() => goTo(step - 1)} disabled={step === 0} className="rounded-[12px] border border-line px-5 py-3 text-subhead font-semibold disabled:opacity-40">
             Back
           </button>
           {current.id === "review" ? (
-            <Link href={`/patients/${patientId}/note`} className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-center text-[16px] font-semibold text-accent-ink">
+            <Link href={`/patients/${patientId}/note`} className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-center text-callout font-semibold text-accent-ink">
               Printable sheet
             </Link>
           ) : (
-            <button type="button" onClick={() => goTo(step + 1)} className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-[16px] font-semibold text-accent-ink">
+            <button type="button" onClick={() => goTo(step + 1)} className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-callout font-semibold text-accent-ink">
               {dirty.has(current.id) ? "Save & next" : "Next"}
             </button>
           )}
@@ -562,7 +562,7 @@ function YesterdayButton({
     <button
       type="button"
       onClick={() => onUse(text)}
-      className="self-start text-left text-[13px] font-medium text-accent"
+      className="self-start text-left text-footnote font-medium text-accent"
     >
       {label} <span className="font-normal text-muted">{text}</span>
     </button>

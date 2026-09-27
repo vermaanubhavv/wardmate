@@ -27,7 +27,7 @@ export default function Loading() {
 
       {/* Deliberately still: a pulsing skeleton on a screen that appears for half a second
           draws more attention to the wait than it hides. */}
-      <span className="sr-only">Loading the ward</span>
+      <span className="sr-only">Loading the handover</span>
     </div>
   );
 }

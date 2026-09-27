@@ -1,5 +1,6 @@
 "use client";
 
+import { ActionSheet } from "../../../action-sheet";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -164,7 +165,7 @@ function PreviewLine({
     >
       <span className="shrink-0 font-semibold">{label}:</span>
       <span className="min-w-0 flex-1">{children}</span>
-      <span className="shrink-0 text-[11px] text-accent">edit</span>
+      <span className="shrink-0 text-caption2 text-accent">edit</span>
     </button>
   );
 }
@@ -207,6 +208,7 @@ export default function DischargeWorkspace({
     return i >= 0 ? i : 0;
   });
   const [menuOpen, setMenuOpen] = useState(false);
+  const [askReset, setAskReset] = useState(false);
   const [openMed, setOpenMed] = useState<string | null>(null);
 
   // --- real-time autosave -------------------------------------------------------------
@@ -500,7 +502,7 @@ export default function DischargeWorkspace({
   }
 
   function reset() {
-    if (!confirm("Discard every edit and rebuild this summary from the record?")) return;
+    setAskReset(false);
     startTransition(async () => {
       const result = await resetDischargeAction(patientId);
       if (!result.ok) return setMessage(result.error ?? "Could not reset.");
@@ -613,11 +615,11 @@ export default function DischargeWorkspace({
         const drafting = autoGen === "running" && !draft.indicationForAdmission.text.trim();
         return (
           <>
-            <p className="text-[12px] leading-[1.45] text-muted">
+            <p className="text-caption leading-[1.45] text-muted">
               Why admission was needed — not a repeat of the diagnosis. The AI drafts it from the record; you approve.
             </p>
             {drafting ? (
-              <p className="text-[13px] text-accent">Drafting from the record…</p>
+              <p className="text-footnote text-accent">Drafting from the record…</p>
             ) : (
               <button type="button" disabled={readOnly || generating === "indication"} onClick={() => generate("indication")} className={genBtn}>
                 {generating === "indication" ? "Generating…" : draft.indicationForAdmission.text ? "Redraft with AI" : "Generate with AI"}
@@ -651,7 +653,7 @@ export default function DischargeWorkspace({
       case "diagnoses":
         return (
           <>
-            <p className="text-[12px] leading-[1.45] text-muted">Confirm the compiled diagnosis, fix the wording, or add one.</p>
+            <p className="text-caption leading-[1.45] text-muted">Confirm the compiled diagnosis, fix the wording, or add one.</p>
             {draft.diagnoses.map((d, i) => {
               const setD = (o: Partial<Diagnosis>) =>
                 patch("diagnoses", "diagnoses", draft.diagnoses.map((x, j) => (j === i ? { ...x, ...o } : x)));
@@ -661,7 +663,7 @@ export default function DischargeWorkspace({
                     value={d.text}
                     onChange={(v) => setD({ text: v })}
                     placeholder="Diagnosis"
-                    className="h-11 w-full rounded-[10px] border border-line bg-card px-3 text-[15px] outline-none focus:border-accent"
+                    className="h-11 w-full rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
                   />
                   <div className="flex flex-wrap gap-1.5">
                     {DX_CATEGORIES.map((c) => (
@@ -670,8 +672,8 @@ export default function DischargeWorkspace({
                       </SelChip>
                     ))}
                   </div>
-                  {d.derivedFrom && <p className="text-[11px] text-muted">Derived from the operation ({d.derivedFrom}) — confirm it.</p>}
-                  <button type="button" onClick={() => patch("diagnoses", "diagnoses", draft.diagnoses.filter((_, j) => j !== i))} className="self-start text-[12px] text-muted">
+                  {d.derivedFrom && <p className="text-caption2 text-muted">Derived from the operation ({d.derivedFrom}) — confirm it.</p>}
+                  <button type="button" onClick={() => patch("diagnoses", "diagnoses", draft.diagnoses.filter((_, j) => j !== i))} className="self-start text-caption text-muted">
                     Remove
                   </button>
                 </div>
@@ -707,7 +709,7 @@ export default function DischargeWorkspace({
                   <Field label="Drains" value={p.drains} onChange={(v) => setP({ drains: v })} />
                   <Field label="Complications" value={p.complications} onChange={(v) => setP({ complications: v })} />
                   <Field label="Outcome" value={p.outcome} onChange={(v) => setP({ outcome: v })} />
-                  <button type="button" onClick={() => patch("procedures", "procedures", draft.procedures.filter((_, j) => j !== i))} className="self-start text-[12px] text-muted">
+                  <button type="button" onClick={() => patch("procedures", "procedures", draft.procedures.filter((_, j) => j !== i))} className="self-start text-caption text-muted">
                     Remove procedure
                   </button>
                 </div>
@@ -731,11 +733,11 @@ export default function DischargeWorkspace({
         const drafting = autoGen === "running" && !draft.clinicalCourse.text.trim();
         return (
           <>
-            <p className="text-[12px] leading-[1.45] text-muted">
+            <p className="text-caption leading-[1.45] text-muted">
               Mandatory. The AI synthesises it from the whole record; read it against the rounds, edit, then approve.
             </p>
             {drafting ? (
-              <p className="text-[13px] text-accent">Synthesising the admission from the record…</p>
+              <p className="text-footnote text-accent">Synthesising the admission from the record…</p>
             ) : (
               <button
                 type="button"
@@ -747,7 +749,7 @@ export default function DischargeWorkspace({
               </button>
             )}
             {draft.clinicalCourse.uncertainPoints.length > 0 && (
-              <div className="rounded-[10px] bg-orange-50 p-2.5 text-[13px] text-orange-800">
+              <div className="rounded-[10px] bg-warn-bg p-2.5 text-footnote text-warn-fg">
                 <p className="font-medium">The AI could not resolve these — check them:</p>
                 <ul className="mt-1 list-disc pl-4">
                   {draft.clinicalCourse.uncertainPoints.map((u, i) => (
@@ -770,11 +772,11 @@ export default function DischargeWorkspace({
         const drafting = autoGen === "running" && draft.relevantInvestigations.items.length === 0;
         return (
           <>
-            <p className="text-[12px] leading-[1.45] text-muted">
+            <p className="text-caption leading-[1.45] text-muted">
               The short, meaningful results — not whole panels. The AI proposes from what was recorded; keep the ones that matter.
             </p>
             {drafting ? (
-              <p className="text-[13px] text-accent">Picking out the results that mattered…</p>
+              <p className="text-footnote text-accent">Picking out the results that mattered…</p>
             ) : (
               <button
                 type="button"
@@ -796,7 +798,7 @@ export default function DischargeWorkspace({
               return (
                 <div key={it.id} className="flex flex-col gap-2 rounded-[10px] border border-line p-2.5">
                   <div className="flex items-center gap-3">
-                    <span className="flex-1 text-[13px] font-medium">{it.group || "Result"}</span>
+                    <span className="flex-1 text-footnote font-medium">{it.group || "Result"}</span>
                     <Toggle on={it.accepted} onClick={() => setIt({ accepted: !it.accepted })} />
                   </div>
                   <Field label="Group" value={it.group} onChange={(v) => setIt({ group: v })} />
@@ -810,7 +812,7 @@ export default function DischargeWorkspace({
                         items: draft.relevantInvestigations.items.filter((_, j) => j !== i),
                       })
                     }
-                    className="self-start text-[12px] text-muted"
+                    className="self-start text-caption text-muted"
                   >
                     Remove
                   </button>
@@ -851,7 +853,7 @@ export default function DischargeWorkspace({
                   <Field label="Specimen" value={h.specimen} onChange={(v) => setH({ specimen: v })} />
                   <Field label="Date sent" type="date" value={h.dateSent} onChange={(v) => setH({ dateSent: v || null })} />
                   <div className="flex flex-col gap-1">
-                    <span className="text-[13px] text-muted">Status</span>
+                    <span className="text-footnote text-muted">Status</span>
                     <div className="flex flex-wrap gap-1.5">
                       {(["pending", "preliminary", "final"] as HistopathologyStatus[]).map((s) => (
                         <SelChip key={s} selected={h.status === s} onClick={() => setH({ status: s })}>
@@ -862,7 +864,7 @@ export default function DischargeWorkspace({
                   </div>
                   <Area label="Result" value={h.result} onChange={(v) => setH({ result: v })} rows={2} />
                   <Field label="Review plan" value={h.reviewPlan} onChange={(v) => setH({ reviewPlan: v })} placeholder="Review during Surgery OPD follow-up" />
-                  <button type="button" onClick={() => patch("histopathology", "histopathology", draft.histopathology.filter((_, j) => j !== i))} className="self-start text-[12px] text-muted">
+                  <button type="button" onClick={() => patch("histopathology", "histopathology", draft.histopathology.filter((_, j) => j !== i))} className="self-start text-caption text-muted">
                     Remove
                   </button>
                 </div>
@@ -885,7 +887,7 @@ export default function DischargeWorkspace({
       case "medications":
         return (
           <>
-            <p className="text-[12px] leading-[1.45] text-muted">Tap a drug to open its details. Remove what this patient does not need.</p>
+            <p className="text-caption leading-[1.45] text-muted">Tap a drug to open its details. Remove what this patient does not need.</p>
             {draft.medications.map((m, i) => {
               const setM = (o: Partial<typeof m>) =>
                 patch("medications", "medications", draft.medications.map((x, j) => (j === i ? { ...x, ...o } : x)));
@@ -895,14 +897,14 @@ export default function DischargeWorkspace({
                 <div key={m.id} className="rounded-[10px] border border-line">
                   <div className="flex items-center gap-2 px-3 py-2.5">
                     <button type="button" onClick={() => setOpenMed(open ? null : m.id)} className="flex-1 text-left">
-                      <span className="text-[13px] font-semibold">{m.generic || "New drug"}</span>
-                      {m.strength ? <span className="text-[13px] font-semibold"> {m.strength}</span> : null}
-                      {summary ? <span className="ml-1 text-[12px] text-muted">{summary}</span> : null}
+                      <span className="text-footnote font-semibold">{m.generic || "New drug"}</span>
+                      {m.strength ? <span className="text-footnote font-semibold"> {m.strength}</span> : null}
+                      {summary ? <span className="ml-1 text-caption text-muted">{summary}</span> : null}
                     </button>
                     <button
                       type="button"
                       onClick={() => patch("medications", "medications", draft.medications.filter((_, j) => j !== i))}
-                      className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-chip text-[13px] text-muted"
+                      className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-chip text-footnote text-muted"
                       aria-label="Remove drug"
                     >
                       ×
@@ -919,7 +921,7 @@ export default function DischargeWorkspace({
                         <Field label="Duration" value={m.duration} onChange={(v) => setM({ duration: v })} />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <span className="text-[13px] text-muted">Status</span>
+                        <span className="text-footnote text-muted">Status</span>
                         <div className="flex flex-wrap gap-1.5">
                           {MEDICATION_STATUSES.map((s) => (
                             <SelChip key={s.value} selected={m.status === s.value} onClick={() => setM({ status: s.value })}>
@@ -933,7 +935,7 @@ export default function DischargeWorkspace({
                         <Field label="Reason" value={m.reason} onChange={(v) => setM({ reason: v })} placeholder="Why started / stopped / changed" />
                       )}
                       {formularyAvailable && (
-                        <div className="text-[11px] text-muted">
+                        <div className="text-caption2 text-muted">
                           <FormularyLink wardId={wardId} patientId={patientId} drugKey={m.drugKey} drugLabel={m.generic} mapped={null} />
                         </div>
                       )}
@@ -981,7 +983,7 @@ export default function DischargeWorkspace({
       case "conditionAtDischarge":
         return (
           <>
-            <p className="text-[12px] leading-[1.45] text-muted">Tap what is true today. Set at least five, or add free text.</p>
+            <p className="text-caption leading-[1.45] text-muted">Tap what is true today. Set at least five, or add free text.</p>
             <div className="flex flex-wrap gap-2">
               {CONDITION_VARIABLES.map((v) => {
                 const val = dc.vars[v.key];
@@ -1001,7 +1003,7 @@ export default function DischargeWorkspace({
             </div>
             {CONDITION_VARIABLES.some((v) => typeof dc.vars[v.key] === "string" && (dc.vars[v.key] as string).trim()) && (
               <div className="flex flex-col gap-2 rounded-[10px] border border-line p-2.5">
-                <span className="text-[13px] text-muted">Findings that carry a note — edit or clear</span>
+                <span className="text-footnote text-muted">Findings that carry a note — edit or clear</span>
                 {CONDITION_VARIABLES.filter((v) => typeof dc.vars[v.key] === "string" && (dc.vars[v.key] as string).trim()).map((v) => (
                   <Field key={v.key} label={v.label} value={dc.vars[v.key] as string} onChange={(nv) => setConditionVar(v.key, nv || null)} />
                 ))}
@@ -1020,7 +1022,7 @@ export default function DischargeWorkspace({
       case "primaryCareActions":
         return (
           <>
-            <p className="text-[12px] leading-[1.45] text-muted">Only what the patient&rsquo;s GP genuinely needs to do. Prefer 0–3. Leave empty for &ldquo;None.&rdquo;</p>
+            <p className="text-caption leading-[1.45] text-muted">Only what the patient&rsquo;s GP genuinely needs to do. Prefer 0–3. Leave empty for &ldquo;None.&rdquo;</p>
             <StringList items={draft.primaryCareActions} onChange={(v) => patch("primaryCareActions", "primaryCareActions", v)} placeholder="e.g. Repeat CBC and renal function after 7 days" noneLabel="None." />
           </>
         );
@@ -1029,14 +1031,14 @@ export default function DischargeWorkspace({
         return (
           <>
             <div className="flex flex-col gap-2">
-              <p className="text-[12px] leading-[1.45] text-muted">Clear tasks the patient must do. Prefer 0–3.</p>
+              <p className="text-caption leading-[1.45] text-muted">Clear tasks the patient must do. Prefer 0–3.</p>
               <StringList items={draft.patientActions} onChange={(v) => patch("patientActions", "patientActions", v)} placeholder="e.g. Attend Surgery OPD after 7 days for wound review" noneLabel="None." />
             </div>
 
             <div className="my-1 border-t border-line" />
 
             <div className="flex items-center gap-3">
-              <span className="flex-1 text-[15px]">Include an Advice section</span>
+              <span className="flex-1 text-subhead">Include an Advice section</span>
               <Toggle on={draft.advice.included} onClick={() => patch("advice", "advice", { ...draft.advice, included: !draft.advice.included })} />
             </div>
             {draft.advice.included && (
@@ -1055,7 +1057,7 @@ export default function DischargeWorkspace({
                       ))}
                     </div>
                     <Area value={a.text} onChange={(v) => patch("advice", "advice", { ...draft.advice, items: draft.advice.items.map((x, j) => (j === i ? { ...x, text: v } : x)) })} rows={2} />
-                    <button type="button" onClick={() => patch("advice", "advice", { ...draft.advice, items: draft.advice.items.filter((_, j) => j !== i) })} className="self-start text-[12px] text-muted">
+                    <button type="button" onClick={() => patch("advice", "advice", { ...draft.advice, items: draft.advice.items.filter((_, j) => j !== i) })} className="self-start text-caption text-muted">
                       Remove
                     </button>
                   </div>
@@ -1069,12 +1071,12 @@ export default function DischargeWorkspace({
             <div className="my-1 border-t border-line" />
 
             <div className="flex items-center gap-3">
-              <span className="flex-1 text-[15px]">Include a Red Flags section</span>
+              <span className="flex-1 text-subhead">Include a Red Flags section</span>
               <Toggle on={draft.redFlags.included} onClick={() => patch("redFlags", "redFlags", { ...draft.redFlags, included: !draft.redFlags.included })} />
             </div>
             {draft.redFlags.included && (
               <>
-                <p className="text-[12px] text-muted">Tap the warnings that apply.</p>
+                <p className="text-caption text-muted">Tap the warnings that apply.</p>
                 <div className="flex flex-wrap gap-1.5">
                   {RED_FLAG_SUGGESTIONS.map((s) => {
                     const on = draft.redFlags.items.includes(s);
@@ -1131,8 +1133,8 @@ export default function DischargeWorkspace({
           <>
             <span
               className={
-                "inline-flex items-center gap-1.5 self-start rounded-full px-3 py-1 text-[12px] font-semibold " +
-                (checks.blocking.length === 0 ? "bg-accent/10 text-accent" : "bg-orange-100 text-orange-700")
+                "inline-flex items-center gap-1.5 self-start rounded-full px-3 py-1 text-caption font-semibold " +
+                (checks.blocking.length === 0 ? "bg-accent/10 text-accent" : "bg-warn-bg text-warn-fg")
               }
             >
               {checks.blocking.length === 0 ? (
@@ -1147,12 +1149,12 @@ export default function DischargeWorkspace({
             {(checks.blocking.length > 0 || checks.warnings.length > 0) && (
               <div className="flex flex-col gap-1">
                 {checks.blocking.map((c) => (
-                  <button key={c.id} type="button" onClick={() => goTo(stepIndexOf(c.section === "patientActions" || c.section === "redFlags" ? "advice" : c.section))} className="block text-left text-[13px] text-red-600">
+                  <button key={c.id} type="button" onClick={() => goTo(stepIndexOf(c.section === "patientActions" || c.section === "redFlags" ? "advice" : c.section))} className="block text-left text-footnote text-critical-fg">
                     ● {c.message}
                   </button>
                 ))}
                 {checks.warnings.map((c) => (
-                  <button key={c.id} type="button" onClick={() => goTo(stepIndexOf(c.section === "patientActions" || c.section === "redFlags" ? "advice" : c.section))} className="block text-left text-[13px] text-orange-700">
+                  <button key={c.id} type="button" onClick={() => goTo(stepIndexOf(c.section === "patientActions" || c.section === "redFlags" ? "advice" : c.section))} className="block text-left text-footnote text-warn-fg">
                     ▲ {c.message}
                   </button>
                 ))}
@@ -1160,19 +1162,19 @@ export default function DischargeWorkspace({
             )}
 
             {/* The summary as it will read — tap any line to jump to that card and edit it. */}
-            <div className="overflow-hidden rounded-[10px] border border-line bg-card text-[12px] leading-[1.5]">
-              <p className="border-b border-line px-3 pb-1.5 pt-2 text-center text-[11px] font-bold uppercase tracking-[0.06em]">
+            <div className="overflow-hidden rounded-[10px] border border-line bg-card text-caption leading-[1.5]">
+              <p className="border-b border-line px-3 pb-1.5 pt-2 text-center text-caption2 font-bold uppercase tracking-[0.06em]">
                 Discharge summary · tap a line to edit
               </p>
               <PreviewLine label="Diagnosis" onEdit={() => goTo(stepIndexOf("diagnoses"))}>
-                {primary || <em className="text-orange-700">not set</em>}
+                {primary || <em className="text-warn-fg">not set</em>}
                 {proc ? ` · ${proc}` : ""}
               </PreviewLine>
               <PreviewLine label="Indication" onEdit={() => goTo(stepIndexOf("indication"))}>
-                {draft.indicationForAdmission.text.trim().slice(0, 160) || <em className="text-orange-700">not written</em>}
+                {draft.indicationForAdmission.text.trim().slice(0, 160) || <em className="text-warn-fg">not written</em>}
               </PreviewLine>
               <PreviewLine label="Course" onEdit={() => goTo(stepIndexOf("clinicalCourse"))}>
-                {courseSnippet ? `${courseSnippet}…` : <em className="text-orange-700">not written</em>}
+                {courseSnippet ? `${courseSnippet}…` : <em className="text-warn-fg">not written</em>}
               </PreviewLine>
               <PreviewLine label="Investigations" onEdit={() => goTo(stepIndexOf("relevantInvestigations"))}>
                 {acceptedInv.length ? acceptedInv.map((i) => i.group).filter(Boolean).join(", ") : <em className="text-muted">none</em>}
@@ -1186,7 +1188,7 @@ export default function DischargeWorkspace({
                 {draft.medications.length ? draft.medications.map((m) => m.generic).filter(Boolean).join(", ") : <em className="text-muted">none listed</em>}
               </PreviewLine>
               <PreviewLine label="Condition" onEdit={() => goTo(stepIndexOf("conditionAtDischarge"))}>
-                {dc.prose.trim() || dc.freeText?.trim() || <em className="text-orange-700">not set</em>}
+                {dc.prose.trim() || dc.freeText?.trim() || <em className="text-warn-fg">not set</em>}
               </PreviewLine>
               <PreviewLine label="Patient to" onEdit={() => goTo(stepIndexOf("advice"))}>
                 {draft.patientActions.length ? draft.patientActions.join("; ") : <em className="text-muted">nothing added</em>}
@@ -1202,16 +1204,16 @@ export default function DischargeWorkspace({
                   : <em className="text-muted">not included</em>}
               </PreviewLine>
               <PreviewLine label="Signed" onEdit={() => goTo(stepIndexOf("authentication"))} last>
-                {draft.authentication.doctorName || <em className="text-orange-700">name missing</em>}
+                {draft.authentication.doctorName || <em className="text-warn-fg">name missing</em>}
               </PreviewLine>
             </div>
 
             <div className="mt-1 flex items-center gap-4">
-              <Link href={`/patients/${patientId}/discharge/print`} className="text-[13px] text-accent">
+              <Link href={`/patients/${patientId}/discharge/print`} className="text-footnote text-accent">
                 Full page preview
               </Link>
               {!finalised && (
-                <button type="button" onClick={reset} disabled={pending} className="text-[13px] text-muted">
+                <button type="button" onClick={() => setAskReset(true)} disabled={pending} className="text-footnote text-muted">
                   Discard edits &amp; rebuild
                 </button>
               )}
@@ -1230,11 +1232,11 @@ export default function DischargeWorkspace({
     current.id !== "review" && !current.required && !filledFor(current.id) && !dirty.has(current.id as DischargeSectionId);
 
   return (
-    <div className="flex flex-col gap-3 px-4 pb-40">
+    <div className="flex flex-col gap-3 px-4 pb-[var(--bar-height)]">
       {finalised && (
         <div className="ios-group flex items-center justify-between px-4 py-3">
-          <span className="text-[15px] font-medium text-accent">Finalised</span>
-          <button type="button" onClick={reopen} className="text-[13px] font-medium text-accent" disabled={pending}>
+          <span className="text-subhead font-medium text-accent">Finalised</span>
+          <button type="button" onClick={reopen} className="text-footnote font-medium text-accent" disabled={pending}>
             Reopen to edit
           </button>
         </div>
@@ -1243,11 +1245,11 @@ export default function DischargeWorkspace({
       {/* THE CARD */}
       <div className="ios-group overflow-hidden">
         <div className="px-4 pt-4 pb-3">
-          <p className="text-[11.5px] font-semibold uppercase tracking-[0.03em] text-muted">
+          <p className="text-caption2 font-semibold uppercase tracking-[0.03em] text-muted">
             Discharge · {step + 1} of {STEPS.length}
           </p>
           <div className="mt-0.5 flex items-start justify-between gap-2">
-            <h2 className="text-[25px] font-bold leading-tight tracking-[-0.021em]">{current.title}</h2>
+            <h2 className="text-title1 font-bold leading-tight tracking-[-0.021em]">{current.title}</h2>
             {current.id !== "review" && badgeFor(current.id)}
           </div>
         </div>
@@ -1258,11 +1260,11 @@ export default function DischargeWorkspace({
 
         <div className="flex flex-col gap-3 px-4 py-4">
           {current.id !== "review" && cardSections(current.id).some((s) => blockingBySection.has(s)) && (
-            <div className="rounded-[10px] bg-red-50 px-3 py-2">
+            <div className="rounded-[10px] bg-critical-bg px-3 py-2">
               {cardSections(current.id)
                 .flatMap((s) => blockingBySection.get(s) ?? [])
                 .map((c) => (
-                  <p key={c.id} className="text-[13px] text-red-600">
+                  <p key={c.id} className="text-footnote text-critical-fg">
                     {c.message}
                   </p>
                 ))}
@@ -1273,7 +1275,7 @@ export default function DischargeWorkspace({
       </div>
 
       {/* jump to any section */}
-      <button type="button" onClick={() => setMenuOpen((o) => !o)} className="self-center text-[13px] font-medium text-accent">
+      <button type="button" onClick={() => setMenuOpen((o) => !o)} className="self-center text-footnote font-medium text-accent">
         {menuOpen ? "Hide sections" : "Jump to a section"}
       </button>
 
@@ -1282,7 +1284,7 @@ export default function DischargeWorkspace({
       {!finalised && (
         <Link
           href={`/patients/${patientId}/prepare-discharge`}
-          className="self-center text-[13px] text-muted underline decoration-line underline-offset-2"
+          className="self-center text-footnote text-muted underline decoration-line underline-offset-2"
         >
           Read in the paper file
         </Link>
@@ -1292,39 +1294,48 @@ export default function DischargeWorkspace({
           {STEPS.map((s, i) => {
             const isBlocking = s.id !== "review" && cardSections(s.id).some((sec) => blockingBySection.has(sec));
             const done = s.id === "review" ? checks.blocking.length === 0 : filledFor(s.id);
-            const dot = isBlocking ? "bg-red-500" : done ? "bg-accent" : "bg-line";
+            const dot = isBlocking ? "bg-recording" : done ? "bg-accent" : "bg-line";
             return (
               <button
                 key={s.id}
                 type="button"
                 onClick={() => goTo(i)}
-                className={"flex items-center gap-2 rounded-[8px] px-2.5 py-2 text-left text-[14px] " + (i === step ? "bg-chip font-medium" : "")}
+                className={"flex items-center gap-2 rounded-[8px] px-2.5 py-2 text-left text-subhead " + (i === step ? "bg-chip font-medium" : "")}
               >
                 <span className={"h-2 w-2 shrink-0 rounded-full " + dot} />
                 <span className="text-muted">{i + 1}.</span>
                 <span className="flex-1">{s.title}</span>
-                {dirty.has(s.id as DischargeSectionId) && <span className="text-[11px] text-accent">unsaved</span>}
+                {dirty.has(s.id as DischargeSectionId) && <span className="text-caption2 text-accent">unsaved</span>}
               </button>
             );
           })}
         </div>
       )}
 
-      <div className="flex items-center gap-2 text-[12px] text-muted">
+      <div className="flex items-center gap-2 text-caption text-muted">
         {saveState === "saving" && <span>Saving…</span>}
         {saveState === "saved" && dirty.size === 0 && <span className="text-accent">All changes saved</span>}
-        {saveState === "error" && <span className="text-red-600">Not saved — check your connection</span>}
+        {saveState === "error" && <span className="text-critical-fg">Not saved — check your connection</span>}
         {message && <span>· {message}</span>}
       </div>
 
       {/* fixed navigation */}
-      <div className="fixed inset-x-0 bottom-0 z-10 mx-auto max-w-md border-t border-line bg-background/90 px-4 py-3 backdrop-blur-xl">
+      <ActionSheet
+        open={askReset}
+        title="Rebuild this summary from the record?"
+        message="Every edit made here is discarded and the summary is compiled again from what was recorded."
+        action="Discard edits and rebuild"
+        onCancel={() => setAskReset(false)}
+        onConfirm={reset}
+      />
+
+      <div className="bottom-bar fixed inset-x-0 bottom-0 z-10 mx-auto max-w-md border-t border-line bg-background/90 px-4 pt-3 backdrop-blur-xl">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => goTo(step - 1)}
             disabled={step === 0}
-            className="rounded-[12px] border border-line px-5 py-3 text-[15px] font-semibold disabled:opacity-40"
+            className="rounded-[12px] border border-line px-5 py-3 text-subhead font-semibold disabled:opacity-40"
           >
             Back
           </button>
@@ -1333,14 +1344,14 @@ export default function DischargeWorkspace({
             <button
               type="button"
               onClick={() => goTo(step + 1)}
-              className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-[16px] font-semibold text-accent-ink"
+              className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-callout font-semibold text-accent-ink"
             >
               {isOptionalEmpty ? "Skip" : "Next"}
             </button>
           ) : finalised ? (
             <Link
               href={`/patients/${patientId}/discharge/print`}
-              className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-center text-[16px] font-semibold text-accent-ink"
+              className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-center text-callout font-semibold text-accent-ink"
             >
               Print / download
             </Link>
@@ -1349,7 +1360,7 @@ export default function DischargeWorkspace({
               type="button"
               onClick={finalise}
               disabled={pending || checks.blocking.length > 0}
-              className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-[16px] font-semibold text-accent-ink disabled:opacity-50"
+              className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-callout font-semibold text-accent-ink disabled:opacity-50"
             >
               {isFinalising ? "Finalising…" : checks.blocking.length > 0 ? `Finalise (${checks.blocking.length} to fix)` : "Finalise & print"}
             </button>

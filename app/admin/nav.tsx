@@ -30,7 +30,7 @@ export default function AdminNav() {
             <Link
               key={t.href}
               href={t.href}
-              className={`rounded-full px-3 py-1 text-[13px] ${
+              className={`rounded-full px-3 py-1 text-footnote ${
                 active
                   ? "bg-accent text-white"
                   : "bg-chip text-foreground/70 active:opacity-60"

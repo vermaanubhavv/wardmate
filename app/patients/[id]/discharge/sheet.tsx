@@ -33,7 +33,7 @@ function SectionHeading({
       className="mt-3 flex items-baseline justify-between font-bold underline decoration-dotted print:no-underline"
     >
       <span>{children}</span>
-      <span className="ml-2 text-[10px] font-normal text-accent no-underline print:hidden">edit</span>
+      <span className="ml-2 text-caption2 font-normal text-accent no-underline print:hidden">edit</span>
     </Link>
   );
 }
@@ -53,7 +53,7 @@ export default function DischargeSheet({
 }) {
   return (
     <section className="px-4 pb-4 print:px-0">
-      <div className="ios-group px-5 py-5 text-[13px] leading-snug text-black print:rounded-none print:border-0 print:p-0 print:shadow-none">
+      <div className="ios-group px-5 py-5 text-footnote leading-snug text-black print:rounded-none print:border-0 print:p-0 print:shadow-none">
         {/* Heading */}
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element -- ward-uploaded logo via a
@@ -61,26 +61,26 @@ export default function DischargeSheet({
           {doc.logoUrl && <img src={doc.logoUrl} alt="" className="h-16 w-16 shrink-0 object-contain" />}
           <div className="flex-1 text-center">
             {doc.letterheadLines.map((line, i) => (
-              <p key={i} className={i < 2 ? "text-[14px] font-bold" : "text-[13px]"}>
+              <p key={i} className={i < 2 ? "text-subhead font-bold" : "text-footnote"}>
                 {line}
               </p>
             ))}
             {doc.unitName && !letterheadNamesUnit(doc.letterheadLines, doc.unitName) && (
-              <p className="mt-1 text-[13px] font-bold">UNIT – {doc.unitName}</p>
+              <p className="mt-1 text-footnote font-bold">UNIT – {doc.unitName}</p>
             )}
           </div>
           {doc.logoUrl && <div className="h-16 w-16 shrink-0" aria-hidden />}
         </div>
 
-        <p className="mt-3 border border-black py-1 text-center text-[15px] font-bold uppercase">
+        <p className="mt-3 border border-black py-1 text-center text-subhead font-bold uppercase">
           Discharge Summary
         </p>
         {doc.status !== "finalised" && (
-          <p className="mt-1 text-center text-[11px] text-black print:hidden">Draft — not yet finalised</p>
+          <p className="mt-1 text-center text-caption2 text-black print:hidden">Draft — not yet finalised</p>
         )}
 
         {/* 1. Patient Details */}
-        <table className="mt-2 w-full border-collapse text-[12px]">
+        <table className="mt-2 w-full border-collapse text-caption">
           <tbody>
             <tr>
               <Cell b="Name">{doc.patient.name}</Cell>
@@ -97,7 +97,7 @@ export default function DischargeSheet({
 
         {/* 2. Encounter Details */}
         <SectionHeading editBase={editBase} section="encounter">Encounter Details</SectionHeading>
-        <div className="grid grid-cols-2 gap-x-4 text-[12px]">
+        <div className="grid grid-cols-2 gap-x-4 text-caption">
           {doc.encounter.map((row) => (
             <p key={row.label}>
               <span className="font-bold">{row.label}: </span>
@@ -108,7 +108,7 @@ export default function DischargeSheet({
 
         {/* 3. Indication for Admission */}
         <SectionHeading editBase={editBase} section="indication">Indication for Admission</SectionHeading>
-        <p className="text-[12px]">{doc.indication || BLANK}</p>
+        <p className="text-caption">{doc.indication || BLANK}</p>
 
         {/* 4. Diagnoses */}
         <SectionHeading editBase={editBase} section="diagnoses">Diagnoses</SectionHeading>
@@ -122,7 +122,7 @@ export default function DischargeSheet({
           <>
             <SectionHeading editBase={editBase} section="procedures">Operation / Procedures</SectionHeading>
             {doc.procedures.map((p) => (
-              <div key={p.id} className="mb-1 text-[12px]">
+              <div key={p.id} className="mb-1 text-caption">
                 {procedureLines(p).map((l, i) => (
                   <p key={i} className={i === 0 ? "font-bold" : "pl-3"}>
                     {l}
@@ -135,9 +135,9 @@ export default function DischargeSheet({
 
         {/* 6. Clinical Course */}
         <SectionHeading editBase={editBase} section="clinicalCourse">Clinical Course</SectionHeading>
-        <p className="whitespace-pre-wrap text-[12px] leading-relaxed">{doc.clinicalCourse || BLANK}</p>
+        <p className="whitespace-pre-wrap text-caption leading-relaxed">{doc.clinicalCourse || BLANK}</p>
         {doc.clinicalCourse && !doc.clinicalCourseApproved && (
-          <p className="text-[11px] italic text-black print:hidden">Not yet approved by the resident.</p>
+          <p className="text-caption2 italic text-black print:hidden">Not yet approved by the resident.</p>
         )}
 
         {/* 7. Relevant Investigations */}
@@ -145,7 +145,7 @@ export default function DischargeSheet({
           <>
             <SectionHeading editBase={editBase} section="relevantInvestigations">Relevant Investigations and Results</SectionHeading>
             {doc.investigations.map((i, k) => (
-              <p key={k} className="text-[12px]">
+              <p key={k} className="text-caption">
                 <span className="font-bold">{i.group}: </span>
                 {i.text}
                 {i.interpretation ? ` — ${i.interpretation}` : ""}
@@ -159,7 +159,7 @@ export default function DischargeSheet({
           <>
             <SectionHeading editBase={editBase} section="histopathology">Histopathology</SectionHeading>
             {doc.histopathology.map((h) => (
-              <div key={h.id} className="mb-1 text-[12px]">
+              <div key={h.id} className="mb-1 text-caption">
                 <p className="font-bold">Specimen: {h.specimen}</p>
                 <p className="pl-3">Status: {h.status}</p>
                 {h.result && <p className="pl-3">Result: {h.result}</p>}
@@ -172,14 +172,14 @@ export default function DischargeSheet({
         {/* 9. Medications on Discharge */}
         <SectionHeading editBase={editBase} section="medications">Medications on Discharge</SectionHeading>
         {doc.medications.length === 0 ? (
-          <p className="text-[12px]">{BLANK}</p>
+          <p className="text-caption">{BLANK}</p>
         ) : (
-          <ol className="list-decimal pl-5 text-[12px]">
+          <ol className="list-decimal pl-5 text-caption">
             {doc.medications.map((m) => (
               <li key={m.id} className="mb-0.5">
                 {medLine(m)}
                 {formularyAvailable && (
-                  <span className="ml-2 text-[11px] text-muted">
+                  <span className="ml-2 text-caption2 text-muted">
                     <FormularyLink
                       wardId={wardId}
                       patientId={patientId}
@@ -196,14 +196,14 @@ export default function DischargeSheet({
 
         {/* 10. Condition at Discharge */}
         <SectionHeading editBase={editBase} section="conditionAtDischarge">Condition at Discharge</SectionHeading>
-        <p className="text-[12px]">{doc.condition || BLANK}</p>
+        <p className="text-caption">{doc.condition || BLANK}</p>
 
         {/* 11. Primary Care Actions */}
         <SectionHeading editBase={editBase} section="primaryCareActions">Primary Care Actions</SectionHeading>
         {doc.primaryCareActions.length === 0 ? (
-          <p className="text-[12px]">None.</p>
+          <p className="text-caption">None.</p>
         ) : (
-          <ul className="list-disc pl-5 text-[12px]">
+          <ul className="list-disc pl-5 text-caption">
             {doc.primaryCareActions.map((a, i) => (
               <li key={i}>{a}</li>
             ))}
@@ -213,9 +213,9 @@ export default function DischargeSheet({
         {/* 12. Patient Actions */}
         <SectionHeading editBase={editBase} section="patientActions">Patient Actions</SectionHeading>
         {doc.patientActions.length === 0 ? (
-          <p className="text-[12px]">None.</p>
+          <p className="text-caption">None.</p>
         ) : (
-          <ul className="list-disc pl-5 text-[12px]">
+          <ul className="list-disc pl-5 text-caption">
             {doc.patientActions.map((a, i) => (
               <li key={i}>{a}</li>
             ))}
@@ -227,7 +227,7 @@ export default function DischargeSheet({
           <>
             <SectionHeading editBase={editBase} section="advice">Advice</SectionHeading>
             {doc.advice.map((a) => (
-              <p key={a.id} className="text-[12px]">
+              <p key={a.id} className="text-caption">
                 <span className="font-bold">{a.module}: </span>
                 {a.text}
               </p>
@@ -239,7 +239,7 @@ export default function DischargeSheet({
         {doc.redFlags && doc.redFlags.length > 0 && (
           <>
             <SectionHeading editBase={editBase} section="redFlags">When to Seek Medical Attention</SectionHeading>
-            <ul className="list-disc pl-5 text-[12px]">
+            <ul className="list-disc pl-5 text-caption">
               {doc.redFlags.map((r, i) => (
                 <li key={i}>{r}</li>
               ))}
@@ -249,7 +249,7 @@ export default function DischargeSheet({
 
         {/* 15. Authentication */}
         <SectionHeading editBase={editBase} section="authentication">Authentication</SectionHeading>
-        <div className="text-[12px]">
+        <div className="text-caption">
           <p className="font-bold">{doc.authentication.name || BLANK}</p>
           {doc.authentication.designation && <p>{doc.authentication.designation}</p>}
           {doc.authentication.department && <p>{doc.authentication.department}</p>}
@@ -281,14 +281,14 @@ function DxBlock({
 }) {
   if (items.length === 0) {
     return blankIfEmpty ? (
-      <p className="text-[12px]">
+      <p className="text-caption">
         <span className="font-bold">{title}: </span>
         {BLANK}
       </p>
     ) : null;
   }
   return (
-    <div className="text-[12px]">
+    <div className="text-caption">
       <span className="font-bold">{title}:</span>
       <ul className="list-disc pl-5">
         {items.map((i, k) => (

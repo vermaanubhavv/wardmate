@@ -79,19 +79,19 @@ export default function DischargeTab({
     <section className="px-4 pb-6">
       <p className="ios-group-header mb-2 px-4">Discharge</p>
       <div className="ios-group px-4 py-4">
-        <p className="text-[15px] leading-snug">
+        <p className="text-subhead leading-snug">
           Compiled from {patientName}&rsquo;s record. The cards arrive filled — diagnoses,
           procedures, medications and condition at discharge from what was recorded, and the
           clinical course drafted for you to read.
         </p>
-        <p className="mt-2 text-[13px] text-muted">
+        <p className="mt-2 text-footnote text-muted">
           Nothing is approved until you approve it, section by section, and reading in the paper
           file is a step inside the summary.
         </p>
 
         <Link
           href={`/patients/${patientId}/discharge`}
-          className="mt-4 flex w-full items-center justify-center rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink active:opacity-80"
+          className="mt-4 flex w-full items-center justify-center rounded-[10px] bg-accent px-4 py-3 text-body font-semibold text-accent-ink active:opacity-80"
         >
           {label}
         </Link>
@@ -99,10 +99,10 @@ export default function DischargeTab({
         {/* Said plainly, because a resident who taps straight through deserves to know whether
             they are about to wait. Silent once there is nothing left to say. */}
         {warming && (
-          <p className="mt-2 text-center text-[13px] text-muted">Writing the first draft…</p>
+          <p className="mt-2 text-center text-footnote text-muted">Writing the first draft…</p>
         )}
         {!warming && ready && (
-          <p className="mt-2 text-center text-[13px] text-muted">
+          <p className="mt-2 text-center text-footnote text-muted">
             First draft ready — nothing approved yet.
           </p>
         )}

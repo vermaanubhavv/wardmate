@@ -114,7 +114,7 @@ export default function DiagnosisCombobox({
       {show && (
         <ul id={listId} role="listbox" className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-[10px] border border-line bg-card py-1 shadow-lg">
           {!text.trim() && (
-            <li className="px-3 pb-1 pt-0.5 text-[11px] font-medium uppercase tracking-[0.05em] text-muted">
+            <li className="px-3 pb-1 pt-0.5 text-caption2 font-medium uppercase tracking-[0.05em] text-muted">
               Common
             </li>
           )}
@@ -128,7 +128,7 @@ export default function DiagnosisCombobox({
                 }}
                 onMouseEnter={() => setActive(i)}
                 className={
-                  "block w-full px-3 py-2 text-left text-[15px] " + (i === active ? "bg-chip" : "")
+                  "block w-full px-3 py-2 text-left text-subhead " + (i === active ? "bg-chip" : "")
                 }
               >
                 {d}

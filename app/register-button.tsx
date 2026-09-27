@@ -71,11 +71,11 @@ export default function RegisterButton() {
         >
           {busy ? <Mark className="h-7 w-7" spinning /> : <ImageIcon className="h-6 w-6" />}
         </button>
-        <span className="mt-1.5 text-[12px] text-muted">{busy ? "Reading…" : "Register"}</span>
+        <span className="mt-1.5 text-caption text-muted">{busy ? "Reading…" : "Register"}</span>
 
         {/* Above the bar, full width — see round-recorder for why. */}
         {message && (
-          <p className="absolute inset-x-0 bottom-full mb-2 px-2 text-center text-[13px] text-accent">
+          <p role="status" className="absolute inset-x-0 bottom-full mb-2 px-2 text-center text-footnote text-warn-fg">
             {message}
           </p>
         )}

@@ -47,12 +47,12 @@ export function CaseHistoryCard({
   );
 
   return (
-    <div className="px-4 py-3 text-[15px] leading-relaxed">
+    <div className="px-4 py-3 text-subhead leading-relaxed">
       {sections
         .filter((section) => !section.hidden)
         .map((section) => (
           <div key={section.key} className="mb-2.5 last:mb-0">
-            <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
+            <p className="text-caption font-semibold uppercase tracking-wide text-muted">
               {section.label}
             </p>
             {section.lines.length > 0 ? (
@@ -66,7 +66,7 @@ export function CaseHistoryCard({
               // was nothing. Only the first is a gap, so only the first is coloured as one.
               <p
                 className={
-                  "mt-0.5 " + (section.note === "NR" ? "text-orange-700" : "text-muted")
+                  "mt-0.5 " + (section.note === "NR" ? "text-warn-fg" : "text-muted")
                 }
               >
                 {section.note}
@@ -77,7 +77,7 @@ export function CaseHistoryCard({
 
       {other.length > 0 && (
         <div className="mt-3 border-t border-line pt-2.5">
-          <p className="mb-0.5 text-[12px] font-semibold uppercase tracking-wide text-muted">
+          <p className="mb-0.5 text-caption font-semibold uppercase tracking-wide text-muted">
             Examination
           </p>
           <ObjectiveSummaryView summary={exam} />
@@ -124,7 +124,7 @@ export function ObjectiveSummaryView({
     summary.normalCount === 0;
 
   return (
-    <div className="text-[15px] leading-relaxed">
+    <div className="text-subhead leading-relaxed">
       {summary.vitals.length > 0 && (
         <p className="tabular-nums">
           {summary.vitals.map((v) => `${v.label} ${v.value}`).join("  ·  ")}
@@ -135,7 +135,7 @@ export function ObjectiveSummaryView({
         <p className={summary.vitals.length > 0 ? "mt-1" : ""}>
           {summary.piccle.text}
           {summary.piccle.notRecorded.length > 0 && (
-            <span className="text-[13px] text-muted">
+            <span className="text-footnote text-muted">
               {"  ·  "}
               {summary.piccle.notRecorded.join(", ").toLowerCase()} not recorded
             </span>
@@ -156,15 +156,15 @@ export function ObjectiveSummaryView({
         <p key={l.id} className="mt-1">
           <span className="text-muted">{l.label}</span>{" "}
           <span className="font-medium tabular-nums">{l.value}</span>
-          {l.flag === "high" && <span className="ml-0.5 font-medium text-red-700">↑</span>}
-          {l.flag === "low" && <span className="ml-0.5 font-medium text-red-700">↓</span>}
+          {l.flag === "high" && <span className="ml-0.5 font-medium text-critical-fg">↑</span>}
+          {l.flag === "low" && <span className="ml-0.5 font-medium text-critical-fg">↓</span>}
           {l.range && (
-            <span className="ml-1 text-[13px] text-muted">
+            <span className="ml-1 text-footnote text-muted">
               ({l.range}
               {l.source === "builtin" ? " typical" : ""})
             </span>
           )}
-          {l.when && <span className="ml-1 text-[13px] text-muted">· {l.when}</span>}
+          {l.when && <span className="ml-1 text-footnote text-muted">· {l.when}</span>}
         </p>
       ))}
 
@@ -174,8 +174,8 @@ export function ObjectiveSummaryView({
           report, is always in Investigations — this fold is a shortcut, not the only way in. */}
       {summary.keyLabs.length > 0 && (
         <details className="mt-1 [&[open]_.watch-chev]:rotate-90">
-          <summary className="flex cursor-pointer list-none items-center gap-1.5 text-[13px] text-muted active:opacity-60 [&::-webkit-details-marker]:hidden">
-            <span className="watch-chev text-[10px] transition-transform">▶</span>
+          <summary className="flex cursor-pointer list-none items-center gap-1.5 text-footnote text-muted active:opacity-60 [&::-webkit-details-marker]:hidden">
+            <span className="watch-chev text-caption2 transition-transform">▶</span>
             {summary.keyLabs.length} in-range result{summary.keyLabs.length === 1 ? "" : "s"} on the watch-list
           </summary>
           {summary.keyLabs.map((l) => (
@@ -183,12 +183,12 @@ export function ObjectiveSummaryView({
               <span className="text-muted">{l.label}</span>{" "}
               <span className="font-medium tabular-nums">{l.value}</span>
               {l.range && (
-                <span className="ml-1 text-[13px] text-muted">
+                <span className="ml-1 text-footnote text-muted">
                   ({l.range}
                   {l.source === "builtin" ? " typical" : ""})
                 </span>
               )}
-              {l.when && <span className="ml-1 text-[13px] text-muted">· {l.when}</span>}
+              {l.when && <span className="ml-1 text-footnote text-muted">· {l.when}</span>}
             </p>
           ))}
         </details>
@@ -199,7 +199,7 @@ export function ObjectiveSummaryView({
       {summary.mutedLabs.length > 0 && <MutedLabs labs={summary.mutedLabs} />}
 
       {summary.normalLabCount > 0 && (
-        <p className="mt-1 text-[13px] text-muted">
+        <p className="mt-1 text-footnote text-muted">
           {summary.normalLabCount} other blood{" "}
           {summary.normalLabCount === 1 ? "result" : "results"} within range
         </p>
@@ -210,7 +210,7 @@ export function ObjectiveSummaryView({
       {empty && emptyText && <p className="text-muted">{emptyText}</p>}
 
       {pertinentNegatives.length > 0 && (
-        <p className="mt-1.5 text-[13px] text-muted">
+        <p className="mt-1.5 text-footnote text-muted">
           No complaints of {formatList(pertinentNegatives)}.
         </p>
       )}
@@ -221,12 +221,12 @@ export function ObjectiveSummaryView({
           only once something else in this section was recorded, so a bedside nobody has
           examined yet still says so. */}
       {nadPhrases.length > 0 && !empty && (
-        <p className="mt-1.5 text-[13px] text-muted">
+        <p className="mt-1.5 text-footnote text-muted">
           {nadPhrases.join(". ").replace(/^./, (c) => c.toUpperCase())}.
         </p>
       )}
       {outstanding.length > 0 && !empty && (
-        <p className="mt-1.5 text-[13px] text-muted">
+        <p className="mt-1.5 text-footnote text-muted">
           {outstanding.join(", ").replace(/^./, (c) => c.toUpperCase())} — NAD
         </p>
       )}
@@ -248,14 +248,14 @@ function MutedLabs({
   const out = labs.filter((l) => l.outOfRange).length;
   return (
     <details className="mt-1 [&[open]_.lab-chev]:rotate-90">
-      <summary className="flex cursor-pointer list-none items-center gap-1.5 text-[13px] text-muted active:opacity-60 [&::-webkit-details-marker]:hidden">
-        <span className="lab-chev text-[10px] transition-transform">▶</span>
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 text-footnote text-muted active:opacity-60 [&::-webkit-details-marker]:hidden">
+        <span className="lab-chev text-caption2 transition-transform">▶</span>
         {labs.length} other blood {labs.length === 1 ? "result" : "results"}
         {out > 0 && ` · ${out} outside range`}
       </summary>
       <div className="mt-0.5">
         {labs.map((l) => (
-          <p key={l.id} className="mt-1 text-[13px] text-muted">
+          <p key={l.id} className="mt-1 text-footnote text-muted">
             {l.label} <span className="tabular-nums">{l.value}</span>
             {l.range && ` (${l.range}${l.source === "builtin" ? " typical" : ""})`}
             {l.when && ` · ${l.when}`}
@@ -291,7 +291,7 @@ function ImagingReport({ imaging }: { imaging: ImagingSummary }) {
         </p>
       ) : (
         imaging.modality && (
-          <p className="mt-1 text-[13px] text-muted">{imaging.modality}</p>
+          <p className="mt-1 text-footnote text-muted">{imaging.modality}</p>
         )
       )}
 
@@ -299,8 +299,8 @@ function ImagingReport({ imaging }: { imaging: ImagingSummary }) {
 
       {imaging.hidden.length > 0 && (
         <details className="mt-1 [&[open]_.rep-chev]:rotate-90">
-          <summary className="flex cursor-pointer list-none items-center gap-1.5 text-[13px] text-muted active:opacity-60 [&::-webkit-details-marker]:hidden">
-            <span className="rep-chev text-[10px] transition-transform">▶</span>
+          <summary className="flex cursor-pointer list-none items-center gap-1.5 text-footnote text-muted active:opacity-60 [&::-webkit-details-marker]:hidden">
+            <span className="rep-chev text-caption2 transition-transform">▶</span>
             Full {imaging.modality ?? "report"} · {imaging.hidden.length} more{" "}
             {imaging.hidden.length === 1 ? "line" : "lines"}
           </summary>

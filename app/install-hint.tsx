@@ -49,8 +49,8 @@ export default function InstallHint() {
 
   return (
     <section className="ios-group p-5">
-      <p className="text-[17px] font-semibold">Put WardMate on your home screen</p>
-      <p className="mt-1 text-[15px] text-muted leading-snug">
+      <p className="text-body font-semibold">Put WardMate on your home screen</p>
+      <p className="mt-1 text-subhead text-muted leading-snug">
         Takes ten seconds, and it works better than the browser. Do this before you sign in.
       </p>
 
@@ -102,7 +102,7 @@ export default function InstallHint() {
         />
       </ol>
 
-      <p className="mt-4 text-[13px] text-muted leading-snug">
+      <p className="mt-4 text-footnote text-muted leading-snug">
         Signing in on this screen only signs you in inside the browser — the home-screen app
         would still ask again.
       </p>
@@ -114,11 +114,11 @@ export default function InstallHint() {
 function Step({ n, icon, text }: { n: number; icon: React.ReactNode; text: React.ReactNode }) {
   return (
     <li className="flex items-start gap-3">
-      <span className="mt-px grid h-6 w-6 shrink-0 place-items-center rounded-full bg-chip text-[13px] font-semibold tabular-nums">
+      <span className="mt-px grid h-6 w-6 shrink-0 place-items-center rounded-full bg-chip text-footnote font-semibold tabular-nums">
         {n}
       </span>
       <span className="mt-0.5 shrink-0 text-accent">{icon}</span>
-      <span className="text-[15px] text-muted leading-snug">{text}</span>
+      <span className="text-subhead text-muted leading-snug">{text}</span>
     </li>
   );
 }

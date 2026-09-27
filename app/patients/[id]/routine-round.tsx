@@ -38,11 +38,11 @@ export default function RoutineRoundButton({ patientId }: { patientId: string })
         type="button"
         onClick={run}
         disabled={pending}
-        className="rounded-[10px] border border-line bg-card px-3 py-1.5 text-[13px] font-semibold text-accent active:opacity-60 disabled:opacity-50"
+        className="rounded-[10px] border border-line bg-card px-3 py-1.5 text-footnote font-semibold text-accent active:opacity-60 disabled:opacity-50"
       >
         {pending ? "Filling…" : "Routine round — fill normals"}
       </button>
-      {message && <p className="mt-1 text-[13px] text-muted">{message}</p>}
+      {message && <p className="mt-1 text-footnote text-muted">{message}</p>}
     </div>
   );
 }

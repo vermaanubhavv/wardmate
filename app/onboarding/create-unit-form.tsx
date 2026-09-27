@@ -29,7 +29,7 @@ export default function CreateUnitForm({
   return (
     <form action={formAction} className="ios-group flex flex-col gap-3 p-4">
       <label className="flex flex-col gap-1.5">
-        <span className="text-[15px] text-muted">Name your unit</span>
+        <span className="text-subhead text-muted">Name your unit</span>
         <input
           name="name"
           required
@@ -37,13 +37,13 @@ export default function CreateUnitForm({
           autoFocus={autoFocus}
           autoCapitalize="words"
           placeholder="e.g. Unit Alpha"
-          className="h-12 w-full rounded-[10px] border border-line bg-card px-3 text-[17px] outline-none focus:border-accent"
+          className="h-12 w-full rounded-[10px] border border-line bg-card px-3 text-body outline-none focus:border-accent"
         />
       </label>
       {specialties.length > 1 && (
         <fieldset className="flex flex-col gap-1.5">
-          <legend className="text-[15px] text-muted">Department</legend>
-          <p className="text-[13px] leading-relaxed text-muted">
+          <legend className="text-subhead text-muted">Department</legend>
+          <p className="text-footnote leading-relaxed text-muted">
             This cannot be changed later — it decides how the unit counts days, what its
             checklists ask and how its discharge summaries read.
           </p>
@@ -61,18 +61,18 @@ export default function CreateUnitForm({
                   className="mt-1 size-4 accent-[var(--accent)]"
                 />
                 <span className="min-w-0">
-                  <span className="block text-[17px]">{s.label}</span>
-                  <span className="block text-[13px] leading-snug text-muted">{s.blurb}</span>
+                  <span className="block text-body">{s.label}</span>
+                  <span className="block text-footnote leading-snug text-muted">{s.blurb}</span>
                 </span>
               </label>
             ))}
           </div>
         </fieldset>
       )}
-      {state.error && <p className="text-[13px] text-red-700">{state.error}</p>}
+      {state.error && <p className="text-footnote text-critical-fg">{state.error}</p>}
       <button
         disabled={pending}
-        className="rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink disabled:opacity-60"
+        className="rounded-[10px] bg-accent px-4 py-3 text-body font-semibold text-accent-ink disabled:opacity-60"
       >
         {pending ? "Creating…" : "Create unit"}
       </button>

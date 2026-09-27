@@ -110,10 +110,10 @@ export default async function BuildNotePage({ params }: { params: Promise<{ id: 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
       <header className="flex items-baseline justify-between gap-3 px-4 pb-3 pt-6">
-        <Link href={`/patients/${id}`} className="text-[17px] text-accent">
+        <Link href={`/patients/${id}`} className="text-body text-accent">
           ‹ Patient
         </Link>
-        <p className="truncate text-[13px] text-muted">
+        <p className="truncate text-footnote text-muted">
           Today&rsquo;s note · {stripPatientHonorific(patient.display_name)}
           {patient.bed ? ` · bed ${patient.bed}` : ""}
         </p>

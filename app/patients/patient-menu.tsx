@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { stripPatientHonorific } from "@/lib/patients";
 import EditIdentity from "./edit-identity";
 import { deletePatientForever, dischargePatient } from "./actions";
+import { ConfirmSubmit } from "../action-sheet";
 
 type Patient = {
   id: string;
@@ -116,7 +117,7 @@ export default function PatientMenu({
           e.stopPropagation();
           setOpen((o) => !o);
         }}
-        className="shrink-0 rounded-lg px-2 py-1 text-lg leading-none text-muted active:bg-chip"
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-title3 leading-none text-muted active:bg-chip"
       >
         ⋯
       </button>
@@ -138,54 +139,40 @@ export default function PatientMenu({
             <button
               type="button"
               onClick={openEditor}
-              className="block w-full px-4 py-3 text-left text-[17px] active:bg-chip"
+              className="block w-full px-4 py-3 text-left text-body active:bg-chip"
             >
               Change bed
             </button>
             <button
               type="button"
               onClick={openEditor}
-              className="block w-full border-t border-line px-4 py-3 text-left text-[17px] active:bg-chip"
+              className="block w-full border-t border-line px-4 py-3 text-left text-body active:bg-chip"
             >
               Change name, age, sex
             </button>
 
             <form action={dischargePatient} className="border-t border-line">
               <input type="hidden" name="patient_id" value={patient.id} />
-              <button
-                type="submit"
-                onClick={(e) => {
-                  if (
-                    !confirm(
-                      `Discharge ${patientName} from the ward?\n\nTheir record will move to the Discharged list and can be restored if needed.`
-                    )
-                  ) {
-                    e.preventDefault();
-                  }
-                }}
-                className="block w-full px-4 py-3 text-left text-[17px] active:bg-chip"
+              <ConfirmSubmit
+                title={`Discharge ${patientName} from the ward?`}
+                message="Their record moves to the Discharged list and can be put back for 48 hours."
+                action="Discharge"
+                className="block w-full px-4 py-3 text-left text-body active:bg-chip"
               >
                 Discharge from ward
-              </button>
+              </ConfirmSubmit>
             </form>
 
             <form action={deletePatientForever} className="border-t border-line">
               <input type="hidden" name="patient_id" value={patient.id} />
-              <button
-                type="submit"
-                onClick={(e) => {
-                  if (
-                    !confirm(
-                      `Delete ${patientName}?\n\nThey will move to the trash bin now, remain recoverable for 48 hours, and then be permanently deleted automatically.`
-                    )
-                  ) {
-                    e.preventDefault();
-                  }
-                }}
-                className="block w-full px-4 py-3 text-left text-[17px] text-red-600 active:bg-chip"
+              <ConfirmSubmit
+                title={`Move ${patientName} to Trash?`}
+                message="Their recordings and everything taken from them stay recoverable for 48 hours, then are deleted for good."
+                action="Move to Trash"
+                className="block w-full px-4 py-3 text-left text-body text-critical-fg active:bg-chip"
               >
-                Delete permanently
-              </button>
+                Move to Trash
+              </ConfirmSubmit>
             </form>
           </div>,
           document.body

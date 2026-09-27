@@ -160,57 +160,57 @@ export default function EditIdentity({
         <form action={formAction} className="flex flex-col gap-5 p-6" onClick={(e) => e.stopPropagation()}>
           <input type="hidden" name="patient_id" value={patient.id} />
 
-          <p className="text-[17px] font-semibold">Edit patient</p>
+          <p className="text-body font-semibold">Edit patient</p>
 
           <label className="flex flex-col gap-2">
-            <span className="text-[15px] text-muted">Name</span>
+            <span className="text-subhead text-muted">Name</span>
             <input
               name="display_name"
               required
               defaultValue={stripPatientHonorific(patient.display_name)}
               autoCapitalize="words"
-              className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+              className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-body outline-none focus:border-accent"
             />
           </label>
 
           <label className="flex flex-col gap-2">
-            <span className="text-[15px] text-muted">Bed</span>
+            <span className="text-subhead text-muted">Bed</span>
             <input
               name="bed"
               required
               defaultValue={patient.bed}
               autoCapitalize="characters"
-              className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+              className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-body outline-none focus:border-accent"
             />
             {/* Moving a bed reorders the whole ward list, since the list walks in bed order. */}
-            <span className="text-[13px] text-muted">e.g. SW-12</span>
+            <span className="text-footnote text-muted">e.g. SW-12</span>
           </label>
 
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-2">
-              <span className="text-[15px] text-muted">IP no.</span>
+              <span className="text-subhead text-muted">IP no.</span>
               <input
                 name="uhid_ip_no"
                 defaultValue={patient.uhid_ip_no ?? ""}
-                className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+                className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-body outline-none focus:border-accent"
               />
             </label>
             <label className="flex flex-1 flex-col gap-2">
-              <span className="text-[15px] text-muted">MRD no.</span>
+              <span className="text-subhead text-muted">MRD no.</span>
               <input
                 name="mrd_no"
                 defaultValue={patient.mrd_no ?? ""}
-                className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+                className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-body outline-none focus:border-accent"
               />
             </label>
           </div>
 
           <label className="flex flex-col gap-2">
-            <span className="text-[15px] text-muted">Location</span>
+            <span className="text-subhead text-muted">Location</span>
             <select
               name="location"
               defaultValue={patient.location ?? "ward"}
-              className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+              className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-body outline-none focus:border-accent"
             >
               {LOCATION_CHOICES.map((c) => (
                 <option key={c.value} value={c.value}>
@@ -222,7 +222,7 @@ export default function EditIdentity({
 
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-2">
-              <span className="text-[15px] text-muted">Age</span>
+              <span className="text-subhead text-muted">Age</span>
               <input
                 type="number"
                 name="age_years"
@@ -230,15 +230,15 @@ export default function EditIdentity({
                 min={0}
                 max={120}
                 defaultValue={patient.age_years ?? ""}
-                className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+                className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-body outline-none focus:border-accent"
               />
             </label>
             <label className="flex flex-1 flex-col gap-2">
-              <span className="text-[15px] text-muted">Sex</span>
+              <span className="text-subhead text-muted">Sex</span>
               <select
                 name="sex"
                 defaultValue={patient.sex ?? ""}
-                className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+                className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-body outline-none focus:border-accent"
               >
                 <option value="">—</option>
                 <option value="M">M</option>
@@ -249,11 +249,11 @@ export default function EditIdentity({
           </div>
 
           <label className="flex flex-col gap-2">
-            <span className="text-[15px] text-muted">Diagnosis</span>
+            <span className="text-subhead text-muted">Diagnosis</span>
             <DiagnosisCombobox
               name="primary_diagnosis"
               defaultValue={patient.primary_diagnosis ?? ""}
-              className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+              className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-body outline-none focus:border-accent"
             />
           </label>
 
@@ -262,12 +262,12 @@ export default function EditIdentity({
               management — see readManagement in ./actions.ts; choosing it records the surgery
               date, which is what the POD count and the POST OP badge are derived from. */}
           <label className="flex flex-col gap-2">
-            <span className="text-[15px] text-muted">Management</span>
+            <span className="text-subhead text-muted">Management</span>
             <select
               name="management"
               value={management}
               onChange={(e) => setManagement(e.target.value)}
-              className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+              className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-body outline-none focus:border-accent"
             >
               <option value="">Not stated</option>
               {MANAGEMENT_CHOICES.map((c) => (
@@ -287,27 +287,27 @@ export default function EditIdentity({
           {management === "preop" || management === "postop" || specialty !== "general_surgery" ? (
             <>
               <label className="flex flex-col gap-2">
-                <span className="text-[15px] text-muted">{checklistFieldLabel(specialty)}</span>
+                <span className="text-subhead text-muted">{checklistFieldLabel(specialty)}</span>
                 <input
                   name="procedure"
                   list="operation-suggestions"
                   defaultValue={currentProcedure(patient, templateChoices)}
                   autoCapitalize="none"
-                  className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+                  className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-body outline-none focus:border-accent"
                 />
                 <datalist id="operation-suggestions">
                   {templateChoices.map((t) => (
                     <option key={`${t.family}|${t.variant ?? ""}`} value={t.label} />
                   ))}
                 </datalist>
-                <span className="text-[13px] text-muted">
+                <span className="text-footnote text-muted">
                   Type anything. Picking one of the suggestions also brings its checklist.
                 </span>
               </label>
 
               {(management === "preop" || management === "postop") && (
                 <label className="flex flex-col gap-2">
-                  <span className="text-[15px] text-muted">
+                  <span className="text-subhead text-muted">
                     {management === "postop" ? "Date of operation" : "Planned date of operation"}
                   </span>
                   <input
@@ -319,10 +319,10 @@ export default function EditIdentity({
                         ? (patient.surgery_date ?? "")
                         : (patient.planned_surgery_date ?? "")
                     }
-                    className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+                    className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-body outline-none focus:border-accent"
                   />
                   {management === "postop" && (
-                    <span className="text-[13px] text-muted">
+                    <span className="text-footnote text-muted">
                       Sets the post-op day count shown on the ward list.
                     </span>
                   )}
@@ -344,21 +344,21 @@ export default function EditIdentity({
           {specialty === "medical_oncology" && (
             <>
               <label className="flex flex-col gap-2">
-                <span className="text-[15px] text-muted">Regimen</span>
+                <span className="text-subhead text-muted">Regimen</span>
                 <input
                   name="regimen"
                   list="regimen-suggestions"
                   defaultValue={patient.regimen ?? ""}
                   autoCapitalize="characters"
                   placeholder="e.g. R-CHOP"
-                  className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+                  className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-body outline-none focus:border-accent"
                 />
                 <datalist id="regimen-suggestions">
                   {REGIMEN_SUGGESTIONS.map((r) => (
                     <option key={r} value={r} />
                   ))}
                 </datalist>
-                <span className="text-[13px] text-muted">
+                <span className="text-footnote text-muted">
                   Type anything — the suggestions are only suggestions. Clearing this clears the
                   cycle with it, and the patient counts hospital days again.
                 </span>
@@ -366,7 +366,7 @@ export default function EditIdentity({
 
               <div className="flex gap-3">
                 <label className="flex w-24 shrink-0 flex-col gap-2">
-                  <span className="text-[15px] text-muted">Cycle</span>
+                  <span className="text-subhead text-muted">Cycle</span>
                   <input
                     type="number"
                     name="cycle_number"
@@ -374,21 +374,21 @@ export default function EditIdentity({
                     max={60}
                     inputMode="numeric"
                     defaultValue={patient.cycle_number ?? ""}
-                    className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+                    className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-body outline-none focus:border-accent"
                   />
                 </label>
 
                 <label className="flex min-w-0 flex-1 flex-col gap-2">
-                  <span className="text-[15px] text-muted">Cycle started</span>
+                  <span className="text-subhead text-muted">Cycle started</span>
                   <input
                     type="date"
                     name="cycle_started_on"
                     defaultValue={patient.cycle_started_on ?? ""}
-                    className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+                    className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-body outline-none focus:border-accent"
                   />
                 </label>
               </div>
-              <span className="-mt-1 text-[13px] text-muted">
+              <span className="-mt-1 text-footnote text-muted">
                 Day 1 is the day the drugs went up, not the day after. This is what the ward
                 list counts from — &ldquo;C2 D3&rdquo;.
               </span>
@@ -397,14 +397,14 @@ export default function EditIdentity({
 
           {specialty === "burns_plastic_surgery" && (
             <label className="flex flex-col gap-2">
-              <span className="text-[15px] text-muted">Date of burn</span>
+              <span className="text-subhead text-muted">Date of burn</span>
               <input
                 type="date"
                 name="burn_date"
                 defaultValue={patient.burn_date ?? ""}
-                className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[17px] outline-none focus:border-accent"
+                className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-body outline-none focus:border-accent"
               />
-              <span className="text-[13px] text-muted">
+              <span className="text-footnote text-muted">
                 Often before the admission — that is the point of the field. The ward list counts
                 from here: the day of the burn is PBD 1. Clearing it counts operative or hospital
                 days again.
@@ -413,7 +413,7 @@ export default function EditIdentity({
           )}
 
           {state.error && (
-            <p className="ios-group px-4 py-3 text-[15px] text-orange-700">
+            <p className="ios-group px-4 py-3 text-subhead text-warn-fg">
               {state.error}
             </p>
           )}
@@ -422,14 +422,14 @@ export default function EditIdentity({
             <button
               type="button"
               onClick={() => dialogRef.current?.close()}
-              className="flex-1 rounded-[10px] bg-card px-4 py-3 text-[17px] text-muted"
+              className="flex-1 rounded-[10px] bg-card px-4 py-3 text-body text-muted"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={pending}
-              className="flex-[2] rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink disabled:opacity-50"
+              className="flex-[2] rounded-[10px] bg-accent px-4 py-3 text-body font-semibold text-accent-ink disabled:opacity-50"
             >
               {pending ? "Saving…" : "Save"}
             </button>

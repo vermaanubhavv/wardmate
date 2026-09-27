@@ -145,24 +145,24 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col bg-background print:max-w-none print:bg-white">
       <header className="px-4 pb-3 pt-6 print:hidden">
-        <Link href={`/patients/${id}`} className="text-[17px] text-accent">
+        <Link href={`/patients/${id}`} className="text-body text-accent">
           ‹ Patient
         </Link>
         <h1 className="mt-3 ios-large-title">Today&rsquo;s note</h1>
-        <p className="mt-1 text-[15px] text-muted">
+        <p className="mt-1 text-subhead text-muted">
           Everything below is what was actually recorded today. Blank lines are for what
           wasn&rsquo;t.
         </p>
         <Link
           href={`/patients/${id}/note/build`}
-          className="mt-3 inline-flex items-center gap-1 rounded-[10px] border border-line px-3 py-2 text-[14px] font-semibold text-accent"
+          className="mt-3 inline-flex items-center gap-1 rounded-[10px] border border-line px-3 py-2 text-subhead font-semibold text-accent"
         >
           Build today&rsquo;s note by card ›
         </Link>
       </header>
 
       {canOverlay && (
-        <p className="px-4 pb-2 text-[13px] text-muted print:hidden">
+        <p className="px-4 pb-2 text-footnote text-muted print:hidden">
           Printed onto your unit&rsquo;s own uploaded form. Best effort from a photograph — check
           the fields land where you expect before you print for real.
         </p>
@@ -182,16 +182,16 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
             <SoapNote note={note} />
           </div>
         ) : (
-          <div className="ios-group px-5 py-5 text-[16px] leading-relaxed text-black print:rounded-none print:border-0 print:p-0 print:shadow-none">
+          <div className="ios-group px-5 py-5 text-callout leading-relaxed text-black print:rounded-none print:border-0 print:p-0 print:shadow-none">
             <div className="text-center">
-              <p className="text-[16px] font-bold uppercase">Progress Sheet</p>
+              <p className="text-callout font-bold uppercase">Progress Sheet</p>
             </div>
 
             {/* The note's own heading, not a line inside either column — it names who is
                 rounding, which applies to the whole sheet below it, so it runs the full width
                 on its own line rather than being confined to Observation or the Investigation
                 column. */}
-            <p className="mt-2 border-b-2 border-black pb-1 text-center text-[15px] font-bold underline">
+            <p className="mt-2 border-b-2 border-black pb-1 text-center text-subhead font-bold underline">
               {note.caseSeenBy}
             </p>
 
@@ -214,7 +214,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
             <p className="mt-3 font-semibold tabular-nums">{note.dateTime}</p>
 
             <div className="mt-3 flex min-h-[520px] flex-col print:min-h-[560px]">
-              <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
+              <p className="text-caption font-semibold uppercase tracking-wide text-muted">
                 Observation
               </p>
               {note.observation.length > 0 ? (
@@ -234,7 +234,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
             </div>
 
             <div className="mt-3">
-              <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
+              <p className="text-caption font-semibold uppercase tracking-wide text-muted">
                 Investigation / Treatment / Management
               </p>
               {note.plan.length > 0 ? (
@@ -245,7 +245,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
             </div>
 
             <div className="mt-6 flex items-end justify-end">
-              <div className="w-40 border-b border-line pb-1 text-right text-[13px] text-muted">
+              <div className="w-40 border-b border-line pb-1 text-right text-footnote text-muted">
                 Signature
               </div>
             </div>
@@ -254,7 +254,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
 
         {/* Shown every time, whichever layout rendered above it — the one line the whole page
             exists under. */}
-        <p className="mt-3 text-[11px] leading-snug text-muted">
+        <p className="mt-3 text-caption2 leading-snug text-muted">
           * This sheet is generated from what was recorded in WardMate. It is a draft, not a
           medical record, until signed by the treating doctor — do not accept or file it
           unsigned.

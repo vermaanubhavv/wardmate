@@ -142,12 +142,12 @@ export default function HistoryCheckCard({
     <section className="px-4 pb-6">
       <div className="ios-group">
         <div className="flex items-center justify-between gap-3 px-4 py-3">
-          <p className="text-[15px] font-semibold">History check</p>
+          <p className="text-subhead font-semibold">History check</p>
           <ModeSwitch mode={shownMode} onChange={switchMode} />
         </div>
 
         <div className="border-t border-line px-4 py-3">
-          <p className="mb-2 text-[12px] text-muted">
+          <p className="mb-2 text-caption text-muted">
             {suggested.length > 0
               ? "Complaint (suggested from the chief complaints)"
               : !showAll && own.length > 0
@@ -161,7 +161,7 @@ export default function HistoryCheckCard({
               </SelChip>
             ))}
             {!showAll && visible.length < trees.length && (
-              <button type="button" onClick={() => setShowAll(true)} className="px-2 text-[13px] text-accent">
+              <button type="button" onClick={() => setShowAll(true)} className="px-2 text-footnote text-accent">
                 More…
               </button>
             )}
@@ -176,16 +176,16 @@ export default function HistoryCheckCard({
             >
               {running ? "Checking…" : run ? "Check again" : "Check history"}
             </button>
-            {!hasSources && <span className="text-[13px] text-muted">Record or build the case history first.</span>}
-            {hasSources && !online && <span className="text-[13px] text-orange-700">No connection.</span>}
+            {!hasSources && <span className="text-footnote text-muted">Record or build the case history first.</span>}
+            {hasSources && !online && <span className="text-footnote text-warn-fg">No connection.</span>}
           </div>
-          {message && <p className="mt-2 text-[13px] text-orange-700">{message}</p>}
+          {message && <p className="mt-2 text-footnote text-warn-fg">{message}</p>}
         </div>
 
         {run && run.status === "error" && (
           <div className="border-t border-line px-4 py-3">
-            <p className="text-[13px] text-orange-700">The last check failed: {run.error ?? "unknown error"}</p>
-            <p className="mt-1 text-[12px] text-muted">Nothing was stored against the patient. Try again.</p>
+            <p className="text-footnote text-warn-fg">The last check failed: {run.error ?? "unknown error"}</p>
+            <p className="mt-1 text-caption text-muted">Nothing was stored against the patient. Try again.</p>
           </div>
         )}
 
@@ -205,7 +205,7 @@ export default function HistoryCheckCard({
 
             <GeneratedHistory text={view.text} />
 
-            <div className="border-t border-line px-4 py-3 text-[12px] text-muted">
+            <div className="border-t border-line px-4 py-3 text-caption text-muted">
               <p>
                 {statusChip("Pending clinician review", "warn")}{" "}
                 <span className="ml-1">
@@ -235,7 +235,7 @@ export default function HistoryCheckCard({
         )}
 
         {!run && shownMode === "academic" && (
-          <div className="border-t border-line px-4 py-3 text-[13px]">
+          <div className="border-t border-line px-4 py-3 text-footnote">
             <Link href={`/learn/history/${treeId}`} className="font-semibold text-accent">
               Learn: taking this history ›
             </Link>
@@ -262,7 +262,7 @@ function ModeSwitch({ mode, onChange }: { mode: CheckMode; onChange: (m: CheckMo
       aria-checked={mode === m}
       onClick={() => onChange(m)}
       className={
-        "rounded-full px-3 py-1 text-[12px] font-semibold transition-colors " +
+        "rounded-full px-3 py-1 text-caption font-semibold transition-colors " +
         (mode === m ? "bg-accent text-accent-ink" : "text-muted")
       }
     >
@@ -296,7 +296,7 @@ function useAction() {
 
 function Quote({ quote, source }: { quote: string; source: string }) {
   return (
-    <p className="text-[13px] italic text-muted">
+    <p className="text-footnote italic text-muted">
       “{quote}” <span className="not-italic">— {source}</span>
     </p>
   );
@@ -305,12 +305,12 @@ function Quote({ quote, source }: { quote: string; source: string }) {
 function WrongPatientBox({ patientId, runId, quote, source }: { patientId: string; runId: string; quote: string; source: string }) {
   const { pending, error, submit } = useAction();
   return (
-    <div className="border-t border-line bg-orange-50 px-4 py-3">
-      <p className="text-[14px] font-semibold text-orange-800">This dictation may be about another patient</p>
+    <div className="border-t border-line bg-warn-bg px-4 py-3">
+      <p className="text-subhead font-semibold text-warn-fg">This dictation may be about another patient</p>
       <div className="mt-1">
         <Quote quote={quote} source={source} />
       </div>
-      <p className="mt-2 text-[12px] text-muted">Only the name, age, sex and bed identify a patient. Check the entry before using this history.</p>
+      <p className="mt-2 text-caption text-muted">Only the name, age, sex and bed identify a patient. Check the entry before using this history.</p>
       <div className="mt-2 flex flex-wrap gap-2">
         <button
           type="button"
@@ -325,11 +325,11 @@ function WrongPatientBox({ patientId, runId, quote, source }: { patientId: strin
         >
           It is this patient
         </button>
-        <Link href={`/patients/${patientId}/case-history`} className="rounded-[10px] border border-line px-3 py-1.5 text-[13px] font-medium text-accent">
+        <Link href={`/patients/${patientId}/case-history`} className="rounded-[10px] border border-line px-3 py-1.5 text-footnote font-medium text-accent">
           Review entries ›
         </Link>
       </div>
-      {error && <p className="mt-2 text-[13px] text-orange-700">{error}</p>}
+      {error && <p className="mt-2 text-footnote text-warn-fg">{error}</p>}
     </div>
   );
 }
@@ -344,25 +344,25 @@ function ConflictBox({ patientId, runId, conflict }: { patientId: string; runId:
     fd.set("state", state);
     submit(resolveHistorySlot, fd);
   };
-  const btn = "rounded-[10px] border border-line bg-card px-3 py-1.5 text-[13px] font-medium disabled:opacity-50";
+  const btn = "rounded-[10px] border border-line bg-card px-3 py-1.5 text-footnote font-medium disabled:opacity-50";
   return (
-    <div className="border-t border-line bg-orange-50 px-4 py-3">
-      <p className="text-[14px] font-semibold text-orange-800">Conflicting statements — {conflict.label}</p>
-      <p className="mt-0.5 text-[13px]">{conflict.question}</p>
+    <div className="border-t border-line bg-warn-bg px-4 py-3">
+      <p className="text-subhead font-semibold text-warn-fg">Conflicting statements — {conflict.label}</p>
+      <p className="mt-0.5 text-footnote">{conflict.question}</p>
       <div className="mt-1 flex flex-col gap-1">
         <Quote quote={conflict.first.quote} source={conflict.first.source} />
         <Quote quote={conflict.second.quote} source={conflict.second.source} />
       </div>
-      <p className="mt-2 text-[12px] text-muted">Which is right? Your answer is recorded as yours, beside the quotes.</p>
+      <p className="mt-2 text-caption text-muted">Which is right? Your answer is recorded as yours, beside the quotes.</p>
       <div className="mt-2 flex flex-wrap gap-2">
         <button type="button" disabled={pending} className={btn} onClick={() => pick("positive")}>Present</button>
         <button type="button" disabled={pending} className={btn} onClick={() => pick("negative")}>Explicitly absent</button>
         <button type="button" disabled={pending} className={btn} onClick={() => pick("unasked")}>Not asked</button>
-        <button type="button" disabled={pending} className="px-2 text-[13px] text-muted" onClick={() => pick("dismiss")}>
+        <button type="button" disabled={pending} className="px-2 text-footnote text-muted" onClick={() => pick("dismiss")}>
           Leave as is
         </button>
       </div>
-      {error && <p className="mt-2 text-[13px] text-orange-700">{error}</p>}
+      {error && <p className="mt-2 text-footnote text-warn-fg">{error}</p>}
     </div>
   );
 }
@@ -372,32 +372,32 @@ function GapBands({ bands, unasked, answered, leading, mode }: { bands: BandView
   return (
     <div className="border-t border-line px-4 py-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[14px] font-semibold">Not yet asked</p>
+        <p className="text-subhead font-semibold">Not yet asked</p>
         {statusChip(unasked === 0 ? "Complete" : `${unasked} gap${unasked === 1 ? "" : "s"} · ${answered} answered`, unasked === 0 ? "ok" : "warn")}
       </div>
       {leading.length > 0 && (
-        <p className="mt-1 text-[12px] text-muted">Questions that would help separate {leading.join(" / ")}.</p>
+        <p className="mt-1 text-caption text-muted">Questions that would help separate {leading.join(" / ")}.</p>
       )}
       {nonEmpty.length === 0 && (
-        <p className="mt-2 text-[13px] text-muted">
+        <p className="mt-2 text-footnote text-muted">
           {mode === "ward" ? "Every core question and every red flag has an answer." : "Every question in the tree has an answer."}
         </p>
       )}
       {nonEmpty.map((b) => (
         <div key={b.key} className="mt-3">
-          <p className={"text-[12px] font-semibold uppercase tracking-wide " + (b.key === "red_flag" ? "text-orange-700" : "text-muted")}>
+          <p className={"text-caption font-semibold uppercase tracking-wide " + (b.key === "red_flag" ? "text-warn-fg" : "text-muted")}>
             {b.title}
           </p>
           <ul className="mt-1 flex flex-col gap-1.5">
             {b.gaps.map((g) => (
-              <li key={g.slotId} className="flex gap-2 text-[14px]">
-                <span className={"mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full " + (g.redFlag ? "bg-orange-500" : "bg-orange-300")} aria-hidden />
+              <li key={g.slotId} className="flex gap-2 text-subhead">
+                <span className={"mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full " + (g.redFlag ? "bg-warn-fg" : "bg-warn-fg")} aria-hidden />
                 <span>
                   {g.question}
                   {g.forDifferentials.length > 0 && b.key !== "discriminating" && (
                     <span className="text-muted"> ({g.forDifferentials.join(", ")})</span>
                   )}
-                  {g.teach && <span className="block text-[12px] text-muted">{g.teach}</span>}
+                  {g.teach && <span className="block text-caption text-muted">{g.teach}</span>}
                 </span>
               </li>
             ))}
@@ -413,18 +413,18 @@ function AnsweredList({ items }: { items: AnsweredView[] }) {
   if (items.length === 0) return null;
   return (
     <details className="border-t border-line [&[open]_.hc-chev]:rotate-90">
-      <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-[13px] text-muted active:bg-chip [&::-webkit-details-marker]:hidden">
-        <span className="hc-chev shrink-0 text-[11px] transition-transform">&#9654;</span>
+      <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-footnote text-muted active:bg-chip [&::-webkit-details-marker]:hidden">
+        <span className="hc-chev shrink-0 text-caption2 transition-transform">&#9654;</span>
         Answered ({items.length}) — tap a line for its source
       </summary>
       <ul className="px-4 pb-3">
         {items.map((a) => (
           <li key={a.slotId} className="border-t border-line py-2 first:border-t-0">
             <button type="button" onClick={() => setOpen(open === a.slotId ? null : a.slotId)} className="flex w-full items-start justify-between gap-2 text-left">
-              <span className="text-[14px]">
+              <span className="text-subhead">
                 {a.label}
                 {a.value && (
-                  <span className={a.unconfirmed ? "ml-1 text-orange-700" : "ml-1"}>
+                  <span className={a.unconfirmed ? "ml-1 text-warn-fg" : "ml-1"}>
                     : {a.value}
                     {a.unconfirmed && " (unconfirmed)"}
                   </span>
@@ -434,7 +434,7 @@ function AnsweredList({ items }: { items: AnsweredView[] }) {
             </button>
             {open === a.slotId && (
               <div className="mt-1">
-                {a.quote ? <Quote quote={a.quote.quote} source={a.quote.source} /> : <p className="text-[13px] text-muted">Your own answer — no dictated quote.</p>}
+                {a.quote ? <Quote quote={a.quote.quote} source={a.quote.source} /> : <p className="text-footnote text-muted">Your own answer — no dictated quote.</p>}
               </div>
             )}
           </li>
@@ -458,14 +458,14 @@ function GeneratedHistory({ text }: { text: string }) {
   return (
     <div className="border-t border-line px-4 py-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[14px] font-semibold">History as recorded</p>
-        <button type="button" onClick={copy} className="text-[13px] font-semibold text-accent active:opacity-60">
+        <p className="text-subhead font-semibold">History as recorded</p>
+        <button type="button" onClick={copy} className="text-footnote font-semibold text-accent active:opacity-60">
           {state === "copied" ? "Copied" : "Copy"}
         </button>
       </div>
-      <pre className="mt-2 whitespace-pre-wrap font-sans text-[13px] leading-snug">{text}</pre>
-      {state === "failed" && <p className="mt-1 text-[12px] text-orange-700">Could not copy — select the text and copy it by hand.</p>}
-      <p className="mt-2 text-[12px] text-muted">Only what was dictated, in case-sheet order. &ldquo;Not recorded&rdquo; means not recorded, never absent.</p>
+      <pre className="mt-2 whitespace-pre-wrap font-sans text-footnote leading-snug">{text}</pre>
+      {state === "failed" && <p className="mt-1 text-caption text-warn-fg">Could not copy — select the text and copy it by hand.</p>}
+      <p className="mt-2 text-caption text-muted">Only what was dictated, in case-sheet order. &ldquo;Not recorded&rdquo; means not recorded, never absent.</p>
     </div>
   );
 }

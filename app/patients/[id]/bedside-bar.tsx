@@ -75,7 +75,8 @@ export default function BedsideBar({
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Day 3 post lap chole, afebrile, drain 30 ml serous…"
-          className="w-full rounded-[10px] bg-card px-4 py-3 text-base outline-none focus:border-accent"
+          aria-label="Bedside note"
+          className="field"
         />
         <div className="flex gap-3">
           <button
@@ -84,7 +85,7 @@ export default function BedsideBar({
               setTyping(false);
               setMessage(null);
             }}
-            className="flex-1 ios-group px-4 py-3 text-[15px] text-muted"
+            className="btn btn-secondary flex-1 text-muted"
           >
             Cancel
           </button>
@@ -92,12 +93,12 @@ export default function BedsideBar({
             type="button"
             onClick={save}
             disabled={busy || !text.trim()}
-            className="flex-[2] rounded-xl bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink disabled:opacity-50"
+            className="btn btn-primary flex-[2]"
           >
             {busy ? "Saving…" : "Save note"}
           </button>
         </div>
-        {message && <p className="text-center text-[15px] text-muted">{message}</p>}
+        {message && <p role="status" className="text-center text-subhead text-muted">{message}</p>}
       </div>
     );
   }
@@ -109,7 +110,7 @@ export default function BedsideBar({
         <button
           type="button"
           onClick={() => setTyping(true)}
-          className="self-end text-[13px] text-muted underline underline-offset-4"
+          className="tap self-end text-footnote text-accent"
         >
           Type instead
         </button>
@@ -121,18 +122,17 @@ export default function BedsideBar({
       {missing.length > 0 && (
         <p
           className={
-            recording
-              ? "text-[14px] font-medium text-orange-700"
-              : "text-[13px] text-muted"
+            "line-clamp-2 " +
+            (recording ? "text-subhead font-medium text-warn-fg" : "text-footnote text-muted")
           }
         >
-          <span className={recording ? undefined : "text-orange-700"}>Still to cover:</span>{" "}
+          <span className={recording ? undefined : "text-warn-fg"}>Still to cover:</span>{" "}
           {missing.map((m) => m.item.hint ?? m.item.label).join(" · ")}
         </p>
       )}
       <Recorder patientId={patientId} onBusyChange={onBusyChange} />
       <PhotoButton patientId={patientId} />
-      {message && <p className="text-center text-[15px] text-muted">{message}</p>}
+      {message && <p role="status" className="text-center text-subhead text-muted">{message}</p>}
     </div>
   );
 }

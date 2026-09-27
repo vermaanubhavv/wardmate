@@ -33,11 +33,11 @@ export function statusChip(text: string, tone: "ok" | "warn" | "muted") {
   return (
     <span
       className={
-        "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium " +
+        "shrink-0 rounded-full px-2 py-0.5 text-caption2 font-medium " +
         (tone === "ok"
           ? "bg-accent/10 text-accent"
           : tone === "warn"
-            ? "bg-orange-100 text-orange-700"
+            ? "bg-warn-bg text-warn-fg"
             : "bg-chip text-muted")
       }
     >
@@ -64,11 +64,11 @@ export function SelChip({
       type="button"
       onClick={onClick}
       className={
-        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] transition-colors " +
+        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-footnote transition-colors " +
         (selected
           ? "border-accent bg-accent text-accent-ink"
           : tone === "note"
-            ? "border-orange-300 bg-orange-100 text-orange-700"
+            ? "border-warn-fg/30 bg-warn-bg text-warn-fg"
             : "border-line bg-card text-muted")
       }
     >
@@ -95,7 +95,7 @@ export function OptionRow({
       type="button"
       onClick={onClick}
       className={
-        "flex items-center gap-2.5 rounded-[10px] border px-3.5 py-3 text-left text-[14.5px] " +
+        "flex items-center gap-2.5 rounded-[10px] border px-3.5 py-3 text-left text-subhead " +
         (selected
           ? "border-accent bg-accent text-accent-ink"
           : dashed
@@ -133,9 +133,9 @@ export function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
 }
 
 export const genBtn =
-  "self-start rounded-[10px] border border-line px-3 py-1.5 text-[13px] font-medium text-accent disabled:opacity-50";
+  "self-start rounded-[10px] border border-line px-3 py-1.5 text-footnote font-medium text-accent disabled:opacity-50";
 export const approveBtn =
-  "self-start rounded-[10px] bg-accent px-3 py-1.5 text-[13px] font-semibold text-accent-ink disabled:opacity-50";
+  "self-start rounded-[10px] bg-accent px-3 py-1.5 text-footnote font-semibold text-accent-ink disabled:opacity-50";
 
 // --- dictation + pill helpers, shared by the case-history and progress-note workspaces ------
 
@@ -228,7 +228,7 @@ export function DictateArea({
         rows={rows}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-[10px] border border-line bg-card px-3 py-2 text-[15px] leading-relaxed outline-none focus:border-accent"
+        className="rounded-[10px] border border-line bg-card px-3 py-2 text-subhead leading-relaxed outline-none focus:border-accent"
       />
       <div className="flex items-center gap-2">
         <button
@@ -236,13 +236,13 @@ export function DictateArea({
           onClick={status === "recording" ? () => mediaRef.current?.stop() : start}
           disabled={status === "working"}
           className={
-            "self-start rounded-[10px] px-3 py-1.5 text-[13px] font-medium " +
-            (status === "recording" ? "bg-red-500 text-white" : "border border-line text-accent")
+            "self-start rounded-[10px] px-3 py-1.5 text-footnote font-medium " +
+            (status === "recording" ? "bg-recording text-white" : "border border-line text-accent")
           }
         >
           {status === "recording" ? "■ Stop" : status === "working" ? "Transcribing…" : "🎤 Speak"}
         </button>
-        {error && <span className="text-[12px] text-red-600">{error}</span>}
+        {error && <span className="text-caption text-critical-fg">{error}</span>}
       </div>
     </div>
   );
@@ -252,7 +252,7 @@ export function DictateArea({
 export function UncertainList({ points }: { points: string[] }) {
   if (points.length === 0) return null;
   return (
-    <div className="rounded-[10px] bg-orange-50 p-2.5 text-[13px] text-orange-800">
+    <div className="rounded-[10px] bg-warn-bg p-2.5 text-footnote text-warn-fg">
       <p className="font-medium">The AI could not resolve these — check them:</p>
       <ul className="mt-1 list-disc pl-4">
         {points.map((p, i) => (

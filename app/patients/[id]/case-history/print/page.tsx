@@ -64,8 +64,8 @@ const unconfirmed = (o: Observation) => o.needs_confirmation && !o.confirmed_at;
 const cell = "border border-black/60 px-1 py-0.5";
 
 /** Section heading as a light band — how a printed case sheet separates its sections. */
-const band = "border-b border-black/60 bg-black/[0.08] px-1.5 py-[2px] text-[10.5px] font-bold uppercase tracking-wide";
-const body = "text-[12px] leading-[1.4]";
+const band = "border-b border-black/60 bg-black/[0.08] px-1.5 py-[2px] text-caption2 font-bold uppercase tracking-wide";
+const body = "text-caption leading-[1.4]";
 
 /** Ruled lines filling whatever is left of a box, for writing by hand. Absolutely placed, so the
  *  lines never add to the box's height — they only occupy space the page has already given it.
@@ -108,7 +108,7 @@ function Box({
       style={{ flex: `${grow} 0 auto`, minHeight: `${min}mm` }}
       className={"flex break-inside-avoid flex-col border " + (strong ? "border-black " : "border-black/60 ") + className}
     >
-      <p className={band + (strong ? " border-black text-[11px]" : "")}>{heading}</p>
+      <p className={band + (strong ? " border-black text-caption2" : "")}>{heading}</p>
       <div className={"px-1.5 pt-1 " + body}>{children}</div>
       <Lines />
     </div>
@@ -177,7 +177,7 @@ function LeadBox({ section, table, grow = 1.5, min = 24 }: { section: HistorySec
         </div>
       )}
       {table?.columns && (
-        <table className="my-1 w-full border-collapse text-[11px]">
+        <table className="my-1 w-full border-collapse text-caption2">
           <thead>
             <tr>
               {table.columns.map((c) => (
@@ -359,7 +359,7 @@ export default async function CaseHistoryPrintPage({
   const name = stripPatientHonorific(patient.display_name);
   const chief = byKey.get("chief")!;
   const past = byKey.get("past")!;
-  const sub = "text-[10px] font-semibold uppercase";
+  const sub = "text-caption2 font-semibold uppercase";
   const ageSex = `${patient.age_years != null ? `${patient.age_years} yrs` : "NR"} / ${patient.sex ?? "NR"}`;
 
   return (
@@ -374,11 +374,11 @@ export default async function CaseHistoryPrintPage({
         @media print { html, body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
       `}</style>
       <header className="px-4 pb-3 pt-6 print:hidden">
-        <Link href={`/patients/${id}/case-history`} className="text-[17px] text-accent">
+        <Link href={`/patients/${id}/case-history`} className="text-body text-accent">
           ‹ Case history
         </Link>
         <h1 className="mt-3 ios-large-title">Patient history sheet</h1>
-        <p className="mt-1 text-[15px] text-muted">
+        <p className="mt-1 text-subhead text-muted">
           One A4 sheet: history on the front, examination to sign-off on the back. Choose
           two-sided in your browser&rsquo;s print dialog, or save as PDF.
         </p>
@@ -396,14 +396,14 @@ export default async function CaseHistoryPrintPage({
                 // eslint-disable-next-line @next/next/no-img-element -- ward-uploaded logo via a short-lived signed link.
                 <img src={logoUrl} alt="" className="h-[17mm] w-[17mm] shrink-0 object-contain" />
               ) : (
-                <div className="flex h-[17mm] w-[17mm] shrink-0 items-center justify-center border border-dashed border-black/50 text-center text-[8px] leading-tight text-black/50">
+                <div className="flex h-[17mm] w-[17mm] shrink-0 items-center justify-center border border-dashed border-black/50 text-center text-caption2 leading-tight text-black/50">
                   Hospital logo
                 </div>
               )}
               <div className="flex-1 text-center">
-                {ward?.name && <p className="text-[14px] font-bold">{ward.name}</p>}
-                <p className="text-[10px] uppercase tracking-wide">Department of {pack.label}</p>
-                <p className="mt-1 text-[15px] font-bold uppercase tracking-[0.12em]">Patient history sheet</p>
+                {ward?.name && <p className="text-subhead font-bold">{ward.name}</p>}
+                <p className="text-caption2 uppercase tracking-wide">Department of {pack.label}</p>
+                <p className="mt-1 text-subhead font-bold uppercase tracking-[0.12em]">Patient history sheet</p>
               </div>
               <div className="h-[17mm] w-[17mm] shrink-0" aria-hidden />
             </div>
@@ -421,7 +421,7 @@ export default async function CaseHistoryPrintPage({
                 ["Unit", ward?.name],
               ].map(([k, v]) => (
                 <div key={k} className="border-b border-r border-black/60 px-1 py-0.5">
-                  <p className="text-[8.5px] uppercase text-black/70">{k}</p>
+                  <p className="text-caption2 uppercase text-black/70">{k}</p>
                   <p className="min-h-[1.35em] font-semibold">{v ?? <NR />}</p>
                 </div>
               ))}
@@ -454,7 +454,7 @@ export default async function CaseHistoryPrintPage({
           {/* ---- Back ---- */}
           <FitPage>
             {/* The back is a separate side of paper: it carries who it belongs to. */}
-            <div className="flex flex-none items-baseline justify-between border-b-2 border-black pb-1 text-[11px]">
+            <div className="flex flex-none items-baseline justify-between border-b-2 border-black pb-1 text-caption2">
               <p className="font-bold uppercase tracking-wide">Patient history sheet — examination &amp; management</p>
               <p>
                 <span className="font-semibold">{name}</span> · {ageSex}
@@ -540,7 +540,7 @@ export default async function CaseHistoryPrintPage({
                     </>
                   )}
                   {hiddenReports > 0 && (
-                    <p className="text-[10px] italic">
+                    <p className="text-caption2 italic">
                       {hiddenReports} earlier report(s) not shown — see WardMate.
                     </p>
                   )}
@@ -588,7 +588,7 @@ export default async function CaseHistoryPrintPage({
                   </p>
                 ))}
               </div>
-              <div className="flex h-[22mm] w-[38mm] items-start justify-center border border-black/60 pt-0.5 text-[9px] text-black/60">
+              <div className="flex h-[22mm] w-[38mm] items-start justify-center border border-black/60 pt-0.5 text-caption2 text-black/60">
                 Stamp
               </div>
             </div>

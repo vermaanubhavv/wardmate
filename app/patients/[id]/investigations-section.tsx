@@ -50,7 +50,7 @@ export default function InvestigationsSection({
   if (reports.length === 0) {
     return (
       <section className="px-4 pb-6">
-        <p className="ios-group p-5 text-[15px] text-muted">
+        <p className="ios-group p-5 text-subhead text-muted">
           Nothing sent yet. Photograph a report or say the results and they will be filed here.
         </p>
       </section>
@@ -64,7 +64,7 @@ export default function InvestigationsSection({
         {reports.map((report) => (
           <li key={report.id}>
             <details className="ios-group [&[open]_.inv-chev]:rotate-90">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[15px] active:bg-chip [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-subhead active:bg-chip [&::-webkit-details-marker]:hidden">
                 <span className="min-w-0 truncate">
                   <span className="font-semibold">{report.panel}</span>
                   <span className="ml-1.5 text-muted">({report.dayLabel})</span>
@@ -74,14 +74,14 @@ export default function InvestigationsSection({
                       on the closed line, because that is the state in which it would otherwise
                       be read as confirmed fact. */}
                   {report.needsConfirmation && (
-                    <span className="rounded-full border border-orange-300 bg-orange-50 px-2 py-0.5 text-[12px] font-semibold text-orange-800">
+                    <span className="rounded-full border border-warn-fg/30 bg-warn-bg px-2 py-0.5 text-caption font-semibold text-warn-fg">
                       To confirm
                     </span>
                   )}
-                  <span className="text-[13px] text-muted tabular-nums">
+                  <span className="text-footnote text-muted tabular-nums">
                     {report.values.length}
                   </span>
-                  <span className="inv-chev text-xl font-normal text-muted transition-transform">
+                  <span className="inv-chev text-title3 font-normal text-muted transition-transform">
                     &#8250;
                   </span>
                 </span>
@@ -93,13 +93,13 @@ export default function InvestigationsSection({
 
                   return (
                     <li key={value.id} className="flex items-baseline gap-3 px-4 py-2.5">
-                      <span className="min-w-0 flex-1 text-[15px]">
+                      <span className="min-w-0 flex-1 text-subhead">
                         {reading?.label ?? value.label}
                       </span>
                       <span
                         className={
-                          "shrink-0 text-[15px] tabular-nums " +
-                          (reading?.flag ? "font-semibold text-red-600" : "")
+                          "shrink-0 text-subhead tabular-nums " +
+                          (reading?.flag ? "font-semibold text-critical-fg" : "")
                         }
                       >
                         {value.value_text ?? "—"}
@@ -108,7 +108,7 @@ export default function InvestigationsSection({
                       {/* The colour shows its work, the same way the vitals tiles do — a flag
                           with no stated range is the "trust me" this app refuses. */}
                       {reading?.flag && reading.range && (
-                        <span className="shrink-0 text-[12px] font-medium text-red-600">
+                        <span className="shrink-0 text-caption font-medium text-critical-fg">
                           ({reading.range})
                         </span>
                       )}

@@ -9,8 +9,8 @@ import RegisterButton from "../register-button";
 import { ChevronIcon, PlusIcon } from "../icons";
 import RoundRecorder from "../round-recorder";
 import PatientMenu from "../patients/patient-menu";
-import { signOut } from "../actions";
 import { restorePatient } from "../patients/actions";
+import { signOut } from "../actions";
 import BottomBar from "../bottom-bar";
 import Wordmark from "../wordmark";
 import Mark from "../mark";
@@ -89,11 +89,11 @@ export default async function Home({
     return (
       <main className="mx-auto w-full max-w-md flex-1 px-4 py-10">
         <h1 className="ios-large-title">WardMate</h1>
-        <p className="ios-group mt-4 px-4 py-3 text-[15px] text-accent">
-          {wardError ? `Could not read the database: ${wardError.message}` : "No ward found."}
+        <p role="alert" className="ios-group mt-4 px-4 py-3 text-subhead text-warn-fg">
+          {wardError ? "The ward could not be loaded. Check the connection and try again." : "No ward found."}
         </p>
         <form action={signOut} className="mt-6">
-          <button className="text-[17px] text-accent">Sign out</button>
+          <button className="btn btn-secondary w-full">Sign out</button>
         </form>
       </main>
     );
@@ -103,11 +103,15 @@ export default async function Home({
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
       {/* The navigation bar: brand on the left, the one destructive-ish action on the right,
           both at the size iOS puts them. Translucent, so the list passes under it. */}
+      {/* The navigation bar: the unit's name where iOS puts a title, and the way into the
+          unit's settings where iOS puts the trailing action. Translucent, so the list passes
+          under it. Sign out lives on /unit now — it was one un-confirmed tap away on the
+          screen used most. */}
       <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line/60 bg-background/80 px-4 pb-2.5 top-bar backdrop-blur-xl">
         <Wordmark />
-        <form action={signOut}>
-          <button className="text-[15px] text-accent">Sign out</button>
-        </form>
+        <Link href="/unit" className="tap text-subhead text-accent active:opacity-60">
+          Unit
+        </Link>
       </div>
 
       <header className="px-4 pb-3 pt-4">
@@ -116,7 +120,7 @@ export default async function Home({
             worth of space. Absent entirely when there is no real name to use — see
             getDoctorName. */}
         {(doctor || designation || departmentLabel) && (
-          <p className="text-[14px] text-muted">
+          <p className="text-subhead text-muted">
             {doctor && (
               <>
                 Hello, Dr. <span className="text-foreground">{doctor}</span>
@@ -140,14 +144,14 @@ export default async function Home({
           className="mt-1 flex items-center justify-between gap-3 rounded-[12px] bg-card px-4 py-3 active:opacity-70"
         >
           <div className="min-w-0">
-            <h1 className="ios-large-title truncate text-[22px]">{ward.name}</h1>
-            <p className="mt-0.5 text-[13px] text-muted">
+            <h1 className="ios-large-title truncate text-title2">{ward.name}</h1>
+            <p className="mt-0.5 text-footnote text-muted">
               {patients.length} {patients.length === 1 ? "patient" : "patients"}
             </p>
           </div>
-          <span className="flex shrink-0 items-center gap-1 text-[14px] font-medium text-accent">
-            Switch
-            <ChevronIcon className="h-3.5 w-3.5 rotate-90" />
+          <span className="flex shrink-0 items-center gap-1 text-subhead font-medium text-accent">
+            Settings
+            <ChevronIcon className="h-3.5 w-3.5" />
           </span>
         </Link>
 
@@ -178,7 +182,7 @@ export default async function Home({
             href="/ward?filter=dischargeable"
             icon={<CircleCheckBig className="h-[15px] w-[15px]" strokeWidth={2.3} />}
             value={dischargeableCount}
-            label="Dischargeable"
+            label="Nothing pending"
             tone="good"
             active={filter === "dischargeable"}
           />
@@ -191,16 +195,17 @@ export default async function Home({
           <div className="flex items-center justify-between px-3 pb-2.5">
             <div className="flex items-center gap-1.5">
               <ListChecks className="h-4 w-4 text-accent" strokeWidth={2.2} />
-              <span className="text-[15px] font-semibold">
+              <span className="text-subhead font-semibold">
                 To do{totalOutstanding > 0 ? ` · ${totalOutstanding} outstanding` : ""}
               </span>
             </div>
-            <Link href="/todo" className="shrink-0 text-[13px] font-semibold text-accent">
-              See all ›
+            <Link href="/todo" className="tap flex shrink-0 items-center text-footnote font-semibold text-accent">
+              See all
+              <ChevronIcon className="h-3 w-3" />
             </Link>
           </div>
           {todoPreview.length === 0 ? (
-            <p className="px-3 pb-3 text-[14px] text-muted">Nothing urgent right now.</p>
+            <p className="px-3 pb-3 text-subhead text-muted">Nothing urgent right now.</p>
           ) : (
             <ul className="flex flex-col">
               {todoPreview.map((item) => (
@@ -219,15 +224,15 @@ export default async function Home({
                     aria-hidden
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[14px] leading-snug">{item.text}</p>
-                    <p className="mt-0.5 flex items-center gap-1.5 truncate text-[12px] text-accent">
+                    <p className="truncate text-subhead leading-snug">{item.text}</p>
+                    <p className="mt-0.5 flex items-center gap-1.5 truncate text-caption text-accent">
                       <span className="rounded bg-chip px-1 font-mono tabular-nums text-muted">
                         {item.bed}
                       </span>
                       {stripPatientHonorific(item.patientName)}
                     </p>
                     {item.suggestedBy && (
-                      <p className="mt-1 inline-flex items-center rounded-[5px] bg-warn-bg px-1.5 py-0.5 text-[10.5px] font-semibold text-warn-fg">
+                      <p className="mt-1 inline-flex items-center rounded-[5px] bg-warn-bg px-1.5 py-0.5 text-caption2 font-semibold text-warn-fg">
                         Suggested · {item.suggestedBy}
                       </p>
                     )}
@@ -245,7 +250,7 @@ export default async function Home({
         {dischargedId && (
           <div className="mt-2 flex items-center gap-2.5 rounded-[10px] border-l-[3px] border-accent bg-card px-3 py-2.5">
             <CircleCheckBig className="h-[17px] w-[17px] shrink-0 text-accent" strokeWidth={2.2} />
-            <p className="flex-1 text-[14px]">
+            <p className="flex-1 text-subhead">
               {dischargedPatient.data
                 ? stripPatientHonorific(dischargedPatient.data.display_name)
                 : "Patient"}{" "}
@@ -253,7 +258,7 @@ export default async function Home({
             </p>
             <form action={restorePatient}>
               <input type="hidden" name="patient_id" value={dischargedId} />
-              <button className="shrink-0 text-[14px] font-semibold text-accent">Undo</button>
+              <button className="tap shrink-0 text-subhead font-semibold text-accent">Undo</button>
             </form>
           </div>
         )}
@@ -265,7 +270,7 @@ export default async function Home({
             Formats and Protocols there. */}
         <div className="mt-3 grid grid-cols-2 gap-2">
           <NavTile href="/handover" icon={<SquarePen className="h-[19px] w-[19px]" strokeWidth={2.2} />}>
-            Update
+            Handover
           </NavTile>
           {pendingConfirmCount > 0 && (
             <NavTile href="/confirm" icon={<CircleAlert className="h-[19px] w-[19px]" strokeWidth={2.2} />}>
@@ -277,11 +282,11 @@ export default async function Home({
 
       {/* Bottom padding clears the floating bar so the last patient stays readable. The bar is
           a row of circles now rather than three stacked buttons, so this is much less. */}
-      <div className="flex-1 px-4 pb-32">
+      <div className="flex-1 px-4 pb-[var(--bar-height)]">
         {deleteFailed && (
-          <p className="ios-group mb-4 px-4 py-3 text-[15px] text-orange-700">
+          <p role="alert" className="ios-group mb-4 px-4 py-3 text-subhead text-warn-fg">
             {deleteFailed === "refused"
-              ? "The database could not move this patient to Trash. Run patch 0029_patient_trash.sql in Supabase, then try again."
+              ? "This patient could not be moved to Trash. Ask whoever set up WardMate to finish the database update, then try again."
               : `Could not delete this patient: ${deleteFailed}`}
           </p>
         )}
@@ -290,15 +295,15 @@ export default async function Home({
             {/* The ring, faint — the same mark on the home screen, quiet here rather than
                 an empty box with nothing to look at. */}
             <Mark className="h-10 w-10 opacity-30" />
-            <p className="text-[17px] text-muted">
+            <p className="text-body text-muted">
               No patients on this ward yet.
               <br />
               Add the first one below.
             </p>
           </div>
         ) : visiblePatients.length === 0 ? (
-          <p className="ios-group px-4 py-6 text-center text-[15px] text-muted">
-            Nothing currently flagged.
+          <p className="ios-group px-4 py-6 text-center text-subhead text-muted">
+            {filter === "critical" ? "Nobody is flagged critical." : "Nobody has nothing pending."}
           </p>
         ) : (
           <ul className="ios-group">
@@ -331,7 +336,7 @@ export default async function Home({
             >
               <PlusIcon className="h-6 w-6" />
             </Link>
-            <span className="mt-1.5 text-[12px] text-muted">Add</span>
+            <span className="mt-1.5 text-caption text-muted">Add</span>
           </div>
 
           <RoundRecorder />
@@ -381,8 +386,8 @@ function StatTile({
     >
       <span className={"grid h-[24px] w-[24px] place-items-center rounded-[7px] " + iconWrap}>{icon}</span>
       <span>
-        <span className={"block text-[20px] font-bold leading-none tabular-nums " + valueColor}>{value}</span>
-        <span className={"mt-0.5 block text-[12px] " + labelColor}>{label}</span>
+        <span className={"block text-title3 font-bold leading-none tabular-nums " + valueColor}>{value}</span>
+        <span className={"mt-0.5 block text-caption " + labelColor}>{label}</span>
       </span>
     </Link>
   );
@@ -405,7 +410,7 @@ function NavTile({
       className="flex flex-col items-center gap-1.5 rounded-[10px] bg-card px-2 py-3 text-center text-accent active:opacity-70"
     >
       {icon}
-      <span className="text-[12px] font-medium leading-tight">{children}</span>
+      <span className="text-caption font-medium leading-tight">{children}</span>
     </Link>
   );
 }
@@ -449,18 +454,18 @@ function PatientRow({
         className="flex items-start gap-3 py-2.5 pl-3 pr-16 active:bg-chip"
       >
         {/* Bed leads the row: on rounds you are looking for a bed, not a name. */}
-        <span className="mt-0.5 min-w-[32px] shrink-0 rounded-md bg-chip px-1.5 py-0.5 text-center font-mono text-[13px] tabular-nums">
+        <span className="mt-0.5 min-w-[32px] shrink-0 rounded-md bg-chip px-1.5 py-0.5 text-center font-mono text-footnote tabular-nums">
           {patient.bed}
         </span>
 
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[17px] font-semibold">
+          <span className="block truncate text-body font-semibold">
             {patientName(patient)}
           </span>
           {/* The day count reads with the diagnosis, not apart from it: "POD 3 · lap chole"
               is one clinical thought, and the number means little without what it counts
               from. */}
-          <span className="mt-0.5 block truncate text-[15px] text-muted">
+          <span className="mt-0.5 block truncate text-subhead text-muted">
             <span className="text-foreground tabular-nums">{dayLabel(patient, pack)}</span>
             {procedure && <span className="text-foreground"> {procedure}</span>}
             {" · "}
@@ -487,7 +492,9 @@ function PatientRow({
                 ? { text: `${patient.unconfirmed_count} to confirm`, tone: "warn" as const }
                 : patient.open_task_count > 0
                   ? { text: `${patient.open_task_count} to do`, tone: "plain" as const }
-                  : null;
+                  : dischargeable
+                    ? { text: "Nothing pending", tone: "good" as const }
+                    : null;
 
             return chip && (
               <span className="mt-1.5 block">
@@ -499,9 +506,9 @@ function PatientRow({
       </Link>
 
       {/* Both sit outside the link, at the right, where iOS puts a row's accessories. */}
-      <div className="absolute right-2 top-2 flex items-center gap-0.5">
+      <div className="absolute inset-y-0 right-2 flex items-center gap-0.5">
         <PatientMenu patient={patient} templateChoices={templateChoices} specialty={pack.key} />
-        <ChevronIcon className="h-4 w-4 shrink-0 text-muted/60" />
+        <ChevronIcon className="h-4 w-4 shrink-0 text-muted" aria-hidden />
       </div>
     </li>
   );
@@ -512,17 +519,19 @@ function Badge({
   tone = "plain",
 }: {
   children: React.ReactNode;
-  tone?: "plain" | "warn" | "critical";
+  tone?: "plain" | "warn" | "critical" | "good";
 }) {
   return (
     <span
       className={
-        "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium " +
+        "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-caption font-medium " +
         (tone === "critical"
           ? "bg-critical-bg text-critical-fg"
           : tone === "warn"
             ? "bg-warn-bg text-warn-fg"
-            : "bg-chip text-muted")
+            : tone === "good"
+              ? "bg-good-bg text-good-fg"
+              : "bg-chip text-muted")
       }
     >
       {tone === "critical" && <TriangleAlert className="h-3 w-3" strokeWidth={2.6} />}

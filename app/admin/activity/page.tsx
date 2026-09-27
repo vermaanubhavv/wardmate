@@ -6,8 +6,8 @@ export const dynamic = "force-dynamic";
 const KIND: Record<string, string> = {
   dictation: "bg-blue-100 text-blue-700",
   round: "bg-violet-100 text-violet-700",
-  discharge: "bg-emerald-100 text-emerald-700",
-  unit: "bg-amber-100 text-amber-700",
+  discharge: "bg-good-bg text-good-fg",
+  unit: "bg-warn-bg text-warn-fg",
   member: "bg-neutral-200 text-neutral-600",
   event: "bg-neutral-100 text-neutral-500",
 };
@@ -23,15 +23,15 @@ export default async function AdminActivityPage() {
         {rows.map((r, i) => (
           <div key={i} className="flex items-start gap-2.5 px-4 py-2.5">
             <span
-              className={`mt-0.5 shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+              className={`mt-0.5 shrink-0 rounded-full px-1.5 py-0.5 text-caption2 font-medium ${
                 KIND[r.kind] ?? KIND.event
               }`}
             >
               {r.kind}
             </span>
             <div className="min-w-0 flex-1">
-              <div className="text-[13px]">{r.summary}</div>
-              <div className="text-[11px] text-muted">
+              <div className="text-footnote">{r.summary}</div>
+              <div className="text-caption2 text-muted">
                 {r.actor}
                 {r.ward ? ` · ${r.ward}` : ""} · {ago(r.at)}
               </div>

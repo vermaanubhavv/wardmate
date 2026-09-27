@@ -1,3 +1,4 @@
+import ScreenHeader from "../screen-header";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -13,6 +14,9 @@ import ClaimName from "./claim-name";
 import EsicTemplateToggle from "./esic-template-toggle";
 import { getExpectedMembers } from "@/lib/expected-members";
 import CreateUnitForm from "../onboarding/create-unit-form";
+import { ConfirmSubmit } from "../action-sheet";
+import { signOut } from "../actions";
+import { isCurrentUserAdmin } from "@/lib/admin";
 import { getFormularySize } from "@/lib/formulary";
 import { DESIGNATION_CHOICES } from "@/lib/patients";
 import { ChecklistIcon, DocumentIcon } from "../icons";
@@ -33,9 +37,9 @@ export default async function UnitPage() {
 
   if (error || !ward) {
     return (
-      <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
+      <main className="flex-1 px-4 py-10 max-w-md mx-auto w-full">
         <h1 className="ios-large-title">Unit</h1>
-        <p className="mt-4 ios-group px-4 py-3 text-[15px] text-orange-700">
+        <p className="mt-4 ios-group px-4 py-3 text-subhead text-warn-fg">
           {error ? `Could not read the database: ${error.message}` : "No ward found."}
         </p>
       </main>
@@ -90,6 +94,7 @@ export default async function UnitPage() {
   const isEsicFaridabad = await getWardIsEsicFaridabad(ward.id);
 
   const isOwner = ward.owner_id === user?.id;
+  const isAdmin = await isCurrentUserAdmin();
 
   // Only the owner ever sees this, and only for their own team — see
   // supabase/patches/0031_clinician_access_owner_read.sql. Not a verification, still just
@@ -137,34 +142,25 @@ export default async function UnitPage() {
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
-      <header className="px-6 pt-8 pb-4">
-        <Link href="/ward" className="text-[17px] text-accent">
-          ‹ Ward
-        </Link>
-        <h1 className="mt-3 ios-large-title break-words text-[28px] leading-tight">{ward.name}</h1>
-        <p className="mt-0.5 text-[15px] text-muted">
-          {roster.length} {roster.length === 1 ? "person" : "people"} on this unit
-        </p>
-
-      </header>
+      <ScreenHeader back="/ward" backLabel="Ward" title={ward.name} subtitle={<>{roster.length} {roster.length === 1 ? "person" : "people"} on this unit</>} />
 
       {/* Formats and Protocols moved here from the ward header's nav row — they're
           unit-wide settings, not something reached for on every round, so they belong beside
           the rest of this screen's setup rather than competing for space with To do and Ward
           round on the page opened most. */}
-      <section className="px-6 pb-6">
+      <section className="px-4 pb-6">
         <ul className="ios-group divide-y divide-line">
           <li>
             <Link href="/formats" className="flex items-center gap-3 px-4 py-3 active:bg-chip">
               <DocumentIcon className="h-4 w-4 shrink-0 text-accent" />
-              <span className="flex-1 text-[15px]">Formats</span>
+              <span className="flex-1 text-subhead">Formats</span>
             </Link>
           </li>
           {isProtocolPublisher && (
             <li>
               <Link href="/protocols" className="flex items-center gap-3 px-4 py-3 active:bg-chip">
                 <ChecklistIcon className="h-4 w-4 shrink-0 text-accent" />
-                <span className="flex-1 text-[15px]">Protocols</span>
+                <span className="flex-1 text-subhead">Protocols</span>
               </Link>
             </li>
           )}
@@ -174,7 +170,7 @@ export default async function UnitPage() {
           <li>
             <Link href="/prepare-discharge/new" className="flex items-center gap-3 px-4 py-3 active:bg-chip">
               <DocumentIcon className="h-4 w-4 shrink-0 text-accent" />
-              <span className="flex-1 text-[15px]">One-off discharge summary</span>
+              <span className="flex-1 text-subhead">One-off discharge summary</span>
             </Link>
           </li>
           {/* Who looked at which patient. Owner-only, and enforced as such at the database —
@@ -183,7 +179,7 @@ export default async function UnitPage() {
             <li>
               <Link href="/unit/access-log" className="flex items-center gap-3 px-4 py-3 active:bg-chip">
                 <DocumentIcon className="h-4 w-4 shrink-0 text-accent" />
-                <span className="flex-1 text-[15px]">Access log</span>
+                <span className="flex-1 text-subhead">Access log</span>
               </Link>
             </li>
           )}
@@ -195,10 +191,10 @@ export default async function UnitPage() {
           they set one. Picking it off the unit's own list is one tap instead of typing. It
           stops rendering the moment a name exists. */}
       {!profile.display_name && unclaimed.length > 0 && (
-        <section className="px-6 pb-6">
-          <p className="mb-2 text-[15px] text-muted">Which one are you?</p>
+        <section className="px-4 pb-6">
+          <p className="ios-group-header mb-2 px-4">Which one are you?</p>
           <ClaimName options={unclaimed} />
-          <p className="mt-2 text-[13px] leading-relaxed text-muted">
+          <p className="mt-2 text-footnote leading-relaxed text-muted">
             Tap your name and the unit sees it against everything you record. Not on the list?
             Type your name below instead.
           </p>
@@ -207,27 +203,27 @@ export default async function UnitPage() {
 
       {/* First, because it is the only section on this screen about the person reading it.
           What is set here is what the landing page greets you with. */}
-      <section className="px-6 pb-6">
-        <p className="mb-2 text-[15px] text-muted">You</p>
+      <section className="px-4 pb-6">
+        <p className="ios-group-header mb-2 px-4">You</p>
         <form action={saveProfile} className="ios-group flex flex-col gap-3 p-4">
           <label className="flex flex-col gap-1.5">
-            <span className="text-[13px] text-muted">Name</span>
+            <span className="text-footnote text-muted">Name</span>
             <input
               name="display_name"
               defaultValue={profile.display_name ?? ""}
               autoCapitalize="words"
               placeholder="As your unit says it"
-              className="w-full rounded-[10px] border border-line bg-card px-3 py-2.5 text-[17px] outline-none focus:border-accent"
+              className="field"
             />
           </label>
 
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-1.5">
-              <span className="text-[13px] text-muted">Designation</span>
+              <span className="text-footnote text-muted">Designation</span>
               <select
                 name="designation"
                 defaultValue={profile.designation ?? ""}
-                className="h-12 w-full rounded-[10px] border border-line bg-card px-3 text-[17px] outline-none focus:border-accent"
+                className="field"
               >
                 <option value="">—</option>
                 {DESIGNATION_CHOICES.map((d) => (
@@ -238,51 +234,49 @@ export default async function UnitPage() {
               </select>
             </label>
             <label className="flex flex-[2] flex-col gap-1.5">
-              <span className="text-[13px] text-muted">Department</span>
+              <span className="text-footnote text-muted">Department</span>
               <input
                 name="department"
                 defaultValue={profile.department ?? ""}
                 placeholder="General Surgery"
-                className="h-12 w-full rounded-[10px] border border-line bg-card px-3 text-[17px] outline-none focus:border-accent"
+                className="field"
               />
             </label>
           </div>
 
-          <button className="rounded-[10px] bg-accent px-4 py-2.5 text-[15px] font-semibold text-accent-ink">
-            Save
-          </button>
+          <button className="btn btn-primary">Save</button>
         </form>
       </section>
 
-      <section className="px-6 pb-6">
-        <p className="mb-2 text-[15px] text-muted">Code for this unit</p>
+      <section className="px-4 pb-6">
+        <p className="ios-group-header mb-2 px-4">Code for this unit</p>
         <CodeBox code={ward.join_code} />
         <InviteShare unitName={ward.name} code={ward.join_code} />
-        <p className="mt-2 text-[13px] text-muted leading-relaxed">
+        <p className="mt-2 text-footnote text-muted leading-relaxed">
           Anyone entering this code joins this unit and sees the same patient list. Everything
           they record is theirs by name. Give it only to the team.
         </p>
       </section>
 
-      <section className="px-6 pb-6">
-        <p className="mb-2 text-[15px] text-muted">On this unit</p>
+      <section className="px-4 pb-6">
+        <p className="ios-group-header mb-2 px-4">On this unit</p>
         <ul className="ios-group divide-y divide-line">
           {roster.map((m) => {
             const attested = attestations.get(m.user_id);
             return (
               <li key={m.user_id} className="px-4 py-3">
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="truncate text-sm">
+                  <span className="truncate text-subhead">
                     {m.display_name || "Doctor"}
                     {m.user_id === user?.id && <span className="text-muted"> · you</span>}
                   </span>
-                  <span className="shrink-0 text-[13px] text-muted">{m.role}</span>
+                  <span className="shrink-0 text-footnote text-muted">{m.role}</span>
                 </div>
                 {/* Owner-only, and self-attested rather than checked against anything — see
                     supabase/patches/0031_clinician_access_owner_read.sql. Shown as what it is:
                     what this person typed about themselves, not a credential this app confirmed. */}
                 {attested && (
-                  <p className="mt-0.5 truncate text-[13px] text-muted">
+                  <p className="mt-0.5 truncate text-footnote text-muted">
                     {attested.designation} · {attested.hospital_name} ·{" "}
                     <span className="font-mono">{attested.registration_number}</span>
                   </p>
@@ -298,21 +292,28 @@ export default async function UnitPage() {
           "Which one are you?". Names are no longer added from here — an existing list can only
           be pared down. Owner only. */}
       {isOwner && !rosterMissing && expected.length > 0 && (
-        <section className="px-6 pb-6">
-          <p className="mb-2 text-[15px] text-muted">Expected on this unit</p>
+        <section className="px-4 pb-6">
+          <p className="ios-group-header mb-2 px-4">Expected on this unit</p>
           <ul className="ios-group divide-y divide-line">
             {expected.map((person) => (
               <li key={person.id} className="flex items-baseline gap-3 px-4 py-3">
-                <span className="flex-1 truncate text-[15px]">
+                <span className="flex-1 truncate text-subhead">
                   {person.full_name}
                   {person.designation && <span className="text-muted"> · {person.designation}</span>}
                 </span>
                 {person.claimed_by ? (
-                  <span className="shrink-0 text-[13px] text-muted">joined</span>
+                  <span className="shrink-0 text-footnote text-muted">joined</span>
                 ) : (
                   <form action={removeExpectedMember} className="shrink-0">
                     <input type="hidden" name="id" value={person.id} />
-                    <button className="text-[13px] text-red-600">Remove</button>
+                    <ConfirmSubmit
+                      title={`Remove ${person.full_name} from the expected list?`}
+                      message="They can still join with the unit code; their name just stops being offered."
+                      action="Remove"
+                      className="tap text-footnote text-critical-fg"
+                    >
+                      Remove
+                    </ConfirmSubmit>
                   </form>
                 )}
               </li>
@@ -324,8 +325,8 @@ export default async function UnitPage() {
       {/* Only the owner may rename — the policy on wards says so, and offering the box to
           everyone else would be a control that silently does nothing. */}
       {isOwner && (
-        <section className="px-6 pb-6">
-          <p className="mb-2 text-[15px] text-muted">Name of this unit</p>
+        <section className="px-4 pb-6">
+          <p className="ios-group-header mb-2 px-4">Name of this unit</p>
           <form action={renameWard} className="flex gap-2">
             <input type="hidden" name="ward_id" value={ward.id} />
             <input
@@ -333,21 +334,19 @@ export default async function UnitPage() {
               defaultValue={ward.name}
               maxLength={60}
               autoCapitalize="words"
-              className="min-w-0 flex-1 ios-group px-4 py-3 text-base outline-none focus:border-accent"
+              className="field min-w-0 flex-1"
             />
-            <button className="shrink-0 ios-group px-4 py-3 text-[17px] font-medium">
-              Rename
-            </button>
+            <button className="btn btn-secondary shrink-0">Rename</button>
           </form>
-          <p className="mt-2 text-[13px] text-muted">Everyone on the unit sees this name.</p>
+          <p className="mt-2 text-footnote text-muted">Everyone on the unit sees this name.</p>
         </section>
       )}
 
       {/* A second, third and fourth unit of the same department write the same documents on the
           same hospital's paper. Only offered when there IS another unit to copy from. */}
       {isOwner && myWards.length > 1 && (
-        <section className="px-6 pb-6">
-          <p className="mb-2 text-[15px] text-muted">Copy setup from another unit</p>
+        <section className="px-4 pb-6">
+          <p className="ios-group-header mb-2 px-4">Copy setup from another unit</p>
           <CopySetup
             wardId={ward.id}
             options={myWards.filter((w) => w.id !== ward.id).map((w) => ({ id: w.id, name: w.name }))}
@@ -359,10 +358,10 @@ export default async function UnitPage() {
           exact wording the prescribing system lists it as. Owner-only: importing replaces the
           whole list for everyone on the unit. */}
       {isOwner && (
-        <section className="px-6 pb-6">
-          <p className="mb-2 text-[15px] text-muted">Hospital formulary</p>
+        <section className="px-4 pb-6">
+          <p className="ios-group-header mb-2 px-4">Hospital formulary</p>
           <div className="ios-group p-4">
-            <p className="text-[15px]">
+            <p className="text-subhead">
               {formularySize > 0 ? (
                 <>
                   <span className="font-semibold tabular-nums">{formularySize}</span> medicines
@@ -372,17 +371,17 @@ export default async function UnitPage() {
                 "Not imported yet."
               )}
             </p>
-            <p className="mt-2 text-[13px] leading-relaxed text-muted">
+            <p className="mt-2 text-footnote leading-relaxed text-muted">
               Lets the discharge summary print each drug under the hospital system&rsquo;s own
               name for it, so it can be typed across exactly. Nothing is matched automatically —
               you confirm which entry each drug is, once, and it is remembered.
             </p>
 
             <details className="mt-3">
-              <summary className="cursor-pointer text-[13px] text-accent">
+              <summary className="cursor-pointer text-footnote text-accent">
                 How to get the list
               </summary>
-              <ol className="mt-2 list-decimal space-y-1 pl-5 text-[13px] leading-relaxed text-muted">
+              <ol className="mt-2 list-decimal space-y-1 pl-5 text-footnote leading-relaxed text-muted">
                 <li>Open a patient&rsquo;s prescription page in the hospital system.</li>
                 <li>Click <span className="font-medium">Add</span> under Medications so the drug list opens.</li>
                 <li>In that window press <span className="font-mono">⌥⌘I</span>, open the Console tab.</li>
@@ -394,7 +393,7 @@ export default async function UnitPage() {
 
             <FormularyImport wardId={ward.id} formularySize={formularySize} />
             {formularySize > 0 && (
-              <p className="mt-2 text-[13px] text-muted">
+              <p className="mt-2 text-footnote text-muted">
                 Re-importing refreshes the drug list. Drugs you have already linked stay linked.
               </p>
             )}
@@ -403,8 +402,8 @@ export default async function UnitPage() {
       )}
 
       {isOwner && (
-        <section className="px-6 pb-6">
-          <p className="mb-2 text-[15px] text-muted">Consultant in charge</p>
+        <section className="px-4 pb-6">
+          <p className="ios-group-header mb-2 px-4">Consultant in charge</p>
           <form action={saveConsultant} className="flex gap-2">
             <input type="hidden" name="ward_id" value={ward.id} />
             <input
@@ -413,11 +412,11 @@ export default async function UnitPage() {
               maxLength={120}
               autoCapitalize="words"
               placeholder="e.g. Dr. Neeraj"
-              className="min-w-0 flex-1 ios-group px-4 py-3 text-base outline-none focus:border-accent"
+              className="field min-w-0 flex-1"
             />
-            <button className="shrink-0 ios-group px-4 py-3 text-[17px] font-medium">Save</button>
+            <button className="btn btn-secondary shrink-0">Save</button>
           </form>
-          <p className="mt-2 text-[13px] text-muted">
+          <p className="mt-2 text-footnote text-muted">
             Fills in the consultant&rsquo;s name on every discharge summary this unit writes. It
             can still be changed on an individual summary.
           </p>
@@ -425,8 +424,8 @@ export default async function UnitPage() {
       )}
 
       {isOwner && (
-        <section className="px-6 pb-6">
-          <p className="mb-2 text-[15px] text-muted">Discharge summary heading</p>
+        <section className="px-4 pb-6">
+          <p className="ios-group-header mb-2 px-4">Discharge summary heading</p>
           <form action={saveLetterhead}>
             <input type="hidden" name="ward_id" value={ward.id} />
             <textarea
@@ -434,24 +433,22 @@ export default async function UnitPage() {
               rows={7}
               defaultValue={ward.letterhead ?? ""}
               placeholder={"E.S.I.C. MEDICAL COLLEGE & HOSPITAL\nNH-3, N.I.T. FARIDABAD, HARYANA\nDEPARTMENT OF GENERAL SURGERY\nUNIT-II"}
-              className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-[15px] leading-relaxed outline-none focus:border-accent"
+              className="field text-subhead leading-relaxed"
             />
-            <button className="mt-2 w-full rounded-[10px] bg-card px-4 py-3 text-[17px] font-medium text-accent">
-              Save heading
-            </button>
+            <button className="btn btn-secondary mt-2 w-full">Save heading</button>
           </form>
-          <p className="mt-2 text-[13px] text-muted">
+          <p className="mt-2 text-footnote text-muted">
             Printed at the top of every discharge summary, exactly as typed.
           </p>
         </section>
       )}
 
       {isOwner && (
-        <section className="px-6 pb-6">
+        <section className="px-4 pb-6">
           <div className="flex items-center justify-between ios-group px-4 py-3">
             <div className="pr-4">
-              <p className="text-[15px]">ESIC Medical College Faridabad</p>
-              <p className="mt-0.5 text-[13px] text-muted">
+              <p className="text-subhead">ESIC Medical College Faridabad</p>
+              <p className="mt-0.5 text-footnote text-muted">
                 {isEsicFaridabad
                   ? "On — today’s note prints on the pilot’s own sheet."
                   : "Off — today’s note prints the generic SOAP layout."}
@@ -459,7 +456,7 @@ export default async function UnitPage() {
             </div>
             <EsicTemplateToggle wardId={ward.id} initial={isEsicFaridabad} />
           </div>
-          <p className="mt-2 text-[13px] text-muted">
+          <p className="mt-2 text-footnote text-muted">
             Which printable layout Today&rsquo;s note uses. Leave this on for the ESIC Faridabad
             pilot&rsquo;s own sheet; switch it off for any other hospital&rsquo;s unit, which
             gets a generic Subjective / Objective / Assessment / Plan sheet instead.
@@ -467,18 +464,8 @@ export default async function UnitPage() {
         </section>
       )}
 
-      <section className="px-6 pb-6">
-        <Link
-          href="/protocols"
-          className="flex items-center justify-between rounded-[10px] bg-card px-4 py-3 text-[15px]"
-        >
-          <span>Protocols</span>
-          <span className="text-muted">Company guidance ›</span>
-        </Link>
-      </section>
-
-      <section className="px-6 pb-6">
-        <p className="mb-2 text-[15px] text-muted">Join another unit</p>
+      <section className="px-4 pb-6">
+        <p className="ios-group-header mb-2 px-4">Join another unit</p>
         <JoinForm />
       </section>
 
@@ -486,10 +473,10 @@ export default async function UnitPage() {
           moment you have one — so a doctor covering a second unit, or moving to one at the end
           of a rotation, had no way to start it. The database never restricted this to one; only
           the way in was missing. Creating switches you to the new unit, as it does at first run. */}
-      <section className="px-6 pb-6">
-        <p className="mb-2 text-[15px] text-muted">Create another unit</p>
+      <section className="px-4 pb-6">
+        <p className="ios-group-header mb-2 px-4">Create another unit</p>
         <CreateUnitForm specialties={specialtyChoices()} />
-        <p className="mt-2 text-[13px] text-muted leading-relaxed">
+        <p className="mt-2 text-footnote text-muted leading-relaxed">
           A new unit starts empty, with its own code and its own patients. You will be its owner.
         </p>
       </section>
@@ -498,8 +485,8 @@ export default async function UnitPage() {
           where you find out which unit you are looking at, and it appearing only after there
           are two hid the very thing the create box above changes. */}
       {myWards.length > 0 && (
-        <section className="px-6 pb-6">
-          <p className="mb-2 text-[15px] text-muted">Your units</p>
+        <section className="px-4 pb-6">
+          <p className="ios-group-header mb-2 px-4">Your units</p>
           <ul className="flex flex-col gap-2">
             {myWards.map((w) => (
               <li key={w.id}>
@@ -507,7 +494,7 @@ export default async function UnitPage() {
                   <input type="hidden" name="ward_id" value={w.id} />
                   <button
                     className={
-                      "w-full rounded-[10px] border px-4 py-3 text-left text-sm " +
+                      "w-full rounded-[10px] border px-4 py-3 text-left text-subhead " +
                       (w.id === ward.id
                         ? "border-accent text-accent"
                         : "border-line text-foreground")
@@ -524,14 +511,19 @@ export default async function UnitPage() {
       )}
 
       {!isOwner && (
-        <section className="px-6 pb-6">
+        <section className="px-4 pb-6">
           <form action={leaveWard}>
             <input type="hidden" name="ward_id" value={ward.id} />
-            <button className="w-full rounded-[10px] bg-card px-4 py-3 text-sm text-red-600">
+            <ConfirmSubmit
+              title="Leave this unit?"
+              message="The patients stay with the unit. You stop seeing them until someone gives you the code again."
+              action="Leave unit"
+              className="btn btn-destructive w-full"
+            >
               Leave this unit
-            </button>
+            </ConfirmSubmit>
           </form>
-          <p className="mt-2 text-[13px] text-muted">
+          <p className="mt-2 text-footnote text-muted">
             The patients stay. You simply stop seeing them.
           </p>
         </section>
@@ -542,10 +534,10 @@ export default async function UnitPage() {
           it — moved here from the ward page's own header for the same reason Formats and
           Protocols were: not something reached for on every round. */}
       {Boolean(dischargedCount) && (
-        <section className="px-6 pb-3">
+        <section className="px-4 pb-3">
           <Link
             href="/unit/discharged"
-            className="flex items-center justify-between rounded-[10px] bg-card px-4 py-3 text-[15px]"
+            className="flex items-center justify-between rounded-[10px] bg-card px-4 py-3 text-subhead"
           >
             <span>Discharged</span>
             <span className="text-muted">
@@ -555,10 +547,10 @@ export default async function UnitPage() {
         </section>
       )}
       {Boolean(trashCount) && (
-        <section className="px-6 pb-16">
+        <section className="px-4 pb-6">
           <Link
             href="/unit/trash"
-            className="flex items-center justify-between rounded-[10px] bg-card px-4 py-3 text-[15px]"
+            className="flex items-center justify-between rounded-[10px] bg-card px-4 py-3 text-subhead"
           >
             <span>Trash</span>
             <span className="text-muted">
@@ -567,6 +559,24 @@ export default async function UnitPage() {
           </Link>
         </section>
       )}
+      <section className="px-4 pb-6">
+        {isAdmin && (
+          <Link href="/admin" className="ios-group mb-2 flex items-center justify-between px-4 py-3 text-subhead active:bg-chip">
+            <span>Admin console</span>
+            <span className="text-muted">adoption, activity, friction</span>
+          </Link>
+        )}
+        <form action={signOut}>
+          <ConfirmSubmit
+            title="Sign out of WardMate?"
+            message="Anything recorded on this phone that has not been sent yet stays queued until you sign in again."
+            action="Sign out"
+            className="btn btn-destructive w-full"
+          >
+            Sign out
+          </ConfirmSubmit>
+        </form>
+      </section>
     </div>
   );
 }

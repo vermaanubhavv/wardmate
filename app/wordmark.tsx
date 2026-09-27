@@ -12,7 +12,7 @@ export default function Wordmark({ spinning = false }: { spinning?: boolean }) {
   return (
     <div className="flex items-center gap-1.5">
       <Mark className="h-6 w-6 shrink-0" spinning={spinning} />
-      <span className="text-[15px] font-semibold tracking-[-0.02em]">
+      <span className="text-subhead font-semibold tracking-[-0.02em]">
         ward<span className="text-accent">mate</span>
       </span>
     </div>

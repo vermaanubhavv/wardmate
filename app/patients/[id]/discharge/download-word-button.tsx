@@ -6,7 +6,7 @@ export default function DownloadWordButton({ patientId }: { patientId: string })
   return (
     <a
       href={`/api/patients/${patientId}/discharge-docx`}
-      className="w-full rounded-xl bg-card px-4 py-3 text-center text-[17px] font-semibold text-accent active:opacity-70 print:hidden"
+      className="w-full rounded-xl bg-card px-4 py-3 text-center text-body font-semibold text-accent active:opacity-70 print:hidden"
     >
       Download as Word
     </a>

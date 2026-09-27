@@ -5,7 +5,7 @@ export default function ReferenceList({ references }: { references: Reference[] 
   return (
     <section className="px-4 pb-8">
       <p className="ios-group-header mb-2 px-4">Sources</p>
-      <ol className="ios-group list-decimal px-4 py-3 pl-9 text-[13px] leading-snug text-muted">
+      <ol className="ios-group list-decimal px-4 py-3 pl-9 text-footnote leading-snug text-muted">
         {references.map((r, i) => (
           <li key={i} className="py-1">
             {r.title}. <span className="italic">{r.source}</span>

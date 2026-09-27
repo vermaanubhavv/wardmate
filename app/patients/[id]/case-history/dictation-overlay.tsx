@@ -204,7 +204,7 @@ export default function DictationOverlay({
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
       <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
-        <span className="text-[13px] text-muted">
+        <span className="text-footnote text-muted">
           {state === "connecting" && "Starting…"}
           {state === "listening" && "Listening — speak in any order"}
           {state === "sorting" && "Sorting that into a card…"}
@@ -214,7 +214,7 @@ export default function DictationOverlay({
         <button
           type="button"
           onClick={() => void finish()}
-          className="rounded-[10px] bg-accent px-4 py-2 text-[15px] font-semibold text-accent-ink"
+          className="rounded-[10px] bg-accent px-4 py-2 text-subhead font-semibold text-accent-ink"
         >
           Done
         </button>
@@ -226,15 +226,15 @@ export default function DictationOverlay({
           <span
             className={
               "relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full " +
-              (listening ? "bg-red-500 text-white" : "bg-chip text-muted")
+              (listening ? "bg-recording text-white" : "bg-chip text-muted")
             }
           >
             {listening && (
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-critical-dot opacity-60" />
             )}
             <MicIcon className="relative h-5 w-5" />
           </span>
-          <p className="min-h-[2.5rem] flex-1 text-[15px] leading-snug">
+          <p className="min-h-[2.5rem] flex-1 text-subhead leading-snug">
             <span className="text-black">{bufText}</span>{" "}
             <span className="text-muted">{partial}</span>
             {!bufText && !partial && (
@@ -246,7 +246,7 @@ export default function DictationOverlay({
         </div>
 
         {message && (
-          <p className="mt-3 rounded-[10px] bg-chip px-3 py-2 text-[13px] text-muted">
+          <p className="mt-3 rounded-[10px] bg-chip px-3 py-2 text-footnote text-muted">
             {message}
             {state === "error" && " The Speak button on each card still works."}
           </p>
@@ -261,7 +261,7 @@ export default function DictationOverlay({
               <li
                 key={row.key}
                 className={
-                  "flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-[15px] " +
+                  "flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-subhead " +
                   (now ? "bg-accent/10" : "bg-card")
                 }
               >
@@ -282,12 +282,12 @@ export default function DictationOverlay({
 
         {heard.length > 0 && (
           <div className="mt-5">
-            <p className="text-[13px] font-semibold text-muted">
+            <p className="text-footnote font-semibold text-muted">
               Spoken — check these on the cards after you finish
             </p>
             <ul className="mt-2 flex flex-col gap-1.5">
               {heard.map((h, i) => (
-                <li key={i} className="rounded-[10px] bg-chip px-3 py-2 text-[13px]">
+                <li key={i} className="rounded-[10px] bg-chip px-3 py-2 text-footnote">
                   <span className="font-medium capitalize">{h.section}: </span>
                   {h.text}
                 </li>
@@ -301,7 +301,7 @@ export default function DictationOverlay({
         <button
           type="button"
           onClick={() => void finish()}
-          className="flex w-full items-center justify-center gap-2 rounded-[10px] border border-line py-3 text-[15px] font-medium text-accent"
+          className="flex w-full items-center justify-center gap-2 rounded-[10px] border border-line py-3 text-subhead font-medium text-accent"
         >
           <StopIcon className="h-4 w-4" />
           Stop and review the cards

@@ -1,5 +1,6 @@
 "use client";
 
+import { ConfirmSubmit } from "../../action-sheet";
 import Link from "next/link";
 import { useState } from "react";
 import { mergeLabelValue } from "@/lib/patients";
@@ -171,15 +172,15 @@ export default function EntryCard({
             : "flex cursor-pointer list-none items-baseline gap-2 px-4 py-2.5 active:bg-chip [&::-webkit-details-marker]:hidden"
         }
       >
-        <span className="chev shrink-0 text-[11px] text-muted transition-transform">▶</span>
-        <span className="shrink-0 text-[13px] tabular-nums text-muted">{time}</span>
-        <span className="min-w-0 flex-1 truncate text-[13px] text-muted">{gist}</span>
+        <span className="chev shrink-0 text-caption2 text-muted transition-transform">▶</span>
+        <span className="shrink-0 text-footnote tabular-nums text-muted">{time}</span>
+        <span className="min-w-0 flex-1 truncate text-footnote text-muted">{gist}</span>
       </summary>
 
       <div className={embedded ? "px-4 pb-3 pt-3" : "px-4 pb-3"}>
-        {embedded && <p className="mb-1 text-[11px] uppercase tracking-wide text-muted">{time}</p>}
+        {embedded && <p className="mb-1 text-caption2 uppercase tracking-wide text-muted">{time}</p>}
         {values.length === 0 ? (
-          <p className="text-[15px] text-muted">
+          <p className="text-subhead text-muted">
             {extractionError
               ? "Nothing could be structured from this — the words are under the i."
               : "Nothing clinical was found in this."}
@@ -187,26 +188,26 @@ export default function EntryCard({
         ) : (
           <>
             {context.length > 0 && (
-              <p className="text-[17px] font-semibold leading-snug">
+              <p className="text-body font-semibold leading-snug">
                 <Phrases values={context} withLabel={false} onEdit={openEditor} interactive={correcting} />
               </p>
             )}
 
             {progress.length > 0 && (
-              <p className={"text-[17px] leading-snug " + (context.length > 0 ? "mt-1" : "")}>
+              <p className={"text-body leading-snug " + (context.length > 0 ? "mt-1" : "")}>
                 <Phrases values={progress} withLabel onEdit={openEditor} interactive={correcting} />
               </p>
             )}
 
             {plans.length > 0 && (
               <div className="mt-2">
-                <p className="text-[12px] font-semibold uppercase tracking-wide text-accent">
+                <p className="text-caption font-semibold uppercase tracking-wide text-accent">
                   Plan
                 </p>
                 {/* One line each, not run together: these are separate jobs, ticked off at
                     separate moments, and one may happen without the other. */}
                 {plans.map((v) => (
-                  <p key={v.id} className="text-[17px] leading-snug">
+                  <p key={v.id} className="text-body leading-snug">
                     <PhraseButton value={v} withLabel={false} onEdit={openEditor} interactive={correcting} />
                   </p>
                 ))}
@@ -219,7 +220,7 @@ export default function EntryCard({
                   <Link
                     key={p.id}
                     href={`/protocols#${p.id}`}
-                    className="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-1 text-[12px] font-medium text-accent"
+                    className="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-1 text-caption font-medium text-accent"
                   >
                     Protocol: {p.title} ›
                   </Link>
@@ -249,19 +250,19 @@ export default function EntryCard({
             <input type="hidden" name="observation_id" value={editing.id} />
             <input type="hidden" name="patient_id" value={patientId} />
             <div className="flex items-center gap-2">
-              <span className="shrink-0 text-[13px] text-muted">{editing.label}</span>
+              <span className="shrink-0 text-footnote text-muted">{editing.label}</span>
               <input
                 name="value_text"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 autoFocus
-                className="min-w-0 flex-1 rounded-md border border-line bg-card px-2 py-1 text-[17px] outline-none focus:border-accent"
+                className="min-w-0 flex-1 rounded-md border border-line bg-card px-2 py-1 text-body outline-none focus:border-accent"
               />
-              <button className="shrink-0 text-[15px] font-medium text-accent">Save</button>
+              <button className="shrink-0 text-subhead font-medium text-accent">Save</button>
               <button
                 type="button"
                 onClick={() => setEditingValue(null)}
-                className="shrink-0 text-[15px] text-muted"
+                className="shrink-0 text-subhead text-muted"
               >
                 Cancel
               </button>
@@ -278,7 +279,7 @@ export default function EntryCard({
           aria-label="What was said or photographed"
           aria-expanded={showEvidence}
           className={
-            "grid h-7 w-7 shrink-0 place-items-center rounded-full border text-[13px] font-serif italic " +
+            "grid h-11 w-11 -m-2 shrink-0 place-items-center rounded-full text-footnote font-serif italic [&>span]:grid [&>span]:h-7 [&>span]:w-7 [&>span]:place-items-center [&>span]:rounded-full [&>span]:border " +
             (showEvidence
               ? "border-accent bg-accent text-accent-ink"
               : "border-muted/40 text-muted")
@@ -300,7 +301,7 @@ export default function EntryCard({
             aria-pressed={correcting}
             aria-label="Correct a value"
             className={
-              "grid h-7 w-7 shrink-0 place-items-center rounded-full border " +
+              "grid h-11 w-11 -m-2 shrink-0 place-items-center rounded-full " +
               (correcting
                 ? "border-accent bg-accent text-accent-ink"
                 : "border-muted/40 text-muted")
@@ -311,12 +312,12 @@ export default function EntryCard({
         )}
 
         {accepted ? (
-          <span className="text-[13px] text-muted">Accepted{edited && " · corrected"}</span>
+          <span className="text-footnote text-muted">Accepted{edited && " · corrected"}</span>
         ) : (
           <form action={acceptEntry}>
             <input type="hidden" name="entry_id" value={entryId} />
             <input type="hidden" name="patient_id" value={patientId} />
-            <button className="rounded-full bg-accent px-3 py-1 text-[13px] font-semibold text-accent-ink">
+            <button className="min-h-9 rounded-full bg-accent px-3 text-footnote font-semibold text-accent-ink">
               Accept
             </button>
           </form>
@@ -325,26 +326,20 @@ export default function EntryCard({
         <form action={deleteEntry} className="ml-auto">
           <input type="hidden" name="entry_id" value={entryId} />
           <input type="hidden" name="patient_id" value={patientId} />
-          <button
-            onClick={(e) => {
-              if (
-                !confirm(
-                  "Delete this recording?\n\nEverything it produced goes with it. This cannot be undone."
-                )
-              ) {
-                e.preventDefault();
-              }
-            }}
-            className="px-2 text-[13px] text-accent"
+          <ConfirmSubmit
+            title="Delete this recording?"
+            message="Everything it produced goes with it. This cannot be undone."
+            action="Delete recording"
+            className="min-h-11 px-2 text-footnote text-critical-fg"
           >
             Delete
-          </button>
+          </ConfirmSubmit>
         </form>
       </div>
 
       {showEvidence && (
         <div className="ios-row bg-chip/40 px-4 py-3">
-          <p className="text-[13px] font-medium text-muted">What was recorded</p>
+          <p className="text-footnote font-medium text-muted">What was recorded</p>
 
           {photoUrl && (
             <a href={photoUrl} target="_blank" rel="noreferrer" className="mt-2 block">
@@ -354,7 +349,7 @@ export default function EntryCard({
                 alt="Photographed report"
                 className="w-full rounded-[10px] border border-line"
               />
-              <span className="mt-1 block text-[13px] text-muted">Tap to open full size</span>
+              <span className="mt-1 block text-footnote text-muted">Tap to open full size</span>
             </a>
           )}
 
@@ -362,7 +357,7 @@ export default function EntryCard({
               see is a correction they cannot check, and this app does not rewrite the record
               quietly — "lab chole" really was what the engine heard. */}
           {heard && heard !== transcript && (
-            <p className="mt-1.5 text-[13px] leading-relaxed text-muted">
+            <p className="mt-1.5 text-footnote leading-relaxed text-muted">
               Heard: <span className="italic">“{heard}”</span>
             </p>
           )}
@@ -377,33 +372,33 @@ export default function EntryCard({
                   defaultValue={transcript}
                   rows={4}
                   autoFocus
-                  className="w-full rounded-[10px] border border-line bg-card px-3 py-2 text-[15px] leading-relaxed outline-none focus:border-accent"
+                  className="w-full rounded-[10px] border border-line bg-card px-3 py-2 text-subhead leading-relaxed outline-none focus:border-accent"
                 />
-                <p className="mt-1 text-[13px] text-muted">
+                <p className="mt-1 text-footnote text-muted">
                   Saving works the values out again from these words, replacing the ones above.
                 </p>
                 <div className="mt-2 flex gap-2">
                   <button
                     type="button"
                     onClick={() => setEditingWords(false)}
-                    className="flex-1 rounded-[10px] bg-card px-3 py-2 text-[15px] text-muted"
+                    className="flex-1 rounded-[10px] bg-card px-3 py-2 text-subhead text-muted"
                   >
                     Cancel
                   </button>
-                  <button className="flex-[2] rounded-[10px] bg-accent px-3 py-2 text-[15px] font-semibold text-accent-ink">
+                  <button className="flex-[2] rounded-[10px] bg-accent px-3 py-2 text-subhead font-semibold text-accent-ink">
                     Save and re-read
                   </button>
                 </div>
               </form>
             ) : (
               <>
-                <p className="mt-1.5 text-[15px] italic leading-relaxed text-muted">
+                <p className="mt-1.5 text-subhead italic leading-relaxed text-muted">
                   “{transcript}”
                 </p>
                 <button
                   type="button"
                   onClick={() => setEditingWords(true)}
-                  className="mt-2 text-[13px] font-medium text-accent"
+                  className="mt-2 text-footnote font-medium text-accent"
                 >
                   Correct the words
                 </button>
@@ -411,7 +406,7 @@ export default function EntryCard({
             ))}
 
           {!transcript && !photoUrl && (
-            <p className="mt-1.5 text-[15px] text-muted">Nothing was kept for this entry.</p>
+            <p className="mt-1.5 text-subhead text-muted">Nothing was kept for this entry.</p>
           )}
         </div>
       )}
@@ -455,7 +450,7 @@ function PhraseButton({
   interactive: boolean;
 }) {
   const dot = v.needs_confirmation && !v.confirmed_at && (
-    <span className="ml-1 text-orange-500" aria-label="not confirmed">
+    <span className="ml-1 text-warn-fg" aria-label="not confirmed">
       ●
     </span>
   );

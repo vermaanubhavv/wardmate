@@ -22,12 +22,12 @@ export default function CopyNoteButton({ text }: { text: string }) {
       <button
         type="button"
         onClick={copy}
-        className="w-full rounded-xl bg-card px-4 py-3 text-center text-[17px] font-semibold text-accent active:opacity-70"
+        className="w-full rounded-xl bg-card px-4 py-3 text-center text-body font-semibold text-accent active:opacity-70"
       >
         {state === "copied" ? "Copied" : "Copy as text"}
       </button>
       {state === "failed" && (
-        <p className="mt-2 text-center text-[13px] text-orange-700">
+        <p className="mt-2 text-center text-footnote text-warn-fg">
           Could not copy automatically — select the text and copy it by hand.
         </p>
       )}

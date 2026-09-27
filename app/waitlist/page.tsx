@@ -54,10 +54,10 @@ export default function WaitlistPage() {
     <main className="flex-1 w-full max-w-md mx-auto px-6 py-14 flex flex-col gap-10">
       <header className="flex flex-col items-center gap-3.5 text-center">
         <Mark className="h-12 w-12" />
-        <h1 className="text-[27px] font-semibold tracking-tight">
+        <h1 className="text-title1 font-semibold tracking-tight">
           ward<span className="text-accent">mate</span>
         </h1>
-        <p className="max-w-[19rem] text-[15px] leading-snug text-muted">
+        <p className="max-w-[19rem] text-subhead leading-snug text-muted">
           The ward round, recorded by speaking — and turned into the unit&rsquo;s
           paperwork by itself.
         </p>
@@ -69,7 +69,7 @@ export default function WaitlistPage() {
           {WHAT_IT_DOES.map((line) => (
             <p
               key={line}
-              className="ios-row px-4 py-3.5 text-[15px] leading-snug"
+              className="ios-row px-4 py-3.5 text-subhead leading-snug"
             >
               {line}
             </p>
@@ -82,7 +82,7 @@ export default function WaitlistPage() {
         <WaitlistForm />
       </section>
 
-      <footer className="border-t border-line pt-6 text-center text-[13px] text-muted">
+      <footer className="border-t border-line pt-6 text-center text-footnote text-muted">
         WardMate — built for residents in India.
       </footer>
     </main>

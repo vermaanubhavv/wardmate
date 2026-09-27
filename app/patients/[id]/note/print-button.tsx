@@ -7,7 +7,7 @@ export default function PrintButton() {
     <button
       type="button"
       onClick={() => window.print()}
-      className="w-full rounded-xl bg-accent px-4 py-3 text-center text-[17px] font-semibold text-accent-ink active:opacity-70 print:hidden"
+      className="w-full rounded-xl bg-accent px-4 py-3 text-center text-body font-semibold text-accent-ink active:opacity-70 print:hidden"
     >
       Print
     </button>

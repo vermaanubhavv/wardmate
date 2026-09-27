@@ -39,11 +39,11 @@ export default function FormularyLink({
   if (mapped && !open) {
     return (
       <span className="inline-flex items-center gap-2 print:inline">
-        <span className="text-[11px]">{mapped}</span>
+        <span className="text-caption2">{mapped}</span>
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="shrink-0 text-[10px] text-accent underline print:hidden"
+          className="shrink-0 text-caption2 text-accent underline print:hidden"
         >
           change
         </button>
@@ -59,7 +59,7 @@ export default function FormularyLink({
           setOpen(true);
           search();
         }}
-        className="text-[10px] text-accent underline print:hidden"
+        className="text-caption2 text-accent underline print:hidden"
       >
         link to formulary
       </button>
@@ -79,9 +79,9 @@ export default function FormularyLink({
             }
           }}
           autoFocus
-          className="min-w-0 flex-1 rounded border border-line bg-card px-1.5 py-1 text-[11px] outline-none focus:border-accent"
+          className="min-w-0 flex-1 rounded border border-line bg-card px-1.5 py-1 text-caption2 outline-none focus:border-accent"
         />
-        <button type="button" onClick={search} className="shrink-0 text-[11px] font-medium text-accent">
+        <button type="button" onClick={search} className="shrink-0 text-caption2 font-medium text-accent">
           Search
         </button>
         <button
@@ -90,16 +90,16 @@ export default function FormularyLink({
             setOpen(false);
             setOptions(null);
           }}
-          className="shrink-0 text-[11px] text-muted"
+          className="shrink-0 text-caption2 text-muted"
         >
           Cancel
         </button>
       </div>
 
-      {pending && <p className="mt-1 text-[10px] text-muted">Searching…</p>}
+      {pending && <p className="mt-1 text-caption2 text-muted">Searching…</p>}
 
       {!pending && options !== null && options.length === 0 && (
-        <p className="mt-1 text-[10px] text-muted">
+        <p className="mt-1 text-caption2 text-muted">
           Nothing in the formulary matches that. Try the generic name, or fewer words.
         </p>
       )}
@@ -119,7 +119,7 @@ export default function FormularyLink({
                 <input type="hidden" name="patient_id" value={patientId} />
                 <input type="hidden" name="drug_key" value={drugKey} />
                 <input type="hidden" name="item_text" value={opt} />
-                <button type="submit" className="w-full px-1.5 py-1 text-left text-[11px] active:bg-chip">
+                <button type="submit" className="w-full px-1.5 py-1 text-left text-caption2 active:bg-chip">
                   {opt}
                 </button>
               </form>
@@ -133,7 +133,7 @@ export default function FormularyLink({
           <input type="hidden" name="ward_id" value={wardId} />
           <input type="hidden" name="patient_id" value={patientId} />
           <input type="hidden" name="drug_key" value={drugKey} />
-          <button type="submit" className="text-[10px] text-muted underline">
+          <button type="submit" className="text-caption2 text-muted underline">
             Unlink
           </button>
         </form>

@@ -67,9 +67,9 @@ export default function UrgencyDot({
             ? `Urgency: ${meta.label}${note ? `, ${note}` : ""}. Tap to change.`
             : "No urgency set. Tap to set."
         }
-        // Padding rather than a bigger dot: the target stays thumb-sized without the colour
-        // shouting louder than the job it belongs to.
-        className="-m-1 p-1 active:opacity-60"
+        // Padding rather than a bigger dot: a 44pt target without the colour shouting louder
+        // than the job it belongs to.
+        className="-m-3 grid h-11 w-11 place-items-center active:opacity-60"
       >
         {meta ? (
           <span className={"block h-3 w-3 rounded-full " + meta.dot} />

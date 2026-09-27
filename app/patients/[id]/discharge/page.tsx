@@ -33,10 +33,10 @@ export default async function DischargeWorkspacePage({ params }: { params: Promi
       {/* Deliberately slim: the workspace card leads with the current section as its own
           headline, so a big "Discharge summary" title here would just compete with it. */}
       <header className="flex items-baseline justify-between gap-3 px-4 pb-3 pt-6">
-        <Link href={`/patients/${id}`} className="text-[17px] text-accent">
+        <Link href={`/patients/${id}`} className="text-body text-accent">
           ‹ Patient
         </Link>
-        <p className="truncate text-[13px] text-muted">
+        <p className="truncate text-footnote text-muted">
           Discharge · {stripPatientHonorific(context.patient.display_name)}
           {context.patient.bed ? ` · bed ${context.patient.bed}` : ""}
         </p>

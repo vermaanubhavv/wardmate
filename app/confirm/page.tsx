@@ -1,4 +1,4 @@
-import Link from "next/link";
+import ScreenHeader from "../screen-header";
 import { getCurrentWard } from "@/lib/ward";
 import { getWardPendingConfirmations } from "@/lib/confirm-queue";
 import ConfirmQueue from "./confirm-queue";
@@ -15,10 +15,10 @@ export default async function ConfirmPage() {
 
   if (error || !ward) {
     return (
-      <main className="mx-auto w-full max-w-md flex-1 px-6 py-10">
-        <h1 className="ios-large-title">Confirm</h1>
-        <p className="mt-4 ios-group px-4 py-3 text-[15px] text-orange-700">
-          {error ? `Could not read the database: ${error.message}` : "No ward found."}
+      <main className="mx-auto w-full max-w-md flex-1">
+        <ScreenHeader title="Confirm" />
+        <p role="alert" className="mx-4 ios-group px-4 py-3 text-subhead text-warn-fg">
+          {error ? "The queue could not be loaded. Check the connection and try again." : "No ward found."}
         </p>
       </main>
     );
@@ -28,17 +28,14 @@ export default async function ConfirmPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
-      <header className="px-6 pb-4 pt-8">
-        <Link href="/ward" className="text-[17px] text-accent">
-          ‹ Ward
-        </Link>
-        <h1 className="mt-3 ios-large-title">Confirm</h1>
-        <p className="mt-1 text-[15px] text-muted">
-          {items.length > 0
-            ? `${items.length} conflict${items.length === 1 ? "" : "s"} across the unit — two recordings disagree. Tick and accept, or open one to correct it.`
-            : "Two recordings disagreeing about the same value, from every patient at once."}
-        </p>
-      </header>
+      <ScreenHeader
+        title="Confirm"
+        subtitle={
+          items.length > 0
+            ? `${items.length} conflict${items.length === 1 ? "" : "s"} across the unit — two recordings disagree. Confirm each, or open one to correct it.`
+            : "Two recordings disagreeing about the same value, from every patient at once."
+        }
+      />
 
       <ConfirmQueue items={items} />
     </div>

@@ -21,25 +21,25 @@ export default function GlobalError({
 
   return (
     <html lang="en">
-      <body className="min-h-screen bg-[#f2f2f7] font-mono">
+      <body className="min-h-screen bg-[#f2f2f7]">
         <main className="mx-auto flex min-h-screen w-full max-w-md flex-col items-start justify-center px-6">
           <h1 className="text-[22px] font-semibold text-neutral-900">
             Something broke
           </h1>
-          <p className="mt-2 text-[15px] leading-relaxed text-neutral-600">
+          <p className="mt-2 text-subhead leading-relaxed text-muted">
             The app hit an error it could not recover from on this screen. Your
             saved work is safe — nothing you had already confirmed is affected.
           </p>
           <div className="mt-6 flex gap-3">
             <button
               onClick={() => reset()}
-              className="rounded-lg bg-neutral-900 px-4 py-2.5 text-[15px] font-medium text-white"
+              className="btn btn-primary"
             >
               Try again
             </button>
             <a
               href="/ward"
-              className="rounded-lg bg-white px-4 py-2.5 text-[15px] font-medium text-neutral-900 ring-1 ring-neutral-300"
+              className="btn btn-secondary"
             >
               Back to ward
             </a>

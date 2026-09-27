@@ -27,13 +27,13 @@ export default function ClaimName({ options }: { options: ExpectedMember[] }) {
               disabled={pending}
               className="flex w-full items-baseline justify-between gap-3 px-4 py-3 text-left active:bg-chip disabled:opacity-50"
             >
-              <span className="truncate text-[15px]">{option.full_name}</span>
-              <span className="shrink-0 text-[13px] text-muted">{option.designation ?? "Tap if this is you"}</span>
+              <span className="truncate text-subhead">{option.full_name}</span>
+              <span className="shrink-0 text-footnote text-muted">{option.designation ?? "Tap if this is you"}</span>
             </button>
           </li>
         ))}
       </ul>
-      {state.error && <p className="mt-2 text-[13px] text-orange-700">{state.error}</p>}
+      {state.error && <p className="mt-2 text-footnote text-warn-fg">{state.error}</p>}
     </form>
   );
 }

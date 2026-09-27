@@ -450,24 +450,27 @@ export default function Recorder({
 
   return (
     <div className="flex flex-col gap-2">
+      <span className="sr-only" role="status">
+        {status === "recording" ? "Recording" : status === "working" ? "Transcribing" : ""}
+      </span>
       <button
         type="button"
         onClick={recording ? stop : start}
         disabled={status === "working" || status === "starting"}
         className={
-          "flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-[17px] font-medium transition-colors " +
+          "btn w-full transition-colors " +
           (recording
-            ? "bg-rose-500 text-white"
+            ? "bg-recording text-white"
             : status === "working" || status === "starting"
               ? "bg-chip text-muted"
-              : "bg-accent text-accent-ink")
+              : "btn-primary")
         }
       >
         {recording ? (
           <span className="flex items-center justify-center gap-3">
             {mode === "live" ? <PulseDot speaking={speaking} /> : <LevelMeter level={level} />}
             Tap to stop
-            <span className="font-mono text-base tabular-nums opacity-90">
+            <span className="font-mono text-body tabular-nums opacity-90">
               {mm}:{ss}
             </span>
           </span>
@@ -476,7 +479,7 @@ export default function Recorder({
         ) : status === "working" ? (
           <span className="flex items-center justify-center gap-2">
             <Mark className="h-5 w-5" spinning />
-            Working…
+            Transcribing…
           </span>
         ) : (
           <>
@@ -489,13 +492,13 @@ export default function Recorder({
       {/* While a live socket is open, the words themselves ARE the "it's working" signal — no
           need to wait for the round to end to see whether it heard anything. */}
       {recording && mode === "live" && liveText && (
-        <p className="rounded-lg bg-chip/60 px-3 py-2 text-[13px] leading-relaxed text-muted">
+        <p className="rounded-lg bg-chip/60 px-3 py-2 text-footnote leading-relaxed text-muted">
           “{liveText}”
         </p>
       )}
 
       {transcript && (
-        <div className="rounded-lg bg-chip/60 px-3 py-2 text-[13px] leading-relaxed text-muted">
+        <div className="rounded-lg bg-chip/60 px-3 py-2 text-footnote leading-relaxed text-muted">
           {findings.length > 0 ? highlight(transcript, findings.map((f) => f.source_quote)) : <>“{transcript}”</>}
         </div>
       )}
@@ -505,19 +508,19 @@ export default function Recorder({
           {findings.map((f, i) => (
             <li
               key={`${f.label}-${i}`}
-              className="wm-pop flex items-baseline gap-2 text-[13px]"
+              className="wm-pop flex items-baseline gap-2 text-footnote"
               style={{ animationDelay: `${i * 80}ms` }}
             >
-              <span aria-hidden className={"mt-1 h-1.5 w-1.5 shrink-0 rounded-full " + (f.needs_confirmation ? "bg-orange-500" : "bg-emerald-500")} />
+              <span aria-hidden className={"mt-1 h-1.5 w-1.5 shrink-0 rounded-full " + (f.needs_confirmation ? "bg-warn-dot" : "bg-good-dot")} />
               <span className="text-muted">{f.label}</span>
               <span className="font-medium">{f.value_text}</span>
-              {f.needs_confirmation && <span className="text-[11px] text-orange-600">check</span>}
+              {f.needs_confirmation && <span className="text-caption2 font-medium text-warn-fg">check</span>}
             </li>
           ))}
         </ul>
       )}
 
-      {message && <p className="text-center text-[15px] text-muted">{message}</p>}
+      {message && <p role="status" className="text-center text-subhead text-muted">{message}</p>}
     </div>
   );
 }

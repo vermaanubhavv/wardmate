@@ -10,8 +10,8 @@ import { useState } from "react";
  */
 
 const CONTROL =
-  "ios-group w-full px-4 py-3.5 text-base outline-none transition-shadow focus:ring-2 focus:ring-accent";
-const FIELD_LABEL = "text-[13px] font-medium uppercase tracking-wide text-muted";
+  "ios-group w-full px-4 py-3.5 text-body outline-none transition-shadow focus:ring-2 focus:ring-accent";
+const FIELD_LABEL = "text-footnote font-medium uppercase tracking-wide text-muted";
 
 export default function ContactForm() {
   const [name, setName] = useState("");
@@ -50,8 +50,8 @@ export default function ContactForm() {
   if (done) {
     return (
       <div className="ios-group flex flex-col gap-1.5 px-4 py-4">
-        <p className="text-[15px] font-semibold">Message sent</p>
-        <p className="text-[14px] text-muted">We&rsquo;ll get back to you at {email}.</p>
+        <p className="text-subhead font-semibold">Message sent</p>
+        <p className="text-subhead text-muted">We&rsquo;ll get back to you at {email}.</p>
       </div>
     );
   }
@@ -99,11 +99,11 @@ export default function ContactForm() {
       <button
         type="submit"
         disabled={!valid || busy}
-        className="rounded-[10px] bg-accent px-4 py-3.5 text-[17px] font-semibold text-accent-ink transition-opacity active:opacity-80 disabled:opacity-40"
+        className="rounded-[10px] bg-accent px-4 py-3.5 text-body font-semibold text-accent-ink transition-opacity active:opacity-80 disabled:opacity-40"
       >
         {busy ? "Sending…" : "Send message"}
       </button>
-      {error && <p className="ios-group px-4 py-3 text-[15px] text-orange-700">{error}</p>}
+      {error && <p className="ios-group px-4 py-3 text-subhead text-warn-fg">{error}</p>}
     </form>
   );
 }

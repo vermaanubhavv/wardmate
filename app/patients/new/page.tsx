@@ -10,8 +10,8 @@ export default async function NewPatientPage() {
   if (!ward) {
     return (
       <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
-        <p className="rounded-[10px] bg-warn-bg px-4 py-3 text-[15px] text-warn-fg">No ward found for your account.</p>
-        <Link href="/ward" className="mt-4 inline-block text-[15px] text-muted underline">
+        <p className="rounded-[10px] bg-warn-bg px-4 py-3 text-subhead text-warn-fg">No ward found for your account.</p>
+        <Link href="/ward" className="mt-4 inline-block text-subhead text-muted underline">
           Back
         </Link>
       </main>
@@ -31,7 +31,7 @@ export default async function NewPatientPage() {
     <main className="flex-1 px-6 py-10 flex flex-col gap-6 max-w-md mx-auto w-full">
       <header>
         <h1 className="ios-large-title">Add patient</h1>
-        <p className="mt-1 text-[15px] text-muted">to {ward.name}</p>
+        <p className="mt-1 text-subhead text-muted">to {ward.name}</p>
       </header>
 
       <PatientForm

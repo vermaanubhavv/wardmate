@@ -158,7 +158,7 @@ export default function HomePage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <a href="#" className="flex items-center gap-2">
             <Mark className="h-7 w-7" />
-            <span className="text-[17px] font-semibold tracking-tight">
+            <span className="text-body font-semibold tracking-tight">
               ward<span className="text-accent">mate</span>
             </span>
           </a>
@@ -167,19 +167,19 @@ export default function HomePage() {
               <a
                 key={href}
                 href={href}
-                className="rounded-[9px] px-3 py-1.5 text-[14px] font-medium text-muted transition-colors hover:bg-accent/10 hover:text-accent"
+                className="rounded-[9px] px-3 py-1.5 text-subhead font-medium text-muted transition-colors hover:bg-accent/10 hover:text-accent"
               >
                 {label}
               </a>
             ))}
           </nav>
           <div className="flex items-center gap-1 sm:gap-2">
-            <a href="/login" className="whitespace-nowrap rounded-[10px] px-2 py-2 text-[14px] font-semibold text-muted hover:text-foreground sm:px-3">
+            <a href="/login" className="whitespace-nowrap rounded-[10px] px-2 py-2 text-subhead font-semibold text-muted hover:text-foreground sm:px-3">
               Log in
             </a>
             <a
               href="#waitlist"
-              className="whitespace-nowrap rounded-[10px] bg-accent px-3 py-2 text-[14px] font-semibold text-accent-ink shadow-[0_8px_20px_-10px_var(--accent)] sm:px-4"
+              className="whitespace-nowrap rounded-[10px] bg-accent px-3 py-2 text-subhead font-semibold text-accent-ink shadow-[0_8px_20px_-10px_var(--accent)] sm:px-4"
             >
               Join the waitlist
             </a>
@@ -200,7 +200,7 @@ export default function HomePage() {
               Less clerical.{" "}
               <span className="wm-accent-text">More clinical.</span>
             </h1>
-            <p className="wm-in mt-6 max-w-[50ch] text-[17.5px] leading-snug text-muted" style={d(240)}>
+            <p className="wm-in mt-6 max-w-[50ch] text-body leading-snug text-muted" style={d(240)}>
               WardMate&rsquo;s AI drafts the ward list and the round from what&rsquo;s already
               in front of you, and flags what the guidelines say you shouldn&rsquo;t miss — so
               training time goes to the patient, not the paperwork. Built by a resident
@@ -209,11 +209,11 @@ export default function HomePage() {
             <div className="wm-in mt-8 flex flex-wrap gap-3" style={d(360)}>
               <a
                 href="#waitlist"
-                className="wm-card rounded-[12px] bg-accent px-6 py-3.5 text-[15px] font-semibold text-accent-ink shadow-[0_14px_30px_-14px_var(--accent)]"
+                className="wm-card rounded-[12px] bg-accent px-6 py-3.5 text-subhead font-semibold text-accent-ink shadow-[0_14px_30px_-14px_var(--accent)]"
               >
                 Join the waitlist →
               </a>
-              <a href="#about" className="wm-card rounded-[12px] border border-line bg-card/70 px-6 py-3.5 text-[15px] font-semibold backdrop-blur">
+              <a href="#about" className="wm-card rounded-[12px] border border-line bg-card/70 px-6 py-3.5 text-subhead font-semibold backdrop-blur">
                 See how it works
               </a>
             </div>
@@ -248,14 +248,14 @@ export default function HomePage() {
         <div className="max-w-3xl">
           <div className="wm-reveal">
             <Eyebrow>The problem</Eyebrow>
-            <h2 className="mt-1 text-[30px] font-semibold leading-tight tracking-tight sm:text-[34px]">Built between call shifts</h2>
-            <p className="mt-4 max-w-[56ch] text-[16px] leading-snug text-muted">
+            <h2 className="mt-1 text-title1 font-semibold leading-tight tracking-tight sm:text-large">Built between call shifts</h2>
+            <p className="mt-4 max-w-[56ch] text-callout leading-snug text-muted">
               A patient&rsquo;s information gets fragmented fast — investigations ordered and lost
               track of, reports that never make it back to the file. Updates to the consultant end
               up incomplete, because nobody has the full picture in one place. And somewhere in
               between chasing all of it down, the actual care waits.
             </p>
-            <p className="mt-5 max-w-[56ch] text-[16px] leading-snug text-muted">
+            <p className="mt-5 max-w-[56ch] text-callout leading-snug text-muted">
               Two things carry most of that weight. The <span className="font-semibold text-foreground">to-do list</span> is
               triaged, most urgent first — a fever that&rsquo;s not settling sits above routine
               bloodwork, not buried in it. The <span className="font-semibold text-foreground">handover</span> is a
@@ -274,11 +274,11 @@ export default function HomePage() {
       <section className="wm-merge" aria-label="One patient's fever, scattered across five places, brought into one">
         <div className="wm-merge-stage">
           <div className="wm-merge-titles">
-            <h2 className="wm-merge-t1 text-[30px] font-semibold leading-tight tracking-tight sm:text-[44px]">
+            <h2 className="wm-merge-t1 text-title1 font-semibold leading-tight tracking-tight sm:text-[44px]">
               Bed 7&rsquo;s fever lives in five places.
               <span className="block text-muted">None of them agree.</span>
             </h2>
-            <h2 className="wm-merge-t2 text-[30px] font-semibold leading-tight tracking-tight sm:text-[44px]">
+            <h2 className="wm-merge-t2 text-title1 font-semibold leading-tight tracking-tight sm:text-[44px]">
               <span className="text-accent">Now it lives in one.</span>
               <span className="block text-muted">And says where each value came from.</span>
             </h2>
@@ -290,7 +290,7 @@ export default function HomePage() {
               className={`wm-frag wm-frag-${kind || "plain"}`}
               style={{ "--x": x, "--y": y, "--r": r, "--i": i } as React.CSSProperties}
             >
-              <p className="flex items-center gap-1.5 text-[11.5px] font-semibold uppercase tracking-wide text-muted">
+              <p className="flex items-center gap-1.5 text-caption2 font-semibold uppercase tracking-wide text-muted">
                 <Svg className="h-3.5 w-3.5">{Icon[icon as keyof typeof Icon]}</Svg>
                 {label}
               </p>
@@ -301,16 +301,16 @@ export default function HomePage() {
           <div className="wm-merge-card wm-glow-border px-5 py-5 shadow-[0_30px_60px_-30px_var(--accent)]">
             <div className="flex items-center gap-3">
               <Mark className="h-9 w-9 shrink-0" />
-              <p className="text-[15px] leading-snug">
+              <p className="text-subhead leading-snug">
                 <span className="block font-semibold">Bed 7 · Shikha, 25/F</span>
                 <span className="text-muted">Day 5, acute pancreatitis</span>
               </p>
             </div>
             <div className="mt-3">
               {UNIFIED.map(([value, source]) => (
-                <p key={value} className="border-t border-line py-2.5 text-[14.5px] leading-snug">
+                <p key={value} className="border-t border-line py-2.5 text-subhead leading-snug">
                   <span className="block font-semibold">{value}</span>
-                  <span className="text-[12.5px] text-muted">{source}</span>
+                  <span className="text-caption text-muted">{source}</span>
                 </p>
               ))}
             </div>
@@ -324,7 +324,7 @@ export default function HomePage() {
           <div>
             <div className="wm-reveal">
               <Eyebrow>A day on service</Eyebrow>
-              <h2 className="mt-1 text-[30px] font-semibold tracking-tight">How the shift actually flows</h2>
+              <h2 className="mt-1 text-title1 font-semibold tracking-tight">How the shift actually flows</h2>
             </div>
             <div className="wm-timeline mt-7 flex flex-col gap-7">
               <div className="wm-timeline-fill" />
@@ -334,9 +334,9 @@ export default function HomePage() {
                     <Svg>{Icon[icon as keyof typeof Icon]}</Svg>
                   </span>
                   <div className="pt-1">
-                    <p className="font-mono text-[12.5px] font-medium text-accent">{time}</p>
-                    <p className="mt-0.5 text-[16px] font-semibold">{title}</p>
-                    <p className="mt-1 max-w-[46ch] text-[14.5px] leading-snug text-muted">{body}</p>
+                    <p className="font-mono text-caption font-medium text-accent">{time}</p>
+                    <p className="mt-0.5 text-callout font-semibold">{title}</p>
+                    <p className="mt-1 max-w-[46ch] text-subhead leading-snug text-muted">{body}</p>
                   </div>
                 </div>
               ))}
@@ -346,8 +346,8 @@ export default function HomePage() {
           <div>
             <div className="wm-reveal">
               <Eyebrow>Triaged, most urgent first</Eyebrow>
-              <h2 className="mt-1 text-[30px] font-semibold tracking-tight">Unit Alpha, this round</h2>
-              <p className="mt-2 max-w-[46ch] text-[14.5px] text-muted">The same list you&rsquo;d see in the app. Flip it between bed order and triaged.</p>
+              <h2 className="mt-1 text-title1 font-semibold tracking-tight">Unit Alpha, this round</h2>
+              <p className="mt-2 max-w-[46ch] text-subhead text-muted">The same list you&rsquo;d see in the app. Flip it between bed order and triaged.</p>
             </div>
             <div className="wm-reveal mt-6">
               <TriageDemo lines={ROUND_LINES} />
@@ -360,8 +360,8 @@ export default function HomePage() {
       <section id="guidelines" className="scroll-mt-16 mx-auto max-w-6xl px-6 py-20">
         <div className="wm-reveal text-center">
           <Eyebrow>The academic half</Eyebrow>
-          <h2 className="mt-1 text-[30px] font-semibold tracking-tight sm:text-[34px]">Learns the guidelines with you</h2>
-          <p className="mx-auto mt-3 max-w-[62ch] text-[16px] leading-snug text-muted">
+          <h2 className="mt-1 text-title1 font-semibold tracking-tight sm:text-large">Learns the guidelines with you</h2>
+          <p className="mx-auto mt-3 max-w-[62ch] text-callout leading-snug text-muted">
             Every prompt says why — pulled from the standard texts and scoring systems your
             consultant already expects you to know, attached to the patient in front of you. One
             department&rsquo;s ward, or a dozen — the guideline comes with the patient.
@@ -371,17 +371,17 @@ export default function HomePage() {
           {GUIDELINES.map(([badge, dept, context, body]) => (
             <div key={badge} className="wm-glow-border wm-card wm-reveal flex flex-col gap-3 px-6 py-6">
               <div className="flex items-center justify-between">
-                <span className="rounded-[6px] bg-accent/10 px-2.5 py-1 font-mono text-[12px] font-semibold text-accent">
+                <span className="rounded-[6px] bg-accent/10 px-2.5 py-1 font-mono text-caption font-semibold text-accent">
                   {badge}
                 </span>
-                <span className="text-[11px] font-medium uppercase tracking-wide text-muted">{dept}</span>
+                <span className="text-caption2 font-medium uppercase tracking-wide text-muted">{dept}</span>
               </div>
-              <p className="text-[16px] font-semibold leading-snug">{context}</p>
-              <p className="text-[14px] leading-snug text-muted">{body}</p>
+              <p className="text-callout font-semibold leading-snug">{context}</p>
+              <p className="text-subhead leading-snug text-muted">{body}</p>
             </div>
           ))}
         </div>
-        <p className="mt-5 text-center text-[13px] text-muted">3 prompts, 3 departments · pulled from standard references, not memory</p>
+        <p className="mt-5 text-center text-footnote text-muted">3 prompts, 3 departments · pulled from standard references, not memory</p>
       </section>
 
       {/* ---- phone screens ---- */}
@@ -389,8 +389,8 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl px-6">
           <div className="wm-reveal text-center">
             <Eyebrow>The product</Eyebrow>
-            <h2 className="mt-1 text-[30px] font-semibold tracking-tight sm:text-[34px]">On your phone, between patients</h2>
-            <p className="mx-auto mt-3 max-w-[58ch] text-[16px] leading-snug text-muted">
+            <h2 className="mt-1 text-title1 font-semibold tracking-tight sm:text-large">On your phone, between patients</h2>
+            <p className="mx-auto mt-3 max-w-[58ch] text-callout leading-snug text-muted">
               The to-do list and the round are the two you&rsquo;ll live in — both triaged, most
               urgent first, so the patient who needs you now doesn&rsquo;t wait behind routine
               bloodwork.
@@ -406,7 +406,7 @@ export default function HomePage() {
       <section id="founder" className="mx-auto max-w-3xl px-6 py-20">
         <div className="wm-glow-border wm-reveal px-6 py-7 sm:px-8">
           <Eyebrow>The person behind it</Eyebrow>
-          <h2 className="mt-1 text-[26px] font-semibold tracking-tight">Built by a resident who still wants to learn</h2>
+          <h2 className="mt-1 text-title1 font-semibold tracking-tight">Built by a resident who still wants to learn</h2>
           <div className="mt-5 flex items-start gap-5">
             {/* eslint-disable-next-line @next/next/no-img-element -- fixed marketing asset */}
             <img
@@ -417,22 +417,22 @@ export default function HomePage() {
               className="h-[72px] w-[72px] shrink-0 rounded-full object-cover ring-1 ring-black/5 shadow-[0_12px_28px_-12px_var(--accent)]"
             />
             <div>
-              <p className="text-[17px] font-semibold">Dr. Anubhav Verma</p>
-              <p className="font-mono text-[12px] text-accent">JR-2 · General Surgery</p>
-              <p className="mt-2.5 text-[15px] leading-snug text-muted">
+              <p className="text-body font-semibold">Dr. Anubhav Verma</p>
+              <p className="font-mono text-caption text-accent">JR-2 · General Surgery</p>
+              <p className="mt-2.5 text-subhead leading-snug text-muted">
                 I&rsquo;m a second-year surgery resident, still on call. Residency was meant to
                 be where I learned medicine from the patient in front of me. Most days, the
                 paperwork got there first. By the time the list was written and the handover
                 sent, the reading I meant to do on the case — the scoring system, the guideline,
                 the why behind the plan — waited for a day off that never came.
               </p>
-              <p className="mt-2.5 text-[15px] leading-snug text-muted">
+              <p className="mt-2.5 text-subhead leading-snug text-muted">
                 WardMate is my way of putting that back: the clerical half handled, and the
                 academic half sitting next to the patient, while you&rsquo;re still at the bed
                 and the case is still yours. I&rsquo;m building it the way I practice — one ward
                 round at a time.
               </p>
-              <p className="mt-2.5 text-[13.5px] text-muted">
+              <p className="mt-2.5 text-footnote text-muted">
                 — Anubhav ·{" "}
                 <a href="mailto:anubhav@wardmate.in" className="text-foreground underline underline-offset-2">
                   anubhav@wardmate.in
@@ -448,8 +448,8 @@ export default function HomePage() {
         <div className="mx-auto grid max-w-4xl gap-10 px-6 sm:grid-cols-2">
           <div id="waitlist" className="wm-reveal min-w-0 scroll-mt-20">
             <Eyebrow>Get early access</Eyebrow>
-            <h2 className="mt-1 text-[24px] font-semibold tracking-tight">Join the waitlist</h2>
-            <p className="mt-2 text-[14.5px] text-muted">
+            <h2 className="mt-1 text-title1 font-semibold tracking-tight">Join the waitlist</h2>
+            <p className="mt-2 text-subhead text-muted">
               We&rsquo;re onboarding residency programs in small cohorts as we build.
             </p>
             <div className="mt-5">
@@ -459,15 +459,15 @@ export default function HomePage() {
 
           <div id="contact" className="wm-reveal min-w-0 scroll-mt-20">
             <Eyebrow>Get in touch</Eyebrow>
-            <h2 className="mt-1 text-[24px] font-semibold tracking-tight">Contact us</h2>
-            <p className="mt-2 text-[14.5px] text-muted">
+            <h2 className="mt-1 text-title1 font-semibold tracking-tight">Contact us</h2>
+            <p className="mt-2 text-subhead text-muted">
               Tell us about your program, or what&rsquo;s missing from how your team hands
               over.
             </p>
             <div className="mt-5">
               <ContactForm />
             </div>
-            <p className="mt-4 text-[13px] text-muted">
+            <p className="mt-4 text-footnote text-muted">
               Prefer email? Write to{" "}
               <a href="mailto:anubhav@wardmate.in" className="text-foreground underline underline-offset-2">
                 anubhav@wardmate.in
@@ -477,7 +477,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 border-t border-line px-6 py-8 bottom-bar text-[13px] text-muted">
+      <footer className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 border-t border-line px-6 py-8 bottom-bar text-footnote text-muted">
         <span className="flex items-center gap-2">
           <Mark className="h-5 w-5" /> © 2026 WardMate
         </span>

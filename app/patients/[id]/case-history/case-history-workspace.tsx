@@ -982,21 +982,21 @@ export default function CaseHistoryWorkspace({
           <div className="grid grid-cols-2 gap-2">
             {fields.map((f) => (
               <label key={f} className="flex flex-col gap-0.5">
-                <span className="text-[12px] font-medium text-muted">{f}</span>
+                <span className="text-caption font-medium text-muted">{f}</span>
                 <input
                   value={readField(binding[0], f)}
                   onChange={(e) => {
                     binding[1](writeField(binding[0], f, e.target.value));
                     mark(current.id);
                   }}
-                  className="rounded-[8px] border border-line bg-card px-2 py-1.5 text-[14px]"
+                  className="rounded-[8px] border border-line bg-card px-2 py-1.5 text-subhead"
                 />
               </label>
             ))}
           </div>
         )}
         {columns && recordedInRows && (
-          <p className="text-[12px] text-muted">Record each one separately: {columns.join(" · ").replace(" (as recorded)", "")}</p>
+          <p className="text-caption text-muted">Record each one separately: {columns.join(" · ").replace(" (as recorded)", "")}</p>
         )}
       </div>
     );
@@ -1006,7 +1006,7 @@ export default function CaseHistoryWorkspace({
     const id = current.id;
     if (id === "demographics")
       return (
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[15px]">
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-subhead">
           <dt className="text-muted">Name</dt><dd>{demographics.name}</dd>
           <dt className="text-muted">Age</dt><dd>{demographics.age !== null ? `${demographics.age} years` : "Not recorded"}</dd>
           <dt className="text-muted">Sex</dt><dd>{sex || "Not recorded"}</dd>
@@ -1017,7 +1017,7 @@ export default function CaseHistoryWorkspace({
     if (id === "complaints")
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">Tap every complaint the patient came in with. Add anything not listed, then say how long each one has been going on.</p>
+          <p className="text-caption leading-[1.45] text-muted">Tap every complaint the patient came in with. Add anything not listed, then say how long each one has been going on.</p>
           <div className="flex flex-wrap gap-1.5">
             {[...new Set([...complaintChips, ...complaints])].map((c) => (
               <SelChip key={c} selected={complaints.includes(c)} onClick={() => { toggleInList(complaints, c, setComplaints); mark("complaints"); }}>
@@ -1027,10 +1027,10 @@ export default function CaseHistoryWorkspace({
           </div>
           {complaints.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <span className="text-[12px] font-medium text-muted">How long has each been present?</span>
+              <span className="text-caption font-medium text-muted">How long has each been present?</span>
               {complaints.map((c, i) => (
                 <div key={c} className="flex flex-wrap items-center gap-1.5">
-                  <span className="mr-auto text-[14px]">{i + 1}. {c}</span>
+                  <span className="mr-auto text-subhead">{i + 1}. {c}</span>
                   <div className="flex items-center gap-1">
                     {DURATION_QUICK.map((d) => (
                       <button
@@ -1038,7 +1038,7 @@ export default function CaseHistoryWorkspace({
                         type="button"
                         onClick={() => { setComplaintDur({ ...complaintDur, [c]: d }); mark("complaints"); }}
                         className={
-                          "rounded-full px-2 py-1 text-[11px] whitespace-nowrap " +
+                          "rounded-full px-2 py-1 text-caption2 whitespace-nowrap " +
                           ((complaintDur[c] ?? "").trim().toLowerCase() === d
                             ? "bg-accent text-accent-ink"
                             : "bg-chip text-muted")
@@ -1052,11 +1052,11 @@ export default function CaseHistoryWorkspace({
                     value={complaintDur[c] ?? ""}
                     onChange={(e) => { setComplaintDur({ ...complaintDur, [c]: e.target.value }); mark("complaints"); }}
                     placeholder="e.g. 3 days"
-                    className="h-9 w-24 shrink-0 rounded-[10px] border border-line bg-card px-2 text-[14px] outline-none focus:border-accent"
+                    className="h-9 w-24 shrink-0 rounded-[10px] border border-line bg-card px-2 text-subhead outline-none focus:border-accent"
                   />
                 </div>
               ))}
-              <span className="text-[11px] text-muted">Longest-standing complaint is listed first automatically.</span>
+              <span className="text-caption2 text-muted">Longest-standing complaint is listed first automatically.</span>
             </div>
           )}
           <div className="flex gap-2">
@@ -1064,7 +1064,7 @@ export default function CaseHistoryWorkspace({
               value={customComplaint}
               onChange={(e) => setCustomComplaint(e.target.value)}
               placeholder="Another complaint"
-              className="h-11 flex-1 rounded-[10px] border border-line bg-card px-3 text-[15px] outline-none focus:border-accent"
+              className="h-11 flex-1 rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
             />
             <button
               type="button"
@@ -1075,7 +1075,7 @@ export default function CaseHistoryWorkspace({
                 setCustomComplaint("");
                 mark("complaints");
               }}
-              className="shrink-0 rounded-[10px] border border-line px-3 text-[14px] font-medium text-accent"
+              className="shrink-0 rounded-[10px] border border-line px-3 text-subhead font-medium text-accent"
             >
               Add
             </button>
@@ -1089,18 +1089,18 @@ export default function CaseHistoryWorkspace({
       const set = (v: string) => { setHopi({ ...hopi, [c]: v }); mark("hopi"); };
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">
+          <p className="text-caption leading-[1.45] text-muted">
             Tap what fits <span className="font-medium">{c}</span> — each tap adds to the line below. Then type or speak anything the pills can&rsquo;t say.
           </p>
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="mr-1 text-[13px] font-medium text-muted">Duration</span>
+            <span className="mr-1 text-footnote font-medium text-muted">Duration</span>
             {DURATION_QUICK.map((d) => (
               <button
                 key={d}
                 type="button"
                 onClick={() => { setHopiDur({ ...hopiDur, [c]: d }); mark("hopi"); }}
                 className={
-                  "rounded-full px-2 py-1 text-[11px] whitespace-nowrap " +
+                  "rounded-full px-2 py-1 text-caption2 whitespace-nowrap " +
                   ((hopiDur[c] ?? "").trim().toLowerCase() === d ? "bg-accent text-accent-ink" : "bg-chip text-muted")
                 }
               >
@@ -1111,7 +1111,7 @@ export default function CaseHistoryWorkspace({
               value={hopiDur[c] ?? ""}
               onChange={(e) => { setHopiDur({ ...hopiDur, [c]: e.target.value }); mark("hopi"); }}
               placeholder="e.g. 3 days"
-              className="h-9 w-28 rounded-[10px] border border-line bg-card px-2.5 text-[14px] outline-none focus:border-accent"
+              className="h-9 w-28 rounded-[10px] border border-line bg-card px-2.5 text-subhead outline-none focus:border-accent"
             />
           </div>
           {attrs.map((a) => (
@@ -1161,7 +1161,7 @@ export default function CaseHistoryWorkspace({
               </div>
               {drugPicker && DRUG_OPTIONS[drugPicker] && (
                 <div className="flex flex-col gap-1.5 rounded-[10px] bg-chip/50 p-2.5">
-                  <span className="text-[12px] font-medium text-muted">Common {drugPicker} drugs</span>
+                  <span className="text-caption font-medium text-muted">Common {drugPicker} drugs</span>
                   <div className="flex flex-wrap gap-1.5">
                     {DRUG_OPTIONS[drugPicker].map((d) => (
                       <SelChip
@@ -1189,7 +1189,7 @@ export default function CaseHistoryWorkspace({
     if (id === "dietary")
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">What the patient eats: vegetarian or mixed, meals a day, appetite, recent change — only what was said.</p>
+          <p className="text-caption leading-[1.45] text-muted">What the patient eats: vegetarian or mixed, meals a day, appetite, recent change — only what was said.</p>
           <DictateArea value={dietary} onChange={(v) => { setDietary(v); mark("dietary"); }} placeholder="e.g. mixed diet, three meals a day, appetite reduced for two weeks" rows={4} />
         </>
       );
@@ -1197,7 +1197,7 @@ export default function CaseHistoryWorkspace({
     if (id === "environmental")
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">Housing, water source, sanitation, occupational or travel exposure — only what was said.</p>
+          <p className="text-caption leading-[1.45] text-muted">Housing, water source, sanitation, occupational or travel exposure — only what was said.</p>
           <DictateArea value={environmental} onChange={(v) => { setEnvironmental(v); mark("environmental"); }} placeholder="e.g. borewell water, works in a stone quarry, no recent travel" rows={4} />
         </>
       );
@@ -1205,7 +1205,7 @@ export default function CaseHistoryWorkspace({
     if (id === "obstetric")
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">LMP, cycle, obstetric score (G/P/L/A), menopause — whatever is relevant.</p>
+          <p className="text-caption leading-[1.45] text-muted">LMP, cycle, obstetric score (G/P/L/A), menopause — whatever is relevant.</p>
           <DictateArea value={obstetric} onChange={(v) => { setObstetric(v); mark("obstetric"); }} placeholder="e.g. LMP 12/07, regular 28-day cycle, P2L2, not menopausal" rows={4} />
         </>
       );
@@ -1221,7 +1221,7 @@ export default function CaseHistoryWorkspace({
       };
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">
+          <p className="text-caption leading-[1.45] text-muted">
             <span className="font-medium">PICCLE</span> — Pallor, Icterus, Cyanosis, Clubbing,
             Lymphadenopathy, (o)Edema. Tap each sign you checked; leave a sign untouched if you
             did not look for it.
@@ -1230,7 +1230,7 @@ export default function CaseHistoryWorkspace({
             type="button"
             onClick={() => setAllPiccle(allNormal ? "unset" : "normal")}
             className={
-              "self-start rounded-[10px] px-3 py-1.5 text-[13px] font-semibold " +
+              "self-start rounded-[10px] px-3 py-1.5 text-footnote font-semibold " +
               (allNormal ? "bg-accent text-accent-ink" : "border border-line text-accent")
             }
           >
@@ -1242,7 +1242,7 @@ export default function CaseHistoryWorkspace({
               return (
                 <div key={s.label} className="flex flex-col gap-1.5 rounded-[10px] border border-line p-2.5">
                   <div className="flex items-center gap-2">
-                    <span className="flex-1 text-[14px] font-medium">{s.title}</span>
+                    <span className="flex-1 text-subhead font-medium">{s.title}</span>
                     <SelChip selected={st.state === "normal"} onClick={() => { setPiccle({ ...piccle, [s.label]: { ...st, state: st.state === "normal" ? "unset" : "normal" } }); mark("piccle"); }}>
                       Normal
                     </SelChip>
@@ -1255,7 +1255,7 @@ export default function CaseHistoryWorkspace({
                       value={st.note}
                       onChange={(e) => { setPiccle({ ...piccle, [s.label]: { ...st, note: e.target.value } }); mark("piccle"); }}
                       placeholder="Detail (e.g. mild, bilateral)"
-                      className="h-10 rounded-[10px] border border-line bg-card px-3 text-[14px] outline-none focus:border-accent"
+                      className="h-10 rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
                     />
                   )}
                 </div>
@@ -1281,14 +1281,14 @@ export default function CaseHistoryWorkspace({
     if (id === "local")
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">The examination of the presenting problem itself — the lump, the hernia, the wound, the perianal region.</p>
+          <p className="text-caption leading-[1.45] text-muted">The examination of the presenting problem itself — the lump, the hernia, the wound, the perianal region.</p>
           <DictateArea value={local} onChange={(v) => { setLocal(v); mark("local"); }} placeholder="Site, size, tenderness, consistency, margins…" rows={6} />
           {/* The department's diagram, as it prints on the back of the history sheet — marked by
               hand there; describe here what gets drawn. */}
           {hasExamDiagram(specialty) && (
           <div className="rounded-[10px] border border-line bg-white p-2 text-black">
             <ExamDiagrams specialty={specialty} />
-            <p className="mt-1 text-[12px] text-muted">Prints blank on the history sheet for marking by hand.</p>
+            <p className="mt-1 text-caption text-muted">Prints blank on the history sheet for marking by hand.</p>
           </div>
           )}
         </>
@@ -1297,7 +1297,7 @@ export default function CaseHistoryWorkspace({
     if (id === "onco_disease")
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">
+          <p className="text-caption leading-[1.45] text-muted">
             What the cancer IS. Site, what the biopsy showed, the stage, and when it was
             diagnosed — the facts every later decision is read against.
           </p>
@@ -1314,7 +1314,7 @@ export default function CaseHistoryWorkspace({
     if (id === "onco_treatment")
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">
+          <p className="text-caption leading-[1.45] text-muted">
             What has already been given for it — surgery, radiotherapy, earlier lines of
             chemotherapy — with how many cycles and what the response was.
           </p>
@@ -1331,7 +1331,7 @@ export default function CaseHistoryWorkspace({
     if (id === "onco_cycle")
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">
+          <p className="text-caption leading-[1.45] text-muted">
             The cycle running now, in words. The day count on the ward list is not taken from
             here — it comes from the regimen and cycle start date on the patient record, which
             the pen beside the patient&rsquo;s name sets.
@@ -1349,7 +1349,7 @@ export default function CaseHistoryWorkspace({
     if (id === "onco_toxicity")
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">
+          <p className="text-caption leading-[1.45] text-muted">
             What the last cycle did to the patient. Write a grade only if one was actually
             decided — otherwise say what it stopped them doing, which is the more useful record
             anyway.
@@ -1374,7 +1374,7 @@ export default function CaseHistoryWorkspace({
       };
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">
+          <p className="text-caption leading-[1.45] text-muted">
             Judged from the patient in front of you, not from what they say. It decides
             fitness for the next cycle, so it is worth being honest about.
           </p>
@@ -1402,7 +1402,7 @@ export default function CaseHistoryWorkspace({
     if (id === "onco_nodes")
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">
+          <p className="text-caption leading-[1.45] text-muted">
             Station by station. Tap a station, then what you found there — the tap appends
             &ldquo;Station — finding&rdquo; to the line below, so more than one station can be
             recorded. Size, number and consistency are worth adding in your own words.
@@ -1410,7 +1410,7 @@ export default function CaseHistoryWorkspace({
           <div className="flex flex-col gap-2">
             {NODE_STATIONS.map((station) => (
               <div key={station} className="flex flex-wrap items-center gap-1.5">
-                <span className="w-24 shrink-0 text-[13px] font-medium text-muted">{station}</span>
+                <span className="w-24 shrink-0 text-footnote font-medium text-muted">{station}</span>
                 {NODE_FINDINGS.map((f) => (
                   <SelChip
                     key={f}
@@ -1439,7 +1439,7 @@ export default function CaseHistoryWorkspace({
     if (id === "onco_mucosa_line")
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">
+          <p className="text-caption leading-[1.45] text-muted">
             The mucositis grade decides whether the next cycle can go ahead on schedule. Skin,
             nails and the line site are what a chemotherapy round examines that a surgical round
             does not.
@@ -1472,7 +1472,7 @@ export default function CaseHistoryWorkspace({
     if (id === "diagnosis")
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">The AI drafts a provisional diagnosis from the case history above. Read it, edit it, then approve — approving writes it to the patient.</p>
+          <p className="text-caption leading-[1.45] text-muted">The AI drafts a provisional diagnosis from the case history above. Read it, edit it, then approve — approving writes it to the patient.</p>
           <button type="button" disabled={generating === "diagnosis"} onClick={() => generate("diagnosis")} className={genBtn}>
             {generating === "diagnosis" ? "Generating…" : diagnosis.text ? "Regenerate with AI" : "Generate with AI"}
           </button>
@@ -1480,25 +1480,25 @@ export default function CaseHistoryWorkspace({
           <Area value={diagnosis.text} onChange={(v) => setDiagnosis({ ...diagnosis, text: v })} rows={3} placeholder="Provisional diagnosis" />
 
           <div className="flex flex-col gap-2">
-            <span className="text-[12px] font-medium text-muted">Differential diagnosis</span>
+            <span className="text-caption font-medium text-muted">Differential diagnosis</span>
             {diagnosis.differentials.map((d, i) => (
               <div key={i} className="flex gap-2">
                 <input
                   value={d}
                   onChange={(e) => setDiagnosis({ ...diagnosis, differentials: diagnosis.differentials.map((x, j) => (j === i ? e.target.value : x)) })}
-                  className="h-10 flex-1 rounded-[10px] border border-line bg-card px-3 text-[14px] outline-none focus:border-accent"
+                  className="h-10 flex-1 rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
                 />
-                <button type="button" onClick={() => setDiagnosis({ ...diagnosis, differentials: diagnosis.differentials.filter((_, j) => j !== i) })} className="shrink-0 px-2 text-[13px] text-muted">
+                <button type="button" onClick={() => setDiagnosis({ ...diagnosis, differentials: diagnosis.differentials.filter((_, j) => j !== i) })} className="shrink-0 px-2 text-footnote text-muted">
                   Remove
                 </button>
               </div>
             ))}
-            <button type="button" onClick={() => setDiagnosis({ ...diagnosis, differentials: [...diagnosis.differentials, ""] })} className="self-start text-[13px] font-medium text-accent">
+            <button type="button" onClick={() => setDiagnosis({ ...diagnosis, differentials: [...diagnosis.differentials, ""] })} className="self-start text-footnote font-medium text-accent">
               + Add a differential
             </button>
           </div>
 
-          <p className="text-[11px] leading-[1.4] text-muted">
+          <p className="text-caption2 leading-[1.4] text-muted">
             The differential feeds the <span className="font-medium">Relevant negatives</span>{" "}
             card near the top of the stack. Regenerate that card after editing this list.
           </p>
@@ -1514,7 +1514,7 @@ export default function CaseHistoryWorkspace({
     if (id === "negatives")
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">
+          <p className="text-caption leading-[1.45] text-muted">
             The pertinent negatives that close the history of presenting illness — the ones that
             support{" "}
             <span className="font-medium">{(primaryDiagnosis ?? diagnosis.text ?? "the diagnosis").trim() || "the diagnosis"}</span>{" "}
@@ -1545,7 +1545,7 @@ export default function CaseHistoryWorkspace({
       const setList = (items: string[]) => setPlan({ ...plan, [planTab]: items });
       return (
         <>
-          <p className="text-[12px] leading-[1.45] text-muted">
+          <p className="text-caption leading-[1.45] text-muted">
             The AI drafts an initial plan from the complaints and provisional diagnosis on record — workup, conservative
             measures, and specific medications for this presentation. Edit any line, then approve — approving puts every
             line, across all three, on the to-do list.
@@ -1568,14 +1568,14 @@ export default function CaseHistoryWorkspace({
                 <input
                   value={it}
                   onChange={(e) => setList(list.map((x, j) => (j === i ? e.target.value : x)))}
-                  className="h-11 flex-1 rounded-[10px] border border-line bg-card px-3 text-[15px] outline-none focus:border-accent"
+                  className="h-11 flex-1 rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
                 />
-                <button type="button" onClick={() => setList(list.filter((_, j) => j !== i))} className="shrink-0 px-2 text-[13px] text-muted">
+                <button type="button" onClick={() => setList(list.filter((_, j) => j !== i))} className="shrink-0 px-2 text-footnote text-muted">
                   Remove
                 </button>
               </div>
             ))}
-            <button type="button" onClick={() => setList([...list, ""])} className="self-start text-[13px] font-medium text-accent">
+            <button type="button" onClick={() => setList([...list, ""])} className="self-start text-footnote font-medium text-accent">
               + Add a line
             </button>
           </div>
@@ -1596,8 +1596,8 @@ export default function CaseHistoryWorkspace({
       <>
         <span
           className={
-            "inline-flex items-center gap-1.5 self-start rounded-full px-3 py-1 text-[12px] font-semibold " +
-            (missing.length === 0 ? "bg-accent/10 text-accent" : "bg-orange-100 text-orange-700")
+            "inline-flex items-center gap-1.5 self-start rounded-full px-3 py-1 text-caption font-semibold " +
+            (missing.length === 0 ? "bg-accent/10 text-accent" : "bg-warn-bg text-warn-fg")
           }
         >
           {missing.length === 0 ? (
@@ -1609,7 +1609,7 @@ export default function CaseHistoryWorkspace({
           )}
         </span>
         <div className="flex flex-col gap-2 rounded-[10px] border border-line bg-card p-3">
-          <p className="text-[12px] leading-[1.45] text-muted">
+          <p className="text-caption leading-[1.45] text-muted">
             The AI writes the tapped fragments and dictated bits up into a proper case history —
             in clinical prose, in the usual order and language — using what is already on record
             for this patient. It runs on its own when you reach this step. Read it, edit any
@@ -1628,7 +1628,7 @@ export default function CaseHistoryWorkspace({
               <UncertainList points={compiled.uncertain} />
               {compiled.sections.map((s, i) => (
                 <div key={s.label} className="flex flex-col gap-1">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">{s.label}</span>
+                  <span className="text-caption2 font-semibold uppercase tracking-wide text-muted">{s.label}</span>
                   <Area
                     value={s.text}
                     onChange={(v) =>
@@ -1651,21 +1651,21 @@ export default function CaseHistoryWorkspace({
         <div className="rounded-[10px] border border-line bg-card">
           <CaseHistoryCard observations={fullObservations} sex={sex} wardRanges={wardRanges} />
         </div>
-        {dirty.size > 0 && <p className="text-[13px] text-orange-700">{dirty.size} card(s) not yet saved — step back into them.</p>}
+        {dirty.size > 0 && <p className="text-footnote text-warn-fg">{dirty.size} card(s) not yet saved — step back into them.</p>}
 
         <Link
           href={`/patients/${patientId}/case-history/print`}
-          className="self-start rounded-[10px] border border-line px-3 py-2 text-[14px] font-semibold text-accent"
+          className="self-start rounded-[10px] border border-line px-3 py-2 text-subhead font-semibold text-accent"
         >
           Print / save as PDF
         </Link>
         {compiled && (
-          <p className="text-[12px] text-orange-700">
+          <p className="text-caption text-warn-fg">
             Apply the compiled prose above before printing, or the sheet prints the rough notes.
           </p>
         )}
 
-        <Link href={`/patients/${patientId}`} className="self-start text-[14px] font-semibold text-accent">
+        <Link href={`/patients/${patientId}`} className="self-start text-subhead font-semibold text-accent">
           Done — back to patient
         </Link>
       </>
@@ -1693,7 +1693,7 @@ export default function CaseHistoryWorkspace({
   };
 
   return (
-    <div className="flex flex-col gap-3 px-4 pb-40">
+    <div className="flex flex-col gap-3 px-4 pb-[var(--bar-height)]">
       {dictating && (
         <DictationOverlay
           specialty={specialty}
@@ -1714,22 +1714,22 @@ export default function CaseHistoryWorkspace({
           className="ios-group flex items-center justify-between gap-3 px-4 py-3.5 text-left active:bg-chip"
         >
           <span>
-            <span className="block text-[15px] font-semibold text-accent">Dictate the whole clerking</span>
-            <span className="block text-[13px] text-muted">
+            <span className="block text-subhead font-semibold text-accent">Dictate the whole clerking</span>
+            <span className="block text-footnote text-muted">
               Speak in any order — each part is sorted into its card as you go.
             </span>
           </span>
-          <span aria-hidden className="text-xl">🎤</span>
+          <span aria-hidden className="text-title3">🎤</span>
         </button>
       )}
 
       <div className="ios-group overflow-hidden">
         <div className="px-4 pt-4 pb-3">
-          <p className="text-[11.5px] font-semibold uppercase tracking-[0.03em] text-muted">
+          <p className="text-caption2 font-semibold uppercase tracking-[0.03em] text-muted">
             Case history · {step + 1} of {STEPS.length}
           </p>
           <div className="mt-0.5 flex items-start justify-between gap-2">
-            <h2 className="text-[24px] font-bold leading-tight tracking-[-0.021em]">{current.title}</h2>
+            <h2 className="text-title1 font-bold leading-tight tracking-[-0.021em]">{current.title}</h2>
             {dirty.has(current.id) && statusChip("unsaved", "warn")}
           </div>
         </div>
@@ -1742,7 +1742,7 @@ export default function CaseHistoryWorkspace({
         </div>
       </div>
 
-      <button type="button" onClick={() => setMenuOpen((o) => !o)} className="self-center text-[13px] font-medium text-accent">
+      <button type="button" onClick={() => setMenuOpen((o) => !o)} className="self-center text-footnote font-medium text-accent">
         {menuOpen ? "Hide cards" : "Jump to a card"}
       </button>
       {menuOpen && (
@@ -1752,9 +1752,9 @@ export default function CaseHistoryWorkspace({
               key={`${s.id}-${i}`}
               type="button"
               onClick={() => goTo(i)}
-              className={"flex items-center gap-2 rounded-[8px] px-2.5 py-2 text-left text-[14px] " + (i === step ? "bg-chip font-medium" : "")}
+              className={"flex items-center gap-2 rounded-[8px] px-2.5 py-2 text-left text-subhead " + (i === step ? "bg-chip font-medium" : "")}
             >
-              <span className={"h-2 w-2 shrink-0 rounded-full " + (dirty.has(s.id) ? "bg-orange-500" : "bg-line")} />
+              <span className={"h-2 w-2 shrink-0 rounded-full " + (dirty.has(s.id) ? "bg-warn-fg" : "bg-line")} />
               <span className="text-muted">{i + 1}.</span>
               <span className="flex-1">{(s as { title: string }).title}</span>
             </button>
@@ -1762,19 +1762,19 @@ export default function CaseHistoryWorkspace({
         </div>
       )}
 
-      {message && <p className="text-[13px] text-muted">{message}</p>}
+      {message && <p className="text-footnote text-muted">{message}</p>}
 
-      <div className="fixed inset-x-0 bottom-0 z-10 mx-auto max-w-md border-t border-line bg-background/90 px-4 py-3 backdrop-blur-xl">
+      <div className="bottom-bar fixed inset-x-0 bottom-0 z-10 mx-auto max-w-md border-t border-line bg-background/90 px-4 pt-3 backdrop-blur-xl">
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => goTo(step - 1)} disabled={step === 0} className="rounded-[12px] border border-line px-5 py-3 text-[15px] font-semibold disabled:opacity-40">
+          <button type="button" onClick={() => goTo(step - 1)} disabled={step === 0} className="rounded-[12px] border border-line px-5 py-3 text-subhead font-semibold disabled:opacity-40">
             Back
           </button>
           {current.id === "review" ? (
-            <Link href={`/patients/${patientId}`} className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-center text-[16px] font-semibold text-accent-ink">
+            <Link href={`/patients/${patientId}`} className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-center text-callout font-semibold text-accent-ink">
               Done
             </Link>
           ) : (
-            <button type="button" onClick={() => goTo(step + 1)} className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-[16px] font-semibold text-accent-ink">
+            <button type="button" onClick={() => goTo(step + 1)} className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-callout font-semibold text-accent-ink">
               {dirty.has(current.id) ? "Save & next" : "Next"}
             </button>
           )}
@@ -1828,7 +1828,7 @@ function AttrGroup({
 
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-[12px] font-medium text-muted">{attr.label}</span>
+      <span className="text-caption font-medium text-muted">{attr.label}</span>
       <div className="flex flex-wrap gap-1.5">
         {attr.options.map((o) => (
           <SelChip key={o} selected={has(o)} onClick={() => toggle(o)}>
