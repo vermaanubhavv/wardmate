@@ -420,11 +420,166 @@ const COMPLAINT_CHIPS_BY_SPECIALTY: Record<string, string[]> = {
   emergency_medicine: COMPLAINT_CHIPS_EMERGENCY_MEDICINE,
 };
 
+const PAST_CHIPS_PULMONARY_MEDICINE = [
+  "TB (Koch's) — treated",
+  "Asthma",
+  "COPD",
+  "Bronchiectasis",
+  "ILD",
+  "Previous ICD / tapping",
+  "Previous NIV / ventilation",
+  "DM",
+  "HTN",
+  "CAD / IHD",
+  "HIV",
+];
+
+const PAST_CHIPS_ENT = [
+  "Recurrent tonsillitis",
+  "Chronic sinusitis",
+  "Allergic rhinitis",
+  "Previous ear discharge",
+  "Hearing aid",
+  "Previous ENT surgery",
+  "DM",
+  "HTN",
+  "Bleeding disorder",
+  "On blood thinners",
+];
+
+const PAST_CHIPS_PSYCHIATRY = [
+  "Previous psychiatric illness",
+  "Previous admission",
+  "Previous self-harm",
+  "Alcohol use",
+  "Substance use",
+  "Seizure disorder",
+  "Head injury",
+  "Thyroid",
+  "DM",
+  "HTN",
+];
+
+const PAST_CHIPS_OPHTHALMOLOGY = [
+  "DM",
+  "HTN",
+  "Glaucoma",
+  "Previous cataract surgery",
+  "Previous eye laser",
+  "Uses glasses",
+  "Previous eye injury",
+  "Steroid use",
+  "Thyroid",
+  "Asthma / COPD",
+];
+
+const PAST_CHIPS_DERMATOLOGY = [
+  "Psoriasis",
+  "Atopic dermatitis / eczema",
+  "Asthma / allergic rhinitis",
+  "Leprosy — treated",
+  "Previous drug reaction",
+  "DM",
+  "HTN",
+  "Thyroid",
+  "HIV",
+  "Steroid use",
+];
+
+const PAST_CHIPS_BURNS_PLASTIC_SURGERY = [
+  "DM",
+  "HTN",
+  "Seizure disorder",
+  "Previous burns",
+  "Previous grafting / flap",
+  "Keloid tendency",
+  "Smoker",
+  "Asthma / COPD",
+  "CKD",
+  "Tetanus immunised",
+];
+
+const PAST_CHIPS_ORTHOPAEDICS = [
+  "DM",
+  "HTN",
+  "Osteoporosis",
+  "Rheumatoid arthritis",
+  "Previous fracture",
+  "Previous joint replacement / implant",
+  "TB (Koch's)",
+  "Previous DVT",
+  "CKD",
+  "Smoker",
+];
+
+const PAST_CHIPS_UROLOGY = [
+  "Renal / ureteric stones",
+  "BPH",
+  "Recurrent UTI",
+  "Previous catheterisation",
+  "Previous urological surgery",
+  "DM",
+  "HTN",
+  "CKD",
+  "TB (Koch's)",
+  "On blood thinners",
+];
+
+const PAST_CHIPS_NEUROSURGERY = [
+  "Seizure disorder",
+  "Previous head injury",
+  "Previous neurosurgery",
+  "VP shunt",
+  "HTN",
+  "DM",
+  "Stroke",
+  "On blood thinners",
+  "Known brain tumour",
+  "Alcohol use",
+];
+
+const PAST_CHIPS_PAEDIATRICS = [
+  "Preterm birth",
+  "NICU admission",
+  "Previous admissions",
+  "Asthma / wheeze",
+  "Seizures",
+  "Congenital heart disease",
+  "Malnutrition",
+  "TB contact",
+  "Incomplete immunisation",
+  "Allergies",
+];
+
+const PAST_CHIPS_EMERGENCY_MEDICINE = [
+  "DM",
+  "HTN",
+  "CAD / IHD",
+  "Asthma / COPD",
+  "Seizure disorder",
+  "CKD",
+  "Stroke",
+  "On blood thinners",
+  "Allergies",
+  "Pregnant",
+];
+
 const PAST_CHIPS_BY_SPECIALTY: Record<string, string[]> = {
   general_surgery: PAST_CHIPS_GENERAL_SURGERY,
   internal_medicine: PAST_CHIPS_INTERNAL_MEDICINE,
   medical_oncology: PAST_CHIPS_MEDICAL_ONCOLOGY,
   obstetrics_gynaecology: PAST_CHIPS_OBSTETRICS_GYNAECOLOGY,
+  pulmonary_medicine: PAST_CHIPS_PULMONARY_MEDICINE,
+  ent: PAST_CHIPS_ENT,
+  psychiatry: PAST_CHIPS_PSYCHIATRY,
+  ophthalmology: PAST_CHIPS_OPHTHALMOLOGY,
+  dermatology: PAST_CHIPS_DERMATOLOGY,
+  burns_plastic_surgery: PAST_CHIPS_BURNS_PLASTIC_SURGERY,
+  orthopaedics: PAST_CHIPS_ORTHOPAEDICS,
+  urology: PAST_CHIPS_UROLOGY,
+  neurosurgery: PAST_CHIPS_NEUROSURGERY,
+  paediatrics: PAST_CHIPS_PAEDIATRICS,
+  emergency_medicine: PAST_CHIPS_EMERGENCY_MEDICINE,
 };
 
 /** Unknown or missing specialty (including "patch not run yet") degrades to the surgical set —
