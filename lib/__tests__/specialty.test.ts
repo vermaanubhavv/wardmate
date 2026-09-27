@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { SPECIALTY_KEYS } from "@/lib/specialty/types";
 import { burnsPlasticSurgeryPack } from "@/lib/specialty/burns-plastic-surgery";
 import { listTrees } from "@/lib/history-check/trees";
@@ -562,17 +564,28 @@ describe("offersChecklistFamily — the picker follows the department chosen at 
     expect(offersChecklistFamily(generalSurgeryPack, "dka")).toBe(false);
   });
 
-  it("offers nothing to a department whose own checklists are not written yet", () => {
-    // Every one of these operates or admits, and would have been handed another department's
-    // work by the old phase-only filter — an eye unit offered "Lap chole", an O&G unit offered
-    // appendicectomy. Empty is the deliberate answer until their own rows exist.
-    for (const pack of listSpecialties().filter((p) => p.checklistFamilies?.length === 0)) {
+  it("never hands a department another department's checklists", () => {
+    // Before their own rows existed these departments were given an empty list, so an eye unit
+    // was never offered "Lap chole" or an O&G unit an appendicectomy. Now every department has
+    // its own (patches 0089–0091), and still none of them is offered surgery's or medicine's.
+    for (const pack of listSpecialties().filter((p) => p.checklistFamilies !== null)) {
+      if (pack.key === "internal_medicine" || pack.key === "medical_oncology") continue;
+      expect(pack.checklistFamilies?.length, pack.key).toBeGreaterThan(0);
       for (const family of ["lap_chole", "appendicectomy", "dka", "chemo_cycle"]) {
-        expect(offersChecklistFamily(pack, family)).toBe(false);
+        expect(offersChecklistFamily(pack, family), `${pack.key}: ${family}`).toBe(false);
       }
     }
-    // And that set is not empty, so the loop above is really asserting something.
-    expect(listSpecialties().some((p) => p.checklistFamilies?.length === 0)).toBe(true);
+  });
+
+  it("every family a department lists is seeded as a picker row by some patch", () => {
+    // A family with no care_templates row can never be picked, so the list would be a lie.
+    const dir = path.join(process.cwd(), "supabase/patches");
+    const sql = fs.readdirSync(dir).filter((f) => f.endsWith(".sql")).map((f) => fs.readFileSync(path.join(dir, f), "utf8")).join("\n");
+    for (const pack of listSpecialties()) {
+      for (const family of pack.checklistFamilies ?? []) {
+        expect(sql.includes(`'${family}'`), `${pack.key}: ${family}`).toBe(true);
+      }
+    }
   });
 
   it("lets a neighbouring department share rows on purpose, not by accident", () => {

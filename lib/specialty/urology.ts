@@ -99,7 +99,8 @@ Urology ward — what the words mean here:
   pickerPhase: "after_surgery",
 
   // Empty: no urological checklist is written yet. Post-PCNL and post-TURP are the first two.
-  checklistFamilies: [],
+  // Seeded by patches 0089–0091 (drafts until published).
+  checklistFamilies: ["turp", "stone_surgery", "nephrectomy", "urinary_retention"],
 
   lexiconSpecialty: "urology",
 

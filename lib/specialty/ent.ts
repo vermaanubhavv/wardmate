@@ -105,7 +105,8 @@ ENT ward — what the words mean here:
   // ENT unit must not be handed general surgery's operations (lap chole, appendicectomy) just
   // because it also operates. The operation is still typed freely and kept as typed; only the
   // checklist behind it is absent until this unit's own are seeded.
-  checklistFamilies: [],
+  // Seeded by patches 0089–0091 (drafts until published).
+  checklistFamilies: ["tonsillectomy", "ear_surgery", "fess", "tracheostomy"],
 
   lexiconSpecialty: "ent",
 

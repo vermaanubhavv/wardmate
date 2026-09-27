@@ -123,7 +123,8 @@ Obstetrics and gynaecology ward — what the words mean here:
   // an O&G unit's operations are LSCS, hysterectomy and laparoscopy, none of which are in
   // general surgery's library, so offering that library offered the wrong department's work.
   // A PPH / pre-eclampsia / post-LSCS checklist replaces this the day it is written.
-  checklistFamilies: [],
+  // Seeded by patches 0089–0091 (drafts until published).
+  checklistFamilies: ["lscs", "normal_delivery", "pre_eclampsia", "antenatal_admission"],
 
   lexiconSpecialty: "obstetrics-gynaecology",
 

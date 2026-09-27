@@ -91,7 +91,8 @@ Skin ward and clinic — what the words mean here:
 
   // Empty: no dermatology checklist has been written. Cellulitis is medicine's row, and
   // claiming it here would be this app deciding a clinical scope nobody signed off.
-  checklistFamilies: [],
+  // Seeded by patches 0089–0091 (drafts until published).
+  checklistFamilies: ["sjs_ten", "autoimmune_blistering", "erythroderma", "leprosy_reaction"],
 
   lexiconSpecialty: "dermatology",
 

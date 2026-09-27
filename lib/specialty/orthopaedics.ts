@@ -105,7 +105,8 @@ Orthopaedic ward — what the words mean here:
   // Empty, exactly as scoringKeys is not: no orthopaedic checklist has been written, and this
   // unit must not be handed general surgery's operations because it also operates. A
   // post-arthroplasty and a fracture-fixation checklist are the first to seed.
-  checklistFamilies: [],
+  // Seeded by patches 0089–0091 (drafts until published).
+  checklistFamilies: ["fracture_fixation", "hip_fracture", "arthroplasty", "limb_in_cast", "open_fracture"],
 
   lexiconSpecialty: "orthopaedics",
 

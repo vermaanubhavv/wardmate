@@ -102,7 +102,8 @@ Paediatric ward — what the words mean here:
 
   // Empty: no paediatric checklist has been written, and not one of medicine's 22 is a child's
   // admission — the drugs, the doses and the thresholds inside them are all adult.
-  checklistFamilies: [],
+  // Seeded by patches 0089–0091 (drafts until published).
+  checklistFamilies: ["paediatric_pneumonia", "paediatric_dehydration", "neonatal_sepsis", "febrile_seizure", "severe_acute_malnutrition"],
 
   lexiconSpecialty: "paediatrics",
 

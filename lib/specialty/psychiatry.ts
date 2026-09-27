@@ -97,7 +97,8 @@ Psychiatry ward — what the words mean here:
   pickerPhase: "before_surgery",
 
   // Empty: no psychiatry checklist exists, and none of medicine's is a psychiatric admission.
-  checklistFamilies: [],
+  // Seeded by patches 0089–0091 (drafts until published).
+  checklistFamilies: ["acute_psychosis", "alcohol_withdrawal", "suicide_risk", "mania"],
 
   lexiconSpecialty: "psychiatry",
 

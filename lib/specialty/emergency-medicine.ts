@@ -102,7 +102,8 @@ Emergency department — what the words mean here:
   // Empty: no emergency checklist is written. The obvious first ones — a resuscitation
   // checklist, a poisoning checklist, a polytrauma primary survey — are exactly the clinical
   // content that needs a department's own sign-off before it goes near a patient.
-  checklistFamilies: [],
+  // Seeded by patches 0089–0091 (drafts until published).
+  checklistFamilies: ["polytrauma", "poisoning", "snakebite", "heat_illness"],
 
   lexiconSpecialty: "emergency-medicine",
 

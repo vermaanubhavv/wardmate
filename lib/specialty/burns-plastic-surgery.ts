@@ -124,7 +124,8 @@ Burns and plastic surgery ward — what the words mean here:
 
   // Empty: a burns resuscitation checklist and the graft/flap ones are real clinical content
   // this pack has not got yet, and general surgery's operations are not this unit's either.
-  checklistFamilies: [],
+  // Seeded by patches 0089–0091 (drafts until published).
+  checklistFamilies: ["acute_burns", "skin_graft", "flap_surgery", "hand_surgery"],
 
   lexiconSpecialty: "burns_plastic_surgery",
 
