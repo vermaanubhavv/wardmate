@@ -28,6 +28,14 @@ import { heartScoreV1 } from "./heart-score.v1";
 import { ciwaArV1 } from "./ciwa-ar.v1";
 import { childPughV1 } from "./child-pugh.v1";
 import { kdigoAkiV1 } from "./kdigo-aki.v1";
+import { masccV1 } from "./mascc.v1";
+import { scortenV1 } from "./scorten.v1";
+import { absiV1 } from "./absi.v1";
+import { canadianCtHeadV1 } from "./canadian-ct-head.v1";
+import { centorV1 } from "./centor.v1";
+import { cowsV1 } from "./cows.v1";
+import { meowsV1 } from "./meows.v1";
+import { pewsV1 } from "./pews.v1";
 
 const BUILT_IN: PathwayDefinition[] = [
   // General surgery
@@ -53,6 +61,15 @@ const BUILT_IN: PathwayDefinition[] = [
   ciwaArV1, // ciwa_ar — alcohol withdrawal  — surgery + medicine
   childPughV1, // child_pugh — chronic liver disease  — surgery + medicine
   kdigoAkiV1, // kdigo_aki — acute kidney injury  — surgery + medicine
+  // Department scores (2026-09-28) — draft until signed off, so not offered at runtime yet.
+  masccV1, // mascc — febrile neutropenia  — oncology
+  scortenV1, // scorten — SJS / TEN  — dermatology
+  absiV1, // absi — burn severity  — burns & plastics
+  canadianCtHeadV1, // canadian_ct_head — minor head injury  — neurosurgery + emergency
+  centorV1, // centor — sore throat  — ENT
+  cowsV1, // cows — opioid withdrawal  — psychiatry
+  meowsV1, // meows — obstetric early warning  — O&G
+  pewsV1, // pews — paediatric early warning  — paediatrics
 ];
 
 // Fail fast in dev/test if a built-in definition is malformed.

@@ -86,7 +86,9 @@ Paediatric ward — what the words mean here:
 
   // EMPTY, AND DELIBERATELY SO. Every built pathway is validated in adults only. See the header:
   // this is the single most important line in this pack.
-  scoringKeys: [],
+  // Brighton PEWS — draft until signed off. Scored by the resident's taps, never by adult
+  // vital-sign thresholds, so the "adult-only" rule above still holds.
+  scoringKeys: ["pews"],
 
   // No OT notes slot: this ward has no operating theatre. A child who is operated on belongs to
   // a surgical unit.

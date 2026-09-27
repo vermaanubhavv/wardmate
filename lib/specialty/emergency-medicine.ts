@@ -86,7 +86,7 @@ Emergency department — what the words mean here:
 
   // The five an emergency physician reaches for, all active. No triage category and no
   // early-warning score — see the header.
-  scoringKeys: ["heart_score", "qsofa", "wells_pe", "wells_dvt", "upper_gi_bleeding"],
+  scoringKeys: ["heart_score", "qsofa", "wells_pe", "wells_dvt", "upper_gi_bleeding", "canadian_ct_head"],
 
   // No OT notes slot: a department that resuscitates and refers does not run a theatre.
   formatKinds: [

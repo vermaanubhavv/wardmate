@@ -20,6 +20,26 @@ const row = (o: Partial<ObservationRow>): ObservationRow => ({
 const facts = { ageYears: 64, sex: "male", admittedAt: ADM };
 
 describe("observations adapter", () => {
+  it("reads the ward's own charted vitals — BP as systolic and diastolic, PR as heart rate, SpO2", () => {
+    const inputs = toEngineInputs(
+      [
+        row({ kind: "vital", label: "BP", value_text: "90/60", source_quote: "90/60" }),
+        row({ kind: "vital", label: "PR", value_text: "124 /min", source_quote: "124 /min" }),
+        row({ kind: "vital", label: "SpO2", value_text: "93% RA", source_quote: "93% RA" }),
+      ],
+      facts
+    );
+    expect(inputs.find((i) => i.key === "sbp")?.value).toBe(90);
+    expect(inputs.find((i) => i.key === "dbp")?.value).toBe(60);
+    expect(inputs.find((i) => i.key === "hr")?.value).toBe(124);
+    expect(inputs.find((i) => i.key === "spo2")?.value).toBe(93);
+  });
+
+  it("does not read a per-rectal finding labelled PR as a pulse", () => {
+    const inputs = toEngineInputs([row({ kind: "exam", label: "PR", value_text: "no mass, 2 cm above", source_quote: "PR no mass" })], facts);
+    expect(inputs.find((i) => i.key === "hr")).toBeUndefined();
+  });
+
   it("synthesises an age input at admission from the patient record", () => {
     const inputs = toEngineInputs([], facts);
     const age = inputs.find((i) => i.key === "age_years");

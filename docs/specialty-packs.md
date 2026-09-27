@@ -1028,3 +1028,27 @@ medicine's families.
 Two limits to know: a non-operative family (pre-eclampsia, corneal ulcer, acute burns) has no
 post-operative protocol, so it stops showing once a surgery date is set; and the normal-delivery
 postnatal list appears only if the delivery is recorded as the surgery date.
+
+## 18. A score for every department (2026-09-28)
+
+Eight new scoring pathways, drafted from their original papers and registered as `draft` (the
+engine offers only `active` ones, so nothing shows until sign-off flips them):
+
+| Department | Score (pathwayId) | Shape |
+|---|---|---|
+| Medical oncology | MASCC (`mascc`) | points; age and SBP auto, the rest tapped |
+| Dermatology | SCORTEN (`scorten`) | points in the first 24 h; age, HR, urea, bicarbonate, glucose auto |
+| Burns & plastics | ABSI (`absi`) | points; sex and age auto, TBSA / inhalation / full thickness tapped |
+| Neurosurgery, emergency | Canadian CT Head Rule (`canadian_ct_head`) | high / medium / not met; age auto |
+| ENT | Centor (`centor`) | points; temperature auto |
+| Psychiatry | COWS (`cows`) | points; pulse auto |
+| O&G | MEOWS (`meows`) | one red or two yellow triggers; all vitals auto, AVPU tapped |
+| Paediatrics | Brighton PEWS (`pews`) | points, all tapped — the resident age-bands HR / RR |
+
+Ophthalmology has none: there is no validated ward score to offer. Baux (burns) and McIsaac (ENT)
+were not built — Baux needs arithmetic the engine does not do, McIsaac a negative point.
+
+The same change fixed the observations adapter: the ward's vitals card charts "BP 120/80" and
+"PR", which never matched the engine's systolic / heart-rate aliases, so qSOFA, CURB-65,
+Glasgow-Blatchford and HEART never saw a charted BP or pulse. It also now reads diastolic BP and
+SpO₂ (needed by MEOWS).

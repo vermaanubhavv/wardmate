@@ -89,7 +89,7 @@ Psychiatry ward — what the words mean here:
 
   // Alcohol withdrawal only, and only because CIWA-Ar is already built, reviewed and active.
   // No mood, psychosis or risk scale is offered: none has been built here.
-  scoringKeys: ["ciwa_ar"],
+  scoringKeys: ["ciwa_ar", "cows"],
 
   // No OT notes slot: this department has no operating theatre.
   formatKinds: ["investigation", "interdepartmental", "discharge", "notes", "logo"] as FormatKind[],
