@@ -175,4 +175,12 @@ export type SpecialtyPack = {
    * means "no department order", which is what the picker did before this field existed.
    */
   historyTreeIds: string[];
+
+  /**
+   * The examination checklists this department's residents are pointed to, in the order the
+   * ward examines (content/examination/). Linked from the History check card in academic mode;
+   * the Learn page still lists every checklist. An id that names no registered checklist is
+   * ignored, and an empty list falls back to the general physical examination.
+   */
+  examIds: string[];
 };

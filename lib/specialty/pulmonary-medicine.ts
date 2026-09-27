@@ -122,4 +122,7 @@ Pulmonary medicine ward — what the words mean here:
     "shock",
     "altered_sensorium",
   ],
+
+  // Examination checklists, in the order this ward examines — see types.ts.
+  examIds: ["respiratory", "general_physical", "cardiovascular"],
 };

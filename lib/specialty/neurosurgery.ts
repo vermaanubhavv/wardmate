@@ -117,4 +117,7 @@ Neurosurgical ward — what the words mean here:
     "giddiness",
     "fever",
   ],
+
+  // Examination checklists, in the order this ward examines — see types.ts.
+  examIds: ["neurological", "spine", "general_physical"],
 };

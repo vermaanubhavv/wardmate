@@ -122,4 +122,7 @@ Emergency department — what the words mean here:
     "haematemesis",
     "fever",
   ],
+
+  // Examination checklists, in the order this ward examines — see types.ts.
+  examIds: ["general_physical", "respiratory", "cardiovascular", "abdomen", "neurological", "spine", "burns_wound"],
 };

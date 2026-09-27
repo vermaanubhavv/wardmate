@@ -2,20 +2,37 @@ import { describe, it, expect } from "vitest";
 import { validateExamChecklist } from "@/lib/history-check/exam-schema";
 import { getExamChecklist, listExamChecklists } from "@/lib/history-check/exams";
 import { generalPhysicalV1 } from "@/content/examination/general-physical.v1";
+import { listSpecialties } from "@/lib/specialty";
 
 const clone = () => JSON.parse(JSON.stringify(generalPhysicalV1)) as typeof generalPhysicalV1;
 
 describe("exam checklists", () => {
-  it("every shipped checklist validates, is clinician-reviewed, and names its reviewer", () => {
+  it("every shipped checklist validates, and only a named reviewer can mark one reviewed", () => {
     for (const c of listExamChecklists()) {
-      expect(validateExamChecklist(c).ok).toBe(true);
-      // Reviewed by Dr Anubhav Verma. A NEW checklist starts pending — copying a shipped file carries
-      // this field forward, so reset it; this assertion is what catches you if you forget.
-      expect(c.reviewStatus).toBe("reviewed");
-      expect(c.reviewedBy).toBeTruthy();
+      expect(validateExamChecklist(c).ok, c.id).toBe(true);
+      if (c.reviewStatus === "reviewed") expect(c.reviewedBy, c.id).toBeTruthy();
+      else expect(c.reviewedBy, c.id).toBeNull();
     }
     expect(getExamChecklist("general_physical")?.title).toMatch(/General physical/);
     expect(getExamChecklist("nope")).toBeNull();
+  });
+
+  it("pins exactly which checklists a clinician has signed off", () => {
+    // Adding an id here is a claim that a named clinician read that checklist. Nothing else is.
+    const reviewed = listExamChecklists().filter((c) => c.reviewStatus === "reviewed").map((c) => c.id).sort();
+    expect(reviewed).toEqual([
+      "abdomen", "breast", "burns_wound", "cardiovascular", "ent", "eye", "general_physical",
+      "genitourinary", "gynaecological", "mental_state", "musculoskeletal", "neurological",
+      "newborn", "obstetric", "paediatric", "respiratory", "skin", "spine",
+    ]);
+  });
+
+  it("every department's examination list names checklists that ship", () => {
+    for (const pack of listSpecialties()) {
+      expect(pack.examIds.length, pack.key).toBeGreaterThan(0);
+      for (const id of pack.examIds) expect(getExamChecklist(id), `${pack.key}: ${id}`).toBeTruthy();
+      expect(new Set(pack.examIds).size, pack.key).toBe(pack.examIds.length);
+    }
   });
 
   it("rejects a reviewed checklist with no reviewer named", () => {

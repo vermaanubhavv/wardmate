@@ -52,13 +52,18 @@ export default function HistoryCheckCard({
   trees,
   runs,
   hasSources,
+  exams = [],
 }: {
   patientId: string;
   trees: TreeChoice[];
   /** Latest run per tree, keyed by tree id. */
   runs: Record<string, RunView>;
   hasSources: boolean;
+  /** This department's examination checklists, in order (the pack's examIds). Empty falls back
+   *  to the general physical examination. */
+  exams?: { id: string; title: string }[];
 }) {
+  const examLinks = exams.length > 0 ? exams : [{ id: "general_physical", title: "General physical examination" }];
   const router = useRouter();
   const online = useOnline();
   const [mode, setMode] = useState<CheckMode>("ward");
@@ -218,9 +223,11 @@ export default function HistoryCheckCard({
                   <Link href={`/learn/history/${run.treeId}`} className="font-semibold text-accent">
                     Learn: taking a {run.complaint.toLowerCase()} history ›
                   </Link>
-                  <Link href="/learn/examination/general_physical" className="font-semibold text-accent">
-                    Learn: general physical examination ›
-                  </Link>
+                  {examLinks.map((e) => (
+                    <Link key={e.id} href={`/learn/examination/${e.id}`} className="font-semibold text-accent">
+                      Learn: {e.title.charAt(0).toLowerCase() + e.title.slice(1)} ›
+                    </Link>
+                  ))}
                 </p>
               )}
             </div>
@@ -232,10 +239,14 @@ export default function HistoryCheckCard({
             <Link href={`/learn/history/${treeId}`} className="font-semibold text-accent">
               Learn: taking this history ›
             </Link>
-            <span className="mx-2 text-muted">·</span>
-            <Link href="/learn/examination/general_physical" className="font-semibold text-accent">
-              General physical examination ›
-            </Link>
+            {examLinks.map((e) => (
+              <span key={e.id}>
+                <span className="mx-2 text-muted">·</span>
+                <Link href={`/learn/examination/${e.id}`} className="font-semibold text-accent">
+                  {e.title} ›
+                </Link>
+              </span>
+            ))}
           </div>
         )}
       </div>
