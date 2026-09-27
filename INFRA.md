@@ -20,7 +20,7 @@ repo to Vercel for deploys — everything past this point assumes that has happe
 | Hosting | **Vercel** | Project name `wardmate`. Deployed via `vercel --prod` from the CLI today — see above. |
 | Database | **Supabase** (Postgres) | Project ref `zrisashumxmiiwffhezc` → `https://zrisashumxmiiwffhezc.supabase.co`. Region **Mumbai (`ap-south-1`)** — patient data at rest stays in India. Also provides auth and file storage. |
 | AI | **Anthropic API** (`claude-opus-5`) | Structures spoken/typed notes into clinical values; reads photographed lab reports and the ward register. |
-| Speech-to-text | Pluggable — **OpenAI**, **Sarvam** or **Deepgram** | Behind `lib/stt/`, selected by the `STT_PROVIDER` env var. Swappable without touching anything else; the point of that seam is comparing engines on Indian-accented medical speech. Deepgram runs `nova-3-medical` in `en-IN` with a per-patient keyterm list — see `docs/medical-dictation-keyterms.md`. |
+| Speech-to-text | **Deepgram** | Behind `lib/stt/`; the only engine (OpenAI and Sarvam were removed to keep patient audio with one sub-processor). Runs `nova-3-medical` in `en-IN` with a per-patient keyterm list — see `docs/medical-dictation-keyterms.md`. |
 | Outbound email | **Resend**, via Supabase's SMTP integration | Sends the sign-in codes. Outreach check-ins (waitlist / quiet / active) go out daily at 10:00 IST from pg_cron via Resend's API; key in Supabase Vault as `resend_api_key` — see `supabase/patches/0081_outreach_emails.sql`. |
 | Monitoring | **Sentry** (`@sentry/nextjs`) | Crash reports + 10%-sampled performance traces, browser and server. Dormant unless `NEXT_PUBLIC_SENTRY_DSN` is set. See "Sentry" below. |
 | Styling | Tailwind, hand-rolled iOS-style components | No component library. |
@@ -35,10 +35,7 @@ values are not reproduced here:
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 ANTHROPIC_API_KEY
-OPENAI_API_KEY
-SARVAM_API_KEY
 DEEPGRAM_API_KEY
-STT_PROVIDER
 NEXT_PUBLIC_LIVE_DICTATION
 NEXT_PUBLIC_SENTRY_DSN     # empty = Sentry off; a real DSN turns it on. Not a secret.
 SENTRY_ORG                # build-time only, for source-map upload
@@ -46,21 +43,15 @@ SENTRY_PROJECT            # build-time only
 SENTRY_AUTH_TOKEN         # build-time only, IS a secret — set in Vercel, not in the browser
 ```
 
-To trial Deepgram Nova-3 Medical, set `DEEPGRAM_API_KEY` and `STT_PROVIDER=deepgram`. The key
-is used only on the server (the API routes call `lib/stt`); it is never sent to the browser.
+`DEEPGRAM_API_KEY` is used only on the server (the API routes call `lib/stt`); it is never sent to the browser.
 
 **Live case-history dictation** (`NEXT_PUBLIC_LIVE_DICTATION=1`) adds a "Dictate the whole
 clerking" flow: the browser streams the microphone straight to Deepgram Nova-3 Medical and
 each pause-delimited thought is sorted into its card as the resident speaks. It needs
-`DEEPGRAM_API_KEY` set regardless of `STT_PROVIDER` (it mints a 30-second Deepgram token in
+`DEEPGRAM_API_KEY` (it mints a 30-second Deepgram token in
 `/api/transcribe/live-token`; the long-lived key never reaches the browser). Every other
-"Speak" button is unaffected and keeps using `STT_PROVIDER`. Leave the flag unset to hide the
-feature.
-
-To trial Sarvam Saaras, set `SARVAM_API_KEY` and `STT_PROVIDER=sarvam` locally and in Vercel.
-Sarvam's synchronous endpoint returns one transcript for recordings up to 30 seconds, so use
-short bedside notes while evaluating it; longer round recordings should stay on OpenAI until a
-Sarvam batch/realtime flow is added.
+"Speak" button is unaffected and uses a prerecorded Deepgram pass. Leave the flag unset to hide
+the feature.
 
 The Supabase key is the **publishable** (anon) key, not the service role key — deliberately.
 The app never uses a service-role key from application code; every read and write goes through

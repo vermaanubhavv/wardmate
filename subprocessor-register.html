@@ -305,22 +305,10 @@
             <td class="muted-cell">Per Anthropic's API terms; confirm current retention/training settings in the account's data-handling agreement before launch.</td>
           </tr>
           <tr>
-            <td class="vendor">OpenAI<span class="role">default speech-to-text</span></td>
-            <td><span class="tag">audio</span> raw voice recordings</td>
-            <td class="muted-cell">Transcribes spoken bedside notes to text. Active only when <code>STT_PROVIDER</code> is unset or <code>openai</code>.</td>
-            <td class="muted-cell">Per OpenAI's API terms — confirm current policy.</td>
-          </tr>
-          <tr>
-            <td class="vendor">Deepgram<span class="role">alternate speech-to-text</span></td>
+            <td class="vendor">Deepgram<span class="role">speech-to-text</span></td>
             <td><span class="tag">audio</span> raw voice recordings, incl. live-dictation streams</td>
-            <td class="muted-cell">Same job as OpenAI above; a per-ward setting picks one provider, not both.</td>
+            <td class="muted-cell">Transcribes spoken bedside notes and live case-history dictation to text. The only speech-to-text provider.</td>
             <td class="muted-cell">Every request is sent with <code>mip_opt_out=true</code>, so audio is excluded from Deepgram's model training. Other retention per Deepgram's API terms — confirm current policy.</td>
-          </tr>
-          <tr>
-            <td class="vendor">Sarvam<span class="role">alternate speech-to-text</span></td>
-            <td><span class="tag">audio</span> short (&lt;30s) voice recordings</td>
-            <td class="muted-cell">Same job, evaluated for Indian-accented medical speech.</td>
-            <td class="muted-cell">Per Sarvam's API terms — confirm current policy.</td>
           </tr>
         </tbody>
       </table>
@@ -404,7 +392,6 @@
 
   <footer>
     <span>WardMate · <code>wardmate.in</code></span>
-    <span>Speech-to-text provider is a per-deployment setting (<code>STT_PROVIDER</code>) — only one of OpenAI / Deepgram / Sarvam is active at a time. Update this register if that setting changes.</span>
   </footer>
 
 </div>
