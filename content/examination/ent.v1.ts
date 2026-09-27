@@ -2,7 +2,7 @@ import type { ExamChecklist, ExamItem } from "@/lib/history-check/exam-types";
 import { BATES, DHINGRA, HUTCHISONS } from "@/content/history-trees/_helpers";
 
 /**
- * ENT EXAMINATION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * ENT EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Ear, nose, throat and neck, with a head mirror or headlamp and light reflected from behind
  * the patient's shoulder. The normal ear is examined first so the abnormal side has a reference.
@@ -27,8 +27,8 @@ export const entV1: ExamChecklist = {
   version: "1.0.0",
   title: "ENT examination",
   setting: "ENT ward and OPD, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DHINGRA, HUTCHISONS, BATES],
   sections: [
     {

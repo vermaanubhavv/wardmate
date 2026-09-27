@@ -2,7 +2,7 @@ import type { ExamChecklist, ExamItem } from "@/lib/history-check/exam-types";
 import { BAILEY_LOVE, BATES, CAMPBELL_UROLOGY, HUTCHISONS, MACLEODS } from "@/content/history-trees/_helpers";
 
 /**
- * GENITOURINARY EXAMINATION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * GENITOURINARY EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Consent and a chaperone first. Then the kidneys and bladder, the external genitalia, the
  * scrotum and its contents, the inguinal nodes and the rectal examination for the prostate,
@@ -26,8 +26,8 @@ export const genitourinaryV1: ExamChecklist = {
   version: "1.0.0",
   title: "Genitourinary examination",
   setting: "Urology and general surgery ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [CAMPBELL_UROLOGY, BAILEY_LOVE, MACLEODS, HUTCHISONS, BATES],
   sections: [
     {

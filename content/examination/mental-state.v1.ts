@@ -2,7 +2,7 @@ import type { ExamChecklist, ExamItem } from "@/lib/history-check/exam-types";
 import { HUTCHISONS, KAPLAN_SADOCK, MACLEODS } from "@/content/history-trees/_helpers";
 
 /**
- * MENTAL STATE EXAMINATION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * MENTAL STATE EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * A structured record of what is observed and elicited now, at this interview, from appearance
  * through cognition to insight. Much of it is gathered while the history is being taken; the
@@ -27,8 +27,8 @@ export const mentalStateV1: ExamChecklist = {
   version: "1.0.0",
   title: "Mental state examination",
   setting: "Psychiatry ward and OPD, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [KAPLAN_SADOCK, MACLEODS, HUTCHISONS],
   sections: [
     {

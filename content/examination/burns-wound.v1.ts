@@ -2,7 +2,7 @@ import type { ExamChecklist, ExamItem } from "@/lib/history-check/exam-types";
 import { ATLS, BAILEY_LOVE, GRABB_SMITH, MACLEODS } from "@/content/history-trees/_helpers";
 
 /**
- * BURNS AND WOUND EXAMINATION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * BURNS AND WOUND EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * In an acute burn the airway and circulation come before the wound: inhalation signs first,
  * then perfusion, then the extent and depth of the burn, circumferential burns and the special
@@ -27,8 +27,8 @@ export const burnsWoundV1: ExamChecklist = {
   version: "1.0.0",
   title: "Burns and wound examination",
   setting: "Burns and plastic surgery ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [GRABB_SMITH, ATLS, BAILEY_LOVE, MACLEODS],
   sections: [
     {

@@ -13,7 +13,7 @@ return 404, and nothing under `lib/history-check/` is queried. Off by default.
 Clinical content carries `reviewStatus` and `reviewedBy`, and the card and learning pages show
 a chip for each: amber "Pending clinician review", or green "Reviewed · <reviewer>".
 
-**All ninety-seven trees, the five system examination checklists and the safety-level
+**All ninety-seven trees, all eighteen examination checklists and the safety-level
 thresholds are reviewed and signed off by Dr Anubhav Verma.** As with the scoring pathways, that
 is a single-clinician sign-off covering content that spans nine specialties; departmental review
 is still outstanding.
@@ -209,11 +209,11 @@ before packs existed. See `docs/specialty-packs.md` §11.
 
 ### Examination checklists — `content/examination/`
 
-Eighteen checklists. The five system examinations — `general-physical.v1.ts`,
-`cardiovascular.v1.ts`, `respiratory.v1.ts`, `abdomen.v1.ts` and `neurological.v1.ts` — are
-reviewed. Thirteen department examinations added 2026-09-28 are PENDING CLINICIAN REVIEW:
-obstetric, gynaecological, breast, ENT, eye, skin, mental state, musculoskeletal, spine,
-paediatric, newborn, burns and wound, genitourinary. `exam.test.ts` pins which are reviewed.
+Eighteen checklists, all reviewed: the five system examinations — `general-physical.v1.ts`,
+`cardiovascular.v1.ts`, `respiratory.v1.ts`, `abdomen.v1.ts` and `neurological.v1.ts` — and
+thirteen department examinations added and signed off 2026-09-28: obstetric, gynaecological,
+breast, ENT, eye, skin, mental state, musculoskeletal, spine, paediatric, newborn, burns and
+wound, genitourinary. `exam.test.ts` pins which are reviewed.
 
 Each department points its residents to its own list, in order — `examIds` on the specialty
 pack (e.g. O&G: obstetric, gynaecological, breast, general physical, abdomen). The History check

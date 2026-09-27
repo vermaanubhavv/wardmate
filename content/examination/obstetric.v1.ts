@@ -2,7 +2,7 @@ import type { ExamChecklist, ExamItem } from "@/lib/history-check/exam-types";
 import { BATES, DUTTA_OBSTETRICS, HUTCHISONS, MACLEODS } from "@/content/history-trees/_helpers";
 
 /**
- * OBSTETRIC EXAMINATION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * OBSTETRIC EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * General examination, then the abdomen (inspection, fundal height, the four Leopold grips,
  * auscultation of the fetal heart), and, in labour, the vaginal examination. Anaemia and
@@ -27,8 +27,8 @@ export const obstetricV1: ExamChecklist = {
   version: "1.0.0",
   title: "Obstetric examination",
   setting: "Obstetrics and gynaecology ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DUTTA_OBSTETRICS, MACLEODS, HUTCHISONS, BATES],
   sections: [
     {

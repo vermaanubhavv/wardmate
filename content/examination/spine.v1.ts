@@ -2,7 +2,7 @@ import type { ExamChecklist, ExamItem } from "@/lib/history-check/exam-types";
 import { APLEY, ATLS, BATES, MACLEODS, YOUMANS } from "@/content/history-trees/_helpers";
 
 /**
- * SPINE EXAMINATION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * SPINE EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Inspection, palpation, movements, the nerve-root tension signs and a full neurological
  * examination to a level, with the perianal and bladder assessment that residents skip.
@@ -26,8 +26,8 @@ export const spineV1: ExamChecklist = {
   version: "1.0.0",
   title: "Spine examination",
   setting: "Orthopaedics and neurosurgery ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [APLEY, YOUMANS, ATLS, MACLEODS, BATES],
   sections: [
     {

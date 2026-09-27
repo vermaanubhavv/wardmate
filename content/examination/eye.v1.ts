@@ -2,7 +2,7 @@ import type { ExamChecklist, ExamItem } from "@/lib/history-check/exam-types";
 import { BATES, MACLEODS, PARSONS_EYE } from "@/content/history-trees/_helpers";
 
 /**
- * EYE EXAMINATION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * EYE EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Function before structure: visual acuity is recorded first, before any light is shone or
  * drop is put in, then fields, movements, adnexa, the anterior segment by torch light, the
@@ -27,8 +27,8 @@ export const eyeV1: ExamChecklist = {
   version: "1.0.0",
   title: "Eye examination",
   setting: "Ophthalmology ward and OPD, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PARSONS_EYE, MACLEODS, BATES],
   sections: [
     {

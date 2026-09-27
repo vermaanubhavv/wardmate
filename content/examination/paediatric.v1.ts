@@ -2,7 +2,7 @@ import type { ExamChecklist, ExamItem } from "@/lib/history-check/exam-types";
 import { BATES, GHAI_PAEDIATRICS, HUTCHISONS, IMNCI, MACLEODS } from "@/content/history-trees/_helpers";
 
 /**
- * PAEDIATRIC EXAMINATION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * PAEDIATRIC EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * The child is examined opportunistically: observe and count first while the child is calm,
  * on the mother's lap, and leave the distressing parts (throat, ears, anything painful) to
@@ -27,8 +27,8 @@ export const paediatricV1: ExamChecklist = {
   version: "1.0.0",
   title: "Paediatric examination",
   setting: "Paediatrics ward and emergency, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [GHAI_PAEDIATRICS, IMNCI, MACLEODS, HUTCHISONS, BATES],
   sections: [
     {

@@ -2,7 +2,7 @@ import type { ExamChecklist, ExamItem } from "@/lib/history-check/exam-types";
 import { BATES, HUTCHISONS, MACLEODS, SHAW_GYNAECOLOGY } from "@/content/history-trees/_helpers";
 
 /**
- * GYNAECOLOGICAL EXAMINATION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * GYNAECOLOGICAL EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Consent and a chaperone first, then the general and breast examination, the abdomen, the
  * external genitalia, the speculum, the bimanual examination and, when indicated, the rectal
@@ -27,8 +27,8 @@ export const gynaecologicalV1: ExamChecklist = {
   version: "1.0.0",
   title: "Gynaecological examination",
   setting: "Obstetrics and gynaecology ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [SHAW_GYNAECOLOGY, MACLEODS, HUTCHISONS, BATES],
   sections: [
     {

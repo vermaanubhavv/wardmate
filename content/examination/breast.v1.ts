@@ -2,7 +2,7 @@ import type { ExamChecklist, ExamItem } from "@/lib/history-check/exam-types";
 import { BAILEY_LOVE, BATES, HUTCHISONS, MACLEODS } from "@/content/history-trees/_helpers";
 
 /**
- * BREAST EXAMINATION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * BREAST EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Consent and a chaperone, inspection in several positions, palpation of the normal breast
  * first and then the symptomatic one, the lump described by its characteristics, and then the
@@ -28,8 +28,8 @@ export const breastV1: ExamChecklist = {
   version: "1.0.0",
   title: "Breast examination",
   setting: "Surgical and gynaecology wards, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [BAILEY_LOVE, MACLEODS, HUTCHISONS, BATES],
   sections: [
     {

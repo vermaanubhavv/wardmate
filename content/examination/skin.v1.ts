@@ -2,7 +2,7 @@ import type { ExamChecklist, ExamItem } from "@/lib/history-check/exam-types";
 import { HUTCHISONS, IADVL, MACLEODS, NLEP } from "@/content/history-trees/_helpers";
 
 /**
- * DERMATOLOGICAL EXAMINATION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * DERMATOLOGICAL EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Look at all of the skin, in daylight, before touching any of it; describe the primary lesion
  * before the secondary change; then the pattern, the special signs, the mucosae, the appendages
@@ -27,8 +27,8 @@ export const skinV1: ExamChecklist = {
   version: "1.0.0",
   title: "Dermatological examination",
   setting: "Dermatology ward and OPD, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [IADVL, NLEP, MACLEODS, HUTCHISONS],
   sections: [
     {

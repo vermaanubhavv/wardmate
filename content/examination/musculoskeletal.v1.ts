@@ -2,7 +2,7 @@ import type { ExamChecklist, ExamItem } from "@/lib/history-check/exam-types";
 import { APLEY, BAILEY_LOVE, BATES, HUTCHISONS, MACLEODS } from "@/content/history-trees/_helpers";
 
 /**
- * MUSCULOSKELETAL (LIMB AND JOINT) EXAMINATION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * MUSCULOSKELETAL (LIMB AND JOINT) EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Look, feel, move, special tests and the distal neurovascular status, always comparing with the
  * normal side and always examining the joint above and the joint below. Written for the
@@ -27,8 +27,8 @@ export const musculoskeletalV1: ExamChecklist = {
   version: "1.0.0",
   title: "Musculoskeletal (limb and joint) examination",
   setting: "Orthopaedics ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [APLEY, BAILEY_LOVE, MACLEODS, HUTCHISONS, BATES],
   sections: [
     {

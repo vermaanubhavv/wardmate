@@ -2,7 +2,7 @@ import type { ExamChecklist, ExamItem } from "@/lib/history-check/exam-types";
 import { BATES, GHAI_PAEDIATRICS, IMNCI, MACLEODS } from "@/content/history-trees/_helpers";
 
 /**
- * NEWBORN EXAMINATION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * NEWBORN EXAMINATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Gestation and weight first, then the vital state of the baby, then head to toe, then the
  * hips and reflexes, and the danger signs checked at every contact. Keep the baby warm: examine
@@ -26,8 +26,8 @@ export const newbornV1: ExamChecklist = {
   version: "1.0.0",
   title: "Newborn examination",
   setting: "Labour room, postnatal ward and neonatal unit, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [GHAI_PAEDIATRICS, IMNCI, MACLEODS, BATES],
   sections: [
     {

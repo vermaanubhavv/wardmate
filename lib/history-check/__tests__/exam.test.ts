@@ -20,7 +20,11 @@ describe("exam checklists", () => {
   it("pins exactly which checklists a clinician has signed off", () => {
     // Adding an id here is a claim that a named clinician read that checklist. Nothing else is.
     const reviewed = listExamChecklists().filter((c) => c.reviewStatus === "reviewed").map((c) => c.id).sort();
-    expect(reviewed).toEqual(["abdomen", "cardiovascular", "general_physical", "neurological", "respiratory"]);
+    expect(reviewed).toEqual([
+      "abdomen", "breast", "burns_wound", "cardiovascular", "ent", "eye", "general_physical",
+      "genitourinary", "gynaecological", "mental_state", "musculoskeletal", "neurological",
+      "newborn", "obstetric", "paediatric", "respiratory", "skin", "spine",
+    ]);
   });
 
   it("every department's examination list names checklists that ship", () => {
