@@ -10,7 +10,6 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "deploy:init": "node scripts/deploy-init.mjs",
-    "deploy:github": "node scripts/deploy-github.mjs",
     "ship": "node scripts/ship.mjs",
     "db:push": "node scripts/db-push.mjs",
     "env:sync": "node scripts/env-sync.mjs"
