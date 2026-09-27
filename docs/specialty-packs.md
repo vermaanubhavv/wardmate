@@ -1031,8 +1031,9 @@ postnatal list appears only if the delivery is recorded as the surgery date.
 
 ## 18. A score for every department (2026-09-28)
 
-Eight new scoring pathways, drafted from their original papers and registered as `draft` (the
-engine offers only `active` ones, so nothing shows until sign-off flips them):
+Eight new scoring pathways, drafted from their original papers and signed off for pilot use by
+Dr Anubhav Verma on 2026-09-28 (`active`; single-clinician sign-off, departmental review due
+2027-09-01):
 
 | Department | Score (pathwayId) | Shape |
 |---|---|---|

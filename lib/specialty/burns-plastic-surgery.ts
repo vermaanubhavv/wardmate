@@ -109,7 +109,7 @@ Burns and plastic surgery ward — what the words mean here:
 
   // Empty on purpose: the burns severity indices are exactly the kind of number that would be
   // read as a prognosis at a bedside, and none has been built or reviewed here.
-  // ABSI — draft until signed off; the engine offers only active definitions.
+  // ABSI — signed off 2026-09-28.
   scoringKeys: ["absi"],
 
   formatKinds: [

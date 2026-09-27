@@ -104,7 +104,7 @@ Obstetrics and gynaecology ward — what the words mean here:
 
   // Deliberately empty — see the file header. No surgical or medicine pathway can trigger here
   // either way, because only listed pathwayIds are ever offered to a unit.
-  // MEOWS — draft until signed off; the engine offers only active definitions.
+  // MEOWS — signed off 2026-09-28.
   scoringKeys: ["meows"],
 
   // An O&G unit operates (LSCS, laparoscopy, hysterectomy), unlike internal medicine — keep the

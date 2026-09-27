@@ -10,12 +10,13 @@ const assessed = (m: Record<string, { satisfied: boolean; points?: number }>): E
   Object.fromEntries(Object.entries(m).map(([k, v]) => [k, { ...v, text: "x", at: "x", by: "u" }]));
 const allNo = (ids: string[]) => Object.fromEntries(ids.map((id) => [id, { satisfied: false }]));
 
-describe("dept scores B — every definition validates and is a draft", () => {
+describe("dept scores B — every definition validates and is signed off", () => {
   for (const def of [canadianCtHeadV1, centorV1, cowsV1]) {
     it(def.pathwayId, () => {
       expect(validatePathwayDefinition(def)).toEqual({ ok: true, issues: [] });
-      expect(def.status).toBe("draft");
-      expect(def.clinicalOwner).toMatch(/PENDING CLINICIAN REVIEW/);
+      expect(def.status).toBe("active");
+      expect(def.clinicalOwner).toMatch(/signed off/i);
+      expect(def.clinicalOwner).toMatch(/review due/i);
     });
   }
 });

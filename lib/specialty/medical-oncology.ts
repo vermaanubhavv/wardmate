@@ -82,7 +82,7 @@ Medical oncology ward — what the words mean here:
   // wrong for this ward and showing them would be worse than showing nothing. The oncology
   // scores — MASCC for febrile neutropenia risk, Cairo-Bishop for tumour lysis, ECOG — are the
   // next phase and land after the pilot, with the same clinical sign-off the surgical ones get.
-  // MASCC — draft until signed off; the engine offers only active definitions.
+  // MASCC — signed off 2026-09-28.
   scoringKeys: ["mascc"],
 
   // No OT notes slot: this unit has no operating theatre. Everything else stays.

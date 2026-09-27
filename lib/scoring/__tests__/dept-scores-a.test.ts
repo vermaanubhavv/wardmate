@@ -15,12 +15,13 @@ const assessed = (
   Object.fromEntries(Object.entries(m).map(([k, v]) => [k, { ...v, text: "x", at: "x", by: "u" }]));
 const sex = (s: string) => input("sex", null, null, 0, { text: s });
 
-describe("dept scores A — definitions validate and stay draft", () => {
+describe("dept scores A — definitions validate and are signed off", () => {
   for (const def of [masccV1, scortenV1, absiV1]) {
     it(def.pathwayId, () => {
       expect(validatePathwayDefinition(def)).toEqual({ ok: true, issues: [] });
-      expect(def.status).toBe("draft");
-      expect(def.clinicalOwner).toMatch(/PENDING CLINICIAN REVIEW/);
+      expect(def.status).toBe("active");
+      expect(def.clinicalOwner).toMatch(/signed off/i);
+      expect(def.clinicalOwner).toMatch(/review due/i);
     });
   }
 });

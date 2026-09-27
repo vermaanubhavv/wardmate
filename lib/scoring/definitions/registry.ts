@@ -61,7 +61,7 @@ const BUILT_IN: PathwayDefinition[] = [
   ciwaArV1, // ciwa_ar — alcohol withdrawal  — surgery + medicine
   childPughV1, // child_pugh — chronic liver disease  — surgery + medicine
   kdigoAkiV1, // kdigo_aki — acute kidney injury  — surgery + medicine
-  // Department scores (2026-09-28) — draft until signed off, so not offered at runtime yet.
+  // Department scores — signed off for pilot use 2026-09-28 (Dr Anubhav Verma).
   masccV1, // mascc — febrile neutropenia  — oncology
   scortenV1, // scorten — SJS / TEN  — dermatology
   absiV1, // absi — burn severity  — burns & plastics

@@ -11,7 +11,8 @@
  * Heart- and respiratory-rate thresholds are relative to the normal range FOR AGE. The engine
  * cannot age-band, so the resident judges "above the normal rate for age" when answering.
  *
- * STATUS: PENDING CLINICIAN REVIEW — draft, not signed off. Source: Monaghan A. Detecting and
+ * STATUS: active — signed off for pilot use by Dr Anubhav Verma, 2026-09-28 (single-clinician sign-off;
+ * departmental review due 2027-09-01). Source: Monaghan A. Detecting and
  * managing deterioration in children. Paediatr Nurs 2005;17:32–5.
  */
 
@@ -115,8 +116,8 @@ export const pewsV1: PathwayDefinition = {
   pathwayId: "pews",
   pathwayVersion: "1.0.0",
   title: "Paediatric early warning (PEWS)",
-  status: "draft",
-  clinicalOwner: "PENDING CLINICIAN REVIEW — drafted 2026-09-28 from the cited source; not yet signed off. Departmental review due 2027-09-01.",
+  status: "active",
+  clinicalOwner: "Reviewed against the cited source and signed off for pilot use by Dr Anubhav Verma — 2026-09-28. Single-clinician sign-off; departmental review due 2027-09-01.",
   sourceReferences: [
     { label: "Monaghan A, Paediatr Nurs 2005", citation: "Monaghan A. Detecting and managing deterioration in children. Paediatr Nurs 2005;17(1):32–5." },
   ],

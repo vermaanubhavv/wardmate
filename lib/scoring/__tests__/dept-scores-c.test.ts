@@ -8,12 +8,13 @@ import { pewsV1 } from "../definitions/pews.v1";
 const assessed = (m: Record<string, { satisfied: boolean; points?: number }>): EvaluateContext["assessedComponents"] =>
   Object.fromEntries(Object.entries(m).map(([k, v]) => [k, { ...v, text: "x", at: "x", by: "u" }]));
 
-describe("dept scores C — definitions validate as drafts", () => {
+describe("dept scores C — definitions validate and are signed off", () => {
   for (const def of [meowsV1, pewsV1]) {
     it(def.pathwayId, () => {
       expect(validatePathwayDefinition(def)).toEqual({ ok: true, issues: [] });
-      expect(def.status).toBe("draft");
-      expect(def.clinicalOwner).toMatch(/PENDING CLINICIAN REVIEW/);
+      expect(def.status).toBe("active");
+      expect(def.clinicalOwner).toMatch(/signed off/i);
+      expect(def.clinicalOwner).toMatch(/review due/i);
       expect(def.tasks).toEqual([]);
     });
   }

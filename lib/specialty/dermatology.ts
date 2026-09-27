@@ -82,7 +82,7 @@ Skin ward and clinic — what the words mean here:
 
   // Empty on purpose: SCORTEN, PASI and the BSA indices are real instruments this app has not
   // built or reviewed, and it does not compute them.
-  // SCORTEN — draft until signed off; the engine offers only active definitions.
+  // SCORTEN — signed off 2026-09-28.
   scoringKeys: ["scorten"],
 
   // No OT notes slot.

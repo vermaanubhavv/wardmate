@@ -13,8 +13,8 @@
  *
  * It describes withdrawal severity; it does not itself prescribe.
  *
- * STATUS: draft — PENDING CLINICIAN REVIEW (drafted 2026-09-28 from the cited source; not yet
- * signed off). Source: Wesson DR, Ling W. J Psychoactive Drugs 2003;35:253–9.
+ * STATUS: active — signed off for pilot use by Dr Anubhav Verma, 2026-09-28 (single-clinician sign-off;
+ * departmental review due 2027-09-01). Source: Wesson DR, Ling W. J Psychoactive Drugs 2003;35:253–9.
  */
 
 import type { CardDefinition, ComponentInput, PathwayDefinition, TimeWindow } from "../types";
@@ -150,8 +150,8 @@ export const cowsV1: PathwayDefinition = {
   pathwayId: "cows",
   pathwayVersion: "1.0.0",
   title: "Opioid withdrawal",
-  status: "draft",
-  clinicalOwner: "PENDING CLINICIAN REVIEW — drafted 2026-09-28 from the cited source; not yet signed off. Departmental review due 2027-09-01.",
+  status: "active",
+  clinicalOwner: "Reviewed against the cited source and signed off for pilot use by Dr Anubhav Verma — 2026-09-28. Single-clinician sign-off; departmental review due 2027-09-01.",
   sourceReferences: [
     { label: "Wesson DR, Ling W. J Psychoactive Drugs 2003", citation: "The Clinical Opiate Withdrawal Scale (COWS). J Psychoactive Drugs 2003;35:253–9." },
   ],

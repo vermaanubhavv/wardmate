@@ -87,7 +87,7 @@ ENT ward — what the words mean here:
 
   // Empty on purpose. Nothing ENT-specific has been built and reviewed, and offering an
   // unrelated pathway because it exists would be worse than offering none.
-  // Centor — draft until signed off; the engine offers only active definitions.
+  // Centor — signed off 2026-09-28.
   scoringKeys: ["centor"],
 
   // All six slots: this department operates.

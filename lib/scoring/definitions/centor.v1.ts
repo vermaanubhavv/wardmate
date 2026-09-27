@@ -10,8 +10,8 @@
  * A probability, not a diagnosis. Fever is auto-read from charted temperature only; a history
  * of fever without a recorded reading does not score here.
  *
- * STATUS: draft — PENDING CLINICIAN REVIEW (drafted 2026-09-28 from the cited source; not yet
- * signed off). Source: Centor RM et al., Med Decis Making 1981;1:239–46.
+ * STATUS: active — signed off for pilot use by Dr Anubhav Verma, 2026-09-28 (single-clinician sign-off;
+ * departmental review due 2027-09-01). Source: Centor RM et al., Med Decis Making 1981;1:239–46.
  */
 
 import type { CardDefinition, PathwayDefinition, TimeWindow } from "../types";
@@ -81,8 +81,8 @@ export const centorV1: PathwayDefinition = {
   pathwayId: "centor",
   pathwayVersion: "1.0.0",
   title: "Sore throat",
-  status: "draft",
-  clinicalOwner: "PENDING CLINICIAN REVIEW — drafted 2026-09-28 from the cited source; not yet signed off. Departmental review due 2027-09-01.",
+  status: "active",
+  clinicalOwner: "Reviewed against the cited source and signed off for pilot use by Dr Anubhav Verma — 2026-09-28. Single-clinician sign-off; departmental review due 2027-09-01.",
   sourceReferences: [
     { label: "Centor RM et al., Med Decis Making 1981", citation: "The diagnosis of strep throat in adults in the emergency room. Med Decis Making 1981;1:239–46." },
   ],

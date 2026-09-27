@@ -86,7 +86,7 @@ Paediatric ward — what the words mean here:
 
   // EMPTY, AND DELIBERATELY SO. Every built pathway is validated in adults only. See the header:
   // this is the single most important line in this pack.
-  // Brighton PEWS — draft until signed off. Scored by the resident's taps, never by adult
+  // Brighton PEWS — signed off 2026-09-28. Scored by the resident's taps, never by adult
   // vital-sign thresholds, so the "adult-only" rule above still holds.
   scoringKeys: ["pews"],
 

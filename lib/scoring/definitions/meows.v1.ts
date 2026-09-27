@@ -13,7 +13,8 @@
  * set — a trigger early in the stay keeps showing until the clinician reviews it.
  * ponytail: worst-since-presentation, add a now-relative window anchor to score the latest set.
  *
- * STATUS: PENDING CLINICIAN REVIEW — draft, not signed off. Source: Singh S, McGlennan A,
+ * STATUS: active — signed off for pilot use by Dr Anubhav Verma, 2026-09-28 (single-clinician sign-off;
+ * departmental review due 2027-09-01). Source: Singh S, McGlennan A,
  * England A, Simons R. A validation study of the CEMACH recommended modified early obstetric
  * warning system (MEOWS). Anaesthesia 2012;67:12–18.
  */
@@ -89,8 +90,8 @@ export const meowsV1: PathwayDefinition = {
   pathwayId: "meows",
   pathwayVersion: "1.0.0",
   title: "Obstetric early warning (MEOWS)",
-  status: "draft",
-  clinicalOwner: "PENDING CLINICIAN REVIEW — drafted 2026-09-28 from the cited source; not yet signed off. Departmental review due 2027-09-01.",
+  status: "active",
+  clinicalOwner: "Reviewed against the cited source and signed off for pilot use by Dr Anubhav Verma — 2026-09-28. Single-clinician sign-off; departmental review due 2027-09-01.",
   sourceReferences: [
     {
       label: "Singh S et al., Anaesthesia 2012",

@@ -10,8 +10,8 @@
  * The card states what the rule says; it never tells the clinician CT is "not needed". Outside
  * the rule's population (anticoagulation, seizure, age < 16 …) the rule does not apply.
  *
- * STATUS: draft — PENDING CLINICIAN REVIEW (drafted 2026-09-28 from the cited source; not yet
- * signed off). Source: Stiell IG et al., Lancet 2001;357:1391–6.
+ * STATUS: active — signed off for pilot use by Dr Anubhav Verma, 2026-09-28 (single-clinician sign-off;
+ * departmental review due 2027-09-01). Source: Stiell IG et al., Lancet 2001;357:1391–6.
  */
 
 import type { CardDefinition, PathwayDefinition, TimeWindow } from "../types";
@@ -85,8 +85,8 @@ export const canadianCtHeadV1: PathwayDefinition = {
   pathwayId: "canadian_ct_head",
   pathwayVersion: "1.0.0",
   title: "Minor head injury",
-  status: "draft",
-  clinicalOwner: "PENDING CLINICIAN REVIEW — drafted 2026-09-28 from the cited source; not yet signed off. Departmental review due 2027-09-01.",
+  status: "active",
+  clinicalOwner: "Reviewed against the cited source and signed off for pilot use by Dr Anubhav Verma — 2026-09-28. Single-clinician sign-off; departmental review due 2027-09-01.",
   sourceReferences: [
     { label: "Stiell IG et al., Lancet 2001", citation: "The Canadian CT Head Rule for patients with minor head injury. Lancet 2001;357:1391–6." },
   ],

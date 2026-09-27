@@ -11,7 +11,8 @@
  * prompt that sits beside the clinician's assessment. Unknown items score 0 in a provisional
  * total, which can only err towards "higher risk".
  *
- * STATUS: PENDING CLINICIAN REVIEW — draft; hidden at runtime until signed off.
+ * STATUS: active — signed off for pilot use by Dr Anubhav Verma, 2026-09-28 (single-clinician sign-off;
+ * departmental review due 2027-09-01).
  */
 
 import type { CardDefinition, PathwayDefinition, TimeWindow } from "../types";
@@ -169,8 +170,8 @@ export const masccV1: PathwayDefinition = {
   pathwayId: "mascc",
   pathwayVersion: "1.0.0",
   title: "Febrile neutropenia — MASCC risk index",
-  status: "draft",
-  clinicalOwner: "PENDING CLINICIAN REVIEW — drafted 2026-09-28 from the cited source; not yet signed off. Departmental review due 2027-09-01.",
+  status: "active",
+  clinicalOwner: "Reviewed against the cited source and signed off for pilot use by Dr Anubhav Verma — 2026-09-28. Single-clinician sign-off; departmental review due 2027-09-01.",
   sourceReferences: [
     {
       label: "Klastersky J et al., J Clin Oncol 2000",
