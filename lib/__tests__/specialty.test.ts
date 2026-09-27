@@ -252,11 +252,17 @@ describe("internal medicine counts by the hospital day", () => {
     expect(matchDischargeTemplateFor(p, { diagnosisText: "dengue fever with warning signs" })?.key).toBe("dengue");
   });
 
-  it("no medicine template ever guesses a drug or dose", () => {
-    // The one rule that was never up for debate, even once published: a medicine discharge
-    // prescription is entirely patient-specific. Every template's medications list stays empty.
-    for (const t of [...p.dischargeTemplates, p.genericDischargeTemplate]) {
-      expect(t.scaffold.medications).toEqual([]);
+  it("pre-fills typical medicines, but never a number for a titrated or organ-dependent drug", () => {
+    // Changed 2026-09-28 on the product owner's direction: medicine now pre-fills a starting set
+    // like every other department. What must still never be guessed is a dose that is titrated
+    // on the ward or set by organ function or a specialist.
+    for (const t of p.dischargeTemplates) expect(t.scaffold.medications.length, t.key).toBeGreaterThan(0);
+    expect(p.genericDischargeTemplate.scaffold.medications).toEqual([]);
+    const titrated = /insulin|glargine|amlodipine|telmisartan|chlorthalidone|prednisolone|hydroxychloroquine|mycophenolate|azathioprine|att|isoniazid|rifampicin|tenofovir|dolutegravir|cotrimoxazole|metformin|hypoglycaemic/i;
+    for (const t of p.dischargeTemplates) {
+      for (const m of t.scaffold.medications.filter((m) => titrated.test(m.generic))) {
+        expect(`${m.strength ?? ""} ${m.dose ?? ""}`, `${t.key}: ${m.generic}`).not.toMatch(/\d/);
+      }
     }
   });
 });

@@ -1,5 +1,5 @@
 import type { AdviceItem } from "@/lib/discharge-entities";
-import type { DischargeTemplate } from "@/lib/discharge-templates";
+import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-templates";
 
 /**
  * INTERNAL MEDICINE discharge templates.
@@ -9,12 +9,14 @@ import type { DischargeTemplate } from "@/lib/discharge-templates";
  * ("reviewed and signed off for pilot use by Dr. Anubhav"; formal review still due). Intended
  * to be corrected from real use, not treated as finished.
  *
- * WHY NO DEFAULT DRUG LIST, STILL. This did not change. A medicine discharge prescription is
- * entirely patient-specific — the diagnosis, the organ function and the comorbid drugs decide
- * every line. Every template below carries `medications: []`; the value they add is the
- * condition-specific clinical-course skeleton, the correct red flags, and the correct
- * follow-up tests — never a guessed drug or dose. That is not the part that was ever in
- * question; it is the same protection the generic template already has, and it stays.
+ * DEFAULT DRUG LISTS. On the product owner's direction (2026-09-28), as for every other
+ * department, each condition template now pre-fills the typical discharge medicines as a
+ * starting set the resident checks and edits per patient. Anything titrated, organ-function-
+ * dependent, culture-dependent or specialist-set (insulin, antihypertensives, steroids and
+ * immunosuppressants, ATT, ART, culture-directed antibiotics) keeps its dose as `[ … ]` —
+ * never a guessed number. The generic template stays `medications: []`.
+ *
+ * MEDICINE LINES: PENDING CLINICIAN REVIEW.
  *
  * Each template's `match` is tried against the typed diagnosis/procedure text; `families`
  * is the fallback via the care_templates picker (patches 0064, 0067). Ordered specific before
@@ -76,6 +78,18 @@ export const MEDICINE_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     "Each day — symptoms; vitals including the temperature trend; examination; oral intake; the results back and the problem each addresses; the day's plan. For discharge — afebrile, stable off support, tolerating orals, oral medicines prescribed, and follow-up with repeat-test dates written down.",
 };
 
+const M = {
+  paracetamolSos: { generic: "Paracetamol", strength: "650 mg", route: "PO", frequency: "SOS for fever or pain (not more than 4 doses a day)", status: "prn" } as TemplateMedication,
+  pantoprazole: { generic: "Pantoprazole", strength: "40 mg", route: "PO", frequency: "OD before breakfast", duration: "While on steroid", status: "new" } as TemplateMedication,
+  ors: { generic: "Oral rehydration salts (ORS)", dose: "1 sachet in 1 litre of clean water", route: "PO", frequency: "Sip through the day", duration: "[ … ] days", indication: "while intake is poor", status: "temporary" } as TemplateMedication,
+  culturedAntibiotic: { generic: "[ Oral antibiotic as per culture sensitivity ]", dose: "[ … ]", route: "PO", frequency: "[ … ]", duration: "To complete [ … ] days in total", indication: "culture-directed step-down", status: "new" } as TemplateMedication,
+  att: { generic: "FDC as per NTEP weight band (HRZE, then HRE)", dose: "[ as per weight band ]", route: "PO", frequency: "OD, empty stomach", duration: "Intensive phase 2 months, then continuation phase [ … ] months as per NTEP", status: "new" } as TemplateMedication,
+  pyridoxine: { generic: "Pyridoxine", dose: "[ … ]", route: "PO", frequency: "OD", duration: "Throughout ATT", status: "new" } as TemplateMedication,
+  insulinBasal: { generic: "Insulin — basal ([ glargine / NPH ])", dose: "[ as titrated on the ward ]", route: "SC", frequency: "[ OD / BD ]", duration: "Long term", status: "new" } as TemplateMedication,
+  insulinBolus: { generic: "Insulin — prandial ([ regular / rapid-acting ])", dose: "[ as titrated on the ward ]", route: "SC", frequency: "Before meals", duration: "Long term", status: "new" } as TemplateMedication,
+  metformin: { generic: "Metformin", dose: "[ … ]", route: "PO", frequency: "[ … ] with meals", duration: "Long term", indication: "restart only if renal function allows, as advised", status: "changed" } as TemplateMedication,
+};
+
 /** Shared shell for a febrile-illness-family template — only the parts that genuinely differ
  *  by diagnosis are overridden per condition below. */
 function febrile(opts: {
@@ -87,6 +101,7 @@ function febrile(opts: {
   course: string;
   extraRedFlags?: string[];
   followUp: string[];
+  medications?: TemplateMedication[];
 }): DischargeTemplate {
   return {
     key: opts.key,
@@ -105,7 +120,7 @@ function febrile(opts: {
         outcome: "[ Outcome of this admission ]",
       },
       clinicalCourse: opts.course,
-      medications: [],
+      medications: opts.medications ?? [],
       advice: MEDICINE_ADVICE,
       redFlags: [...STANDARD_RED_FLAGS, ...(opts.extraRedFlags ?? [])],
       patientActions: opts.followUp,
@@ -135,6 +150,10 @@ export const MEDICINE_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       "Get [ repeat CBC / renal function / … ] repeated on [ … ].",
       "Attend the medicine OPD on [ … ] with all reports.",
     ],
+    medications: [
+      M.culturedAntibiotic,
+      M.paracetamolSos,
+    ],
   }),
   febrile({
     key: "enteric_fever",
@@ -149,6 +168,11 @@ export const MEDICINE_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       "Complete the full course of antibiotics as prescribed.",
       "Maintain food and hand hygiene; avoid outside water and raw food until reviewed.",
       "Attend the medicine OPD on [ … ] with all reports.",
+    ],
+    medications: [
+      { generic: "Azithromycin", strength: "500 mg", route: "PO", frequency: "OD", duration: "To complete [ 7 ] days in total", indication: "or as per blood-culture sensitivity", status: "new" },
+      { generic: "Cefixime", strength: "200 mg", route: "PO", frequency: "BD", duration: "To complete [ 14 ] days in total", indication: "alternative to azithromycin — pick one", status: "new" },
+      M.paracetamolSos,
     ],
   }),
   febrile({
@@ -169,6 +193,10 @@ export const MEDICINE_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       "Avoid NSAIDs/aspirin and intramuscular injections until reviewed.",
       "Attend the medicine OPD on [ … ] with all reports.",
     ],
+    medications: [
+      M.paracetamolSos,
+      M.ors,
+    ],
   }),
   febrile({
     key: "pulmonary_tb",
@@ -185,6 +213,11 @@ export const MEDICINE_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       "Register with the local DOTS centre / continue follow-up as arranged.",
       "All household contacts should be screened for TB symptoms.",
     ],
+    medications: [
+      M.att,
+      { ...M.pyridoxine, indication: "with ATT, as per NTEP" },
+      M.paracetamolSos,
+    ],
   }),
   febrile({
     key: "cap",
@@ -199,6 +232,11 @@ export const MEDICINE_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       "Complete the full course of antibiotics as prescribed.",
       "Get a repeat chest X-ray on [ … ] if symptoms have not fully settled.",
       "Attend the medicine OPD on [ … ] with all reports.",
+    ],
+    medications: [
+      { generic: "Amoxicillin-clavulanate", strength: "625 mg", route: "PO", frequency: "TDS", duration: "To complete [ 5–7 ] days in total", indication: "or as per sputum / blood culture sensitivity", status: "new" },
+      { generic: "Azithromycin", strength: "500 mg", route: "PO", frequency: "OD", duration: "To complete [ 3–5 ] days in total", indication: "if atypical cover was started", status: "new" },
+      M.paracetamolSos,
     ],
   }),
   febrile({
@@ -215,6 +253,10 @@ export const MEDICINE_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       "Get a repeat urine routine on [ … ] if symptoms persist.",
       "Drink adequate fluids; attend the medicine OPD on [ … ] with all reports.",
     ],
+    medications: [
+      { ...M.culturedAntibiotic, duration: "To complete [ 7–14 ] days in total" },
+      M.paracetamolSos,
+    ],
   }),
   febrile({
     key: "cellulitis",
@@ -229,6 +271,10 @@ export const MEDICINE_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       "Complete the full course of antibiotics as prescribed.",
       "Elevate the limb where possible; keep the area clean and dry.",
       "Attend the medicine OPD on [ … ] for a wound check.",
+    ],
+    medications: [
+      { generic: "Amoxicillin-clavulanate", strength: "625 mg", route: "PO", frequency: "TDS", duration: "To complete [ 5–7 ] days in total", indication: "or as per pus culture sensitivity", status: "new" },
+      M.paracetamolSos,
     ],
   }),
 
@@ -247,6 +293,11 @@ export const MEDICINE_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       "Get HbA1c and renal function repeated on [ … ].",
       "Attend the medicine / diabetes OPD on [ … ] with the glucose chart and all reports.",
     ],
+    medications: [
+      M.insulinBasal,
+      M.insulinBolus,
+      M.metformin,
+    ],
   }),
   febrile({
     key: "hhs",
@@ -262,6 +313,11 @@ export const MEDICINE_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       "Get renal function and electrolytes repeated on [ … ].",
       "Attend the medicine / diabetes OPD on [ … ] with the glucose chart and all reports.",
     ],
+    medications: [
+      { ...M.insulinBasal, indication: "if discharged on insulin" },
+      { ...M.insulinBolus, indication: "if discharged on insulin" },
+      { generic: "[ Oral hypoglycaemic agent ]", dose: "[ … ]", route: "PO", frequency: "[ … ]", duration: "Long term", indication: "restart only as advised, per renal function", status: "changed" },
+    ],
   }),
   febrile({
     key: "hypertensive_emergency",
@@ -276,6 +332,11 @@ export const MEDICINE_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       "Check blood pressure at home as advised and keep a chart.",
       "Get renal function repeated on [ … ].",
       "Attend the medicine OPD on [ … ] with the BP chart and all reports.",
+    ],
+    medications: [
+      { generic: "Amlodipine", dose: "[ … ]", route: "PO", frequency: "[ OD ]", duration: "Long term", status: "new" },
+      { generic: "Telmisartan", dose: "[ … ]", route: "PO", frequency: "[ OD ]", duration: "Long term", indication: "if renal function and potassium allow", status: "new" },
+      { generic: "Chlorthalidone", dose: "[ … ]", route: "PO", frequency: "[ OD ]", duration: "Long term", indication: "if a third agent is needed", status: "new" },
     ],
   }),
 
@@ -293,6 +354,10 @@ export const MEDICINE_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       "Take iron / haematinic supplements exactly as prescribed, with the diet advice given.",
       "Attend the medicine OPD on [ … ] with all reports.",
     ],
+    medications: [
+      { generic: "Ferrous sulphate + Folic acid", strength: "[ 100 mg elemental iron + 0.5 mg ]", route: "PO", frequency: "OD, 1 hour before a meal", duration: "[ 3 ] months after haemoglobin normalises", indication: "only for iron deficiency confirmed", status: "new" },
+      { generic: "Vitamin B12 (cyanocobalamin / methylcobalamin)", dose: "[ … ]", route: "[ IM / PO ]", frequency: "[ … ]", duration: "[ … ]", indication: "only if B12 deficiency confirmed", status: "new" },
+    ],
   }),
   febrile({
     key: "thrombocytopenia",
@@ -307,6 +372,11 @@ export const MEDICINE_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       "Get a repeat platelet count on [ … ] and bring the report to the next visit.",
       "Avoid NSAIDs/aspirin and contact sports until the platelet count is reviewed.",
       "Attend the medicine / haematology OPD on [ … ] with all reports.",
+    ],
+    medications: [
+      { generic: "Prednisolone", dose: "[ … ]", route: "PO", frequency: "OD after breakfast", duration: "[ taper as written ]", indication: "if ITP — as per haematology", status: "new" },
+      { ...M.pantoprazole, indication: "while on prednisolone" },
+      M.paracetamolSos,
     ],
   }),
   febrile({
@@ -323,6 +393,13 @@ export const MEDICINE_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       "Get [ renal function / urine protein / complement ] repeated on [ … ].",
       "Attend the Rheumatology / medicine OPD on [ … ] with all reports.",
     ],
+    medications: [
+      { generic: "Prednisolone", dose: "[ … ]", route: "PO", frequency: "OD after breakfast", duration: "[ taper as written ]", indication: "as per rheumatology", status: "new" },
+      { ...M.pantoprazole, indication: "while on prednisolone" },
+      { generic: "Hydroxychloroquine", dose: "[ by weight ]", route: "PO", frequency: "[ OD ]", duration: "Long term", status: "continue" },
+      { generic: "Mycophenolate mofetil / Azathioprine", dose: "[ … ]", route: "PO", frequency: "[ … ]", duration: "Long term", indication: "if started by rheumatology", status: "new" },
+      { generic: "Calcium + Vitamin D3", strength: "[ 500 mg + 250 IU ]", route: "PO", frequency: "[ BD ]", duration: "While on steroid", status: "new" },
+    ],
   }),
   febrile({
     key: "hiv_oi",
@@ -337,6 +414,11 @@ export const MEDICINE_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       "Take ART and OI treatment exactly as prescribed — do not miss doses.",
       "Attend the ART centre / medicine OPD on [ … ] with all reports.",
       "Get [ CD4 / relevant follow-up test ] repeated on [ … ].",
+    ],
+    medications: [
+      { generic: "Tenofovir + Lamivudine + Dolutegravir (TLD) FDC", dose: "[ as per ART centre ]", route: "PO", frequency: "OD", duration: "Lifelong", indication: "start / continue as per ART centre and OI timing", status: "new" },
+      { generic: "Cotrimoxazole", dose: "[ … ]", route: "PO", frequency: "OD", duration: "[ until CD4 recovers, as per NACO ]", indication: "if CD4 < 200 / as per NACO", status: "new" },
+      { generic: "[ OI treatment ]", dose: "[ … ]", route: "[ … ]", frequency: "[ … ]", duration: "[ … ]", indication: "as per the OI identified", status: "new" },
     ],
   }),
 ];
