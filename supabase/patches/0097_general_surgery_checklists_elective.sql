@@ -28,7 +28,7 @@
 --
 -- No drug doses anywhere. Drug names appear only as aliases (words a resident dictates).
 --
--- CLINICAL CONTENT: PENDING CLINICIAN REVIEW — seeded as draft; a later patch publishes it.
+-- CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28) — seeded as draft; 0099 publishes it.
 -- Drafts are invisible to residents (getTemplateForPatient matches published protocols only).
 --
 -- Requires: 0026, 0032, 0036, 0040, 0056, 0058, 0060.
