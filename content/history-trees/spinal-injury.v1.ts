@@ -1,0 +1,71 @@
+import type { HistoryTree } from "@/lib/history-check/types";
+import { ATLS, BAILEY_LOVE, commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, surgicalBackground, val, yn, YOUMANS } from "@/content/history-trees/_helpers";
+
+/**
+ * INJURY TO THE SPINE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * Neurosurgery ward and casualty, north India. Falls from a tree, a roof or a height and road
+ * traffic injury make up most of the casemix, with diving into shallow water and assault
+ * behind them. The history fixes the time of injury, how the patient was lifted and carried,
+ * and whether the limbs moved at the scene — the three things that decide whether a deficit
+ * was present from the start or came on later. Differentials: cervical fracture or
+ * dislocation, thoracolumbar fracture, complete cord injury, incomplete cord injury, central
+ * cord syndrome in an elderly spondylotic neck, cauda equina or conus injury, spinal /
+ * neurogenic shock, bleeding from an associated head, chest or abdominal injury, fracture
+ * through a rigid spine (ankylosing spondylitis), and a soft-tissue injury without fracture or
+ * cord damage.
+ */
+export const spinalInjuryV1: HistoryTree = {
+  id: "spinal_injury",
+  version: "1.0.0",
+  complaint: "Injury to the spine",
+  triggers: ["spinal injury", "spine injury", "injury to the spine", "spinal cord injury", "cord injury", "neck injury", "back injury", "fall from tree", "fell from tree", "fell from roof", "diving injury", "cervical fracture", "vertebral fracture", "fracture spine", "kamar me chot", "gardan me chot", "reedh ki haddi me chot", "legs not moving after fall"],
+  setting: "Neurosurgery ward and casualty, north India",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
+  references: [ATLS, YOUMANS, BAILEY_LOVE, MACLEODS, HUTCHISONS],
+  slots: [
+    ...commonHpi("spinal injury"),
+    val("informant", "scene_account", "Account from the scene", "Who was with the patient at the time of injury, and what did they see — did the patient move the arms and legs at the scene?", ["witnessed", "saw", "bystander", "family", "police", "no one saw", "moving legs at scene", "moving hands", "found lying", "brought by"]),
+    val("hpi", "injury_mechanism", "Mechanism", "How did the injury happen — a fall from a tree, roof or height, a road traffic collision, a dive into shallow water, a heavy load falling on the back, or an assault?", ["fall", "tree", "roof", "chhat", "height", "road traffic", "motorcycle", "pillion", "dive", "diving", "shallow water", "canal", "pond", "load fell", "wall collapse", "assault", "beaten"]),
+    val("hpi", "fall_height_landing", "Height of fall and how the patient landed", "How far was the fall, and did the patient land on the feet, the buttocks, the back or the head first?", ["feet", "metres", "storey", "landed on feet", "landed on buttocks", "landed on back", "head first", "on the head", "speed", "thrown", "ejected"], { numeric: true }),
+    val("hpi", "time_of_injury", "Time of injury", "At what time did the injury happen, and how many hours has it been since?", ["time", "o'clock", "morning", "evening", "night", "hours ago", "hours since", "yesterday", "at about"], { numeric: true }),
+    val("hpi", "extrication_transport", "How the patient was moved and brought", "How was the patient lifted and carried — by hand, on a cot or charpai, on a board or stretcher, with the neck supported or not — and was the patient taken anywhere else first?", ["lifted", "carried", "charpai", "cot", "stretcher", "board", "collar", "neck supported", "sat up", "made to walk", "auto", "ambulance", "referred", "other hospital", "private hospital"], { teach: "Unsupported lifting, sitting the patient up or making them walk can turn an unstable fracture into a cord injury, so how they arrived matters as much as how they fell." }),
+    val("hpi", "weakness_onset", "When weakness began", "When did the weakness or numbness start — at the moment of injury, during transport, or hours later?", ["immediately", "at once", "on the spot", "during transport", "after lifting", "later", "hours later", "next day", "gradually", "no weakness"], { teach: "Weakness that appears after the injury, rather than at the moment of it, suggests a cord that was threatened but not yet damaged, which changes the urgency." }),
+    val("hpi", "weakness_pattern", "Which limbs are weak", "Which limbs are weak — both legs, all four limbs, the arms more than the legs, or one side more than the other?", ["both legs", "all four limbs", "arms more than legs", "hands weak", "one side", "one leg", "legs only", "cannot move legs", "cannot lift arms"]),
+    val("hpi", "sensory_level", "Numbness and its level", "Where is the numbness — up to which level on the body, and is feeling lost completely or only reduced?", ["numbness", "no sensation", "cannot feel", "below the chest", "below the navel", "below the waist", "from the nipple", "tingling", "reduced sensation", "sun hai", "sunn"]),
+    val("hpi", "spinal_pain_site", "Site of spinal pain", "Where along the spine is the pain — neck, upper back, lower back or tailbone — and is there a step or swelling there?", ["neck pain", "upper back", "mid back", "lower back", "tailbone", "step", "swelling", "gap", "tender", "kamar", "gardan"]),
+    yn("hpi", "walked_after", "Walked after the injury", "Was the patient able to stand or walk at any time after the injury?", ["walked", "stood up", "able to walk", "could not stand", "could not walk", "never walked"]),
+    yn("associated", "burning_hands", "Burning or tingling in the hands", "Any burning pain, tingling or clumsiness in the hands or arms since the injury?", ["burning hands", "tingling hands", "burning arms", "clumsy hands", "cannot hold", "electric", "current like"]),
+    yn("associated", "head_injury_loc", "Associated head injury", "Did the patient hit the head, lose consciousness, or vomit after the injury?", ["hit head", "head injury", "unconscious", "loss of consciousness", "blackout", "vomited", "does not remember"]),
+    yn("associated", "other_injuries", "Injuries elsewhere", "Any pain or injury in the chest, abdomen, pelvis, heels or limbs?", ["chest pain", "abdominal pain", "pelvis", "heel", "heels", "ankle", "wrist", "fracture", "deformity", "bleeding", "other injuries"], { teach: "A fall onto the feet that breaks the heels often breaks the lumbar spine as well, and a distracting injury can hide spinal pain." }),
+    yn("associated", "priapism", "Persistent erection", "Has there been a persistent erection since the injury?", ["erection", "priapism", "persistent erection"], { tier: "detailed" }),
+    // Red flags
+    yn("red_flag", "breathing_difficulty", "Difficulty breathing or a weak cough", "Is there any difficulty in breathing, a weak cough, breathing only with the belly, or a weak voice?", ["breathless", "difficulty breathing", "weak cough", "cannot cough", "belly breathing", "abdominal breathing", "weak voice", "saans", "gasping"], { teach: "An injury high in the neck can weaken the breathing muscles, and the failure often comes hours later as the cord swells." }),
+    yn("red_flag", "faint_low_bp", "Low blood pressure, slow pulse or fainting", "Has anyone recorded a low blood pressure or a slow pulse, or does the patient feel faint or light-headed when propped up?", ["low bp", "low blood pressure", "slow pulse", "faint", "light headed", "dizzy on sitting", "cold", "sweaty", "pale"], { teach: "Low pressure after spinal injury may come from loss of vascular tone or from bleeding elsewhere; a slow pulse with warm feet points one way, a fast pulse with cold skin the other." }),
+    yn("red_flag", "complete_loss", "No movement or feeling below a level", "Has there been no movement and no feeling at all below a level since the injury?", ["no movement", "no sensation", "cannot feel anything", "completely numb", "totally paralysed", "no feeling below"], { teach: "Whether any movement or sensation survives below the injury — even feeling around the anus — changes what recovery can be expected." }),
+    yn("red_flag", "bladder_bowel", "Bladder or bowel disturbance", "Has the patient passed urine since the injury, and is there any leaking of urine or stool without awareness?", ["not passed urine", "retention", "cannot pass urine", "leaking urine", "incontinence", "no control", "passed stool in clothes", "catheter", "not aware of urine", "peshab nahi"], { teach: "Retention or loss of awareness of the bladder is often the first sign of cord or cauda equina injury and needs a time recorded against it." }),
+    yn("red_flag", "saddle_numbness", "Numbness around the anus and genitals", "Any numbness around the anus, genitals or inner thighs?", ["saddle", "numb around anus", "numb private parts", "genital numbness", "inner thigh", "perineum", "no feeling while wiping"], { teach: "Numbness in the saddle area with bladder change points to the cauda equina or conus, where early decompression is time-sensitive." }),
+    yn("red_flag", "worsening_deficit", "Weakness or numbness getting worse", "Has the weakness or numbness spread or got worse since the injury, or since the patient was moved?", ["getting worse", "spreading", "worsening", "rising", "going up", "after moving", "now cannot", "was moving earlier"], { teach: "A deficit that climbs or deepens after the injury points to ongoing compression or an unstable spine and shortens the time available." }),
+    yn("red_flag", "rigid_spine", "Stiff spine from before", "Did the patient have a stiff or bent spine before this — ankylosing spondylitis, long-standing neck stiffness, or previous spinal surgery?", ["ankylosing spondylitis", "stiff spine", "bamboo spine", "bent back", "stiff neck", "cervical spondylosis", "spondylosis", "previous spine surgery", "rod", "fixation"], { teach: "A rigid spine breaks like a long bone after trivial force and the fracture is easily missed, so a minor fall in such a patient carries more weight." }),
+    PREGNANCY,
+    yn("exposure", "intoxication", "Alcohol or drugs at the time", "Had the patient taken alcohol or any intoxicant at the time of injury?", ["alcohol", "drunk", "intoxicated", "smell of alcohol", "bhang", "under influence"], { teach: "Intoxication blunts pain and makes the neurological examination unreliable, so the spine is treated as injured until cleared." }),
+    yn("exposure", "prior_neck_symptoms", "Neck or limb symptoms before the injury", "Before the injury, was there neck pain, tingling in the hands, or unsteadiness in walking?", ["neck pain before", "tingling before", "old neck problem", "unsteady before", "spondylosis", "already weak"], { tier: "detailed", teach: "A narrow, arthritic neck can suffer a cord injury from a minor fall without any fracture, typically with the hands worse than the legs." }),
+    ...surgicalBackground({ acute: true }),
+  ],
+  differentials: [
+    { id: "cervical_fracture", name: "Cervical spine fracture or dislocation", pointers: ["breathing_difficulty", "burning_hands", "head_injury_loc"], discriminators: ["injury_mechanism", "spinal_pain_site", "weakness_pattern", "breathing_difficulty", "burning_hands", "head_injury_loc"] },
+    { id: "thoracolumbar_fracture", name: "Thoracolumbar fracture", pointers: ["other_injuries", "spinal_pain_site"], discriminators: ["fall_height_landing", "spinal_pain_site", "other_injuries", "weakness_pattern", "sensory_level"] },
+    { id: "complete_cord", name: "Complete spinal cord injury", pointers: ["complete_loss", "priapism", "bladder_bowel"], discriminators: ["complete_loss", "sensory_level", "saddle_numbness", "weakness_onset", "priapism"] },
+    { id: "incomplete_cord", name: "Incomplete spinal cord injury", pointers: ["worsening_deficit", "walked_after"], discriminators: ["weakness_pattern", "sensory_level", "saddle_numbness", "weakness_onset", "worsening_deficit", "walked_after"] },
+    { id: "central_cord", name: "Central cord syndrome in a spondylotic neck", pointers: ["burning_hands", "prior_neck_symptoms", "rigid_spine"], discriminators: ["weakness_pattern", "burning_hands", "prior_neck_symptoms", "fall_height_landing", "walked_after"] },
+    { id: "cauda_equina", name: "Cauda equina or conus injury", pointers: ["saddle_numbness", "bladder_bowel"], discriminators: ["saddle_numbness", "bladder_bowel", "spinal_pain_site", "weakness_pattern", "fall_height_landing"] },
+    { id: "neurogenic_shock", name: "Spinal / neurogenic shock", pointers: ["faint_low_bp", "complete_loss"], discriminators: ["faint_low_bp", "complete_loss", "weakness_pattern", "other_injuries"] },
+    { id: "associated_bleeding", name: "Bleeding from an associated head, chest or abdominal injury", pointers: ["other_injuries", "head_injury_loc", "faint_low_bp"], discriminators: ["other_injuries", "head_injury_loc", "faint_low_bp", "injury_mechanism", "surg_blood_thinners"] },
+    { id: "ankylosed_spine_fracture", name: "Fracture through a rigid spine (ankylosing spondylitis or fused spine)", pointers: ["rigid_spine"], discriminators: ["rigid_spine", "fall_height_landing", "worsening_deficit", "spinal_pain_site"] },
+    { id: "soft_tissue", name: "Soft-tissue injury without fracture or cord damage", pointers: ["walked_after"], discriminators: ["walked_after", "spinal_pain_site", "sensory_level", "weakness_pattern", "intoxication"] },
+  ],
+  output: {
+    durationSlot: "duration",
+    hpiOrder: ["time_of_injury", "duration", "injury_mechanism", "fall_height_landing", "extrication_transport", "spinal_pain_site", "weakness_onset", "weakness_pattern", "sensory_level", "walked_after", "progression", "prior_treatment", "prior_investigations"],
+  },
+};

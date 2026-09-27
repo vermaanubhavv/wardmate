@@ -109,6 +109,9 @@ Neurosurgical ward — what the words mean here:
   historyTreeIds: [
     "head_injury",
     "altered_sensorium",
+    "spinal_injury",
+    "shunt_problem",
+    "neural_tube_swelling",
     "limb_weakness",
     "headache",
     "low_back_pain",
