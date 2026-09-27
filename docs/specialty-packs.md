@@ -984,7 +984,7 @@ in `lib/discharge-templates-<department>.ts`, plus its own generic template:
 | Department | File | Condition templates |
 |---|---|---|
 | General surgery | `discharge-templates.ts` | 11 (unchanged) |
-| Internal medicine | `discharge-templates-medicine.ts` | 14 (unchanged, still no default drugs) |
+| Internal medicine | `discharge-templates-medicine.ts` | 14 (typical medicines pre-filled from 2026-09-28) |
 | Medical oncology | `discharge-templates-oncology.ts` | 7 (unchanged) |
 | O&G | `discharge-templates-obgyn.ts` | 8 (was 0) |
 | Pulmonary | `discharge-templates-pulmonary.ts` | 10 |
