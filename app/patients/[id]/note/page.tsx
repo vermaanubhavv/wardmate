@@ -8,7 +8,9 @@ import { syncPatientPathways } from "@/lib/scoring/store";
 import { getScoreNoteLines } from "@/lib/scoring/read";
 import { getWardFormats } from "@/lib/formats";
 import { getWardLabRanges } from "@/lib/ward-lab-ranges";
-import { getWardIsEsicFaridabad } from "@/lib/ward";
+import { getWardIsEsicFaridabad, getWardSpecialtyStored } from "@/lib/ward";
+import { getSpecialtyPack } from "@/lib/specialty";
+import { progressNoteConfigFor } from "@/lib/progress-note-config";
 import { MANAGEMENT_CHOICES } from "@/lib/patients";
 import { getProcedureLabels, procedureFor } from "@/lib/templates";
 import CopyNoteButton from "./copy-button";
@@ -42,7 +44,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
 
   if (!patient) notFound();
 
-  const [{ data: wardRow }, { data: entriesData }, wardFormats, { data: profile }, procedures, wardRanges, isEsicFaridabad] =
+  const [{ data: wardRow }, { data: entriesData }, wardFormats, { data: profile }, procedures, wardRanges, isEsicFaridabad, specialty] =
     await Promise.all([
       supabase.from("wards").select("name").eq("id", patient.ward_id).maybeSingle(),
       supabase
@@ -68,6 +70,8 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
       getWardLabRanges(patient.ward_id),
       // Which printable layout this ward gets — see lib/ward.ts.
       getWardIsEsicFaridabad(patient.ward_id),
+      // Which department's exam lines the sheet carries — see lib/progress-note-config.ts.
+      getWardSpecialtyStored(patient.ward_id),
     ]);
 
   // The unit's own uploaded progress-note form, with its fields detected — see
@@ -125,6 +129,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
     wardRanges,
     scoreLines,
     practitionerName: profile?.display_name ?? null,
+    noteConfig: progressNoteConfigFor(getSpecialtyPack(specialty).key),
   });
   const noteText = formatProgressNoteText(note);
 

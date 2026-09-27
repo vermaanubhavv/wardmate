@@ -4,6 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { stripPatientHonorific } from "@/lib/patients";
 import { istDayKey } from "@/lib/patient-state";
 import NoteWorkspace, { type NoteObs } from "../note-workspace";
+import { getWardSpecialtyStored } from "@/lib/ward";
+import { getSpecialtyPack } from "@/lib/specialty";
+import { progressNoteConfigFor } from "@/lib/progress-note-config";
 
 /**
  * Build today's progress note as a card stack — one pass through the sheet's own lines, mostly
@@ -16,7 +19,7 @@ export default async function BuildNotePage({ params }: { params: Promise<{ id: 
 
   const { data: patient } = await supabase
     .from("current_patients")
-    .select("id, display_name, bed")
+    .select("id, ward_id, display_name, bed")
     .eq("id", id)
     .maybeSingle();
   if (!patient) notFound();
@@ -24,7 +27,7 @@ export default async function BuildNotePage({ params }: { params: Promise<{ id: 
   const cutoff = new Date();
   cutoff.setHours(cutoff.getHours() - 48);
   const since = cutoff.toISOString();
-  const [{ data: entriesData }, { data: medRows }] = await Promise.all([
+  const [{ data: entriesData }, { data: medRows }, specialty] = await Promise.all([
     supabase
       .from("entries")
       .select("recorded_at, is_case_history, observations(kind, label, value_text, urgency)")
@@ -38,7 +41,10 @@ export default async function BuildNotePage({ params }: { params: Promise<{ id: 
       .eq("patient_id", id)
       .eq("kind", "medication")
       .order("recorded_at", { ascending: false }),
+    getWardSpecialtyStored(patient.ward_id),
   ]);
+  // This department's cards and chips — lib/progress-note-config.ts.
+  const noteConfig = progressNoteConfigFor(getSpecialtyPack(specialty).key);
 
   const seenDrug = new Set<string>();
   const currentMeds = ((medRows ?? []) as { label: string; value_text: string | null }[])
@@ -120,6 +126,7 @@ export default async function BuildNotePage({ params }: { params: Promise<{ id: 
         yesterday={yesterday}
         currentMeds={currentMeds}
         suggestedAssessment={suggestedAssessment}
+        noteConfig={noteConfig}
       />
     </div>
   );

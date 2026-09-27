@@ -5,6 +5,7 @@ import { classifyLab, canonicalLabName, type SuppliedRange } from "@/lib/lab-ran
 import { flagRadiology } from "@/lib/radiology-flags";
 import type { WardRanges } from "@/lib/exam-summary";
 import type { Observation } from "@/lib/patient-state";
+import { DEFAULT_PROGRESS_NOTE_CONFIG, type ProgressNoteConfig } from "@/lib/progress-note-config";
 
 /** What the app cannot know and must not invent: a label and a blank to write on — the same
  *  convention lib/discharge.ts uses, so a printed page never looks like it is missing a field
@@ -91,8 +92,6 @@ const VITAL_HEADINGS: Record<VitalKey, string> = {
 function findVital(observations: Observation[], key: VitalKey): Observation | undefined {
   return observations.find((o) => matchVitalLabel(o.label) === key && o.value_text);
 }
-const ABDOMEN_ALIASES = ["abdomen", "per abdomen", "p/a", "pa", "abdominal examination"];
-const CHEST_ALIASES = ["chest", "respiratory system", "rs", "lungs", "air entry"];
 const FLATUS_ALIASES = ["flatus", "passed flatus", "wind"];
 const STOOL_ALIASES = ["stool", "motion", "bowels", "bowel movement", "passed stool"];
 const ASSESSMENT_ALIASES = ["assessment"];
@@ -140,8 +139,12 @@ export function buildProgressNote(
     /** The signed-in doctor's own name, for the SOAP sheet's "Practitioner's name" line. Blank,
      *  never guessed, when nobody has set one on their profile. */
     practitionerName?: string | null;
+    /** This department's exam lines — see lib/progress-note-config.ts. Absent is the
+     *  general-surgery sheet (P/Abdomen, Chest, Flatus / Stool), exactly as before. */
+    noteConfig?: ProgressNoteConfig;
   }
 ): ProgressNote {
+  const noteConfig = options?.noteConfig ?? DEFAULT_PROGRESS_NOTE_CONFIG;
   const now = new Date();
 
   // Case seen by (department)(unit) team — the note's own heading, not a line inside it. It
@@ -222,20 +225,17 @@ export function buildProgressNote(
   const icuLine = icuObs?.value_text?.trim() ? `ICU: ${icuObs.value_text.trim()}` : null;
   const line5c = [...otherVitals, icuLine].filter(Boolean).join("   ");
 
-  // 6. P/Abdomen, said today — printed exactly as recorded, never normalised to "NAD" wording
-  // that was not actually said. No trailing BLANK when empty: unlike a single-word field (a
-  // name, a date), an exam finding is written as a sentence, and a row of underscores after
-  // the heading reads as clutter rather than an invitation to fill it in. Always followed by
-  // one ruled line of extra room, whether or not something was said — the same "floor, not a
-  // ceiling" reasoning Issues already uses.
-  const abdomen = findLabel(todaysObservations, ABDOMEN_ALIASES);
-  const line6 = `P/Abdomen -${abdomen ? ` ${abdomen.value_text ?? abdomen.label}` : ""}`;
-  const line6b = "";
-
-  // 7. Chest, said today. Same reasoning as P/Abdomen above, including the extra ruled line.
-  const chest = findLabel(todaysObservations, CHEST_ALIASES);
-  const line7 = `Chest -${chest ? ` ${chest.value_text ?? chest.label}` : ""}`;
-  const line7b = "";
+  // 6–7. The department's exam lines — P/Abdomen and Chest on a surgical ward, the local eye
+  // examination on an eye ward, and so on (lib/progress-note-config.ts). Each is said today and
+  // printed exactly as recorded, never normalised to "NAD" wording that was not actually said.
+  // No trailing BLANK when empty: unlike a single-word field (a name, a date), an exam finding
+  // is written as a sentence, and a row of underscores after the heading reads as clutter rather
+  // than an invitation to fill it in. Each is followed by one ruled line of extra room, whether
+  // or not something was said — the same "floor, not a ceiling" reasoning Issues already uses.
+  const examLines = noteConfig.examSections.map((section) => {
+    const found = findLabel(todaysObservations, section.aliases);
+    return `${section.printLabel} -${found ? ` ${found.value_text ?? found.label}` : ""}`;
+  });
 
   // 7b. Flatus / Stool, said today — a tick-or-write line either way. If today's round already
   // said whether flatus or stool passed, that wording prints; where it did not, the heading
@@ -245,7 +245,9 @@ export function buildProgressNote(
   const stoolObs = findLabel(todaysObservations, STOOL_ALIASES);
   const flatusText = flatusObs ? (flatusObs.value_text ?? flatusObs.label) : "";
   const stoolText = stoolObs ? (stoolObs.value_text ?? stoolObs.label) : "";
-  const line7c = `Flatus / Stool -${flatusText || stoolText ? ` Flatus: ${flatusText || "—"}   Stool: ${stoolText || "—"}` : ""}`;
+  const line7c = noteConfig.bowelLine
+    ? `Flatus / Stool -${flatusText || stoolText ? ` Flatus: ${flatusText || "—"}   Stool: ${stoolText || "—"}` : ""}`
+    : null;
 
   // 9. Assessment — only the resident's own stated judgement (labelled "assessment", or a
   // sentence using a plain stable/worse/same word). Never computed by the app: there is no
@@ -308,7 +310,8 @@ export function buildProgressNote(
     line2, line3, line3b, line4, line5, line5b,
     // Omitted rather than printed empty — see line5c above.
     ...(line5c ? [line5c] : []),
-    line6, line6b, line7, line7b, line7c,
+    ...examLines.flatMap((line) => [line, ""]),
+    ...(line7c !== null ? [line7c] : []),
     line8, ...scoreLines, line9, ...issueBlankLines,
   ];
 
@@ -360,7 +363,9 @@ export function buildProgressNote(
   const objective = [
     line4, line5, line5b,
     ...(line5c ? [line5c] : []),
-    line6, line7, line7c, line9,
+    ...examLines,
+    ...(line7c !== null ? [line7c] : []),
+    line9,
   ];
   const assessment = [line2, line8, ...scoreLines];
 

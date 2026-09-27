@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { AI_MODEL } from "@/lib/model";
+import { DEFAULT_PROGRESS_NOTE_CONFIG, type ProgressNoteConfig } from "@/lib/progress-note-config";
 
 /**
  * The AI compile for the daily progress note — turns the tapped fragments and dictated bits
@@ -25,7 +26,16 @@ export type NoteContext = {
   procedure: string | null;
 };
 
-const SYSTEM = `You write the daily progress-sheet entry for an inpatient on a general-surgery ward in an Indian hospital, from the rough notes taken on this morning's round — tapped keywords, comma-separated fragments, dictated half-sentences.
+/**
+ * The instructions, built per department: which ward the patient is on, the shorthand that ward
+ * writes in, and which exam lines exist. general_surgery keeps the same rules and fields as before
+ * per-department notes existed, with its exam lines listed out.
+ */
+export function systemPromptFor(config: ProgressNoteConfig): string {
+  const examIds = config.examSections.map((s) => s.id);
+  const fieldList = ["complaints", "sensorium", ...examIds, "assessment"];
+  const examGuide = config.examSections.map((s) => `- ${s.id}: ${s.title}`).join("\n");
+  return `You write the daily progress-sheet entry for an inpatient on ${config.wardPhrase} in an Indian hospital, from the rough notes taken on this morning's round — tapped keywords, comma-separated fragments, dictated half-sentences.
 
 You are REWRITING the fragments into the terse, standard phrasing a progress sheet uses. Not adding, not completing, not interpreting.
 
@@ -33,38 +43,46 @@ Absolute rules:
 1. Use ONLY today's notes and the patient context given. Never introduce a symptom, sign, event or number that is not there.
 2. Keep every clinical fact present in the fragments.
 3. Say nothing where the fragments say nothing — a field with no content is returned as an empty string, not padded. Do not write "no complaints" unless the resident recorded that.
-4. Progress-sheet register: short phrases, standard abbreviations (P/A soft, NT, ND, BS+, NVBS, B/L air entry equal). Expand only genuinely ambiguous shorthand.
+4. Progress-sheet register: short phrases, standard abbreviations (${config.registerHint}). Expand only genuinely ambiguous shorthand.
 5. Do not invent an assessment. Only rewrite the resident's own words for it ("satisfactory", "improving", "static"). If they recorded none, return "".
-6. Put any contradiction in the fragments (e.g. "passed flatus" and "obstipation") in uncertain_points.
+6. Put any contradiction in the fragments (two findings that cannot both be true) in uncertain_points.
 7. "plan" is a list — one concrete action per item, imperative, in the resident's intent. Do not add standard items they did not mention.
 
-Fields to return, each a string ("" if nothing for it): complaints, sensorium, abdomen, chest, assessment. Plus plan as string[].
+The examination lines on this ward's sheet:
+${examGuide}
 
-Return JSON: { "complaints": string, "sensorium": string, "abdomen": string, "chest": string, "assessment": string, "plan": string[], "uncertain_points": string[] }.`;
+Fields to return, each a string ("" if nothing for it): ${fieldList.join(", ")}. Plus plan as string[].
 
-const SCHEMA = {
-  type: "object",
-  properties: {
-    complaints: { type: "string" },
-    sensorium: { type: "string" },
-    abdomen: { type: "string" },
-    chest: { type: "string" },
-    assessment: { type: "string" },
-    plan: { type: "array", items: { type: "string" } },
-    uncertain_points: { type: "array", items: { type: "string" } },
-  },
-  required: ["complaints", "sensorium", "abdomen", "chest", "assessment", "plan", "uncertain_points"],
-  additionalProperties: false,
-} as const;
+Return JSON: { ${fieldList.map((f) => `"${f}": string`).join(", ")}, "plan": string[], "uncertain_points": string[] }.`;
+}
+
+function schemaFor(config: ProgressNoteConfig) {
+  const fields = ["complaints", "sensorium", ...config.examSections.map((s) => s.id), "assessment"];
+  return {
+    type: "object",
+    properties: {
+      ...Object.fromEntries(fields.map((f) => [f, { type: "string" }])),
+      plan: { type: "array", items: { type: "string" } },
+      uncertain_points: { type: "array", items: { type: "string" } },
+    },
+    required: [...fields, "plan", "uncertain_points"],
+    additionalProperties: false,
+  };
+}
 
 export type CompiledNote = {
-  fields: { complaints: string; sensorium: string; abdomen: string; chest: string; assessment: string };
+  /** complaints, sensorium, assessment, and one entry per exam section id of this department. */
+  fields: Record<string, string>;
   plan: string[];
   uncertainPoints: string[];
   model: string;
 };
 
-export async function compileProgressNote(digest: string, ctx?: NoteContext): Promise<CompiledNote> {
+export async function compileProgressNote(
+  digest: string,
+  ctx?: NoteContext,
+  config: ProgressNoteConfig = DEFAULT_PROGRESS_NOTE_CONFIG
+): Promise<CompiledNote> {
   const ctxLine = ctx
     ? `Patient: ${[
         ctx.age_years != null ? `${ctx.age_years}y` : null,
@@ -80,10 +98,10 @@ export async function compileProgressNote(digest: string, ctx?: NoteContext): Pr
   const response = await client().messages.create({
     model: AI_MODEL,
     max_tokens: 1200,
-    system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
+    system: [{ type: "text", text: systemPromptFor(config), cache_control: { type: "ephemeral" } }],
     output_config: {
       effort: "low",
-      format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> },
+      format: { type: "json_schema", schema: schemaFor(config) as unknown as Record<string, unknown> },
     },
     messages: [{ role: "user", content: `${ctxLine}Today's round notes:\n\n${digest}` }],
   });
@@ -92,13 +110,9 @@ export async function compileProgressNote(digest: string, ctx?: NoteContext): Pr
   const p = block && block.type === "text" ? JSON.parse(block.text) : {};
   const str = (v: unknown) => String(v ?? "").trim();
   return {
-    fields: {
-      complaints: str(p.complaints),
-      sensorium: str(p.sensorium),
-      abdomen: str(p.abdomen),
-      chest: str(p.chest),
-      assessment: str(p.assessment),
-    },
+    fields: Object.fromEntries(
+      ["complaints", "sensorium", ...config.examSections.map((sec) => sec.id), "assessment"].map((f) => [f, str(p[f])])
+    ),
     plan: Array.isArray(p.plan) ? p.plan.map(String).map((s: string) => s.trim()).filter(Boolean) : [],
     uncertainPoints: Array.isArray(p.uncertain_points) ? p.uncertain_points.map(String) : [],
     model: AI_MODEL,
