@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, NPCCHH_HEAT, PREGNANCY, TINTINALLI, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * HEAT ILLNESS / COLLAPSE IN THE HEAT — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * HEAT ILLNESS / COLLAPSE IN THE HEAT — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Emergency department, north India. Summer heat waves bring two groups: people working hard
  * outdoors (construction, farming, traffic duty, daily-wage labour) who collapse at work, and
  * older or unwell people alone indoors without cooling who are found confused at home. The
@@ -19,8 +19,8 @@ export const heatIllnessV1: HistoryTree = {
   complaint: "Heat illness / collapse in the heat",
   triggers: ["heat stroke", "heatstroke", "sunstroke", "sun stroke", "heat exhaustion", "heat illness", "heat cramps", "heat syncope", "hyperthermia", "hyperpyrexia", "collapse in heat", "collapsed in sun", "heat wave", "loo lagna", "loo lag gayi", "loo lagi", "garmi lag gayi"],
   setting: "Emergency department, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [NPCCHH_HEAT, TINTINALLI, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("illness"),

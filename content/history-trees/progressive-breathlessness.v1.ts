@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, FISHMAN, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BREATHLESSNESS AND DRY COUGH GETTING WORSE OVER MONTHS — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * BREATHLESSNESS AND DRY COUGH GETTING WORSE OVER MONTHS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Pulmonary medicine ward, north India, where scarring of the lung is often traced to a job —
  * stone quarrying, sandblasting, slate-pencil work, construction — to pigeons on the roof or a
  * desert cooler at home, or to tuberculosis treated years ago. The occupational history is the
@@ -17,8 +17,8 @@ export const progressiveBreathlessnessV1: HistoryTree = {
   complaint: "Breathlessness and dry cough getting worse over months",
   triggers: ["progressive breathlessness", "gradually increasing breathlessness", "breathlessness for months", "dry cough for months", "ild", "interstitial lung disease", "pulmonary fibrosis", "lung fibrosis", "ipf", "silicosis", "pneumoconiosis", "hypersensitivity pneumonitis", "sarcoidosis", "fibrosis of lungs"],
   setting: "Pulmonary medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [FISHMAN, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("breathlessness"),

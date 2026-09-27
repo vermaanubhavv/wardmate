@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, NRCP_RABIES, TINTINALLI, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ANIMAL BITE (DOG, CAT, MONKEY) — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * ANIMAL BITE (DOG, CAT, MONKEY) — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Emergency department, north India. Stray dogs, pet dogs and cats, and urban monkeys account
  * for most bites; children are bitten on the face and head more often than adults. The history
  * decides the rabies exposure category under the national guidelines (I: touching or feeding,
@@ -20,8 +20,8 @@ export const animalBiteV1: HistoryTree = {
   complaint: "Animal bite (dog, cat, monkey)",
   triggers: ["animal bite", "dog bite", "dog bitten", "bitten by dog", "stray dog bite", "cat bite", "cat scratch", "bitten by cat", "monkey bite", "bitten by monkey", "monkey scratch", "bat bite", "rabies exposure", "anti rabies", "kutte ne kata", "kutta kaat liya", "bandar ne kata", "billi ne kata"],
   setting: "Emergency department, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [NRCP_RABIES, TINTINALLI, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("bite"),

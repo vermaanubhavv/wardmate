@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, FISHMAN, HUTCHISONS, MACLEODS, NTEP, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * PROBLEM WHILE ON TB TREATMENT — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * PROBLEM WHILE ON TB TREATMENT — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Pulmonary medicine ward, north India, where a patient on anti-tubercular treatment is
  * admitted with jaundice, vomiting, a rash, blurred vision, or simply "not getting better".
  * Three questions run underneath the whole history: which regimen, which month, and how many
@@ -20,8 +20,8 @@ export const tbTreatmentProblemV1: HistoryTree = {
   complaint: "Problem while on TB treatment",
   triggers: ["on att", "att induced", "att induced hepatitis", "att hepatitis", "dili", "on tb treatment", "tb treatment", "tb ki dawai", "not improving on att", "att side effect", "att reaction", "mdr tb", "rr tb", "dr tb", "drug resistant tb", "defaulted att", "left att"],
   setting: "Pulmonary medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [NTEP, FISHMAN, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("problem"),

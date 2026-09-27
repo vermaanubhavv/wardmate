@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, FISHMAN, GINA, GOLD, HUTCHISONS, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * WHEEZE / TIGHT CHEST — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * WHEEZE / TIGHT CHEST — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Pulmonary medicine ward, north India, where most wheeze on admission is an asthma or COPD
  * flare, and COPD here follows years of bidi or cigarette smoke or of cooking over a chulha.
  * Two questions run underneath the whole history: is the noise really coming from the small
@@ -17,8 +17,8 @@ export const wheezeV1: HistoryTree = {
   complaint: "Wheeze / tight chest",
   triggers: ["wheeze", "wheezing", "wheezy", "tight chest", "chest tightness", "tightness in chest", "whistling in chest", "seeti ki awaz", "asthma", "asthma attack", "acute asthma", "dama", "copd", "copd exacerbation", "aecopd", "bronchospasm"],
   setting: "Pulmonary medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [FISHMAN, GINA, GOLD, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("wheeze"),
