@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { complaintChipsFor, pastChipsFor } from "@/lib/case-history-chips";
+import { SPECIALTY_KEYS } from "@/lib/specialty/types";
+import { TREATMENT_ADVICE } from "@/lib/history-check/schema";
 
 describe("specialty-aware case-history chips", () => {
   it("gives each specialty its own complaint chip set", () => {
@@ -16,6 +18,20 @@ describe("specialty-aware case-history chips", () => {
     expect(obgyn).toContain("Labour pains");
     expect(obgyn).not.toEqual(surgery);
     expect(obgyn).not.toEqual(medicine);
+  });
+
+  it("every department has its own complaint set — none falls back to surgery's", () => {
+    const surgery = complaintChipsFor("general_surgery");
+    for (const key of SPECIALTY_KEYS) {
+      const chips = complaintChipsFor(key);
+      expect(chips.length, key).toBeGreaterThanOrEqual(15);
+      expect(new Set(chips).size, `${key} has a duplicate chip`).toBe(chips.length);
+      for (const c of chips) expect(TREATMENT_ADVICE.test(c), `${key}: "${c}"`).toBe(false);
+      if (key !== "general_surgery") expect(chips, key).not.toEqual(surgery);
+    }
+    expect(complaintChipsFor("ophthalmology")).toContain("Red eye");
+    expect(complaintChipsFor("psychiatry")).toContain("Low mood");
+    expect(complaintChipsFor("urology")).toContain("Blood in urine");
   });
 
   it("gives medicine, oncology and O&G their own past-history chip set, distinct from surgery's", () => {
