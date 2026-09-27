@@ -90,6 +90,12 @@ import { urinaryIncontinenceV1 } from "@/content/history-trees/urinary-incontine
 import { spinalInjuryV1 } from "@/content/history-trees/spinal-injury.v1";
 import { shuntProblemV1 } from "@/content/history-trees/shunt-problem.v1";
 import { neuralTubeSwellingV1 } from "@/content/history-trees/swelling-on-back-newborn.v1";
+import { wheezeV1 } from "@/content/history-trees/wheeze.v1";
+import { progressiveBreathlessnessV1 } from "@/content/history-trees/progressive-breathlessness.v1";
+import { tbTreatmentProblemV1 } from "@/content/history-trees/tb-treatment-problem.v1";
+import { roadTrafficAccidentV1 } from "@/content/history-trees/road-traffic-accident.v1";
+import { heatIllnessV1 } from "@/content/history-trees/heat-illness.v1";
+import { animalBiteV1 } from "@/content/history-trees/animal-bite.v1";
 
 /**
  * Every complaint tree the app ships, every version. Adding a complaint is a new file beside
@@ -190,4 +196,10 @@ export const HISTORY_TREES: readonly HistoryTree[] = [
   spinalInjuryV1,
   shuntProblemV1,
   neuralTubeSwellingV1,
+  wheezeV1,
+  progressiveBreathlessnessV1,
+  tbTreatmentProblemV1,
+  roadTrafficAccidentV1,
+  heatIllnessV1,
+  animalBiteV1,
 ];
