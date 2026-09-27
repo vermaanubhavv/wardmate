@@ -44,6 +44,9 @@ export function buildDeepgramParams(
   for (const [key, value] of Object.entries(params.extra ?? {})) {
     search.set(key, String(value));
   }
+  // Patient audio must never join Deepgram's Model Improvement Program. Set after `extra` so
+  // no caller can switch it off.
+  search.set("mip_opt_out", "true");
 
   const safe = dedupeCaseInsensitive(keyterms).slice(0, MAX_KEYTERMS);
   for (const term of safe) {

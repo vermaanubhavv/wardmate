@@ -78,8 +78,8 @@ create table patients (
   id           uuid primary key default gen_random_uuid(),
   ward_id      uuid not null references wards (id) on delete cascade,
 
-  -- The only two identifying facts we hold, by explicit design. No hospital number, no
-  -- phone, no address. If this database leaked it would be close to useless to anyone.
+  -- Name and bed, plus optional hospital numbers (patch 0024, at the unit's request). No
+  -- phone, no address.
   display_name text not null,
   bed          text not null,      -- carries location, e.g. 'SW-12', 'ICU-3'
   uhid_ip_no   text,

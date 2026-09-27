@@ -314,19 +314,13 @@
             <td class="vendor">Deepgram<span class="role">alternate speech-to-text</span></td>
             <td><span class="tag">audio</span> raw voice recordings, incl. live-dictation streams</td>
             <td class="muted-cell">Same job as OpenAI above; a per-ward setting picks one provider, not both.</td>
-            <td class="muted-cell">Per Deepgram's API terms — confirm current policy.</td>
+            <td class="muted-cell">Every request is sent with <code>mip_opt_out=true</code>, so audio is excluded from Deepgram's model training. Other retention per Deepgram's API terms — confirm current policy.</td>
           </tr>
           <tr>
             <td class="vendor">Sarvam<span class="role">alternate speech-to-text</span></td>
             <td><span class="tag">audio</span> short (&lt;30s) voice recordings</td>
             <td class="muted-cell">Same job, evaluated for Indian-accented medical speech.</td>
             <td class="muted-cell">Per Sarvam's API terms — confirm current policy.</td>
-          </tr>
-          <tr>
-            <td class="vendor">Hugging Face<span class="role">hosted inference API</span></td>
-            <td><span class="tag">text</span> dictated transcript text</td>
-            <td class="muted-cell">Spots candidate drug/condition names before the main extraction step, as a hint — never trusted on its own.</td>
-            <td class="muted-cell">Per Hugging Face's inference-API terms — confirm current policy.</td>
           </tr>
         </tbody>
       </table>
@@ -352,7 +346,7 @@
         <tbody>
           <tr>
             <td class="vendor">Supabase</td>
-            <td class="muted-cell">Database, authentication, and file storage — the system of record for every patient, entry, and photo.</td>
+            <td class="muted-cell">Database, authentication, and file storage — the system of record for every patient, entry, and photo. Hosted in Mumbai, India.</td>
             <td><span class="tag">yes</span> — this is where it lives</td>
           </tr>
           <tr>

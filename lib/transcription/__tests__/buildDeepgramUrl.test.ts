@@ -21,6 +21,11 @@ describe("buildDeepgramUrl", () => {
     expect(p.get("punctuate")).toBeNull();
   });
 
+  it("always opts patient audio out of Deepgram's model training", () => {
+    expect(buildDeepgramParams([]).get("mip_opt_out")).toBe("true");
+    expect(buildDeepgramParams([], { extra: { mip_opt_out: false } }).get("mip_opt_out")).toBe("true");
+  });
+
   it("never emits a comma-joined list or a legacy :weight", () => {
     const url = buildDeepgramUrl(["Ryle's tube", "Ranson's criteria", "CECT abdomen"]);
     expect(url).not.toMatch(/keyterm=[^&]*%2C/);
