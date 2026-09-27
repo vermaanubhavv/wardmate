@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PARSONS_EYE, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * FLASHES OF LIGHT / FLOATERS — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * FLASHES OF LIGHT / FLOATERS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Eye ward and OPD, north India. Most new floaters come from the vitreous peeling away from
  * the retina with age; the history exists to find the few where it has torn the retina on
  * the way, and the retina is now separating. A sudden shower, a curtain, and myopia or past
@@ -17,8 +17,8 @@ export const flashesFloatersV1: HistoryTree = {
   complaint: "Flashes of light / floaters",
   triggers: ["flashes", "flashes of light", "flashing lights", "photopsia", "sparks in eye", "floaters in eye", "cobwebs", "spots in vision", "black dots", "flies in front of eye", "chamak", "aankh me chamak", "aankh ke aage machhar", "aankh ke aage kale dhabbe"],
   setting: "Eye ward and OPD, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PARSONS_EYE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("flashes or floaters"),

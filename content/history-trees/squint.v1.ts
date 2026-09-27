@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, GHAI_PAEDIATRICS, HUTCHISONS, MACLEODS, paedBackground, PARSONS_EYE, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SQUINT / EYES NOT ALIGNED — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * SQUINT / EYES NOT ALIGNED — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Eye ward and OPD, north India. Two different histories share one complaint. In a child,
  * usually told by a parent, the questions are when it was first seen, whether it comes and
  * goes, whether glasses straighten it, and whether the turned eye sees at all — and the white
@@ -21,8 +21,8 @@ export const squintV1: HistoryTree = {
   complaint: "Squint / eyes not aligned",
   triggers: ["squint", "strabismus", "crossed eyes", "cross eyed", "eyes not aligned", "eyes not straight", "eye turning in", "eye turning out", "lazy eye", "amblyopia", "esotropia", "exotropia", "bhenga", "bhengapan", "tedhi aankh", "aankh tedhi", "tirchi aankh"],
   setting: "Eye ward and OPD, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PARSONS_EYE, GHAI_PAEDIATRICS, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("squint"),

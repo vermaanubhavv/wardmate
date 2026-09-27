@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PARSONS_EYE, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BULGING OF THE EYE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * BULGING OF THE EYE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Eye ward and OPD, north India. One side or both, how fast, and whether it hurts carry most
  * of this history. Slow painless bulging of both eyes is usually the thyroid; a painful one
  * that came over days with fever, or in an uncontrolled diabetic with black nasal crusts, is
@@ -19,8 +19,8 @@ export const proptosisV1: HistoryTree = {
   complaint: "Bulging of the eye",
   triggers: ["proptosis", "exophthalmos", "bulging eye", "bulging of eye", "bulging of the eye", "protruding eye", "eye coming out", "eye pushed forward", "prominent eye", "aankh bahar aa gayi", "aankh bahar nikal rahi", "aankh ubhri hui"],
   setting: "Eye ward and OPD, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PARSONS_EYE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("bulging of the eye"),

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PARSONS_EYE, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * WATERING OF THE EYE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * WATERING OF THE EYE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Eye ward and OPD, north India. The first split is overflow against overproduction: tears that
  * roll down the cheek because the drain is blocked or the lid does not pump them, or an
  * irritated eye making more tears than any drain could carry. Age, a swelling at the inner
@@ -21,8 +21,8 @@ export const wateringEyeV1: HistoryTree = {
   complaint: "Watering of the eye",
   triggers: ["watering eye", "watering of eye", "watering of the eye", "watering from eye", "watering eyes", "epiphora", "excessive tearing", "tears rolling", "blocked tear duct", "nasolacrimal duct", "dacryocystitis", "aankh se paani", "aankh se aansu", "aansu aate", "aankh me paani"],
   setting: "Eye ward and OPD, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PARSONS_EYE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("watering of the eye"),

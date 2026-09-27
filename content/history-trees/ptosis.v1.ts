@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PARSONS_EYE, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * DROOPING OF THE EYELID — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * DROOPING OF THE EYELID — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Eye ward and OPD, north India. Most drooping lids are present from birth or come slowly
  * with age; the history exists to find the few that are nerve or junction problems. Whether
  * the droop varies with fatigue, whether the eye moves and the eyes stay together, and
@@ -20,8 +20,8 @@ export const ptosisV1: HistoryTree = {
   complaint: "Drooping of the eyelid",
   triggers: ["ptosis", "drooping eyelid", "drooping of eyelid", "drooping of the eyelid", "drooping of lid", "eyelid drooping", "droopy eyelid", "droopy lid", "lid droop", "blepharoptosis", "palak girna", "palak jhukna", "palak latakna", "palak neeche"],
   setting: "Eye ward and OPD, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PARSONS_EYE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("drooping of the eyelid"),
