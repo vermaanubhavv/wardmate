@@ -16,7 +16,7 @@ import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-temp
  * immunosuppressants, ATT, ART, culture-directed antibiotics) keeps its dose as `[ … ]` —
  * never a guessed number. The generic template stays `medications: []`.
  *
- * MEDICINE LINES: PENDING CLINICIAN REVIEW.
+ * MEDICINE LINES: REVIEWED (Dr Anubhav Verma, 2026-09-28).
  *
  * Each template's `match` is tried against the typed diagnosis/procedure text; `families`
  * is the fallback via the care_templates picker (patches 0064, 0067). Ordered specific before
