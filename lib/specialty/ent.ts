@@ -126,4 +126,7 @@ ENT ward — what the words mean here:
     "head_injury",
     "fever",
   ],
+
+  // Examination checklists, in the order this ward examines — see types.ts.
+  examIds: ["ent", "general_physical", "neurological"],
 };

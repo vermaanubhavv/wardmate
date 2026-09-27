@@ -44,7 +44,7 @@ export default function LearnIndexPage() {
           ))}
         </ul>
         <p className="mt-3 px-4 text-[12px] text-muted">
-          Content is pending clinician review. It lists questions to ask and signs to look for; it never states a diagnosis or a treatment.
+          Each page shows whether a clinician has reviewed it. It lists questions to ask and signs to look for; it never states a diagnosis or a treatment.
         </p>
       </section>
     </div>

@@ -130,4 +130,7 @@ Obstetrics and gynaecology ward — what the words mean here:
 
   // Obstetric complaints first, then the gynaecological ones.
   historyTreeIds: ["labour_pains", "bleeding_pv", "vaginal_discharge", "reduced_fetal_movements", "vomiting_in_pregnancy", "mass_per_vaginum", "abdominal_pain", "burning_micturition", "oedema", "fever", "breast_lump"],
+
+  // Examination checklists, in the order this ward examines — see types.ts.
+  examIds: ["obstetric", "gynaecological", "breast", "general_physical", "abdomen"],
 };

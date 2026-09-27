@@ -69,6 +69,7 @@ import { getWardSpecialtyStored } from "@/lib/ward";
 import { getUser } from "@/lib/auth";
 import HistoryCheckCard from "./history-check-card";
 import { loadHistoryCheckCard } from "@/lib/history-check/page-data";
+import { getExamChecklist } from "@/lib/history-check/exams";
 
 type Entry = {
   id: string;
@@ -590,6 +591,10 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           trees={historyCheck.trees}
           runs={historyCheck.runs}
           hasSources={historyCheck.hasSources}
+          exams={pack.examIds.flatMap((id) => {
+            const c = getExamChecklist(id);
+            return c ? [{ id: c.id, title: c.title }] : [];
+          })}
         />
       )}
 

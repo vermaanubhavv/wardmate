@@ -131,4 +131,7 @@ Burns and plastic surgery ward — what the words mean here:
 
   // The burn first, then the injuries and wounds this unit also takes.
   historyTreeIds: ["burns", "hand_injury", "pressure_sore", "post_burn_contracture", "limb_injury", "leg_ulcer", "lump", "shock", "fever", "head_injury"],
+
+  // Examination checklists, in the order this ward examines — see types.ts.
+  examIds: ["burns_wound", "general_physical", "musculoskeletal"],
 };

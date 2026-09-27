@@ -110,4 +110,7 @@ Skin ward and clinic — what the words mean here:
     "loss_of_weight_appetite",
     "fever",
   ],
+
+  // Examination checklists, in the order this ward examines — see types.ts.
+  examIds: ["skin", "general_physical"],
 };

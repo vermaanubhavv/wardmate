@@ -119,4 +119,7 @@ Urology ward — what the words mean here:
     "groin_swelling",
     "fever",
   ],
+
+  // Examination checklists, in the order this ward examines — see types.ts.
+  examIds: ["genitourinary", "abdomen", "general_physical"],
 };

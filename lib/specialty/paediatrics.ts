@@ -121,4 +121,7 @@ Paediatric ward — what the words mean here:
     "oedema",
     "poisoning_snakebite",
   ],
+
+  // Examination checklists, in the order this ward examines — see types.ts.
+  examIds: ["paediatric", "newborn", "general_physical", "respiratory", "abdomen"],
 };
