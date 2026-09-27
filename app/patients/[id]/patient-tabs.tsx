@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 export type PatientTab = {
   key: string;
@@ -31,8 +32,18 @@ export type PatientTab = {
  * ten, and a wrong tab is more expensive than a tap.
  */
 export default function PatientTabs({ tabs }: { tabs: PatientTab[] }) {
-  const [active, setActive] = useState(tabs[0]?.key);
+  // The tab lives in the URL (?tab=) so a back-swipe from the note or the discharge workspace
+  // lands on the tab it left from. "Next" links to the bare patient URL, so walking the ward
+  // still opens every bed on Today.
+  const router = useRouter();
+  const pathname = usePathname();
+  const fromUrl = useSearchParams().get("tab");
+  const [active, setActiveState] = useState(fromUrl ?? tabs[0]?.key);
   const current = tabs.find((t) => t.key === active) ?? tabs[0];
+  function setActive(key: string) {
+    setActiveState(key);
+    router.replace(key === tabs[0]?.key ? pathname : `${pathname}?tab=${key}`, { scroll: false });
+  }
 
   return (
     <>

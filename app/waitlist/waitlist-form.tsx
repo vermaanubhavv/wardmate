@@ -64,10 +64,8 @@ const DEPARTMENTS = [
 ];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-// Most residents sign up with a personal Gmail, so the address is a username box plus an
-// editable domain box that starts on "gmail.com". Anyone on another provider edits the one
-// box; either way the whole step is one Back tap away.
-const EMAIL_DOMAIN_DEFAULT = "gmail.com";
+// One box. It used to be a username box beside an editable "gmail.com" box, which broke
+// autofill: a saved address pasted into the left half became "a@b.com@gmail.com".
 const STEPS = 3;
 
 const FIELD_LABEL = "text-footnote font-medium uppercase tracking-wide text-muted";
@@ -94,8 +92,7 @@ export default function WaitlistForm({
 } = {}) {
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState<"fwd" | "back">("fwd");
-  const [emailUser, setEmailUser] = useState("");
-  const [emailDomain, setEmailDomain] = useState(EMAIL_DOMAIN_DEFAULT);
+  const [email, setEmail] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
   const [name, setName] = useState("");
   const [college, setCollege] = useState("");
@@ -109,8 +106,7 @@ export default function WaitlistForm({
 
   const resolvedDepartment =
     department === "Other" ? departmentOther.trim() : department;
-  const email = `${emailUser.trim()}@${emailDomain.trim()}`;
-  const emailValid = emailUser.trim().length > 0 && EMAIL_RE.test(email);
+  const emailValid = EMAIL_RE.test(email.trim());
   const stepValid =
     step === 0
       ? emailValid
@@ -132,7 +128,7 @@ export default function WaitlistForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,
+          email: email.trim(),
           name,
           college,
           department: resolvedDepartment,
@@ -263,50 +259,24 @@ export default function WaitlistForm({
           <>
             <label className="flex flex-col gap-2">
               <span className={FIELD_LABEL}>Email</span>
-              <span className="flex items-stretch gap-2">
-                <input
-                  type="text"
-                  required
-                  autoFocus={autoFocusFirstField}
-                  inputMode="email"
-                  autoCapitalize="off"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  autoComplete="username"
-                  aria-label="Email username"
-                  value={emailUser}
-                  onChange={(e) => setEmailUser(e.target.value.replace(/\s/g, ""))}
-                  onBlur={() => setEmailTouched(true)}
-                  placeholder="you"
-                  className="ios-group min-w-0 flex-1 px-4 py-3.5 text-body outline-none transition-shadow focus:ring-2 focus:ring-accent"
-                />
-                <span className="flex items-center text-body text-muted">@</span>
-                <input
-                  type="text"
-                  required
-                  inputMode="email"
-                  autoCapitalize="off"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  aria-label="Email provider"
-                  value={emailDomain}
-                  onChange={(e) =>
-                    setEmailDomain(e.target.value.replace(/\s/g, ""))
-                  }
-                  onBlur={() => setEmailTouched(true)}
-                  placeholder="gmail.com"
-                  className="ios-group px-3 py-3.5 text-body outline-none transition-shadow focus:ring-2 focus:ring-accent"
-                  style={{ width: "8.5rem" }}
-                />
-              </span>
-              {emailTouched && emailUser.length > 0 && !emailValid ? (
+              <input
+                type="email"
+                required
+                autoFocus={autoFocusFirstField}
+                inputMode="email"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value.replace(/\s/g, ""))}
+                onBlur={() => setEmailTouched(true)}
+                placeholder="you@gmail.com"
+                className="ios-group w-full px-4 py-3.5 text-body outline-none transition-shadow focus:ring-2 focus:ring-accent"
+              />
+              {emailTouched && email.length > 0 && !emailValid && (
                 <span className="text-footnote text-warn-fg">
                   That doesn&rsquo;t look like an email address.
-                </span>
-              ) : (
-                <span className="text-footnote text-muted">
-                  Set to <span className="text-foreground">gmail.com</span> — change
-                  the right box if yours differs.
                 </span>
               )}
             </label>

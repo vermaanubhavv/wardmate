@@ -144,48 +144,23 @@ export default async function UnitPage() {
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
       <ScreenHeader back="/ward" backLabel="Ward" title={ward.name} subtitle={<>{roster.length} {roster.length === 1 ? "person" : "people"} on this unit</>} />
 
-      {/* Formats and Protocols moved here from the ward header's nav row — they're
-          unit-wide settings, not something reached for on every round, so they belong beside
-          the rest of this screen's setup rather than competing for space with To do and Ward
-          round on the page opened most. */}
-      <section className="px-4 pb-6">
-        <ul className="ios-group divide-y divide-line">
-          <li>
-            <Link href="/formats" className="flex items-center gap-3 px-4 py-3 active:bg-chip">
-              <DocumentIcon className="h-4 w-4 shrink-0 text-accent" />
-              <span className="flex-1 text-subhead">Formats</span>
-            </Link>
-          </li>
-          {isProtocolPublisher && (
-            <li>
-              <Link href="/protocols" className="flex items-center gap-3 px-4 py-3 active:bg-chip">
-                <ChecklistIcon className="h-4 w-4 shrink-0 text-accent" />
-                <span className="flex-1 text-subhead">Protocols</span>
-              </Link>
-            </li>
-          )}
-          {/* A discharge summary for somebody who is not on this unit — no patient to open, so
-              it is reached from here rather than from the ward. A unit patient's discharge is
-              always started from that patient. */}
-          <li>
-            <Link href="/prepare-discharge/new" className="flex items-center gap-3 px-4 py-3 active:bg-chip">
-              <DocumentIcon className="h-4 w-4 shrink-0 text-accent" />
-              <span className="flex-1 text-subhead">One-off discharge summary</span>
-            </Link>
-          </li>
-          {/* Who looked at which patient. Owner-only, and enforced as such at the database —
-              see 0072_patient_access_log.sql — so this link is a convenience, not the gate. */}
-          {isOwner && (
-            <li>
-              <Link href="/unit/access-log" className="flex items-center gap-3 px-4 py-3 active:bg-chip">
-                <DocumentIcon className="h-4 w-4 shrink-0 text-accent" />
-                <span className="flex-1 text-subhead">Access log</span>
-              </Link>
-            </li>
-          )}
-        </ul>
-      </section>
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      <h2 className="px-4 pb-2 pt-2 text-title3 font-semibold">You</h2>
       {/* Ahead of everything, and only ever once: somebody who has just entered the unit code
           has no name on them yet, and every screen after this one shows them as "Doctor" until
           they set one. Picking it off the unit's own list is one tap instead of typing. It
@@ -200,7 +175,6 @@ export default async function UnitPage() {
           </p>
         </section>
       )}
-
       {/* First, because it is the only section on this screen about the person reading it.
           What is set here is what the landing page greets you with. */}
       <section className="px-4 pb-6">
@@ -247,7 +221,86 @@ export default async function UnitPage() {
           <button className="btn btn-primary">Save</button>
         </form>
       </section>
-
+      {/* Shown even with one unit, now that a second can be made from this screen: the list is
+          where you find out which unit you are looking at, and it appearing only after there
+          are two hid the very thing the create box above changes. */}
+      {myWards.length > 0 && (
+        <section className="px-4 pb-6">
+          <p className="ios-group-header mb-2 px-4">Your units</p>
+          <ul className="flex flex-col gap-2">
+            {myWards.map((w) => (
+              <li key={w.id}>
+                <form action={switchWard}>
+                  <input type="hidden" name="ward_id" value={w.id} />
+                  <button
+                    className={
+                      "w-full rounded-[10px] border px-4 py-3 text-left text-subhead " +
+                      (w.id === ward.id
+                        ? "border-accent text-accent"
+                        : "border-line text-foreground")
+                    }
+                  >
+                    {w.name}
+                    {w.id === ward.id && " · current"}
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      <section className="px-4 pb-6">
+        <p className="ios-group-header mb-2 px-4">Join another unit</p>
+        <JoinForm />
+      </section>
+      {/* Creating a unit used to exist only on the first-run screen, which redirects away the
+          moment you have one — so a doctor covering a second unit, or moving to one at the end
+          of a rotation, had no way to start it. The database never restricted this to one; only
+          the way in was missing. Creating switches you to the new unit, as it does at first run. */}
+      <section className="px-4 pb-6">
+        <p className="ios-group-header mb-2 px-4">Create another unit</p>
+        <CreateUnitForm specialties={specialtyChoices()} />
+        <p className="mt-2 text-footnote text-muted leading-relaxed">
+          A new unit starts empty, with its own code and its own patients. You will be its owner.
+        </p>
+      </section>
+      {!isOwner && (
+        <section className="px-4 pb-6">
+          <form action={leaveWard}>
+            <input type="hidden" name="ward_id" value={ward.id} />
+            <ConfirmSubmit
+              title="Leave this unit?"
+              message="The patients stay with the unit. You stop seeing them until someone gives you the code again."
+              action="Leave unit"
+              className="btn btn-destructive w-full"
+            >
+              Leave this unit
+            </ConfirmSubmit>
+          </form>
+          <p className="mt-2 text-footnote text-muted">
+            The patients stay. You simply stop seeing them.
+          </p>
+        </section>
+      )}
+      <section className="px-4 pb-6">
+        {isAdmin && (
+          <Link href="/admin" className="ios-group mb-2 flex items-center justify-between px-4 py-3 text-subhead active:bg-chip">
+            <span>Admin console</span>
+            <span className="text-muted">adoption, activity, friction</span>
+          </Link>
+        )}
+        <form action={signOut}>
+          <ConfirmSubmit
+            title="Sign out of WardMate?"
+            message="Anything recorded on this phone that has not been sent yet stays queued until you sign in again."
+            action="Sign out"
+            className="btn btn-destructive w-full"
+          >
+            Sign out
+          </ConfirmSubmit>
+        </form>
+      </section>
+      <h2 className="px-4 pb-2 pt-2 text-title3 font-semibold">Unit</h2>
       <section className="px-4 pb-6">
         <p className="ios-group-header mb-2 px-4">Code for this unit</p>
         <CodeBox code={ward.join_code} />
@@ -257,7 +310,6 @@ export default async function UnitPage() {
           they record is theirs by name. Give it only to the team.
         </p>
       </section>
-
       <section className="px-4 pb-6">
         <p className="ios-group-header mb-2 px-4">On this unit</p>
         <ul className="ios-group divide-y divide-line">
@@ -286,7 +338,6 @@ export default async function UnitPage() {
           })}
         </ul>
       </section>
-
       {/* Who this unit expects. The roster above is who has actually arrived; this is the list
           they arrive against, and each unclaimed name is still offered to a new joiner under
           "Which one are you?". Names are no longer added from here — an existing list can only
@@ -321,7 +372,6 @@ export default async function UnitPage() {
           </ul>
         </section>
       )}
-
       {/* Only the owner may rename — the policy on wards says so, and offering the box to
           everyone else would be a control that silently does nothing. */}
       {isOwner && (
@@ -341,7 +391,27 @@ export default async function UnitPage() {
           <p className="mt-2 text-footnote text-muted">Everyone on the unit sees this name.</p>
         </section>
       )}
-
+      {isOwner && (
+        <section className="px-4 pb-6">
+          <p className="ios-group-header mb-2 px-4">Consultant in charge</p>
+          <form action={saveConsultant} className="flex gap-2">
+            <input type="hidden" name="ward_id" value={ward.id} />
+            <input
+              name="consultant_in_charge"
+              defaultValue={consultantInCharge ?? ""}
+              maxLength={120}
+              autoCapitalize="words"
+              placeholder="e.g. Dr. Neeraj"
+              className="field min-w-0 flex-1"
+            />
+            <button className="btn btn-secondary shrink-0">Save</button>
+          </form>
+          <p className="mt-2 text-footnote text-muted">
+            Fills in the consultant&rsquo;s name on every discharge summary this unit writes. It
+            can still be changed on an individual summary.
+          </p>
+        </section>
+      )}
       {/* A second, third and fourth unit of the same department write the same documents on the
           same hospital's paper. Only offered when there IS another unit to copy from. */}
       {isOwner && myWards.length > 1 && (
@@ -353,7 +423,87 @@ export default async function UnitPage() {
           />
         </section>
       )}
-
+      <h2 className="px-4 pb-2 pt-2 text-title3 font-semibold">Documents</h2>
+      {/* Formats and Protocols moved here from the ward header's nav row — they're
+          unit-wide settings, not something reached for on every round, so they belong beside
+          the rest of this screen's setup rather than competing for space with To do and Ward
+          round on the page opened most. */}
+      <section className="px-4 pb-6">
+        <ul className="ios-group divide-y divide-line">
+          <li>
+            <Link href="/formats" className="flex items-center gap-3 px-4 py-3 active:bg-chip">
+              <DocumentIcon className="h-4 w-4 shrink-0 text-accent" />
+              <span className="flex-1 text-subhead">Formats</span>
+            </Link>
+          </li>
+          {isProtocolPublisher && (
+            <li>
+              <Link href="/protocols" className="flex items-center gap-3 px-4 py-3 active:bg-chip">
+                <ChecklistIcon className="h-4 w-4 shrink-0 text-accent" />
+                <span className="flex-1 text-subhead">Protocols</span>
+              </Link>
+            </li>
+          )}
+          {/* A discharge summary for somebody who is not on this unit — no patient to open, so
+              it is reached from here rather than from the ward. A unit patient's discharge is
+              always started from that patient. */}
+          <li>
+            <Link href="/prepare-discharge/new" className="flex items-center gap-3 px-4 py-3 active:bg-chip">
+              <DocumentIcon className="h-4 w-4 shrink-0 text-accent" />
+              <span className="flex-1 text-subhead">One-off discharge summary</span>
+            </Link>
+          </li>
+          {/* Who looked at which patient. Owner-only, and enforced as such at the database —
+              see 0072_patient_access_log.sql — so this link is a convenience, not the gate. */}
+          {isOwner && (
+            <li>
+              <Link href="/unit/access-log" className="flex items-center gap-3 px-4 py-3 active:bg-chip">
+                <DocumentIcon className="h-4 w-4 shrink-0 text-accent" />
+                <span className="flex-1 text-subhead">Access log</span>
+              </Link>
+            </li>
+          )}
+        </ul>
+      </section>
+      {isOwner && (
+        <section className="px-4 pb-6">
+          <p className="ios-group-header mb-2 px-4">Discharge summary heading</p>
+          <form action={saveLetterhead}>
+            <input type="hidden" name="ward_id" value={ward.id} />
+            <textarea
+              name="letterhead"
+              rows={7}
+              defaultValue={ward.letterhead ?? ""}
+              placeholder={"E.S.I.C. MEDICAL COLLEGE & HOSPITAL\nNH-3, N.I.T. FARIDABAD, HARYANA\nDEPARTMENT OF GENERAL SURGERY\nUNIT-II"}
+              className="field text-subhead leading-relaxed"
+            />
+            <button className="btn btn-secondary mt-2 w-full">Save heading</button>
+          </form>
+          <p className="mt-2 text-footnote text-muted">
+            Printed at the top of every discharge summary, exactly as typed.
+          </p>
+        </section>
+      )}
+      {isOwner && (
+        <section className="px-4 pb-6">
+          <div className="flex items-center justify-between ios-group px-4 py-3">
+            <div className="pr-4">
+              <p className="text-subhead">ESIC Medical College Faridabad</p>
+              <p className="mt-0.5 text-footnote text-muted">
+                {isEsicFaridabad
+                  ? "On — today’s note prints on the pilot’s own sheet."
+                  : "Off — today’s note prints the generic SOAP layout."}
+              </p>
+            </div>
+            <EsicTemplateToggle wardId={ward.id} initial={isEsicFaridabad} />
+          </div>
+          <p className="mt-2 text-footnote text-muted">
+            Which printable layout Today&rsquo;s note uses. Leave this on for the ESIC Faridabad
+            pilot&rsquo;s own sheet; switch it off for any other hospital&rsquo;s unit, which
+            gets a generic Subjective / Objective / Assessment / Plan sheet instead.
+          </p>
+        </section>
+      )}
       {/* The hospital's own drug list, so a discharge summary can print each medicine under the
           exact wording the prescribing system lists it as. Owner-only: importing replaces the
           whole list for everyone on the unit. */}
@@ -400,135 +550,9 @@ export default async function UnitPage() {
           </div>
         </section>
       )}
-
-      {isOwner && (
-        <section className="px-4 pb-6">
-          <p className="ios-group-header mb-2 px-4">Consultant in charge</p>
-          <form action={saveConsultant} className="flex gap-2">
-            <input type="hidden" name="ward_id" value={ward.id} />
-            <input
-              name="consultant_in_charge"
-              defaultValue={consultantInCharge ?? ""}
-              maxLength={120}
-              autoCapitalize="words"
-              placeholder="e.g. Dr. Neeraj"
-              className="field min-w-0 flex-1"
-            />
-            <button className="btn btn-secondary shrink-0">Save</button>
-          </form>
-          <p className="mt-2 text-footnote text-muted">
-            Fills in the consultant&rsquo;s name on every discharge summary this unit writes. It
-            can still be changed on an individual summary.
-          </p>
-        </section>
+      {Boolean(dischargedCount || trashCount) && (
+        <h2 className="px-4 pb-2 pt-2 text-title3 font-semibold">Data</h2>
       )}
-
-      {isOwner && (
-        <section className="px-4 pb-6">
-          <p className="ios-group-header mb-2 px-4">Discharge summary heading</p>
-          <form action={saveLetterhead}>
-            <input type="hidden" name="ward_id" value={ward.id} />
-            <textarea
-              name="letterhead"
-              rows={7}
-              defaultValue={ward.letterhead ?? ""}
-              placeholder={"E.S.I.C. MEDICAL COLLEGE & HOSPITAL\nNH-3, N.I.T. FARIDABAD, HARYANA\nDEPARTMENT OF GENERAL SURGERY\nUNIT-II"}
-              className="field text-subhead leading-relaxed"
-            />
-            <button className="btn btn-secondary mt-2 w-full">Save heading</button>
-          </form>
-          <p className="mt-2 text-footnote text-muted">
-            Printed at the top of every discharge summary, exactly as typed.
-          </p>
-        </section>
-      )}
-
-      {isOwner && (
-        <section className="px-4 pb-6">
-          <div className="flex items-center justify-between ios-group px-4 py-3">
-            <div className="pr-4">
-              <p className="text-subhead">ESIC Medical College Faridabad</p>
-              <p className="mt-0.5 text-footnote text-muted">
-                {isEsicFaridabad
-                  ? "On — today’s note prints on the pilot’s own sheet."
-                  : "Off — today’s note prints the generic SOAP layout."}
-              </p>
-            </div>
-            <EsicTemplateToggle wardId={ward.id} initial={isEsicFaridabad} />
-          </div>
-          <p className="mt-2 text-footnote text-muted">
-            Which printable layout Today&rsquo;s note uses. Leave this on for the ESIC Faridabad
-            pilot&rsquo;s own sheet; switch it off for any other hospital&rsquo;s unit, which
-            gets a generic Subjective / Objective / Assessment / Plan sheet instead.
-          </p>
-        </section>
-      )}
-
-      <section className="px-4 pb-6">
-        <p className="ios-group-header mb-2 px-4">Join another unit</p>
-        <JoinForm />
-      </section>
-
-      {/* Creating a unit used to exist only on the first-run screen, which redirects away the
-          moment you have one — so a doctor covering a second unit, or moving to one at the end
-          of a rotation, had no way to start it. The database never restricted this to one; only
-          the way in was missing. Creating switches you to the new unit, as it does at first run. */}
-      <section className="px-4 pb-6">
-        <p className="ios-group-header mb-2 px-4">Create another unit</p>
-        <CreateUnitForm specialties={specialtyChoices()} />
-        <p className="mt-2 text-footnote text-muted leading-relaxed">
-          A new unit starts empty, with its own code and its own patients. You will be its owner.
-        </p>
-      </section>
-
-      {/* Shown even with one unit, now that a second can be made from this screen: the list is
-          where you find out which unit you are looking at, and it appearing only after there
-          are two hid the very thing the create box above changes. */}
-      {myWards.length > 0 && (
-        <section className="px-4 pb-6">
-          <p className="ios-group-header mb-2 px-4">Your units</p>
-          <ul className="flex flex-col gap-2">
-            {myWards.map((w) => (
-              <li key={w.id}>
-                <form action={switchWard}>
-                  <input type="hidden" name="ward_id" value={w.id} />
-                  <button
-                    className={
-                      "w-full rounded-[10px] border px-4 py-3 text-left text-subhead " +
-                      (w.id === ward.id
-                        ? "border-accent text-accent"
-                        : "border-line text-foreground")
-                    }
-                  >
-                    {w.name}
-                    {w.id === ward.id && " · showing"}
-                  </button>
-                </form>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {!isOwner && (
-        <section className="px-4 pb-6">
-          <form action={leaveWard}>
-            <input type="hidden" name="ward_id" value={ward.id} />
-            <ConfirmSubmit
-              title="Leave this unit?"
-              message="The patients stay with the unit. You stop seeing them until someone gives you the code again."
-              action="Leave unit"
-              className="btn btn-destructive w-full"
-            >
-              Leave this unit
-            </ConfirmSubmit>
-          </form>
-          <p className="mt-2 text-footnote text-muted">
-            The patients stay. You simply stop seeing them.
-          </p>
-        </section>
-      )}
-
       {/* Kept at the end, away from routine profile and unit controls. Both remain hidden
           when empty, so neither creates a destination without something recoverable in
           it — moved here from the ward page's own header for the same reason Formats and
@@ -559,24 +583,6 @@ export default async function UnitPage() {
           </Link>
         </section>
       )}
-      <section className="px-4 pb-6">
-        {isAdmin && (
-          <Link href="/admin" className="ios-group mb-2 flex items-center justify-between px-4 py-3 text-subhead active:bg-chip">
-            <span>Admin console</span>
-            <span className="text-muted">adoption, activity, friction</span>
-          </Link>
-        )}
-        <form action={signOut}>
-          <ConfirmSubmit
-            title="Sign out of WardMate?"
-            message="Anything recorded on this phone that has not been sent yet stays queued until you sign in again."
-            action="Sign out"
-            className="btn btn-destructive w-full"
-          >
-            Sign out
-          </ConfirmSubmit>
-        </form>
-      </section>
     </div>
   );
 }

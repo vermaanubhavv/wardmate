@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Mark from "@/app/mark";
@@ -41,6 +41,14 @@ export default function LoginPage() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Seconds until a code can be asked for again — a second tap inside the window would only
+  // hit Supabase's own rate limit and show a worse message.
+  const [cooldown, setCooldown] = useState(0);
+  useEffect(() => {
+    if (cooldown === 0) return;
+    const id = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(id);
+  }, [cooldown]);
 
   // /auth/callback sends the doctor back here with a reason when Google did not work out.
   const failed = useSearchParams().get("failed");
@@ -70,8 +78,8 @@ export default function LoginPage() {
     }
   }
 
-  async function sendCode(e: React.FormEvent) {
-    e.preventDefault();
+  async function sendCode(e?: React.FormEvent) {
+    e?.preventDefault();
     setBusy(true);
     setError(null);
 
@@ -87,6 +95,7 @@ export default function LoginPage() {
       return;
     }
     setStep("code");
+    setCooldown(30);
   }
 
   async function verifyCode(e: React.FormEvent) {
@@ -103,7 +112,11 @@ export default function LoginPage() {
 
     setBusy(false);
     if (error) {
-      setError(error.message);
+      setError(
+        /expired|invalid/i.test(error.message)
+          ? "That code did not match, or it has expired. Check the newest email, or send a fresh code."
+          : explain(error.message)
+      );
       return;
     }
     router.push("/ward");
@@ -200,17 +213,27 @@ export default function LoginPage() {
           >
             {busy ? "Checking…" : "Sign in"}
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              setStep("email");
-              setCode("");
-              setError(null);
-            }}
-            className="btn btn-quiet text-accent"
-          >
-            Use a different email
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={busy || cooldown > 0}
+              onClick={() => void sendCode()}
+              className="btn btn-quiet flex-1 text-accent"
+            >
+              {cooldown > 0 ? `Send again in ${cooldown}s` : "Send the code again"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setStep("email");
+                setCode("");
+                setError(null);
+              }}
+              className="btn btn-quiet flex-1 text-accent"
+            >
+              Use a different email
+            </button>
+          </div>
         </form>
       )}
 

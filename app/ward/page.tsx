@@ -75,12 +75,18 @@ export default async function Home({
   );
   const criticalCount = [...flags.values()].filter(Boolean).length;
   const dischargeableCount = patients.filter((p) => isDischargeable(p, flags.get(p.id) ?? null)).length;
-  const visiblePatients =
+  const visiblePatients = (
     filter === "critical"
       ? patients.filter((p) => flags.get(p.id))
       : filter === "dischargeable"
         ? patients.filter((p) => isDischargeable(p, flags.get(p.id) ?? null))
-        : patients;
+        : patients
+  )
+    // Critical beds first, then walking order. A stable sort keeps bed order inside each half,
+    // so a flagged BP in bed 24 is seen before the round reaches it rather than found by
+    // scanning twenty rows.
+    .slice()
+    .sort((a, b) => Number(Boolean(flags.get(b.id))) - Number(Boolean(flags.get(a.id))));
 
   const todoPreview = buildWardTodoPreview(tasks, scoringByPatient, patients, 3);
   const totalOutstanding = countWardOutstanding(tasks, scoringByPatient);
@@ -119,21 +125,6 @@ export default async function Home({
             and reading your own name and role back to yourself does not need a heading's
             worth of space. Absent entirely when there is no real name to use — see
             getDoctorName. */}
-        {(doctor || designation || departmentLabel) && (
-          <p className="text-subhead text-muted">
-            {doctor && (
-              <>
-                Hello, Dr. <span className="text-foreground">{doctor}</span>
-              </>
-            )}
-            {(designation || departmentLabel) && (
-              <>
-                {doctor ? " · " : ""}
-                {[designation, departmentLabel].filter(Boolean).join(" · ")}
-              </>
-            )}
-          </p>
-        )}
 
         {/* The name of the actual working unit gets its own card, with the patient count as a
             real caption rather than a bare number jammed against the name — "Unit Alpha 8"
@@ -145,8 +136,17 @@ export default async function Home({
         >
           <div className="min-w-0">
             <h1 className="ios-large-title truncate text-title2">{ward.name}</h1>
-            <p className="mt-0.5 text-footnote text-muted">
-              {patients.length} {patients.length === 1 ? "patient" : "patients"}
+            {/* The greeting rides on the unit card's caption rather than taking a line of
+                its own above the list. */}
+            <p className="mt-0.5 truncate text-footnote text-muted">
+              {[
+                `${patients.length} ${patients.length === 1 ? "patient" : "patients"}`,
+                doctor ? `Dr. ${doctor}` : null,
+                designation,
+                departmentLabel,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </p>
           </div>
           <span className="flex shrink-0 items-center gap-1 text-subhead font-medium text-accent">
@@ -191,57 +191,37 @@ export default async function Home({
         {/* The top few outstanding jobs across the whole unit, red first then yellow, so
             something urgent is visible without opening /todo. Merges the same two sources
             /todo itself reads — see lib/ward-todo-preview.ts. */}
-        <div className="mt-2 rounded-[12px] bg-card pt-3 pb-1">
-          <div className="flex items-center justify-between px-3 pb-2.5">
-            <div className="flex items-center gap-1.5">
-              <ListChecks className="h-4 w-4 text-accent" strokeWidth={2.2} />
-              <span className="text-subhead font-semibold">
-                To do{totalOutstanding > 0 ? ` · ${totalOutstanding} outstanding` : ""}
+        {/* One row, not a card of three: the list below is what this screen is for, and on a
+            375pt phone the old preview pushed the first patient under the fold. The most
+            urgent job is named so a red item is still seen without opening /todo. */}
+        <Link
+          href="/todo"
+          className="mt-2 flex min-h-11 items-center gap-2.5 rounded-[12px] bg-card px-3 py-2.5 active:opacity-70"
+        >
+          <ListChecks className="h-4 w-4 shrink-0 text-accent" strokeWidth={2.2} />
+          <span className="min-w-0 flex-1">
+            <span className="block text-subhead font-semibold">
+              To do{totalOutstanding > 0 ? ` · ${totalOutstanding} outstanding` : ""}
+            </span>
+            {todoPreview[0] && (
+              <span className="mt-0.5 flex items-center gap-1.5 truncate text-caption text-muted">
+                <span
+                  className={
+                    "h-2 w-2 shrink-0 rounded-full " +
+                    (todoPreview[0].urgency === "red"
+                      ? "bg-critical-dot"
+                      : todoPreview[0].urgency === "yellow"
+                        ? "bg-warn-dot"
+                        : "bg-good-dot")
+                  }
+                  aria-hidden
+                />
+                {todoPreview[0].bed} · {todoPreview[0].text}
               </span>
-            </div>
-            <Link href="/todo" className="tap flex shrink-0 items-center text-footnote font-semibold text-accent">
-              See all
-              <ChevronIcon className="h-3 w-3" />
-            </Link>
-          </div>
-          {todoPreview.length === 0 ? (
-            <p className="px-3 pb-3 text-subhead text-muted">Nothing urgent right now.</p>
-          ) : (
-            <ul className="flex flex-col">
-              {todoPreview.map((item) => (
-                <li key={item.id} className="flex items-start gap-2.5 border-t border-chip px-3 py-2">
-                  <span
-                    className={
-                      "mt-1.5 h-2 w-2 shrink-0 rounded-full " +
-                      (item.urgency === "red"
-                        ? "bg-critical-dot"
-                        : item.urgency === "yellow"
-                          ? "bg-warn-dot"
-                          : item.urgency === "green"
-                            ? "bg-good-dot"
-                            : "border border-dashed border-muted/60")
-                    }
-                    aria-hidden
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-subhead leading-snug">{item.text}</p>
-                    <p className="mt-0.5 flex items-center gap-1.5 truncate text-caption text-accent">
-                      <span className="rounded bg-chip px-1 font-mono tabular-nums text-muted">
-                        {item.bed}
-                      </span>
-                      {stripPatientHonorific(item.patientName)}
-                    </p>
-                    {item.suggestedBy && (
-                      <p className="mt-1 inline-flex items-center rounded-[5px] bg-warn-bg px-1.5 py-0.5 text-caption2 font-semibold text-warn-fg">
-                        Suggested · {item.suggestedBy}
-                      </p>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+            )}
+          </span>
+          <ChevronIcon className="h-4 w-4 shrink-0 text-muted" />
+        </Link>
 
         {/* One-time confirmation right after discharging a patient — instant feedback only.
             It carries no state of its own (just the id in the URL) and is gone the moment
@@ -268,7 +248,7 @@ export default async function Home({
             preview card above already links to /todo. "Discharged" moved to /unit, beside
             Trash, the same "not something reached for on every round" reasoning that put
             Formats and Protocols there. */}
-        <div className="mt-3 grid grid-cols-2 gap-2">
+        <div className={"mt-2 grid gap-2 " + (pendingConfirmCount > 0 ? "grid-cols-2" : "grid-cols-1")}>
           <NavTile href="/handover" icon={<SquarePen className="h-[19px] w-[19px]" strokeWidth={2.2} />}>
             Handover
           </NavTile>
@@ -407,10 +387,10 @@ function NavTile({
   return (
     <Link
       href={href}
-      className="flex flex-col items-center gap-1.5 rounded-[10px] bg-card px-2 py-3 text-center text-accent active:opacity-70"
+      className="flex min-h-11 items-center justify-center gap-2 rounded-[10px] bg-card px-2 py-2.5 text-center text-accent active:opacity-70"
     >
       {icon}
-      <span className="text-caption font-medium leading-tight">{children}</span>
+      <span className="text-subhead font-medium leading-tight">{children}</span>
     </Link>
   );
 }
