@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PARSONS_EYE, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * DOUBLE VISION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * DOUBLE VISION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Eye ward and casualty, north India. The first question splits the whole history: does the
  * doubling stay with one eye covered (an eye problem) or go away (the eyes are not moving
  * together)? Binocular doubling is then a nerve, junction, muscle or orbit problem, and the
@@ -19,8 +19,8 @@ export const doubleVisionV1: HistoryTree = {
   complaint: "Double vision",
   triggers: ["double vision", "diplopia", "seeing double", "seeing two images", "do do dikhna", "do dikhai deta", "drooping eyelid", "ptosis", "deviation of eye", "eye turned"],
   setting: "Eye ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PARSONS_EYE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("double vision"),

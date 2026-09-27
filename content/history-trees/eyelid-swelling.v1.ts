@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PARSONS_EYE, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SWELLING OF THE EYELID — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * SWELLING OF THE EYELID — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Eye ward and casualty, north India. Most lid swellings are a stye, a chalazion or an allergy;
  * the history exists to find the few that have gone behind the septum into the orbit, and the
  * diabetic with black crusts in the nose. Vision, eye movement and fever separate them.
@@ -17,8 +17,8 @@ export const eyelidSwellingV1: HistoryTree = {
   complaint: "Swelling of the eyelid / around the eye",
   triggers: ["eyelid swelling", "swelling of eyelid", "swollen eyelid", "lid swelling", "swelling around eye", "periorbital swelling", "puffy eyes", "stye", "chalazion", "gudheri", "anjani", "aankh sooj gayi", "aankh me sujan"],
   setting: "Eye ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PARSONS_EYE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("swelling of the eyelid"),

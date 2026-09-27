@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, GHAI_PAEDIATRICS, HUTCHISONS, IMNCI, MACLEODS, paedBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ABDOMINAL PAIN IN A CHILD — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * ABDOMINAL PAIN IN A CHILD — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Paediatric ward, north India. Most abdominal pain in children is functional, constipation or
  * a passing infection; the history exists to find the few who need a surgeon or a drip today.
  * Where the pain started and where it is now, green vomiting, red-currant stool, a swollen
@@ -18,8 +18,8 @@ export const paediatricAbdominalPainV1: HistoryTree = {
   complaint: "Abdominal pain in a child",
   triggers: ["abdominal pain in child", "child abdominal pain", "paediatric abdominal pain", "pain abdomen child", "child stomach pain", "tummy pain", "tummy ache", "pet dard", "pet me dard", "recurrent abdominal pain", "colic child"],
   setting: "Paediatric ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [GHAI_PAEDIATRICS, IMNCI, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("abdominal pain"),

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, DHINGRA, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * EARACHE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * EARACHE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * ENT ward and casualty, north India. Most ear pain comes from the ear canal or the middle ear,
  * but a normal-looking ear with pain is often referred from the teeth, jaw joint, tonsils or a
  * growth in the throat. The history exists to separate the two, and to catch the diabetic with
@@ -18,8 +18,8 @@ export const earacheV1: HistoryTree = {
   complaint: "Earache",
   triggers: ["earache", "pain in ear", "pain in the ear", "ear ache", "painful ear", "kaan dard", "kaan me dard", "kaan mein dard", "ear hurts", "ear is paining"],
   setting: "ENT ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DHINGRA, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("ear pain"),

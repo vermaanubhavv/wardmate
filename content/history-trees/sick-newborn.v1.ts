@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, GHAI_PAEDIATRICS, HUTCHISONS, IMNCI, MACLEODS, paedBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SICK NEWBORN / NOT FEEDING WELL — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * SICK NEWBORN / NOT FEEDING WELL — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Paediatric ward and newborn unit, north India. A newborn has few ways of being ill: it stops
  * feeding, goes quiet, gets cold, turns yellow or blue, or vomits. The same complaint covers
  * infection, a low sugar, a failing heart and a blocked gut, so the history leans on the
@@ -18,8 +18,8 @@ export const sickNewbornV1: HistoryTree = {
   complaint: "Sick newborn / not feeding well",
   triggers: ["sick newborn", "sick neonate", "newborn not feeding", "baby not feeding", "not sucking", "poor suck", "neonatal sepsis", "neonatal jaundice", "newborn jaundice", "hypothermia", "hypoglycaemia", "birth asphyxia", "doodh nahi pee raha", "lethargic newborn"],
   setting: "Paediatric ward and newborn unit, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [GHAI_PAEDIATRICS, IMNCI, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("illness"),

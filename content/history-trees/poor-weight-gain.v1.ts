@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, GHAI_PAEDIATRICS, HUTCHISONS, IMNCI, MACLEODS, paedBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * POOR WEIGHT GAIN — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * POOR WEIGHT GAIN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Paediatric ward, north India. Most children who do not gain weight are not getting enough
  * to eat, and a careful account of what the child actually eats in a day answers more than
  * any test. The rest of the history looks for where the calories are being lost or burnt —
@@ -19,8 +19,8 @@ export const poorWeightGainV1: HistoryTree = {
   complaint: "Poor weight gain",
   triggers: ["poor weight gain", "not gaining weight", "failure to thrive", "faltering growth", "growth faltering", "underweight child", "malnutrition", "severe acute malnutrition", "weight not increasing", "vajan nahi badh raha", "kamzor bachcha", "thin child", "wasted child"],
   setting: "Paediatric ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [GHAI_PAEDIATRICS, IMNCI, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("poor weight gain"),

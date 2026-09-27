@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, DHINGRA, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * NASAL OBSTRUCTION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * NASAL OBSTRUCTION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * ENT ward and casualty, north India. Most blocked noses are allergic, septal or infective; the
  * history exists to find the one-sided block that is a growth, the child with a forgotten object
  * in the nose, and the diabetic or immunosuppressed patient whose black crusts and facial pain
@@ -18,8 +18,8 @@ export const nasalObstructionV1: HistoryTree = {
   complaint: "Nasal obstruction",
   triggers: ["nasal obstruction", "blocked nose", "nose block", "nasal blockage", "stuffy nose", "cannot breathe through nose", "naak band", "naak bandh", "nose blocked", "sinusitis", "nasal polyp", "running nose", "sneezing"],
   setting: "ENT ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DHINGRA, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("nasal obstruction"),

@@ -31,10 +31,8 @@ describe("tree registry", () => {
     // A tree must not drift into "reviewed" as a side effect of an edit — the chip on the card
     // is the only thing telling a resident whether the content was read by a clinician.
     //
-    // Sixty-one of the seventy-three are signed off. `burns` was re-read as the shipped file (the
-    // earlier sign-off was of a different, independently-written burns tree and did not transfer).
-    // The twelve OBG / paediatric / ENT / eye trees added after that are not on the list: no
-    // clinician has read them yet.
+    // All seventy-three are signed off. `burns` was re-read as the shipped file (the earlier
+    // sign-off was of a different, independently-written burns tree and did not transfer).
     // `jaundice` IS here, at v1.1.0: it was signed off at v1.0.0, then gained four obstructive
     // questions, and the reviewer read those four and re-signed it rather than the list being
     // edited around them. That is the only way an id gets back onto this list after a version
@@ -45,15 +43,18 @@ describe("tree registry", () => {
       "abdominal_distension", "abdominal_pain", "altered_behaviour", "altered_sensorium",
       "anorectal_pain", "bleeding_per_rectum", "bleeding_pv", "breast_lump", "breathlessness",
       "burning_micturition", "burns", "chest_pain", "constipation", "cough",
-      "decreased_urine_output", "diarrhoea", "dysphagia", "ear_discharge", "epistaxis",
-      "febrile_neutropenia", "fever", "fever_with_rash", "generalised_weakness", "giddiness",
-      "groin_swelling", "haematemesis", "haematuria", "haemoptysis", "head_injury", "headache",
-      "hoarseness", "jaundice", "joint_pain", "labour_pains", "leg_ulcer", "limb_injury",
-      "limb_ischaemia", "limb_weakness", "loss_of_weight_appetite", "low_back_pain", "low_mood",
-      "lump", "oedema", "paediatric_breathing", "paediatric_diarrhoea", "paediatric_fever",
-      "paediatric_seizure", "palpitations", "poisoning_snakebite", "polyuria", "post_op_problem",
-      "red_eye", "scrotal_swelling", "shock", "skin_lesion", "snoring_sleepiness", "sore_throat",
-      "thyroid_swelling", "toothache", "vaginal_discharge", "vision_loss",
+      "decreased_urine_output", "diarrhoea", "double_vision", "dysphagia", "ear_discharge",
+      "earache", "epistaxis", "eye_injury", "eyelid_swelling", "febrile_neutropenia", "fever",
+      "fever_with_rash", "foreign_body_ent", "generalised_weakness", "giddiness", "groin_swelling",
+      "haematemesis", "haematuria", "haemoptysis", "head_injury", "headache", "hoarseness",
+      "jaundice", "joint_pain", "labour_pains", "leg_ulcer", "limb_injury", "limb_ischaemia",
+      "limb_weakness", "loss_of_weight_appetite", "low_back_pain", "low_mood", "lump",
+      "mass_per_vaginum", "nasal_obstruction", "oedema", "paediatric_abdominal_pain",
+      "paediatric_breathing", "paediatric_diarrhoea", "paediatric_fever", "paediatric_seizure",
+      "palpitations", "poisoning_snakebite", "polyuria", "poor_weight_gain", "post_op_problem",
+      "red_eye", "reduced_fetal_movements", "scrotal_swelling", "shock", "sick_newborn",
+      "skin_lesion", "snoring_sleepiness", "sore_throat", "thyroid_swelling", "toothache",
+      "vaginal_discharge", "vision_loss", "vomiting_in_pregnancy",
     ]);
   });
 });

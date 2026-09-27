@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { ATLS, commonHpi, HUTCHISONS, MACLEODS, PARSONS_EYE, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * INJURY TO THE EYE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * INJURY TO THE EYE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Eye ward and casualty, north India. The mechanism carries most of this history: a cricket
  * ball or gulli-danda blow, a firecracker at Diwali, a grinding or hammering job without
  * goggles, or a lime or chemical splash. The open globe, the metal fragment inside the eye and
@@ -18,8 +18,8 @@ export const eyeInjuryV1: HistoryTree = {
   complaint: "Injury to the eye",
   triggers: ["eye injury", "injury to eye", "injury to the eye", "eye trauma", "trauma to eye", "hit in the eye", "ball hit eye", "black eye", "foreign body in eye", "something in eye", "lime in eye", "chemical in eye", "cracker injury", "firecracker injury", "aankh me chot", "aankh me kuch gira"],
   setting: "Eye ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PARSONS_EYE, ATLS, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("eye injury"),

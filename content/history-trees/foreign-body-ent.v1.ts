@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, DHINGRA, HUTCHISONS, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * FOREIGN BODY IN EAR, NOSE OR THROAT — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * FOREIGN BODY IN EAR, NOSE OR THROAT — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * ENT ward and casualty, north India. Most are beads, seeds, insects and fish bones that can wait
  * for a calm removal; the history exists to find the few that cannot — the button battery that
  * burns through tissue in hours, the object that has gone into the airway, the sharp bone or coin
@@ -18,8 +18,8 @@ export const foreignBodyEntV1: HistoryTree = {
   complaint: "Foreign body in ear, nose or throat",
   triggers: ["foreign body", "foreign body ear", "foreign body nose", "foreign body throat", "something in ear", "something in nose", "insect in ear", "keeda in ear", "kaan me keeda", "fish bone", "bone stuck", "stuck in throat", "swallowed coin", "coin swallowed", "button battery", "swallowed battery", "bead in nose", "seed in nose", "swallowed something", "aspiration"],
   setting: "ENT ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DHINGRA, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("foreign body"),

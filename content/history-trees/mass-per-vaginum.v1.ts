@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, SHAW_GYNAECOLOGY, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SOMETHING COMING OUT PER VAGINUM — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * SOMETHING COMING OUT PER VAGINUM — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Obstetrics and gynaecology ward, north India. Whether the mass goes back, what brings it
  * down, and whether it followed a delivery split the differential early; bladder and bowel
  * symptoms and the obstetric history fill in the rest. Differentials: uterovaginal prolapse
@@ -16,8 +16,8 @@ export const massPerVaginumV1: HistoryTree = {
   complaint: "Something coming out per vaginum",
   triggers: ["something coming out per vaginum", "something coming out pv", "mass per vaginum", "mass coming out per vaginum", "mass pv", "something coming down", "uterine prolapse", "prolapse uterus", "utero vaginal prolapse", "procidentia", "bulge in vagina", "bachedani bahar aana", "bachedani nikalna"],
   setting: "Obstetrics and gynaecology ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [SHAW_GYNAECOLOGY, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("something coming out per vaginum"),

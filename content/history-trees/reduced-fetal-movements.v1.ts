@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, DUTTA_OBSTETRICS, HUTCHISONS, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * REDUCED FETAL MOVEMENTS — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * REDUCED FETAL MOVEMENTS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Obstetrics and gynaecology ward, north India. The period of gestation and whether movements
  * have reduced or stopped altogether come first, then the ANC card and scan reports. Differentials:
  * fetal growth restriction or fetal compromise, intrauterine fetal death, abruption,
@@ -16,8 +16,8 @@ export const reducedFetalMovementsV1: HistoryTree = {
   complaint: "Reduced fetal movements",
   triggers: ["reduced fetal movements", "decreased fetal movements", "less fetal movements", "fetal movements not felt", "no fetal movements", "absent fetal movements", "reduced fm", "decreased fm", "baby not moving", "baby moving less", "bachcha nahi hil raha"],
   setting: "Obstetrics and gynaecology ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DUTTA_OBSTETRICS, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("reduced fetal movements"),

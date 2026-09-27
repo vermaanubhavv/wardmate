@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, DUTTA_OBSTETRICS, HUTCHISONS, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * VOMITING IN PREGNANCY — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * VOMITING IN PREGNANCY — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Obstetrics and gynaecology ward, north India. When in the pregnancy the vomiting began is
  * the first split: vomiting that starts in the first trimester and settles by mid-pregnancy
  * fits hyperemesis, while vomiting that starts later, or comes with fever, jaundice or pain,
@@ -17,8 +17,8 @@ export const vomitingInPregnancyV1: HistoryTree = {
   complaint: "Vomiting in pregnancy",
   triggers: ["vomiting in pregnancy", "hyperemesis", "hyperemesis gravidarum", "morning sickness", "nausea in pregnancy", "excessive vomiting in pregnancy", "pregnancy vomiting", "emesis gravidarum", "vomiting with amenorrhoea"],
   setting: "Obstetrics and gynaecology ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DUTTA_OBSTETRICS, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("vomiting in pregnancy"),
