@@ -1021,7 +1021,7 @@ picker rows:
 Operative families carry a pre-operative (`before_surgery`) and a post-operative
 (`after_surgery`) protocol, because `getTemplateForPatient` picks by whether a surgery date
 exists; non-operative families carry one. Picker rows use each pack's `pickerPhase`. They are
-seeded as drafts; residents only see published protocols. `specialty.test.ts` checks that every
+seeded as drafts and published by 0092 after sign-off (Dr Anubhav Verma, 2026-09-28). `specialty.test.ts` checks that every
 family a pack lists is seeded by some patch, and that no department is offered surgery's or
 medicine's families.
 

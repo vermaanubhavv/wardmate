@@ -17,7 +17,7 @@
 -- the clinician, never an instruction. Triggers only where time is the point (a 6-hourly
 -- CIWA-Ar, a repeat 20WBCT, a 24-hour tertiary survey).
 --
--- CLINICAL CONTENT: PENDING CLINICIAN REVIEW — seeded as draft; a later patch publishes it.
+-- CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28) — seeded as draft; 0092 publishes it.
 --
 -- Requires: 0004, 0026, 0032, 0036, 0040, 0056, 0058, 0060.
 -- Safe to run more than once — it rewrites the item set for a protocol of the same title.
