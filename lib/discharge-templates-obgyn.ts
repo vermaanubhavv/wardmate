@@ -7,9 +7,9 @@ import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-temp
  * CONDITION TEMPLATES: REVIEWED (Dr Anubhav Verma, 2026-09-28). `OBGYN_DISCHARGE_TEMPLATES` (normal delivery,
  * LSCS, postpartum pre-eclampsia / gestational hypertension, PPH, ectopic, miscarriage / MTP with
  * evacuation, hysterectomy, antenatal admission discharged undelivered) were drafted on the
- * product owner's direction and have NOT yet had the departmental read-through this pack was
- * holding them for (docs/specialty-packs.md §8). They are an editable starting point to be
- * corrected from that review — not signed-off content.
+ * product owner's direction and signed off by him. That is a single-clinician sign-off; the
+ * departmental read-through this pack was holding them for (docs/specialty-packs.md §8) is still
+ * outstanding, and they remain an editable starting point to be corrected from it.
  *
  * Medication lines are a STARTING SET with standard adult strengths, chosen to be compatible
  * with breastfeeding after delivery, and are checked against each patient — allergy, Hb, renal
