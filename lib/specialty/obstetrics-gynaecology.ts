@@ -129,5 +129,5 @@ Obstetrics and gynaecology ward — what the words mean here:
   lexiconSpecialty: "obstetrics-gynaecology",
 
   // Obstetric complaints first, then the gynaecological ones.
-  historyTreeIds: ["labour_pains", "bleeding_pv", "vaginal_discharge", "abdominal_pain", "burning_micturition", "oedema", "fever", "breast_lump"],
+  historyTreeIds: ["labour_pains", "bleeding_pv", "vaginal_discharge", "reduced_fetal_movements", "vomiting_in_pregnancy", "mass_per_vaginum", "abdominal_pain", "burning_micturition", "oedema", "fever", "breast_lump"],
 };

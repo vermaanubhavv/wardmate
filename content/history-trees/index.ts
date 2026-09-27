@@ -60,6 +60,18 @@ import { haemoptysisV1 } from "@/content/history-trees/haemoptysis.v1";
 import { snoringSleepinessV1 } from "@/content/history-trees/snoring-sleepiness.v1";
 import { thyroidSwellingV1 } from "@/content/history-trees/thyroid-swelling.v1";
 import { postOpProblemV1 } from "@/content/history-trees/post-op-problem.v1";
+import { reducedFetalMovementsV1 } from "@/content/history-trees/reduced-fetal-movements.v1";
+import { vomitingInPregnancyV1 } from "@/content/history-trees/vomiting-in-pregnancy.v1";
+import { massPerVaginumV1 } from "@/content/history-trees/mass-per-vaginum.v1";
+import { sickNewbornV1 } from "@/content/history-trees/sick-newborn.v1";
+import { poorWeightGainV1 } from "@/content/history-trees/poor-weight-gain.v1";
+import { paediatricAbdominalPainV1 } from "@/content/history-trees/paediatric-abdominal-pain.v1";
+import { nasalObstructionV1 } from "@/content/history-trees/nasal-obstruction.v1";
+import { earacheV1 } from "@/content/history-trees/earache.v1";
+import { foreignBodyEntV1 } from "@/content/history-trees/foreign-body-ent.v1";
+import { doubleVisionV1 } from "@/content/history-trees/double-vision.v1";
+import { eyelidSwellingV1 } from "@/content/history-trees/eyelid-swelling.v1";
+import { eyeInjuryV1 } from "@/content/history-trees/eye-injury.v1";
 
 /**
  * Every complaint tree the app ships, every version. Adding a complaint is a new file beside
@@ -130,4 +142,16 @@ export const HISTORY_TREES: readonly HistoryTree[] = [
   snoringSleepinessV1,
   thyroidSwellingV1,
   postOpProblemV1,
+  reducedFetalMovementsV1,
+  vomitingInPregnancyV1,
+  massPerVaginumV1,
+  sickNewbornV1,
+  poorWeightGainV1,
+  paediatricAbdominalPainV1,
+  nasalObstructionV1,
+  earacheV1,
+  foreignBodyEntV1,
+  doubleVisionV1,
+  eyelidSwellingV1,
+  eyeInjuryV1,
 ];
