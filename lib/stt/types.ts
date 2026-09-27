@@ -15,7 +15,7 @@ export type Transcription = {
 /**
  * Optional per-call tuning. Today it carries the patient-selected Deepgram keyterm list — see
  * lib/transcription/selectMedicalKeyterms.ts. An engine that cannot use a field ignores it,
- * exactly as Sarvam and OpenAI already ignore each other's hint shapes.
+ * exactly as Deepgram ignores the prose hint.
  */
 export type TranscribeOptions = {
   /**

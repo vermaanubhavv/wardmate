@@ -15,7 +15,7 @@ import { getExpectedMembers } from "@/lib/expected-members";
 import CreateUnitForm from "../onboarding/create-unit-form";
 import { getFormularySize } from "@/lib/formulary";
 import { DESIGNATION_CHOICES } from "@/lib/patients";
-import { ChecklistIcon, DocumentIcon, MicIcon } from "../icons";
+import { ChecklistIcon, DocumentIcon } from "../icons";
 import { listSpecialties, specialtyPacksEnabled } from "@/lib/specialty";
 import { getFinalisedDischargeMap, visibleDischargedFilter } from "@/lib/discharged";
 
@@ -177,17 +177,6 @@ export default async function UnitPage() {
               <span className="flex-1 text-[15px]">One-off discharge summary</span>
             </Link>
           </li>
-          {/* A trial tool: record a stretch of ward speech once and see every configured speech
-              engine transcribe the same audio, to decide which one to set as STT_PROVIDER.
-              Owner only — it is a setup decision, not a round action. */}
-          {isOwner && (
-            <li>
-              <Link href="/tools/transcribe" className="flex items-center gap-3 px-4 py-3 active:bg-chip">
-                <MicIcon className="h-4 w-4 shrink-0 text-accent" />
-                <span className="flex-1 text-[15px]">Compare transcription engines</span>
-              </Link>
-            </li>
-          )}
           {/* Who looked at which patient. Owner-only, and enforced as such at the database —
               see 0072_patient_access_log.sql — so this link is a convenience, not the gate. */}
           {isOwner && (

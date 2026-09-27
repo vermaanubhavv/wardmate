@@ -5,7 +5,7 @@ import { buildDeepgramParams } from "@/lib/transcription/buildDeepgramUrl";
  * Nova-3 Medical over a WebSocket and gets partial + final transcripts back as it speaks.
  *
  * This is the ONLY streaming path in WardMate. Every other "Speak" button records a whole clip
- * and POSTs it to /api/transcribe (one prerecorded pass of whatever STT_PROVIDER is set to).
+ * and POSTs it to /api/transcribe (one prerecorded Deepgram pass).
  * That path is untouched; this one exists for the case-history "dictate the whole clerking"
  * flow, where the words have to land in the right card while the resident is still talking.
  *

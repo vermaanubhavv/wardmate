@@ -64,17 +64,14 @@ in the code as warnings not to re-add them:
 - **Next.js 16.3** (App Router, React 19.2, Server Components + Server Actions), **Tailwind v4**
 - **Supabase** — Postgres + Auth + Storage. Project ref `zrisashumxmiiwffhezc`
 - **Anthropic API** — `claude-opus-5`, structuring speech/photos into observations
-- **OpenAI** — `gpt-4o-transcribe` for speech-to-text (`STT_PROVIDER=openai`)
-- **Sarvam** — `saaras:v3` for Indian-English speech-to-text (`STT_PROVIDER=sarvam`); its
-  synchronous trial path accepts recordings up to 30 seconds
-- **Deepgram** — `nova-3-medical` in `en-IN` (`STT_PROVIDER=deepgram`), given a per-patient
+- **Deepgram** — the only speech-to-text engine: `nova-3-medical` in `en-IN`, given a per-patient
   keyterm list built from the patient's diagnoses / operation / drains / drugs — see
   `docs/medical-dictation-keyterms.md`
 - **Vercel** — production deploys, project `wardmate` (directory still named `coreresident`)
 - **GitHub** — `https://github.com/vermaanubhavv/wardmate` (private), branch `main`, ~74 commits
 
 Server env vars (names only): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
-`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `SARVAM_API_KEY`, `DEEPGRAM_API_KEY`, `STT_PROVIDER`. **There is no service-role key, on
+`ANTHROPIC_API_KEY`, `DEEPGRAM_API_KEY`. **There is no service-role key, on
 purpose.** Controlled writes use `SECURITY DEFINER` Postgres functions instead.
 
 Auth: Google OAuth (primary) + 6-digit email OTP via Resend. Google callback must point at
@@ -315,7 +312,7 @@ the same care the ward page got, not a rushed pass:
    click-through happened; the user still needs to check it against real ward data themselves.
 
 **Phase 4, further out**: discharge/case-history flows, `prepare-discharge`, `formats`,
-`protocols`, `round/[id]`, `register/[id]`, `tools/transcribe`, `learn/*`, and the admin panel
+`protocols`, `round/[id]`, `register/[id]`, `learn/*`, and the admin panel
 (lowest priority — internal tooling, not a resident-facing screen).
 
 Also noted but explicitly deferred by the user: **new scoring-engine pathways** beyond the 17
