@@ -116,4 +116,7 @@ Psychiatry ward — what the words mean here:
     "headache",
     "loss_of_weight_appetite",
   ],
+
+  // Examination checklists, in the order this ward examines — see types.ts.
+  examIds: ["mental_state", "general_physical", "neurological"],
 };

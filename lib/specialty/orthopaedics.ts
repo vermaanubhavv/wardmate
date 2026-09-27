@@ -123,4 +123,7 @@ Orthopaedic ward — what the words mean here:
     "fever",
     "head_injury",
   ],
+
+  // Examination checklists, in the order this ward examines — see types.ts.
+  examIds: ["musculoskeletal", "spine", "general_physical", "neurological"],
 };
