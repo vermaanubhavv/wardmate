@@ -81,6 +81,15 @@ import { hypopigmentedPatchV1 } from "@/content/history-trees/hypopigmented-patc
 import { handInjuryV1 } from "@/content/history-trees/hand-injury.v1";
 import { pressureSoreV1 } from "@/content/history-trees/pressure-sore.v1";
 import { postBurnContractureV1 } from "@/content/history-trees/post-burn-contracture.v1";
+import { neckPainV1 } from "@/content/history-trees/neck-pain.v1";
+import { limpV1 } from "@/content/history-trees/limp.v1";
+import { boneSwellingV1 } from "@/content/history-trees/bone-swelling.v1";
+import { difficultyPassingUrineV1 } from "@/content/history-trees/difficulty-passing-urine.v1";
+import { loinPainV1 } from "@/content/history-trees/loin-pain.v1";
+import { urinaryIncontinenceV1 } from "@/content/history-trees/urinary-incontinence.v1";
+import { spinalInjuryV1 } from "@/content/history-trees/spinal-injury.v1";
+import { shuntProblemV1 } from "@/content/history-trees/shunt-problem.v1";
+import { neuralTubeSwellingV1 } from "@/content/history-trees/swelling-on-back-newborn.v1";
 
 /**
  * Every complaint tree the app ships, every version. Adding a complaint is a new file beside
@@ -172,4 +181,13 @@ export const HISTORY_TREES: readonly HistoryTree[] = [
   handInjuryV1,
   pressureSoreV1,
   postBurnContractureV1,
+  neckPainV1,
+  limpV1,
+  boneSwellingV1,
+  difficultyPassingUrineV1,
+  loinPainV1,
+  urinaryIncontinenceV1,
+  spinalInjuryV1,
+  shuntProblemV1,
+  neuralTubeSwellingV1,
 ];

@@ -105,6 +105,9 @@ export const GHAI_PAEDIATRICS: Reference = { title: "Ghai Essential Pediatrics �
 export const IMNCI: Reference = { title: "Integrated Management of Neonatal and Childhood Illness (IMNCI) — danger signs and assessment", source: "Ministry of Health and Family Welfare, India / WHO (guideline)" };
 export const NLEP: Reference = { title: "National Leprosy Eradication Programme — operational guidelines, case detection", source: "Ministry of Health and Family Welfare, India (guideline)" };
 export const GRABB_SMITH: Reference = { title: "Grabb and Smith's Plastic Surgery — assessment of the patient", source: "Wolters Kluwer (textbook)" };
+export const APLEY: Reference = { title: "Apley and Solomon's System of Orthopaedics and Trauma — the orthopaedic history", source: "CRC Press (textbook)" };
+export const CAMPBELL_UROLOGY: Reference = { title: "Campbell-Walsh-Wein Urology — evaluation of the urologic patient", source: "Elsevier (textbook)" };
+export const YOUMANS: Reference = { title: "Youmans and Winn Neurological Surgery — clinical evaluation", source: "Elsevier (textbook)" };
 export const BAILEY_LOVE: Reference = { title: "Bailey & Love's Short Practice of Surgery — history and examination of the surgical patient", source: "CRC Press (textbook)" };
 
 /**
