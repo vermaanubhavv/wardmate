@@ -110,6 +110,9 @@ Psychiatry ward — what the words mean here:
   historyTreeIds: [
     "low_mood",
     "altered_behaviour",
+    "substance_use",
+    "anxiety",
+    "memory_loss",
     "poisoning_snakebite",
     "altered_sensorium",
     "generalised_weakness",
