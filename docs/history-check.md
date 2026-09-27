@@ -13,7 +13,7 @@ return 404, and nothing under `lib/history-check/` is queried. Off by default.
 Clinical content carries `reviewStatus` and `reviewedBy`, and the card and learning pages show
 a chip for each: amber "Pending clinician review", or green "Reviewed · <reviewer>".
 
-**All ninety-seven trees, all eighteen examination checklists and the safety-level
+**Ninety-seven of the hundred and two trees, all eighteen examination checklists and the safety-level
 thresholds are reviewed and signed off by Dr Anubhav Verma.** As with the scoring pathways, that
 is a single-clinician sign-off covering content that spans nine specialties; departmental review
 is still outstanding.
@@ -28,7 +28,9 @@ computes `assessSafety` and the card does not read it.
 `trees.test.ts` pins the exact list, so a tree cannot drift into "reviewed" as a side effect of
 an edit. `burns` is on it because the shipped file was re-read; the earlier sign-off was of a
 different, independently written burns tree and did not transfer. Every tree is on it today,
-including the thirty-six added later across every department.
+including the thirty-six added later across every department — except the five ophthalmology
+trees added last (watering of the eye, squint, drooping eyelid, flashes / floaters, bulging eye),
+which are **not** on it: not yet read by a clinician.
 
 `jaundice` shows how a tree gets back on the list after its content changes: it was signed off
 at v1.0.0, PR #27 added four obstructive questions and bumped it to v1.1.0, which took it off,
@@ -91,7 +93,7 @@ triggered it. Numeric values render amber with "(unconfirmed)"; there is no conf
 
 ### Trees — `content/history-trees/`
 
-Ninety-seven complaints: fever, chest pain, breathlessness, abdominal pain, jaundice, cough,
+A hundred and two complaints: fever, chest pain, breathlessness, abdominal pain, jaundice, cough,
 oedema, headache, altered sensorium / seizures, limb weakness, diarrhoea / vomiting, generalised
 weakness, giddiness, decreased urine output, constipation, abdominal distension, lump, bleeding
 per rectum, burning micturition, loss of weight / appetite, palpitations, joint pain,
@@ -114,7 +116,7 @@ with a brain shunt, and swelling on the back or head of a baby; and wheeze / tig
 cough worsening over months, problem while on TB treatment, road traffic accident / multiple
 injuries, heat illness, and animal bite.
 
-Ninety-seven trees in all, spanning general medicine, general surgery, emergency medicine,
+A hundred and two trees in all, spanning general medicine, general surgery, emergency medicine,
 paediatrics, medical oncology, obstetrics and gynaecology, orthopaedics, urology and
 neurosurgery — the specialty order set by the product owner — and then the departments that
 had no tree at all: ENT, ophthalmology, dermatology, psychiatry, burns and plastic surgery,
