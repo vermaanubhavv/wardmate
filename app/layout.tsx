@@ -14,16 +14,16 @@ export const metadata: Metadata = {
   title: "WardMate",
   description: "Your Residency Companion",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "WardMate", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "WardMate", statusBarStyle: "default" },
   icons: { icon: "/icon-192.png", apple: "/apple-touch-icon.png" },
 };
 
 export const viewport: Viewport = {
   themeColor: "#f2f2f7",
-  // The app is a one-handed phone tool; letting it zoom on a double-tap loses the round.
+  // Pinch-zoom stays on (WCAG 1.4.4); accidental double-tap zoom is stopped per button with
+  // `touch-action: manipulation` in globals.css instead of by locking the whole page.
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
   viewportFit: "cover",
 };
 

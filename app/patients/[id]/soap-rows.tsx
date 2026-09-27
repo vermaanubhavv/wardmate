@@ -112,12 +112,12 @@ export default function SoapRows({
           onChange={(e) => setDraft(e.target.value)}
           autoFocus
           placeholder={placeholder}
-          className="min-w-0 flex-1 rounded-md border border-line bg-card px-2 py-1 text-[15px] outline-none focus:border-accent"
+          className="min-w-0 flex-1 rounded-md border border-line bg-card px-2 py-1 text-subhead outline-none focus:border-accent"
         />
-        <button type="button" disabled={pending} onClick={() => save(labels, patchKey)} className="shrink-0 text-[14px] font-semibold text-accent">
+        <button type="button" disabled={pending} onClick={() => save(labels, patchKey)} className="shrink-0 text-subhead font-semibold text-accent">
           Save
         </button>
-        <button type="button" onClick={() => setEditing(null)} className="shrink-0 text-[13px] text-muted">
+        <button type="button" onClick={() => setEditing(null)} className="shrink-0 text-footnote text-muted">
           Cancel
         </button>
       </div>
@@ -134,11 +134,11 @@ export default function SoapRows({
         onClick={() => open(g.key, g.value)}
         className="block w-full py-1.5 text-left active:bg-chip"
       >
-        <span className="block text-[13px] text-muted">{label}</span>
+        <span className="block text-footnote text-muted">{label}</span>
         {g.value ? (
-          <span className="mt-0.5 block text-[15px] leading-snug">{g.value}</span>
+          <span className="mt-0.5 block text-subhead leading-snug">{g.value}</span>
         ) : (
-          <span className={"mt-0.5 block text-[15px] " + (g.missing ? "text-warn-fg" : "text-muted/50")}>
+          <span className={"mt-0.5 block text-subhead " + (g.missing ? "text-warn-fg" : "text-muted/50")}>
             not recorded
           </span>
         )}
@@ -151,7 +151,7 @@ export default function SoapRows({
       <div className="divide-y divide-line">{optimisticShown.map(line)}</div>
 
       {negatives.length > 0 && (
-        <p className="mt-1.5 text-[13px] text-muted">
+        <p className="mt-1.5 text-footnote text-muted">
           No complaints of{" "}
           {negatives.map((n, i) => (
             <span key={n.label}>
@@ -170,7 +170,7 @@ export default function SoapRows({
       )}
       {editing && negatives.some((n) => n.label === editing) &&
         editor([editing], `e.g. ${editing} present since morning`, null)}
-      {error && <p className="mt-1 text-[13px] text-warn-fg">{error}</p>}
+      {error && <p className="mt-1 text-footnote text-warn-fg">{error}</p>}
     </>
   );
 }

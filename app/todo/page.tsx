@@ -1,4 +1,4 @@
-import Link from "next/link";
+import ScreenHeader from "../screen-header";
 import { getCurrentWard } from "@/lib/ward";
 import { getWardTasks } from "@/lib/todo";
 import { getWardScoringTasks } from "@/lib/scoring/read";
@@ -12,10 +12,10 @@ export default async function TodoPage() {
 
   if (error || !ward) {
     return (
-      <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
-        <h1 className="ios-large-title">To do</h1>
-        <p className="mt-4 ios-group px-4 py-3 text-[15px] text-orange-700">
-          {error ? `Could not read the database: ${error.message}` : "No ward found."}
+      <main className="flex-1 max-w-md mx-auto w-full">
+        <ScreenHeader back="/ward" title="To do" />
+        <p role="alert" className="mx-4 ios-group px-4 py-3 text-subhead text-warn-fg">
+          {error ? "The list could not be loaded. Check the connection and try again." : "No ward found."}
         </p>
       </main>
     );
@@ -42,19 +42,17 @@ export default async function TodoPage() {
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
-      <header className="px-6 pt-8 pb-4">
-        <Link href="/ward" className="text-[17px] text-accent">
-          ‹ Ward
-        </Link>
-        <h1 className="mt-3 ios-large-title">To do</h1>
-        <p className="mt-1 text-[15px] text-muted">
-          {tasks.length + scoringTasks.length === 0
+      <ScreenHeader
+        back="/ward"
+        title="To do"
+        subtitle={
+          tasks.length + scoringTasks.length === 0
             ? "Nothing outstanding on the unit"
-            : `${tasks.length + scoringTasks.length} outstanding across the unit`}
-        </p>
-      </header>
+            : `${tasks.length + scoringTasks.length} outstanding across the unit`
+        }
+      />
 
-      <section className="px-6 pb-16 flex flex-col gap-4">
+      <section className="px-4 pb-16 flex flex-col gap-4">
         <TodoLists tasks={tasks} scoringTasks={scoringTasks} />
       </section>
     </div>

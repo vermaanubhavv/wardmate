@@ -31,9 +31,9 @@ export default async function AdminUsersPage() {
             <Row key={u.user_id}>
               <Cell>
                 <div className="font-medium">{u.name ?? "—"}</div>
-                <div className="text-[11px] text-muted">{u.email ?? u.user_id.slice(0, 8)}</div>
+                <div className="text-caption2 text-muted">{u.email ?? u.user_id.slice(0, 8)}</div>
                 {u.is_admin && (
-                  <span className="text-[10px] font-medium uppercase text-accent">admin</span>
+                  <span className="text-caption2 font-medium uppercase text-accent">admin</span>
                 )}
               </Cell>
               <Cell num muted>
@@ -57,12 +57,12 @@ export default async function AdminUsersPage() {
             {quiet.map((u) => (
               <div key={u.user_id} className="flex items-center justify-between px-4 py-2.5">
                 <div>
-                  <div className="text-[13px] font-medium">{u.name ?? u.email ?? "—"}</div>
-                  <div className="text-[11px] text-muted">
+                  <div className="text-footnote font-medium">{u.name ?? u.email ?? "—"}</div>
+                  <div className="text-caption2 text-muted">
                     joined {ago(u.joined_at)} · {u.wards} unit{u.wards === 1 ? "" : "s"}
                   </div>
                 </div>
-                <span className="text-[11px] text-muted">
+                <span className="text-caption2 text-muted">
                   {u.days_since_signup != null ? `${Math.round(u.days_since_signup)}d` : ""}
                 </span>
               </div>

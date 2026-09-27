@@ -30,7 +30,7 @@ export default async function AdminWardsPage() {
       >
         {[...byDept.entries()].map(([dept, units]) => (
           <div key={dept} className="mt-3 first:mt-0">
-            <div className="px-1 pb-1 text-[11px] uppercase tracking-wide text-muted">{dept}</div>
+            <div className="px-1 pb-1 text-caption2 uppercase tracking-wide text-muted">{dept}</div>
             <Table
               head={["Unit", "Members", "Patients", "Dict 7d", "Dict 30d", "Rounds 30d", "Last active"]}
             >
@@ -38,7 +38,7 @@ export default async function AdminWardsPage() {
                 <Row key={w.ward_id}>
                   <Cell>
                     <div className="font-medium">{w.ward_name}</div>
-                    <div className="text-[11px] text-muted">code {w.join_code}</div>
+                    <div className="text-caption2 text-muted">code {w.join_code}</div>
                   </Cell>
                   <Cell num>{w.members}</Cell>
                   <Cell num>
@@ -50,14 +50,14 @@ export default async function AdminWardsPage() {
                   <Cell num>
                     {w.round_dictations_30d}
                     {w.round_discarded_30d > 0 && (
-                      <span className="text-orange-600"> ({w.round_discarded_30d} binned)</span>
+                      <span className="text-warn-fg"> ({w.round_discarded_30d} binned)</span>
                     )}
                   </Cell>
                   <Cell
                     num
                     muted={(w.days_since_activity ?? 0) < 14}
                   >
-                    <span className={(w.days_since_activity ?? 0) >= 14 ? "text-orange-600" : ""}>
+                    <span className={(w.days_since_activity ?? 0) >= 14 ? "text-warn-fg" : ""}>
                       {ago(w.last_activity)}
                     </span>
                   </Cell>

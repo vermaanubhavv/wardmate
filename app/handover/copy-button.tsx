@@ -29,17 +29,17 @@ export default function CopyHandoverButton({ text }: { text: string }) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         rows={14}
-        className="w-full rounded-[10px] border border-line bg-card p-3 text-[14px] leading-relaxed text-foreground"
+        className="w-full rounded-[10px] border border-line bg-card p-3 text-subhead leading-relaxed text-foreground"
       />
       <button
         type="button"
         onClick={copy}
-        className="mt-3 w-full rounded-xl bg-accent px-4 py-4 text-center text-[17px] font-semibold text-accent-ink active:opacity-70"
+        className="mt-3 w-full rounded-xl bg-accent px-4 py-4 text-center text-body font-semibold text-accent-ink active:opacity-70"
       >
         {state === "copied" ? "Copied" : "Copy for WhatsApp"}
       </button>
       {state === "failed" && (
-        <p className="mt-2 text-center text-[13px] text-orange-700">
+        <p className="mt-2 text-center text-footnote text-warn-fg">
           Could not copy automatically — select the text above and copy it by hand.
         </p>
       )}

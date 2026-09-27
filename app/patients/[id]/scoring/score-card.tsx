@@ -51,25 +51,25 @@ function Card({ v }: { v: ScoreCardView }) {
       {/* Header line */}
       <div className="flex items-start justify-between gap-3 px-4 py-3">
         <div className="min-w-0">
-          <p className="text-[13px] text-muted">{v.pathwayTitle}</p>
-          <p className="text-[20px] font-bold leading-tight">
+          <p className="text-footnote text-muted">{v.pathwayTitle}</p>
+          <p className="text-title3 font-bold leading-tight">
             {v.shortName}{" "}
             {isClass ? (
-              <span className="text-[16px]">{r.classification!.replace(/_/g, " ")}</span>
+              <span className="text-callout">{r.classification!.replace(/_/g, " ")}</span>
             ) : (
               <>
                 {shownTotal ?? "–"}
-                {v.maxPoints != null && <span className="text-[14px] font-normal text-muted"> / {v.maxPoints}</span>}
+                {v.maxPoints != null && <span className="text-subhead font-normal text-muted"> / {v.maxPoints}</span>}
               </>
             )}
             {(provisional || (!complete && !isClass)) && (
-              <span className="ml-2 text-[12px] font-medium" style={{ color: AMBER }}>
+              <span className="ml-2 text-caption font-medium" style={{ color: AMBER }}>
                 {provisional ? "provisional" : "so far"}
               </span>
             )}
           </p>
           {r.interpretation && (
-            <p className="mt-0.5 text-[12px] leading-snug" style={{ color: attention ? AMBER : "var(--muted)" }}>
+            <p className="mt-0.5 text-caption leading-snug" style={{ color: attention ? AMBER : "var(--muted)" }}>
               {r.interpretation.text}
             </p>
           )}
@@ -79,16 +79,16 @@ function Card({ v }: { v: ScoreCardView }) {
       {/* Provisional: one-tap confirm normal */}
       {provisional && !reviewing && (
         <div className="border-t border-line px-4 py-3">
-          <p className="text-[12px] text-muted">Assuming normal: {assumedLabels.join(", ")}</p>
+          <p className="text-caption text-muted">Assuming normal: {assumedLabels.join(", ")}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             <button
               disabled={pending}
               onClick={() => run(() => confirmScoreNormal(v.patientId, v.instanceId, v.cardId))}
-              className="rounded-[8px] bg-accent px-3 py-1.5 text-[13px] font-semibold text-accent-ink active:opacity-70"
+              className="rounded-[8px] bg-accent px-3 py-1.5 text-footnote font-semibold text-accent-ink active:opacity-70"
             >
               Confirm — all normal
             </button>
-            <button onClick={() => setReviewing(true)} className="text-[13px] text-accent active:opacity-60">
+            <button onClick={() => setReviewing(true)} className="text-footnote text-accent active:opacity-60">
               review each ›
             </button>
           </div>
@@ -99,14 +99,14 @@ function Card({ v }: { v: ScoreCardView }) {
       {(reviewing || (!provisional && v.assessable.length > 0)) &&
         v.assessable.map((a) => (
           <div key={a.componentId} className="border-t border-line px-4 py-2.5">
-            <p className="text-[13px]">{a.question}</p>
+            <p className="text-footnote">{a.question}</p>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {a.options.map((opt, i) => (
                 <button
                   key={i}
                   disabled={pending}
                   onClick={() => run(() => setScoreFinding(v.patientId, v.instanceId, a.componentId, i))}
-                  className="rounded-[8px] border border-line px-2.5 py-1 text-[12px] active:opacity-60"
+                  className="rounded-[8px] border border-line px-2.5 py-1 text-caption active:opacity-60"
                 >
                   {opt.label}
                 </button>
@@ -118,14 +118,14 @@ function Card({ v }: { v: ScoreCardView }) {
       {/* Full breakdown */}
       <button
         onClick={() => setShowAll((s) => !s)}
-        className="w-full border-t border-line px-4 py-2 text-left text-[12px] text-accent active:opacity-60"
+        className="w-full border-t border-line px-4 py-2 text-left text-caption text-accent active:opacity-60"
       >
         {showAll ? "Hide breakdown" : "Breakdown"}
       </button>
       {showAll && (
         <ul className="divide-y divide-line border-t border-line">
           {r.components.map((c) => (
-            <li key={c.componentId} className="px-4 py-2 text-[12px]">
+            <li key={c.componentId} className="px-4 py-2 text-caption">
               <div className="flex items-baseline justify-between gap-2">
                 <span>
                   {mark(c)} {c.label}
@@ -145,16 +145,16 @@ function Card({ v }: { v: ScoreCardView }) {
         <>
           <button
             onClick={() => setShowCite((s) => !s)}
-            className="w-full border-t border-line px-4 py-2 text-left text-[12px] text-accent active:opacity-60"
+            className="w-full border-t border-line px-4 py-2 text-left text-caption text-accent active:opacity-60"
           >
             {showCite ? "Hide source" : "Source & interpretation"}
           </button>
           {showCite && (
-            <p className="border-t border-line px-4 py-3 text-[12px] leading-relaxed text-muted">{v.citation}</p>
+            <p className="border-t border-line px-4 py-3 text-caption leading-relaxed text-muted">{v.citation}</p>
           )}
         </>
       )}
-      {err && <p className="px-4 pb-2 text-[12px]" style={{ color: AMBER }}>{err}</p>}
+      {err && <p className="px-4 pb-2 text-caption" style={{ color: AMBER }}>{err}</p>}
     </div>
   );
 }

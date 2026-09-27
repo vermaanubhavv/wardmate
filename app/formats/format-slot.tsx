@@ -2,6 +2,7 @@
 
 import { useActionState, useRef } from "react";
 import { uploadFormat, removeFormat, type FormatState } from "./actions";
+import { ConfirmSubmit } from "../action-sheet";
 
 /**
  * One of the five formats: what is held, and how to change it.
@@ -39,17 +40,17 @@ export default function FormatSlot({
   return (
     <div className="ios-group p-4">
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-[17px] font-medium">{label}</p>
+        <p className="text-body font-medium">{label}</p>
         {current ? (
-          <span className="shrink-0 text-xs text-emerald-600">held</span>
+          <span className="shrink-0 text-caption text-good-fg">held</span>
         ) : (
-          <span className="shrink-0 text-[13px] text-muted">not uploaded</span>
+          <span className="shrink-0 text-footnote text-muted">not uploaded</span>
         )}
       </div>
-      <p className="mt-0.5 text-[13px] text-muted">{hint}</p>
+      <p className="mt-0.5 text-footnote text-muted">{hint}</p>
 
       {current && (
-        <p className="mt-2 truncate text-[13px] text-muted">
+        <p className="mt-2 truncate text-footnote text-muted">
           {current.url ? (
             <a
               href={current.url}
@@ -76,19 +77,19 @@ export default function FormatSlot({
           not guessable from the outside otherwise. Only shown for "notes", the one kind that
           feeds the progress-note print page. */}
       {current && kind === "notes" && (
-        <p className="mt-1 text-[13px]">
+        <p className="mt-1 text-footnote">
           {current.layout && current.layout.length > 0 ? (
-            <span className="text-emerald-600">
+            <span className="text-good-fg">
               {current.layout.length} field{current.layout.length === 1 ? "" : "s"} found —
               printing will overlay onto this form.
             </span>
           ) : current.layout_error ? (
-            <span className="text-orange-700">
+            <span className="text-warn-fg">
               Could not read this form&rsquo;s layout ({current.layout_error}). Printing falls
               back to the plain layout — try a straighter, flatter photo.
             </span>
           ) : (
-            <span className="text-orange-700">
+            <span className="text-warn-fg">
               No fields found on this photo. Printing falls back to the plain layout — try a
               straighter, flatter photo with the whole form visible.
             </span>
@@ -113,25 +114,27 @@ export default function FormatSlot({
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={pending}
-          className="rounded-lg border border-line px-3 py-2 text-xs text-foreground disabled:opacity-50"
+          className="btn btn-secondary min-h-11 text-footnote text-foreground"
         >
           {pending ? "Uploading…" : current ? "Replace" : "Upload"}
         </button>
 
         {current && (
           <span className="ml-auto">
-            <button
-              type="submit"
+            <ConfirmSubmit
               formAction={removeFormat}
-              className="rounded-lg px-3 py-2 text-xs text-red-600"
+              title="Remove this format?"
+              message="Summaries already written keep their layout. New ones use the default until another is uploaded."
+              action="Remove format"
+              className="min-h-11 rounded-lg px-3 text-footnote text-critical-fg"
             >
               Remove
-            </button>
+            </ConfirmSubmit>
           </span>
         )}
       </form>
 
-      {state.error && <p className="mt-2 text-[13px] text-orange-700">{state.error}</p>}
+      {state.error && <p className="mt-2 text-footnote text-warn-fg">{state.error}</p>}
     </div>
   );
 }

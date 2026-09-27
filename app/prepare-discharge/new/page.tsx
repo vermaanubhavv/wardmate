@@ -11,11 +11,11 @@ export default async function OneOffPage() {
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-6 pb-16 pt-8 print:max-w-none print:px-0">
       <div className="print:hidden">
-        <Link href="/unit" className="text-[17px] text-accent">
+        <Link href="/unit" className="text-body text-accent">
           ‹ Unit
         </Link>
-        <h1 className="mt-3 ios-large-title text-[28px] leading-tight">One-off summary</h1>
-        <p className="mt-1 text-[15px] leading-relaxed text-muted">
+        <h1 className="mt-3 ios-large-title text-title1 leading-tight">One-off summary</h1>
+        <p className="mt-1 text-subhead leading-relaxed text-muted">
           For somebody who is not in WardMate. Nothing is stored — this makes a document and
           keeps no record of it.
         </p>

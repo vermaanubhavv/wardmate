@@ -58,7 +58,7 @@ export default async function AdminOverviewPage() {
       <Section title="Signups — last 12 weeks">
         <div className="ios-group px-3 py-3">
           {weeks.length === 0 ? (
-            <p className="text-[13px] text-muted">No signups recorded.</p>
+            <p className="text-footnote text-muted">No signups recorded.</p>
           ) : (
             <div className="flex items-end gap-1" style={{ height: 72 }}>
               {weeks.map((w) => (
@@ -68,7 +68,7 @@ export default async function AdminOverviewPage() {
                     style={{ height: `${(w.signups / maxWeek) * 56}px` }}
                     title={`${w.week}: ${w.signups}`}
                   />
-                  <span className="text-[9px] tabular-nums text-muted">{w.signups}</span>
+                  <span className="text-caption2 tabular-nums text-muted">{w.signups}</span>
                 </div>
               ))}
             </div>
@@ -78,7 +78,7 @@ export default async function AdminOverviewPage() {
 
       <Section title="Top friction points" subtitle="Full list on the Friction tab">
         {topFriction.length === 0 ? (
-          <p className="ios-group px-4 py-3 text-[13px] text-muted">
+          <p className="ios-group px-4 py-3 text-footnote text-muted">
             Nothing flagged — no stalled accounts or cold units.
           </p>
         ) : (
@@ -87,16 +87,16 @@ export default async function AdminOverviewPage() {
               <div key={i} className="flex items-start gap-2 px-4 py-2.5">
                 <SeverityDot severity={f.severity} />
                 <div className="min-w-0">
-                  <div className="text-[13px] font-medium">
+                  <div className="text-footnote font-medium">
                     {f.category} · <span className="font-normal">{f.subject}</span>
                   </div>
-                  <div className="text-[12px] text-muted">{f.detail}</div>
+                  <div className="text-caption text-muted">{f.detail}</div>
                 </div>
               </div>
             ))}
           </div>
         )}
-        <p className="mt-2 px-1 text-[12px]">
+        <p className="mt-2 px-1 text-caption">
           <Link href="/admin/friction" className="text-accent underline">
             See all friction points
           </Link>

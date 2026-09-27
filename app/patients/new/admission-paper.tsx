@@ -64,17 +64,17 @@ export default function AdmissionPaper({
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={busy}
-        className="w-full rounded-xl border border-line px-4 py-4 text-[17px] font-semibold text-foreground disabled:opacity-60"
+        className="w-full rounded-xl border border-line px-4 py-4 text-body font-semibold text-foreground disabled:opacity-60"
       >
         {busy ? "Reading the paper…" : "Add from admission / OPD paper"}
       </button>
-      <p className="text-center text-[13px] text-muted">
+      <p className="text-center text-footnote text-muted">
         Take a photo or choose one. Name, age, sex, IP and MRD numbers, bed, admission date and
         diagnosis will be suggested
         {oncology ? ", along with the regimen and cycle if the paper prints them" : ""}. Anything
         the paper does not carry is left for you.
       </p>
-      {message && <p className="text-center text-[13px] text-orange-700">{message}</p>}
+      {message && <p className="text-center text-footnote text-warn-fg">{message}</p>}
     </div>
   );
 }

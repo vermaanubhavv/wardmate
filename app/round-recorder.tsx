@@ -52,7 +52,7 @@ export default function RoundRecorder() {
       : status === "starting"
         ? "Starting…"
         : status === "working"
-          ? "Working…"
+          ? "Transcribing…"
           : "Dictate";
 
   return (
@@ -64,7 +64,7 @@ export default function RoundRecorder() {
         aria-label={recording ? "Stop recording" : "Dictate the round"}
         className={
           "grid h-14 w-14 place-items-center rounded-full disabled:opacity-60 active:opacity-80 " +
-          (recording ? "bg-red-500 text-white" : "bg-accent text-accent-ink")
+          (recording ? "bg-recording text-white" : "bg-accent text-accent-ink")
         }
       >
         {recording ? (
@@ -82,8 +82,8 @@ export default function RoundRecorder() {
 
       <span
         className={
-          "mt-1.5 text-[12px] tabular-nums " +
-          (recording ? "text-red-600" : "text-muted")
+          "mt-1.5 text-caption tabular-nums " +
+          (recording ? "text-recording" : "text-muted")
         }
       >
         {caption}
@@ -91,7 +91,7 @@ export default function RoundRecorder() {
 
       {/* Above the bar, full width: these run to a sentence and must not stretch the row. */}
       {message && (
-        <p className="absolute inset-x-0 bottom-full mb-2 px-2 text-center text-[13px] text-accent">
+        <p role="status" className="absolute inset-x-0 bottom-full mb-2 px-2 text-center text-footnote text-warn-fg">
           {message}
         </p>
       )}

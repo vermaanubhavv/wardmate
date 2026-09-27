@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Mark from "@/app/mark";
@@ -41,6 +41,14 @@ export default function LoginPage() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Seconds until a code can be asked for again — a second tap inside the window would only
+  // hit Supabase's own rate limit and show a worse message.
+  const [cooldown, setCooldown] = useState(0);
+  useEffect(() => {
+    if (cooldown === 0) return;
+    const id = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(id);
+  }, [cooldown]);
 
   // /auth/callback sends the doctor back here with a reason when Google did not work out.
   const failed = useSearchParams().get("failed");
@@ -70,8 +78,8 @@ export default function LoginPage() {
     }
   }
 
-  async function sendCode(e: React.FormEvent) {
-    e.preventDefault();
+  async function sendCode(e?: React.FormEvent) {
+    e?.preventDefault();
     setBusy(true);
     setError(null);
 
@@ -87,6 +95,7 @@ export default function LoginPage() {
       return;
     }
     setStep("code");
+    setCooldown(30);
   }
 
   async function verifyCode(e: React.FormEvent) {
@@ -103,10 +112,14 @@ export default function LoginPage() {
 
     setBusy(false);
     if (error) {
-      setError(error.message);
+      setError(
+        /expired|invalid/i.test(error.message)
+          ? "That code did not match, or it has expired. Check the newest email, or send a fresh code."
+          : explain(error.message)
+      );
       return;
     }
-    router.push("/");
+    router.push("/ward");
     router.refresh();
   }
 
@@ -124,15 +137,13 @@ export default function LoginPage() {
         </div>
       </header>
 
-      {step === "email" && <InstallHint />}
-
       {step === "email" && (
         <div className="flex flex-col gap-4">
           <button
             type="button"
             onClick={signInWithGoogle}
             disabled={googleBusy}
-            className="flex items-center justify-center gap-2.5 rounded-[10px] bg-card px-4 py-3 text-[17px] font-medium disabled:opacity-60"
+            className="btn btn-secondary text-foreground"
           >
             <GoogleMark />
             {googleBusy ? "Opening Google…" : "Continue with Google"}
@@ -140,7 +151,7 @@ export default function LoginPage() {
 
           <div className="flex items-center gap-3">
             <span className="h-px flex-1 bg-line" />
-            <span className="text-[13px] text-muted">or</span>
+            <span className="text-footnote text-muted">or</span>
             <span className="h-px flex-1 bg-line" />
           </div>
         </div>
@@ -149,7 +160,7 @@ export default function LoginPage() {
       {step === "email" ? (
         <form onSubmit={sendCode} className="flex flex-col gap-4">
           <label className="flex flex-col gap-2">
-            <span className="text-[15px] text-muted">Your email</span>
+            <span className="text-subhead text-muted">Your email</span>
             <span className="relative">
               <Mail className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted" strokeWidth={2} />
               <input
@@ -161,21 +172,21 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@hospital.in"
-                className="ios-group w-full py-4 pl-11 pr-4 text-base outline-none focus:border-accent"
+                className="field py-4 pl-11 pr-4"
               />
             </span>
           </label>
           <button
             type="submit"
             disabled={busy}
-            className="rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink disabled:opacity-50"
+            className="btn btn-primary"
           >
             {busy ? "Sending…" : "Send me a code"}
           </button>
         </form>
       ) : (
         <form onSubmit={verifyCode} className="flex flex-col gap-4">
-          <p className="text-[15px] text-muted">
+          <p className="text-subhead text-muted">
             We sent a code to <span className="text-foreground">{email}</span>. It
             expires in an hour.
           </p>
@@ -187,45 +198,58 @@ export default function LoginPage() {
               inputMode="numeric"
               autoComplete="one-time-code"
               pattern="[0-9]*"
-              maxLength={10}
+              maxLength={6}
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               placeholder="the code from the email"
-              className="ios-group w-full py-4 pl-11 pr-4 text-center text-xl tracking-[0.25em] outline-none focus:border-accent"
+              aria-label="Sign-in code"
+              className="field py-4 pl-11 pr-4 text-center text-title3 tracking-[0.25em]"
             />
           </span>
           <button
             type="submit"
             disabled={busy || code.length === 0}
-            className="rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink disabled:opacity-50"
+            className="btn btn-primary"
           >
             {busy ? "Checking…" : "Sign in"}
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              setStep("email");
-              setCode("");
-              setError(null);
-            }}
-            className="text-[17px] text-accent"
-          >
-            Use a different email
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={busy || cooldown > 0}
+              onClick={() => void sendCode()}
+              className="btn btn-quiet flex-1 text-accent"
+            >
+              {cooldown > 0 ? `Send again in ${cooldown}s` : "Send the code again"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setStep("email");
+                setCode("");
+                setError(null);
+              }}
+              className="btn btn-quiet flex-1 text-accent"
+            >
+              Use a different email
+            </button>
+          </div>
         </form>
       )}
 
+      {step === "email" && <InstallHint />}
+
       {failed && !error && (
-        <p className="flex items-start gap-2 rounded-[10px] bg-warn-bg px-4 py-3 text-[15px] text-warn-fg">
+        <p className="flex items-start gap-2 rounded-[10px] bg-warn-bg px-4 py-3 text-subhead text-warn-fg">
           <TriangleAlert className="mt-0.5 h-[17px] w-[17px] shrink-0" strokeWidth={2.2} />
           {failed === "cancelled"
-            ? "Google sign-in was cancelled. Use the code instead, or try again."
-            : "Google sign-in did not complete. Use the code below instead."}
+            ? "Google sign-in was cancelled. Use the code above instead, or try again."
+            : "Google sign-in did not complete. Use the code above instead."}
         </p>
       )}
 
       {error && (
-        <p className="flex items-start gap-2 rounded-[10px] bg-warn-bg px-4 py-3 text-[15px] text-warn-fg">
+        <p role="alert" className="flex items-start gap-2 rounded-[10px] bg-warn-bg px-4 py-3 text-subhead text-warn-fg">
           <TriangleAlert className="mt-0.5 h-[17px] w-[17px] shrink-0" strokeWidth={2.2} />
           {error}
         </p>

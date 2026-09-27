@@ -4,28 +4,31 @@ export type Urgency = "red" | "yellow" | "green" | null;
 
 export const URGENCY_META: Record<
   "red" | "yellow" | "green",
-  { label: string; meaning: string; dot: string; chip: string; border: string }
+  { label: string; meaning: string; dot: string; chip: string; border: string; edge: string }
 > = {
   red: {
     label: "Now",
     meaning: "Within hours, or today",
-    dot: "bg-red-500",
-    chip: "bg-red-100 text-red-700",
-    border: "border-red-300",
+    dot: "bg-critical-dot",
+    chip: "bg-critical-bg text-critical-fg",
+    border: "border-critical-fg/30",
+    edge: "border-l-critical-dot",
   },
   yellow: {
     label: "Soon",
     meaning: "Today or tomorrow",
-    dot: "bg-amber-500",
-    chip: "bg-amber-100 text-amber-700",
-    border: "border-amber-300",
+    dot: "bg-warn-dot",
+    chip: "bg-warn-bg text-warn-fg",
+    border: "border-warn-fg/30",
+    edge: "border-l-warn-dot",
   },
   green: {
     label: "Has time",
     meaning: "No hurry",
-    dot: "bg-emerald-500",
-    chip: "bg-emerald-100 text-emerald-700",
-    border: "border-emerald-300",
+    dot: "bg-good-dot",
+    chip: "bg-good-bg text-good-fg",
+    border: "border-good-fg/30",
+    edge: "border-l-good-dot",
   },
 };
 

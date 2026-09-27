@@ -150,7 +150,7 @@ export default function CaseHistoryCapture({
   if (variant === "speak") {
     return (
       <div className="mt-2">
-        <p className="px-1 text-[13px] leading-relaxed text-muted">
+        <p className="px-1 text-footnote leading-relaxed text-muted">
           Speak the clerking straight down this list — in your own words, in any order. Each part
           is transcribed and sorted into its card for you to check. Nothing here is compulsory;
           say what applies.
@@ -159,10 +159,10 @@ export default function CaseHistoryCapture({
         <ol className="ios-group mt-3 divide-y divide-line">
           {CLERKING_FORMAT.map((s, i) => (
             <li key={s.title} className="flex gap-3 px-4 py-2.5">
-              <span className="text-[13px] font-semibold tabular-nums text-muted">{i + 1}</span>
+              <span className="text-footnote font-semibold tabular-nums text-muted">{i + 1}</span>
               <span>
-                <span className="text-[15px] font-semibold">{s.title}</span>
-                <span className="mt-0.5 block text-[13px] leading-relaxed text-muted">{s.hint}</span>
+                <span className="text-subhead font-semibold">{s.title}</span>
+                <span className="mt-0.5 block text-footnote leading-relaxed text-muted">{s.hint}</span>
               </span>
             </li>
           ))}
@@ -173,8 +173,8 @@ export default function CaseHistoryCapture({
           onClick={recording ? stopRecording : startRecording}
           disabled={status === "working" || status === "starting" || photoBusy}
           className={
-            "mt-3 flex w-full items-center justify-center gap-2 rounded-[12px] px-4 py-3.5 text-[16px] font-semibold disabled:opacity-50 " +
-            (recording ? "bg-red-500 text-white" : "bg-accent text-accent-ink")
+            "mt-3 flex w-full items-center justify-center gap-2 rounded-[12px] px-4 py-3.5 text-callout font-semibold disabled:opacity-50 " +
+            (recording ? "bg-recording text-white" : "bg-accent text-accent-ink")
           }
         >
           {recording ? (
@@ -194,11 +194,11 @@ export default function CaseHistoryCapture({
         </button>
 
         {recording && (
-          <p className="mt-2 text-center text-[13px] text-red-500">
+          <p className="mt-2 text-center text-footnote text-critical-fg">
             Recording — scroll the list as you go. Tap stop when done.
           </p>
         )}
-        {message && <p className="mt-3 text-[13px] text-muted">{message}</p>}
+        {message && <p className="mt-3 text-footnote text-muted">{message}</p>}
       </div>
     );
   }
@@ -208,13 +208,13 @@ export default function CaseHistoryCapture({
       ref={detailsRef}
       className="mt-2 border-t border-line [&[open]_.add-chev]:rotate-90"
     >
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[15px] font-semibold active:bg-chip [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-subhead font-semibold active:bg-chip [&::-webkit-details-marker]:hidden">
         <span>{hasExisting ? "Add to case history" : "Add case history"}</span>
-        <span className="add-chev text-xl font-normal text-muted transition-transform">›</span>
+        <span className="add-chev text-title3 font-normal text-muted transition-transform">›</span>
       </summary>
 
       <div className="border-t border-line px-4 pb-4 pt-3">
-        <p className="text-[13px] leading-relaxed text-muted">
+        <p className="text-footnote leading-relaxed text-muted">
           {hasExisting
             ? "Add a further page or dictate an addendum."
             : "Photograph, upload, or dictate the case sheet."}
@@ -226,8 +226,8 @@ export default function CaseHistoryCapture({
           onClick={recording ? stopRecording : startRecording}
           disabled={status === "working" || status === "starting" || photoBusy}
           className={
-            "flex items-center justify-center gap-1.5 rounded-[10px] px-3 py-3 text-[15px] font-medium disabled:opacity-50 " +
-            (recording ? "bg-red-500 text-white" : "bg-accent text-accent-ink")
+            "flex items-center justify-center gap-1.5 rounded-[10px] px-3 py-3 text-subhead font-medium disabled:opacity-50 " +
+            (recording ? "bg-recording text-white" : "bg-accent text-accent-ink")
           }
         >
           {recording ? (
@@ -251,7 +251,7 @@ export default function CaseHistoryCapture({
           onClick={() => setShowPhotoChoices((shown) => !shown)}
           disabled={busy}
           aria-expanded={showPhotoChoices}
-          className="flex items-center justify-center gap-1.5 rounded-[10px] border border-line bg-card px-3 py-3 text-[15px] font-medium disabled:opacity-50"
+          className="flex items-center justify-center gap-1.5 rounded-[10px] border border-line bg-card px-3 py-3 text-subhead font-medium disabled:opacity-50"
         >
           <ImageIcon className="h-[18px] w-[18px]" />
           Add photo
@@ -263,7 +263,7 @@ export default function CaseHistoryCapture({
               type="button"
               onClick={() => cameraInputRef.current?.click()}
               disabled={busy}
-              className="rounded-lg bg-card px-3 py-2.5 text-[14px] font-medium disabled:opacity-50"
+              className="rounded-lg bg-card px-3 py-2.5 text-subhead font-medium disabled:opacity-50"
             >
               Take picture
             </button>
@@ -271,7 +271,7 @@ export default function CaseHistoryCapture({
               type="button"
               onClick={() => uploadInputRef.current?.click()}
               disabled={busy}
-              className="rounded-lg bg-card px-3 py-2.5 text-[14px] font-medium disabled:opacity-50"
+              className="rounded-lg bg-card px-3 py-2.5 text-subhead font-medium disabled:opacity-50"
             >
               Upload photo
             </button>
@@ -306,7 +306,7 @@ export default function CaseHistoryCapture({
         />
       </div>
 
-      {message && <p className="mt-3 text-[13px] text-muted">{message}</p>}
+      {message && <p className="mt-3 text-footnote text-muted">{message}</p>}
 
       {/* Only offered before anything is saved and before one exists — once a case history is
           on record there is nothing left to skip. */}
@@ -316,7 +316,7 @@ export default function CaseHistoryCapture({
           onClick={() => {
             if (detailsRef.current) detailsRef.current.open = false;
           }}
-          className="mt-3 text-[13px] text-muted underline underline-offset-4"
+          className="mt-3 text-footnote text-muted underline underline-offset-4"
         >
           Add later
         </button>

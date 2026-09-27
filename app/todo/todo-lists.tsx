@@ -51,19 +51,21 @@ export default function TodoLists({
   return (
     <>
       {!nothingOutstanding && (
-        <div className="inline-flex self-start rounded-full bg-card p-0.5 text-[14px] font-medium">
-          <button
-            onClick={() => setView("urgency")}
-            className={"rounded-full px-3 py-1 " + (view === "urgency" ? "bg-chip" : "text-muted")}
-          >
-            By urgency
-          </button>
-          <button
-            onClick={() => setView("type")}
-            className={"rounded-full px-3 py-1 " + (view === "type" ? "bg-accent text-accent-ink" : "text-muted")}
-          >
-            By type
-          </button>
+        <div className="flex rounded-[9px] bg-fill-tertiary p-0.5 text-footnote font-medium">
+          {(["urgency", "type"] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={view === v}
+              onClick={() => setView(v)}
+              className={
+                "min-h-10 flex-1 rounded-[7px] px-3 " +
+                (view === v ? "bg-card font-semibold shadow-sm" : "text-foreground/80")
+              }
+            >
+              {v === "urgency" ? "By urgency" : "By type"}
+            </button>
+          ))}
         </div>
       )}
 
@@ -91,10 +93,10 @@ function ByUrgency({
         <div>
           <div className="mb-2 flex items-baseline gap-2">
             <span className="h-2.5 w-2.5 rounded-full bg-warn-dot" aria-hidden />
-            <p className="text-[17px] font-medium">Score inputs · {scoringTasks.length}</p>
+            <p className="text-body font-medium">Score inputs · {scoringTasks.length}</p>
           </div>
-          <p className="mb-2 text-[13px] text-muted">Needed to complete a clinical score</p>
-          <ul className="divide-y divide-line rounded-[10px] border border-line bg-card">
+          <p className="mb-2 text-footnote text-muted">Needed to complete a clinical score</p>
+          <ul className="ios-group divide-y divide-line">
             {scoringTasks.map((t) => (
               <ScoringRow key={t.id} t={t} />
             ))}
@@ -103,7 +105,7 @@ function ByUrgency({
       )}
       {tasks.length === 0 ? (
         nothingOutstanding && (
-          <p className="ios-group p-6 text-[15px] text-muted">Every job on the unit is ticked off.</p>
+          <p className="ios-group p-6 text-subhead text-muted">Every job on the unit is ticked off.</p>
         )
       ) : (
         GROUPS.map(({ key, title, note }) => {
@@ -120,17 +122,13 @@ function ByUrgency({
                   }
                   aria-hidden
                 />
-                <p className="text-[17px] font-medium">
+                <p className="text-body font-medium">
                   {title} · {group.length}
                 </p>
               </div>
-              <p className="mb-2 text-[13px] text-muted">{note}</p>
+              <p className="mb-2 text-footnote text-muted">{note}</p>
 
-              <ul
-                className={
-                  "rounded-[10px] border bg-card divide-y divide-line " + (meta ? meta.border : "border-line")
-                }
-              >
+              <ul className="ios-group divide-y divide-line">
                 {group.map((t) => (
                   <TaskRow key={t.id} task={t} />
                 ))}
@@ -182,17 +180,17 @@ function ByType({ tasks, scoringTasks }: { tasks: WardTask[]; scoringTasks: Ward
     .filter((s) => s.wardTasks.length > 0 || s.scoringTasks.length > 0);
 
   if (sections.length === 0) {
-    return <p className="ios-group p-6 text-[15px] text-muted">Every job on the unit is ticked off.</p>;
+    return <p className="ios-group p-6 text-subhead text-muted">Every job on the unit is ticked off.</p>;
   }
 
   return (
     <>
       {sections.map(({ category, wardTasks, scoringTasks: sTasks }) => (
         <div key={category}>
-          <p className="mb-2 text-[17px] font-medium">
+          <p className="mb-2 text-body font-medium">
             {CATEGORY_LABELS[category]} · {wardTasks.length + sTasks.length}
           </p>
-          <ul className="divide-y divide-line rounded-[10px] border border-line bg-card">
+          <ul className="ios-group divide-y divide-line">
             {sTasks.map((t) => (
               <ScoringRow key={t.id} t={t} />
             ))}
@@ -208,7 +206,7 @@ function ByType({ tasks, scoringTasks }: { tasks: WardTask[]; scoringTasks: Ward
 
 function TaskRow({ task }: { task: WardTask }) {
   return (
-    <li className="flex items-start gap-3 px-4 py-3">
+    <li className={"flex items-start gap-3 border-l-[3px] py-3 pl-3 pr-4 " + (task.effective ? URGENCY_META[task.effective].edge : "border-l-transparent")}>
       <Tick
         observationId={task.id}
         patientId={task.patient_id}
@@ -226,18 +224,18 @@ function TaskRow({ task }: { task: WardTask }) {
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="text-[15px]">
+        <p className="text-subhead">
           {task.value_text ?? task.label}
           {/* Said in words, so a job that climbed with the calendar never looks like one
               somebody graded red. */}
           {task.note && (
-            <span className="ml-2 whitespace-nowrap text-xs text-critical-fg">— {task.note}</span>
+            <span className="ml-2 whitespace-nowrap text-caption text-critical-fg">— {task.note}</span>
           )}
         </p>
         {/* Which bed to walk to — the thing that turns a list into a route. */}
         <Link
           href={`/patients/${task.patient_id}`}
-          className="mt-0.5 flex items-center gap-1.5 truncate text-[13px] text-accent active:opacity-60"
+          className="mt-0.5 flex items-center gap-1.5 truncate text-footnote text-accent active:opacity-60"
         >
           <span className="rounded bg-chip px-1 font-mono tabular-nums text-muted">
             {task.patient.bed}
@@ -246,10 +244,10 @@ function TaskRow({ task }: { task: WardTask }) {
         </Link>
         {/* Only when it says something the job does not. */}
         {!quoteAddsNothing(task.value_text ?? task.label, task.source_quote) && (
-          <p className="mt-0.5 truncate text-[13px] italic text-muted">“{task.source_quote}”</p>
+          <p className="mt-0.5 truncate text-footnote italic text-muted">“{task.source_quote}”</p>
         )}
         {task.repeats > 0 && (
-          <p className="mt-0.5 text-[13px] text-muted">
+          <p className="mt-0.5 text-footnote text-muted">
             said {task.repeats + 1} times — showing the latest
           </p>
         )}

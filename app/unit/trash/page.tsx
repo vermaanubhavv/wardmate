@@ -1,4 +1,4 @@
-import Link from "next/link";
+import ScreenHeader from "../../screen-header";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWard } from "@/lib/ward";
 import { compareBeds, patientName } from "@/lib/patients";
@@ -30,9 +30,9 @@ export default async function TrashPage() {
 
   if (error || !ward) {
     return (
-      <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
+      <main className="flex-1 px-4 py-10 max-w-md mx-auto w-full">
         <h1 className="ios-large-title">Trash</h1>
-        <p className="mt-4 ios-group px-4 py-3 text-[15px] text-orange-700">
+        <p className="mt-4 ios-group px-4 py-3 text-subhead text-warn-fg">
           {error ? `Could not read the database: ${error.message}` : "No ward found."}
         </p>
       </main>
@@ -77,20 +77,12 @@ export default async function TrashPage() {
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
-      <header className="px-6 pt-8 pb-4">
-        <Link href="/unit" className="text-[17px] text-accent">
-          ‹ Unit
-        </Link>
-        <h1 className="mt-3 ios-large-title">Trash</h1>
-        <p className="mt-0.5 text-[15px] text-muted">
-          Deleted from the ward. Kept here for {TRASH_HOURS} hours in case that was a mistake,
-          then deleted permanently.
-        </p>
-      </header>
+      <ScreenHeader back="/unit" backLabel="Unit" title="Trash" subtitle={<>Deleted from the ward. Kept here for {TRASH_HOURS} hours in case that was a mistake,
+          then deleted permanently.</>} />
 
-      <section className="px-6 pb-16 flex flex-col gap-3">
+      <section className="px-4 pb-16 flex flex-col gap-3">
         {patients.length === 0 ? (
-          <p className="ios-group p-6 text-[15px] text-muted">Nothing is in the trash.</p>
+          <p className="ios-group p-6 text-subhead text-muted">Nothing is in the trash.</p>
         ) : (
           patients.map((p) => <TrashCard key={p.id} patient={p} />)
         )}
@@ -112,15 +104,15 @@ function TrashCard({ patient }: { patient: TrashedPatient }) {
   return (
     <div className="ios-group p-4">
       <div className="flex items-baseline gap-2">
-        <span className="shrink-0 rounded-md bg-chip px-2 py-1 font-mono text-[13px]">
+        <span className="shrink-0 rounded-md bg-chip px-2 py-1 font-mono text-footnote">
           {patient.bed}
         </span>
-        <span className="truncate text-[17px] font-medium">{patientName(patient)}</span>
+        <span className="truncate text-body font-medium">{patientName(patient)}</span>
       </div>
-      <p className="mt-0.5 truncate text-[15px] text-muted">
+      <p className="mt-0.5 truncate text-subhead text-muted">
         {patient.primary_diagnosis || "No diagnosis recorded"}
       </p>
-      <p className="mt-1 text-[13px] text-orange-700">
+      <p className="mt-1 text-footnote text-warn-fg">
         {left === 0
           ? "Deleted for good very soon."
           : `${left} ${left === 1 ? "hour" : "hours"} left to recover this patient.`}
@@ -128,7 +120,7 @@ function TrashCard({ patient }: { patient: TrashedPatient }) {
 
       <form action={restoreFromTrash} className="mt-3">
         <input type="hidden" name="patient_id" value={patient.id} />
-        <button className="w-full rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink">
+        <button className="w-full rounded-[10px] bg-accent px-4 py-3 text-body font-semibold text-accent-ink">
           Restore to ward
         </button>
       </form>

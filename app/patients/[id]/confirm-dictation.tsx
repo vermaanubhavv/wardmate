@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { updateObservation, confirmChecked, confirmAll } from "./actions";
 import { flagMisheard } from "./flag-misheard";
+import { ActionSheet } from "../../action-sheet";
 
 export type PendingObservation = {
   id: string;
@@ -44,6 +45,19 @@ export default function ConfirmDictation({
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [ticked, setTicked] = useState(0);
+  const [ask, setAsk] = useState<{ kind: "all" } | { kind: "clear"; o: PendingObservation } | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
+
+  function saveDraft(o: PendingObservation, value: string) {
+    const fd = new FormData();
+    fd.set("observation_id", o.id);
+    fd.set("patient_id", patientId);
+    fd.set("value_text", value);
+    setEditingId(null);
+    void updateObservation(fd);
+    if (value.trim()) flagMisheard(o.value_text ?? "", value, o.kind === "medication" ? "drug" : null);
+  }
 
   function openEditor(o: PendingObservation) {
     setEditingId(o.id);
@@ -51,7 +65,7 @@ export default function ConfirmDictation({
   }
 
   return (
-    <form action={confirmChecked}>
+    <form ref={formRef} action={confirmChecked}>
       <input type="hidden" name="patient_id" value={patientId} />
 
       <ul className="flex flex-col gap-2">
@@ -65,29 +79,30 @@ export default function ConfirmDictation({
                 : [];
 
           return (
-            <li key={o.id} className="rounded-[10px] border border-orange-200 bg-orange-50 p-3">
-              <label className="flex items-start gap-3">
+            <li key={o.id} className="rounded-[10px] bg-warn-bg p-3">
+              <label className="flex min-h-11 items-start gap-3">
                 <input
                   type="checkbox"
                   name="observation_ids"
                   value={o.id}
+                  onChange={(e) => setTicked((n) => n + (e.target.checked ? 1 : -1))}
                   className="mt-0.5 h-5 w-5 shrink-0 accent-accent"
                 />
-                <span className="min-w-0 flex-1 text-sm">
+                <span className="min-w-0 flex-1 text-subhead">
                   <span className="text-muted">{o.label}</span>{" "}
                   <span className="font-medium">{o.value_text}</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => (editing ? setEditingId(null) : openEditor(o))}
-                  className="shrink-0 text-[13px] font-medium text-orange-700 underline underline-offset-4"
+                  className="tap shrink-0 px-1 text-footnote font-medium text-warn-fg underline underline-offset-4"
                 >
                   {editing ? "Cancel" : "Edit"}
                 </button>
               </label>
-              <p className="mt-1.5 pl-8 text-[13px] text-orange-700/70 italic">“{o.source_quote}”</p>
+              <p className="mt-1.5 pl-8 text-footnote text-warn-fg italic">“{o.source_quote}”</p>
               {o.conflict_note && !editing && (
-                <p className="mt-1 pl-8 text-xs text-orange-800">{o.conflict_note}</p>
+                <p className="mt-1 pl-8 text-caption text-warn-fg">{o.conflict_note}</p>
               )}
 
               {editing && (
@@ -97,23 +112,18 @@ export default function ConfirmDictation({
                       value={draft}
                       onChange={(e) => setDraft(e.target.value)}
                       autoFocus
-                      className="min-w-0 flex-1 rounded-md border border-orange-300 bg-card px-2 py-1 text-[15px] outline-none focus:border-accent"
+                      className="field min-w-0 flex-1"
                     />
                     <button
                       type="button"
                       onClick={() => {
-                        const fd = new FormData();
-                        fd.set("observation_id", o.id);
-                        fd.set("patient_id", patientId);
-                        fd.set("value_text", draft);
-                        // Close the editor at once — the corrected value is already on the
-                        // row above it — and let the write and the teaching run behind it.
-                        setEditingId(null);
-                        void updateObservation(fd);
-                        // Saving a correction teaches it too — see flag-misheard.ts.
-                        flagMisheard(o.value_text ?? "", draft, o.kind === "medication" ? "drug" : null);
+                        // An empty value deletes the observation (see updateObservation), so
+                        // that one case asks first; a real correction saves at once and teaches
+                        // the mis-hearing — see flag-misheard.ts.
+                        if (!draft.trim()) setAsk({ kind: "clear", o });
+                        else saveDraft(o, draft);
                       }}
-                      className="shrink-0 text-[14px] font-semibold text-accent"
+                      className="tap shrink-0 px-1 text-subhead font-semibold text-accent"
                     >
                       Save
                     </button>
@@ -126,7 +136,7 @@ export default function ConfirmDictation({
                           key={s}
                           type="button"
                           onClick={() => setDraft(s)}
-                          className="rounded-full border border-orange-300 bg-card px-2.5 py-1 text-[13px] text-orange-800"
+                          className="min-h-9 rounded-full bg-card px-3 text-footnote text-warn-fg"
                         >
                           {s}
                         </button>
@@ -140,21 +150,38 @@ export default function ConfirmDictation({
         })}
       </ul>
 
+      {/* The careful action is the filled one. Accepting everything unread is what the amber
+          exists to prevent, so it is the quiet button and it asks first. */}
       <div className="mt-3 flex gap-3">
-        <button
-          type="submit"
-          className="flex-1 rounded-[10px] border border-orange-300 px-4 py-3 text-[15px] font-semibold text-orange-700"
-        >
-          Accept ticked
+        <button type="submit" disabled={ticked === 0} className="btn btn-primary flex-1">
+          Accept {ticked > 0 ? ticked : "ticked"}
         </button>
-        <button
-          type="submit"
-          formAction={confirmAll}
-          className="flex-1 rounded-xl bg-orange-500 px-4 py-3 text-[15px] font-semibold text-accent-ink"
-        >
+        <button type="button" onClick={() => setAsk({ kind: "all" })} className="btn btn-secondary flex-1">
           Accept all {pending.length}
         </button>
       </div>
+
+      <ActionSheet
+        open={ask !== null}
+        title={ask?.kind === "all" ? `Accept all ${pending.length} as heard?` : "Remove this value?"}
+        message={
+          ask?.kind === "all"
+            ? "Every number, drug and dose on this card is marked confirmed without being looked at."
+            : "An empty value removes it from the record. The recording it came from is kept."
+        }
+        action={ask?.kind === "all" ? `Accept all ${pending.length}` : "Remove"}
+        onCancel={() => setAsk(null)}
+        onConfirm={() => {
+          const a = ask;
+          setAsk(null);
+          if (!a) return;
+          if (a.kind === "clear") saveDraft(a.o, "");
+          else {
+            const fd = new FormData(formRef.current ?? undefined);
+            void confirmAll(fd);
+          }
+        }}
+      />
     </form>
   );
 }

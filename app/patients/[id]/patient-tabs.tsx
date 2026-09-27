@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 export type PatientTab = {
   key: string;
@@ -31,8 +32,18 @@ export type PatientTab = {
  * ten, and a wrong tab is more expensive than a tap.
  */
 export default function PatientTabs({ tabs }: { tabs: PatientTab[] }) {
-  const [active, setActive] = useState(tabs[0]?.key);
+  // The tab lives in the URL (?tab=) so a back-swipe from the note or the discharge workspace
+  // lands on the tab it left from. "Next" links to the bare patient URL, so walking the ward
+  // still opens every bed on Today.
+  const router = useRouter();
+  const pathname = usePathname();
+  const fromUrl = useSearchParams().get("tab");
+  const [active, setActiveState] = useState(fromUrl ?? tabs[0]?.key);
   const current = tabs.find((t) => t.key === active) ?? tabs[0];
+  function setActive(key: string) {
+    setActiveState(key);
+    router.replace(key === tabs[0]?.key ? pathname : `${pathname}?tab=${key}`, { scroll: false });
+  }
 
   return (
     <>
@@ -43,7 +54,7 @@ export default function PatientTabs({ tabs }: { tabs: PatientTab[] }) {
       <div
         role="tablist"
         aria-label="Patient record"
-        className="mx-4 mb-4 flex rounded-[9px] bg-[rgba(118,118,128,0.12)] p-0.5"
+        className="mx-4 mb-4 flex rounded-[9px] bg-fill-tertiary p-0.5"
       >
         {tabs.map((tab) => {
           const on = tab.key === current?.key;
@@ -57,7 +68,7 @@ export default function PatientTabs({ tabs }: { tabs: PatientTab[] }) {
               id={`tab-${tab.key}`}
               onClick={() => setActive(tab.key)}
               className={
-                "min-w-0 flex-1 truncate rounded-[7px] px-1 py-1.5 text-[13px] transition-colors active:opacity-60 " +
+                "min-h-10 min-w-0 flex-1 truncate rounded-[7px] px-1 text-footnote transition-colors active:opacity-60 " +
                 (on ? "bg-card font-semibold shadow-sm" : "font-medium text-foreground/80")
               }
             >
@@ -73,11 +84,11 @@ export default function PatientTabs({ tabs }: { tabs: PatientTab[] }) {
         role="tabpanel"
         id={`panel-${current?.key}`}
         aria-labelledby={`tab-${current?.key}`}
-        className="pb-72"
+        className="pb-[var(--bar-height)]"
       >
         {current?.empty ? (
           <section className="px-4 pb-6">
-            <p className="ios-group p-5 text-[15px] text-muted">{current.empty}</p>
+            <p className="ios-group p-5 text-subhead text-muted">{current.empty}</p>
           </section>
         ) : (
           current?.content

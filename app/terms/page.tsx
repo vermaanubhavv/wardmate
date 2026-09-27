@@ -12,17 +12,17 @@ import Link from "next/link";
 export default function TermsPage() {
   return (
     <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full pb-24">
-      <Link href="/onboarding" className="text-[17px] text-accent">
+      <Link href="/onboarding" className="text-body text-accent">
         ‹ Back
       </Link>
 
-      <div className="mt-4 ios-group px-4 py-3 text-[13px] leading-relaxed text-orange-700">
+      <div className="mt-4 ios-group px-4 py-3 text-footnote leading-relaxed text-warn-fg">
         <b>Unreviewed draft (version: draft-1).</b> Not yet checked by a lawyer. Treat this as a
         starting point, not a finished agreement.
       </div>
 
       <h1 className="mt-4 ios-large-title">Clinician Data Agreement</h1>
-      <p className="mt-1 text-[15px] text-muted">
+      <p className="mt-1 text-subhead text-muted">
         WardMate is adopted unit by unit, resident by resident — not procured by a hospital&rsquo;s
         IT department first. So this agreement is written for the relationship that actually
         exists today: between WardMate and the doctor creating an account, not a hospital that
@@ -91,7 +91,7 @@ export default function TermsPage() {
         </Clause>
       </div>
 
-      <p className="mt-8 text-[13px] text-muted">
+      <p className="mt-8 text-footnote text-muted">
         Questions, a data request, or a suspected breach: contact your unit&rsquo;s founder
         directly until a support address is published here.
       </p>
@@ -102,11 +102,11 @@ export default function TermsPage() {
 function Clause({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="text-[17px] font-semibold">
+      <h2 className="text-body font-semibold">
         <span className="text-muted mr-1.5">{n}.</span>
         {title}
       </h2>
-      <p className="mt-1 text-[15px] leading-relaxed text-foreground">{children}</p>
+      <p className="mt-1 text-subhead leading-relaxed text-foreground">{children}</p>
     </section>
   );
 }

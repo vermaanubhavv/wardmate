@@ -1,4 +1,4 @@
-import Link from "next/link";
+import ScreenHeader from "../../screen-header";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 import { getCurrentWard } from "@/lib/ward";
@@ -25,9 +25,9 @@ export default async function AccessLogPage() {
 
   if (error || !ward) {
     return (
-      <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
+      <main className="flex-1 px-4 py-10 max-w-md mx-auto w-full">
         <h1 className="ios-large-title">Access log</h1>
-        <p className="mt-4 ios-group px-4 py-3 text-[15px] text-orange-700">
+        <p className="mt-4 ios-group px-4 py-3 text-subhead text-warn-fg">
           {error ? `Could not read the database: ${error.message}` : "No ward found."}
         </p>
       </main>
@@ -39,9 +39,9 @@ export default async function AccessLogPage() {
 
   if (!isOwner) {
     return (
-      <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
+      <main className="flex-1 px-4 py-10 max-w-md mx-auto w-full">
         <h1 className="ios-large-title">Access log</h1>
-        <p className="mt-4 ios-group px-4 py-3 text-[15px] text-muted">
+        <p className="mt-4 ios-group px-4 py-3 text-subhead text-muted">
           Only {ward.name}&rsquo;s owner can see this.
         </p>
       </main>
@@ -70,34 +70,26 @@ export default async function AccessLogPage() {
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
-      <header className="px-6 pt-8 pb-4">
-        <Link href="/unit" className="text-[17px] text-accent">
-          ‹ Unit
-        </Link>
-        <h1 className="mt-3 ios-large-title">Access log</h1>
-        <p className="mt-0.5 text-[15px] text-muted">
-          Who opened a patient&rsquo;s record on {ward.name}, most recent first. Last {LIMIT}.
-        </p>
-      </header>
+      <ScreenHeader back="/unit" backLabel="Unit" title="Access log" subtitle={<>Who opened a patient&rsquo;s record on {ward.name}, most recent first. Last {LIMIT}.</>} />
 
-      <section className="px-6 pb-16 flex flex-col gap-3">
+      <section className="px-4 pb-16 flex flex-col gap-3">
         {entries.length === 0 ? (
-          <p className="ios-group p-6 text-[15px] text-muted">No views logged yet.</p>
+          <p className="ios-group p-6 text-subhead text-muted">No views logged yet.</p>
         ) : (
           <ul className="ios-group divide-y divide-line">
             {entries.map((row) => (
               <li key={row.id} className="px-4 py-3">
                 <div className="flex items-baseline gap-2">
                   {row.patients && (
-                    <span className="shrink-0 rounded-md bg-chip px-2 py-1 font-mono text-[13px]">
+                    <span className="shrink-0 rounded-md bg-chip px-2 py-1 font-mono text-footnote">
                       {row.patients.bed}
                     </span>
                   )}
-                  <span className="truncate text-[15px]">
+                  <span className="truncate text-subhead">
                     {row.patients?.display_name ?? "Deleted patient"}
                   </span>
                 </div>
-                <p className="mt-1 text-[13px] text-muted">
+                <p className="mt-1 text-footnote text-muted">
                   {(row.actor_id && names.get(row.actor_id)) || "Doctor"} ·{" "}
                   {whenViewed(row.occurred_at)}
                 </p>

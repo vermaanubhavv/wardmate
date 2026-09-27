@@ -50,7 +50,7 @@ export function SuggestField({
 
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[13px] text-muted">{label}</span>
+      <span className="text-footnote text-muted">{label}</span>
       <div className="relative">
         <input
           type="text"
@@ -61,7 +61,7 @@ export function SuggestField({
           autoComplete="off"
           value={text}
           placeholder={placeholder}
-          className="h-11 w-full rounded-[10px] border border-line bg-card px-3 text-[15px] outline-none focus:border-accent"
+          className="h-11 w-full rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
           onChange={(e) => {
             onChange(e.target.value);
             setOpen(true);
@@ -98,7 +98,7 @@ export function SuggestField({
                     choose(o);
                   }}
                   onMouseEnter={() => setActive(i)}
-                  className={"block w-full px-3 py-2 text-left text-[15px] " + (i === active ? "bg-chip" : "")}
+                  className={"block w-full px-3 py-2 text-left text-subhead " + (i === active ? "bg-chip" : "")}
                 >
                   {o}
                 </button>
@@ -128,7 +128,7 @@ export function SegmentedField({
   const current = (value ?? "").trim();
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-[13px] text-muted">{label}</span>
+      <span className="text-footnote text-muted">{label}</span>
       <div className="flex gap-1.5">
         {options.map((o) => {
           const selected = current.toLowerCase() === o.toLowerCase();
@@ -138,7 +138,7 @@ export function SegmentedField({
               type="button"
               onClick={() => onChange(selected ? "" : o)}
               className={
-                "h-11 flex-1 rounded-[10px] border text-[15px] font-medium transition-colors " +
+                "h-11 flex-1 rounded-[10px] border text-subhead font-medium transition-colors " +
                 (selected ? "border-accent bg-accent text-accent-ink" : "border-line bg-card text-foreground")
               }
             >
@@ -174,11 +174,11 @@ export function SelectField({
   const withCurrent = current && !options.some((o) => o.toLowerCase() === current.toLowerCase()) ? [current, ...options] : options;
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[13px] text-muted">{label}</span>
+      <span className="text-footnote text-muted">{label}</span>
       <select
         value={current}
         onChange={(e) => onChange(e.target.value)}
-        className="h-11 rounded-[10px] border border-line bg-card px-3 text-[15px] outline-none focus:border-accent"
+        className="h-11 rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
       >
         {!current && <option value="">Not set</option>}
         {withCurrent.map((o) => (
@@ -206,13 +206,13 @@ export function Field({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[13px] text-muted">{label}</span>
+      <span className="text-footnote text-muted">{label}</span>
       <input
         type={type}
         value={value ?? ""}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="h-11 rounded-[10px] border border-line bg-card px-3 text-[15px] outline-none focus:border-accent"
+        className="h-11 rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
       />
     </label>
   );
@@ -233,13 +233,13 @@ export function Area({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      {label && <span className="text-[13px] text-muted">{label}</span>}
+      {label && <span className="text-footnote text-muted">{label}</span>}
       <textarea
         value={value ?? ""}
         rows={rows}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-[10px] border border-line bg-card px-3 py-2 text-[15px] leading-relaxed outline-none focus:border-accent"
+        className="rounded-[10px] border border-line bg-card px-3 py-2 text-subhead leading-relaxed outline-none focus:border-accent"
       />
     </label>
   );
@@ -258,25 +258,25 @@ export function StringList({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      {items.length === 0 && <p className="text-[13px] text-muted">{noneLabel}</p>}
+      {items.length === 0 && <p className="text-footnote text-muted">{noneLabel}</p>}
       {items.map((item, i) => (
         <div key={i} className="flex gap-2">
           <input
             value={item}
             placeholder={placeholder}
             onChange={(e) => onChange(items.map((x, j) => (j === i ? e.target.value : x)))}
-            className="h-11 flex-1 rounded-[10px] border border-line bg-card px-3 text-[15px] outline-none focus:border-accent"
+            className="h-11 flex-1 rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
           />
           <button
             type="button"
             onClick={() => onChange(items.filter((_, j) => j !== i))}
-            className="shrink-0 px-2 text-[13px] text-muted"
+            className="shrink-0 px-2 text-footnote text-muted"
           >
             Remove
           </button>
         </div>
       ))}
-      <button type="button" onClick={() => onChange([...items, ""])} className="self-start text-[13px] font-medium text-accent">
+      <button type="button" onClick={() => onChange([...items, ""])} className="self-start text-footnote font-medium text-accent">
         + Add
       </button>
     </div>

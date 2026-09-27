@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { flagMisheard } from "../patients/[id]/flag-misheard";
 import { confirmMany, confirmAllPending, editAndConfirm, discardPending } from "./actions";
 import type { PendingConfirm } from "@/lib/confirm-queue";
+import { ActionSheet } from "../action-sheet";
+import BottomBar from "../bottom-bar";
 
 /**
  * The whole unit's outstanding confirmations on one screen — grouped by bed, worked top to
@@ -21,6 +23,8 @@ export default function ConfirmQueue({ items }: { items: PendingConfirm[] }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  // Which destructive thing the sheet is asking about: everything at once, or one row.
+  const [ask, setAsk] = useState<{ kind: "all" } | { kind: "discard"; id: string } | null>(null);
 
   // The queue only ever shrinks within a sitting (a refresh drops what was just cleared), so
   // the high-water mark is the honest denominator for "3 of 11". Adjusting state during render
@@ -53,7 +57,7 @@ export default function ConfirmQueue({ items }: { items: PendingConfirm[] }) {
 
   if (items.length === 0) {
     return (
-      <p className="mx-4 ios-group px-4 py-3 text-[15px] text-muted">
+      <p className="mx-4 ios-group px-4 py-3 text-subhead text-muted">
         {done > 0
           ? `All ${done} confirmed. Nothing left waiting on the unit.`
           : "Nothing waiting to be confirmed. Everything dictated on the unit has been checked."}
@@ -62,10 +66,10 @@ export default function ConfirmQueue({ items }: { items: PendingConfirm[] }) {
   }
 
   return (
-    <div className="flex flex-col gap-4 px-4 pb-40">
+    <div className="flex flex-col gap-4 px-4 pb-[var(--bar-height)]">
       {done > 0 && (
         <div>
-          <p className="mb-1 text-[13px] font-medium text-muted tabular-nums">
+          <p className="mb-1 text-footnote font-medium text-muted tabular-nums">
             {done} of {startTotal} confirmed
           </p>
           <div className="h-1.5 overflow-hidden rounded-full bg-line">
@@ -79,7 +83,7 @@ export default function ConfirmQueue({ items }: { items: PendingConfirm[] }) {
 
       {groups.map((rows) => (
         <div key={rows[0].patient_id} className="ios-group overflow-hidden">
-          <p className="border-b border-line bg-chip px-4 py-2 text-[13px] font-semibold">
+          <p className="border-b border-line bg-chip px-4 py-2 text-footnote font-semibold">
             Bed {rows[0].bed} · {rows[0].patient_name}
           </p>
           <ul className="divide-y divide-line">
@@ -97,7 +101,7 @@ export default function ConfirmQueue({ items }: { items: PendingConfirm[] }) {
                 }}
                 onCancelEdit={() => setEditingId(null)}
                 onConfirm={() => run(() => confirmMany([o.id]))}
-                onDiscard={() => run(() => discardPending(o.id), () => setEditingId(null))}
+                onDiscard={() => setAsk({ kind: "discard", id: o.id })}
                 onSave={() =>
                   run(
                     () => editAndConfirm(o.id, draft),
@@ -116,18 +120,43 @@ export default function ConfirmQueue({ items }: { items: PendingConfirm[] }) {
         </div>
       ))}
 
-      {message && <p className="text-[13px] text-orange-700">{message}</p>}
+      {message && <p role="alert" className="text-footnote text-warn-fg">{message}</p>}
 
-      <div className="fixed inset-x-0 bottom-0 z-10 mx-auto flex max-w-md gap-3 border-t border-line bg-background/90 px-4 py-3 backdrop-blur-xl">
+      {/* Quiet on purpose. Every row above has its own Confirm; taking the whole unit's
+          numbers on one tap is the exception, so it asks first and is not the filled button. */}
+      <BottomBar>
         <button
           type="button"
           disabled={pending}
-          onClick={() => run(() => confirmAllPending(patientIds))}
-          className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-[15px] font-semibold text-accent-ink disabled:opacity-50"
+          onClick={() => setAsk({ kind: "all" })}
+          className="btn btn-secondary"
         >
-          Confirm all {items.length}
+          Confirm all {items.length} without checking
         </button>
-      </div>
+      </BottomBar>
+
+      <ActionSheet
+        open={ask !== null}
+        title={
+          ask?.kind === "all"
+            ? `Confirm all ${items.length} values as heard?`
+            : "Discard this value?"
+        }
+        message={
+          ask?.kind === "all"
+            ? "Every number, drug and dose still waiting on the unit will be marked confirmed without being looked at."
+            : "It is removed from the record. The recording it came from is kept."
+        }
+        action={ask?.kind === "all" ? `Confirm all ${items.length}` : "Discard"}
+        onCancel={() => setAsk(null)}
+        onConfirm={() => {
+          const a = ask;
+          setAsk(null);
+          if (!a) return;
+          if (a.kind === "all") run(() => confirmAllPending(patientIds));
+          else run(() => discardPending(a.id), () => setEditingId(null));
+        }}
+      />
     </div>
   );
 }
@@ -182,9 +211,9 @@ function SwipeRow({
   return (
     <li className="relative overflow-hidden">
       {/* What the swipe will do, revealed under the moving row. */}
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-5 text-[13px] font-semibold">
-        <span className={dx > 24 ? "text-emerald-700" : "text-transparent"}>✓ Confirm</span>
-        <span className={dx < -24 ? "text-rose-700" : "text-transparent"}>Discard ✕</span>
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-5 text-footnote font-semibold">
+        <span className={dx > 24 ? "text-good-fg" : "text-transparent"}>✓ Confirm</span>
+        <span className={dx < -24 ? "text-critical-fg" : "text-transparent"}>Discard ✕</span>
       </div>
 
       <div
@@ -199,23 +228,35 @@ function SwipeRow({
         }}
       >
         <div className="flex items-start gap-3">
-          <span className="min-w-0 flex-1 text-sm">
+          <span className="min-w-0 flex-1 text-subhead">
             <span className="text-muted">{o.label}</span>{" "}
             <span className="font-medium">{o.value_text}</span>
           </span>
           {!swiping && (
-            <button
-              type="button"
-              onClick={editing ? onCancelEdit : onOpenEdit}
-              className="shrink-0 text-[13px] font-medium text-accent underline underline-offset-4"
-            >
-              {editing ? "Cancel" : "Edit"}
-            </button>
+            <span className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={editing ? onCancelEdit : onOpenEdit}
+                className="tap min-h-11 px-2 text-footnote font-medium text-accent"
+              >
+                {editing ? "Cancel" : "Edit"}
+              </button>
+              {!editing && (
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={onConfirm}
+                  className="min-h-11 rounded-full bg-good-bg px-3 text-footnote font-semibold text-good-fg"
+                >
+                  Confirm
+                </button>
+              )}
+            </span>
           )}
         </div>
-        <p className="mt-1.5 text-[13px] italic text-muted">“{o.source_quote}”</p>
+        <p className="mt-1.5 text-footnote italic text-muted">“{o.source_quote}”</p>
         {o.conflict_note && !editing && (
-          <p className="mt-1 text-xs text-orange-800">{o.conflict_note}</p>
+          <p className="mt-1 text-caption text-warn-fg">{o.conflict_note}</p>
         )}
 
         {editing && (
@@ -225,19 +266,19 @@ function SwipeRow({
               onChange={(e) => onDraft(e.target.value)}
               autoFocus
               inputMode={NUMERIC_KINDS.has(o.kind) ? "decimal" : "text"}
-              className="min-w-0 flex-1 rounded-md border border-line bg-card px-2 py-1 text-[15px] outline-none focus:border-accent"
+              className="field min-w-0 flex-1"
             />
-            <button type="button" disabled={disabled} onClick={onSave} className="shrink-0 text-[14px] font-semibold text-accent">
+            <button type="button" disabled={disabled} onClick={onSave} className="tap shrink-0 min-h-11 px-1 text-subhead font-semibold text-accent">
               Save
             </button>
-            <button type="button" disabled={disabled} onClick={onDiscard} className="shrink-0 text-[13px] text-muted">
+            <button type="button" disabled={disabled} onClick={onDiscard} className="tap shrink-0 min-h-11 px-1 text-footnote text-critical-fg">
               Discard
             </button>
           </div>
         )}
 
         {!editing && (
-          <p className="mt-1 text-[11px] text-muted/70">Swipe right to confirm · left to discard</p>
+          <p className="mt-1 text-caption2 text-muted">Swipe right to confirm · left to discard</p>
         )}
       </div>
     </li>

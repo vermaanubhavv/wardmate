@@ -35,17 +35,22 @@ export default function Tick({
           await completeTask(formData);
         });
       }}
-      className="shrink-0"
+      className="-my-2 shrink-0"
     >
       <input type="hidden" name="observation_id" value={observationId} />
       <input type="hidden" name="patient_id" value={patientId} />
       <button
         aria-label={`Mark done: ${label}`}
-        className={
-          "grid h-[26px] w-[26px] place-items-center rounded-full border-2 transition-colors " +
-          (done ? "border-accent bg-accent" : "border-muted/50 active:border-accent")
-        }
+        // The circle stays 26px; the button around it is 44pt, so a thumb lands on it without the
+        // control looking any heavier than the job beside it.
+        className="grid h-11 w-11 place-items-center"
       >
+        <span
+          className={
+            "grid h-[26px] w-[26px] place-items-center rounded-full border-2 transition-colors " +
+            (done ? "border-accent bg-accent" : "border-muted/50")
+          }
+        >
         {/* The tick appears with the fill, so the state is legible at a glance rather than
             only by colour. */}
         {done && (
@@ -62,6 +67,7 @@ export default function Tick({
             <path d="m5 13 4 4L19 7" />
           </svg>
         )}
+        </span>
       </button>
     </form>
   );

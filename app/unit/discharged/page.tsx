@@ -1,4 +1,4 @@
-import Link from "next/link";
+import ScreenHeader from "../../screen-header";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWard } from "@/lib/ward";
 import { compareBeds, patientName } from "@/lib/patients";
@@ -37,9 +37,9 @@ export default async function DischargedPage() {
 
   if (error || !ward) {
     return (
-      <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
+      <main className="flex-1 px-4 py-10 max-w-md mx-auto w-full">
         <h1 className="ios-large-title">Discharged</h1>
-        <p className="mt-4 ios-group px-4 py-3 text-[15px] text-orange-700">
+        <p className="mt-4 ios-group px-4 py-3 text-subhead text-warn-fg">
           {error ? `Could not read the database: ${error.message}` : "No ward found."}
         </p>
       </main>
@@ -72,27 +72,19 @@ export default async function DischargedPage() {
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
-      <header className="px-6 pt-8 pb-4">
-        <Link href="/unit" className="text-[17px] text-accent">
-          ‹ Unit
-        </Link>
-        <h1 className="mt-3 ios-large-title">Discharged</h1>
-        <p className="mt-0.5 text-[15px] text-muted">
-          A recent discharge can still be undone; once a summary is saved it stays here for
-          good. Nothing recorded about a patient is ever deleted.
-        </p>
-      </header>
+      <ScreenHeader back="/unit" backLabel="Unit" title="Discharged" subtitle={<>A recent discharge can still be undone; once a summary is saved it stays here for
+          good. Nothing recorded about a patient is ever deleted.</>} />
 
-      <section className="px-6 pb-16 flex flex-col gap-6">
+      <section className="px-4 pb-16 flex flex-col gap-6">
         {patients.length === 0 ? (
-          <p className="ios-group p-6 text-[15px] text-muted">
+          <p className="ios-group p-6 text-subhead text-muted">
             Nobody discharged recently, and nothing saved yet.
           </p>
         ) : (
           <>
             {recent.length > 0 && (
               <div>
-                <p className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-muted">
+                <p className="mb-2 text-footnote font-semibold uppercase tracking-wide text-muted">
                   Recently discharged · within {DISCHARGE_UNDO_WINDOW_HOURS} hours
                 </p>
                 <div className="flex flex-col gap-3">
@@ -104,7 +96,7 @@ export default async function DischargedPage() {
             )}
             {saved.length > 0 && (
               <div>
-                <p className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-muted">
+                <p className="mb-2 text-footnote font-semibold uppercase tracking-wide text-muted">
                   Saved
                 </p>
                 <div className="flex flex-col gap-3">
@@ -141,15 +133,15 @@ function DischargedCard({
   return (
     <div className="ios-group p-4">
       <div className="flex items-baseline gap-2">
-        <span className="shrink-0 rounded-md bg-chip px-2 py-1 font-mono text-[13px]">
+        <span className="shrink-0 rounded-md bg-chip px-2 py-1 font-mono text-footnote">
           {patient.bed}
         </span>
-        <span className="truncate text-[17px] font-medium">{patientName(patient)}</span>
+        <span className="truncate text-body font-medium">{patientName(patient)}</span>
       </div>
-      <p className="mt-0.5 truncate text-[15px] text-muted">
+      <p className="mt-0.5 truncate text-subhead text-muted">
         {patient.primary_diagnosis || "No diagnosis recorded"}
       </p>
-      <p className="mt-1 text-[13px] text-muted">
+      <p className="mt-1 text-footnote text-muted">
         {patient.entry_count === 0
           ? "Nothing was ever recorded on this patient."
           : `${patient.entry_count} ${patient.entry_count === 1 ? "entry" : "entries"} on their record.`}
@@ -164,11 +156,11 @@ function DischargedCard({
       </p>
 
       {saved ? (
-        <p className="mt-1 text-[13px] text-good-fg">
+        <p className="mt-1 text-footnote text-good-fg">
           Summary saved{finalisedAt ? ` ${new Date(finalisedAt).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short" })}` : ""} — kept here indefinitely.
         </p>
       ) : (
-        <p className="mt-1 text-[13px] text-warn-fg">
+        <p className="mt-1 text-footnote text-warn-fg">
           {hoursLeft(patient.discharged_at) === 0
             ? "Leaves this list very soon if nothing is saved."
             : `${hoursLeft(patient.discharged_at)}h left to undo, unless a summary is saved first.`}
@@ -178,7 +170,7 @@ function DischargedCard({
       <div className="mt-3 flex gap-3">
         <form action={restorePatient} className="flex-1">
           <input type="hidden" name="patient_id" value={patient.id} />
-          <button className="w-full rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink">
+          <button className="w-full rounded-[10px] bg-accent px-4 py-3 text-body font-semibold text-accent-ink">
             Put back on the ward
           </button>
         </form>

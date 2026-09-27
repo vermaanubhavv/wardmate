@@ -1,3 +1,4 @@
+import ScreenHeader from "../screen-header";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { listTemplateChoices } from "@/lib/templates";
@@ -16,9 +17,9 @@ type Protocol = {
 };
 
 const SEVERITY_STYLE: Record<string, string> = {
-  critical: "border-red-300 bg-red-50 text-red-800",
-  urgent: "border-orange-300 bg-orange-50 text-orange-800",
-  warning: "border-amber-300 bg-amber-50 text-amber-800",
+  critical: "border-critical-fg/30 bg-critical-bg text-critical-fg",
+  urgent: "border-warn-fg/30 bg-warn-bg text-warn-fg",
+  warning: "border-warn-fg/30 bg-warn-bg text-warn-fg",
 };
 
 export default async function ProtocolsPage() {
@@ -37,27 +38,24 @@ export default async function ProtocolsPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
-      <header className="px-6 pb-4 pt-8">
-        <Link href="/ward" className="text-[17px] text-accent">
-          ‹ Ward
-        </Link>
-        <h1 className="ios-large-title mt-3">Protocols</h1>
-        <p className="mt-1 text-[15px] text-muted">
-          Company-approved clinical guidance. Read-only reference — nothing here writes to a
-          patient until you choose to act on it yourself.
-        </p>
+      <ScreenHeader
+        back="/unit"
+        backLabel="Unit"
+        title="Protocols"
+        subtitle="Company-approved clinical guidance. Read-only reference — nothing here writes to a patient until you choose to act on it yourself."
+      >
         {/* The one line the whole feature exists under — see the spec's own clinical safety
             boundary. Said once here rather than once per protocol, but said. */}
-        <p className="mt-3 rounded-[10px] bg-chip px-3 py-2 text-[13px] leading-relaxed text-muted">
+        <p className="mt-3 rounded-[10px] bg-chip px-3 py-2 text-footnote leading-relaxed text-muted">
           Decision support based on approved protocol. You remain responsible for assessment
           and management.
         </p>
-      </header>
+      </ScreenHeader>
 
-      <main className="flex flex-col gap-4 px-6 pb-16">
+      <main className="flex flex-col gap-4 px-4 pb-16">
         {isPublisher && (
           <details className="ios-group p-4">
-            <summary className="cursor-pointer text-[17px] font-semibold">
+            <summary className="cursor-pointer text-body font-semibold">
               New company protocol
             </summary>
             <form action={createProtocol} className="mt-4 flex flex-col gap-3">
@@ -130,14 +128,14 @@ export default async function ProtocolsPage() {
                 <button
                   name="status"
                   value="draft"
-                  className="flex-1 rounded-[10px] border border-line px-3 py-3 text-[15px]"
+                  className="flex-1 rounded-[10px] border border-line px-3 py-3 text-subhead"
                 >
                   Save draft
                 </button>
                 <button
                   name="status"
                   value="published"
-                  className="flex-1 rounded-[10px] bg-accent px-3 py-3 text-[15px] font-semibold text-accent-ink"
+                  className="flex-1 rounded-[10px] bg-accent px-3 py-3 text-subhead font-semibold text-accent-ink"
                 >
                   Publish
                 </button>
@@ -151,7 +149,7 @@ export default async function ProtocolsPage() {
             <ProtocolCard key={p.id} protocol={p} isPublisher={isPublisher} />
           ))}
           {(protocols ?? []).length === 0 && (
-            <p className="ios-group px-4 py-3 text-[15px] text-muted">
+            <p className="ios-group px-4 py-3 text-subhead text-muted">
               Nothing published yet.
             </p>
           )}
@@ -164,12 +162,12 @@ export default async function ProtocolsPage() {
 function Section({ name, label, hint }: { name: string; label: string; hint: string }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[13px] font-medium text-muted">{label}</span>
+      <span className="text-footnote font-medium text-muted">{label}</span>
       <textarea
         name={name}
         rows={3}
         placeholder={hint}
-        className="rounded-[10px] border border-line px-3 py-2.5 text-[15px]"
+        className="rounded-[10px] border border-line px-3 py-2.5 text-subhead"
       />
     </label>
   );
@@ -189,10 +187,10 @@ function ProtocolCard({ protocol: p, isPublisher }: { protocol: Protocol; isPubl
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="truncate font-semibold">{p.title}</h2>
-          <p className="mt-0.5 text-[13px] text-muted">
+          <p className="mt-0.5 text-footnote text-muted">
             v{p.version} · {p.source_name} · {p.phase.replace("_", " ")}
             {isPublisher && p.status !== "published" && (
-              <span className="ml-1.5 rounded-full bg-chip px-1.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-muted">
+              <span className="ml-1.5 rounded-full bg-chip px-1.5 py-0.5 text-caption2 font-medium uppercase tracking-wide text-muted">
                 {p.status}
               </span>
             )}
@@ -203,7 +201,7 @@ function ProtocolCard({ protocol: p, isPublisher }: { protocol: Protocol; isPubl
             href={p.source_url}
             target="_blank"
             rel="noreferrer"
-            className="shrink-0 text-[13px] text-accent underline"
+            className="shrink-0 text-footnote text-accent underline"
           >
             Source
           </a>
@@ -218,7 +216,7 @@ function ProtocolCard({ protocol: p, isPublisher }: { protocol: Protocol; isPubl
             <p
               key={f.id}
               className={
-                "rounded-[10px] border px-3 py-2 text-[14px] font-medium " +
+                "rounded-[10px] border px-3 py-2 text-subhead font-medium " +
                 (SEVERITY_STYLE[f.severity ?? "urgent"] ?? SEVERITY_STYLE.urgent)
               }
             >
@@ -258,8 +256,8 @@ function ProtocolCard({ protocol: p, isPublisher }: { protocol: Protocol; isPubl
 function ProtocolList({ heading, items }: { heading: string; items: Item[] }) {
   return (
     <div className="mt-3">
-      <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">{heading}</p>
-      <ul className="mt-1 space-y-1 text-[15px]">
+      <p className="text-caption font-semibold uppercase tracking-wide text-muted">{heading}</p>
+      <ul className="mt-1 space-y-1 text-subhead">
         {items.map((i) => (
           <li key={i.id}>· {i.prompt}</li>
         ))}
@@ -285,7 +283,7 @@ function StatusButton({
       <input type="hidden" name="status" value={status} />
       <button
         className={
-          "rounded-[10px] px-3 py-2 text-[13px] font-medium " +
+          "rounded-[10px] px-3 py-2 text-footnote font-medium " +
           (accent ? "bg-accent text-accent-ink" : "border border-line text-muted")
         }
       >

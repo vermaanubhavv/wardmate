@@ -8,14 +8,14 @@
 
 export function ErrorNote({ message }: { message: string }) {
   return (
-    <p className="mt-4 ios-group px-4 py-3 text-[14px] text-orange-700">
+    <p className="mt-4 ios-group px-4 py-3 text-subhead text-warn-fg">
       Could not read the database: {message}
     </p>
   );
 }
 
 export function Empty({ children }: { children: React.ReactNode }) {
-  return <p className="mt-4 text-[14px] text-muted">{children}</p>;
+  return <p className="mt-4 text-subhead text-muted">{children}</p>;
 }
 
 /** A grid of headline numbers. */
@@ -34,9 +34,9 @@ export function Stat({
 }) {
   return (
     <div className="ios-group px-3 py-2.5">
-      <div className="text-[22px] font-semibold tabular-nums leading-tight">{value}</div>
-      <div className="mt-0.5 text-[12px] text-muted">{label}</div>
-      {hint && <div className="text-[11px] text-muted/80">{hint}</div>}
+      <div className="text-title2 font-semibold tabular-nums leading-tight">{value}</div>
+      <div className="mt-0.5 text-caption text-muted">{label}</div>
+      {hint && <div className="text-caption2 text-muted/80">{hint}</div>}
     </div>
   );
 }
@@ -53,7 +53,7 @@ export function Section({
   return (
     <section className="mt-8">
       <div className="ios-group-header px-1">{title}</div>
-      {subtitle && <p className="px-1 pb-1 text-[12px] text-muted">{subtitle}</p>}
+      {subtitle && <p className="px-1 pb-1 text-caption text-muted">{subtitle}</p>}
       <div className="mt-1">{children}</div>
     </section>
   );
@@ -69,9 +69,9 @@ export function Table({
 }) {
   return (
     <div className="ios-group overflow-x-auto">
-      <table className="w-full min-w-full border-collapse text-[13px]">
+      <table className="w-full min-w-full border-collapse text-footnote">
         <thead>
-          <tr className="border-b border-line/60 text-left text-[11px] uppercase tracking-wide text-muted">
+          <tr className="border-b border-line/60 text-left text-caption2 uppercase tracking-wide text-muted">
             {head.map((h, i) => (
               <th key={i} className="whitespace-nowrap px-3 py-2 font-medium">
                 {h}
@@ -112,15 +112,15 @@ export function Cell({
 }
 
 const SEV: Record<string, string> = {
-  high: "bg-red-100 text-red-700",
-  medium: "bg-amber-100 text-amber-700",
+  high: "bg-critical-bg text-critical-fg",
+  medium: "bg-warn-bg text-warn-fg",
   low: "bg-neutral-200 text-neutral-600",
 };
 
 export function SeverityDot({ severity }: { severity: string }) {
   return (
     <span
-      className={`inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium uppercase ${
+      className={`inline-block rounded-full px-1.5 py-0.5 text-caption2 font-medium uppercase ${
         SEV[severity] ?? SEV.low
       }`}
     >

@@ -159,7 +159,7 @@ export default function PatientForm({
               autoCapitalize="characters"
               value={fields.bed}
               onChange={(e) => set("bed")(e.target.value)}
-              className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+              className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
             />
           </Field>
         </div>
@@ -168,7 +168,7 @@ export default function PatientForm({
             <select
               name="location"
               defaultValue="ward"
-              className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+              className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
             >
               {LOCATION_CHOICES.map((c) => (
                 <option key={c.value} value={c.value}>
@@ -187,7 +187,7 @@ export default function PatientForm({
           autoCapitalize="words"
           value={fields.display_name}
           onChange={(e) => set("display_name")(e.target.value)}
-          className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+          className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
         />
       </Field>
 
@@ -198,7 +198,7 @@ export default function PatientForm({
               name="uhid_ip_no"
               value={fields.uhid_ip_no}
               onChange={(e) => set("uhid_ip_no")(e.target.value)}
-              className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+              className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
             />
           </Field>
         </div>
@@ -208,7 +208,7 @@ export default function PatientForm({
               name="mrd_no"
               value={fields.mrd_no}
               onChange={(e) => set("mrd_no")(e.target.value)}
-              className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+              className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
             />
           </Field>
         </div>
@@ -226,7 +226,7 @@ export default function PatientForm({
               max={120}
               value={fields.age_years}
               onChange={(e) => set("age_years")(e.target.value)}
-              className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+              className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
             />
           </Field>
         </div>
@@ -236,7 +236,7 @@ export default function PatientForm({
               name="sex"
               value={fields.sex}
               onChange={(e) => set("sex")(e.target.value)}
-              className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+              className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
             >
               <option value="">—</option>
               <option value="M">M</option>
@@ -253,7 +253,7 @@ export default function PatientForm({
           value={fields.primary_diagnosis}
           onChange={set("primary_diagnosis")}
           extraSuggestions={diagnosisSuggestions}
-          className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+          className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
         />
       </Field>
 
@@ -265,7 +265,7 @@ export default function PatientForm({
           value={admittedOn || localToday}
           max={localToday}
           onChange={(e) => setAdmittedOn(e.target.value)}
-          className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+          className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
         />
       </Field>
 
@@ -279,7 +279,7 @@ export default function PatientForm({
           name="management"
           value={management}
           onChange={(e) => setManagement(e.target.value)}
-          className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+          className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
         >
           <option value="">Not stated</option>
           {MANAGEMENT_CHOICES.map((c) => (
@@ -307,7 +307,7 @@ export default function PatientForm({
             value={fields.procedure}
             onChange={(e) => set("procedure")(e.target.value)}
             autoCapitalize="none"
-            className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+            className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
           />
           <datalist id="operation-suggestions">
             {templateChoices.map((t) => (
@@ -336,7 +336,7 @@ export default function PatientForm({
             // deliberately unbounded: a postponed list still needs its old date recorded.
             max={management === "postop" ? localToday : undefined}
             defaultValue={management === "postop" ? localToday : ""}
-            className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+            className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
           />
         </Field>
       )}
@@ -365,7 +365,7 @@ export default function PatientForm({
               onChange={(e) => set("regimen")(e.target.value)}
               autoCapitalize="characters"
               placeholder="e.g. R-CHOP"
-              className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+              className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
             />
             <datalist id="new-regimen-suggestions">
               {REGIMEN_SUGGESTIONS.map((r) => (
@@ -387,7 +387,7 @@ export default function PatientForm({
                     max={60}
                     value={fields.cycle_number}
                     onChange={(e) => set("cycle_number")(e.target.value)}
-                    className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+                    className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
                   />
                 </Field>
               </div>
@@ -399,7 +399,7 @@ export default function PatientForm({
                     max={localToday}
                     value={fields.cycle_started_on}
                     onChange={(e) => set("cycle_started_on")(e.target.value)}
-                    className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+                    className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
                   />
                 </Field>
               </div>
@@ -419,13 +419,13 @@ export default function PatientForm({
             max={localToday}
             value={fields.burn_date}
             onChange={(e) => set("burn_date")(e.target.value)}
-            className="w-full ios-group px-4 py-4 text-base outline-none focus:border-accent"
+            className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
           />
         </Field>
       )}
 
       {state.error && (
-        <p className="ios-group px-4 py-3 text-[15px] text-orange-700">
+        <p className="ios-group px-4 py-3 text-subhead text-warn-fg">
           {state.error}
         </p>
       )}
@@ -433,14 +433,14 @@ export default function PatientForm({
       <div className="flex gap-3 pt-2">
         <Link
           href="/ward"
-          className="flex-1 rounded-[10px] border border-line px-4 py-4 text-center text-base text-muted"
+          className="flex-1 rounded-[10px] border border-line px-4 py-4 text-center text-body text-muted"
         >
           Cancel
         </Link>
         <button
           type="submit"
           disabled={pending}
-          className="flex-[2] rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink disabled:opacity-50"
+          className="flex-[2] rounded-[10px] bg-accent px-4 py-3 text-body font-semibold text-accent-ink disabled:opacity-50"
         >
           {pending ? "Adding…" : "Add patient"}
         </button>
@@ -460,9 +460,9 @@ function Field({
 }) {
   return (
     <label className="flex flex-col gap-2">
-      <span className="text-[15px] text-muted">{label}</span>
+      <span className="text-subhead text-muted">{label}</span>
       {children}
-      {hint && <span className="text-[13px] text-muted">{hint}</span>}
+      {hint && <span className="text-footnote text-muted">{hint}</span>}
     </label>
   );
 }

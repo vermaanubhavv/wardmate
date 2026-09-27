@@ -122,8 +122,8 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   return (
     <div
       className={
-        "px-4 py-2 text-[13px] " +
-        (online ? "bg-chip text-foreground" : "bg-accent text-accent-ink")
+        "px-4 py-2 text-footnote " +
+        (online ? "bg-chip text-foreground" : "bg-warn-fg text-accent-ink")
       }
       role="status"
     >
@@ -146,7 +146,7 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
       {online && !sending && pending > 0 && (
         <p>
           {pending === 1 ? "1 recording" : `${pending} recordings`} still to send.{" "}
-          <button onClick={() => void send()} className="font-semibold underline">
+          <button onClick={() => void send()} className="tap font-semibold underline">
             Try now
           </button>
         </p>

@@ -27,10 +27,10 @@ export default async function AdminUsagePage() {
             <div className="ios-group divide-y divide-line/40">
               {metrics.map((m) => (
                 <div key={m.metric} className="flex items-center justify-between px-4 py-2.5">
-                  <span className="text-[13px]">{m.metric}</span>
+                  <span className="text-footnote">{m.metric}</span>
                   <span className="flex items-center gap-2">
-                    <span className="tabular-nums text-[13px] font-medium">{m.count}</span>
-                    <span className="text-[11px] text-muted">
+                    <span className="tabular-nums text-footnote font-medium">{m.count}</span>
+                    <span className="text-caption2 text-muted">
                       {total > 0 ? `${Math.round((m.count / total) * 100)}%` : ""}
                     </span>
                   </span>
@@ -43,7 +43,7 @@ export default async function AdminUsagePage() {
 
       <Section title="Speech engine" subtitle="Voice dictations by provider / model">
         {stt.length === 0 ? (
-          <p className="ios-group px-4 py-3 text-[13px] text-muted">No voice dictations yet.</p>
+          <p className="ios-group px-4 py-3 text-footnote text-muted">No voice dictations yet.</p>
         ) : (
           <Table head={["Provider", "Model", "Entries", "Extraction errors"]}>
             {stt.map((s, i) => (
@@ -52,7 +52,7 @@ export default async function AdminUsagePage() {
                 <Cell muted>{s.model}</Cell>
                 <Cell num>{s.entries}</Cell>
                 <Cell num>
-                  <span className={s.errors > 0 ? "text-orange-600" : ""}>{s.errors}</span>
+                  <span className={s.errors > 0 ? "text-warn-fg" : ""}>{s.errors}</span>
                 </Cell>
               </Row>
             ))}

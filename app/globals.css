@@ -20,9 +20,17 @@
   --foreground: #000000; /* label */
   --muted: #636366; /* stronger secondary label, readable in bright ward lighting */
   --line: #c6c6c8; /* separator */
-  --accent: #0f9e96; /* WardMate teal — from the mark, not a system colour */
+  /* WardMate teal, from the mark — darkened one step for anything READ. The mark's own
+     #0f9e96 measures 3.3:1 on white, under WCAG AA for the 13–17px text it sits behind; this
+     one measures 4.85:1 on white and 4.35:1 on the grouped background and still reads as the
+     same colour beside the icon. The brand value stays for the mark and its animation. */
+  --accent: #0b7f79;
+  --accent-brand: #0f9e96;
   --accent-ink: #ffffff;
   --chip: #efeff4; /* the flat fill behind a bed number */
+  --fill-tertiary: rgba(118, 118, 128, 0.12); /* Apple's segmented-control track */
+  --recording: #ef4444; /* the one red for "the mic is live" — red-500, used by every recorder */
+  --bar-height: 7.5rem; /* room a page leaves at its foot for the floating bottom bar */
 
   /* Semantic status colours — the same three tones the app already used ad hoc (the
      ward-list Badge, lib/urgency.ts's red/yellow/green) named once here so a new stat
@@ -49,6 +57,9 @@
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
   --color-chip: var(--chip);
+  --color-fill-tertiary: var(--fill-tertiary);
+  --color-recording: var(--recording);
+  --color-accent-brand: var(--accent-brand);
   --color-critical-bg: var(--critical-bg);
   --color-critical-fg: var(--critical-fg);
   --color-critical-dot: var(--critical-dot);
@@ -60,6 +71,29 @@
   --color-good-dot: var(--good-dot);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
+
+  /* The iOS type scale, in rem so Larger Text still scales it. Ten sizes, named the way
+     Apple names them, replacing twenty-nine arbitrary pixel values that had crept in. */
+  --text-caption2: 0.6875rem; /* 11 */
+  --text-caption2--line-height: 0.8125rem;
+  --text-caption: 0.75rem; /* 12 */
+  --text-caption--line-height: 1rem;
+  --text-footnote: 0.8125rem; /* 13 */
+  --text-footnote--line-height: 1.125rem;
+  --text-subhead: 0.9375rem; /* 15 */
+  --text-subhead--line-height: 1.25rem;
+  --text-callout: 1rem; /* 16 */
+  --text-callout--line-height: 1.3125rem;
+  --text-body: 1.0625rem; /* 17 */
+  --text-body--line-height: 1.375rem;
+  --text-title3: 1.25rem; /* 20 */
+  --text-title3--line-height: 1.5625rem;
+  --text-title2: 1.375rem; /* 22 */
+  --text-title2--line-height: 1.75rem;
+  --text-title1: 1.75rem; /* 28 */
+  --text-title1--line-height: 2.125rem;
+  --text-large: 2.125rem; /* 34 */
+  --text-large--line-height: 2.5625rem;
 }
 
 html {
@@ -78,15 +112,98 @@ body {
   font-size: 17px;
   line-height: 1.35;
   -webkit-font-smoothing: antialiased;
-  letter-spacing: -0.01em;
   overscroll-behavior-y: none;
 }
 
-/* A long press on the record button must not pop up the text-selection menu. */
-button {
+/* A long press on the record button must not pop up the text-selection menu, and a quick
+   double tap on any control must not zoom the page — which is what used to justify locking
+   zoom for everyone. */
+button,
+a,
+summary {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+  touch-action: manipulation;
+}
+
+/* The one focus ring. Unlayered, so it wins over any `outline-none` utility: a keyboard, a
+   switch or an iPad with a trackpad must always be able to see where it is. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* In the components layer so a utility on the call site (pl-11, text-muted, flex-1) still
+   wins over the recipe. */
+@layer components {
+/* Buttons. Four recipes for the whole app; a call site picks one and adds nothing. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem; /* 44pt */
+  padding: 0.625rem 1rem;
+  border-radius: 10px;
+  font-size: var(--text-body);
+  font-weight: 600;
+  transition: opacity 0.15s;
+}
+.btn:active {
+  opacity: 0.8;
+}
+.btn:disabled {
+  opacity: 0.5;
+}
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.btn-secondary {
+  background: var(--card);
+  color: var(--accent);
+  border: 0.5px solid var(--line);
+}
+.btn-destructive {
+  background: var(--card);
+  color: var(--critical-fg);
+}
+.btn-quiet {
+  background: transparent;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* Text fields. One height, one radius, one border. */
+.field {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 10px;
+  border: 0.5px solid var(--line);
+  background: var(--card);
+  font-size: var(--text-body);
+  outline: none;
+}
+.field:focus {
+  border-color: var(--accent);
+}
+
+/* Anything text-only that is still a tap target — "undo", "Edit", a back link — gets a
+   thumb-sized hit box without growing on screen. */
+.tap {
+  position: relative;
+}
+.tap::after {
+  content: "";
+  position: absolute;
+  inset: 50%;
+  width: max(100%, 2.75rem);
+  height: max(100%, 2.75rem);
+  transform: translate(-50%, -50%);
+}
 }
 
 /* iOS large title: the screen announces itself once, at the top, and shrinks away as the
@@ -116,7 +233,16 @@ button {
 }
 
 .ios-row + .ios-row {
-  box-shadow: inset 0 0.5px 0 var(--line);
+  position: relative;
+}
+.ios-row + .ios-row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 1rem;
+  right: 0;
+  height: 0.5px;
+  background: var(--line);
 }
 
 /* `viewport-fit=cover` lets an installed PWA reach the bottom edge. Put the action bar above

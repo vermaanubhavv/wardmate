@@ -44,7 +44,7 @@ function Segmented({
           role="tab"
           aria-selected={value === i}
           onClick={() => value !== i && onChange(i)}
-          className={`rounded-[9px] px-4 py-2 text-[14px] font-semibold transition-colors ${
+          className={`rounded-[9px] px-4 py-2 text-subhead font-semibold transition-colors ${
             value === i ? "bg-accent text-accent-ink shadow-[0_6px_16px_-8px_var(--accent)]" : "text-muted hover:text-foreground"
           }`}
         >
@@ -102,7 +102,7 @@ export function TriageDemo({ lines }: { lines: readonly Line[] }) {
             style={vt(`bed-${bed}`, critical ? { boxShadow: "inset 0 0 0 1px var(--critical-fg)" } : {})}
           >
             <span
-              className={`grid h-8 w-8 shrink-0 place-items-center rounded-[9px] font-mono text-[13px] font-semibold ${
+              className={`grid h-8 w-8 shrink-0 place-items-center rounded-[9px] font-mono text-footnote font-semibold ${
                 critical ? "bg-critical-fg text-white" : "bg-chip text-muted"
               }`}
             >
@@ -110,19 +110,19 @@ export function TriageDemo({ lines }: { lines: readonly Line[] }) {
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-[14.5px] font-semibold">{who}</p>
+                <p className="text-subhead font-semibold">{who}</p>
                 {critical && (
-                  <span className="shrink-0 rounded-[5px] bg-critical-fg px-2 py-0.5 text-[10.5px] font-bold text-white">
+                  <span className="shrink-0 rounded-[5px] bg-critical-fg px-2 py-0.5 text-caption2 font-bold text-white">
                     CRITICAL
                   </span>
                 )}
               </div>
-              <p className={`mt-1 text-[13.5px] leading-snug ${critical ? "font-medium text-critical-fg" : "text-muted"}`}>{body}</p>
+              <p className={`mt-1 text-footnote leading-snug ${critical ? "font-medium text-critical-fg" : "text-muted"}`}>{body}</p>
             </div>
           </div>
         ))}
       </div>
-      <p className="mt-3 text-[13px] text-muted" aria-live="polite">
+      <p className="mt-3 text-footnote text-muted" aria-live="polite">
         {triaged
           ? "Most urgent first: the unsettled fever goes to the top. Ready to copy for WhatsApp."
           : "In bed order, the fever sits at the bottom of the list."}
@@ -158,19 +158,19 @@ export function ScreenTour({ screens }: { screens: readonly Screen[] }) {
             >
               <span className="flex items-center gap-2">
                 <span
-                  className={`hidden h-6 w-6 shrink-0 place-items-center rounded-full font-mono text-[12px] font-semibold lg:grid ${
+                  className={`hidden h-6 w-6 shrink-0 place-items-center rounded-full font-mono text-caption font-semibold lg:grid ${
                     active === i ? "bg-accent text-accent-ink" : "bg-chip text-muted"
                   }`}
                 >
                   {i + 1}
                 </span>
-                <span className={`text-[13.5px] font-semibold lg:text-[16px] ${active === i ? "text-accent" : ""}`}>{title}</span>
+                <span className={`text-footnote font-semibold lg:text-callout ${active === i ? "text-accent" : ""}`}>{title}</span>
               </span>
-              <span className="mt-1.5 hidden text-[14px] leading-snug text-muted lg:block">{blurb}</span>
+              <span className="mt-1.5 hidden text-subhead leading-snug text-muted lg:block">{blurb}</span>
             </button>
           ))}
         </div>
-        <p className="mt-3 min-h-[3em] text-[14.5px] leading-snug text-muted lg:hidden">{screens[active][3]}</p>
+        <p className="mt-3 min-h-[3em] text-subhead leading-snug text-muted lg:hidden">{screens[active][3]}</p>
       </div>
 
       {/* All three stacked in one grid cell and cross-faded, so switching is instant. */}

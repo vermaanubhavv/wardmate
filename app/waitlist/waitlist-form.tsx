@@ -64,15 +64,13 @@ const DEPARTMENTS = [
 ];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-// Most residents sign up with a personal Gmail, so the address is a username box plus an
-// editable domain box that starts on "gmail.com". Anyone on another provider edits the one
-// box; either way the whole step is one Back tap away.
-const EMAIL_DOMAIN_DEFAULT = "gmail.com";
+// One box. It used to be a username box beside an editable "gmail.com" box, which broke
+// autofill: a saved address pasted into the left half became "a@b.com@gmail.com".
 const STEPS = 3;
 
-const FIELD_LABEL = "text-[13px] font-medium uppercase tracking-wide text-muted";
+const FIELD_LABEL = "text-footnote font-medium uppercase tracking-wide text-muted";
 const CONTROL =
-  "ios-group w-full appearance-none px-4 py-3.5 text-base outline-none transition-shadow focus:ring-2 focus:ring-accent";
+  "ios-group w-full appearance-none px-4 py-3.5 text-body outline-none transition-shadow focus:ring-2 focus:ring-accent";
 // A single chevron for the department select, so it looks the same on every platform.
 const SELECT_CHEVRON =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23636366' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E\")";
@@ -94,8 +92,7 @@ export default function WaitlistForm({
 } = {}) {
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState<"fwd" | "back">("fwd");
-  const [emailUser, setEmailUser] = useState("");
-  const [emailDomain, setEmailDomain] = useState(EMAIL_DOMAIN_DEFAULT);
+  const [email, setEmail] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
   const [name, setName] = useState("");
   const [college, setCollege] = useState("");
@@ -109,8 +106,7 @@ export default function WaitlistForm({
 
   const resolvedDepartment =
     department === "Other" ? departmentOther.trim() : department;
-  const email = `${emailUser.trim()}@${emailDomain.trim()}`;
-  const emailValid = emailUser.trim().length > 0 && EMAIL_RE.test(email);
+  const emailValid = EMAIL_RE.test(email.trim());
   const stepValid =
     step === 0
       ? emailValid
@@ -132,7 +128,7 @@ export default function WaitlistForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,
+          email: email.trim(),
           name,
           college,
           department: resolvedDepartment,
@@ -192,10 +188,10 @@ export default function WaitlistForm({
           className={`${styles.rise} flex flex-col gap-1.5`}
           style={{ animationDelay: "0.05s" }}
         >
-          <h2 className="text-[22px] font-semibold tracking-tight">
+          <h2 className="text-title2 font-semibold tracking-tight">
             You&rsquo;re on the list
           </h2>
-          <p className="text-[15px] text-muted">
+          <p className="text-subhead text-muted">
             We&rsquo;ll write to{" "}
             <span className="text-foreground">{submittedEmail}</span> when
             WardMate opens for your college.
@@ -203,7 +199,7 @@ export default function WaitlistForm({
         </div>
 
         <p
-          className={`${styles.rise} ios-group w-full px-4 py-3.5 text-left text-[15px] text-muted`}
+          className={`${styles.rise} ios-group w-full px-4 py-3.5 text-left text-subhead text-muted`}
           style={{ animationDelay: "0.1s" }}
         >
           One email, with an invite link. Nothing else.
@@ -232,7 +228,7 @@ export default function WaitlistForm({
             </span>
           ))}
         </div>
-        <div className="flex items-center justify-between text-[13px]">
+        <div className="flex items-center justify-between text-footnote">
           <span className="text-muted tabular-nums">
             Step {step + 1} of {STEPS}
           </span>
@@ -253,60 +249,34 @@ export default function WaitlistForm({
         className={`${dir === "fwd" ? styles.stepForward : styles.stepBack} flex flex-col gap-5`}
       >
         <div className="flex flex-col gap-1">
-          <h3 className="text-[19px] font-semibold tracking-tight">
+          <h3 className="text-title3 font-semibold tracking-tight">
             {STEP_TITLES[step].title}
           </h3>
-          <p className="text-[14px] text-muted">{STEP_TITLES[step].hint}</p>
+          <p className="text-subhead text-muted">{STEP_TITLES[step].hint}</p>
         </div>
 
         {step === 0 && (
           <>
             <label className="flex flex-col gap-2">
               <span className={FIELD_LABEL}>Email</span>
-              <span className="flex items-stretch gap-2">
-                <input
-                  type="text"
-                  required
-                  autoFocus={autoFocusFirstField}
-                  inputMode="email"
-                  autoCapitalize="off"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  autoComplete="username"
-                  aria-label="Email username"
-                  value={emailUser}
-                  onChange={(e) => setEmailUser(e.target.value.replace(/\s/g, ""))}
-                  onBlur={() => setEmailTouched(true)}
-                  placeholder="you"
-                  className="ios-group min-w-0 flex-1 px-4 py-3.5 text-base outline-none transition-shadow focus:ring-2 focus:ring-accent"
-                />
-                <span className="flex items-center text-base text-muted">@</span>
-                <input
-                  type="text"
-                  required
-                  inputMode="email"
-                  autoCapitalize="off"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  aria-label="Email provider"
-                  value={emailDomain}
-                  onChange={(e) =>
-                    setEmailDomain(e.target.value.replace(/\s/g, ""))
-                  }
-                  onBlur={() => setEmailTouched(true)}
-                  placeholder="gmail.com"
-                  className="ios-group px-3 py-3.5 text-base outline-none transition-shadow focus:ring-2 focus:ring-accent"
-                  style={{ width: "8.5rem" }}
-                />
-              </span>
-              {emailTouched && emailUser.length > 0 && !emailValid ? (
-                <span className="text-[13px] text-orange-700">
+              <input
+                type="email"
+                required
+                autoFocus={autoFocusFirstField}
+                inputMode="email"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value.replace(/\s/g, ""))}
+                onBlur={() => setEmailTouched(true)}
+                placeholder="you@gmail.com"
+                className="ios-group w-full px-4 py-3.5 text-body outline-none transition-shadow focus:ring-2 focus:ring-accent"
+              />
+              {emailTouched && email.length > 0 && !emailValid && (
+                <span className="text-footnote text-warn-fg">
                   That doesn&rsquo;t look like an email address.
-                </span>
-              ) : (
-                <span className="text-[13px] text-muted">
-                  Set to <span className="text-foreground">gmail.com</span> — change
-                  the right box if yours differs.
                 </span>
               )}
             </label>
@@ -392,7 +362,7 @@ export default function WaitlistForm({
                   type="button"
                   aria-pressed={active}
                   onClick={() => setYear(y)}
-                  className={`rounded-[10px] px-4 py-3.5 text-[15px] font-medium transition-colors active:opacity-80 ${
+                  className={`rounded-[10px] px-4 py-3.5 text-subhead font-medium transition-colors active:opacity-80 ${
                     active
                       ? "bg-accent text-accent-ink"
                       : "bg-card text-foreground"
@@ -410,7 +380,7 @@ export default function WaitlistForm({
         <button
           type="submit"
           disabled={!stepValid || busy}
-          className="rounded-[10px] bg-accent px-4 py-3.5 text-[17px] font-semibold text-accent-ink transition-opacity active:opacity-80 disabled:opacity-40"
+          className="rounded-[10px] bg-accent px-4 py-3.5 text-body font-semibold text-accent-ink transition-opacity active:opacity-80 disabled:opacity-40"
         >
           {busy
             ? "Joining…"
@@ -418,13 +388,13 @@ export default function WaitlistForm({
               ? "Continue"
               : "Join the waitlist"}
         </button>
-        <p className="text-center text-[13px] text-muted">
+        <p className="text-center text-footnote text-muted">
           One email when WardMate opens for your college. Nothing else.
         </p>
       </div>
 
       {error && (
-        <p className="ios-group px-4 py-3 text-[15px] text-orange-700">{error}</p>
+        <p className="ios-group px-4 py-3 text-subhead text-warn-fg">{error}</p>
       )}
     </form>
   );

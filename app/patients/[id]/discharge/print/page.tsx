@@ -35,11 +35,11 @@ export default async function DischargePrintPage({ params }: { params: Promise<{
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col bg-background print:max-w-none print:bg-white">
       <header className="px-4 pb-3 pt-6 print:hidden">
-        <Link href={`/patients/${id}/discharge`} className="text-[17px] text-accent">
+        <Link href={`/patients/${id}/discharge`} className="text-body text-accent">
           ‹ Discharge workspace
         </Link>
         <h1 className="mt-3 ios-large-title">Discharge summary</h1>
-        <p className="mt-1 text-[15px] text-muted">
+        <p className="mt-1 text-subhead text-muted">
           {doc.status === "finalised"
             ? "Finalised. Tap any section heading to reopen it for editing."
             : "Draft. Tap any section heading to edit that part, then come back."}

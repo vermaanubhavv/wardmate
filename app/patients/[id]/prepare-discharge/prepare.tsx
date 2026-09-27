@@ -193,16 +193,16 @@ export default function Prepare({ patientId }: { patientId: string }) {
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="flex items-center justify-center gap-2 rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink"
+        className="flex items-center justify-center gap-2 rounded-[10px] bg-accent px-4 py-3 text-body font-semibold text-accent-ink"
       >
         <Camera className="h-5 w-5" strokeWidth={2.2} />
         {pages.length === 0 ? "Add investigation reports" : "Add more reports"}
       </button>
 
-      {notice && <p className="text-[13px] leading-relaxed text-warn-fg">{notice}</p>}
+      {notice && <p className="text-footnote leading-relaxed text-warn-fg">{notice}</p>}
 
       {pages.length === 0 && (
-        <p className="text-[13px] leading-relaxed text-muted">
+        <p className="text-footnote leading-relaxed text-muted">
           Photograph the investigation reports — blood tests and the like. Each page is read on its
           own and shown to you before anything is stored. Other kinds of paper are left out.
         </p>
@@ -211,15 +211,15 @@ export default function Prepare({ patientId }: { patientId: string }) {
       {pages.map((page) => (
         <div key={page.id} className={"p-4 " + (page.status === "failed" ? "rounded-[12px] bg-critical-bg" : "ios-group")}>
           <div className="flex items-baseline justify-between gap-3">
-            <span className="truncate text-[13px] text-muted">{page.fileName}</span>
+            <span className="truncate text-footnote text-muted">{page.fileName}</span>
             {page.status === "reading" && (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-chip px-2 py-0.5 text-[12px] font-semibold text-muted">
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-chip px-2 py-0.5 text-caption font-semibold text-muted">
                 <LoaderCircle className="h-3 w-3 animate-spin" strokeWidth={2.6} />
                 Reading…
               </span>
             )}
             {page.status === "failed" && (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-critical-bg px-2 py-0.5 text-[12px] font-semibold text-critical-fg">
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-critical-bg px-2 py-0.5 text-caption font-semibold text-critical-fg">
                 <TriangleAlert className="h-3 w-3" strokeWidth={2.6} />
                 Could not read
               </span>
@@ -227,7 +227,7 @@ export default function Prepare({ patientId }: { patientId: string }) {
             {page.status === "read" && (
               <span
                 className={
-                  "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-semibold " +
+                  "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-caption font-semibold " +
                   (isInvestigation(page) ? "bg-good-bg text-good-fg" : "bg-warn-bg text-warn-fg")
                 }
               >
@@ -242,13 +242,13 @@ export default function Prepare({ patientId }: { patientId: string }) {
           </div>
 
           {page.status === "failed" && page.error && (
-            <p className="mt-2 text-[13px] leading-relaxed text-critical-fg">{page.error}</p>
+            <p className="mt-2 text-footnote leading-relaxed text-critical-fg">{page.error}</p>
           )}
 
           {page.status === "read" && (
             <>
               <label className="mt-3 flex flex-col gap-1.5">
-                <span className="text-[13px] text-muted">
+                <span className="text-footnote text-muted">
                   This page is {page.kindConfidence === "low" && "— I am not sure —"}
                 </span>
                 <select
@@ -258,7 +258,7 @@ export default function Prepare({ patientId }: { patientId: string }) {
                       prev.map((p) => (p.id === page.id ? { ...p, kind: e.target.value as PaperKind } : p))
                     )
                   }
-                  className="h-12 w-full rounded-[10px] border border-line bg-card px-3 text-[17px] outline-none focus:border-accent"
+                  className="h-12 w-full rounded-[10px] border border-line bg-card px-3 text-body outline-none focus:border-accent"
                 >
                   <option value="lab_report">An investigation report</option>
                   <option value="other">Something else — leave it out</option>
@@ -266,29 +266,29 @@ export default function Prepare({ patientId }: { patientId: string }) {
               </label>
 
               {page.unreadable && (
-                <p className="mt-2 text-[13px] leading-relaxed text-warn-fg">
+                <p className="mt-2 text-footnote leading-relaxed text-warn-fg">
                   Not read on this page: {page.unreadable}
                 </p>
               )}
 
               {page.kind === "lab_report" && page.labValues && (
-                <p className="mt-2 flex items-center gap-1.5 text-[13px] text-muted">
+                <p className="mt-2 flex items-center gap-1.5 text-footnote text-muted">
                   <FlaskConical className="h-3.5 w-3.5 text-good-fg" strokeWidth={2.2} />
                   {page.labValues.length} values read, with the ranges printed beside them.
                 </p>
               )}
 
               <details className="mt-2">
-                <summary className="cursor-pointer text-[13px] text-accent">
+                <summary className="cursor-pointer text-footnote text-accent">
                   What it read ({page.transcript.length} characters)
                 </summary>
-                <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap text-[13px] leading-relaxed text-foreground">
+                <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap text-footnote leading-relaxed text-foreground">
                   {page.transcript || "Nothing legible."}
                 </pre>
               </details>
 
               {isInvestigation(page) && (
-              <label className="mt-3 flex items-center gap-2 text-[13px] text-muted">
+              <label className="mt-3 flex items-center gap-2 text-footnote text-muted">
                 <input
                   type="checkbox"
                   checked={page.include}
@@ -312,13 +312,13 @@ export default function Prepare({ patientId }: { patientId: string }) {
             type="button"
             disabled={storing}
             onClick={() => void store()}
-            className="flex items-center justify-center gap-2 rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink disabled:opacity-60"
+            className="flex items-center justify-center gap-2 rounded-[10px] bg-accent px-4 py-3 text-body font-semibold text-accent-ink disabled:opacity-60"
           >
             {storing
               ? "Adding…"
               : `Add ${ready.length} ${ready.length === 1 ? "report" : "reports"} and open the discharge`}
           </button>
-          <p className="text-[13px] leading-relaxed text-muted">
+          <p className="text-footnote leading-relaxed text-muted">
             Everything read off a photograph is marked for you to confirm — a photograph has no
             second reading behind it the way speech does. Nothing is filled in that the papers do
             not say: the summary prints a blank where nothing was recorded.
@@ -326,7 +326,7 @@ export default function Prepare({ patientId }: { patientId: string }) {
         </>
       )}
 
-      {storeError && <p className="text-[13px] leading-relaxed text-warn-fg">{storeError}</p>}
+      {storeError && <p className="text-footnote leading-relaxed text-warn-fg">{storeError}</p>}
     </div>
   );
 }

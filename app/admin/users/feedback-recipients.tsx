@@ -74,19 +74,19 @@ export default function FeedbackRecipients({ users }: { users: User[] }) {
 
   return (
     <div className="ios-group px-4 py-3">
-      <label className="block text-[13px] font-medium" htmlFor="feedback-segment">
+      <label className="block text-footnote font-medium" htmlFor="feedback-segment">
         Feedback recipients
       </label>
       <select
         id="feedback-segment"
         value={segment}
         onChange={(event) => setSegment(event.target.value as Segment)}
-        className="mt-2 w-full rounded-lg border border-line bg-background px-3 py-2 text-[14px]"
+        className="mt-2 w-full rounded-lg border border-line bg-background px-3 py-2 text-subhead"
       >
         <option value="used">People who have used Wardmate</option>
         <option value="all">Everyone who signed up</option>
       </select>
-      <p className="mt-2 text-[12px] text-muted">
+      <p className="mt-2 text-caption text-muted">
         {emails.length} unique email{emails.length === 1 ? "" : "s"} · admin accounts excluded
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
@@ -94,7 +94,7 @@ export default function FeedbackRecipients({ users }: { users: User[] }) {
           type="button"
           onClick={copyEmails}
           disabled={emails.length === 0}
-          className="rounded-lg bg-accent px-3 py-2 text-[13px] font-medium text-accent-ink disabled:opacity-50 active:opacity-70"
+          className="rounded-lg bg-accent px-3 py-2 text-footnote font-medium text-accent-ink disabled:opacity-50 active:opacity-70"
         >
           {state === "copied" ? "Emails copied" : "Copy emails"}
         </button>
@@ -102,13 +102,13 @@ export default function FeedbackRecipients({ users }: { users: User[] }) {
           type="button"
           onClick={downloadCsv}
           disabled={emails.length === 0}
-          className="rounded-lg bg-chip px-3 py-2 text-[13px] font-medium text-foreground disabled:opacity-50 active:opacity-70"
+          className="rounded-lg bg-chip px-3 py-2 text-footnote font-medium text-foreground disabled:opacity-50 active:opacity-70"
         >
           Download CSV
         </button>
       </div>
       {state === "failed" && (
-        <p className="mt-2 text-[12px] text-orange-700">
+        <p className="mt-2 text-caption text-warn-fg">
           Could not copy automatically. Download the CSV instead.
         </p>
       )}

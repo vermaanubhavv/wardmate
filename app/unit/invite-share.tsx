@@ -45,11 +45,11 @@ export default function InviteShare({ unitName, code }: { unitName: string; code
       <button
         type="button"
         onClick={share}
-        className="mt-2 w-full rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink active:opacity-70"
+        className="mt-2 w-full rounded-[10px] bg-accent px-4 py-3 text-body font-semibold text-accent-ink active:opacity-70"
       >
         Send invite
       </button>
-      {said && <p className="mt-2 text-[13px] text-muted">{said}</p>}
+      {said && <p className="mt-2 text-footnote text-muted">{said}</p>}
     </>
   );
 }

@@ -33,7 +33,7 @@ export default function CopyForEsic({ payload }: { payload: EsicPayload }) {
       <button
         type="button"
         onClick={copy}
-        className="w-full rounded-xl bg-card px-4 py-3 text-center text-[17px] font-semibold text-accent active:opacity-70"
+        className="w-full rounded-xl bg-card px-4 py-3 text-center text-body font-semibold text-accent active:opacity-70"
       >
         {state === "copied" ? "Copied" : "Copy for hospital system"}
       </button>
@@ -42,12 +42,12 @@ export default function CopyForEsic({ payload }: { payload: EsicPayload }) {
           automatically, and a shorter prescription arriving silently is the failure this
           whole feature has to avoid. */}
       {mapped < total && (
-        <p className="mt-2 text-center text-[13px] text-orange-700">
+        <p className="mt-2 text-center text-footnote text-warn-fg">
           {total - mapped} of {total} not linked to the formulary — those stay for you to enter.
         </p>
       )}
       {state === "failed" && (
-        <p className="mt-2 text-center text-[13px] text-orange-700">
+        <p className="mt-2 text-center text-footnote text-warn-fg">
           Could not copy automatically.
         </p>
       )}

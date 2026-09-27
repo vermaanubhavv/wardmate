@@ -49,10 +49,10 @@ export default async function NewCaseHistoryPage({
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
       <header className="flex items-baseline justify-between gap-3 px-4 pb-3 pt-6">
-        <Link href="/ward" className="text-[17px] text-accent">
+        <Link href="/ward" className="text-body text-accent">
           ‹ Ward
         </Link>
-        <p className="truncate text-[13px] text-muted">
+        <p className="truncate text-footnote text-muted">
           {name}
           {patient.bed ? ` · bed ${patient.bed}` : ""}
         </p>
@@ -60,14 +60,14 @@ export default async function NewCaseHistoryPage({
 
       <main className="flex-1 px-4 pb-10 pt-2">
         <h1 className="ios-large-title">Case history</h1>
-        <p className="mt-2 text-[15px] leading-relaxed text-muted">
+        <p className="mt-2 text-subhead leading-relaxed text-muted">
           Do it now, while {name}&rsquo;s sheet is in hand — whichever way suits. You can also
           come back to it later from the patient&rsquo;s page.
         </p>
 
         {/* Route 1 — speak it against the visible format. */}
         <div className="mt-5">
-          <p className="text-[15px] font-semibold">Speak it</p>
+          <p className="text-subhead font-semibold">Speak it</p>
           <CaseHistoryCapture
             patientId={id}
             variant="speak"
@@ -80,8 +80,8 @@ export default async function NewCaseHistoryPage({
           href={`/patients/${id}/case-history`}
           className="ios-group mt-6 block px-4 py-4 active:bg-chip"
         >
-          <p className="text-[15px] font-semibold text-accent">Build it card by card</p>
-          <p className="mt-1 text-[13px] leading-relaxed text-muted">
+          <p className="text-subhead font-semibold text-accent">Build it card by card</p>
+          <p className="mt-1 text-footnote leading-relaxed text-muted">
             Walk through complaints, history and examination one card at a time. Dictate or type
             each card.
           </p>
@@ -89,7 +89,7 @@ export default async function NewCaseHistoryPage({
 
         <Link
           href={`/patients/${id}`}
-          className="mt-5 block rounded-[10px] border border-line px-4 py-3 text-center text-[15px] text-muted"
+          className="mt-5 block rounded-[10px] border border-line px-4 py-3 text-center text-subhead text-muted"
         >
           Skip for now — go to patient
         </Link>

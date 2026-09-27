@@ -175,6 +175,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const dischargeStatus = (dischargeRow?.status as "draft" | "finalised" | undefined) ?? null;
   const here = ward.findIndex((p) => p.id === patient.id);
   const next = here >= 0 ? ward[here + 1] : undefined;
+  const prev = here > 0 ? ward[here - 1] : undefined;
   const position = here >= 0 ? `${here + 1} of ${ward.length}` : null;
 
   // Who and where the patient is, dropped once here rather than at each place that reads an
@@ -396,21 +397,21 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                     />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[15px]">
+                    <p className="text-subhead">
                       {jobText}
                       <CameDue observation={o} />
                     </p>
                     {/* The words it came from, so a job is never just the app's paraphrase —
                         shown only when they say more than the job itself does. */}
                     {!quoteAddsNothing(o.value_text ?? o.label, o.source_quote) && (
-                      <p className="mt-0.5 truncate text-[13px] italic text-muted">
+                      <p className="mt-0.5 truncate text-footnote italic text-muted">
                         “{o.source_quote}”
                       </p>
                     )}
                     {/* Said again on a later round. The earlier ones are still on the record
                         below; the list just does not count one job twice. */}
                     {o.repeats > 0 && (
-                      <p className="mt-0.5 text-[13px] text-muted">
+                      <p className="mt-0.5 text-footnote text-muted">
                         said {o.repeats + 1} times — showing the latest
                       </p>
                     )}
@@ -420,7 +421,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
               })}
             </ul>
           ) : scoringTasks.length === 0 ? (
-            <p className="px-4 py-3 text-[15px] text-muted">
+            <p className="px-4 py-3 text-subhead text-muted">
               Nothing outstanding.
             </p>
           ) : null}
@@ -429,21 +430,21 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
           {doneTasks.length > 0 && (
             <details className="border-t border-line px-4 py-3">
-              <summary className="flex cursor-pointer items-center gap-1.5 text-[13px] text-good-fg">
+              <summary className="flex cursor-pointer items-center gap-1.5 text-footnote text-good-fg">
                 <Check className="h-3.5 w-3.5" strokeWidth={3} />
                 {doneTasks.length} done
               </summary>
               <ul className="mt-2 flex flex-col gap-1.5">
                 {doneTasks.map((o) => (
                   <li key={o.id} className="flex items-baseline justify-between gap-3">
-                    <span className="text-[15px] text-muted line-through truncate">
+                    <span className="text-subhead text-muted line-through truncate">
                       {o.value_text ?? o.label}
                     </span>
                     <form action={reopenTask} className="shrink-0">
                       <input type="hidden" name="observation_id" value={o.id} />
                       <input type="hidden" name="patient_id" value={patient.id} />
-                      <button className="text-[13px] text-muted underline underline-offset-4">
-                        undo
+                      <button className="tap text-footnote text-muted underline underline-offset-4">
+                        Undo
                       </button>
                     </form>
                   </li>
@@ -465,27 +466,21 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           <div className="mb-2 flex items-baseline gap-2 px-4">
             <span className="ios-group-header">Today</span>
             {missing.length > 0 && (
-              <span className="shrink-0 text-[13px] text-warn-fg tabular-nums">
+              <span className="shrink-0 text-footnote text-warn-fg tabular-nums">
                 {missing.length} not recorded
               </span>
             )}
-            <Link
-              href={`/patients/${patient.id}/note`}
-              className="ml-auto shrink-0 text-[13px] font-semibold text-accent active:opacity-60"
-            >
-              View note ›
-            </Link>
           </div>
 
           {template && routineFillable && <RoutineRoundButton patientId={patient.id} />}
 
           <details open className="ios-group [&[open]_.chev]:rotate-90">
             <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 active:bg-chip [&::-webkit-details-marker]:hidden">
-              <span className="chev shrink-0 text-[11px] text-muted transition-transform">▶</span>
+              <ChevronIcon className="chev h-3.5 w-3.5 shrink-0 text-muted transition-transform" />
               <ClipboardList className="h-4 w-4 shrink-0 text-accent" strokeWidth={2.2} />
-              <span className="text-[15px] font-semibold">SOAP</span>
+              <span className="text-subhead font-semibold">SOAP</span>
               {template && (
-                <span className="ml-auto min-w-0 truncate text-[13px] text-muted">
+                <span className="ml-auto min-w-0 truncate text-footnote text-muted">
                   {template.name}
                 </span>
               )}
@@ -550,9 +545,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           <ul className="ios-group divide-y divide-line">
             {medications.map((m) => (
               <li key={m.id} className="px-4 py-2.5">
-                <p className="text-[15px]">{m.value_text ?? m.label}</p>
+                <p className="text-subhead">{m.value_text ?? m.label}</p>
                 {!quoteAddsNothing(m.value_text ?? m.label, m.source_quote) && (
-                  <p className="mt-0.5 truncate text-[13px] italic text-muted">
+                  <p className="mt-0.5 truncate text-footnote italic text-muted">
                     “{m.source_quote}”
                   </p>
                 )}
@@ -602,7 +597,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       <section className="px-4 pb-6">
         <p className="ios-group-header mb-2 px-4">Record by date</p>
         {entries.length === 0 ? (
-          <p className="ios-group p-5 text-[15px] text-muted">
+          <p className="ios-group p-5 text-subhead text-muted">
             No earlier records yet.
           </p>
         ) : (
@@ -625,13 +620,11 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                       are not looking for, and the one day you are is nearly always this one. */}
                   <details open={i === 0} className="ios-group [&[open]_.chev]:rotate-90">
                     <summary className="flex cursor-pointer list-none items-baseline gap-2 px-4 py-3 active:bg-chip [&::-webkit-details-marker]:hidden">
-                      <span className="chev shrink-0 text-[11px] text-muted transition-transform">
-                        ▶
-                      </span>
-                      <span className="text-[15px] font-semibold">
+                      <ChevronIcon className="chev h-3.5 w-3.5 shrink-0 text-muted transition-transform" />
+                      <span className="text-subhead font-semibold">
                         {dayHeading(day.recorded_at, todayKey)}
                       </span>
-                      <span className="ml-auto shrink-0 text-[13px] text-muted tabular-nums">
+                      <span className="ml-auto shrink-0 text-footnote text-muted tabular-nums">
                         {count}
                       </span>
                     </summary>
@@ -649,10 +642,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                           must never cost the resident the transcript, the photograph, or the
                           ability to correct a mis-heard word. */}
                       <details className="border-t border-line [&[open]_.raw-chev]:rotate-90">
-                        <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-[13px] text-muted active:bg-chip [&::-webkit-details-marker]:hidden">
-                          <span className="raw-chev shrink-0 text-[11px] transition-transform">
-                            &#9654;
-                          </span>
+                        <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-footnote text-muted active:bg-chip [&::-webkit-details-marker]:hidden">
+                          <ChevronIcon className="raw-chev h-3 w-3 shrink-0 transition-transform" />
                           As recorded &mdash; evidence and corrections
                         </summary>
                         <div className="flex flex-col gap-2 px-2 pb-2">
@@ -740,16 +731,25 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       {/* A real navigation bar: back on the left, where the eye and thumb both go for it, and
           the walk to the next bed on the right. Both at iOS's size. */}
       <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-line/60 bg-background/80 px-2 pb-2.5 top-bar backdrop-blur-xl">
-        <Link href="/ward" className="flex items-center text-[17px] text-accent active:opacity-60">
+        <Link href="/ward" className="flex min-h-11 items-center text-body text-accent active:opacity-60">
           <ChevronIcon className="h-[18px] w-[18px] rotate-180" />
           Ward
         </Link>
         <div className="flex items-center gap-3 pr-2">
-          {position && <span className="text-[13px] text-muted tabular-nums">{position}</span>}
+          {position && <span className="text-footnote text-muted tabular-nums">{position}</span>}
+          {prev && (
+            <Link
+              href={`/patients/${prev.id}`}
+              aria-label="Previous patient"
+              className="flex min-h-11 items-center text-body font-medium text-accent active:opacity-60"
+            >
+              <ChevronIcon className="h-[18px] w-[18px] rotate-180" />
+            </Link>
+          )}
           {next && (
             <Link
               href={`/patients/${next.id}`}
-              className="flex items-center text-[17px] font-medium text-accent active:opacity-60"
+              className="flex min-h-11 items-center text-body font-medium text-accent active:opacity-60"
             >
               Next
               <ChevronIcon className="h-[18px] w-[18px]" />
@@ -778,7 +778,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
               </span>
             </h1>
             {patient.uhid_ip_no && (
-              <p className="mt-2 truncate pl-0.5 text-[12px] text-muted">
+              <p className="mt-2 truncate pl-0.5 text-caption text-muted">
                 <span className="uppercase tracking-wide">IP no.</span>
                 <span className="mx-1.5">·</span>
                 <span className="font-mono text-foreground/80">{patient.uhid_ip_no}</span>
@@ -809,7 +809,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                   {/* The headline is the day count and what it counts from — "POD 0 Lap chole"
                       on a surgical ward, "C2 D3 R-CHOP" on an oncology one. Both are the one
                       fact a round leads with; the diagnosis drops to a parenthetical below. */}
-                  <p className="text-[19px] font-bold uppercase leading-snug">
+                  <p className="text-title3 font-bold leading-snug">
                     {day.text}
                     {day.clock === "cycle"
                       ? patient.regimen
@@ -819,7 +819,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                         ? ` ${procedure}`
                         : ""}
                   </p>
-                  <p className="mt-0.5 text-[13px] text-muted">
+                  <p className="mt-0.5 text-footnote text-muted">
                     {/* A derived diagnosis reads exactly like a recorded one. It is a fixed
                         mapping from the operation — see lib/diagnosis-from-procedure.ts — and
                         the unit reads "lap chole" as gall stone disease without being told so
@@ -829,13 +829,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 </>
               ) : (
                 <>
-                  <p className="text-[19px] font-bold uppercase leading-snug">
+                  <p className="text-title3 font-bold leading-snug">
                     {diagnosis ?? "Diagnosis not recorded"}
                   </p>
                   {(() => {
                     const managementChoice = MANAGEMENT_CHOICES.find((c) => c.value === patient.management);
                     return managementChoice ? (
-                      <p className="mt-0.5 text-[13px] text-muted">({managementChoice.label})</p>
+                      <p className="mt-0.5 text-footnote text-muted">({managementChoice.label})</p>
                     ) : null;
                   })()}
                 </>
@@ -843,9 +843,10 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             </div>
             <Link
               href={`/patients/${patient.id}/note`}
-              className="shrink-0 pt-0.5 text-[13px] font-semibold text-accent active:opacity-60"
+              className="tap flex shrink-0 items-center pt-0.5 text-footnote font-semibold text-accent active:opacity-60"
             >
-              View note ›
+              View note
+              <ChevronIcon className="h-3 w-3" />
             </Link>
           </div>
           <SummaryRow
@@ -873,7 +874,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             content: todayPanel,
           },
           { key: "history", label: "History", content: historyPanel },
-          { key: "investigations", label: "Investigations", content: investigationsPanel },
+          { key: "investigations", label: "Tests", content: investigationsPanel },
           { key: "discharge", label: "Discharge", content: dischargePanel },
         ]}
       />
@@ -912,34 +913,32 @@ function CaseHistorySection({
   return (
     <section className="px-4 pb-6">
       <details className="ios-group [&[open]_.case-history-chev]:rotate-90">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[15px] font-semibold active:bg-chip [&::-webkit-details-marker]:hidden">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-subhead font-semibold active:bg-chip [&::-webkit-details-marker]:hidden">
           <span>Case history</span>
           <span className="flex items-center gap-2">
-            <span className="text-[12px] font-normal text-muted">
+            <span className="text-caption font-normal text-muted">
               {entries.length > 0 ? "Recorded" : "Not recorded"}
             </span>
-            <span className="case-history-chev text-xl font-normal text-muted transition-transform">
-              ›
-            </span>
+            <ChevronIcon className="case-history-chev h-4 w-4 text-muted transition-transform" />
           </span>
         </summary>
 
         <div className="border-t border-line">
           <Link
             href={`/patients/${patientId}/case-history`}
-            className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 text-[15px] font-semibold text-accent active:bg-chip"
+            className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 text-subhead font-semibold text-accent active:bg-chip"
           >
             <span>{entries.length > 0 ? "Review case history" : "Build case history"}</span>
-            <span className="text-xl font-normal">›</span>
+            <ChevronIcon className="h-4 w-4" />
           </Link>
 
           {entries.length > 0 && (
             <Link
               href={`/patients/${patientId}/case-history/print`}
-              className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 text-[14px] font-medium text-accent active:bg-chip"
+              className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 text-subhead font-medium text-accent active:bg-chip"
             >
               <span>Print / save as PDF</span>
-              <span className="text-xl font-normal">›</span>
+              <ChevronIcon className="h-4 w-4" />
             </Link>
           )}
 
@@ -957,8 +956,8 @@ function CaseHistorySection({
               mis-heard word — those all live on the entry card. */}
           {entries.length > 0 ? (
             <details className="border-t border-line [&[open]_.raw-chev]:rotate-90">
-              <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-[13px] text-muted active:bg-chip [&::-webkit-details-marker]:hidden">
-                <span className="raw-chev shrink-0 text-[11px] transition-transform">&#9654;</span>
+              <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-footnote text-muted active:bg-chip [&::-webkit-details-marker]:hidden">
+                <ChevronIcon className="raw-chev h-3 w-3 shrink-0 transition-transform" />
                 As recorded &mdash; evidence and corrections
               </summary>
               {entries.map((entry) => (
@@ -995,7 +994,7 @@ function CaseHistorySection({
               ))}
             </details>
           ) : (
-            <p className="px-4 py-3 text-[14px] text-muted">No case history recorded yet.</p>
+            <p className="px-4 py-3 text-subhead text-muted">No case history recorded yet.</p>
           )}
           <CaseHistoryCapture patientId={patientId} hasExisting={entries.length > 0} />
         </div>
@@ -1028,7 +1027,7 @@ function DaySoap({
   })).filter((g) => g.items.length > 0);
 
   if (groups.length === 0) {
-    return <p className="px-4 py-3 text-[14px] text-muted">Nothing structured from this day.</p>;
+    return <p className="px-4 py-3 text-subhead text-muted">Nothing structured from this day.</p>;
   }
 
   return (
@@ -1053,7 +1052,7 @@ function DaySoap({
             />
           ) : (
             items.map((o) => (
-              <p key={o.id} className="text-[15px] leading-relaxed">
+              <p key={o.id} className="text-subhead leading-relaxed">
                 {o.value_text ?? o.label}
               </p>
             ))
@@ -1154,7 +1153,7 @@ function VitalsPanel({ observations }: { observations: Observation[] }) {
     <section className="px-4 pb-6">
       <div className="mb-2 flex items-baseline gap-2 px-4">
         <p className="ios-group-header">Vitals</p>
-        <p className="text-[13px] text-muted">{vitalsWhen(latestTime)}</p>
+        <p className="text-footnote text-muted">{vitalsWhen(latestTime)}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
@@ -1174,10 +1173,10 @@ function VitalsPanel({ observations }: { observations: Observation[] }) {
                 <Icon className="h-[16px] w-[16px]" strokeWidth={2.2} />
               </span>
               <div className="min-w-0">
-                <span className="block text-[11px] uppercase tracking-wide text-muted">{t.label}</span>
+                <span className="block text-caption2 uppercase tracking-wide text-muted">{t.label}</span>
                 <span
                   className={
-                    "text-[17px] font-semibold tabular-nums " + (t.flag ? "text-critical-fg" : "text-foreground")
+                    "text-body font-semibold tabular-nums " + (t.flag ? "text-critical-fg" : "text-foreground")
                   }
                 >
                   {t.value}
@@ -1185,7 +1184,7 @@ function VitalsPanel({ observations }: { observations: Observation[] }) {
                 {/* The range rides along with the flag rather than the flag standing alone —
                     a colour with no stated reason is exactly the "trust me" the rival app asks
                     for. This one shows its work. */}
-                {t.flag && <span className="ml-1 text-[11px] font-medium text-critical-fg">({t.range})</span>}
+                {t.flag && <span className="ml-1 text-caption2 font-medium text-critical-fg">({t.range})</span>}
               </div>
             </div>
           );
@@ -1194,13 +1193,13 @@ function VitalsPanel({ observations }: { observations: Observation[] }) {
 
       {earlier.length > 0 && (
         <details className="mt-2 [&[open]_.vitals-chev]:rotate-90">
-          <summary className="flex cursor-pointer list-none items-center gap-2 px-1 text-[13px] text-muted active:opacity-60 [&::-webkit-details-marker]:hidden">
-            <span className="vitals-chev text-[11px] transition-transform">▶</span>
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-1 text-footnote text-muted active:opacity-60 [&::-webkit-details-marker]:hidden">
+            <ChevronIcon className="vitals-chev h-3 w-3 transition-transform" />
             {earlier.length} earlier {earlier.length === 1 ? "reading" : "readings"}
           </summary>
           <ul className="mt-1.5 ios-group divide-y divide-line">
             {earlier.map(([time, obs]) => (
-              <li key={time} className="px-4 py-2.5 text-[14px]">
+              <li key={time} className="px-4 py-2.5 text-subhead">
                 <span className="text-muted">{vitalsWhen(time)}</span>
                 {"  ·  "}
                 {obs.map((o) => `${o.label} ${o.value_text}`).join("  ·  ")}
@@ -1244,7 +1243,7 @@ function PacSection({ pac }: { pac: Observation[] }) {
   return (
     <section className="px-4 pb-6">
       <details className="ios-group [&[open]_.pac-chev]:rotate-90">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[15px] font-semibold active:bg-chip [&::-webkit-details-marker]:hidden">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-subhead font-semibold active:bg-chip [&::-webkit-details-marker]:hidden">
           <span className="flex items-center gap-2">
             <Stethoscope className="h-4 w-4 text-accent" strokeWidth={2.2} />
             Pre-anaesthetic checkup
@@ -1254,39 +1253,37 @@ function PacSection({ pac }: { pac: Observation[] }) {
                 word is the entire reason anyone opens this patient. */}
             <span
               className={
-                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-semibold " +
+                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-caption font-semibold " +
                 (meta ? meta.chip : "bg-warn-bg text-warn-fg")
               }
             >
               {meta ? meta.word : "Not recorded"}
             </span>
-            <span className="pac-chev text-xl font-normal text-muted transition-transform">
-              &#8250;
-            </span>
+            <ChevronIcon className="pac-chev h-4 w-4 text-muted transition-transform" />
           </span>
         </summary>
 
         <div className="border-t border-line px-4 py-3">
           {!latest || !meta ? (
-            <p className="text-[15px] text-orange-700">
+            <p className="text-subhead text-warn-fg">
               Nobody has said whether this patient is fit for surgery.
             </p>
           ) : (
             <>
               {/* The chip above is the app's reading of the sentence. This is the sentence,
                   kept beside it and never replaced by it. */}
-              <p className="text-[15px] leading-snug">{latest.value_text ?? latest.label}</p>
-              <p className="mt-0.5 text-[13px] text-muted">{pacWhen(latest.recorded_at)}</p>
+              <p className="text-subhead leading-snug">{latest.value_text ?? latest.label}</p>
+              <p className="mt-0.5 text-footnote text-muted">{pacWhen(latest.recorded_at)}</p>
 
               {!quoteAddsNothing(latest.value_text ?? latest.label, latest.source_quote) && (
-                <p className="mt-1 text-[13px] italic text-muted">
+                <p className="mt-1 text-footnote italic text-muted">
                   &ldquo;{latest.source_quote}&rdquo;
                 </p>
               )}
 
               {(latest.pac_verdict === "fit_with_conditions" ||
                 latest.pac_verdict === "unfit") && (
-                <p className="mt-2 text-[13px] text-muted">
+                <p className="mt-2 text-footnote text-muted">
                   Anything the anaesthetist asked for is on the to-do list, one job at a time.
                 </p>
               )}
@@ -1296,7 +1293,7 @@ function PacSection({ pac }: { pac: Observation[] }) {
               {earlier.length > 0 && (
                 <ul className="mt-3 border-t border-line pt-2">
                   {earlier.map((o) => (
-                    <li key={o.id} className="mt-1.5 first:mt-0 text-[13px] text-muted">
+                    <li key={o.id} className="mt-1.5 first:mt-0 text-footnote text-muted">
                       <span className="font-medium">
                         {o.pac_verdict ? PAC_META[o.pac_verdict].word : "Recorded"}
                       </span>
@@ -1446,7 +1443,7 @@ const SOAP_LOOK: Record<(typeof SOAP_ORDER)[number], { icon: LucideIcon; chip: s
 function SoapHeading({ section, label }: { section: (typeof SOAP_ORDER)[number]; label: string }) {
   const { icon: Icon, chip } = SOAP_LOOK[section];
   return (
-    <p className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-wide text-muted">
+    <p className="mb-1 flex items-center gap-1.5 text-caption font-semibold uppercase tracking-wide text-muted">
       <span className={"grid h-[18px] w-[18px] place-items-center rounded-[5px] " + chip}>
         <Icon className="h-[11px] w-[11px]" strokeWidth={2.6} />
       </span>
@@ -1502,7 +1499,7 @@ function CameDue({ observation }: { observation: Observation }) {
   const effective = effectiveUrgency(observation);
   if (!effective.note) return null;
 
-  return <span className="ml-2 whitespace-nowrap text-xs text-critical-fg">— {effective.note}</span>;
+  return <span className="ml-2 whitespace-nowrap text-caption text-critical-fg">— {effective.note}</span>;
 }
 
 /** A fact in the patient identity block. The long text gets room; the label stays scannable. */
@@ -1517,8 +1514,8 @@ function SummaryRow({
     <div className="ios-row flex items-start gap-2.5 px-4 py-3">
       <HeartPulse className="mt-0.5 h-4 w-4 shrink-0 text-muted" strokeWidth={2.2} />
       <div className="min-w-0">
-        <dt className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">{label}</dt>
-        <dd className="mt-0.5 text-[16px] leading-snug">{value}</dd>
+        <dt className="text-caption2 font-medium uppercase tracking-[0.08em] text-muted">{label}</dt>
+        <dd className="mt-0.5 text-callout leading-snug">{value}</dd>
       </div>
     </div>
   );
@@ -1548,10 +1545,10 @@ function CountTile({
         <Icon className="h-[15px] w-[15px]" strokeWidth={2.3} />
       </span>
       <span>
-        <span className={"block text-[20px] font-bold leading-none tabular-nums " + (warn ? "text-warn-fg" : "text-foreground")}>
+        <span className={"block text-title3 font-bold leading-none tabular-nums " + (warn ? "text-warn-fg" : "text-foreground")}>
           {value}
         </span>
-        <span className={"mt-0.5 block text-[12px] " + (warn ? "text-warn-fg" : "text-muted")}>{label}</span>
+        <span className={"mt-0.5 block text-caption " + (warn ? "text-warn-fg" : "text-muted")}>{label}</span>
       </span>
     </div>
   );

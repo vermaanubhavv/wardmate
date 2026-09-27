@@ -38,7 +38,7 @@ function Figure({
       <svg viewBox={viewBox} style={{ height: `${height}mm` }} className="w-auto" role="img" aria-label={caption}>
         {children}
       </svg>
-      <figcaption className="mt-0.5 text-[8.5px] font-semibold uppercase tracking-wide">{caption}</figcaption>
+      <figcaption className="mt-0.5 text-caption2 font-semibold uppercase tracking-wide">{caption}</figcaption>
     </figure>
   );
 }
@@ -299,7 +299,7 @@ export function ExamDiagrams({ specialty }: { specialty: string }) {
   return (
     <div>
       <div className="flex items-end justify-evenly gap-4">{d.figures}</div>
-      {d.note && <p className="mt-1 text-center text-[10.5px]">{d.note}</p>}
+      {d.note && <p className="mt-1 text-center text-caption2">{d.note}</p>}
     </div>
   );
 }

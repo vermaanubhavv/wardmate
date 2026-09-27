@@ -213,7 +213,7 @@ export default function OneOff({
   if (doc) {
     return (
       <div className="flex flex-col gap-3">
-        <p className="text-[13px] leading-relaxed text-muted print:hidden">
+        <p className="text-footnote leading-relaxed text-muted print:hidden">
           Nothing here has been stored. Print or save it now — leaving this screen loses it.
         </p>
         <DischargeSheet doc={doc} wardId="" patientId="" formularyAvailable={false} />
@@ -223,7 +223,7 @@ export default function OneOff({
         <button
           type="button"
           onClick={() => setDoc(null)}
-          className="rounded-[10px] border border-line px-4 py-3 text-[15px] print:hidden"
+          className="rounded-[10px] border border-line px-4 py-3 text-subhead print:hidden"
         >
           Back to editing
         </button>
@@ -239,7 +239,7 @@ export default function OneOff({
 
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-[13px] leading-relaxed text-muted">
+        <p className="text-footnote leading-relaxed text-muted">
           {usedTemplateLabel ? `Filled from the ${usedTemplateLabel} template. ` : ""}
           Replace every <span className="font-mono">[ … ]</span> with the patient&rsquo;s details.
           Nothing is stored.
@@ -286,7 +286,7 @@ export default function OneOff({
           {CONDITION_VARIABLES.map((v) => {
             const val = d.conditionAtDischarge.vars[v.key];
             return (
-              <label key={v.key} className="flex items-center gap-2 text-[14px]">
+              <label key={v.key} className="flex items-center gap-2 text-subhead">
                 <input
                   type="checkbox"
                   checked={val === true}
@@ -320,22 +320,22 @@ export default function OneOff({
                   <Field label="Frequency" value={m.frequency} onChange={(v) => setM({ frequency: v })} />
                   <Field label="Duration" value={m.duration} onChange={(v) => setM({ duration: v })} />
                   <label className="flex flex-col gap-1">
-                    <span className="text-[13px] text-muted">Status</span>
-                    <select value={m.status} onChange={(e) => setM({ status: e.target.value as MedicationStatus })} className="h-11 rounded-[10px] border border-line bg-card px-2 text-[15px] outline-none">
+                    <span className="text-footnote text-muted">Status</span>
+                    <select value={m.status} onChange={(e) => setM({ status: e.target.value as MedicationStatus })} className="h-11 rounded-[10px] border border-line bg-card px-2 text-subhead outline-none">
                       {MEDICATION_STATUSES.map((s) => (
                         <option key={s.value} value={s.value}>{s.label}</option>
                       ))}
                     </select>
                   </label>
                 </div>
-                <button type="button" onClick={() => set({ medications: d.medications.filter((_, j) => j !== i) })} className="self-start text-[13px] text-muted">Remove</button>
+                <button type="button" onClick={() => set({ medications: d.medications.filter((_, j) => j !== i) })} className="self-start text-footnote text-muted">Remove</button>
               </div>
             );
           })}
           <button
             type="button"
             onClick={() => set({ medications: [...d.medications, { id: uid(), generic: "", strength: null, dose: null, route: null, frequency: null, duration: null, indication: null, status: "new", reason: null, drugKey: "", source: "resident" }] })}
-            className="self-start text-[13px] font-medium text-accent"
+            className="self-start text-footnote font-medium text-accent"
           >
             + Add medication
           </button>
@@ -350,7 +350,7 @@ export default function OneOff({
         </Editor>
 
         <Editor title="Advice">
-          <label className="flex items-center gap-2 text-[14px]">
+          <label className="flex items-center gap-2 text-subhead">
             <input type="checkbox" checked={d.advice.included} onChange={(e) => set({ advice: { ...d.advice, included: e.target.checked } })} />
             Include the advice section
           </label>
@@ -359,18 +359,18 @@ export default function OneOff({
               <div key={a.id} className="flex flex-col gap-1 rounded-[10px] border border-line p-2">
                 <Field label="Module" value={a.module} onChange={(v) => set({ advice: { ...d.advice, items: d.advice.items.map((x, j) => (j === i ? { ...x, module: v } : x)) } })} />
                 <Area value={a.text} rows={2} onChange={(v) => set({ advice: { ...d.advice, items: d.advice.items.map((x, j) => (j === i ? { ...x, text: v } : x)) } })} />
-                <button type="button" onClick={() => set({ advice: { ...d.advice, items: d.advice.items.filter((_, j) => j !== i) } })} className="self-start text-[13px] text-muted">Remove</button>
+                <button type="button" onClick={() => set({ advice: { ...d.advice, items: d.advice.items.filter((_, j) => j !== i) } })} className="self-start text-footnote text-muted">Remove</button>
               </div>
             ))}
           {d.advice.included && (
-            <button type="button" onClick={() => set({ advice: { ...d.advice, items: [...d.advice.items, { id: uid(), module: "", text: "" }] } })} className="self-start text-[13px] font-medium text-accent">
+            <button type="button" onClick={() => set({ advice: { ...d.advice, items: [...d.advice.items, { id: uid(), module: "", text: "" }] } })} className="self-start text-footnote font-medium text-accent">
               + Add advice
             </button>
           )}
         </Editor>
 
         <Editor title="When to seek medical attention (red flags)">
-          <label className="flex items-center gap-2 text-[14px]">
+          <label className="flex items-center gap-2 text-subhead">
             <input type="checkbox" checked={d.redFlags.included} onChange={(e) => set({ redFlags: { ...d.redFlags, included: e.target.checked } })} />
             Include the red-flags section
           </label>
@@ -385,12 +385,12 @@ export default function OneOff({
           <Field label="Department" value={d.authentication.department} onChange={(v) => set({ authentication: { ...d.authentication, department: v } })} />
         </Editor>
 
-        {error && <p className="text-[13px] text-orange-700">{error}</p>}
+        {error && <p className="text-footnote text-warn-fg">{error}</p>}
         <div className="flex gap-2">
-          <button type="button" onClick={() => setDraft(null)} className="flex-1 rounded-[10px] border border-line px-4 py-3 text-[15px]">
+          <button type="button" onClick={() => setDraft(null)} className="flex-1 rounded-[10px] border border-line px-4 py-3 text-subhead">
             Back to the papers
           </button>
-          <button type="button" disabled={building} onClick={() => void preview()} className="flex-1 rounded-[10px] bg-accent px-4 py-3 text-[15px] font-semibold text-accent-ink disabled:opacity-60">
+          <button type="button" disabled={building} onClick={() => void preview()} className="flex-1 rounded-[10px] bg-accent px-4 py-3 text-subhead font-semibold text-accent-ink disabled:opacity-60">
             {building ? "Rendering…" : "Preview summary"}
           </button>
         </div>
@@ -401,13 +401,13 @@ export default function OneOff({
   // --- papers + identity + template card ---------------------------------------
   const field = (key: keyof typeof identity, label: string, placeholder?: string, type = "text") => (
     <label className="flex flex-1 flex-col gap-1.5">
-      <span className="text-[13px] text-muted">{label}</span>
+      <span className="text-footnote text-muted">{label}</span>
       <input
         type={type}
         value={identity[key]}
         placeholder={placeholder}
         onChange={(e) => setIdentity((p) => ({ ...p, [key]: e.target.value }))}
-        className="h-12 w-full rounded-[10px] border border-line bg-card px-3 text-[17px] outline-none focus:border-accent"
+        className="h-12 w-full rounded-[10px] border border-line bg-card px-3 text-body outline-none focus:border-accent"
       />
     </label>
   );
@@ -429,7 +429,7 @@ export default function OneOff({
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink"
+        className="rounded-[10px] bg-accent px-4 py-3 text-body font-semibold text-accent-ink"
       >
         {pages.length === 0 ? "Add the papers" : "Add more papers"}
       </button>
@@ -437,21 +437,21 @@ export default function OneOff({
       {pages.map((page) => (
         <div key={page.id} className="ios-group p-4">
           <div className="flex items-baseline justify-between gap-3">
-            <span className="truncate text-[13px] text-muted">{page.fileName}</span>
-            {page.status === "reading" && <span className="shrink-0 text-[13px] text-muted">Reading…</span>}
-            {page.status === "failed" && <span className="shrink-0 text-[13px] text-orange-700">Could not read</span>}
+            <span className="truncate text-footnote text-muted">{page.fileName}</span>
+            {page.status === "reading" && <span className="shrink-0 text-footnote text-muted">Reading…</span>}
+            {page.status === "failed" && <span className="shrink-0 text-footnote text-warn-fg">Could not read</span>}
           </div>
           {page.status === "failed" && page.error && (
-            <p className="mt-2 text-[13px] leading-relaxed text-orange-700">{page.error}</p>
+            <p className="mt-2 text-footnote leading-relaxed text-warn-fg">{page.error}</p>
           )}
           {page.status === "read" && (
             <>
               <label className="mt-3 flex flex-col gap-1.5">
-                <span className="text-[13px] text-muted">This page is {page.kindConfidence === "low" && "— I am not sure —"}</span>
+                <span className="text-footnote text-muted">This page is {page.kindConfidence === "low" && "— I am not sure —"}</span>
                 <select
                   value={page.kind}
                   onChange={(e) => setPages((prev) => prev.map((p) => (p.id === page.id ? { ...p, kind: e.target.value as PaperKind } : p)))}
-                  className="h-12 w-full rounded-[10px] border border-line bg-card px-3 text-[17px] outline-none focus:border-accent"
+                  className="h-12 w-full rounded-[10px] border border-line bg-card px-3 text-body outline-none focus:border-accent"
                 >
                   {PAPER_KINDS.map((k) => (
                     <option key={k.kind} value={k.kind}>{k.label}</option>
@@ -459,13 +459,13 @@ export default function OneOff({
                 </select>
               </label>
               {page.unreadable && (
-                <p className="mt-2 text-[13px] leading-relaxed text-orange-700">Not read on this page: {page.unreadable}</p>
+                <p className="mt-2 text-footnote leading-relaxed text-warn-fg">Not read on this page: {page.unreadable}</p>
               )}
               <details className="mt-2">
-                <summary className="cursor-pointer text-[13px] text-accent">What it read ({page.transcript.length} characters)</summary>
-                <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap text-[13px] leading-relaxed">{page.transcript || "Nothing legible."}</pre>
+                <summary className="cursor-pointer text-footnote text-accent">What it read ({page.transcript.length} characters)</summary>
+                <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap text-footnote leading-relaxed">{page.transcript || "Nothing legible."}</pre>
               </details>
-              <label className="mt-3 flex items-center gap-2 text-[13px] text-muted">
+              <label className="mt-3 flex items-center gap-2 text-footnote text-muted">
                 <input type="checkbox" checked={page.include} onChange={(e) => setPages((prev) => prev.map((p) => (p.id === page.id ? { ...p, include: e.target.checked } : p)))} />
                 Use this page
               </label>
@@ -475,7 +475,7 @@ export default function OneOff({
       ))}
 
       <section className="ios-group flex flex-col gap-3 p-4">
-        <p className="text-[13px] text-muted">Who is this summary for? Typed, not read off the papers.</p>
+        <p className="text-footnote text-muted">Who is this summary for? Typed, not read off the papers.</p>
         {field("name", "Name", "As it should print")}
         <div className="flex gap-3">
           {field("age", "Age", "Years", "number")}
@@ -495,15 +495,15 @@ export default function OneOff({
 
       {haveSubject && (
         <section className="ios-group flex flex-col gap-2 p-4">
-          <p className="text-[15px] font-medium">Discharge template</p>
-          <p className="text-[13px] text-muted">
+          <p className="text-subhead font-medium">Discharge template</p>
+          <p className="text-footnote text-muted">
             The standard sections for this diagnosis — advice, red flags, follow-up, the
             operation skeleton — arrive pre-filled with blanks for you to complete.
           </p>
           <select
             value={templateKey}
             onChange={(e) => setTemplateKey(e.target.value)}
-            className="h-12 w-full rounded-[10px] border border-line bg-card px-3 text-[17px] outline-none focus:border-accent"
+            className="h-12 w-full rounded-[10px] border border-line bg-card px-3 text-body outline-none focus:border-accent"
           >
             <option value="auto">Match automatically from the diagnosis / procedure</option>
             <option value="none">No template — start blank</option>
@@ -519,13 +519,13 @@ export default function OneOff({
           type="button"
           disabled={building}
           onClick={() => void build()}
-          className="rounded-[10px] bg-accent px-4 py-3 text-[17px] font-semibold text-accent-ink disabled:opacity-60"
+          className="rounded-[10px] bg-accent px-4 py-3 text-body font-semibold text-accent-ink disabled:opacity-60"
         >
           {building ? "Building…" : `Build the summary${chosenLabel ? ` — ${chosenLabel}` : ""}`}
         </button>
       )}
 
-      {error && <p className="text-[13px] leading-relaxed text-orange-700">{error}</p>}
+      {error && <p className="text-footnote leading-relaxed text-warn-fg">{error}</p>}
     </div>
   );
 }
@@ -533,7 +533,7 @@ export default function OneOff({
 function Editor({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="ios-group flex flex-col gap-2 p-4">
-      <p className="text-[15px] font-medium">{title}</p>
+      <p className="text-subhead font-medium">{title}</p>
       {children}
     </section>
   );
