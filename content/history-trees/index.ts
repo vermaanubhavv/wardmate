@@ -96,6 +96,11 @@ import { tbTreatmentProblemV1 } from "@/content/history-trees/tb-treatment-probl
 import { roadTrafficAccidentV1 } from "@/content/history-trees/road-traffic-accident.v1";
 import { heatIllnessV1 } from "@/content/history-trees/heat-illness.v1";
 import { animalBiteV1 } from "@/content/history-trees/animal-bite.v1";
+import { wateringEyeV1 } from "@/content/history-trees/watering-eye.v1";
+import { squintV1 } from "@/content/history-trees/squint.v1";
+import { ptosisV1 } from "@/content/history-trees/ptosis.v1";
+import { flashesFloatersV1 } from "@/content/history-trees/flashes-floaters.v1";
+import { proptosisV1 } from "@/content/history-trees/proptosis.v1";
 
 /**
  * Every complaint tree the app ships, every version. Adding a complaint is a new file beside
@@ -202,4 +207,9 @@ export const HISTORY_TREES: readonly HistoryTree[] = [
   roadTrafficAccidentV1,
   heatIllnessV1,
   animalBiteV1,
+  wateringEyeV1,
+  squintV1,
+  ptosisV1,
+  flashesFloatersV1,
+  proptosisV1,
 ];

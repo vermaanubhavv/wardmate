@@ -107,7 +107,7 @@ Eye ward — what the words mean here:
 
   // The two eye trees first. Headache and polyuria follow because this ward is where an acute
   // angle closure and an undiagnosed diabetes are often first met.
-  historyTreeIds: ["red_eye", "vision_loss", "double_vision", "eyelid_swelling", "eye_injury", "headache", "polyuria", "limb_injury", "fever"],
+  historyTreeIds: ["red_eye", "vision_loss", "double_vision", "eyelid_swelling", "eye_injury", "watering_eye", "flashes_floaters", "squint", "ptosis", "proptosis", "headache", "polyuria", "limb_injury", "fever"],
 
   // Examination checklists, in the order this ward examines — see types.ts.
   examIds: ["eye", "general_physical", "neurological"],
