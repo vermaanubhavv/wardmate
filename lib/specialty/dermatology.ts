@@ -102,6 +102,9 @@ Skin ward and clinic — what the words mean here:
   // The skin complaint first, then the febrile rash, then what walks into the same clinic.
   historyTreeIds: [
     "skin_lesion",
+    "blistering_rash",
+    "erythroderma",
+    "hypopigmented_patch",
     "fever_with_rash",
     "leg_ulcer",
     "lump",

@@ -129,5 +129,5 @@ Burns and plastic surgery ward — what the words mean here:
   lexiconSpecialty: "burns_plastic_surgery",
 
   // The burn first, then the injuries and wounds this unit also takes.
-  historyTreeIds: ["burns", "limb_injury", "leg_ulcer", "lump", "shock", "fever", "head_injury"],
+  historyTreeIds: ["burns", "hand_injury", "pressure_sore", "post_burn_contracture", "limb_injury", "leg_ulcer", "lump", "shock", "fever", "head_injury"],
 };

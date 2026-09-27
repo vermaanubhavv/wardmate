@@ -103,6 +103,8 @@ export const DUTTA_OBSTETRICS: Reference = { title: "DC Dutta's Textbook of Obst
 export const SHAW_GYNAECOLOGY: Reference = { title: "Shaw's Textbook of Gynaecology — the gynaecological history", source: "Elsevier (textbook)" };
 export const GHAI_PAEDIATRICS: Reference = { title: "Ghai Essential Pediatrics — history taking in children", source: "CBS (textbook)" };
 export const IMNCI: Reference = { title: "Integrated Management of Neonatal and Childhood Illness (IMNCI) — danger signs and assessment", source: "Ministry of Health and Family Welfare, India / WHO (guideline)" };
+export const NLEP: Reference = { title: "National Leprosy Eradication Programme — operational guidelines, case detection", source: "Ministry of Health and Family Welfare, India (guideline)" };
+export const GRABB_SMITH: Reference = { title: "Grabb and Smith's Plastic Surgery — assessment of the patient", source: "Wolters Kluwer (textbook)" };
 export const BAILEY_LOVE: Reference = { title: "Bailey & Love's Short Practice of Surgery — history and examination of the surgical patient", source: "CRC Press (textbook)" };
 
 /**

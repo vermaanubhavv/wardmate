@@ -72,6 +72,15 @@ import { foreignBodyEntV1 } from "@/content/history-trees/foreign-body-ent.v1";
 import { doubleVisionV1 } from "@/content/history-trees/double-vision.v1";
 import { eyelidSwellingV1 } from "@/content/history-trees/eyelid-swelling.v1";
 import { eyeInjuryV1 } from "@/content/history-trees/eye-injury.v1";
+import { substanceUseV1 } from "@/content/history-trees/substance-use.v1";
+import { anxietyV1 } from "@/content/history-trees/anxiety.v1";
+import { memoryLossV1 } from "@/content/history-trees/memory-loss.v1";
+import { blisteringRashV1 } from "@/content/history-trees/blistering-rash.v1";
+import { erythrodermaV1 } from "@/content/history-trees/erythroderma.v1";
+import { hypopigmentedPatchV1 } from "@/content/history-trees/hypopigmented-patch.v1";
+import { handInjuryV1 } from "@/content/history-trees/hand-injury.v1";
+import { pressureSoreV1 } from "@/content/history-trees/pressure-sore.v1";
+import { postBurnContractureV1 } from "@/content/history-trees/post-burn-contracture.v1";
 
 /**
  * Every complaint tree the app ships, every version. Adding a complaint is a new file beside
@@ -154,4 +163,13 @@ export const HISTORY_TREES: readonly HistoryTree[] = [
   doubleVisionV1,
   eyelidSwellingV1,
   eyeInjuryV1,
+  substanceUseV1,
+  anxietyV1,
+  memoryLossV1,
+  blisteringRashV1,
+  erythrodermaV1,
+  hypopigmentedPatchV1,
+  handInjuryV1,
+  pressureSoreV1,
+  postBurnContractureV1,
 ];

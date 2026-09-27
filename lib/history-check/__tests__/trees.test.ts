@@ -6,7 +6,7 @@ describe("tree registry", () => {
   it("lists every shipped complaint once and resolves by id and version", () => {
     const trees = listTrees();
     const ids = trees.map((t) => t.id);
-    for (const want of ["fever", "chest_pain", "breathlessness", "abdominal_pain", "jaundice", "cough", "oedema", "headache", "altered_sensorium", "limb_weakness", "diarrhoea", "generalised_weakness", "giddiness", "decreased_urine_output", "constipation", "abdominal_distension", "lump", "bleeding_per_rectum", "burning_micturition", "loss_of_weight_appetite", "palpitations", "joint_pain", "haematemesis", "polyuria", "low_back_pain", "sore_throat", "fever_with_rash", "poisoning_snakebite", "dysphagia", "groin_swelling", "breast_lump", "anorectal_pain", "leg_ulcer", "scrotal_swelling", "head_injury", "shock", "paediatric_fever", "paediatric_diarrhoea", "paediatric_breathing", "paediatric_seizure", "bleeding_pv", "vaginal_discharge", "labour_pains", "febrile_neutropenia", "haematuria", "limb_injury", "thyroid_swelling", "post_op_problem", "burns", "reduced_fetal_movements", "vomiting_in_pregnancy", "mass_per_vaginum", "sick_newborn", "poor_weight_gain", "paediatric_abdominal_pain", "nasal_obstruction", "earache", "foreign_body_ent", "double_vision", "eyelid_swelling", "eye_injury"]) {
+    for (const want of ["fever", "chest_pain", "breathlessness", "abdominal_pain", "jaundice", "cough", "oedema", "headache", "altered_sensorium", "limb_weakness", "diarrhoea", "generalised_weakness", "giddiness", "decreased_urine_output", "constipation", "abdominal_distension", "lump", "bleeding_per_rectum", "burning_micturition", "loss_of_weight_appetite", "palpitations", "joint_pain", "haematemesis", "polyuria", "low_back_pain", "sore_throat", "fever_with_rash", "poisoning_snakebite", "dysphagia", "groin_swelling", "breast_lump", "anorectal_pain", "leg_ulcer", "scrotal_swelling", "head_injury", "shock", "paediatric_fever", "paediatric_diarrhoea", "paediatric_breathing", "paediatric_seizure", "bleeding_pv", "vaginal_discharge", "labour_pains", "febrile_neutropenia", "haematuria", "limb_injury", "thyroid_swelling", "post_op_problem", "burns", "reduced_fetal_movements", "vomiting_in_pregnancy", "mass_per_vaginum", "sick_newborn", "poor_weight_gain", "paediatric_abdominal_pain", "nasal_obstruction", "earache", "foreign_body_ent", "double_vision", "eyelid_swelling", "eye_injury", "substance_use", "anxiety", "memory_loss", "blistering_rash", "erythroderma", "hypopigmented_patch", "hand_injury", "pressure_sore", "post_burn_contracture"]) {
       expect(ids).toContain(want);
     }
     expect(new Set(ids).size).toBe(ids.length);
@@ -31,8 +31,10 @@ describe("tree registry", () => {
     // A tree must not drift into "reviewed" as a side effect of an edit — the chip on the card
     // is the only thing telling a resident whether the content was read by a clinician.
     //
-    // All seventy-three are signed off. `burns` was re-read as the shipped file (the earlier
-    // sign-off was of a different, independently-written burns tree and did not transfer).
+    // Seventy-three of the eighty-two are signed off. `burns` was re-read as the shipped file (the
+    // earlier sign-off was of a different, independently-written burns tree and did not transfer).
+    // The nine psychiatry / dermatology / burns trees added after that are not on the list: no
+    // clinician has read them yet.
     // `jaundice` IS here, at v1.1.0: it was signed off at v1.0.0, then gained four obstructive
     // questions, and the reviewer read those four and re-signed it rather than the list being
     // edited around them. That is the only way an id gets back onto this list after a version
@@ -168,6 +170,6 @@ describe("the surgical complaints", () => {
 describe("registry size", () => {
   it("keeps the docs honest about how many trees ship", () => {
     // docs/history-check.md states this number; update both together.
-    expect(listTrees().length).toBe(73);
+    expect(listTrees().length).toBe(82);
   });
 });
