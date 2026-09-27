@@ -14,7 +14,7 @@
 -- NO DOSES. No drug or blood-product doses or volumes appear anywhere below; decisions a
 -- consultant owns (dose holds, prophylaxis, transfusion) are phrased as questions.
 --
--- CLINICAL CONTENT: PENDING CLINICIAN REVIEW — seeded as draft; a later patch publishes it
+-- CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28) — seeded as draft; 0096 publishes it
 -- (together with 0061's two, which were never published).
 --
 -- Requires: 0026_company_protocol_library.sql, 0058_checklist_item_trigger.sql,

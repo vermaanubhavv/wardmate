@@ -21,7 +21,7 @@
 -- STATUS. Every protocol is 'draft', version 'v1-draft' — residents cannot see them until
 -- published (getTemplateForPatient matches published protocols only).
 --
--- CLINICAL CONTENT: PENDING CLINICIAN REVIEW — seeded as draft; a later patch publishes it.
+-- CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28) — seeded as draft; 0096 publishes it.
 --
 -- Requires: 0026, 0032, 0058, 0060, 0063, 0064.
 -- Safe to run more than once — it rewrites the item set for a protocol of the same title.
