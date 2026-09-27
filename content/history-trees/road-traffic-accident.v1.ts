@@ -1,0 +1,81 @@
+import type { HistoryTree } from "@/lib/history-check/types";
+import { ATLS, commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, surgicalBackground, TINTINALLI, val, yn } from "@/content/history-trees/_helpers";
+
+/**
+ * ROAD TRAFFIC ACCIDENT / MULTIPLE INJURIES — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * Emergency department, north India. The AMPLE history (allergies, medicines, past history,
+ * last meal, events) wrapped around the mechanism, because the mechanism predicts the injuries
+ * before the examination finds them. The local casemix is dominated by two-wheeler riders
+ * without a helmet, pedestrians struck on highways, overloaded vehicles overturning, and falls
+ * under the wheels of trucks and tractors; many patients arrive hours late after a first stop
+ * at another hospital. Differentials are injury PATTERNS to look for, not a diagnosis of the
+ * patient: traumatic brain injury, cervical spine or cord injury, pneumothorax or haemothorax,
+ * rib fractures or flail segment, intra-abdominal bleeding, pelvic fracture with bleeding,
+ * urethral or bladder injury, long bone fracture, crush injury, facial injury threatening the
+ * airway, intoxication masking injury, and a medical event that caused the crash.
+ */
+export const roadTrafficAccidentV1: HistoryTree = {
+  id: "road_traffic_accident",
+  version: "1.0.0",
+  complaint: "Road traffic accident / multiple injuries",
+  triggers: ["road traffic accident", "rta", "road accident", "road traffic injury", "motor vehicle accident", "mva", "polytrauma", "multiple injuries", "multiple trauma", "bike accident", "motorcycle accident", "two wheeler accident", "scooter accident", "car accident", "truck accident", "tractor accident", "bus accident", "hit by vehicle", "hit by a vehicle", "knocked down by vehicle", "pedestrian hit", "vehicle overturned", "gaadi se takkar", "bike se gira", "gaadi palat gayi"],
+  setting: "Emergency department, north India",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
+  references: [ATLS, TINTINALLI, MACLEODS, HUTCHISONS],
+  slots: [
+    ...commonHpi("injury"),
+    val("informant", "scene_informant", "Who brought the patient", "Who brought the patient — ambulance crew, police, a bystander or family — and did anyone see the crash happen?", ["ambulance", "108", "police", "bystander", "passer by", "family", "brought by", "witnessed", "no one saw", "found on road"]),
+    // HPI: the events
+    val("hpi", "crash_mechanism", "Mechanism", "What kind of crash was it — a two-wheeler, a car, a truck, a tractor or a bus — and what did it hit or what hit it?", ["two wheeler", "bike", "motorcycle", "scooter", "car", "truck", "tractor", "bus", "auto", "e rickshaw", "cycle", "collision", "head on", "hit from behind", "skidded", "hit a pole", "hit a divider"]),
+    val("hpi", "patient_position", "Patient's position", "Was the patient the driver, a pillion rider, a passenger, a cyclist or a pedestrian?", ["driver", "driving", "rider", "pillion", "passenger", "front seat", "back seat", "cyclist", "pedestrian", "walking", "crossing the road"]),
+    val("hpi", "speed_impact", "Speed and direction of impact", "How fast were the vehicles going, and did the impact come from the front, the side or behind?", ["speed", "fast", "slow", "km", "highway", "front", "side", "behind", "t bone", "impact"], { numeric: true }),
+    yn("hpi", "helmet_belt_worn", "Helmet or seat belt worn", "Was a helmet or seat belt being worn, and was the helmet strapped and did it come off?", ["helmet", "no helmet", "without helmet", "seat belt", "seatbelt", "not wearing", "strapped", "came off", "cracked helmet"]),
+    val("hpi", "time_since_injury", "Time since injury", "At what time did the crash happen, and how many hours ago was that?", ["hours ago", "minutes ago", "time of accident", "o clock", "last night", "this morning", "since"], { numeric: true }),
+    val("hpi", "prehospital_care", "Care before arrival", "What was done before arrival — collar, splint, dressing, fluids, a first hospital or a referral — and at what time was the patient referred?", ["collar", "splint", "dressing", "bandage", "drip", "fluids", "first aid", "referred", "referral", "another hospital", "district hospital", "chc", "private hospital", "stitches"]),
+    yn("hpi", "consciousness_lost", "Loss of consciousness", "Was consciousness lost at any point, and for how long?", ["unconscious", "loss of consciousness", "blacked out", "did not respond", "knocked out", "conscious throughout", "remembers everything"]),
+    val("hpi", "pain_sites", "Where it hurts", "Where does the patient have pain, and which part hurts the most?", ["pain in", "hurts", "chest", "abdomen", "pelvis", "hip", "thigh", "leg", "arm", "back", "neck", "head", "everywhere"]),
+    // Associated injuries, region by region
+    yn("associated", "chest_injury_symptoms", "Chest pain or breathlessness", "Any chest pain, pain on breathing in, or breathlessness since the crash?", ["chest pain", "pain on breathing", "breathless", "breathlessness", "difficulty breathing", "rib pain", "chest injury", "cannot take deep breath"]),
+    yn("associated", "abdominal_injury_symptoms", "Abdominal pain", "Any abdominal pain, distension, or pain going to the shoulder tip since the crash?", ["abdominal pain", "pain abdomen", "pet me dard", "distension", "swelling of abdomen", "shoulder tip", "left shoulder pain", "handlebar", "seat belt mark"]),
+    yn("associated", "limb_deformity", "Limb pain, swelling or deformity", "Is any limb painful, swollen, deformed, or impossible to move or bear weight on?", ["deformity", "swelling", "cannot move", "cannot bear weight", "bent", "shortened", "fracture", "broken", "thigh", "leg", "arm", "forearm"]),
+    yn("associated", "neck_pain_crash", "Neck pain", "Any neck pain or stiffness since the crash, and was the neck held still afterwards?", ["neck pain", "neck stiffness", "gardan", "collar", "held still", "cannot turn neck"]),
+    yn("associated", "external_bleeding", "Bleeding at the scene", "How much blood was lost at the scene or on the way, and from where?", ["bleeding", "blood loss", "soaked", "pool of blood", "bleeding from", "wound", "cut", "lacerated", "profuse"]),
+    yn("associated", "vomiting_after", "Vomiting", "Any vomiting since the crash, and how many times?", ["vomiting", "vomited", "ulti", "times", "repeated"]),
+    yn("associated", "urine_after", "Blood in urine or unable to pass urine", "Has urine been passed since, was there blood in it or at the tip of the penis, or has the patient been unable to pass urine?", ["blood in urine", "red urine", "blood at meatus", "blood at tip", "cannot pass urine", "not passed urine", "urine retention", "passed urine"]),
+    yn("associated", "facial_injury", "Injury to the face or jaw", "Any injury to the face or jaw — bleeding from the mouth or nose, loose teeth, or difficulty opening the mouth?", ["face", "jaw", "bleeding from mouth", "bleeding from nose", "teeth", "loose teeth", "cannot open mouth", "swollen face", "eye swelling"], { tier: "detailed" }),
+    // Red flags
+    yn("red_flag", "high_energy_crash", "High-energy mechanism", "Was the patient ejected or thrown, did the vehicle overturn, was someone else killed in the crash, or did the patient go under a truck or tractor wheel?", ["ejected", "thrown", "overturned", "rolled over", "rollover", "someone died", "death at scene", "under the wheel", "run over", "went under", "tractor overturned", "high speed"], { teach: "Ejection, a rollover, a death in the same vehicle, or going under a wheel each predict serious hidden injury even when the patient looks well on arrival." }),
+    yn("red_flag", "breathing_threat", "Worsening breathlessness", "Is the breathlessness getting worse, does one side of the chest move less or paradoxically, or is there noisy breathing or blood in the mouth?", ["worsening breathlessness", "one side not moving", "paradoxical", "chest moving in", "noisy breathing", "gurgling", "blood in mouth", "cannot breathe", "gasping", "air under skin"], { teach: "A threat to the airway or breathing kills fastest after injury, and a chest segment moving the wrong way or one side not moving points to a flail segment or air or blood around the lung." }),
+    yn("red_flag", "consciousness_falling", "Falling conscious level", "Has the patient become drowsier since the crash, or talked first and then deteriorated?", ["drowsier", "deteriorating", "less responsive", "was talking", "then became", "lucid interval", "falling gcs", "not responding now"], { teach: "A patient who talks and then deteriorates may have an expanding bleed inside the skull, and the time available is measured in hours." }),
+    yn("red_flag", "bleeding_shock_signs", "Signs of heavy blood loss", "Any giddiness on sitting up, cold clammy skin, marked thirst, restlessness, or an abdomen that is swelling up?", ["giddiness", "cold", "clammy", "thirst", "restless", "pale", "abdomen swelling", "low bp", "fainting", "sweating"], { teach: "Bleeding into the chest, abdomen, pelvis or thighs is invisible from outside, and thirst, restlessness and cold skin come before the blood pressure falls." }),
+    yn("red_flag", "pelvic_injury_signs", "Pelvic or hip pain", "Any pain in the pelvis, hips or groin, inability to stand, or bruising of the scrotum or perineum?", ["pelvis", "pelvic pain", "hip pain", "groin pain", "cannot stand", "scrotal bruising", "perineal bruising", "crushed pelvis"], { teach: "A broken pelvis can hide litres of blood and often travels with an injury to the bladder or urethra." }),
+    yn("red_flag", "spinal_deficit", "Numbness or weakness of the limbs", "Any numbness, tingling or weakness in the arms or legs, or loss of control of urine or stools, since the crash?", ["numbness", "tingling", "weakness", "cannot feel legs", "cannot move legs", "paralysis", "loss of bladder control", "incontinence", "back pain"], { teach: "New numbness or weakness after a crash means the spine is treated as injured until proved otherwise, because careless movement can make a partial injury complete." }),
+    yn("red_flag", "open_fracture", "Bone through the skin", "Is bone visible through a wound, or is there a wound over a broken or deformed limb?", ["bone visible", "bone out", "open fracture", "compound fracture", "wound over fracture", "exposed bone", "haddi bahar"], { teach: "A wound over a fracture lets dirt from the road into the bone, and the delay since injury matters for infection." }),
+    yn("red_flag", "trapped_crushed", "Trapped or crushed", "Was the patient trapped in the vehicle or pinned under it, and for how long?", ["trapped", "pinned", "stuck", "under the vehicle", "crushed", "extricated", "cut out", "hours trapped"], { teach: "A limb crushed for a long time can release muscle breakdown products into the blood once freed, and the tight swelling that follows can cut off its own supply." }),
+    yn("red_flag", "intoxicated_at_crash", "Alcohol or drugs", "Had the patient taken alcohol or any drug before the crash?", ["alcohol", "drunk", "daru", "sharab", "smell of alcohol", "intoxicated", "drugs", "under influence"], { teach: "Intoxication blunts pain and dulls consciousness, so a serious head, abdominal or spinal injury can be hidden behind what looks like drunkenness." }),
+    PREGNANCY,
+    // Background: AMPLE and the rest
+    ...surgicalBackground({ acute: true }),
+    yn("exposure", "crash_cause", "Why the crash happened", "Was there giddiness, a blackout, chest pain, a fit, or low sugar before the crash, or did the patient lose control for another reason?", ["giddiness", "blackout", "fainted", "chest pain", "fit", "seizure", "low sugar", "hypoglycaemia", "fell asleep", "lost control", "brakes failed", "pothole"], { teach: "A medical event at the wheel can cause the crash, and the injuries then distract from the illness that started it." }),
+    yn("exposure", "tetanus_status", "Tetanus immunisation", "When was the last tetanus immunisation, and is it known at all?", ["tetanus", "tt", "tetanus injection", "last tetanus", "not known", "never"], { tier: "detailed" }),
+  ],
+  differentials: [
+    { id: "tbi", name: "Traumatic brain injury", pointers: ["consciousness_falling", "consciousness_lost", "vomiting_after", "helmet_belt_worn"], discriminators: ["consciousness_falling", "consciousness_lost", "vomiting_after", "helmet_belt_worn", "intoxicated_at_crash", "surg_blood_thinners"] },
+    { id: "spinal_injury", name: "Cervical spine or spinal cord injury", pointers: ["spinal_deficit", "neck_pain_crash", "high_energy_crash"], discriminators: ["spinal_deficit", "neck_pain_crash", "high_energy_crash", "patient_position", "consciousness_lost"] },
+    { id: "pneumo_haemothorax", name: "Pneumothorax or haemothorax", pointers: ["breathing_threat", "chest_injury_symptoms"], discriminators: ["breathing_threat", "chest_injury_symptoms", "bleeding_shock_signs", "speed_impact", "crash_mechanism"] },
+    { id: "chest_wall", name: "Rib fractures or flail segment", pointers: ["chest_injury_symptoms", "breathing_threat", "trapped_crushed"], discriminators: ["chest_injury_symptoms", "breathing_threat", "trapped_crushed", "helmet_belt_worn", "speed_impact"] },
+    { id: "abdominal_bleeding", name: "Intra-abdominal bleeding (liver, spleen, bowel)", pointers: ["abdominal_injury_symptoms", "bleeding_shock_signs", "high_energy_crash"], discriminators: ["abdominal_injury_symptoms", "bleeding_shock_signs", "helmet_belt_worn", "crash_mechanism", "intoxicated_at_crash", "time_since_injury"] },
+    { id: "pelvic_fracture", name: "Pelvic fracture with bleeding", pointers: ["pelvic_injury_signs", "bleeding_shock_signs", "trapped_crushed"], discriminators: ["pelvic_injury_signs", "bleeding_shock_signs", "urine_after", "patient_position", "high_energy_crash"] },
+    { id: "urethral_bladder", name: "Urethral or bladder injury", pointers: ["urine_after", "pelvic_injury_signs"], discriminators: ["urine_after", "pelvic_injury_signs", "abdominal_injury_symptoms", "intoxicated_at_crash"] },
+    { id: "long_bone", name: "Long bone fracture, open or closed", pointers: ["limb_deformity", "open_fracture"], discriminators: ["limb_deformity", "open_fracture", "external_bleeding", "time_since_injury", "prehospital_care", "tetanus_status"] },
+    { id: "crush_injury", name: "Crush injury with muscle breakdown or compartment swelling", pointers: ["trapped_crushed", "limb_deformity"], discriminators: ["trapped_crushed", "limb_deformity", "urine_after", "time_since_injury", "crash_mechanism"] },
+    { id: "facial_airway", name: "Facial injury threatening the airway", pointers: ["facial_injury", "breathing_threat"], discriminators: ["facial_injury", "breathing_threat", "consciousness_falling", "helmet_belt_worn"] },
+    { id: "intoxication_masking", name: "Intoxication masking an injury", pointers: ["intoxicated_at_crash"], discriminators: ["intoxicated_at_crash", "consciousness_falling", "abdominal_injury_symptoms", "spinal_deficit", "scene_informant"] },
+    { id: "medical_cause_crash", name: "A medical event that caused the crash", pointers: ["crash_cause"], discriminators: ["crash_cause", "scene_informant", "consciousness_lost", "surg_regular_drugs"] },
+  ],
+  output: {
+    durationSlot: "duration",
+    hpiOrder: ["time_since_injury", "crash_mechanism", "patient_position", "speed_impact", "helmet_belt_worn", "consciousness_lost", "pain_sites", "prehospital_care", "prior_treatment", "prior_investigations"],
+  },
+};

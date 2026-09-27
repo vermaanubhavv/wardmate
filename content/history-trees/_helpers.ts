@@ -108,6 +108,13 @@ export const GRABB_SMITH: Reference = { title: "Grabb and Smith's Plastic Surger
 export const APLEY: Reference = { title: "Apley and Solomon's System of Orthopaedics and Trauma — the orthopaedic history", source: "CRC Press (textbook)" };
 export const CAMPBELL_UROLOGY: Reference = { title: "Campbell-Walsh-Wein Urology — evaluation of the urologic patient", source: "Elsevier (textbook)" };
 export const YOUMANS: Reference = { title: "Youmans and Winn Neurological Surgery — clinical evaluation", source: "Elsevier (textbook)" };
+export const FISHMAN: Reference = { title: "Fishman's Pulmonary Diseases and Disorders — approach to the patient with respiratory symptoms", source: "McGraw Hill (textbook)" };
+export const GINA: Reference = { title: "Global Strategy for Asthma Management and Prevention", source: "Global Initiative for Asthma (GINA report)" };
+export const GOLD: Reference = { title: "Global Strategy for the Diagnosis, Management and Prevention of COPD", source: "Global Initiative for Chronic Obstructive Lung Disease (GOLD report)" };
+export const NTEP: Reference = { title: "Technical and Operational Guidelines for Tuberculosis Control", source: "National TB Elimination Programme, Ministry of Health and Family Welfare, India (guideline)" };
+export const TINTINALLI: Reference = { title: "Tintinalli's Emergency Medicine — approach to the emergency patient", source: "McGraw Hill (textbook)" };
+export const NRCP_RABIES: Reference = { title: "National Guidelines for Rabies Prophylaxis", source: "National Rabies Control Programme, NCDC, India (guideline)" };
+export const NPCCHH_HEAT: Reference = { title: "Heat-related illnesses — guidelines for health professionals", source: "National Programme on Climate Change and Human Health, Ministry of Health and Family Welfare, India (guideline)" };
 export const BAILEY_LOVE: Reference = { title: "Bailey & Love's Short Practice of Surgery — history and examination of the surgical patient", source: "CRC Press (textbook)" };
 
 /**
