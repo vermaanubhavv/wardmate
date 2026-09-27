@@ -9,6 +9,7 @@ import {
   type TriggerContext,
 } from "@/lib/checklist-triggers";
 import { getSpecialtyPack, offersChecklistFamily } from "@/lib/specialty";
+import { firstNumber } from "@/lib/lab-ranges";
 
 type TemplateItem = {
   id: string;
@@ -339,12 +340,6 @@ const SYMPTOM_LABELS = new Set([
 ]);
 
 /** First number in a string, or null — for turning "Hb 8.2 g/dL" into 8.2. */
-function firstNumber(s: string | null): number | null {
-  if (!s) return null;
-  const m = s.match(/-?\d+(\.\d+)?/);
-  return m ? Number(m[0]) : null;
-}
-
 /**
  * Line up what was actually said against what the template expects.
  *

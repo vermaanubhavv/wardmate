@@ -74,3 +74,18 @@ describe("evaluateTrigger", () => {
     expect(evaluateTrigger(t, baseCtx({ values: "type 2 diabetes" })).active).toBe(false);
   });
 });
+
+describe("reading a recorded lab value", () => {
+  it("reads Indian and western thousands separators and lakh, so a normal count is not read as critical", async () => {
+    const { firstNumber } = await import("@/lib/lab-ranges");
+    expect(firstNumber("1,50,000")).toBe(150000);
+    expect(firstNumber("150,000 /cumm")).toBe(150000);
+    expect(firstNumber("1.5 lakh")).toBe(150000);
+    expect(firstNumber("2 lakhs")).toBe(200000);
+    expect(firstNumber("18000")).toBe(18000);
+    expect(firstNumber("Hb 8.2 g/dL")).toBe(8.2);
+    expect(firstNumber("-2.1")).toBe(-2.1);
+    expect(firstNumber("not done")).toBeNull();
+    expect(firstNumber(null)).toBeNull();
+  });
+});
