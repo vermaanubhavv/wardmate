@@ -1,7 +1,4 @@
-import {
-  MEDICINE_DISCHARGE_TEMPLATES,
-  MEDICINE_GENERIC_DISCHARGE_TEMPLATE,
-} from "@/lib/discharge-templates-medicine";
+import { DERMATOLOGY_DISCHARGE_TEMPLATES, DERMATOLOGY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-dermatology";
 import type { FormatKind } from "@/lib/formats";
 import type { SpecialtyPack } from "./types";
 
@@ -31,10 +28,9 @@ import type { SpecialtyPack } from "./types";
  *    never computes one, never converts "most of the back" into a number, and never grades
  *    severity from the words around it.
  *
- * WHAT THIS PACK BORROWS. The medicine discharge templates — an inpatient dermatology discharge
- * is medical in shape (problem, course, what was started, what to apply, follow-up). Its own
- * (severe drug reaction, pemphigus, erythroderma, leprosy under the national programme with its
- * monthly follow-up) are the first thing to add past pilot.
+ * DISCHARGE TEMPLATES are this department's own, in `lib/discharge-templates-dermatology.ts` (added 2026-09-28, with
+ * typical medicines pre-filled on the product owner's direction). It no longer borrows the
+ * general-surgery or medicine set.
  *
  * SCORING IS EMPTY, deliberately. SCORTEN, PASI and BSA-based indices are real instruments that
  * this app has not built, not reviewed and does not compute. Offering none is the honest state.
@@ -81,8 +77,8 @@ Skin ward and clinic — what the words mean here:
 
   checklistAnchor: "admission",
 
-  dischargeTemplates: MEDICINE_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: MEDICINE_GENERIC_DISCHARGE_TEMPLATE,
+  dischargeTemplates: DERMATOLOGY_DISCHARGE_TEMPLATES,
+  genericDischargeTemplate: DERMATOLOGY_GENERIC_DISCHARGE_TEMPLATE,
 
   // Empty on purpose: SCORTEN, PASI and the BSA indices are real instruments this app has not
   // built or reviewed, and it does not compute them.

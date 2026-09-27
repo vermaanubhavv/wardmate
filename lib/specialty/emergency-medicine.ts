@@ -1,7 +1,4 @@
-import {
-  MEDICINE_DISCHARGE_TEMPLATES,
-  MEDICINE_GENERIC_DISCHARGE_TEMPLATE,
-} from "@/lib/discharge-templates-medicine";
+import { EMERGENCY_DISCHARGE_TEMPLATES, EMERGENCY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-emergency";
 import type { FormatKind } from "@/lib/formats";
 import type { SpecialtyPack } from "./types";
 
@@ -37,9 +34,9 @@ import type { SpecialtyPack } from "./types";
  * haematemesis that needs a triage decision now. Nothing else is offered — no triage category
  * and no early-warning score, because both drive an allocation decision this app does not make.
  *
- * DISCHARGE TEMPLATES are the condition-keyed medicine ones. Most emergency episodes do not end
- * in a discharge summary at all, and those that do are usually an observation-ward discharge,
- * which is medicine in shape.
+ * DISCHARGE TEMPLATES are this department's own, in `lib/discharge-templates-emergency.ts` (added 2026-09-28, with
+ * typical medicines pre-filled on the product owner's direction). It no longer borrows the
+ * general-surgery or medicine set.
  *
  * CLINICIAN SIGNED OFF FOR PILOT USE 2026-09-26 (Dr. Anubhav), product owner and general-surgery
  * resident, on his own direction and covering this pack's clinical content: the extraction
@@ -84,8 +81,8 @@ Emergency department — what the words mean here:
 
   checklistAnchor: "admission",
 
-  dischargeTemplates: MEDICINE_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: MEDICINE_GENERIC_DISCHARGE_TEMPLATE,
+  dischargeTemplates: EMERGENCY_DISCHARGE_TEMPLATES,
+  genericDischargeTemplate: EMERGENCY_GENERIC_DISCHARGE_TEMPLATE,
 
   // The five an emergency physician reaches for, all active. No triage category and no
   // early-warning score — see the header.

@@ -1,4 +1,4 @@
-import { DISCHARGE_TEMPLATES, GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates";
+import { ORTHOPAEDICS_DISCHARGE_TEMPLATES, ORTHOPAEDICS_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-orthopaedics";
 import type { FormatKind } from "@/lib/formats";
 import type { SpecialtyPack } from "./types";
 
@@ -26,10 +26,9 @@ import type { SpecialtyPack } from "./types";
  *    two emergencies, and both are recorded as what was found, never as a grade this app
  *    invents.
  *
- * WHAT IT BORROWS, AND WHEN TO STOP. Discharge templates are the general-surgery ones: an
- * orthopaedic discharge has the shape of a post-operative one — operation, implant, wound,
- * weight-bearing instruction, when to come back. Its own (post-arthroplasty, fracture fixation,
- * spine, amputation) belong in a `lib/discharge-templates-orthopaedics.ts` past pilot.
+ * DISCHARGE TEMPLATES are this department's own, in `lib/discharge-templates-orthopaedics.ts` (added 2026-09-28, with
+ * typical medicines pre-filled on the product owner's direction). It no longer borrows the
+ * general-surgery or medicine set.
  *
  * SCORING is the two Wells pathways and nothing else. They are built, reviewed and active, and
  * venous thromboembolism after a hip fracture or an arthroplasty is this ward's own risk rather
@@ -84,8 +83,8 @@ Orthopaedic ward — what the words mean here:
   checklistAnchor: "post_op",
 
   // General surgery's templates, on purpose — see the header.
-  dischargeTemplates: DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: GENERIC_DISCHARGE_TEMPLATE,
+  dischargeTemplates: ORTHOPAEDICS_DISCHARGE_TEMPLATES,
+  genericDischargeTemplate: ORTHOPAEDICS_GENERIC_DISCHARGE_TEMPLATE,
 
   // The two Wells pathways only: built, active, and this ward's own risk after a hip fracture
   // or an arthroplasty. No fracture classification is a score this app may produce.

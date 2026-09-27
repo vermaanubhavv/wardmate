@@ -1,4 +1,4 @@
-import { DISCHARGE_TEMPLATES, GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates";
+import { NEUROSURGERY_DISCHARGE_TEMPLATES, NEUROSURGERY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-neurosurgery";
 import type { FormatKind } from "@/lib/formats";
 import type { SpecialtyPack } from "./types";
 
@@ -24,10 +24,9 @@ import type { SpecialtyPack } from "./types";
  * 4. THE SPINE HAS A LEVEL, AND THE LEVEL IS DATA: "D12 burst fracture", "L4-L5 disc",
  *    "power 2 by 5 in both lower limbs", "bladder involvement". A level is never inferred.
  *
- * WHAT IT BORROWS, AND WHEN TO STOP. Discharge templates are the general-surgery ones — a
- * craniotomy discharge is post-operative in shape. Its own (post-craniotomy, head-injury advice,
- * shunt warning signs, post-spinal-fixation) belong in a
- * `lib/discharge-templates-neurosurgery.ts` past pilot.
+ * DISCHARGE TEMPLATES are this department's own, in `lib/discharge-templates-neurosurgery.ts` (added 2026-09-28, with
+ * typical medicines pre-filled on the product owner's direction). It no longer borrows the
+ * general-surgery or medicine set.
  *
  * SCORING IS DELIBERATELY EMPTY. The Glasgow Coma Scale is dictated and stored, not scored by
  * this app: it is an examination the resident performs, and a total this app assembled from
@@ -81,8 +80,8 @@ Neurosurgical ward — what the words mean here:
 
   checklistAnchor: "post_op",
 
-  dischargeTemplates: DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: GENERIC_DISCHARGE_TEMPLATE,
+  dischargeTemplates: NEUROSURGERY_DISCHARGE_TEMPLATES,
+  genericDischargeTemplate: NEUROSURGERY_GENERIC_DISCHARGE_TEMPLATE,
 
   // Empty on purpose — see the header. GCS is dictated, never scored here, and every
   // neurosurgical outcome model is prognostic.

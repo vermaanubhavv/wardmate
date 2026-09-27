@@ -1,4 +1,4 @@
-import { DISCHARGE_TEMPLATES, GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates";
+import { ENT_DISCHARGE_TEMPLATES, ENT_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-ent";
 import type { FormatKind } from "@/lib/formats";
 import type { SpecialtyPack } from "./types";
 
@@ -26,12 +26,9 @@ import type { SpecialtyPack } from "./types";
  *    and oral cavity / laryngeal malignancy in tobacco and areca-nut users, in a population
  *    that presents late.
  *
- * WHAT THIS PACK BORROWS, AND WHEN TO STOP. Discharge templates are the general-surgery ones:
- * an ENT discharge is a post-operative discharge in shape — operation, findings, what was
- * removed, wound and suture care, when to come back — and a generic surgical template holds
- * that. Its own templates (tympanoplasty, FESS, tonsillectomy, tracheostomy care at home,
- * post-laryngectomy) are the first thing to add past pilot, in a
- * `lib/discharge-templates-ent.ts`.
+ * DISCHARGE TEMPLATES are this department's own, in `lib/discharge-templates-ent.ts` (added 2026-09-28, with
+ * typical medicines pre-filled on the product owner's direction). It no longer borrows the
+ * general-surgery or medicine set.
  *
  * SCORING IS DELIBERATELY EMPTY. WardMate has built no ENT pathway, and an empty list is a
  * clinical statement — an ENT unit must not be offered Ranson's or CURB-65 because they happen
@@ -85,8 +82,8 @@ ENT ward — what the words mean here:
   checklistAnchor: "post_op",
 
   // General surgery's templates, on purpose — see the header for what to add and when.
-  dischargeTemplates: DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: GENERIC_DISCHARGE_TEMPLATE,
+  dischargeTemplates: ENT_DISCHARGE_TEMPLATES,
+  genericDischargeTemplate: ENT_GENERIC_DISCHARGE_TEMPLATE,
 
   // Empty on purpose. Nothing ENT-specific has been built and reviewed, and offering an
   // unrelated pathway because it exists would be worse than offering none.

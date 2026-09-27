@@ -1,4 +1,4 @@
-import { DISCHARGE_TEMPLATES, GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates";
+import { UROLOGY_DISCHARGE_TEMPLATES, UROLOGY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-urology";
 import type { FormatKind } from "@/lib/formats";
 import type { SpecialtyPack } from "./types";
 
@@ -25,10 +25,9 @@ import type { SpecialtyPack } from "./types";
  *    and urine output in the hours after, are the numbers this ward acts on — which is why the
  *    one score offered here is the AKI staging pathway.
  *
- * WHAT IT BORROWS, AND WHEN TO STOP. Discharge templates are the general-surgery ones: a
- * urological discharge is post-operative in shape, with a catheter or stent instruction added.
- * Its own (post-TURP, post-PCNL, post-URSL with stent removal date, post-nephrectomy) belong in
- * a `lib/discharge-templates-urology.ts` past pilot.
+ * DISCHARGE TEMPLATES are this department's own, in `lib/discharge-templates-urology.ts` (added 2026-09-28, with
+ * typical medicines pre-filled on the product owner's direction). It no longer borrows the
+ * general-surgery or medicine set.
  *
  * SCORING is `kdigo_aki` alone. It is built, reviewed and active, and post-obstructive acute
  * kidney injury is this department's own daily problem rather than a score borrowed because it
@@ -81,8 +80,8 @@ Urology ward — what the words mean here:
 
   checklistAnchor: "post_op",
 
-  dischargeTemplates: DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: GENERIC_DISCHARGE_TEMPLATE,
+  dischargeTemplates: UROLOGY_DISCHARGE_TEMPLATES,
+  genericDischargeTemplate: UROLOGY_GENERIC_DISCHARGE_TEMPLATE,
 
   // Post-obstructive AKI is this ward's own problem, and the pathway is built and active.
   // Nothing prognostic is offered — see the header.

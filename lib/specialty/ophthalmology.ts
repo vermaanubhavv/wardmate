@@ -1,4 +1,4 @@
-import { DISCHARGE_TEMPLATES, GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates";
+import { OPHTHALMOLOGY_DISCHARGE_TEMPLATES, OPHTHALMOLOGY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-ophthalmology";
 import type { FormatKind } from "@/lib/formats";
 import type { SpecialtyPack } from "./types";
 
@@ -29,10 +29,9 @@ import type { SpecialtyPack } from "./types";
  *    and trauma alongside. A post-operative eye that becomes painful with falling vision is the
  *    one time-critical event on this ward, and it is a red flag in the vision-loss tree too.
  *
- * WHAT THIS PACK BORROWS. Discharge templates are the general-surgery ones: an eye discharge is
- * operative in shape — what was done, to which eye, drops and their taper, when to return. Its
- * own (cataract surgery, trabeculectomy, vitrectomy, keratoplasty, each with its drop schedule
- * as dictated) are the first thing to add past pilot, in `lib/discharge-templates-eye.ts`.
+ * DISCHARGE TEMPLATES are this department's own, in `lib/discharge-templates-ophthalmology.ts` (added 2026-09-28, with
+ * typical medicines pre-filled on the product owner's direction). It no longer borrows the
+ * general-surgery or medicine set.
  *
  * SCORING IS EMPTY, deliberately. No ophthalmic pathway has been built and reviewed here, and
  * an eye unit must not be offered a surgical or medical score because it happens to exist.
@@ -82,8 +81,8 @@ Eye ward — what the words mean here:
 
   checklistAnchor: "post_op",
 
-  dischargeTemplates: DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: GENERIC_DISCHARGE_TEMPLATE,
+  dischargeTemplates: OPHTHALMOLOGY_DISCHARGE_TEMPLATES,
+  genericDischargeTemplate: OPHTHALMOLOGY_GENERIC_DISCHARGE_TEMPLATE,
 
   // Empty on purpose: nothing ophthalmic has been built and reviewed here.
   scoringKeys: [],

@@ -1,7 +1,4 @@
-import {
-  MEDICINE_DISCHARGE_TEMPLATES,
-  MEDICINE_GENERIC_DISCHARGE_TEMPLATE,
-} from "@/lib/discharge-templates-medicine";
+import { PULMONARY_DISCHARGE_TEMPLATES, PULMONARY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-pulmonary";
 import type { FormatKind } from "@/lib/formats";
 import type { SpecialtyPack } from "./types";
 
@@ -32,12 +29,8 @@ import type { SpecialtyPack } from "./types";
  *
  * WHAT THIS PACK DELIBERATELY BORROWS, AND WHEN TO STOP BORROWING:
  *
- * - DISCHARGE TEMPLATES are the medicine ones. They already carry pulmonary tuberculosis and
- *   community-acquired pneumonia, which is most of what this ward discharges, and a wrong-but-
- *   generic template is better than a missing one. A chest unit's own templates — COPD
- *   exacerbation, asthma, pleural effusion after drainage, post-tubercular lung disease — are
- *   the first thing to add when this pack goes past its pilot, in a
- *   `lib/discharge-templates-pulmonary.ts` beside the medicine one.
+ * - DISCHARGE TEMPLATES are now this department's own, in `lib/discharge-templates-pulmonary.ts`
+ *   (added 2026-09-28, typical medicines pre-filled on the product owner's direction).
  * - SCORING is CURB-65, qSOFA and the two Wells pathways, all of which already exist and are
  *   active. Nothing respiratory-specific (BAP-65, PESI, GOLD grading) is offered, because
  *   offering a score this app has not built and reviewed would be worse than offering none.
@@ -89,9 +82,9 @@ Pulmonary medicine ward — what the words mean here:
   // hours since admission (oxygen reassessed, sputum sent before the first dose) and labs.
   checklistAnchor: "admission",
 
-  // Borrowed from medicine on purpose — see the note above for what to add and when.
-  dischargeTemplates: MEDICINE_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: MEDICINE_GENERIC_DISCHARGE_TEMPLATE,
+  // This department's own — see the note above.
+  dischargeTemplates: PULMONARY_DISCHARGE_TEMPLATES,
+  genericDischargeTemplate: PULMONARY_GENERIC_DISCHARGE_TEMPLATE,
 
   // Only scores this app has actually built and activated. CURB-65 is the pneumonia pathway,
   // qSOFA carries SIRS alongside it, and the two Wells pathways are here because a breathless

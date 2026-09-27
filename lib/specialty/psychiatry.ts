@@ -1,7 +1,4 @@
-import {
-  MEDICINE_DISCHARGE_TEMPLATES,
-  MEDICINE_GENERIC_DISCHARGE_TEMPLATE,
-} from "@/lib/discharge-templates-medicine";
+import { PSYCHIATRY_DISCHARGE_TEMPLATES, PSYCHIATRY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-psychiatry";
 import type { FormatKind } from "@/lib/formats";
 import type { SpecialtyPack } from "./types";
 
@@ -35,10 +32,9 @@ import type { SpecialtyPack } from "./types";
  *    Mental Healthcare Act. It is recorded as spoken, as text. The app takes no view on it,
  *    asserts nothing about the patient's capacity, and adds no field that would invite one.
  *
- * WHAT THIS PACK BORROWS. Discharge templates are the medicine ones — a psychiatric discharge
- * summary's shape (problem, course, what was started, follow-up) is closer to a medical one
- * than to an operative one. Its own templates (first episode psychosis, mania, depression with
- * a risk review, alcohol detoxification) are the first thing to add past pilot.
+ * DISCHARGE TEMPLATES are this department's own, in `lib/discharge-templates-psychiatry.ts` (added 2026-09-28, with
+ * typical medicines pre-filled on the product owner's direction). It no longer borrows the
+ * general-surgery or medicine set.
  *
  * SCORING IS CIWA-Ar ONLY, and only because it is already built, reviewed and active for
  * alcohol withdrawal, which this ward manages daily. No depression, mania or risk scale is
@@ -88,8 +84,8 @@ Psychiatry ward — what the words mean here:
   checklistAnchor: "admission",
 
   // Medicine's templates, on purpose — see the header.
-  dischargeTemplates: MEDICINE_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: MEDICINE_GENERIC_DISCHARGE_TEMPLATE,
+  dischargeTemplates: PSYCHIATRY_DISCHARGE_TEMPLATES,
+  genericDischargeTemplate: PSYCHIATRY_GENERIC_DISCHARGE_TEMPLATE,
 
   // Alcohol withdrawal only, and only because CIWA-Ar is already built, reviewed and active.
   // No mood, psychosis or risk scale is offered: none has been built here.
