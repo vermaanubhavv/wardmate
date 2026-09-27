@@ -18,7 +18,8 @@
  *                                   was not actually applied.
  *
  * Needs `SUPABASE_DB_URL` (Supabase -> Project Settings -> Database -> Connection string ->
- * URI, direct connection on port 5432). Kept in `env/deploy.env`; in CI it is a GitHub Secret.
+ * URI, port 5432). Kept in `env/deploy.env`; in CI it is a GitHub Secret, and there it must be the
+ * Session pooler string — the direct host is IPv6-only and GitHub's runners can't reach it.
  *
  * Each patch file wraps itself in `begin; ... commit;`, so this runs the file exactly as a
  * human would paste it — it does not add a transaction of its own. Keep new patches

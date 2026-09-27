@@ -121,7 +121,5 @@ console.log(
     "  npm run db:push       just apply new SQL patches",
     "  npm run env:sync      just push env/production.env to Vercel",
     "",
-    "Want deploys to happen automatically on `git push`?  npm run deploy:github",
-    "",
   ].join("\n")
 );

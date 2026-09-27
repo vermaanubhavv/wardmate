@@ -295,17 +295,20 @@ Sub-commands if you want just one part: `npm run db:push`, `npm run env:sync` (b
   (added by `vercel env pull`) are ignored. Locally it reads the project from
   `.vercel/project.json` and the token from your `vercel login` — no config.
 
-### Automatic deploys on `git push` (optional)
+### Automatic deploys on `git push`
 
-```
-npm run deploy:github
-```
+Two independent things happen on every push to `main`:
 
-Prints the five GitHub secrets to add and copies the big one to your clipboard, then the
-Action in `.github/workflows/deploy.yml` runs `test → db:push → env:sync → deploy` on every
-push to `main`. **Don't also connect the repo in Vercel's dashboard** — the Action deploys, a
-Vercel Git connection would double it. Use a *fresh* token from vercel.com/account/tokens for
-the secret (the CLI login token expires).
+- **Vercel's Git integration** builds and deploys the app to production.
+- **`.github/workflows/deploy.yml`** runs `npm test`, then `db:push` — which also fails the run
+  if any public table lacks RLS or any view lacks `security_invoker`.
+
+They run in parallel, so code that needs a new patch can be live for ~30s before the patch
+lands. The only secret the workflow needs is `SUPABASE_DB_URL`, and it must be the **Session
+pooler** string (`aws-0-ap-south-1.pooler.supabase.com:5432`, user
+`postgres.zrisashumxmiiwffhezc`) — the direct `db.….supabase.co` host is IPv6-only and GitHub's
+runners can't reach it. Environment variables are not synced by CI; run `npm run env:sync`
+locally when `env/production.env` changes.
 
 ## Known gaps / near-term work
 
