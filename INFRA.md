@@ -18,7 +18,7 @@ repo to Vercel for deploys — everything past this point assumes that has happe
 |---|---|---|
 | Framework | **Next.js** (App Router, React Server Components) | |
 | Hosting | **Vercel** | Project name `wardmate`. Deployed via `vercel --prod` from the CLI today — see above. |
-| Database | **Supabase** (Postgres) | Project ref `zrisashumxmiiwffhezc` → `https://zrisashumxmiiwffhezc.supabase.co`. Also provides auth and file storage. |
+| Database | **Supabase** (Postgres) | Project ref `zrisashumxmiiwffhezc` → `https://zrisashumxmiiwffhezc.supabase.co`. Region **Mumbai (`ap-south-1`)** — patient data at rest stays in India. Also provides auth and file storage. |
 | AI | **Anthropic API** (`claude-opus-5`) | Structures spoken/typed notes into clinical values; reads photographed lab reports and the ward register. |
 | Speech-to-text | Pluggable — **OpenAI**, **Sarvam** or **Deepgram** | Behind `lib/stt/`, selected by the `STT_PROVIDER` env var. Swappable without touching anything else; the point of that seam is comparing engines on Indian-accented medical speech. Deepgram runs `nova-3-medical` in `en-IN` with a per-patient keyterm list — see `docs/medical-dictation-keyterms.md`. |
 | Outbound email | **Resend**, via Supabase's SMTP integration | Sends the sign-in codes. Outreach check-ins (waitlist / quiet / active) go out daily at 10:00 IST from pg_cron via Resend's API; key in Supabase Vault as `resend_api_key` — see `supabase/patches/0081_outreach_emails.sql`. |
@@ -120,9 +120,11 @@ and is bound by the same RLS policies as a normal query. **If a future function 
 
 ### What's deliberately NOT stored
 
-Patients have a name and a bed. No hospital ID, no phone number, no address. This is a product
-decision as much as an engineering one — see `BRAND.md` — and it should not be casually
-"fixed" by adding fields later without that context.
+Patients have a name, a bed and, optionally, the hospital's UHID/IP and MRD numbers (patch
+0024, added at the unit's request). No phone number, no address. The hospital numbers are what
+would make a leak link back to real records, so they sit behind the same ward-scoped RLS as
+everything else, and must stay out of logs, Sentry events, URLs and test fixtures. Adding
+further identifiers is a product decision — see `BRAND.md` — not a casual field addition.
 
 ### Deletion is two-step by design
 
@@ -233,7 +235,7 @@ so a slow request shows *where* the time went:
   per-request context (route, `ward.id`) onto every span/log/error via the isolation scope.
   All no-ops when Sentry is off.
 - Spans: `stt.transcribe` (any provider, via a wrapper in `lib/stt/index.ts`),
-  `ai.clinical-ner` + `ai.extract-observations` (`lib/extract.ts`), `ai.round-split`
+  `ai.extract-observations` (`lib/extract.ts`), `ai.round-split`
   (`lib/read-round.ts`) — each carries token usage under `gen_ai.usage.*`.
 - Logs: the `entries/voice` and `round` routes emit `dictation transcribed` / `dictation
   stored` / `round draft built` with counts and provider — never a transcript or a name.

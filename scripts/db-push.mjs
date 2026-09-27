@@ -73,7 +73,10 @@ try {
       filename   text primary key,
       applied_at timestamptz not null default now(),
       sha256     text
-    )
+    );
+    -- No policies: invisible to anon/authenticated through the API. This script connects as
+    -- the owner, which bypasses RLS.
+    alter table public._patch_log enable row level security;
   `);
 
   const applied = new Set(
@@ -134,6 +137,26 @@ try {
       console.log(`\nDone — ${pending.length} patch(es) applied.`);
     }
   }
+
+  // RLS is the security boundary (INFRA.md), so a public table without it, or a view that
+  // runs as its owner, is readable across wards through the API. Refuse to call that done.
+  const { rows: leaks } = await client.query(`
+    select c.relname,
+           case c.relkind when 'v' then 'view without security_invoker'
+                          else 'table without row level security' end as problem
+      from pg_class c
+      join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'public'
+       and ((c.relkind in ('r', 'p') and not c.relrowsecurity)
+         or (c.relkind = 'v' and not coalesce(c.reloptions @> array['security_invoker=true'], false)))
+     order by 1
+  `);
+  if (leaks.length > 0) {
+    console.error("\nRLS check FAILED — these are exposed to every signed-in user:");
+    for (const l of leaks) console.error(`  ${l.relname}: ${l.problem}`);
+    process.exit(1);
+  }
+  console.log("RLS check ok — every public table has RLS, every view is security_invoker.");
 } finally {
   await client.end();
 }
