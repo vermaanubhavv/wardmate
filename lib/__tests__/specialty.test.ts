@@ -574,6 +574,17 @@ describe("offersChecklistFamily — the picker follows the department chosen at 
     expect(offersChecklistFamily(internalMedicinePack, "febrile_neutropenia")).toBe(false);
   });
 
+  it("offers general surgery its own procedure checklists (0097 / 0098) and no other department", () => {
+    const families = ["breast_surgery", "colorectal_resection", "gastrectomy", "thyroidectomy", "abscess_debridement",
+      "acute_pancreatitis", "perforation_peritonitis", "intestinal_obstruction", "acute_cholecystitis"];
+    for (const f of families) {
+      expect(offersChecklistFamily(generalSurgeryPack, f), f).toBe(true);
+      for (const other of listSpecialties().filter((p) => p.key !== "general_surgery")) {
+        expect(offersChecklistFamily(other, f), `${other.key}: ${f}`).toBe(false);
+      }
+    }
+  });
+
   it("gives the one pack with no list of its own every family no other pack claims", () => {
     // The operations, which live only in care_templates and are never listed in a pack.
     expect(offersChecklistFamily(generalSurgeryPack, "lap_chole")).toBe(true);
