@@ -34,6 +34,17 @@ describe("specialty-aware case-history chips", () => {
     expect(complaintChipsFor("urology")).toContain("Blood in urine");
   });
 
+  it("every department has its own past-history set", () => {
+    for (const key of SPECIALTY_KEYS) {
+      const chips = pastChipsFor(key);
+      expect(chips.length, key).toBeGreaterThanOrEqual(8);
+      expect(new Set(chips).size, `${key} has a duplicate chip`).toBe(chips.length);
+      for (const c of chips) expect(TREATMENT_ADVICE.test(c), `${key}: "${c}"`).toBe(false);
+    }
+    expect(pastChipsFor("ophthalmology")).toContain("Glaucoma");
+    expect(pastChipsFor("paediatrics")).toContain("Preterm birth");
+  });
+
   it("gives medicine, oncology and O&G their own past-history chip set, distinct from surgery's", () => {
     const surgery = pastChipsFor("general_surgery");
     const medicine = pastChipsFor("internal_medicine");

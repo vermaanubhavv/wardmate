@@ -41,9 +41,53 @@ const SURGICAL: Lead = {
 
 const DEPARTMENT_LEAD: Record<SpecialtyKey, Lead[]> = {
   general_surgery: [SURGICAL],
-  burns_plastic_surgery: [SURGICAL],
-  ent: [SURGICAL],
-  ophthalmology: [SURGICAL],
+  // The burn itself is asked first — when, with what, in a closed space or not, and what was
+  // done before arrival — because every later decision (fluids, airway, surgery) hangs on it.
+  burns_plastic_surgery: [
+    {
+      key: "hopi",
+      table: {
+        fields: [
+          "Time of burn / injury",
+          "Agent (flame / scald / electrical / chemical)",
+          "Closed space / smoke inhalation",
+          "First aid and what was applied",
+          "Referred from / time since injury",
+        ],
+      },
+    },
+    { key: "past", table: { fields: ["Tetanus immunisation", "Previous burns / reconstructive surgery", "DM / HTN / epilepsy", "Allergies"] } },
+    SURGICAL,
+  ],
+  ent: [
+    SURGICAL,
+    {
+      key: "past",
+      table: {
+        fields: ["Previous ear / nose / throat complaints", "Hearing aid / previous audiogram", "Allergic rhinitis / asthma", "Bleeding tendency / blood thinners"],
+      },
+    },
+    { key: "personal", table: { fields: ["Tobacco — smoked / chewed", "Alcohol", "Voice use at work", "Noise exposure"] } },
+  ],
+  // An eye history leads with the eye's own past: glasses, surgery, drops and injury — then the
+  // two systemic diseases that decide most eye admissions, and steroid use.
+  ophthalmology: [
+    {
+      key: "past",
+      table: {
+        fields: [
+          "Glasses / contact lenses",
+          "Previous eye surgery / laser",
+          "Eye drops in use",
+          "Previous eye injury",
+          "Diabetes / hypertension (duration, control)",
+          "Steroid use (drops / tablets)",
+        ],
+      },
+    },
+    SURGICAL,
+    { key: "family", table: { fields: ["Glaucoma", "Squint / lazy eye", "Retinal disease / blindness"] } },
+  ],
   obstetrics_gynaecology: [
     {
       key: "obstetric",

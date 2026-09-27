@@ -23,6 +23,9 @@ describe("department prompts", () => {
     expect(leadsFor("obstetrics_gynaecology")[0].key).toBe("obstetric");
     expect(leadsFor("psychiatry").map((l) => l.key)).toEqual(["personal", "family"]);
     expect(leadsFor("emergency_medicine").map((l) => l.key)).toEqual(["hopi", "past"]);
+    expect(leadsFor("ent").map((l) => l.key)).toEqual(["surgical", "past", "personal"]);
+    expect(leadsFor("ophthalmology").map((l) => l.key)).toEqual(["past", "surgical", "family"]);
+    expect(leadsFor("burns_plastic_surgery")[0].key).toBe("hopi");
     expect(leadsFor("nonsense")).toEqual([]);
   });
 });
