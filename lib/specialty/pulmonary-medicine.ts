@@ -101,7 +101,7 @@ Pulmonary medicine ward — what the words mean here:
   // of the medicine list — DKA, SLE, enteric fever — is not this ward's and is not offered.
   // A chest unit's own checklists (COPD exacerbation, asthma, pleural effusion, post-TB lung)
   // replace this list when they are written.
-  checklistFamilies: ["cap", "pulmonary_tb", "vte_suspected"],
+  checklistFamilies: ["copd_exacerbation", "acute_asthma", "pleural_drain", "cap", "pulmonary_tb", "vte_suspected"],
 
   lexiconSpecialty: "pulmonary-medicine",
 

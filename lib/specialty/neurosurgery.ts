@@ -100,7 +100,8 @@ Neurosurgical ward — what the words mean here:
 
   // Empty: no neurosurgical checklist is written. A head-injury observation checklist and a
   // shunt checklist are the first two, and both need this unit's sign-off.
-  checklistFamilies: [],
+  // Seeded by patches 0089–0091 (drafts until published).
+  checklistFamilies: ["head_injury", "craniotomy", "spine_surgery", "vp_shunt"],
 
   lexiconSpecialty: "neurosurgery",
 

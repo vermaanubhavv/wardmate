@@ -100,7 +100,8 @@ Eye ward — what the words mean here:
 
   // Empty for the same reason as ENT: no ophthalmology checklist exists yet, and an eye unit
   // being offered "Lap chole" would be worse than being offered nothing.
-  checklistFamilies: [],
+  // Seeded by patches 0089–0091 (drafts until published).
+  checklistFamilies: ["cataract_surgery", "glaucoma_surgery", "vitreoretinal_surgery", "corneal_ulcer"],
 
   lexiconSpecialty: "ophthalmology",
 

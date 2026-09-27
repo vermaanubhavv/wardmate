@@ -1005,3 +1005,26 @@ tapers, immunosuppressants, ATT and DR-TB regimens, antiepileptics, anticoagulat
 impairment — the drug is named and the dose is a `[ … ]` blank. No paediatric or infant template
 states a dose (the paediatrics pack's rule); `specialty.test.ts` enforces that, that no department
 borrows another's set, and that no generic template auto-matches.
+
+## 17. Every department's own ward checklists (2026-09-28)
+
+Patches 0089–0091 seed checklists for the eleven departments that had none, and three of its
+own for pulmonary medicine (which keeps medicine's CAP, TB and VTE rows). 71 protocols, 49
+picker rows:
+
+| Patch | Departments | Families |
+|---|---|---|
+| 0089 | O&G, ENT, eye, ortho | lscs, normal_delivery, pre_eclampsia, antenatal_admission · tonsillectomy, ear_surgery, fess, tracheostomy · cataract_surgery, glaucoma_surgery, vitreoretinal_surgery, corneal_ulcer · fracture_fixation, hip_fracture, arthroplasty, limb_in_cast, open_fracture |
+| 0090 | urology, neurosurgery, burns, pulmonary | turp, stone_surgery, nephrectomy, urinary_retention · head_injury, craniotomy, spine_surgery, vp_shunt · acute_burns, skin_graft, flap_surgery, hand_surgery · copd_exacerbation, acute_asthma, pleural_drain |
+| 0091 | dermatology, psychiatry, paediatrics, emergency | sjs_ten, autoimmune_blistering, erythroderma, leprosy_reaction · acute_psychosis, alcohol_withdrawal, suicide_risk, mania · paediatric_pneumonia, paediatric_dehydration, neonatal_sepsis, febrile_seizure, severe_acute_malnutrition · polytrauma, poisoning, snakebite, heat_illness |
+
+Operative families carry a pre-operative (`before_surgery`) and a post-operative
+(`after_surgery`) protocol, because `getTemplateForPatient` picks by whether a surgery date
+exists; non-operative families carry one. Picker rows use each pack's `pickerPhase`. They are
+seeded as drafts; residents only see published protocols. `specialty.test.ts` checks that every
+family a pack lists is seeded by some patch, and that no department is offered surgery's or
+medicine's families.
+
+Two limits to know: a non-operative family (pre-eclampsia, corneal ulcer, acute burns) has no
+post-operative protocol, so it stops showing once a surgery date is set; and the normal-delivery
+postnatal list appears only if the delivery is recorded as the surgery date.
