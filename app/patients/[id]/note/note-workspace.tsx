@@ -21,6 +21,7 @@ import {
   replaceActiveMedications,
   applyCompiledNote,
 } from "./actions";
+import type { ProgressNoteConfig } from "@/lib/progress-note-config";
 
 export type NoteObs = { kind: string; label: string; value: string | null };
 
@@ -38,48 +39,8 @@ const MED_PRESETS = [
   "Nebulisation — Duolin / Budecort",
 ];
 
-const COMPLAINT_PILLS = [
-  "No fresh complaints",
-  "Pain",
-  "Vomiting",
-  "Fever",
-  "Not passed flatus",
-  "Not passed stool",
-  "Not tolerating orals",
-  "Abdominal distension",
-  "Cough",
-  "Breathlessness",
-  "Giddiness",
-];
 const SENSORIUM = ["Conscious & oriented", "Drowsy", "Altered sensorium", "Irritable"];
-const ABDOMEN_PILLS = [
-  "Soft",
-  "Non-tender",
-  "Tender",
-  "Guarding",
-  "Distended",
-  "Non-distended",
-  "Bowel sounds present",
-  "Bowel sounds absent",
-];
-const CHEST_PILLS = ["Clear", "NVBS", "B/L air entry equal", "Added sounds", "Decreased air entry"];
 const ASSESSMENT = ["Satisfactory", "Stable", "Improving", "Static", "Deteriorating"];
-const PLAN_PILLS = [
-  "Continue same treatment",
-  "Start orals",
-  "Step down antibiotics",
-  "Stop IV fluids",
-  "Remove drain",
-  "Remove catheter",
-  "Suture removal",
-  "Chest physiotherapy",
-  "Ambulate",
-  "Repeat CBC",
-  "Repeat RFT",
-  "PAC / consent",
-  "Plan for discharge",
-  "Refer",
-];
 const VITALS: { key: string; label: string; ph: string }[] = [
   { key: "BP", label: "BP", ph: "120/80" },
   { key: "PR", label: "PR", ph: "84 /min" },
@@ -92,30 +53,24 @@ const VITALS: { key: string; label: string; ph: string }[] = [
   { key: "ICU", label: "ICU / support", ph: "e.g. on noradrenaline 0.08" },
 ];
 
-type StepId =
-  | "complaints"
-  | "sensorium"
-  | "vitals"
-  | "abdomen"
-  | "chest"
-  | "bowel"
-  | "assessment"
-  | "plan"
-  | "meds"
-  | "review";
+/** The shared cards are fixed ids; each department's exam cards use their section id. */
+type StepId = string;
 
-const STEPS: { id: StepId; title: string }[] = [
-  { id: "complaints", title: "Complaints / overnight" },
-  { id: "sensorium", title: "Sensorium" },
-  { id: "vitals", title: "Vitals" },
-  { id: "abdomen", title: "Per abdomen" },
-  { id: "chest", title: "Chest" },
-  { id: "bowel", title: "Flatus / stool" },
-  { id: "assessment", title: "Assessment" },
-  { id: "plan", title: "Plan" },
-  { id: "meds", title: "Medications" },
-  { id: "review", title: "Review & print" },
-];
+/** The card order: the lines every sheet shares, with this department's exam cards (and the
+ *  Flatus / Stool card where the ward keeps it) in the middle — the order the sheet prints. */
+function stepsFor(config: ProgressNoteConfig): { id: StepId; title: string }[] {
+  return [
+    { id: "complaints", title: "Complaints / overnight" },
+    { id: "sensorium", title: "Sensorium" },
+    { id: "vitals", title: "Vitals" },
+    ...config.examSections.map((sec) => ({ id: sec.id, title: sec.title })),
+    ...(config.bowelLine ? [{ id: "bowel", title: "Flatus / stool" }] : []),
+    { id: "assessment", title: "Assessment" },
+    { id: "plan", title: "Plan" },
+    { id: "meds", title: "Medications" },
+    { id: "review", title: "Review & print" },
+  ];
+}
 
 export default function NoteWorkspace({
   patientId,
@@ -124,6 +79,7 @@ export default function NoteWorkspace({
   yesterday = [],
   currentMeds,
   suggestedAssessment = "",
+  noteConfig,
 }: {
   patientId: string;
   dateLabel: string;
@@ -135,7 +91,11 @@ export default function NoteWorkspace({
   /** A pre-fill for the Assessment card on a routine round — "" when nothing should be
    *  suggested (no round yet today, or something on it reads as concerning). */
   suggestedAssessment?: string;
+  /** This department's exam cards and chips — lib/progress-note-config.ts. */
+  noteConfig: ProgressNoteConfig;
 }) {
+  const STEPS = useMemo(() => stepsFor(noteConfig), [noteConfig]);
+  const sectionById = (id: string) => noteConfig.examSections.find((sec) => sec.id === id);
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [step, setStep] = useState(0);
@@ -171,8 +131,9 @@ export default function NoteWorkspace({
     GRBS: val(["grbs", "rbs", "cbg"]),
     ICU: val(["icu", "icu / support", "support"]),
   }));
-  const [abdomen, setAbdomen] = useState(() => val(["per abdomen", "abdomen", "p/a", "pa"]));
-  const [chest, setChest] = useState(() => val(["chest", "respiratory system", "rs"]));
+  const [exam, setExam] = useState<Record<string, string>>(() =>
+    Object.fromEntries(noteConfig.examSections.map((sec) => [sec.id, val(sec.aliases)]))
+  );
   const [flatus, setFlatus] = useState(() => val(["flatus", "passed flatus"]));
   const [stool, setStool] = useState(() => val(["stool", "motion", "bowels"]));
   const [assessment, setAssessment] = useState(() => val(["assessment"]) || suggestedAssessment);
@@ -180,7 +141,7 @@ export default function NoteWorkspace({
   const [meds, setMeds] = useState<string[]>(currentMeds);
 
   const [compiled, setCompiled] = useState<{
-    fields: { complaints: string; sensorium: string; abdomen: string; chest: string; assessment: string };
+    fields: Record<string, string>;
     plan: string[];
     uncertain: string[];
   } | null>(null);
@@ -200,8 +161,10 @@ export default function NoteWorkspace({
         patientId,
         VITALS.map((v) => ({ label: v.key, value: vitals[v.key]?.trim() || null }))
       );
-    else if (id === "abdomen") res = await replaceTodayNoteExam(patientId, [{ label: "per abdomen", kind: "exam", value: abdomen || null }]);
-    else if (id === "chest") res = await replaceTodayNoteExam(patientId, [{ label: "chest", kind: "exam", value: chest || null }]);
+    else if (sectionById(id)) {
+      const sec = sectionById(id)!;
+      res = await replaceTodayNoteExam(patientId, [{ label: sec.label, kind: "exam", value: exam[sec.id] || null }]);
+    }
     else if (id === "bowel")
       res = await replaceTodayNoteExam(patientId, [
         { label: "flatus", kind: "exam", value: flatus || null },
@@ -292,7 +255,7 @@ export default function NoteWorkspace({
       return (
         <>
           <p className="text-[12px] leading-[1.45] text-muted">Overnight events and any fresh complaint. Tap what fits, add the rest.</p>
-          <PillsAndText pills={COMPLAINT_PILLS} value={complaints} onChange={(v) => { setComplaints(v); mark("complaints"); }} placeholder="Overnight in the patient's words" />
+          <PillsAndText pills={noteConfig.complaintPills} value={complaints} onChange={(v) => { setComplaints(v); mark("complaints"); }} placeholder="Overnight in the patient's words" />
           <YesterdayButton text={yVal(["complaints", "c/o", "complaint"])} onUse={(v) => { setComplaints(v); mark("complaints"); }} />
         </>
       );
@@ -334,20 +297,16 @@ export default function NoteWorkspace({
           />
         </div>
       );
-    if (id === "abdomen")
+    const sec = sectionById(id);
+    if (sec) {
+      const set = (v: string) => { setExam({ ...exam, [sec.id]: v }); mark(sec.id); };
       return (
         <>
-          <PillsAndText pills={ABDOMEN_PILLS} value={abdomen} onChange={(v) => { setAbdomen(v); mark("abdomen"); }} placeholder="Anything else on the abdomen" />
-          <YesterdayButton text={yVal(["per abdomen", "abdomen", "p/a", "pa"])} onUse={(v) => { setAbdomen(v); mark("abdomen"); }} />
+          <PillsAndText pills={sec.pills} value={exam[sec.id] ?? ""} onChange={set} placeholder={sec.placeholder} />
+          <YesterdayButton text={yVal(sec.aliases)} onUse={set} />
         </>
       );
-    if (id === "chest")
-      return (
-        <>
-          <PillsAndText pills={CHEST_PILLS} value={chest} onChange={(v) => { setChest(v); mark("chest"); }} placeholder="Anything else on the chest" />
-          <YesterdayButton text={yVal(["chest", "respiratory system", "rs"])} onUse={(v) => { setChest(v); mark("chest"); }} />
-        </>
-      );
+    }
     if (id === "bowel")
       return (
         <div className="flex flex-col gap-3">
@@ -400,7 +359,7 @@ export default function NoteWorkspace({
         <>
           <p className="text-[12px] leading-[1.45] text-muted">Today&rsquo;s jobs. Each tap adds a line; the AI can propose from the round.</p>
           <div className="flex flex-wrap gap-1.5">
-            {PLAN_PILLS.map((p) => {
+            {noteConfig.planPills.map((p) => {
               const on = planItems.includes(p);
               return (
                 <SelChip key={p} selected={on} onClick={() => { setPlanItems(on ? planItems.filter((x) => x !== p) : [...planItems, p]); mark("plan"); }}>
@@ -482,10 +441,15 @@ export default function NoteWorkspace({
         {compiled && (
           <>
             <UncertainList points={compiled.uncertain} />
-            {(["complaints", "sensorium", "abdomen", "chest", "assessment"] as const).map((k) =>
+            {[
+              { k: "complaints", title: "complaints" },
+              { k: "sensorium", title: "sensorium" },
+              ...noteConfig.examSections.map((sec) => ({ k: sec.id, title: sec.title })),
+              { k: "assessment", title: "assessment" },
+            ].map(({ k, title }) =>
               compiled.fields[k] ? (
                 <div key={k} className="flex flex-col gap-1">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">{k}</span>
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">{title}</span>
                   <input
                     value={compiled.fields[k]}
                     onChange={(e) => setCompiled({ ...compiled, fields: { ...compiled.fields, [k]: e.target.value } })}

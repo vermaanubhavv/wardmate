@@ -4,6 +4,9 @@ import { plainAiError } from "@/lib/ai-error";
 import { istDayKey } from "@/lib/patient-state";
 import { MANAGEMENT_CHOICES } from "@/lib/patients";
 import { compileProgressNote } from "@/lib/progress-note-ai";
+import { progressNoteConfigFor } from "@/lib/progress-note-config";
+import { getSpecialtyPack } from "@/lib/specialty";
+import { getWardSpecialtyStored } from "@/lib/ward";
 
 /**
  * Compile today's tapped fragments into the progress-sheet phrasing.
@@ -28,7 +31,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       .gte("recorded_at", since),
     supabase
       .from("current_patients")
-      .select("age_years, sex, primary_diagnosis, surgery_date, post_op_day, management, procedure_text")
+      .select("ward_id, age_years, sex, primary_diagnosis, surgery_date, post_op_day, management, procedure_text")
       .eq("id", patientId)
       .maybeSingle(),
   ]);
@@ -62,6 +65,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     ? `Post Op Day (${patient.post_op_day ?? "—"})`
     : MANAGEMENT_CHOICES.find((c) => c.value === patient?.management)?.label ?? null;
 
+  // This department's exam lines and ward wording — lib/progress-note-config.ts.
+  const noteConfig = progressNoteConfigFor(
+    getSpecialtyPack(patient?.ward_id ? await getWardSpecialtyStored(patient.ward_id) : null).key
+  );
+
   try {
     const compiled = await compileProgressNote(digest, {
       age_years: patient?.age_years ?? null,
@@ -69,7 +77,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       diagnosis: patient?.primary_diagnosis ?? null,
       status,
       procedure: patient?.procedure_text ?? null,
-    });
+    }, noteConfig);
     return NextResponse.json(compiled);
   } catch (e) {
     return NextResponse.json({ error: plainAiError(e) }, { status: 502 });

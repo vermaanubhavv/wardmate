@@ -3,6 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { istDayKey } from "@/lib/patient-state";
+import { getWardSpecialtyStored } from "@/lib/ward";
+import { getSpecialtyPack } from "@/lib/specialty";
+import { progressNoteConfigFor } from "@/lib/progress-note-config";
 
 /**
  * Writes from the daily progress-note workspace.
@@ -253,7 +256,7 @@ export async function replaceActiveMedications(
 export async function applyCompiledNote(
   patientId: string,
   compiled: {
-    fields: { complaints: string; sensorium: string; abdomen: string; chest: string; assessment: string };
+    fields: Record<string, string>;
     plan: string[];
   }
 ): Promise<{ ok: boolean; error?: string }> {
@@ -261,12 +264,18 @@ export async function applyCompiledNote(
   const user = await currentUser(supabase);
   if (!user) return { ok: false, error: "Not signed in." };
 
+  // Which exam lines exist is decided here from the patient's own ward, never taken from the
+  // client — a field the department does not have is simply not written.
+  const { data: patient } = await supabase.from("current_patients").select("ward_id").eq("id", patientId).maybeSingle();
+  if (!patient) return { ok: false, error: "Patient not found." };
+  const config = progressNoteConfigFor(getSpecialtyPack(await getWardSpecialtyStored(patient.ward_id)).key);
+
+  const field = (k: string) => String(compiled.fields[k] ?? "").trim();
   const map: [string, string, string][] = [
-    ["complaints", "note", compiled.fields.complaints],
-    ["sensorium", "exam", compiled.fields.sensorium],
-    ["per abdomen", "exam", compiled.fields.abdomen],
-    ["chest", "exam", compiled.fields.chest],
-    ["assessment", "note", compiled.fields.assessment],
+    ["complaints", "note", field("complaints")],
+    ["sensorium", "exam", field("sensorium")],
+    ...config.examSections.map((s): [string, string, string] => [s.label, "exam", field(s.id)]),
+    ["assessment", "note", field("assessment")],
   ];
   for (const [label, kind, text] of map) {
     const err = await rewriteToday(supabase, patientId, user.id, label, kind, text ? [text] : []);
