@@ -75,6 +75,8 @@ const ANALYTES: AnalyteSpec[] = [
   { key: "hct", aliases: /\b(h(a)?ematocrit|hct|pcv|packed cell volume)\b/i, unitAnalyte: "hct" },
   { key: "sbp", aliases: /\b(systolic( blood pressure| bp)?|sbp)\b/i, unitAnalyte: "sbp" },
   { key: "hr", aliases: /\b(heart rate|pulse( rate)?|hr\b)\b/i, unitAnalyte: "hr" },
+  { key: "dbp", aliases: /\b(diastolic( blood pressure| bp)?|dbp)\b/i, unitAnalyte: "sbp" },
+  { key: "spo2", aliases: /\b(spo2|sp o2|spo₂|oxygen saturation|o2 saturation|saturation)\b/i, unitAnalyte: null },
   { key: "rr", aliases: /\b(resp(iratory)? rate|rr\b)\b/i, unitAnalyte: "rr" },
   { key: "temp", aliases: /\b(temp(erature)?|febrile|pyrexia)\b/i, unitAnalyte: "temp" },
   { key: "ph", aliases: /\b(ph\b|arterial ph|blood ph)\b/i, unitAnalyte: null },
@@ -92,6 +94,18 @@ const ANALYTES: AnalyteSpec[] = [
   { key: "sodium", aliases: /\b(sodium|s\.?\s?na\b|serum sodium|na\+?)\b/i, unitAnalyte: null },
   { key: "potassium", aliases: /\b(potassium|s\.?\s?k\b|serum potassium|k\+?)\b/i, unitAnalyte: null },
   { key: "lactate", aliases: /\b(lactate|serum lactate|blood lactate|lactic acid)\b/i, unitAnalyte: null },
+];
+
+/**
+ * The labels the ward's own vitals card charts under (note-workspace.tsx, lib/vital-ranges.ts):
+ * "BP" as "120/80" and pulse as "PR". Neither says "systolic" or "heart rate", so before this
+ * a charted BP or pulse never reached a score — qSOFA, CURB-65, Glasgow-Blatchford and HEART
+ * all saw them as missing. Matched on the whole label, and only for vitals, because "PR" alone
+ * also means per rectal.
+ */
+const VITAL_LABELS: { re: RegExp; key: string }[] = [
+  { re: /^(bp|blood pressure)$/i, key: "sbp" },
+  { re: /^(pr|pulse)$/i, key: "hr" },
 ];
 
 const IMAGING = /\b(x-?ray|cxr|chest film|ct\b|ct scan|cect|usg|ultrasound|sonograph|imaging|radiograph)\b/i;
@@ -219,7 +233,10 @@ export function toEngineInputs(rows: ObservationRow[], patient: PatientFacts): E
     }
 
     // --- Known analytes --------------------------------------------
-    const spec = ANALYTES.find((a) => a.aliases.test(row.label) || a.aliases.test(row.source_quote));
+    const vitalKey = row.kind === "vital" ? VITAL_LABELS.find((v) => v.re.test(row.label.trim()))?.key : undefined;
+    const spec = vitalKey
+      ? ANALYTES.find((a) => a.key === vitalKey)
+      : ANALYTES.find((a) => a.aliases.test(row.label) || a.aliases.test(row.source_quote));
     if (!spec) continue;
 
     const raw = numFrom(row);
@@ -254,6 +271,12 @@ export function toEngineInputs(rows: ObservationRow[], patient: PatientFacts): E
       ...(unitError ? { unitError } : {}),
     };
     out.push(input);
+
+    // "120/80" under a BP label carries the diastolic too — the second number.
+    if (spec.key === "sbp") {
+      const dia = (row.value_text ?? "").match(/\d+\s*\/\s*(\d+)/);
+      if (dia) out.push({ ...baseInput(row, "dbp"), value: Number(dia[1]), unit: "mmHg", text: row.value_text });
+    }
 
     if (spec.key === "bun") sawBun = true;
     if (spec.key === "urea" && input.value != null) sawUrea = input;

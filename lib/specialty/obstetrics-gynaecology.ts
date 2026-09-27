@@ -32,14 +32,14 @@ import type { SpecialtyPack } from "./types";
  * (docs/specialty-packs.md §7–§8): the seam, day numbering, extraction prompt, lexicon and
  * quick-tap chips are built and safe to ship. Checklists, scores and condition-specific
  * discharge templates are real clinical content that need the unit's own sign-off before they
- * exist — the same reason `scoringKeys` is empty here, not a placeholder. (The condition
+ * exist. (MEOWS was added 2026-09-28 — see lib/scoring/definitions/meows.v1.ts.) (The condition
  * discharge templates were written 2026-09-28 — see lib/discharge-templates-obgyn.ts.) Behind `SPECIALTY_PACKS`, unreachable until switched on for a pilot unit.
  *
  * What is deliberately NOT shipped in this pack, and why:
  * - No checklist protocols (a PPH drill checklist, a pre-eclampsia checklist, a post-LSCS
  *   checklist are exactly the shape patches 0061/0064/0067 seeded for oncology and medicine —
  *   clinical content, not yet written or reviewed here).
- * - No scoring pathways (`scoringKeys: []` — a modified early-warning score for obstetrics is a
+ * - Scoring: MEOWS only (added 2026-09-28). Previously (`scoringKeys: []` — a modified early-warning score for obstetrics is a
  *   plausible future addition, not one made without sign-off).
  * - No new patient columns for LMP/EDD/gravida/para. That information is captured as clerking
  *   text under "menstrual and obstetric history" (a section every specialty already has — see
@@ -104,7 +104,8 @@ Obstetrics and gynaecology ward — what the words mean here:
 
   // Deliberately empty — see the file header. No surgical or medicine pathway can trigger here
   // either way, because only listed pathwayIds are ever offered to a unit.
-  scoringKeys: [],
+  // MEOWS — signed off 2026-09-28.
+  scoringKeys: ["meows"],
 
   // An O&G unit operates (LSCS, laparoscopy, hysterectomy), unlike internal medicine — keep the
   // OT notes slot, unlike that pack.

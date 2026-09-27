@@ -85,7 +85,8 @@ Neurosurgical ward — what the words mean here:
 
   // Empty on purpose — see the header. GCS is dictated, never scored here, and every
   // neurosurgical outcome model is prognostic.
-  scoringKeys: [],
+  // Canadian CT Head Rule — signed off 2026-09-28.
+  scoringKeys: ["canadian_ct_head"],
 
   formatKinds: [
     "investigation",

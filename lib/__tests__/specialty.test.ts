@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { getDefinition } from "@/lib/scoring/definitions/registry";
 import path from "node:path";
 import { SPECIALTY_KEYS } from "@/lib/specialty/types";
 import { burnsPlasticSurgeryPack } from "@/lib/specialty/burns-plastic-surgery";
@@ -138,8 +139,8 @@ describe("burns counts from the burn, which happened before the admission", () =
     expect(p.dayCount({ post_op_day: null, admission_day: 7, burn_day: null }).text).toBe("Day 7");
   });
 
-  it("offers no score: the burns severity indices are not built or reviewed here", () => {
-    expect(p.scoringKeys).toEqual([]);
+  it("offers its own burn severity index and nothing borrowed", () => {
+    expect(p.scoringKeys).toEqual(["absi"]);
   });
 });
 
@@ -183,8 +184,8 @@ describe("medical oncology counts by the cycle", () => {
     expect(prompt).toContain("CHEMOTHERAPY CYCLE DAY");
   });
 
-  it("offers no surgical scoring pathway", () => {
-    expect(p.scoringKeys).toEqual([]);
+  it("offers MASCC and no surgical scoring pathway", () => {
+    expect(p.scoringKeys).toEqual(["mascc"]);
     expect(generalSurgeryPack.scoringKeys).toContain("acute_pancreatitis");
   });
 
@@ -260,6 +261,22 @@ describe("internal medicine counts by the hospital day", () => {
   });
 });
 
+describe("every department's scores", () => {
+  it("every scoring key a department lists names a registered pathway", () => {
+    for (const p of listSpecialties()) {
+      // Any status: a draft is registered but not yet offered (see registry.ts).
+      for (const k of p.scoringKeys) expect(getDefinition(k, "1.0.0"), `${p.key}: ${k}`).toBeTruthy();
+    }
+  });
+
+  it("every department except ophthalmology has at least one score (no validated ward score exists for eye)", () => {
+    for (const p of listSpecialties()) {
+      if (p.key === "ophthalmology") expect(p.scoringKeys).toEqual([]);
+      else expect(p.scoringKeys.length, p.key).toBeGreaterThan(0);
+    }
+  });
+});
+
 describe("every department's own discharge templates", () => {
   const packs = SPECIALTY_KEYS.map((k) => getSpecialtyPack(k));
 
@@ -330,8 +347,8 @@ describe("obstetrics & gynaecology counts like a surgical unit, not a medicine o
     expect(prompt).toContain("Do not decide PIH versus pre-eclampsia versus eclampsia yourself");
   });
 
-  it("offers no surgical or medicine scoring pathway — none are built yet", () => {
-    expect(p.scoringKeys).toEqual([]);
+  it("offers MEOWS and no surgical or medicine scoring pathway", () => {
+    expect(p.scoringKeys).toEqual(["meows"]);
   });
 
   it("keeps the OT notes slot — unlike internal medicine, this ward operates", () => {

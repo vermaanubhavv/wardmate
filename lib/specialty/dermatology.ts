@@ -82,7 +82,8 @@ Skin ward and clinic — what the words mean here:
 
   // Empty on purpose: SCORTEN, PASI and the BSA indices are real instruments this app has not
   // built or reviewed, and it does not compute them.
-  scoringKeys: [],
+  // SCORTEN — signed off 2026-09-28.
+  scoringKeys: ["scorten"],
 
   // No OT notes slot.
   formatKinds: ["investigation", "interdepartmental", "discharge", "notes", "logo"] as FormatKind[],
