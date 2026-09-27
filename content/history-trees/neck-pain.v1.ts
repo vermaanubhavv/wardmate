@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { APLEY, ATLS, BAILEY_LOVE, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * NECK PAIN — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * NECK PAIN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Orthopaedics ward and casualty, north India. Most neck pain is degenerative or postural; the
  * history exists to find the root, the cord, the fracture and the infection hiding among them.
  * Tuberculosis of the cervical spine is a live differential here. Differentials: cervical
@@ -17,8 +17,8 @@ export const neckPainV1: HistoryTree = {
   complaint: "Neck pain",
   triggers: ["neck pain", "pain in neck", "pain in the neck", "neck ache", "cervical pain", "cervicalgia", "cervical spondylosis", "whiplash", "gardan dard", "gardan me dard", "pain radiating to arm"],
   setting: "Orthopaedics ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [APLEY, BAILEY_LOVE, MACLEODS, HUTCHISONS, ATLS],
   slots: [
     ...commonHpi("neck pain"),

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, GHAI_PAEDIATRICS, HUTCHISONS, MACLEODS, val, yn, YOUMANS } from "@/content/history-trees/_helpers";
 
 /**
- * PROBLEM WITH A BRAIN SHUNT (VP SHUNT) — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * PROBLEM WITH A BRAIN SHUNT (VP SHUNT) — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Neurosurgery ward and casualty, north India. Most patients are children and the informant
  * is usually a parent, who often knows better than anyone what a blocked shunt looked like
  * last time. Hydrocephalus after tuberculous meningitis is a common reason for the shunt
@@ -17,8 +17,8 @@ export const shuntProblemV1: HistoryTree = {
   complaint: "Problem with a brain shunt (VP shunt)",
   triggers: ["vp shunt", "shunt problem", "shunt block", "shunt blocked", "shunt blockage", "shunt malfunction", "shunt infection", "shunt dysfunction", "shunt tube", "brain shunt", "shunted child", "shunt revision", "blocked shunt"],
   setting: "Neurosurgery ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [YOUMANS, GHAI_PAEDIATRICS, BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("shunt problem"),

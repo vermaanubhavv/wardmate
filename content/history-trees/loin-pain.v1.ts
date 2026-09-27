@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, CAMPBELL_UROLOGY, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * PAIN IN THE LOIN / RENAL COLIC — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * PAIN IN THE LOIN / RENAL COLIC — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Urology ward and casualty, north India. The history reads the pain first (colicky and
  * restless, or constant and still), then asks the two questions that change the timing: is
  * there fever with the pain, and is there only one working kidney. The mimics that kill are
@@ -17,8 +17,8 @@ export const loinPainV1: HistoryTree = {
   complaint: "Pain in the loin / renal colic",
   triggers: ["loin pain", "pain in loin", "pain in the loin", "flank pain", "pain in flank", "renal colic", "ureteric colic", "kidney pain", "pain in kidney", "stone pain", "kidney stone pain", "pain in the side", "gurde me dard", "pathri ka dard"],
   setting: "Urology ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [CAMPBELL_UROLOGY, BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("loin pain"),

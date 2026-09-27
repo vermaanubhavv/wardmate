@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, CAMPBELL_UROLOGY, commonHpi, HUTCHISONS, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LEAKING OF URINE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * LEAKING OF URINE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Urology ward and casualty, north India. The history turns on when the urine leaks — with a
  * cough, with a rush of urgency, continuously day and night, or without the patient knowing —
  * and then on what came before: childbirth, a pelvic operation, a nerve or spinal illness.
@@ -17,8 +17,8 @@ export const urinaryIncontinenceV1: HistoryTree = {
   complaint: "Leaking of urine",
   triggers: ["urinary incontinence", "incontinence of urine", "leaking urine", "leaking of urine", "leakage of urine", "urine leakage", "involuntary passage of urine", "cannot control urine", "cannot hold urine", "wetting clothes", "urine leaks on coughing", "continuous dribbling of urine", "vesicovaginal fistula", "vvf", "peshab nikal jata hai", "peshab tapakta hai"],
   setting: "Urology ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [CAMPBELL_UROLOGY, BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("leaking of urine"),

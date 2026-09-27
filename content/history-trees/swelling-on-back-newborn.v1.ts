@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, GHAI_PAEDIATRICS, HUTCHISONS, MACLEODS, paedBackground, val, yn, YOUMANS } from "@/content/history-trees/_helpers";
 
 /**
- * SWELLING ON THE BACK OR HEAD OF A BABY — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * SWELLING ON THE BACK OR HEAD OF A BABY — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Neurosurgery ward and casualty, north India. The baby is usually brought within days of
  * birth, often after a home or small-centre delivery with no anomaly scan, and the mother or a
  * grandmother is the informant. The history asks what covers the swelling, whether it leaks,
@@ -17,8 +17,8 @@ export const neuralTubeSwellingV1: HistoryTree = {
   complaint: "Swelling on the back or head of a baby",
   triggers: ["swelling on back", "swelling on the back", "swelling on back of baby", "swelling on head of baby", "sac on back", "meningocele", "myelomeningocele", "meningomyelocele", "lipomeningocele", "encephalocele", "spina bifida", "neural tube defect", "peeth par gaanth", "peeth par sujan", "sir par thaili"],
   setting: "Neurosurgery ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [GHAI_PAEDIATRICS, YOUMANS, BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("swelling"),

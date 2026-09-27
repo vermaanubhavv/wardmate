@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { ATLS, BAILEY_LOVE, commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, surgicalBackground, val, yn, YOUMANS } from "@/content/history-trees/_helpers";
 
 /**
- * INJURY TO THE SPINE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * INJURY TO THE SPINE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Neurosurgery ward and casualty, north India. Falls from a tree, a roof or a height and road
  * traffic injury make up most of the casemix, with diving into shallow water and assault
  * behind them. The history fixes the time of injury, how the patient was lifted and carried,
@@ -20,8 +20,8 @@ export const spinalInjuryV1: HistoryTree = {
   complaint: "Injury to the spine",
   triggers: ["spinal injury", "spine injury", "injury to the spine", "spinal cord injury", "cord injury", "neck injury", "back injury", "fall from tree", "fell from tree", "fell from roof", "diving injury", "cervical fracture", "vertebral fracture", "fracture spine", "kamar me chot", "gardan me chot", "reedh ki haddi me chot", "legs not moving after fall"],
   setting: "Neurosurgery ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [ATLS, YOUMANS, BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("spinal injury"),

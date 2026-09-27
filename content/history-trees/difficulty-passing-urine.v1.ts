@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, CAMPBELL_UROLOGY, commonHpi, HUTCHISONS, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * DIFFICULTY PASSING URINE / RETENTION — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * DIFFICULTY PASSING URINE / RETENTION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Urology ward and casualty, north India. The history first separates complete retention from
  * a poor stream, then walks the IPSS storage and voiding items one by one, then asks what set
  * the episode off (a drug, an operation, constipation, a clot). Differentials: benign
@@ -17,8 +17,8 @@ export const difficultyPassingUrineV1: HistoryTree = {
   complaint: "Difficulty passing urine / retention",
   triggers: ["difficulty passing urine", "difficulty in passing urine", "urinary retention", "retention of urine", "acute retention", "unable to pass urine", "cannot pass urine", "poor urinary stream", "weak urinary stream", "straining to pass urine", "hesitancy of urine", "luts", "lower urinary tract symptoms", "enlarged prostate", "prostate enlargement", "bph", "peshab ruk gaya", "peshab nahi utarta", "peshab ruk ruk ke"],
   setting: "Urology ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [CAMPBELL_UROLOGY, BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("difficulty passing urine"),

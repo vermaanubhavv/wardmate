@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { APLEY, BAILEY_LOVE, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SWELLING OR PAIN IN A BONE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * SWELLING OR PAIN IN A BONE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  * Orthopaedics ward and casualty, north India. The history separates infection from tumour
  * from injury: how fast it grew, whether it hurts at night, whether there was fever or pus,
  * and whether there is a cancer elsewhere. Chronic osteomyelitis with a discharging sinus and
@@ -17,8 +17,8 @@ export const boneSwellingV1: HistoryTree = {
   complaint: "Swelling or pain in a bone",
   triggers: ["bone swelling", "swelling in bone", "swelling of bone", "bony swelling", "bony lump", "bone pain", "pain in bone", "bone tumour", "bone tumor", "osteomyelitis", "discharging sinus", "pus from bone", "exostosis", "haddi me sujan", "haddi me dard"],
   setting: "Orthopaedics ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [APLEY, BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("bone swelling"),
