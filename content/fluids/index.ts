@@ -12,6 +12,7 @@ import { liverPancreasLungDkaV1 } from "@/content/fluids/liver-pancreas-lung-dka
 import { obstetricFluidsV1 } from "@/content/fluids/obstetric-fluids.v1";
 import { paediatricFluidsV1 } from "@/content/fluids/paediatric-fluids.v1";
 import { parenteralAdditivesV1 } from "@/content/fluids/parenteral-additives.v1";
+import { parenteralNutritionAdministrationV1 } from "@/content/fluids/parenteral-nutrition-administration.v1";
 import { parenteralNutritionDiseasesV1 } from "@/content/fluids/parenteral-nutrition-diseases.v1";
 import { parenteralNutritionPrinciplesV1 } from "@/content/fluids/parenteral-nutrition-principles.v1";
 import { perioperativeAndNeuroV1 } from "@/content/fluids/perioperative-and-neuro.v1";
@@ -35,6 +36,7 @@ export const FLUID_TOPICS: readonly FluidTopic[] = [
   obstetricFluidsV1,
   paediatricFluidsV1,
   parenteralAdditivesV1,
+  parenteralNutritionAdministrationV1,
   parenteralNutritionDiseasesV1,
   parenteralNutritionPrinciplesV1,
   perioperativeAndNeuroV1,
