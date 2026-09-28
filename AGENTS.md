@@ -21,3 +21,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `docs/history-check.md`.
 - What the standard surgical texts prescribe for a general-surgery history, and the gap against
   the shipped trees: `docs/surgical-history.md`.
+- IV Fluid and Electrolyte Correction (the Learn shelf digest of Pandya's fluid-therapy text,
+  which chapters the source edition actually carries, how to add a topic):
+  `docs/iv-fluid-electrolyte-correction.md`.
