@@ -54,6 +54,9 @@ export default function PatientForm({
   const localToday = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
   const [management, setManagement] = useState("");
+  const [showMore, setShowMore] = useState(false);
+  // How the form got filled, for the admin console's funnel — never a value, just the route.
+  const [filledBy, setFilledBy] = useState<"typed" | "speech" | "paper">("typed");
 
   // Controlled so speech can fill them. Each starts empty and is only ever written to by a
   // field the resident actually spoke — see fillFromSpeech.
@@ -87,6 +90,7 @@ export default function PatientForm({
    * already done by hand.
    */
   function fillFromSpeech(p: SpokenPatient) {
+    setFilledBy("speech");
     setFields((f) => ({
       bed: p.bed ?? f.bed,
       display_name: p.name ?? f.display_name,
@@ -111,6 +115,8 @@ export default function PatientForm({
    * never overwritten by a null.
    */
   function fillFromPaper(p: AdmissionPaperPatient) {
+    setFilledBy("paper");
+    setShowMore(true);
     setFields((f) => ({
       ...f,
       bed: p.bed ?? f.bed,
@@ -141,6 +147,12 @@ export default function PatientForm({
   return (
     <form action={formAction} className="flex flex-col gap-5">
       <input type="hidden" name="ward_id" value={wardId} />
+      <input type="hidden" name="filled_by" value={filledBy} />
+
+      <p className="text-footnote text-muted">
+        Only bed and name are needed. Speak it, photograph the admission paper, or type — the
+        rest can be added later.
+      </p>
 
       {/* Above the boxes it fills, so the order on screen is the order of the work. */}
       <SpeakPatient onParsed={fillFromSpeech} />
@@ -191,29 +203,6 @@ export default function PatientForm({
         />
       </Field>
 
-      <div className="flex gap-3">
-        <div className="flex-1">
-          <Field label="IP no.">
-            <input
-              name="uhid_ip_no"
-              value={fields.uhid_ip_no}
-              onChange={(e) => set("uhid_ip_no")(e.target.value)}
-              className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
-            />
-          </Field>
-        </div>
-        <div className="flex-1">
-          <Field label="MRD no.">
-            <input
-              name="mrd_no"
-              value={fields.mrd_no}
-              onChange={(e) => set("mrd_no")(e.target.value)}
-              className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
-            />
-          </Field>
-        </div>
-      </div>
-
       {/* Age and sex sit on one row, in the order they are spoken and written: "62/M". */}
       <div className="flex gap-3">
         <div className="flex-1">
@@ -257,89 +246,128 @@ export default function PatientForm({
         />
       </Field>
 
-      <Field label="Admitted on">
-        <input
-          type="date"
-          name="admitted_on"
-          required
-          value={admittedOn || localToday}
-          max={localToday}
-          onChange={(e) => setAdmittedOn(e.target.value)}
-          className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
-        />
-      </Field>
+      {/* Everything past bed, name, age/sex and diagnosis waits behind one tap. Most of it has a
+          sensible default (admitted today, management not stated) and a first-time user with a
+          ten-box form in front of them was the step people abandoned. <details> keeps the boxes
+          in the form, so their values still submit while it is closed. Speech or a paper that
+          fills something opens it, so nothing is filled out of sight. */}
+      <details
+        open={showMore}
+        onToggle={(e) => setShowMore(e.currentTarget.open)}
+        className="flex flex-col gap-5"
+      >
+        <summary className="tap cursor-pointer text-subhead text-accent">
+          {showMore ? "Fewer details" : "More details — IP/MRD no., admission date, management"}
+        </summary>
+        <div className="mt-5 flex flex-col gap-5">
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <Field label="IP no.">
+                <input
+                  name="uhid_ip_no"
+                  value={fields.uhid_ip_no}
+                  onChange={(e) => set("uhid_ip_no")(e.target.value)}
+                  className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
+                />
+              </Field>
+            </div>
+            <div className="flex-1">
+              <Field label="MRD no.">
+                <input
+                  name="mrd_no"
+                  value={fields.mrd_no}
+                  onChange={(e) => set("mrd_no")(e.target.value)}
+                  className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
+                />
+              </Field>
+            </div>
+          </div>
 
-      {/* Management leads, and decides what else is worth asking. A conservative or workup
-          patient has no operation to name and no date to give, so neither is put in front of
-          somebody admitting at 3am. "Post-op" is offered here but never stored as management —
-          see readManagement in ../actions.ts; choosing it records the surgery date, which is
-          what the POD count and the POST OP badge are both derived from. */}
-      <Field label="Management" hint="Leave blank until the unit has decided">
-        <select
-          name="management"
-          value={management}
-          onChange={(e) => setManagement(e.target.value)}
-          className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
-        >
-          <option value="">Not stated</option>
-          {MANAGEMENT_CHOICES.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-          <option value="postop">Post-op</option>
-        </select>
-      </Field>
+          <Field label="Admitted on">
+            <input
+              type="date"
+              name="admitted_on"
+              required
+              value={admittedOn || localToday}
+              max={localToday}
+              onChange={(e) => setAdmittedOn(e.target.value)}
+              className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
+            />
+          </Field>
 
-      {/* The checklist picker itself: for a surgical unit this only ever meant an operation, so
-          it stayed behind the Pre-op/Post-op gate. Medicine and oncology have no operation and
-          (for medicine) no equivalent management state, so without also showing it for any
-          non-surgical specialty, neither department could attach a checklist to a patient at
-          all — see checklistFieldLabel above. */}
-      {(management === "preop" || management === "postop" || specialty !== "general_surgery") && (
-        <Field
-          label={checklistFieldLabel(specialty)}
-          hint="Type anything. Picking one of the suggestions also brings its checklist of what to mention."
-        >
-          <input
-            name="procedure"
-            list="operation-suggestions"
-            value={fields.procedure}
-            onChange={(e) => set("procedure")(e.target.value)}
-            autoCapitalize="none"
-            className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
-          />
-          <datalist id="operation-suggestions">
-            {templateChoices.map((t) => (
-              <option key={`${t.family}|${t.variant ?? ""}`} value={t.label} />
-            ))}
-          </datalist>
-        </Field>
-      )}
+          {/* Management leads, and decides what else is worth asking. A conservative or workup
+              patient has no operation to name and no date to give, so neither is put in front of
+              somebody admitting at 3am. "Post-op" is offered here but never stored as management —
+              see readManagement in ../actions.ts; choosing it records the surgery date, which is
+              what the POD count and the POST OP badge are both derived from. */}
+          <Field label="Management" hint="Leave blank until the unit has decided">
+            <select
+              name="management"
+              value={management}
+              onChange={(e) => setManagement(e.target.value)}
+              className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
+            >
+              <option value="">Not stated</option>
+              {MANAGEMENT_CHOICES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+              <option value="postop">Post-op</option>
+            </select>
+          </Field>
 
-      {/* The operation date itself stays surgery-only — medicine and oncology have no date to
-          give here. */}
-      {(management === "preop" || management === "postop") && (
-        <Field
-          label={management === "postop" ? "Date of operation" : "Planned date of operation"}
-          hint={
-            management === "postop"
-              ? "The day count on the card is taken from this"
-              : "Left blank if the date is not fixed yet"
-          }
-        >
-          <input
-            type="date"
-            name="operation_date"
-            required={management === "postop"}
-            // An operation that has happened cannot be in the future. A planned one is
-            // deliberately unbounded: a postponed list still needs its old date recorded.
-            max={management === "postop" ? localToday : undefined}
-            defaultValue={management === "postop" ? localToday : ""}
-            className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
-          />
-        </Field>
-      )}
+          {/* The checklist picker itself: for a surgical unit this only ever meant an operation, so
+              it stayed behind the Pre-op/Post-op gate. Medicine and oncology have no operation and
+              (for medicine) no equivalent management state, so without also showing it for any
+              non-surgical specialty, neither department could attach a checklist to a patient at
+              all — see checklistFieldLabel above. */}
+          {(management === "preop" || management === "postop" || specialty !== "general_surgery") && (
+            <Field
+              label={checklistFieldLabel(specialty)}
+              hint="Type anything. Picking one of the suggestions also brings its checklist of what to mention."
+            >
+              <input
+                name="procedure"
+                list="operation-suggestions"
+                value={fields.procedure}
+                onChange={(e) => set("procedure")(e.target.value)}
+                autoCapitalize="none"
+                className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
+              />
+              <datalist id="operation-suggestions">
+                {templateChoices.map((t) => (
+                  <option key={`${t.family}|${t.variant ?? ""}`} value={t.label} />
+                ))}
+              </datalist>
+            </Field>
+          )}
+
+          {/* The operation date itself stays surgery-only — medicine and oncology have no date to
+              give here. */}
+          {(management === "preop" || management === "postop") && (
+            <Field
+              label={management === "postop" ? "Date of operation" : "Planned date of operation"}
+              hint={
+                management === "postop"
+                  ? "The day count on the card is taken from this"
+                  : "Left blank if the date is not fixed yet"
+              }
+            >
+              <input
+                type="date"
+                name="operation_date"
+                required={management === "postop"}
+                // An operation that has happened cannot be in the future. A planned one is
+                // deliberately unbounded: a postponed list still needs its old date recorded.
+                max={management === "postop" ? localToday : undefined}
+                defaultValue={management === "postop" ? localToday : ""}
+                className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
+              />
+            </Field>
+          )}
+        </div>
+      </details>
 
       {/* Nothing spoken is lost because a dropdown above it happens to be unset. The visible
           checklist box only appears for pre-op, post-op, or a non-surgical specialty, but if

@@ -7,10 +7,25 @@ import { listTemplateChoices, resolveProcedure } from "@/lib/templates";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { stripPatientHonorific } from "@/lib/patients";
 import { syncPatientPathways } from "@/lib/scoring/store";
+import { logEvent } from "@/lib/analytics";
 
 export type AddPatientState = { error: string | null };
 
+/**
+ * Logs a failed save (the message only — every one is app-written or a Postgres constraint
+ * name, never a patient value) so the admin console can see where adding a patient goes wrong.
+ * Success is logged inside, just before the redirect.
+ */
 export async function addPatient(
+  prev: AddPatientState,
+  formData: FormData
+): Promise<AddPatientState> {
+  const result = await savePatient(prev, formData);
+  if (result.error) await logEvent("add_patient_failed", { path: "/patients/new", props: { reason: result.error } });
+  return result;
+}
+
+async function savePatient(
   _prev: AddPatientState,
   formData: FormData
 ): Promise<AddPatientState> {
@@ -125,6 +140,8 @@ export async function addPatient(
   // now — the resident should see them the moment the patient exists, not only after the
   // first visit to the patient page. Inert unless the scoring engine is enabled for the ward.
   await syncPatientPathways(created.id);
+
+  await logEvent("patient_added", { path: "/patients/new", wardId, props: { via: String(formData.get("filled_by") ?? "typed") } });
 
   revalidatePath("/");
   revalidatePath("/ward");
