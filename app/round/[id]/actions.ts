@@ -43,7 +43,7 @@ export async function applyRound(formData: FormData) {
     }
 
     const patientId = String(formData.get(`patient_${i}`) ?? "");
-    if (!patientId) continue;
+    if (!patientId || patientId === "skip") continue;
 
     const { data: entry } = await supabase
       .from("entries")
@@ -89,6 +89,21 @@ export async function applyRound(formData: FormData) {
     if (patient) await applyProcedureDone(supabase, patientId, patient, segment.observations);
 
     revalidatePath(`/patients/${patientId}`);
+  }
+
+  // No bed was recognised: the whole transcript goes to the one patient the resident chose,
+  // word for word. Nothing is structured out of it, so there are no values to confirm.
+  const wholePatient = segments.length === 0 ? String(formData.get("whole_patient") ?? "") : "";
+  if (segments.length === 0 && !wholePatient) return;
+  if (wholePatient) {
+    await supabase.from("entries").insert({
+      patient_id: wholePatient,
+      author_id: user.id,
+      source: "voice",
+      transcript: dictation.transcript,
+      audio_path: dictation.audio_path,
+    });
+    revalidatePath(`/patients/${wholePatient}`);
   }
 
   await supabase

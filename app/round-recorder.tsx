@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MicIcon, StopIcon } from "./icons";
 import Mark from "./mark";
@@ -37,6 +38,13 @@ export default function RoundRecorder() {
       if (typeof id === "string") router.push(`/round/${id}`);
     },
   });
+
+  // Every status line is one of the hook's own fixed sentences (mic refused, too short, saved
+  // offline, server refused) — never a transcript — so it is safe to log as the reason. This
+  // is what tells the admin console WHY a started recording never became a draft.
+  useEffect(() => {
+    if (message) track("round_recording_failed", { reason: message });
+  }, [message]);
 
   function onStart() {
     track("round_recording_started");
