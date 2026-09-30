@@ -18,7 +18,7 @@ import { createClient } from "@/lib/supabase/server";
 import { countWardPendingConfirmations } from "@/lib/confirm-queue";
 import { criticalFlag, isDischargeable, type WardFlag } from "@/lib/ward-flags";
 import { getWardTasks } from "@/lib/todo";
-import { getWardScoringTasks } from "@/lib/scoring/read";
+import type { getWardScoringTasks } from "@/lib/scoring/read";
 import { buildWardTodoPreview, countWardOutstanding } from "@/lib/ward-todo-preview";
 import { TriangleAlert, CircleCheckBig, ListChecks, SquarePen, CircleAlert, Settings } from "lucide-react";
 import WardSearch from "./ward-search";
@@ -33,7 +33,7 @@ export default async function Home({
   // rides alongside it: getDoctorName reads the session cookie rather than asking Supabase,
   // so it adds no round trip of its own.
   const [
-    { ward, pack, patients, procedures, templateChoices, error: wardError },
+    { ward, pack, patients: screenPatients, procedures, templateChoices, error: wardError },
     doctor,
     { data: profile },
   ] = await Promise.all([
@@ -58,11 +58,10 @@ export default async function Home({
   // Everything the header needs beyond the patient list itself, fetched together once the
   // ward id is known — the same "one wave of parallel fetches" the screen's own patients
   // query follows, just a beat later because the ward id isn't known until then.
-  const [pendingConfirmCount, tasks, scoringByPatient, dischargedPatient, waitingRounds] = ward
+  const [pendingConfirmCount, tasks, dischargedPatient, waitingRounds] = ward
     ? await Promise.all([
         countWardPendingConfirmations(ward.id),
         getWardTasks(ward.id),
-        getWardScoringTasks(ward.id),
         // Only looked up for the one-time "discharged · Undo" banner — the patient is no
         // longer in `patients` (the active list) by the time this renders.
         dischargedId
@@ -78,8 +77,16 @@ export default async function Home({
           .order("created_at", { ascending: false })
           .limit(20),
       ])
-    : [0, [], new Map(), { data: null }, { data: null }];
+    : [0, [], { data: null }, { data: null }];
   const waitingRoundIds = (waitingRounds.data ?? []).map((r) => r.id);
+
+  // "N to do" counts the jobs a resident said, folded the way /todo and the patient page fold
+  // them — not every raw plan row (a job said twice counted twice) and not the scoring engine's
+  // suggestions, which are not on this screen yet.
+  const jobCounts = new Map<string, number>();
+  for (const t of tasks) jobCounts.set(t.patient_id, (jobCounts.get(t.patient_id) ?? 0) + 1);
+  const patients = screenPatients.map((p) => ({ ...p, open_task_count: jobCounts.get(p.id) ?? 0 }));
+  const noSuggestions: Awaited<ReturnType<typeof getWardScoringTasks>> = new Map();
 
   const flags = new Map<string, WardFlag | null>(
     patients.map((p) => [p.id, criticalFlag(p)])
@@ -99,8 +106,8 @@ export default async function Home({
     .slice()
     .sort((a, b) => Number(Boolean(flags.get(b.id))) - Number(Boolean(flags.get(a.id))));
 
-  const todoPreview = buildWardTodoPreview(tasks, scoringByPatient, patients, 3);
-  const totalOutstanding = countWardOutstanding(tasks, scoringByPatient);
+  const todoPreview = buildWardTodoPreview(tasks, noSuggestions, patients, 3);
+  const totalOutstanding = countWardOutstanding(tasks, noSuggestions);
 
   if (wardError || !ward) {
     return (

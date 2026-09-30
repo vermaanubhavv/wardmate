@@ -46,9 +46,10 @@ export default async function TodoPage() {
         back="/ward"
         title="To do"
         subtitle={
-          tasks.length + scoringTasks.length === 0
+          // Jobs a resident said; the suggestions below are not counted.
+          tasks.length === 0
             ? "Nothing outstanding on the unit"
-            : `${tasks.length + scoringTasks.length} outstanding across the unit`
+            : `${tasks.length} outstanding across the unit`
         }
       />
 

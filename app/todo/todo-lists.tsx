@@ -256,6 +256,15 @@ function TaskRow({ task }: { task: WardTask }) {
       <div className="min-w-0 flex-1">
         <p className="text-subhead">
           {task.value_text ?? task.label}
+          {/* Said again on a later round — the same badge the patient page uses. */}
+          {task.repeats > 0 && (
+            <span
+              className="ml-1.5 inline-block rounded-full bg-chip px-1.5 align-middle text-caption2 font-medium tabular-nums text-muted"
+              aria-label={`said ${task.repeats + 1} times`}
+            >
+              ×{task.repeats + 1}
+            </span>
+          )}
           {/* Said in words, so a job that climbed with the calendar never looks like one
               somebody graded red. */}
           {task.note && (
@@ -275,11 +284,6 @@ function TaskRow({ task }: { task: WardTask }) {
         {/* Only when it says something the job does not. */}
         {!quoteAddsNothing(task.value_text ?? task.label, task.source_quote) && (
           <p className="mt-0.5 truncate text-footnote italic text-muted">“{task.source_quote}”</p>
-        )}
-        {task.repeats > 0 && (
-          <p className="mt-0.5 text-footnote text-muted">
-            said {task.repeats + 1} times — showing the latest
-          </p>
         )}
       </div>
     </li>
