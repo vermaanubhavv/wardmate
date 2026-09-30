@@ -47,4 +47,17 @@ describe("admin insights", () => {
     expect(g).toHaveLength(1);
     expect(g[0]).toMatchObject({ label: "Learn · history", views: 7, views_30d: 4, last_seen: "2026-02-01" });
   });
+
+  it("promotes high-severity usage friction", () => {
+    const recs = recommend({
+      ...empty,
+      usageFriction: [
+        { area: "Ward round", signal: "Round dictations thrown away", severity: "high", occurrences: 4, out_of: 7, people: 3, detail: "d", last_seen: null },
+        { area: "Discharge", signal: "Stuck", severity: "medium", occurrences: 10, out_of: null, people: 8, detail: "d", last_seen: null },
+      ],
+    });
+    expect(recs[0].title).toBe("Ward round: round dictations thrown away");
+    expect(recs[0].evidence).toContain("4 of 7 (57%)");
+    expect(recs.some((r) => r.title.startsWith("Discharge"))).toBe(false);
+  });
 });

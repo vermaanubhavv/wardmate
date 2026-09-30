@@ -35,8 +35,8 @@ Nothing in the app code gates access — the database does. Every RPC returns an
 | Users | `admin_users` | Per-user: units, voice/round/discharge counts, last-active; a "never dictated" list |
 | Units | `admin_ward_activity` | Per-unit, grouped by department: members, patients, dictation volume 7d/30d, rounds binned, last activity (cold units flagged) |
 | Feature usage | `admin_screen_usage`, `admin_feature_usage`, `admin_stt_breakdown` | Screens people open (30d / all-time, admin screens excluded); dictation / round / register / discharge / confirmation outcomes; speech engine split |
-| Friction | `admin_friction` | Quiet accounts, cold units, solo units, rounds discarded, discharges stuck in draft, unconfirmed dangerous values |
-| Activity log | `admin_activity_log` | Unified reverse-chronological feed of the last 200 events |
+| Friction | `admin_usage_friction` (0101), `admin_friction` | **Seen during use** (last 30 days, worst first): notes the AI could not read, transcripts corrected by hand, quick re-dictations, round recordings never saved, rounds/register reads thrown away, Add patient / case history / discharge opened and abandoned, failed saves and history checks, flagged values left unconfirmed, onboarding abandoned. Then the stalled-account list: quiet accounts, cold units, solo units, rounds discarded, discharges stuck in draft, unconfirmed dangerous values |
+| Activity log | `admin_activity_feed` (0101) | What people did, in words ("Created a patient", "Added a voice note"), grouped by day. Filter chips by kind (Patients, Notes, Ward rounds, Discharges, Problems…), plus person, unit, and an opt-in for screen views, which are hidden by default. Tapping a name or unit filters to it. Filters live in the URL. |
 | Events | `admin_event_summary` | The `app_events` stream, one row per event name |
 
 ## Event tracking
