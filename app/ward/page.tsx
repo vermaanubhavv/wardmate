@@ -275,11 +275,19 @@ export default async function Home({
             {/* The ring, faint — the same mark on the home screen, quiet here rather than
                 an empty box with nothing to look at. */}
             <Mark className="h-10 w-10 opacity-30" />
-            <p className="text-body text-muted">
-              No patients on this ward yet.
-              <br />
-              Add the first one below.
+            <p className="text-body text-muted">No patients on this ward yet.</p>
+            {/* Most new units stalled here: people opened Add patient once and left. Say how
+                little it asks for, and offer it as a real button, not only the + in the bar. */}
+            <p className="text-subhead text-muted">
+              Adding one takes a bed and a name. Say it out loud, photograph the admission
+              paper, or type it.
             </p>
+            <Link
+              href="/patients/new"
+              className="tap mt-1 rounded-[10px] bg-accent px-5 py-3 text-body font-semibold text-accent-ink active:opacity-80"
+            >
+              Add your first patient
+            </Link>
           </div>
         ) : visiblePatients.length === 0 ? (
           <p className="ios-group px-4 py-6 text-center text-subhead text-muted">
