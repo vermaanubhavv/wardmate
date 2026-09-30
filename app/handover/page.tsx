@@ -4,6 +4,7 @@ import { getCurrentWard } from "@/lib/ward";
 import { dayLabel, managementLabel, patientName } from "@/lib/patients";
 import { getWardHandover, formatHandoverText, type HandoverPatient } from "@/lib/handover";
 import type { SpecialtyPack } from "@/lib/specialty";
+import { effectiveUrgency, istDate } from "@/lib/urgency";
 import CopyHandoverButton from "./copy-button";
 
 export default async function HandoverPage() {
@@ -22,6 +23,8 @@ export default async function HandoverPage() {
 
   const handover = await getWardHandover(ward);
   const text = formatHandoverText(handover);
+  const watch = handover.patients.filter(needsWatch);
+  const stable = handover.patients.filter((p) => !needsWatch(p));
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
@@ -31,26 +34,49 @@ export default async function HandoverPage() {
         subtitle={`${ward.name} · ${handover.patients.length} active ${handover.patients.length === 1 ? "patient" : "patients"}`}
       />
 
-      <section className="px-4 flex flex-col gap-3">
+      {/* pb-40 keeps the last card clear of the fixed Copy bar. */}
+      <section className="px-4 pb-40 flex flex-col gap-3">
         {handover.patients.length === 0 ? (
           <p className="ios-group p-6 text-subhead text-muted">
             No active patients on this ward.
           </p>
         ) : (
-          handover.patients.map((p) => (
-            <PatientSummary key={p.id} patient={p} pack={handover.pack} />
-          ))
+          <>
+            <PatientGroup title="Watch tonight" patients={watch} pack={handover.pack} />
+            <PatientGroup title="Stable" patients={stable} pack={handover.pack} />
+          </>
         )}
-      </section>
 
-      {/* The assembled message, ready to edit before it goes to the consultant's WhatsApp
-          group — see app/handover/copy-button.tsx. Sits at the end of the page rather than
-          a floating bar: there's a full textarea to read and adjust here, not a single tap. */}
-      <section className="px-4 pt-6 pb-16">
-        <p className="mb-2 text-footnote font-medium text-muted">Ready to send</p>
-        <CopyHandoverButton text={text} />
+        {/* The assembled message, editable, and the Copy bar pinned under the page — see
+            app/handover/copy-button.tsx. Cards and WhatsApp text keep separate orders on
+            purpose: the text stays in bed order, the way the consultant reads it. */}
+        <CopyHandoverButton text={text} draftKey={`handover-draft:${ward.id}:${istDate(handover.generated_at)}`} />
       </section>
     </div>
+  );
+}
+
+/**
+ * Worth a look before the night: a job that is red as of today (graded Now, or a Soon that
+ * has come due) or a value still waiting to be confirmed. Template gaps alone don't count —
+ * nearly every patient has one, so ranking on them would sort nothing. Beds keep their order
+ * within each group, since getWardHandover already returns them bed-sorted.
+ */
+function needsWatch(p: HandoverPatient): boolean {
+  return p.state.pending.length > 0 || p.state.openTasks.some((t) => effectiveUrgency(t).urgency === "red");
+}
+
+function PatientGroup({ title, patients, pack }: { title: string; patients: HandoverPatient[]; pack: SpecialtyPack }) {
+  if (patients.length === 0) return null;
+  return (
+    <>
+      <h2 className="pt-2 text-footnote font-medium text-muted">
+        {title} · {patients.length}
+      </h2>
+      {patients.map((p) => (
+        <PatientSummary key={p.id} patient={p} pack={pack} />
+      ))}
+    </>
   );
 }
 
@@ -60,8 +86,10 @@ function PatientSummary({ patient, pack }: { patient: HandoverPatient; pack: Spe
   const management = managementLabel(patient);
 
   return (
-    <Link href={`/patients/${patient.id}`} className="block active:opacity-70">
-      <div className="ios-group p-4">
+    // The Link stops short of the "not yet recorded" fold: a <details> inside an <a> would
+    // open the patient instead of the list.
+    <div className="ios-group">
+      <Link href={`/patients/${patient.id}`} className="block p-4 active:opacity-70">
         <div className="flex items-baseline gap-2 min-w-0">
           <span className="shrink-0 rounded-md bg-chip px-1.5 py-0.5 font-mono text-footnote tabular-nums">
             {patient.bed}
@@ -93,7 +121,7 @@ function PatientSummary({ patient, pack }: { patient: HandoverPatient; pack: Spe
 
         {clear ? (
           <p className="mt-2 text-subhead text-muted">Nothing outstanding.</p>
-        ) : (
+        ) : (openTasks.length > 0 || pending.length > 0) && (
           <ul className="mt-2 flex flex-col gap-1">
             {openTasks.map((t) => (
               <li key={t.id} className="text-subhead">
@@ -106,14 +134,18 @@ function PatientSummary({ patient, pack }: { patient: HandoverPatient; pack: Spe
                 {o.value_text ? ` — ${o.value_text}` : ""}
               </li>
             ))}
-            {missing.length > 0 && (
-              <li className="text-subhead text-warn-fg">
-                Not yet recorded: {missing.map((m) => m.item.label).join(", ")}
-              </li>
-            )}
           </ul>
         )}
-      </div>
-    </Link>
+      </Link>
+      {/* Folded to a count on screen only — the WhatsApp text still lists every label. */}
+      {missing.length > 0 && (
+        <details className="-mt-2 px-4 pb-2 text-subhead text-muted">
+          <summary className="flex min-h-11 cursor-pointer items-center">
+            {missing.length} not yet recorded
+          </summary>
+          <p className="pb-2">{missing.map((m) => m.item.label).join(", ")}</p>
+        </details>
+      )}
+    </div>
   );
 }

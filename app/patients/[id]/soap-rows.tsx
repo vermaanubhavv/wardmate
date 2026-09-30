@@ -18,11 +18,14 @@ type Extra = { id: string; label: string; value: string | null };
  *  once. Editing writes back to every label it stands for. */
 type Group = { key: string; labels: string[]; value: string | null; missing: boolean };
 
+/** Case and punctuation dropped, so "Cholelithiasis." and "cholelithiasis" are one sentence. */
+const sameWords = (v: string | null) => (v ?? "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean).join(" ");
+
 function groupByValue(items: { label: string; value: string | null; missing: boolean }[]): Group[] {
   const groups: Group[] = [];
   for (const it of items) {
-    const norm = (it.value ?? "").trim().toLowerCase();
-    const existing = norm ? groups.find((g) => (g.value ?? "").trim().toLowerCase() === norm) : null;
+    const norm = sameWords(it.value);
+    const existing = norm ? groups.find((g) => sameWords(g.value) === norm) : null;
     if (existing) {
       existing.labels.push(it.label);
       existing.missing = existing.missing || it.missing;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { MicIcon } from "@/app/icons";
 
 /**
  * The card-stack look, shared between the discharge workspace and the case-history workspace.
@@ -64,7 +65,7 @@ export function SelChip({
       type="button"
       onClick={onClick}
       className={
-        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-footnote transition-colors " +
+        "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 py-1.5 text-footnote transition-colors " +
         (selected
           ? "border-accent bg-accent text-accent-ink"
           : tone === "note"
@@ -133,9 +134,9 @@ export function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
 }
 
 export const genBtn =
-  "self-start rounded-[10px] border border-line px-3 py-1.5 text-footnote font-medium text-accent disabled:opacity-50";
+  "min-h-11 self-start rounded-[10px] border border-line px-3 py-1.5 text-footnote font-medium text-accent disabled:opacity-50";
 export const approveBtn =
-  "self-start rounded-[10px] bg-accent px-3 py-1.5 text-footnote font-semibold text-accent-ink disabled:opacity-50";
+  "min-h-11 self-start rounded-[10px] bg-accent px-3 py-1.5 text-footnote font-semibold text-accent-ink disabled:opacity-50";
 
 // --- dictation + pill helpers, shared by the case-history and progress-note workspaces ------
 
@@ -236,11 +237,19 @@ export function DictateArea({
           onClick={status === "recording" ? () => mediaRef.current?.stop() : start}
           disabled={status === "working"}
           className={
-            "self-start rounded-[10px] px-3 py-1.5 text-footnote font-medium " +
+            "inline-flex min-h-11 items-center gap-1.5 self-start rounded-[10px] px-3 py-1.5 text-footnote font-medium " +
             (status === "recording" ? "bg-recording text-white" : "border border-line text-accent")
           }
         >
-          {status === "recording" ? "■ Stop" : status === "working" ? "Transcribing…" : "🎤 Speak"}
+          {status === "recording" ? (
+            "■ Stop"
+          ) : status === "working" ? (
+            "Transcribing…"
+          ) : (
+            <>
+              <MicIcon /> Speak
+            </>
+          )}
         </button>
         {error && <span className="text-caption text-critical-fg">{error}</span>}
       </div>

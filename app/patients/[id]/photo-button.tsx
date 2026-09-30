@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { ImageIcon } from "@/app/icons";
+import Mark from "@/app/mark";
 import { useRouter } from "next/navigation";
 
 /**
@@ -64,16 +65,28 @@ export default function PhotoButton({ patientId }: { patientId: string }) {
           e.target.value = "";
         }}
       />
+      {/* An icon in the bedside bar's one row; the words it used to carry are its label. */}
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={busy}
-        className="flex w-full items-center justify-center gap-2 rounded-lg border border-line bg-card px-3 py-2.5 text-body font-medium text-foreground active:opacity-70 disabled:opacity-50"
+        aria-label={busy ? "Reading the photo…" : "Photograph a report or obs chart"}
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-line bg-card text-accent active:opacity-70 disabled:opacity-50"
       >
-        <ImageIcon />
-        {busy ? "Reading the photo…" : "Photograph a report or obs chart"}
+        {busy ? <Mark className="h-5 w-5" spinning /> : <ImageIcon className="h-5 w-5" />}
       </button>
-      {message && <p className="text-center text-footnote text-muted">{message}</p>}
+      {/* Hung above the bar (BottomBar's inner row is the positioned parent) so a sentence does
+          not stretch the row the icon sits in. */}
+      {message && (
+        <button
+          type="button"
+          role="status"
+          onClick={() => setMessage(null)}
+          className="absolute inset-x-0 bottom-full mb-3 rounded-lg bg-card px-3 py-2 text-center text-footnote text-muted shadow-sm"
+        >
+          {message} <span className="text-accent">OK</span>
+        </button>
+      )}
     </>
   );
 }

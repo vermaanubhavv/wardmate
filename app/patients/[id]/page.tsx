@@ -14,7 +14,9 @@ import {
   derivePatientState,
   groupByDay,
   groupIntoSittings,
+  isDayCountLabel,
   istDayKey,
+  repeatedLines,
   type Observation,
   type PacVerdict,
 } from "@/lib/patient-state";
@@ -40,6 +42,7 @@ import {
   ShieldCheck,
   Stethoscope,
   Thermometer,
+  Wind,
   type LucideIcon,
 } from "lucide-react";
 import { quoteAddsNothing } from "@/lib/dedupe-tasks";
@@ -354,7 +357,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           else, and this is the only block on the page that answers it in one glance. */}
       <VitalsPanel observations={allObservations} />
 
-      {/* The note builder was only reachable through View note, so it went unfound. */}
+      {/* The note builder was only reachable through the printable sheet, so it went unfound. */}
       <section className="px-4 pb-6">
         <Link
           href={`/patients/${patient.id}/note/build`}
@@ -420,6 +423,16 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                   <div className="min-w-0 flex-1">
                     <p className="text-subhead">
                       {jobText}
+                      {/* Said again on a later round. The earlier ones are still on the record
+                          below; the list just does not count one job twice. */}
+                      {o.repeats > 0 && (
+                        <span
+                          className="ml-1.5 inline-block rounded-full bg-chip px-1.5 align-middle text-caption2 font-medium tabular-nums text-muted"
+                          aria-label={`said ${o.repeats + 1} times`}
+                        >
+                          ×{o.repeats + 1}
+                        </span>
+                      )}
                       <CameDue observation={o} />
                     </p>
                     {/* The words it came from, so a job is never just the app's paraphrase —
@@ -427,13 +440,6 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                     {!quoteAddsNothing(o.value_text ?? o.label, o.source_quote) && (
                       <p className="mt-0.5 truncate text-footnote italic text-muted">
                         “{o.source_quote}”
-                      </p>
-                    )}
-                    {/* Said again on a later round. The earlier ones are still on the record
-                        below; the list just does not count one job twice. */}
-                    {o.repeats > 0 && (
-                      <p className="mt-0.5 text-footnote text-muted">
-                        said {o.repeats + 1} times — showing the latest
                       </p>
                     )}
                   </div>
@@ -511,7 +517,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 cards of their own — nesting one ios-group inside another draws white on white
                 and reads as a box in a box. */}
             <div className="border-t border-line px-4 py-3">
-            {soapGroups(matched, extra).map(({ section, label, matchedItems, extraItems }) => {
+            {soapGroups(matched, extra, vitalSets(allObservations).sets.length > 0).map(({ section, label, matchedItems, extraItems }) => {
               // A never-mentioned symptom is written into the note as a pertinent negative
               // ("no complaints of fever"), not shown as a blank row to chase.
               const negatives = matchedItems
@@ -866,7 +872,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
               href={`/patients/${patient.id}/note`}
               className="tap flex shrink-0 items-center pt-0.5 text-footnote font-semibold text-accent active:opacity-60"
             >
-              View note
+              Print sheet
               <ChevronIcon className="h-3 w-3" />
             </Link>
           </div>
@@ -1044,7 +1050,8 @@ function DaySoap({
   const groups = SOAP_ORDER.map((section) => ({
     section,
     label: SOAP_LABELS[section],
-    items: observations.filter((o) => kindToSoapSection(o.kind) === section),
+    // A stored day count is hidden here too — the page's computed day is the one to read.
+    items: observations.filter((o) => kindToSoapSection(o.kind) === section && !isDayCountLabel(o.kind, o.label)),
   })).filter((g) => g.items.length > 0);
 
   if (groups.length === 0) {
@@ -1124,15 +1131,21 @@ const PAC_META: Record<
  * building a treatment plan on top of it.
  */
 /**
- * The four this block shows, and only when they were actually recorded.
- *
- * A round reads blood pressure, pulse, saturation and temperature. Respiratory rate is charted
- * too and is kept in the record, on the note and in the examination line — it is simply not one
- * of the four a surgical round scans for, and a fifth tile earns its place on a phone only by
- * being read. Nothing is shown as absent: a vital nobody took has no tile at all, because a
- * dash where a number belongs reads at a glance like a number.
+ * The five a ward charts — BP, pulse, temperature, saturation, respiratory rate — in that
+ * order, every time, so the eye learns where each one sits. One nobody took in the latest
+ * reading gets an amber "Not recorded" tile rather than no tile: a missing tile was too easy
+ * to not notice, and the words say plainly that there is no number rather than looking like one.
  */
-const CHARTED_VITALS = new Set(["bp", "pr", "spo2", "temp"]);
+const CHARTED_VITALS = new Set(["bp", "pr", "spo2", "temp", "rr"]);
+const VITAL_ORDER: { key: string; label: string }[] = [
+  { key: "bp", label: "BP" },
+  { key: "pr", label: "PR" },
+  { key: "temp", label: "Temp" },
+  { key: "spo2", label: "SpO₂" },
+  { key: "rr", label: "RR" },
+];
+
+type VitalTile = { id: string; key: string; label: string; value: string | null; flag: string | null; range: string };
 
 /** Readings grouped by the moment they were said, newest first, plus the latest set's tiles. */
 function vitalSets(observations: Observation[]) {
@@ -1146,10 +1159,23 @@ function vitalSets(observations: Observation[]) {
   for (const o of readings) byTime.set(o.recorded_at, [...(byTime.get(o.recorded_at) ?? []), o]);
   const sets = [...byTime.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
   const latest = sets[0];
-  const tiles = latest
-    ? latest[1].flatMap((o) =>
-        classifyVital(o.label, o.value_text).map((c) => ({ ...c, id: `${o.id}-${c.label}` }))
-      )
+  const tiles: VitalTile[] = latest
+    ? VITAL_ORDER.map(({ key, label }) => {
+        const o = latest[1].find((x) => matchVitalLabel(x.label) === key);
+        const parts = o ? classifyVital(o.label, o.value_text) : [];
+        if (!o || parts.length === 0) return { id: key, key, label, value: null, flag: null, range: "" };
+        // classifyVital splits a BP into systolic and diastolic so each can flag on its own
+        // range; on the tile they read back as the one "127/81" that was said.
+        const flagged = parts.find((p) => p.flag);
+        return {
+          id: `${o.id}-${key}`,
+          key,
+          label,
+          value: parts.map((p) => p.value).join("/"),
+          flag: flagged?.flag ?? null,
+          range: flagged?.range ?? "",
+        };
+      })
     : [];
   return { sets, tiles };
 }
@@ -1163,27 +1189,42 @@ const VITAL_ICONS: Record<string, LucideIcon> = {
   pr: HeartPulse,
   spo2: Droplets,
   temp: Thermometer,
+  rr: Wind,
 };
 
 function VitalsPanel({ observations }: { observations: Observation[] }) {
   const { sets, tiles } = vitalSets(observations);
   if (sets.length === 0) return null;
   const [[latestTime], ...earlier] = sets;
+  // Days between the latest reading and today, both as IST calendar days.
+  const daysOld = Math.round(
+    (Date.parse(istDayKey(new Date().toISOString())) - Date.parse(istDayKey(latestTime))) / 86_400_000
+  );
 
   return (
     <section className="px-4 pb-6">
       <div className="mb-2 flex items-baseline gap-2 px-4">
         <p className="ios-group-header">Vitals</p>
         <p className="text-footnote text-muted">{vitalsWhen(latestTime)}</p>
+        {/* Not this morning's numbers — said out loud, because the tiles look just as fresh. */}
+        {daysOld > 0 && (
+          <span className="rounded-full bg-warn-bg px-2 py-0.5 text-caption2 font-medium text-warn-fg">
+            {daysOld === 1 ? "yesterday" : `${daysOld} days ago`}
+          </span>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         {tiles.map((t) => {
-          const Icon = VITAL_ICONS[matchVitalLabel(t.label) ?? ""] ?? Activity;
+          const Icon = VITAL_ICONS[t.key] ?? Activity;
           return (
             <div
               key={t.id}
-              className={"flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 " + (t.flag ? "bg-critical-bg" : "bg-card")}
+              className={
+                "flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 " +
+                (t.key === "bp" ? "col-span-2 " : "") +
+                (t.flag ? "bg-critical-bg" : "bg-card")
+              }
             >
               <span
                 className={
@@ -1195,13 +1236,17 @@ function VitalsPanel({ observations }: { observations: Observation[] }) {
               </span>
               <div className="min-w-0">
                 <span className="block text-caption2 uppercase tracking-wide text-muted">{t.label}</span>
-                <span
-                  className={
-                    "text-body font-semibold tabular-nums " + (t.flag ? "text-critical-fg" : "text-foreground")
-                  }
-                >
-                  {t.value}
-                </span>
+                {t.value === null ? (
+                  <span className="text-subhead font-medium text-warn-fg">Not recorded</span>
+                ) : (
+                  <span
+                    className={
+                      "text-body font-semibold tabular-nums " + (t.flag ? "text-critical-fg" : "text-foreground")
+                    }
+                  >
+                    {t.value}
+                  </span>
+                )}
                 {/* The range rides along with the flag rather than the flag standing alone —
                     a colour with no stated reason is exactly the "trust me" the rival app asks
                     for. This one shows its work. */}
@@ -1481,13 +1526,34 @@ function SoapHeading({ section, label }: { section: (typeof SOAP_ORDER)[number];
  * been migrated and backfilled) falls back the same way an "extra" observation does, so nothing
  * silently disappears — it just lands in Checks until it's classified.
  */
-function soapGroups(matched: MatchedItem[], extra: Observation[]) {
-  return SOAP_ORDER.map((section) => ({
-    section,
-    label: SOAP_LABELS[section],
-    matchedItems: matched.filter((m) => (m.item.soap_section ?? "checks") === section),
-    extraItems: extra.filter((o) => kindToSoapSection(o.kind) === section),
-  })).filter((g) => g.matchedItems.length > 0 || g.extraItems.length > 0);
+function soapGroups(matched: MatchedItem[], extra: Observation[], vitalsPanelShown: boolean) {
+  // Display only — every line below is still in the record and the note. A stored day count
+  // is hidden because the header's computed day is the true one; a vital because the Vitals
+  // panel above already shows it; a repeat because the fuller or later line says it all.
+  const hide = (kind: string, label: string) =>
+    isDayCountLabel(kind, label) || (vitalsPanelShown && isVitalLine(label));
+  return SOAP_ORDER.map((section) => {
+    // A checklist row with no value is a gap to fill, and stays whatever its label.
+    const m = matched.filter(
+      (x) => (x.item.soap_section ?? "checks") === section && !(x.value && hide(x.item.kind, x.item.label))
+    );
+    const e = extra.filter((o) => kindToSoapSection(o.kind) === section && !hide(o.kind, o.label));
+    const repeats = repeatedLines([
+      ...m.map((x) => ({ label: x.item.label, value: x.pertinentNegative ? null : x.value, at: x.recordedAt })),
+      ...e.map((o) => ({ label: o.label, value: o.value_text, at: o.recorded_at })),
+    ]);
+    return {
+      section,
+      label: SOAP_LABELS[section],
+      matchedItems: m.filter((_, i) => !repeats.has(i)),
+      extraItems: e.filter((_, i) => !repeats.has(m.length + i)),
+    };
+  }).filter((g) => g.matchedItems.length > 0 || g.extraItems.length > 0);
+}
+
+/** A charted vital, or a "vitals: 127/81" line that bundles several. */
+function isVitalLine(label: string): boolean {
+  return matchVitalLabel(label) !== null || /^vitals?\b/i.test(label.trim());
 }
 
 /**

@@ -148,7 +148,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
         <Link href={`/patients/${id}`} className="text-body text-accent">
           ‹ Patient
         </Link>
-        <h1 className="mt-3 ios-large-title">Today&rsquo;s note</h1>
+        <h1 className="mt-3 ios-large-title">Print sheet</h1>
         <p className="mt-1 text-subhead text-muted">
           Everything below is what was actually recorded today. Blank lines are for what
           wasn&rsquo;t.
@@ -157,7 +157,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
           href={`/patients/${id}/note/build`}
           className="mt-3 inline-flex items-center gap-1 rounded-[10px] border border-line px-3 py-2 text-subhead font-semibold text-accent"
         >
-          Build today&rsquo;s note by card ›
+          Edit today&rsquo;s note ›
         </Link>
       </header>
 
@@ -262,8 +262,8 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
       </section>
 
       <section className="flex flex-col gap-2 px-4 pb-10 print:hidden">
-        <PrintButton />
         <CopyNoteButton text={noteText} />
+        <PrintButton />
       </section>
     </div>
   );

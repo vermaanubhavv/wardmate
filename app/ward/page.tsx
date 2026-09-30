@@ -20,7 +20,8 @@ import { criticalFlag, isDischargeable, type WardFlag } from "@/lib/ward-flags";
 import { getWardTasks } from "@/lib/todo";
 import { getWardScoringTasks } from "@/lib/scoring/read";
 import { buildWardTodoPreview, countWardOutstanding } from "@/lib/ward-todo-preview";
-import { Users, TriangleAlert, CircleCheckBig, ListChecks, SquarePen, CircleAlert } from "lucide-react";
+import { TriangleAlert, CircleCheckBig, ListChecks, SquarePen, CircleAlert, Settings } from "lucide-react";
+import WardSearch from "./ward-search";
 
 export default async function Home({
   searchParams,
@@ -117,133 +118,108 @@ export default async function Home({
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
-      {/* The navigation bar: brand on the left, the one destructive-ish action on the right,
-          both at the size iOS puts them. Translucent, so the list passes under it. */}
-      {/* The navigation bar: the unit's name where iOS puts a title, and the way into the
-          unit's settings where iOS puts the trailing action. Translucent, so the list passes
-          under it. Sign out lives on /unit now — it was one un-confirmed tap away on the
-          screen used most. */}
-      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line/60 bg-background/80 px-4 pb-2.5 top-bar backdrop-blur-xl">
+      {/* The navigation bar: brand on the left, the way into the unit's settings where iOS
+          puts the trailing action — the one settings entry on this screen. Translucent, so the
+          list passes under it. Sign out lives on /unit — it was one un-confirmed tap away on
+          the screen used most. */}
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line/60 bg-background/80 px-4 pb-1 top-bar backdrop-blur-xl">
         <Wordmark />
-        <Link href="/unit" className="tap text-subhead text-accent active:opacity-60">
-          Unit
+        <Link
+          href="/unit"
+          aria-label="Unit settings"
+          className="-mr-2.5 grid h-11 w-11 place-items-center text-accent active:opacity-60"
+        >
+          <Settings className="h-[22px] w-[22px]" strokeWidth={2} />
         </Link>
       </div>
 
-      <header className="px-4 pb-3 pt-4">
-        {/* One quiet line, not two — this is the one thing on this screen that is not work,
-            and reading your own name and role back to yourself does not need a heading's
-            worth of space. Absent entirely when there is no real name to use — see
-            getDoctorName. */}
+      {/* Everything above the list is kept to a few short rows: the list is what this screen
+          is for, and the old cards and tall tiles left room for three patients on a phone. */}
+      <header className="px-4 pb-3 pt-3">
+        <h1 className="ios-large-title truncate text-title2">{ward.name}</h1>
+        {/* The greeting rides on the title's caption rather than taking a line of its own. */}
+        <p className="mt-0.5 truncate text-footnote text-muted">
+          {[
+            `${patients.length} ${patients.length === 1 ? "patient" : "patients"}`,
+            doctor ? `Dr. ${doctor}` : null,
+            designation,
+            departmentLabel,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
 
-        {/* The name of the actual working unit gets its own card, with the patient count as a
-            real caption rather than a bare number jammed against the name — "Unit Alpha 8"
-            read as one run-on word. Switching units is a chevron affordance on the same card,
-            not a separate pill competing with it for attention. */}
-        <Link
-          href="/unit"
-          className="mt-1 flex items-center justify-between gap-3 rounded-[12px] bg-card px-4 py-3 active:opacity-70"
-        >
-          <div className="min-w-0">
-            <h1 className="ios-large-title truncate text-title2">{ward.name}</h1>
-            {/* The greeting rides on the unit card's caption rather than taking a line of
-                its own above the list. */}
-            <p className="mt-0.5 truncate text-footnote text-muted">
-              {[
-                `${patients.length} ${patients.length === 1 ? "patient" : "patients"}`,
-                doctor ? `Dr. ${doctor}` : null,
-                designation,
-                departmentLabel,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            </p>
-          </div>
-          <span className="flex shrink-0 items-center gap-1 text-subhead font-medium text-accent">
-            Settings
-            <ChevronIcon className="h-3.5 w-3.5" />
-          </span>
-        </Link>
-
-        {/* Patients / Critical / Dischargeable — the same three counts a resident used to
-            have to open the list to add up themselves. Each tile is also the filter: tapping
-            one is the same "?filter=" the old All/Critical pill used, just with a third
-            state and something to look at while deciding whether to tap it. Dischargeable is
-            a heuristic (nothing critical, nothing outstanding), not a clinical sign-off —
-            see isDischargeable() above. */}
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          <StatTile
-            href="/ward"
-            icon={<Users className="h-[15px] w-[15px]" strokeWidth={2.3} />}
-            value={patients.length}
-            label="Patients"
-            tone="neutral"
-            active={!filter}
-          />
-          <StatTile
+        {/* All / Critical / Nothing pending — each chip is the count and the filter in one,
+            the same "?filter=" the tiles used. "Nothing pending" is a heuristic (nothing
+            critical, nothing outstanding), not a clinical sign-off — see isDischargeable(). */}
+        <div className="mt-3 flex gap-2">
+          <FilterChip href="/ward" label="All" value={patients.length} active={!filter} />
+          <FilterChip
             href="/ward?filter=critical"
-            icon={<TriangleAlert className="h-[15px] w-[15px]" strokeWidth={2.3} />}
-            value={criticalCount}
             label="Critical"
-            tone="critical"
+            value={criticalCount}
+            dot="bg-critical-dot"
             active={filter === "critical"}
           />
-          <StatTile
+          <FilterChip
             href="/ward?filter=dischargeable"
-            icon={<CircleCheckBig className="h-[15px] w-[15px]" strokeWidth={2.3} />}
-            value={dischargeableCount}
             label="Nothing pending"
-            tone="good"
+            value={dischargeableCount}
+            dot="bg-good-dot"
             active={filter === "dischargeable"}
           />
         </div>
 
-        {/* The top few outstanding jobs across the whole unit, red first then yellow, so
-            something urgent is visible without opening /todo. Merges the same two sources
-            /todo itself reads — see lib/ward-todo-preview.ts. */}
-        {/* One row, not a card of three: the list below is what this screen is for, and on a
-            375pt phone the old preview pushed the first patient under the fold. The most
-            urgent job is named so a red item is still seen without opening /todo. */}
-        <Link
-          href="/todo"
-          className="mt-2 flex min-h-11 items-center gap-2.5 rounded-[12px] bg-card px-3 py-2.5 active:opacity-70"
-        >
-          <ListChecks className="h-4 w-4 shrink-0 text-accent" strokeWidth={2.2} />
-          <span className="min-w-0 flex-1">
-            <span className="block text-subhead font-semibold">
-              To do{totalOutstanding > 0 ? ` · ${totalOutstanding} outstanding` : ""}
-            </span>
-            {todoPreview[0] && (
-              <span className="mt-0.5 flex items-center gap-1.5 truncate text-caption text-muted">
-                <span
-                  className={
-                    "h-2 w-2 shrink-0 rounded-full " +
-                    (todoPreview[0].urgency === "red"
-                      ? "bg-critical-dot"
-                      : todoPreview[0].urgency === "yellow"
-                        ? "bg-warn-dot"
-                        : "bg-good-dot")
-                  }
-                  aria-hidden
-                />
-                {todoPreview[0].bed} · {todoPreview[0].text}
+        {/* To do, Handover and Confirm share one row. To do keeps its count and names the most
+            urgent job (red first, then yellow — see lib/ward-todo-preview.ts), so a red item is
+            still seen without opening /todo. */}
+        <div className="mt-2 flex gap-2">
+          <Link
+            href="/todo"
+            className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-[12px] bg-card px-3 py-2 active:opacity-70"
+          >
+            <ListChecks className="h-4 w-4 shrink-0 text-accent" strokeWidth={2.2} />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-subhead font-semibold">
+                To do{totalOutstanding > 0 ? ` · ${totalOutstanding}` : ""}
               </span>
-            )}
-          </span>
-          <ChevronIcon className="h-4 w-4 shrink-0 text-muted" />
-        </Link>
+              {todoPreview[0] && (
+                <span className="mt-0.5 flex items-center gap-1.5 text-caption text-muted">
+                  <span
+                    className={
+                      "h-2 w-2 shrink-0 rounded-full " +
+                      (todoPreview[0].urgency === "red"
+                        ? "bg-critical-dot"
+                        : todoPreview[0].urgency === "yellow"
+                          ? "bg-warn-dot"
+                          : "bg-good-dot")
+                    }
+                    aria-hidden
+                  />
+                  <span className="truncate">
+                    {todoPreview[0].bed} · {todoPreview[0].text}
+                  </span>
+                </span>
+              )}
+            </span>
+          </Link>
+          <NavTile href="/handover" icon={<SquarePen className="h-[18px] w-[18px]" strokeWidth={2.2} />}>
+            Handover
+          </NavTile>
+          {pendingConfirmCount > 0 && (
+            <NavTile href="/confirm" icon={<CircleAlert className="h-[18px] w-[18px]" strokeWidth={2.2} />}>
+              Confirm · {pendingConfirmCount}
+            </NavTile>
+          )}
+        </div>
 
-        {/* One-time confirmation right after discharging a patient — instant feedback only.
-            It carries no state of its own (just the id in the URL) and is gone the moment
-            this page is reloaded or left. The real 48-hour undo window lives on
-            /unit → Discharged, which survives navigation — see app/patients/actions.ts. */}
         {waitingRoundIds.length > 0 && (
           <Link
             href={`/round/${waitingRoundIds[0]}`}
-            className="mt-2 flex items-center gap-2.5 rounded-[10px] border-l-[3px] border-warn-fg bg-card px-3 py-2.5 active:opacity-70"
+            className="mt-2 flex min-h-11 items-center gap-2 rounded-[10px] border-l-[3px] border-warn-fg bg-card px-3 py-2 active:opacity-70"
           >
-            <TriangleAlert className="h-[17px] w-[17px] shrink-0 text-warn-fg" strokeWidth={2.2} />
-            <p className="flex-1 text-subhead">
+            <TriangleAlert className="h-4 w-4 shrink-0 text-warn-fg" strokeWidth={2.2} />
+            <p className="flex-1 text-footnote">
               {waitingRoundIds.length === 1
                 ? "A round dictation is waiting to be checked and saved"
                 : `${waitingRoundIds.length} round dictations are waiting to be checked and saved`}
@@ -252,10 +228,14 @@ export default async function Home({
           </Link>
         )}
 
+        {/* One-time confirmation right after discharging a patient — instant feedback only.
+            It carries no state of its own (just the id in the URL) and is gone the moment
+            this page is reloaded or left. The real 48-hour undo window lives on
+            /unit → Discharged, which survives navigation — see app/patients/actions.ts. */}
         {dischargedId && (
-          <div className="mt-2 flex items-center gap-2.5 rounded-[10px] border-l-[3px] border-accent bg-card px-3 py-2.5">
-            <CircleCheckBig className="h-[17px] w-[17px] shrink-0 text-accent" strokeWidth={2.2} />
-            <p className="flex-1 text-subhead">
+          <div className="mt-2 flex min-h-11 items-center gap-2 rounded-[10px] border-l-[3px] border-accent bg-card px-3 py-1.5">
+            <CircleCheckBig className="h-4 w-4 shrink-0 text-accent" strokeWidth={2.2} />
+            <p className="flex-1 text-footnote">
               {dischargedPatient.data
                 ? stripPatientHonorific(dischargedPatient.data.display_name)
                 : "Patient"}{" "}
@@ -267,22 +247,6 @@ export default async function Home({
             </form>
           </div>
         )}
-
-        {/* A grid rather than a horizontal-scroll row: nothing here should be able to slide
-            off the edge of the screen unseen. "To do" no longer needs its own tile — the
-            preview card above already links to /todo. "Discharged" moved to /unit, beside
-            Trash, the same "not something reached for on every round" reasoning that put
-            Formats and Protocols there. */}
-        <div className={"mt-2 grid gap-2 " + (pendingConfirmCount > 0 ? "grid-cols-2" : "grid-cols-1")}>
-          <NavTile href="/handover" icon={<SquarePen className="h-[19px] w-[19px]" strokeWidth={2.2} />}>
-            Handover
-          </NavTile>
-          {pendingConfirmCount > 0 && (
-            <NavTile href="/confirm" icon={<CircleAlert className="h-[19px] w-[19px]" strokeWidth={2.2} />}>
-              Confirm · {pendingConfirmCount}
-            </NavTile>
-          )}
-        </div>
       </header>
 
       {/* Bottom padding clears the floating bar so the last patient stays readable. The bar is
@@ -316,10 +280,12 @@ export default async function Home({
           </div>
         ) : visiblePatients.length === 0 ? (
           <p className="ios-group px-4 py-6 text-center text-subhead text-muted">
-            {filter === "critical" ? "Nobody is flagged critical." : "Nobody has nothing pending."}
+            {filter === "critical" ? "Nobody is flagged critical." : "Every patient has something pending."}
           </p>
         ) : (
-          <ul className="ios-group">
+          <>
+          <WardSearch listId="ward-list" />
+          <ul id="ward-list" className="ios-group">
             {visiblePatients.map((p) => (
               <PatientRow
                 key={p.id}
@@ -332,6 +298,7 @@ export default async function Home({
               />
             ))}
           </ul>
+          </>
         )}
       </div>
 
@@ -360,54 +327,37 @@ export default async function Home({
   );
 }
 
-/** One of the three Patients/Critical/Dischargeable tiles — an icon, the count, and the
- *  label, doubling as the filter control the old All/Critical pill used to be. */
-function StatTile({
+/** One of the All / Critical / Nothing pending chips — the count and the filter in one. */
+function FilterChip({
   href,
-  icon,
-  value,
   label,
-  tone,
+  value,
+  dot,
   active,
 }: {
   href: string;
-  icon: React.ReactNode;
-  value: number;
   label: string;
-  tone: "neutral" | "critical" | "good";
+  value: number;
+  dot?: string;
   active: boolean;
 }) {
-  const card =
-    tone === "critical" ? "bg-critical-bg" : tone === "good" ? "bg-good-bg" : "bg-card";
-  const iconWrap =
-    tone === "critical"
-      ? "bg-critical-fg/10 text-critical-fg"
-      : tone === "good"
-        ? "bg-good-fg/10 text-good-fg"
-        : "bg-chip text-accent";
-  const valueColor = tone === "critical" ? "text-critical-fg" : tone === "good" ? "text-good-fg" : "text-foreground";
-  const labelColor = tone === "critical" ? "text-critical-fg" : tone === "good" ? "text-good-fg" : "text-muted";
-
   return (
     <Link
       href={href}
+      aria-current={active ? "page" : undefined}
       className={
-        "flex flex-col gap-1.5 rounded-[12px] px-3 py-2.5 active:opacity-70 " +
-        card +
-        (active ? " ring-2 ring-accent" : "")
+        "flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-subhead active:opacity-70 " +
+        (active ? "bg-accent text-accent-ink" : "bg-card text-foreground")
       }
     >
-      <span className={"grid h-[24px] w-[24px] place-items-center rounded-[7px] " + iconWrap}>{icon}</span>
-      <span>
-        <span className={"block text-title3 font-bold leading-none tabular-nums " + valueColor}>{value}</span>
-        <span className={"mt-0.5 block text-caption " + labelColor}>{label}</span>
-      </span>
+      {dot && <span aria-hidden className={"h-2 w-2 rounded-full " + dot} />}
+      {label}
+      <span className="font-semibold tabular-nums">{value}</span>
     </Link>
   );
 }
 
-/** One tile in the header's nav grid — icon above label, sized to read at a glance without
- *  reading, the same reasoning the capsules' icons used before. */
+/** A shortcut beside the To do row — icon above a short label, narrow enough that three fit. */
 function NavTile({
   href,
   icon,
@@ -420,10 +370,10 @@ function NavTile({
   return (
     <Link
       href={href}
-      className="flex min-h-11 items-center justify-center gap-2 rounded-[10px] bg-card px-2 py-2.5 text-center text-accent active:opacity-70"
+      className="flex min-h-11 shrink-0 flex-col items-center justify-center gap-0.5 rounded-[12px] bg-card px-3 py-1.5 text-center text-accent active:opacity-70"
     >
       {icon}
-      <span className="text-subhead font-medium leading-tight">{children}</span>
+      <span className="whitespace-nowrap text-caption font-medium leading-tight">{children}</span>
     </Link>
   );
 }
@@ -457,6 +407,7 @@ function PatientRow({
     // carries the same critical/dischargeable colour as the stat row above, so a row reads
     // at a glance on a long list without adding a second badge.
     <li
+      data-search={`${patient.bed} ${patientName(patient)}`.toLowerCase()}
       className={
         "ios-row relative border-l-[3px] " +
         (flag ? "border-l-critical-dot" : dischargeable ? "border-l-good-dot" : "border-l-transparent")
@@ -464,7 +415,7 @@ function PatientRow({
     >
       <Link
         href={`/patients/${patient.id}`}
-        className="flex items-start gap-3 py-2.5 pl-3 pr-16 active:bg-chip"
+        className="flex min-h-11 items-start gap-3 py-2.5 pl-3 pr-16 active:bg-chip"
       >
         {/* Bed leads the row: on rounds you are looking for a bed, not a name. */}
         <span className="mt-0.5 min-w-[32px] shrink-0 rounded-md bg-chip px-1.5 py-0.5 text-center font-mono text-footnote tabular-nums">
@@ -518,9 +469,13 @@ function PatientRow({
         </span>
       </Link>
 
-      {/* Both sit outside the link, at the right, where iOS puts a row's accessories. */}
-      <div className="absolute inset-y-0 right-2 flex items-center gap-0.5">
-        <PatientMenu patient={patient} templateChoices={templateChoices} specialty={pack.key} />
+      {/* Both sit outside the link, at the right, where iOS puts a row's accessories. Taps
+          fall through to the link everywhere but the ⋯ itself, so the whole row opens the
+          patient. */}
+      <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center gap-0.5">
+        <div className="pointer-events-auto">
+          <PatientMenu patient={patient} templateChoices={templateChoices} specialty={pack.key} />
+        </div>
         <ChevronIcon className="h-4 w-4 shrink-0 text-muted" aria-hidden />
       </div>
     </li>

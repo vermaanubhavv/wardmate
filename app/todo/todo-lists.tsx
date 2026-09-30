@@ -4,8 +4,9 @@
  * The body of /todo, in either of two groupings of the same jobs — chosen with a toggle
  * rather than a second screen, since it's the same list either way.
  *
- * "By urgency" (the default) is the original grouping: Now/Soon/Not graded/Has time,
- * red -> yellow -> green, the calendar-aware colour lib/urgency.ts computes. "By type"
+ * "By urgency" (the default) is the original grouping: Overdue first, then Now/Soon/Not
+ * graded/Has time, red -> yellow -> green, the calendar-aware colour lib/urgency.ts
+ * computes; the scoring engine's suggestions close the list, folded, as "Worth asking?". "By type"
  * re-slices the same jobs into who actually walks them — Sampling/Radiology/Procedure/
  * Consents/Other (lib/task-category.ts) — with every job still carrying its urgency dot,
  * so switching views never loses that signal.
@@ -30,7 +31,7 @@ import { scoringPriorityToUrgency } from "@/lib/ward-todo-preview";
 
 /** The four groups, in the order they are worked through. */
 const GROUPS: { key: Urgency; title: string; note: string }[] = [
-  { key: "red", title: "Now", note: "Within hours, or today — including anything that has come due" },
+  { key: "red", title: "Now", note: "Within hours, or come due" },
   { key: "yellow", title: "Soon", note: "Today or tomorrow" },
   { key: null, title: "Not graded", note: "No timeframe was said — tap a dot to grade" },
   { key: "green", title: "Has time", note: "No hurry" },
@@ -87,17 +88,33 @@ function ByUrgency({
   scoringTasks: WardScoringTask[];
   nothingOutstanding: boolean;
 }) {
+  const overdue = tasks.filter(isOverdue);
+  const groups = [
+    { key: "overdue", title: "Overdue", note: "Past the time it was given", dot: "bg-critical-dot", group: overdue },
+    ...GROUPS.map(({ key, title, note }) => ({
+      key: title,
+      title,
+      note,
+      dot: key ? URGENCY_META[key].dot : "border-2 border-dashed border-muted/60",
+      group: tasks.filter((t) => t.effective === key && !isOverdue(t)),
+    })),
+  ];
+
+  // An urgent suggestion (LRINEC's "senior review NOW") is never folded away: it leads the list.
+  const urgentScoring = scoringTasks.filter((t) => t.priority === "urgent");
+  const foldedScoring = scoringTasks.filter((t) => t.priority !== "urgent");
+
   return (
     <>
-      {scoringTasks.length > 0 && (
+      {urgentScoring.length > 0 && (
         <div>
           <div className="mb-2 flex items-baseline gap-2">
-            <span className="h-2.5 w-2.5 rounded-full bg-warn-dot" aria-hidden />
-            <p className="text-body font-medium">Score inputs · {scoringTasks.length}</p>
+            <span className="h-2.5 w-2.5 rounded-full bg-critical-dot" aria-hidden />
+            <p className="text-body font-medium text-critical-fg">Worth asking now · {urgentScoring.length}</p>
           </div>
-          <p className="mb-2 text-footnote text-muted">Needed to complete a clinical score</p>
+          <p className="mb-2 text-footnote text-muted">Suggested by a clinical score as urgent — for you to judge</p>
           <ul className="ios-group divide-y divide-line">
-            {scoringTasks.map((t) => (
+            {urgentScoring.map((t) => (
               <ScoringRow key={t.id} t={t} />
             ))}
           </ul>
@@ -108,20 +125,13 @@ function ByUrgency({
           <p className="ios-group p-6 text-subhead text-muted">Every job on the unit is ticked off.</p>
         )
       ) : (
-        GROUPS.map(({ key, title, note }) => {
-          const group = tasks.filter((t) => t.effective === key);
+        groups.map(({ key, title, note, dot, group }) => {
           if (group.length === 0) return null;
-          const meta = key ? URGENCY_META[key] : null;
 
           return (
-            <div key={title}>
+            <div key={key}>
               <div className="mb-2 flex items-baseline gap-2">
-                <span
-                  className={
-                    "h-2.5 w-2.5 rounded-full " + (meta ? meta.dot : "border-2 border-dashed border-muted/60")
-                  }
-                  aria-hidden
-                />
+                <span className={"h-2.5 w-2.5 rounded-full " + dot} aria-hidden />
                 <p className="text-body font-medium">
                   {title} · {group.length}
                 </p>
@@ -137,8 +147,28 @@ function ByUrgency({
           );
         })
       )}
+      {/* Machine suggestions, not jobs anyone said — last, and folded until wanted. */}
+      {foldedScoring.length > 0 && (
+        <details>
+          <summary className="min-h-11 cursor-pointer py-2.5 text-body font-medium">
+            <span className="mx-2 inline-block h-2.5 w-2.5 rounded-full bg-warn-dot" aria-hidden />
+            Worth asking? · {foldedScoring.length}
+          </summary>
+          <p className="mb-2 text-footnote text-muted">Suggested by a clinical score — for you to judge</p>
+          <ul className="ios-group divide-y divide-line">
+            {foldedScoring.map((t) => (
+              <ScoringRow key={t.id} t={t} />
+            ))}
+          </ul>
+        </details>
+      )}
     </>
   );
+}
+
+/** "2 days overdue" from lib/urgency.ts's effectiveUrgency; "due today" is not overdue yet. */
+function isOverdue(t: WardTask): boolean {
+  return t.note?.endsWith("overdue") ?? false;
 }
 
 const CATEGORY_LABELS: Record<TaskCategory | "other", string> = {
@@ -235,7 +265,7 @@ function TaskRow({ task }: { task: WardTask }) {
         {/* Which bed to walk to — the thing that turns a list into a route. */}
         <Link
           href={`/patients/${task.patient_id}`}
-          className="mt-0.5 flex items-center gap-1.5 truncate text-footnote text-accent active:opacity-60"
+          className="flex min-h-11 items-center gap-1.5 truncate text-footnote text-accent active:opacity-60"
         >
           <span className="rounded bg-chip px-1 font-mono tabular-nums text-muted">
             {task.patient.bed}

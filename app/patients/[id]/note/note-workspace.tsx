@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Field } from "../discharge/discharge-fields";
@@ -21,36 +21,23 @@ import {
   replaceActiveMedications,
   applyCompiledNote,
 } from "./actions";
+import { MED_PRESETS } from "./med-presets";
 import type { ProgressNoteConfig } from "@/lib/progress-note-config";
 
 export type NoteObs = { kind: string; label: string; value: string | null };
 
-const MED_PRESETS = [
-  "Inj Ceftriaxone 1 g IV BD",
-  "Inj Metronidazole 500 mg IV TDS",
-  "Inj Pantoprazole 40 mg IV OD",
-  "Inj Ondansetron 4 mg IV TDS",
-  "Inj Paracetamol 1 g IV SOS",
-  "Tab Paracetamol 650 mg PO TDS",
-  "Inj Tramadol 50 mg IV SOS",
-  "Inj Enoxaparin 40 mg SC OD",
-  "IV fluids — RL / DNS alternately",
-  "Inj Insulin (sliding scale)",
-  "Nebulisation — Duolin / Budecort",
-];
-
 const SENSORIUM = ["Conscious & oriented", "Drowsy", "Altered sensorium", "Irritable"];
 const ASSESSMENT = ["Satisfactory", "Stable", "Improving", "Static", "Deteriorating"];
-const VITALS: { key: string; label: string; ph: string }[] = [
-  { key: "BP", label: "BP", ph: "120/80" },
-  { key: "PR", label: "PR", ph: "84 /min" },
-  { key: "RR", label: "RR", ph: "18 /min" },
-  { key: "Temp", label: "Temp", ph: "Afebrile" },
-  { key: "SpO2", label: "SpO₂", ph: "98% RA" },
-  { key: "GRBS", label: "GRBS", ph: "—" },
+const VITALS: { key: string; label: string; ph: string; aliases: string[] }[] = [
+  { key: "BP", label: "BP", ph: "120/80", aliases: ["bp", "blood pressure"] },
+  { key: "PR", label: "PR", ph: "84 /min", aliases: ["pr", "pulse", "pulse rate"] },
+  { key: "RR", label: "RR", ph: "18 /min", aliases: ["rr", "respiratory rate"] },
+  { key: "Temp", label: "Temp", ph: "Afebrile", aliases: ["temp", "temperature"] },
+  { key: "SpO2", label: "SpO₂", ph: "98% RA", aliases: ["spo2", "saturation", "oxygen saturation"] },
+  { key: "GRBS", label: "GRBS", ph: "—", aliases: ["grbs", "rbs", "cbg"] },
   // Anything here means the patient is on the ICU/HDU — it flags them Critical on the ward
   // list. Free text so the resident can note the support ("on noradrenaline 0.08", "HFNC").
-  { key: "ICU", label: "ICU / support", ph: "e.g. on noradrenaline 0.08" },
+  { key: "ICU", label: "ICU / support", ph: "e.g. on noradrenaline 0.08", aliases: ["icu", "icu / support", "support"] },
 ];
 
 /** The shared cards are fixed ids; each department's exam cards use their section id. */
@@ -85,7 +72,7 @@ export default function NoteWorkspace({
   dateLabel: string;
   observations: NoteObs[];
   /** Yesterday's round, newest value per label — the source for each card's "Same as
-   *  yesterday" shortcut. */
+   *  yesterday" shortcut, and the grey hint under each vital. */
   yesterday?: NoteObs[];
   currentMeds: string[];
   /** A pre-fill for the Assessment card on a routine round — "" when nothing should be
@@ -122,15 +109,9 @@ export default function NoteWorkspace({
 
   const [complaints, setComplaints] = useState(() => val(["complaints", "c/o", "complaint"]));
   const [sensorium, setSensorium] = useState(() => val(["sensorium", "cns", "gcs"]));
-  const [vitals, setVitals] = useState<Record<string, string>>(() => ({
-    BP: val(["bp", "blood pressure"]),
-    PR: val(["pr", "pulse", "pulse rate"]),
-    RR: val(["rr", "respiratory rate"]),
-    Temp: val(["temp", "temperature"]),
-    SpO2: val(["spo2", "saturation", "oxygen saturation"]),
-    GRBS: val(["grbs", "rbs", "cbg"]),
-    ICU: val(["icu", "icu / support", "support"]),
-  }));
+  const [vitals, setVitals] = useState<Record<string, string>>(() =>
+    Object.fromEntries(VITALS.map((v) => [v.key, val(v.aliases)]))
+  );
   const [exam, setExam] = useState<Record<string, string>>(() =>
     Object.fromEntries(noteConfig.examSections.map((sec) => [sec.id, val(sec.aliases)]))
   );
@@ -146,6 +127,11 @@ export default function NoteWorkspace({
     uncertain: string[];
   } | null>(null);
 
+  // Cards filled by "Same as yesterday" since their last save — any number in them is saved
+  // amber, for the resident to confirm, rather than as today's confirmed finding.
+  const [carried, setCarried] = useState<Set<StepId>>(() => new Set());
+  const carry = (id: StepId) => setCarried((s) => new Set(s).add(id));
+
   const current = STEPS[step];
   const mark = (id: StepId) => {
     setDirty((s) => new Set(s).add(id));
@@ -154,8 +140,9 @@ export default function NoteWorkspace({
 
   async function persist(id: StepId): Promise<boolean> {
     let res: { ok: boolean; error?: string } = { ok: true };
-    if (id === "complaints") res = await replaceTodayNoteSection(patientId, "complaints", "note", complaints ? [complaints] : []);
-    else if (id === "sensorium") res = await replaceTodayNoteExam(patientId, [{ label: "sensorium", kind: "exam", value: sensorium || null }]);
+    const c = carried.has(id);
+    if (id === "complaints") res = await replaceTodayNoteSection(patientId, "complaints", "note", complaints ? [complaints] : [], c);
+    else if (id === "sensorium") res = await replaceTodayNoteExam(patientId, [{ label: "sensorium", kind: "exam", value: sensorium || null, carried: c }]);
     else if (id === "vitals")
       res = await replaceTodayNoteVitals(
         patientId,
@@ -163,12 +150,12 @@ export default function NoteWorkspace({
       );
     else if (sectionById(id)) {
       const sec = sectionById(id)!;
-      res = await replaceTodayNoteExam(patientId, [{ label: sec.label, kind: "exam", value: exam[sec.id] || null }]);
+      res = await replaceTodayNoteExam(patientId, [{ label: sec.label, kind: "exam", value: exam[sec.id] || null, carried: c }]);
     }
     else if (id === "bowel")
       res = await replaceTodayNoteExam(patientId, [
-        { label: "flatus", kind: "exam", value: flatus || null },
-        { label: "stool", kind: "exam", value: stool || null },
+        { label: "flatus", kind: "exam", value: flatus || null, carried: c },
+        { label: "stool", kind: "exam", value: stool || null, carried: c },
       ]);
     else if (id === "assessment") res = await replaceTodayNoteSection(patientId, "assessment", "note", assessment ? [assessment] : []);
     else if (id === "plan") res = await replaceTodayNoteSection(patientId, "plan", "plan", planItems);
@@ -178,27 +165,51 @@ export default function NoteWorkspace({
       setMessage(res.error ?? "Could not save — your edits are still here.");
       return false;
     }
-    setDirty((s) => {
+    const drop = (s: Set<StepId>) => {
       const n = new Set(s);
       n.delete(id);
       return n;
-    });
+    };
+    setDirty(drop);
+    setCarried(drop);
     return true;
   }
 
+  /** Leaving a changed card saves it first; a failed save keeps the resident on the card with
+   *  the error in the bottom bar, rather than moving on as if it had landed. */
   function goTo(index: number) {
-    if (index < 0 || index >= STEPS.length) return;
-    if (dirty.has(current.id) && current.id !== "review") {
-      const leaving = current.id;
-      startTransition(async () => {
-        await persist(leaving);
-        router.refresh();
-      });
-    }
-    setStep(index);
-    setMenuOpen(false);
-    if (typeof window !== "undefined") window.scrollTo({ top: 0 });
+    if (index < 0 || index >= STEPS.length || pending) return;
+    const move = () => {
+      setStep(index);
+      setMenuOpen(false);
+      window.scrollTo({ top: 0 });
+    };
+    if (!dirty.has(current.id) || current.id === "review") return move();
+    const leaving = current.id;
+    startTransition(async () => {
+      if (!(await persist(leaving))) return;
+      move();
+      router.refresh();
+    });
   }
+
+  // Leaving the builder altogether — "‹ Patient", another tab, closing the page — saves the card
+  // being edited, without blocking the navigation. Only the current card: the Assessment
+  // pre-fill is committed by the resident moving past it, never on a card they have not seen.
+  const flushRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    flushRef.current = () => {
+      if (dirty.has(current.id) && current.id !== "review") void persist(current.id);
+    };
+  });
+  useEffect(() => {
+    const flush = () => flushRef.current();
+    window.addEventListener("pagehide", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      flush();
+    };
+  }, []);
 
   async function compile() {
     setGenerating("compile");
@@ -229,7 +240,7 @@ export default function NoteWorkspace({
       const res = await applyCompiledNote(patientId, { fields: compiled.fields, plan: compiled.plan });
       if (!res.ok) return setMessage(res.error ?? "Could not apply.");
       setCompiled(null);
-      setMessage("Note rewritten. Open the printable sheet to sign and print.");
+      setMessage("Note rewritten. Open the print sheet to sign and print.");
       router.refresh();
     });
   }
@@ -256,7 +267,7 @@ export default function NoteWorkspace({
         <>
           <p className="text-caption leading-[1.45] text-muted">Overnight events and any fresh complaint. Tap what fits, add the rest.</p>
           <PillsAndText pills={noteConfig.complaintPills} value={complaints} onChange={(v) => { setComplaints(v); mark("complaints"); }} placeholder="Overnight in the patient's words" />
-          <YesterdayButton text={yVal(["complaints", "c/o", "complaint"])} onUse={(v) => { setComplaints(v); mark("complaints"); }} />
+          <YesterdayButton text={yVal(["complaints", "c/o", "complaint"])} onUse={(v) => { setComplaints(v); mark("complaints"); carry("complaints"); }} />
         </>
       );
     if (id === "sensorium")
@@ -268,33 +279,23 @@ export default function NoteWorkspace({
             </OptionRow>
           ))}
           <DictateArea value={sensorium} onChange={(v) => { setSensorium(v); mark("sensorium"); }} placeholder="Or describe it" rows={2} />
-          <YesterdayButton text={yVal(["sensorium", "cns", "gcs"])} onUse={(v) => { setSensorium(v); mark("sensorium"); }} />
+          <YesterdayButton text={yVal(["sensorium", "cns", "gcs"])} onUse={(v) => { setSensorium(v); mark("sensorium"); carry("sensorium"); }} />
         </div>
       );
     if (id === "vitals")
       return (
-        <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-2 gap-3">
-            {VITALS.map((v) => (
-              <Field key={v.key} label={v.label} value={vitals[v.key] ?? ""} onChange={(nv) => { setVitals({ ...vitals, [v.key]: nv }); mark("vitals"); }} placeholder={v.ph} />
-            ))}
-          </div>
-          <YesterdayButton
-            text={yesterdayVitalsSummary(yVal)}
-            label="Same as yesterday"
-            onUse={() => {
-              setVitals({
-                BP: yVal(["bp", "blood pressure"]),
-                PR: yVal(["pr", "pulse", "pulse rate"]),
-                RR: yVal(["rr", "respiratory rate"]),
-                Temp: yVal(["temp", "temperature"]),
-                SpO2: yVal(["spo2", "saturation", "oxygen saturation"]),
-                GRBS: yVal(["grbs", "rbs", "cbg"]),
-                ICU: yVal(["icu", "icu / support", "support"]),
-              });
-              mark("vitals");
-            }}
-          />
+        // Today's vitals are measured, never carried over — yesterday's reading is shown only as
+        // a grey hint under each field.
+        <div className="grid grid-cols-2 gap-3">
+          {VITALS.map((v) => {
+            const y = yVal(v.aliases);
+            return (
+              <div key={v.key} className="flex flex-col gap-1">
+                <Field label={v.label} value={vitals[v.key] ?? ""} onChange={(nv) => { setVitals({ ...vitals, [v.key]: nv }); mark("vitals"); }} placeholder={v.ph} />
+                {y && <p className="text-caption2 text-muted">Yesterday {y}</p>}
+              </div>
+            );
+          })}
         </div>
       );
     const sec = sectionById(id);
@@ -303,7 +304,7 @@ export default function NoteWorkspace({
       return (
         <>
           <PillsAndText pills={sec.pills} value={exam[sec.id] ?? ""} onChange={set} placeholder={sec.placeholder} />
-          <YesterdayButton text={yVal(sec.aliases)} onUse={set} />
+          <YesterdayButton text={yVal(sec.aliases)} onUse={(v) => { set(v); carry(sec.id); }} />
         </>
       );
     }
@@ -332,6 +333,7 @@ export default function NoteWorkspace({
               if (f) setFlatus(f);
               if (s) setStool(s);
               mark("bowel");
+              carry("bowel");
             }}
           />
         </div>
@@ -376,16 +378,16 @@ export default function NoteWorkspace({
                   onChange={(e) => { setPlanItems(planItems.map((x, j) => (j === i ? e.target.value : x))); mark("plan"); }}
                   className="h-11 flex-1 rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
                 />
-                <button type="button" onClick={() => { setPlanItems(planItems.filter((_, j) => j !== i)); mark("plan"); }} className="shrink-0 px-2 text-footnote text-muted">
+                <button type="button" onClick={() => { setPlanItems(planItems.filter((_, j) => j !== i)); mark("plan"); }} className="tap shrink-0 px-2 text-footnote text-muted">
                   Remove
                 </button>
               </div>
             ))}
             <div className="flex gap-3">
-              <button type="button" onClick={() => { setPlanItems([...planItems, ""]); mark("plan"); }} className="self-start text-footnote font-medium text-accent">
+              <button type="button" onClick={() => { setPlanItems([...planItems, ""]); mark("plan"); }} className="tap self-start text-footnote font-medium text-accent">
                 + Add a line
               </button>
-              <button type="button" disabled={generating === "plan"} onClick={proposePlan} className="self-start text-footnote font-medium text-accent disabled:opacity-50">
+              <button type="button" disabled={generating === "plan"} onClick={proposePlan} className="tap self-start text-footnote font-medium text-accent disabled:opacity-50">
                 {generating === "plan" ? "Thinking…" : "Propose with AI"}
               </button>
             </div>
@@ -403,7 +405,7 @@ export default function NoteWorkspace({
           <div className="flex flex-wrap gap-1.5">
             {MED_PRESETS.filter((p) => !meds.some((m) => m.toLowerCase().startsWith(p.split(/\s+\d/)[0].toLowerCase()))).map((p) => (
               <SelChip key={p} selected={false} onClick={() => { setMeds([...meds, p]); mark("meds"); }}>
-                + {p.split(/\s+\d|\s+—/)[0]}
+                + {p}
               </SelChip>
             ))}
           </div>
@@ -417,12 +419,12 @@ export default function NoteWorkspace({
                   placeholder="Drug, dose, route, frequency"
                   className="h-11 flex-1 rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
                 />
-                <button type="button" onClick={() => { setMeds(meds.filter((_, j) => j !== i)); mark("meds"); }} className="shrink-0 px-2 text-footnote text-muted">
+                <button type="button" onClick={() => { setMeds(meds.filter((_, j) => j !== i)); mark("meds"); }} className="tap shrink-0 px-2 text-footnote text-muted">
                   Stop
                 </button>
               </div>
             ))}
-            <button type="button" onClick={() => { setMeds([...meds, ""]); mark("meds"); }} className="self-start text-footnote font-medium text-accent">
+            <button type="button" onClick={() => { setMeds([...meds, ""]); mark("meds"); }} className="tap self-start text-footnote font-medium text-accent">
               + Add a drug
             </button>
           </div>
@@ -433,7 +435,7 @@ export default function NoteWorkspace({
     return (
       <>
         <p className="text-caption leading-[1.45] text-muted">
-          Bind the round into the progress-sheet phrasing, then open the printable sheet — it prints onto your unit&rsquo;s own form.
+          Bind the round into the progress-sheet phrasing, then open the print sheet — it prints onto your unit&rsquo;s own form.
         </p>
         <button type="button" disabled={generating === "compile" || pending} onClick={compile} className={genBtn}>
           {generating === "compile" ? "Writing…" : compiled ? "Rewrite" : "Compile the note with AI"}
@@ -477,9 +479,6 @@ export default function NoteWorkspace({
           </>
         )}
         {dirty.size > 0 && <p className="text-footnote text-warn-fg">{dirty.size} card(s) not yet saved — step back into them.</p>}
-        <Link href={`/patients/${patientId}/note`} className="mt-1 flex items-center justify-center rounded-[12px] bg-accent px-4 py-3 text-callout font-semibold text-accent-ink">
-          Open the printable sheet →
-        </Link>
       </>
     );
   }
@@ -498,13 +497,13 @@ export default function NoteWorkspace({
             {dirty.has(current.id) && statusChip("unsaved", "warn")}
           </div>
         </div>
-        <div className="h-[3px] bg-[#e2e2e9]">
+        <div className="h-[3px] bg-chip">
           <div className="h-full bg-accent transition-all" style={{ width: `${pct}%` }} />
         </div>
         <div className="flex flex-col gap-3 px-4 py-4">{body()}</div>
       </div>
 
-      <button type="button" onClick={() => setMenuOpen((o) => !o)} className="self-center text-footnote font-medium text-accent">
+      <button type="button" onClick={() => setMenuOpen((o) => !o)} className="tap self-center text-footnote font-medium text-accent">
         {menuOpen ? "Hide cards" : "Jump to a card"}
       </button>
       {menuOpen && (
@@ -524,20 +523,19 @@ export default function NoteWorkspace({
         </div>
       )}
 
-      {message && <p className="text-footnote text-muted">{message}</p>}
-
       <div className="bottom-bar fixed inset-x-0 bottom-0 z-10 mx-auto max-w-md border-t border-line bg-background/90 px-4 pt-3 backdrop-blur-xl">
+        {message && <p role="status" className="pb-2 text-footnote text-muted">{message}</p>}
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => goTo(step - 1)} disabled={step === 0} className="rounded-[12px] border border-line px-5 py-3 text-subhead font-semibold disabled:opacity-40">
+          <button type="button" onClick={() => goTo(step - 1)} disabled={step === 0 || pending} className="rounded-[12px] border border-line px-5 py-3 text-subhead font-semibold disabled:opacity-40">
             Back
           </button>
           {current.id === "review" ? (
             <Link href={`/patients/${patientId}/note`} className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-center text-callout font-semibold text-accent-ink">
-              Printable sheet
+              Print sheet
             </Link>
           ) : (
-            <button type="button" onClick={() => goTo(step + 1)} className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-callout font-semibold text-accent-ink">
-              {dirty.has(current.id) ? "Save & next" : "Next"}
+            <button type="button" onClick={() => goTo(step + 1)} disabled={pending} className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-callout font-semibold text-accent-ink disabled:opacity-60">
+              {pending ? "Saving…" : dirty.has(current.id) ? "Save & next" : "Next"}
             </button>
           )}
         </div>
@@ -562,20 +560,9 @@ function YesterdayButton({
     <button
       type="button"
       onClick={() => onUse(text)}
-      className="self-start text-left text-footnote font-medium text-accent"
+      className="tap self-start text-left text-footnote font-medium text-accent"
     >
       {label} <span className="font-normal text-muted">{text}</span>
     </button>
   );
-}
-
-function yesterdayVitalsSummary(yVal: (a: string[]) => string): string {
-  return [
-    yVal(["bp", "blood pressure"]) && `BP ${yVal(["bp", "blood pressure"])}`,
-    yVal(["pr", "pulse", "pulse rate"]) && `PR ${yVal(["pr", "pulse", "pulse rate"])}`,
-    yVal(["temp", "temperature"]) && yVal(["temp", "temperature"]),
-    yVal(["spo2", "saturation", "oxygen saturation"]) && `SpO₂ ${yVal(["spo2", "saturation", "oxygen saturation"])}`,
-  ]
-    .filter(Boolean)
-    .join(" · ");
 }
