@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
  * console has more tabs than fit on a phone, so it scrolls sideways rather than wrapping.
  */
 const TABS: { href: string; label: string }[] = [
-  { href: "/admin", label: "Overview" },
+  { href: "/admin", label: "Insights" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/wards", label: "Units" },
   { href: "/admin/waitlist", label: "Waitlist" },

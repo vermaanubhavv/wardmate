@@ -1,13 +1,16 @@
-import { getFeatureUsage, getSttBreakdown } from "@/lib/admin";
-import { Cell, Empty, ErrorNote, Row, Section, Table } from "../ui";
+import { getFeatureUsage, getScreenUsage, getSttBreakdown } from "@/lib/admin";
+import { groupScreens } from "@/lib/admin-insights";
+import { Cell, Empty, ErrorNote, Row, Section, Table, ago } from "../ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminUsagePage() {
-  const [{ rows: usage, error }, { rows: stt }] = await Promise.all([
+  const [{ rows: usage, error }, { rows: stt }, { rows: screenRows }] = await Promise.all([
     getFeatureUsage(),
     getSttBreakdown(),
+    getScreenUsage(),
   ]);
+  const screens = groupScreens(screenRows);
 
   if (error) return <ErrorNote message={error} />;
   if (usage.length === 0) return <Empty>No usage yet, or this sign-in is not an admin.</Empty>;
@@ -20,6 +23,31 @@ export default async function AdminUsagePage() {
 
   return (
     <>
+      <Section
+        title="Screens people open"
+        subtitle="Every screen view, grouped by screen. Sorted by the last 30 days — the bottom of this list is what nobody finds."
+      >
+        {screens.length === 0 ? (
+          <p className="ios-group px-4 py-3 text-footnote text-muted">No screen views recorded yet.</p>
+        ) : (
+          <Table head={["Screen", "Views 30d", "People 30d", "All-time", "Last opened"]}>
+            {screens.map((s) => (
+              <Row key={s.label}>
+                <Cell>{s.label}</Cell>
+                <Cell num>{s.views_30d}</Cell>
+                <Cell num>{s.people_30d}</Cell>
+                <Cell num muted>{s.views}</Cell>
+                <Cell num muted>{ago(s.last_seen)}</Cell>
+              </Row>
+            ))}
+          </Table>
+        )}
+      </Section>
+
+      <p className="mt-8 px-1 text-caption text-muted">
+        Below: what each feature produced, all-time. The percentage is the share within that
+        feature — e.g. how many round dictations were applied versus thrown away.
+      </p>
       {[...byFeature.entries()].map(([feature, metrics]) => {
         const total = metrics.reduce((s, m) => s + m.count, 0);
         return (
