@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { prepareImageForUpload } from "@/lib/image-for-upload";
 import { ImageIcon } from "./icons";
 import Mark from "./mark";
+import { BarMessage } from "./round-recorder";
 
 /**
  * Photograph the round register. Goes straight to a review screen — this never writes to a
@@ -64,21 +65,20 @@ export default function RegisterButton() {
       <div className="flex flex-col items-center">
         <button
           type="button"
-          onClick={() => inputRef.current?.click()}
+          onClick={() => {
+            setMessage(null);
+            inputRef.current?.click();
+          }}
           disabled={busy}
           aria-label="Photograph the round register"
           className="grid h-14 w-14 place-items-center rounded-full bg-card text-accent active:opacity-80 disabled:opacity-50"
         >
           {busy ? <Mark className="h-7 w-7" spinning /> : <ImageIcon className="h-6 w-6" />}
         </button>
-        <span className="mt-1.5 text-caption text-muted">{busy ? "Reading…" : "Register"}</span>
+        <span className="mt-1.5 text-caption text-muted">{busy ? "Reading…" : "Scan register"}</span>
 
         {/* Above the bar, full width — see round-recorder for why. */}
-        {message && (
-          <p role="status" className="absolute inset-x-0 bottom-full mb-2 px-2 text-center text-footnote text-warn-fg">
-            {message}
-          </p>
-        )}
+        {message && <BarMessage message={message} onDismiss={() => setMessage(null)} />}
       </div>
     </>
   );

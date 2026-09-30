@@ -10,6 +10,7 @@ import type { DraftSegment } from "@/lib/round-draft";
 import { applyRound, discardRound } from "./actions";
 import { ConfirmSubmit } from "../../action-sheet";
 import BottomBar from "../../bottom-bar";
+import SaveButton from "./save-button";
 
 type WardPatient = {
   id: string;
@@ -105,7 +106,7 @@ export default async function RoundReviewPage({
                 </p>
               )}
               <p className="mt-4 text-footnote text-muted">
-                Next time, say the bed before each instruction — &ldquo;bed 4, remove drain tomorrow&rdquo; —
+                Next time, say the bed before each instruction — &ldquo;bed 4, repeat bloods tomorrow&rdquo; —
                 and it is split for you.
               </p>
             </div>
@@ -137,9 +138,7 @@ export default async function RoundReviewPage({
               Discard
             </ConfirmSubmit>
           </form>
-          <button type="submit" form="round-form" className="btn btn-primary flex-[2]">
-            Save
-          </button>
+          <SaveButton form="round-form" />
         </div>
       </BottomBar>
     </div>
@@ -187,7 +186,11 @@ function UpdateCard({
         <ul className="mt-3 flex flex-col gap-1">
           {segment.observations.map((o, k) => (
             <li key={k} className="text-subhead">
-              <span className="text-muted">{o.label}:</span> {o.value_text}
+              {/* Numbers, drugs and doses stay amber: nothing here has been confirmed yet. */}
+              <span className="text-muted">{o.label}:</span>{" "}
+              <span className={o.needs_confirmation || o.value_num != null ? "text-warn-fg" : undefined}>
+                {o.value_text}
+              </span>
             </li>
           ))}
         </ul>

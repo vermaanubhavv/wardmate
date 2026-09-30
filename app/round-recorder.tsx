@@ -28,7 +28,7 @@ const MAX_SECONDS = 300;
 export default function RoundRecorder() {
   const router = useRouter();
 
-  const { status, recording, seconds, message, start, stop } = useDictation({
+  const { status, recording, seconds, message, setMessage, start, stop } = useDictation({
     kind: "round",
     url: "/api/round",
     label: "Round dictation",
@@ -52,16 +52,16 @@ export default function RoundRecorder() {
   }
 
   // The caption under the circle carries the state the button's own words used to. Recording
-  // shows the count, because the one thing you want to know mid-dictation is how long you have
-  // been talking.
+  // shows the count against the cap, because the one thing you want to know mid-dictation is
+  // how long you have been talking — and how long is left before it stops on its own.
   const caption =
     status === "recording"
-      ? `${seconds}s · stop`
+      ? `${clock(seconds)} / ${clock(MAX_SECONDS)}`
       : status === "starting"
         ? "Starting…"
         : status === "working"
           ? "Transcribing…"
-          : "Dictate";
+          : "Dictate round";
 
   return (
     <div className="flex flex-col items-center">
@@ -91,18 +91,39 @@ export default function RoundRecorder() {
       <span
         className={
           "mt-1.5 text-caption tabular-nums " +
-          (recording ? "text-recording" : "text-muted")
+          (recording ? (seconds >= MAX_SECONDS - 30 ? "text-warn-fg" : "text-recording") : "text-muted")
         }
       >
         {caption}
       </span>
 
       {/* Above the bar, full width: these run to a sentence and must not stretch the row. */}
-      {message && (
-        <p role="status" className="absolute inset-x-0 bottom-full mb-2 px-2 text-center text-footnote text-warn-fg">
-          {message}
-        </p>
-      )}
+      {message && <BarMessage message={message} onDismiss={() => setMessage(null)} />}
+    </div>
+  );
+}
+
+function clock(total: number) {
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+}
+
+/** A sentence hung above the bottom bar, on its own background so it reads over the list
+ *  scrolling behind it, with a dismiss. Shared with the register button. */
+export function BarMessage({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+  return (
+    <div
+      role="status"
+      className="absolute inset-x-0 bottom-full mb-2 flex items-center gap-1 rounded-[10px] bg-warn-bg pl-3 text-footnote text-warn-fg shadow-sm"
+    >
+      <p className="flex-1 py-2">{message}</p>
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Dismiss"
+        className="grid h-11 w-11 shrink-0 place-items-center text-body active:opacity-60"
+      >
+        ×
+      </button>
     </div>
   );
 }
