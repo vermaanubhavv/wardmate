@@ -143,3 +143,20 @@ export function ago(iso: string | null | undefined): string {
   if (d < 365) return `${Math.floor(d / 30)}mo ago`;
   return `${Math.floor(d / 365)}y ago`;
 }
+
+/** A tiny bar chart — one bar per item, count underneath. Plain divs, no chart library. */
+export function Bars({ items }: { items: { key: string; value: number; title?: string }[] }) {
+  const max = Math.max(1, ...items.map((i) => i.value));
+  return (
+    <div className="ios-group px-3 py-3">
+      <div className="flex items-end gap-1" style={{ height: 72 }}>
+        {items.map((i) => (
+          <div key={i.key} className="flex flex-1 flex-col items-center gap-1" title={i.title}>
+            <div className="w-full rounded-sm bg-accent/70" style={{ height: `${(i.value / max) * 56}px` }} />
+            <span className="text-caption2 tabular-nums text-muted">{i.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

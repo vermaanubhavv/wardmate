@@ -58,9 +58,7 @@ export default async function AdminEventsPage() {
           </Table>
         )}
         <p className="mt-2 px-1 text-caption text-muted">
-          Per-screen breakdown lives in the <code className="text-caption2">props.screen</code> of
-          each row — a future tab can chart it; the raw rows are in the
-          <code className="mx-1 text-caption2">app_events</code> table.
+          Per-screen breakdown is on the Feature usage tab.
         </p>
       </Section>
     </>

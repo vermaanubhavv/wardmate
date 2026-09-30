@@ -31,10 +31,10 @@ Nothing in the app code gates access — the database does. Every RPC returns an
 
 | Tab | Source | Shows |
 |---|---|---|
-| Overview | `admin_overview`, `admin_signups_weekly` | Headline totals, 12-week signup bars, top 5 friction points |
+| Insights | `admin_weekly_active`, `admin_funnel`, `admin_screen_usage` (patch 0100) + the others | "What to work on next" (ranked, each with evidence and a link), weekly active people, activation funnel, feedback tallies, all-time totals |
 | Users | `admin_users` | Per-user: units, voice/round/discharge counts, last-active; a "never dictated" list |
 | Units | `admin_ward_activity` | Per-unit, grouped by department: members, patients, dictation volume 7d/30d, rounds binned, last activity (cold units flagged) |
-| Feature usage | `admin_feature_usage`, `admin_stt_breakdown` | Dictation / round / register / discharge / confirmation outcomes; speech engine split |
+| Feature usage | `admin_screen_usage`, `admin_feature_usage`, `admin_stt_breakdown` | Screens people open (30d / all-time, admin screens excluded); dictation / round / register / discharge / confirmation outcomes; speech engine split |
 | Friction | `admin_friction` | Quiet accounts, cold units, solo units, rounds discarded, discharges stuck in draft, unconfirmed dangerous values |
 | Activity log | `admin_activity_log` | Unified reverse-chronological feed of the last 200 events |
 | Events | `admin_event_summary` | The `app_events` stream, one row per event name |
@@ -54,3 +54,16 @@ no clinical values — an event name, the route, an optional ward id, and a smal
 
 Both paths are fire-and-forget: a failed write is swallowed so a round never breaks to log
 itself.
+
+## The feedback loop (Insights tab)
+
+The Insights tab reads every report above and runs them through `recommend()` in
+`lib/admin-insights.ts` — plain rules, each with a threshold, the evidence it found and one
+suggested action. Tune a threshold or add a rule there; `lib/__tests__/admin-insights.test.ts`
+covers the ranking. The loop is: read the top item → change the app → watch the funnel step or
+metric it named move over the next weeks.
+
+The funnel is nested: each step counts only people who also passed every step above it, so the
+biggest drop between two rows is the single place new users are lost. New screens should be
+added to `SCREENS` so they show by name (and to `FEATURE_SCREENS` if "nobody opened it in 30
+days" should be flagged).

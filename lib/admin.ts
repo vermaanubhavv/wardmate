@@ -152,3 +152,19 @@ export type FeedbackResponse = {
   created_at: string;
 };
 export const getFeedbackResponses = () => callRows<FeedbackResponse>("admin_feedback_responses");
+
+export type WeekActive = { week: string; active_users: number; new_users: number };
+export const getWeeklyActive = () => callRows<WeekActive>("admin_weekly_active");
+
+export type FunnelStep = { step: number; label: string; users: number };
+export const getFunnel = () => callRows<FunnelStep>("admin_funnel");
+
+export type ScreenUsage = {
+  screen: string;
+  views: number;
+  people: number;
+  views_30d: number;
+  people_30d: number;
+  last_seen: string;
+};
+export const getScreenUsage = () => callRows<ScreenUsage>("admin_screen_usage");

@@ -26,7 +26,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           ? "Sign in to view."
           : !isAdmin
             ? "This sign-in is not an admin. Nothing here is available to it."
-            : "Cross-unit audit — adoption, activity, and friction."}
+            : "How WardMate is being used, where people get stuck, and what to fix next."}
       </p>
 
       {user && isAdmin && <AdminNav />}
