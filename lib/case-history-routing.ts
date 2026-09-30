@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { correctTranscript } from "@/lib/glossary";
+import { log } from "@/lib/observability";
 import {
   ROUTABLE_SECTIONS,
   sectionsForSpecialty,
@@ -28,10 +29,17 @@ export type { RoutableSection, RoutedSegment } from "@/lib/case-history-sections
  * guardrail spirit as lib/case-history-ai.ts, and the same reason: the resident reviews every
  * card before the clerking is saved.
  *
- * A fast, cheap model (Haiku) — this runs many times per clerking and only has to classify.
+ * TypeSafe (Jev) first, Haiku as the failsafe. Jev only LABELS: code splits the fragment into
+ * sentences and each sentence is filed whole, in the resident's words. Anything Jev cannot do
+ * cleanly — a sentence mixing two sections, a label it is unsure of, HOPI for a complaint not
+ * yet mentioned (naming it means writing), no key, an error — sends the whole fragment to Haiku,
+ * which splits and names as before. No TYPESAFE_API_KEY means Haiku only, exactly as before.
  */
 
 const ROUTING_MODEL = "claude-haiku-4-5-20251001";
+const TYPESAFE_MODEL = "jev-latest";
+// ponytail: fixed bar, untuned — set it from a labelled synthetic eval once fallback rates are in.
+const MIN_PROBABILITY = 0.7;
 
 function client(): Anthropic {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -127,6 +135,138 @@ export async function routeClerkingChunk(
   // Same ward-vocabulary correction every other dictation path runs.
   const corrected = (await correctTranscript(text)).text.trim() || text;
 
+  if (process.env.TYPESAFE_API_KEY) {
+    const first = await routeWithTypeSafe(corrected, knownComplaints, specialty);
+    if ("segments" in first) return first;
+    // The reason only, never the dictation.
+    log.info("route-dictation: TypeSafe declined, using Haiku", { reason: first.fallback });
+  }
+  return routeWithHaiku(corrected, knownComplaints, specialty);
+}
+
+type JevChoice = { choice: string; probabilities: Record<string, number> };
+type JevAnswers = Record<string, { choice?: string; probabilities?: Record<string, number>; noul?: number }>;
+
+async function routeWithTypeSafe(
+  corrected: string,
+  knownComplaints: string[],
+  specialty?: string | null
+): Promise<{ segments: RoutedSegment[]; model: string } | { fallback: string }> {
+  const allowed = sectionsForSpecialty(specialty);
+  const specialtyBlock = SPECIALTY_SECTION_BLOCKS[(specialty ?? "").trim()] ?? "";
+  const sentences = splitSentences(corrected);
+
+  // The section descriptions ARE the Haiku prompt's lines, read back out of it, so the two
+  // routers can never disagree about what a section means.
+  const criteria: Record<string, string> = {};
+  for (const [, key, desc] of `${SYSTEM}\n${specialtyBlock}`.matchAll(/^- "(\w+)" — (.+)$/gm)) {
+    if (allowed.includes(key as RoutableSection)) criteria[key] = desc;
+  }
+  criteria.none = `filler ("okay", "next", "let me see") or nothing that belongs on a case sheet`;
+
+  const complaintOptions: Record<string, string> = {};
+  knownComplaints.forEach((c, i) => (complaintOptions[`c${i}`] = c));
+  complaintOptions.none = "a complaint not in this list";
+
+  const questions: Record<string, unknown> = {};
+  sentences.forEach((_, i) => {
+    questions[`section_${i}`] = {
+      type: "choice",
+      instructions: {
+        question: `Which section of a case sheet does \`sentences[${i}]\` belong in? It is part of a clerking dictated out of order.`,
+        ...(specialtyBlock ? { unit_guidance: specialtyBlock } : {}),
+      },
+      criteria,
+    };
+    questions[`mixed_${i}`] = {
+      type: "noul",
+      instructions: `Does \`sentences[${i}]\` contain material for more than one section of a case sheet (for example a comorbidity and an examination finding)?`,
+    };
+    if (knownComplaints.length > 0) {
+      questions[`complaint_${i}`] = {
+        type: "choice",
+        instructions: `If \`sentences[${i}]\` describes how a presenting complaint began or progressed, which complaint is it about?`,
+        criteria: complaintOptions,
+      };
+    }
+  });
+
+  let answers: JevAnswers;
+  let model = TYPESAFE_MODEL;
+  try {
+    const res = await fetch("https://api.typesafe.ai/v1/systemone", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.TYPESAFE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: TYPESAFE_MODEL,
+        state: { complaints_already_mentioned: knownComplaints, sentences },
+        questions,
+      }),
+      // Live dictation: a slow answer is worth less than Haiku's.
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!res.ok) return { fallback: `http ${res.status}` };
+    const body = (await res.json()) as { model?: string; answers?: JevAnswers };
+    answers = body.answers ?? {};
+    model = body.model ?? model;
+  } catch (e) {
+    return { fallback: e instanceof Error ? e.name : "error" };
+  }
+
+  const result = segmentsFromJev(sentences, answers, knownComplaints, allowed);
+  return "segments" in result ? { segments: result.segments, model } : result;
+}
+
+/** Deepgram's smart_format punctuates, so sentence boundaries are real. */
+export function splitSentences(text: string): string[] {
+  const seg = new Intl.Segmenter("en", { granularity: "sentence" });
+  return [...seg.segment(text)].map((s) => s.segment.trim()).filter(Boolean);
+}
+
+/**
+ * Jev's answers to segments, or the reason to hand the fragment to Haiku instead. All or
+ * nothing: a fragment is never half-filed by one router and half by the other.
+ */
+export function segmentsFromJev(
+  sentences: string[],
+  answers: JevAnswers,
+  knownComplaints: string[],
+  allowed: RoutableSection[]
+): { segments: RoutedSegment[] } | { fallback: string } {
+  const segments: RoutedSegment[] = [];
+  for (let i = 0; i < sentences.length; i++) {
+    const section = answers[`section_${i}`] as JevChoice | undefined;
+    const mixed = answers[`mixed_${i}`]?.noul;
+    if (!section?.choice || mixed == null) return { fallback: "missing answer" };
+    if (mixed >= 0.5) return { fallback: "mixed sentence" };
+    if ((section.probabilities?.[section.choice] ?? 0) < MIN_PROBABILITY) return { fallback: "unsure section" };
+    if (section.choice === "none") continue;
+    const key = section.choice as RoutableSection;
+    // Same rule as Haiku's path: never file into a section this unit does not have.
+    if (!allowed.includes(key)) return { fallback: "section not on this unit" };
+
+    if (key !== "hopi") {
+      segments.push({ section: key, text: sentences[i] });
+      continue;
+    }
+    const c = answers[`complaint_${i}`] as JevChoice | undefined;
+    const idx = c?.choice?.startsWith("c") ? Number(c.choice.slice(1)) : NaN;
+    if (!c || !knownComplaints[idx] || (c.probabilities?.[c.choice] ?? 0) < MIN_PROBABILITY) {
+      return { fallback: "hopi complaint unknown" };
+    }
+    segments.push({ section: "hopi", complaint: knownComplaints[idx], text: sentences[i] });
+  }
+  return { segments };
+}
+
+async function routeWithHaiku(
+  corrected: string,
+  knownComplaints: string[],
+  specialty?: string | null
+): Promise<{ segments: RoutedSegment[]; model: string }> {
   const complaintsLine =
     knownComplaints.length > 0
       ? `Complaints already mentioned: ${knownComplaints.join("; ")}`
