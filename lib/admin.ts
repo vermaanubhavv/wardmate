@@ -108,16 +108,6 @@ export type Friction = {
 };
 export const getFriction = () => callRows<Friction>("admin_friction");
 
-export type ActivityRow = {
-  at: string;
-  actor: string;
-  kind: string;
-  summary: string;
-  ward: string | null;
-};
-export const getActivityLog = (limit = 150) =>
-  callRows<ActivityRow>("admin_activity_log", { p_limit: limit });
-
 export type WaitlistEntry = {
   id: number;
   email: string;
@@ -168,3 +158,34 @@ export type ScreenUsage = {
   last_seen: string;
 };
 export const getScreenUsage = () => callRows<ScreenUsage>("admin_screen_usage");
+
+export type FeedKind = "patient" | "note" | "round" | "register" | "discharge" | "history" | "unit" | "feature" | "problem" | "view";
+export type FeedRow = {
+  at: string;
+  actor_id: string | null;
+  actor: string;
+  ward_id: string | null;
+  ward: string | null;
+  kind: FeedKind;
+  summary: string;
+};
+export const getActivityFeed = (f: { kind?: string | null; actor?: string | null; ward?: string | null; views?: boolean; limit?: number }) =>
+  callRows<FeedRow>("admin_activity_feed", {
+    p_limit: f.limit ?? 200,
+    p_kind: f.kind || null,
+    p_actor: f.actor || null,
+    p_ward: f.ward || null,
+    p_views: !!f.views,
+  });
+
+export type UsageFriction = {
+  area: string;
+  signal: string;
+  severity: "high" | "medium" | "low";
+  occurrences: number;
+  out_of: number | null;
+  people: number | null;
+  detail: string;
+  last_seen: string | null;
+};
+export const getUsageFriction = () => callRows<UsageFriction>("admin_usage_friction");

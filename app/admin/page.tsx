@@ -8,6 +8,7 @@ import {
   getSttBreakdown,
   getScreenUsage,
   getFeedbackResponses,
+  getUsageFriction,
 } from "@/lib/admin";
 import { recommend, tallyFeedback } from "@/lib/admin-insights";
 import { Empty, ErrorNote, Section, Stat, StatGrid, SeverityDot, Bars } from "./ui";
@@ -19,7 +20,7 @@ export const dynamic = "force-dynamic";
  * usage is growing, where new people get stuck, and what they say — then the raw totals.
  */
 export default async function AdminInsightsPage() {
-  const [ov, fr, wk, fn, us, st, sc, fb] = await Promise.all([
+  const [ov, fr, wk, fn, us, st, sc, fb, uf] = await Promise.all([
     getOverview(),
     getFriction(),
     getWeeklyActive(),
@@ -28,6 +29,7 @@ export default async function AdminInsightsPage() {
     getSttBreakdown(),
     getScreenUsage(),
     getFeedbackResponses(),
+    getUsageFriction(),
   ]);
 
   if (ov.error) return <ErrorNote message={ov.error} />;
@@ -44,6 +46,7 @@ export default async function AdminInsightsPage() {
     screens: sc.rows,
     friction: fr.rows,
     feedback: fb.rows,
+    usageFriction: uf.rows,
   });
   const weeks = wk.rows;
   const lastFull = weeks.at(-2)?.active_users ?? 0;

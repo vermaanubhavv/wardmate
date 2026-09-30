@@ -6,7 +6,7 @@
  * it and a link to the tab that shows the detail, so the owner can check before acting.
  */
 
-import type { FeatureUsage, FeedbackResponse, Friction, FunnelStep, ScreenUsage, SttRow, WeekActive } from "./admin";
+import type { FeatureUsage, FeedbackResponse, Friction, FunnelStep, ScreenUsage, SttRow, UsageFriction, WeekActive } from "./admin";
 
 export type Priority = "high" | "medium" | "low";
 export type Recommendation = { priority: Priority; title: string; evidence: string; action: string; href: string };
@@ -130,6 +130,7 @@ export function recommend(input: {
   screens: ScreenUsage[];
   friction: Friction[];
   feedback: FeedbackResponse[];
+  usageFriction?: UsageFriction[];
 }): Recommendation[] {
   const out: Recommendation[] = [];
   const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : 0);
@@ -275,6 +276,18 @@ export function recommend(input: {
       title: "Accounts and units have stalled",
       evidence: `${quiet} signed up and never dictated; ${cold} unit${cold === 1 ? "" : "s"} silent for 2+ weeks.`,
       action: "Reach out personally to the most recent ones — they still remember why they signed up.",
+      href: "/admin/friction",
+    });
+
+  // 8. The worst friction seen during use (patch 0101) — at most three, high severity only.
+  for (const x of (input.usageFriction ?? []).filter((x) => x.severity === "high").slice(0, 3))
+    out.push({
+      priority: "high",
+      title: `${x.area}: ${x.signal.toLowerCase()}`,
+      evidence: x.out_of
+        ? `${x.occurrences} of ${x.out_of} (${pct(x.occurrences, x.out_of)}%) in the last 30 days${x.people ? `, ${x.people} people` : ""}.`
+        : `${x.occurrences} times in the last 30 days.`,
+      action: x.detail,
       href: "/admin/friction",
     });
 
