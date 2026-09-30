@@ -126,9 +126,15 @@ const STANDARD_DISCHARGE_MEDICATIONS: { generic: string; strength: string | null
 type StepId = DischargeSectionId | "review";
 
 // Patient Actions and Red Flags live inside the Advice card rather than as their own steps —
-// same data, same checks, one less card to page through.
+// same data, same checks, one less card to page through. Diagnoses comes first, ahead of
+// Indication: the indication reads against the diagnosis, and the review preview already
+// lists it first. Only the cards move; the printed order is DISCHARGE_SECTIONS' own.
+const CARD_SECTIONS = DISCHARGE_SECTIONS.filter((s) => s.id !== "patientActions" && s.id !== "redFlags");
 const STEPS: { id: StepId; title: string; required: boolean }[] = [
-  ...DISCHARGE_SECTIONS.filter((s) => s.id !== "patientActions" && s.id !== "redFlags").map((s) => ({
+  ...[
+    ...CARD_SECTIONS.filter((s) => s.id === "diagnoses"),
+    ...CARD_SECTIONS.filter((s) => s.id !== "diagnoses"),
+  ].map((s) => ({
     id: s.id as StepId,
     title: s.title,
     required: s.required,
@@ -210,6 +216,8 @@ export default function DischargeWorkspace({
   const [menuOpen, setMenuOpen] = useState(false);
   const [askReset, setAskReset] = useState(false);
   const [openMed, setOpenMed] = useState<string | null>(null);
+  // The drug last removed, and where it sat, for the inline Undo — no confirm dialog.
+  const [removedMed, setRemovedMed] = useState<{ med: DischargeDraft["medications"][number]; index: number } | null>(null);
 
   // --- real-time autosave -------------------------------------------------------------
   //
@@ -383,6 +391,7 @@ export default function DischargeWorkspace({
     setStep(index);
     setMenuOpen(false);
     setOpenMed(null);
+    setRemovedMed(null);
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   }
 
@@ -901,13 +910,19 @@ export default function DischargeWorkspace({
                       {m.strength ? <span className="text-footnote font-semibold"> {m.strength}</span> : null}
                       {summary ? <span className="ml-1 text-caption text-muted">{summary}</span> : null}
                     </button>
+                    {/* 44px to tap, the same 18px dot to see; the negative margin keeps the row's height. */}
                     <button
                       type="button"
-                      onClick={() => patch("medications", "medications", draft.medications.filter((_, j) => j !== i))}
-                      className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-chip text-footnote text-muted"
+                      onClick={() => {
+                        const entry = { med: m, index: i };
+                        patch("medications", "medications", draft.medications.filter((_, j) => j !== i));
+                        setRemovedMed(entry);
+                        setTimeout(() => setRemovedMed((r) => (r === entry ? null : r)), 6000);
+                      }}
+                      className="-my-2.5 -mr-3 grid h-11 w-11 shrink-0 place-items-center"
                       aria-label="Remove drug"
                     >
-                      ×
+                      <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-chip text-footnote text-muted">×</span>
                     </button>
                   </div>
                   {open && (
@@ -944,6 +959,23 @@ export default function DischargeWorkspace({
                 </div>
               );
             })}
+            {removedMed && (
+              <div className="flex items-center justify-between rounded-[10px] bg-chip pl-3 text-footnote">
+                <span className="truncate text-muted">Removed {removedMed.med.generic || "drug"}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const meds = [...draft.medications];
+                    meds.splice(Math.min(removedMed.index, meds.length), 0, removedMed.med);
+                    patch("medications", "medications", meds);
+                    setRemovedMed(null);
+                  }}
+                  className="min-h-11 px-3 font-semibold text-accent"
+                >
+                  Undo
+                </button>
+              </div>
+            )}
             <OptionRow
               dashed
               onClick={() => {
@@ -1230,6 +1262,17 @@ export default function DischargeWorkspace({
   const pct = Math.round(((step + 1) / STEPS.length) * 100);
   const isOptionalEmpty =
     current.id !== "review" && !current.required && !filledFor(current.id) && !dirty.has(current.id as DischargeSectionId);
+  // An AI card still waiting on approval: the bar's primary approves it on the way past, so
+  // the small inline Approve is no longer the only way through and "Next" can't skip it.
+  const toApprove: "clinicalCourse" | "indication" | "relevantInvestigations" | null = readOnly
+    ? null
+    : current.id === "indication" && draft.indicationForAdmission.text && !draft.indicationForAdmission.approvedAt
+      ? "indication"
+      : current.id === "clinicalCourse" && draft.clinicalCourse.text && !draft.clinicalCourse.approvedAt
+        ? "clinicalCourse"
+        : current.id === "relevantInvestigations" && draft.relevantInvestigations.items.length > 0 && !draft.relevantInvestigations.approvedAt
+          ? "relevantInvestigations"
+          : null;
 
   return (
     <div className="flex flex-col gap-3 px-4 pb-[var(--bar-height)]">
@@ -1254,7 +1297,7 @@ export default function DischargeWorkspace({
           </div>
         </div>
 
-        <div className="h-[3px] bg-[#e2e2e9]">
+        <div className="h-[3px] bg-chip">
           <div className="h-full bg-accent transition-all" style={{ width: `${pct}%` }} />
         </div>
 
@@ -1343,10 +1386,13 @@ export default function DischargeWorkspace({
           {current.id !== "review" ? (
             <button
               type="button"
-              onClick={() => goTo(step + 1)}
+              onClick={() => {
+                if (toApprove) approve(toApprove);
+                goTo(step + 1);
+              }}
               className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-callout font-semibold text-accent-ink"
             >
-              {isOptionalEmpty ? "Skip" : "Next"}
+              {toApprove ? "Approve & next" : isOptionalEmpty ? "Skip" : "Next"}
             </button>
           ) : finalised ? (
             <Link
