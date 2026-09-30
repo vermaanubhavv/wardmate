@@ -57,7 +57,7 @@ export default async function Home({
   // Everything the header needs beyond the patient list itself, fetched together once the
   // ward id is known — the same "one wave of parallel fetches" the screen's own patients
   // query follows, just a beat later because the ward id isn't known until then.
-  const [pendingConfirmCount, tasks, scoringByPatient, dischargedPatient] = ward
+  const [pendingConfirmCount, tasks, scoringByPatient, dischargedPatient, waitingRounds] = ward
     ? await Promise.all([
         countWardPendingConfirmations(ward.id),
         getWardTasks(ward.id),
@@ -67,8 +67,18 @@ export default async function Home({
         dischargedId
           ? supabase.from("patients").select("display_name").eq("id", dischargedId).maybeSingle()
           : Promise.resolve({ data: null }),
+        // Round dictations recorded but never saved or discarded. Nothing else leads back to
+        // the review screen once someone navigates away, so without this they were lost.
+        supabase
+          .from("round_dictations")
+          .select("id")
+          .eq("ward_id", ward.id)
+          .eq("status", "draft")
+          .order("created_at", { ascending: false })
+          .limit(20),
       ])
-    : [0, [], new Map(), { data: null }];
+    : [0, [], new Map(), { data: null }, { data: null }];
+  const waitingRoundIds = (waitingRounds.data ?? []).map((r) => r.id);
 
   const flags = new Map<string, WardFlag | null>(
     patients.map((p) => [p.id, criticalFlag(p)])
@@ -227,6 +237,21 @@ export default async function Home({
             It carries no state of its own (just the id in the URL) and is gone the moment
             this page is reloaded or left. The real 48-hour undo window lives on
             /unit → Discharged, which survives navigation — see app/patients/actions.ts. */}
+        {waitingRoundIds.length > 0 && (
+          <Link
+            href={`/round/${waitingRoundIds[0]}`}
+            className="mt-2 flex items-center gap-2.5 rounded-[10px] border-l-[3px] border-warn-fg bg-card px-3 py-2.5 active:opacity-70"
+          >
+            <TriangleAlert className="h-[17px] w-[17px] shrink-0 text-warn-fg" strokeWidth={2.2} />
+            <p className="flex-1 text-subhead">
+              {waitingRoundIds.length === 1
+                ? "A round dictation is waiting to be checked and saved"
+                : `${waitingRoundIds.length} round dictations are waiting to be checked and saved`}
+            </p>
+            <ChevronIcon className="h-4 w-4 shrink-0 text-muted" />
+          </Link>
+        )}
+
         {dischargedId && (
           <div className="mt-2 flex items-center gap-2.5 rounded-[10px] border-l-[3px] border-accent bg-card px-3 py-2.5">
             <CircleCheckBig className="h-[17px] w-[17px] shrink-0 text-accent" strokeWidth={2.2} />

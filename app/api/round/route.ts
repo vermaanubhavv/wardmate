@@ -89,16 +89,10 @@ export async function POST(request: Request) {
     );
   }
 
-  if (read.segments.length === 0) {
-    return NextResponse.json(
-      {
-        error:
-          "No bed was recognised in that. Say the bed before each instruction — “bed 4, remove the drain”.",
-        transcript,
-      },
-      { status: 422 }
-    );
-  }
+  // No bed recognised is NOT a failure to throw away: a 4xx makes the client delete the audio,
+  // and this used to lose whole rounds to a bed said the "wrong" way (or a ward with no
+  // patients yet). The draft is kept with no segments; the review screen shows the words and
+  // lets the resident file them to one patient or discard them.
 
   // 3. Keep the audio, so a disputed segment can be listened to again.
   let audioPath: string | null = null;

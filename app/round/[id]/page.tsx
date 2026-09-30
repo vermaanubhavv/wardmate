@@ -70,11 +70,43 @@ export default async function RoundReviewPage({
 
         <section className="px-4 pb-[var(--bar-height)] flex flex-col gap-4">
           {segments.length === 0 ? (
-            <div className="ios-group p-6 text-subhead text-muted">
-              <p>No beds were recognised in that recording.</p>
-              <p className="mt-2">
-                Say the bed number before each instruction — &ldquo;bed 4, remove drain tomorrow&rdquo; —
-                and <Link href="/ward" className="text-accent">record it again from the ward</Link>.
+            // No bed was recognised. The words are kept rather than lost: file them all to one
+            // patient (as they were said, nothing structured out of them), or discard.
+            <div className="ios-group p-4 text-subhead">
+              <p className="text-muted">
+                No bed number was recognised, so this could not be split by bed. Nothing is lost —
+                here is what you said.
+              </p>
+              <p className="mt-3 text-footnote italic leading-relaxed">&ldquo;{dictation.transcript}&rdquo;</p>
+              {patients.length > 0 ? (
+                <label className="mt-4 flex flex-col gap-2">
+                  <span className="text-footnote text-muted">Save all of it, word for word, to</span>
+                  <select
+                    name="whole_patient"
+                    required
+                    defaultValue=""
+                    className="w-full rounded-[10px] border border-line bg-card px-3 py-2.5 text-subhead outline-none focus:border-accent"
+                  >
+                    <option value="" disabled>
+                      Choose a patient…
+                    </option>
+                    {patients.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.bed} · {stripPatientHonorific(p.display_name)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <p className="mt-4 text-footnote text-muted">
+                  There are no patients on this ward yet.{" "}
+                  <Link href="/patients/new" className="text-accent">Add one</Link> — this dictation
+                  waits on the ward list until you come back to it.
+                </p>
+              )}
+              <p className="mt-4 text-footnote text-muted">
+                Next time, say the bed before each instruction — &ldquo;bed 4, remove drain tomorrow&rdquo; —
+                and it is split for you.
               </p>
             </div>
           ) : (
@@ -106,7 +138,7 @@ export default async function RoundReviewPage({
             </ConfirmSubmit>
           </form>
           <button type="submit" form="round-form" className="btn btn-primary flex-[2]">
-            {segments.length === 0 ? "Nothing to save" : "Save"}
+            Save
           </button>
         </div>
       </BottomBar>
@@ -177,14 +209,23 @@ function UpdateCard({
 
       <label className="mt-3 flex flex-col gap-2">
         <span className="text-footnote text-muted">Save this to</span>
+        {/* A sure match is preselected. Anything else must be chosen — a patient, or
+            "Don't save this one" — before Save works. It used to default to "Do not save",
+            so tapping Save silently dropped every unclear bed while the card still looked
+            filled in. Never a guessed patient: the choice is the resident's. */}
         <select
           name={`patient_${index}`}
+          required
           defaultValue={sure ? (match.patientId ?? "") : ""}
-          className="w-full rounded-[10px] border border-line bg-card px-3 py-2.5 text-subhead outline-none focus:border-accent"
+          className={
+            "w-full rounded-[10px] border bg-card px-3 py-2.5 text-subhead outline-none focus:border-accent " +
+            (sure ? "border-line" : "border-warn-fg/50")
+          }
         >
-          {/* Nothing selected means nothing is written for this bed, which is the safe
-              default whenever the app is not certain who was meant. */}
-          <option value="">Do not save this one</option>
+          <option value="" disabled>
+            Choose — the app is not sure who this is
+          </option>
+          <option value="skip">Don&apos;t save this one</option>
           {patients.map((p) => (
             <option key={p.id} value={p.id}>
               {p.bed} · {stripPatientHonorific(p.display_name)}

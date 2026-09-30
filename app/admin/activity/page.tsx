@@ -25,6 +25,7 @@ const KIND_LABEL = Object.fromEntries(KINDS.map((k) => [k.key, k.label]));
 const EVENT_WORDS: Record<string, string> = {
   round_recording_started: "Started recording a ward round",
   add_patient_failed: "Could not add a patient",
+  round_recording_failed: "Round recording did not go through",
 };
 
 function words(r: FeedRow): string {
