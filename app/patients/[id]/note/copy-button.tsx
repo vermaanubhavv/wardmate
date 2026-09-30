@@ -22,7 +22,7 @@ export default function CopyNoteButton({ text }: { text: string }) {
       <button
         type="button"
         onClick={copy}
-        className="w-full rounded-xl bg-card px-4 py-3 text-center text-body font-semibold text-accent active:opacity-70"
+        className="w-full rounded-xl bg-accent px-4 py-3 text-center text-body font-semibold text-accent-ink active:opacity-70"
       >
         {state === "copied" ? "Copied" : "Copy as text"}
       </button>

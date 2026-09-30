@@ -6,6 +6,7 @@ import { istDayKey } from "@/lib/patient-state";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { progressNoteConfigFor } from "@/lib/progress-note-config";
+import { MED_PRESETS } from "./med-presets";
 
 /**
  * Writes from the daily progress-note workspace.
@@ -38,6 +39,20 @@ async function currentUser(supabase: Supa) {
 }
 
 const todayKey = () => istDayKey(new Date().toISOString());
+
+type DeletedRow = { value_text: string | null; needs_confirmation: boolean; confirmed_at: string | null };
+
+/** The texts among rows just deleted that were still awaiting confirmation. A card rewrites its
+ *  whole line, so a value saved back word-for-word keeps its amber state — editing one field
+ *  confirms what the resident typed, not the untouched values beside it. */
+const stillPending = (rows: DeletedRow[] | null) =>
+  new Set((rows ?? []).filter((r) => r.needs_confirmation && !r.confirmed_at).map((r) => (r.value_text ?? "").trim()));
+
+function confirmation(pending: boolean, userId: string, now: string) {
+  return pending
+    ? { needs_confirmation: true, confirmed_at: null, confirmed_by: null }
+    : { needs_confirmation: false, confirmed_at: now, confirmed_by: userId };
+}
 
 /** Non-case-history entry ids for this patient whose round falls on today (IST). */
 async function todayEntryIds(supabase: Supa, patientId: string): Promise<string[]> {
@@ -79,18 +94,23 @@ async function rewriteToday(
   userId: string,
   label: string,
   kind: string,
-  lines: string[]
+  lines: string[],
+  /** Filled by "Same as yesterday" — any number in it stays amber until confirmed. */
+  carried = false
 ): Promise<string | null> {
   const clean = lines.map((l) => l.trim()).filter(Boolean);
   const ids = await todayEntryIds(supabase, patientId);
+  let keep = new Set<string>();
   if (ids.length) {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("observations")
       .delete()
       .eq("patient_id", patientId)
       .in("entry_id", ids)
-      .ilike("label", label);
+      .ilike("label", label)
+      .select("value_text, needs_confirmation, confirmed_at");
     if (error) return error.message;
+    keep = stillPending(data);
   }
   if (clean.length) {
     const entryId = await todayManualEntryId(supabase, patientId, userId);
@@ -104,9 +124,7 @@ async function rewriteToday(
         label,
         value_text: text,
         source_quote: text,
-        needs_confirmation: false,
-        confirmed_at: now,
-        confirmed_by: userId,
+        ...confirmation(keep.has(text) || (carried && /\d/.test(text)), userId, now),
       }))
     );
     if (error) return error.message;
@@ -119,12 +137,13 @@ export async function replaceTodayNoteSection(
   patientId: string,
   label: string,
   kind: "note" | "exam" | "vital" | "plan",
-  lines: string[]
+  lines: string[],
+  carried = false
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient();
   const user = await currentUser(supabase);
   if (!user) return { ok: false, error: "Not signed in." };
-  const err = await rewriteToday(supabase, patientId, user.id, label, kind, lines);
+  const err = await rewriteToday(supabase, patientId, user.id, label, kind, lines, carried);
   if (err) return { ok: false, error: err };
   revalidateEverywhere(patientId);
   return { ok: true };
@@ -133,13 +152,13 @@ export async function replaceTodayNoteSection(
 /** Rewrite several vitals / exam signs of today's sheet at once. */
 export async function replaceTodayNoteExam(
   patientId: string,
-  entries: { label: string; kind: "exam" | "vital"; value: string | null }[]
+  entries: { label: string; kind: "exam" | "vital"; value: string | null; carried?: boolean }[]
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient();
   const user = await currentUser(supabase);
   if (!user) return { ok: false, error: "Not signed in." };
   for (const e of entries) {
-    const err = await rewriteToday(supabase, patientId, user.id, e.label, e.kind, e.value ? [e.value] : []);
+    const err = await rewriteToday(supabase, patientId, user.id, e.label, e.kind, e.value ? [e.value] : [], e.carried);
     if (err) return { ok: false, error: err };
   }
   revalidateEverywhere(patientId);
@@ -163,15 +182,18 @@ export async function replaceTodayNoteVitals(
   if (!user) return { ok: false, error: "Not signed in." };
 
   const ids = await todayEntryIds(supabase, patientId);
+  const keep = new Set<string>();
   if (ids.length) {
     for (const e of entries) {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("observations")
         .delete()
         .eq("patient_id", patientId)
         .in("entry_id", ids)
-        .ilike("label", e.label);
+        .ilike("label", e.label)
+        .select("value_text, needs_confirmation, confirmed_at");
       if (error) return { ok: false, error: error.message };
+      stillPending(data).forEach((t) => keep.add(`${e.label}\n${t}`));
     }
   }
 
@@ -190,9 +212,7 @@ export async function replaceTodayNoteVitals(
         label: e.label,
         value_text: e.value,
         source_quote: e.value,
-        needs_confirmation: false,
-        confirmed_at: now,
-        confirmed_by: user.id,
+        ...confirmation(keep.has(`${e.label}\n${e.value}`), user.id, now),
       }))
     );
     if (error) return { ok: false, error: error.message };
@@ -220,12 +240,15 @@ export async function replaceActiveMedications(
 
   const clean = lines.map((l) => l.trim()).filter(Boolean);
 
-  const { error: delErr } = await supabase
+  const { data: old, error: delErr } = await supabase
     .from("observations")
     .delete()
     .eq("patient_id", patientId)
-    .eq("kind", "medication");
+    .eq("kind", "medication")
+    .select("value_text, needs_confirmation, confirmed_at");
   if (delErr) return { ok: false, error: delErr.message };
+  // A preset chip's dose is a default, not something the resident said — amber until confirmed.
+  const keep = stillPending(old);
 
   if (clean.length) {
     const entryId = await todayManualEntryId(supabase, patientId, user.id);
@@ -240,9 +263,7 @@ export async function replaceActiveMedications(
         label: (text.split(/[,0-9]/)[0] || text).trim().slice(0, 60) || text.slice(0, 60),
         value_text: text,
         source_quote: text,
-        needs_confirmation: false,
-        confirmed_at: now,
-        confirmed_by: user.id,
+        ...confirmation(keep.has(text) || MED_PRESETS.includes(text), user.id, now),
       }))
     );
     if (error) return { ok: false, error: error.message };
