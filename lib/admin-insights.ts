@@ -191,7 +191,7 @@ export function recommend(input: {
       action: "Residents don't trust how the round was split across beds. Look at bed matching on the discarded ones.",
       href: "/admin/friction",
     });
-  const drafts = u("Discharge summary", "Draft");
+  const drafts = u("Discharge summary", "Draft (worked on)");
   const finals = u("Discharge summary", "Finalised");
   if (drafts + finals >= 5 && drafts > finals)
     out.push({

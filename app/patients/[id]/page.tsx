@@ -146,6 +146,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     template,
     { data: dischargeRow },
     wardRanges,
+    ,
+    { data: dischargeWork },
   ] = await Promise.all([
       getActivePatients(patient.ward_id, pack.key !== "general_surgery", pack.key === "burns_plastic_surgery"),
       supabase
@@ -171,8 +173,17 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       // when a pilot ward turns it on, the recompute still finishes before the reads below
       // because this promise is awaited as part of the batch.
       syncPatientPathways(id),
+      // Whether anyone has worked on the draft (patch 0102's computed column), read on its own:
+      // opening this tab pre-writes AI sections, so "a row exists" is not "someone started".
+      // If this read fails the tab behaves exactly as before — the status above is untouched,
+      // so it can never look empty and re-run the AI over a resident's edits.
+      supabase.from("discharge_summaries").select("discharge_worked_on").eq("patient_id", id).maybeSingle(),
     ]);
-  const dischargeStatus = (dischargeRow?.status as "draft" | "finalised" | undefined) ?? null;
+  const dischargeStatus =
+    dischargeRow?.status === "draft" &&
+    (dischargeWork as { discharge_worked_on?: boolean } | null)?.discharge_worked_on === false
+      ? "prepared"
+      : ((dischargeRow?.status as "draft" | "finalised" | undefined) ?? null);
   const here = ward.findIndex((p) => p.id === patient.id);
   const next = here >= 0 ? ward[here + 1] : undefined;
   const prev = here > 0 ? ward[here - 1] : undefined;
