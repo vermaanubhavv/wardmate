@@ -9,6 +9,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { isScoringEngineEnabled, scoringEngineGloballyEnabled } from "./flag";
 import { getDefinition } from "./definitions/registry";
+import { actionForPatient } from "./tasks";
 import type { CardDefinition, CardResult } from "./types";
 
 const OPEN = ["suggested", "accepted"];
@@ -188,7 +189,7 @@ async function pathwayTitlesByInstance(
 export async function getPatientScoringTasks(patientId: string): Promise<ScoringTask[]> {
   if (!scoringEngineGloballyEnabled()) return [];
   const supabase = await createClient();
-  const { data: patient } = await supabase.from("patients").select("ward_id").eq("id", patientId).maybeSingle();
+  const { data: patient } = await supabase.from("patients").select("ward_id, sex, age_years").eq("id", patientId).maybeSingle();
   if (!patient || !(await isScoringEngineEnabled(patient.ward_id))) return [];
 
   const { data } = await supabase
@@ -199,7 +200,8 @@ export async function getPatientScoringTasks(patientId: string): Promise<Scoring
     .order("priority", { ascending: false });
 
   const titles = await pathwayTitlesByInstance(supabase, (data ?? []).map((r) => r.instance_id));
-  return (data ?? []).map((r) => mapTask(r, titles));
+  const facts = { sex: patient.sex ?? null, ageYears: patient.age_years ?? null };
+  return (data ?? []).map((r) => mapTask(r, titles, facts));
 }
 
 /** patientId → open scoring tasks, for the ward-wide /todo screen. */
@@ -215,10 +217,16 @@ export async function getWardScoringTasks(wardId: string): Promise<Map<string, S
     .in("status", OPEN);
 
   const titles = await pathwayTitlesByInstance(supabase, (data ?? []).map((r) => r.instance_id));
+  // Sex and age decide which suggestions apply (actionForPatient).
+  const patientIds = [...new Set((data ?? []).map((r) => r.patient_id))];
+  const { data: pts } = patientIds.length
+    ? await supabase.from("patients").select("id, sex, age_years").in("id", patientIds)
+    : { data: [] };
+  const factsById = new Map((pts ?? []).map((p) => [p.id, { sex: p.sex ?? null, ageYears: p.age_years ?? null }]));
 
   const out = new Map<string, ScoringTask[]>();
   for (const row of data ?? []) {
-    const t = mapTask(row, titles);
+    const t = mapTask(row, titles, factsById.get(row.patient_id) ?? { sex: null, ageYears: null });
     const list = out.get(t.patientId) ?? [];
     list.push(t);
     out.set(t.patientId, list);
@@ -238,12 +246,13 @@ function mapTask(
     status: string;
     due_at: string | null;
   },
-  titles: Map<string, string>
+  titles: Map<string, string>,
+  patient: { sex: string | null; ageYears: number | null }
 ): ScoringTask {
   return {
     id: row.id,
     patientId: row.patient_id,
-    action: row.action,
+    action: actionForPatient(row.action, patient),
     reason: row.reason,
     priority: (row.priority as ScoringTask["priority"]) ?? "routine",
     responsibleRole: row.responsible_role,
