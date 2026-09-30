@@ -354,6 +354,16 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           else, and this is the only block on the page that answers it in one glance. */}
       <VitalsPanel observations={allObservations} />
 
+      {/* The note builder was only reachable through View note, so it went unfound. */}
+      <section className="px-4 pb-6">
+        <Link
+          href={`/patients/${patient.id}/note/build`}
+          className="flex w-full items-center justify-center rounded-[10px] bg-accent px-4 py-3.5 text-body font-semibold text-accent-ink active:opacity-80"
+        >
+          Make Today&apos;s Note
+        </Link>
+      </section>
+
       {/* Then whatever the app heard but is not sure of. It sits above the work because a
           to-do built on a misheard number is worse than a to-do done late. */}
       {pending.length > 0 && (
