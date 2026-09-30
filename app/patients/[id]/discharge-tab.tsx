@@ -32,14 +32,16 @@ export default function DischargeTab({
 }: {
   patientId: string;
   patientName: string;
-  status: "draft" | "finalised" | null;
+  /** "prepared": the AI first draft exists (written when this tab was last opened) but no
+   *  one has edited, approved or finalised anything — so it is not "Continue" yet. */
+  status: "draft" | "finalised" | "prepared" | null;
 }) {
   // Only a summary nobody has begun is worth warming: once a row exists, the sections are
   // either written or deliberately left alone, and re-running the model over a resident's own
   // edits is the one thing this must never do.
   const shouldWarm = status === null;
   const [warming, setWarming] = useState(shouldWarm);
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(status === "prepared");
   const started = useRef(false);
 
   useEffect(() => {
