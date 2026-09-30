@@ -102,6 +102,8 @@ export async function POST(request: Request) {
     needs_confirmation: o.needs_confirmation,
     urgency: o.urgency,
     pac_verdict: o.pac_verdict,
+    task_open: o.task_open ?? null,
+    task_category: o.task_category ?? null,
     conflict_note: dayConflict(o, patient),
   }));
 

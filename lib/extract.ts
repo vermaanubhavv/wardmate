@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { judgeObservations, type TaskCategoryJudgment } from "@/lib/jev-observations";
 import { AI_MODEL } from "@/lib/model";
 import { traced, recordAiUsage } from "@/lib/observability";
 import { isIdentifierLabel } from "@/lib/patients";
@@ -36,6 +37,9 @@ export type ExtractedObservation = {
   urgency: (typeof URGENCIES)[number] | null;
   /** PAC rows only — the normalised reading of a stated verdict. Null otherwise. */
   pac_verdict: (typeof PAC_VERDICTS)[number] | null;
+  /** Plans only, set by Jev after extraction (lib/jev-observations.ts); absent = not judged. */
+  task_open?: boolean;
+  task_category?: TaskCategoryJudgment;
 };
 
 /**
@@ -334,6 +338,10 @@ export async function extractObservations(
       observations.push(obs);
     } else rejected.push(obs);
   }
+
+  // A second, independent look at what survived: does each quote actually say its value?
+  // Can only add amber and to-do judgments; see lib/jev-observations.ts.
+  await judgeObservations(observations);
 
   return { observations, rejected, matchedProtocolIds, model, raw: parsed };
 }

@@ -74,6 +74,8 @@ export async function applyRound(formData: FormData) {
       // having been routed: the resident was not standing in front of this patient.
       needs_confirmation: true,
       urgency: o.urgency,
+      task_open: o.task_open ?? null,
+      task_category: o.task_category ?? null,
       conflict_note: segment.uncertain
         ? "Dictated for the whole round and flagged as unclear — check this is the right patient."
         : null,

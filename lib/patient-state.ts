@@ -22,6 +22,8 @@ export type Observation = {
   recorded_at: string;
   /** PAC rows only — see supabase/patches/0042_pac_status.sql. Null on everything else. */
   pac_verdict?: PacVerdict;
+  /** Plans only — Jev's stored rescue of a plan the keyword filter would hide (patch 0103). */
+  task_open?: boolean | null;
   /** The reference range printed beside this result on the report it was read from — see
    *  supabase/patches/0043_lab_reference_ranges.sql. Null for anything not off a report. */
   ref_low?: number | null;
@@ -83,7 +85,7 @@ export function derivePatientState(
 
   const pending = observations.filter((o) => o.needs_confirmation && !o.confirmed_at);
 
-  const allPlans = observations.filter((o) => o.kind === "plan" && isActionableTask(o.value_text ?? o.label));
+  const allPlans = observations.filter((o) => o.kind === "plan" && isActionableTask(o.value_text ?? o.label, o.task_open));
 
   // Repeats folded together first, newest kept — observations arrive newest first, which is
   // what dedupeTasks relies on. Then sorted on what the colour means TODAY rather than on the
@@ -125,7 +127,7 @@ export function derivePatientState(
     (o) =>
       o.kind !== "note" &&
       o.kind !== "pac_status" &&
-      (o.kind !== "plan" || !isActionableTask(o.value_text ?? o.label)) &&
+      (o.kind !== "plan" || !isActionableTask(o.value_text ?? o.label, o.task_open)) &&
       !templateLabels.has(o.label.toLowerCase())
   );
 

@@ -17,6 +17,7 @@ type Value = {
   source_quote: string;
   needs_confirmation: boolean;
   confirmed_at: string | null;
+  task_open?: boolean | null;
 };
 
 /** What operation and which day — the note's heading, not a finding from it. */
@@ -139,9 +140,9 @@ export default function EntryCard({
   const [draft, setDraft] = useState("");
 
   const context = values.filter((v) => CONTEXT_KINDS.includes(v.kind));
-  const plans = values.filter((v) => v.kind === "plan" && isActionableTask(v.value_text ?? v.label));
+  const plans = values.filter((v) => v.kind === "plan" && isActionableTask(v.value_text ?? v.label, v.task_open));
   const progress = values.filter(
-    (v) => !CONTEXT_KINDS.includes(v.kind) && (v.kind !== "plan" || !isActionableTask(v.value_text ?? v.label))
+    (v) => !CONTEXT_KINDS.includes(v.kind) && (v.kind !== "plan" || !isActionableTask(v.value_text ?? v.label, v.task_open))
   );
 
   const editing = values.find((v) => v.id === editingValue) ?? null;

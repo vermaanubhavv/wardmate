@@ -23,7 +23,13 @@ const PROCEDURE =
 const SAMPLING =
   /\b(cbc|lft|kft|rft|crp|abg|vbg|hba1c|hb\b|tlc\b|electrolytes?|se\b|blood|sample|send\s+(routine\s+)?investigations?|labs?\b|culture)\b/i;
 
-export function classifyTaskCategory(text: string | null | undefined): TaskCategory | null {
+export function classifyTaskCategory(
+  text: string | null | undefined,
+  /** Jev's stored judgment (observations.task_category) wins when present; "other" means it
+   *  read the job as none of these. Null = not judged, so the keywords below decide. */
+  stored?: TaskCategory | "other" | null
+): TaskCategory | null {
+  if (stored) return stored === "other" ? null : stored;
   const value = (text ?? "").trim();
   if (!value) return null;
   if (CONSENT.test(value)) return "consent";

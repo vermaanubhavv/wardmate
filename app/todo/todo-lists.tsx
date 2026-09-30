@@ -181,7 +181,7 @@ function ByType({ tasks, scoringTasks }: { tasks: WardTask[]; scoringTasks: Ward
 
   const wardByCategory = new Map<TaskCategory | "other", WardTask[]>();
   for (const t of tasks) {
-    const category = classifyTaskCategory(t.value_text ?? t.label) ?? "other";
+    const category = classifyTaskCategory(t.value_text ?? t.label, t.task_category) ?? "other";
     const list = wardByCategory.get(category) ?? [];
     list.push(t);
     wardByCategory.set(category, list);

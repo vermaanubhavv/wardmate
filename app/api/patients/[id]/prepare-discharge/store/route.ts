@@ -238,6 +238,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       needs_confirmation: true,
       urgency: o.urgency,
       pac_verdict: o.pac_verdict,
+      task_open: o.task_open ?? null,
+      task_category: o.task_category ?? null,
     }));
 
     if (rows.length === 0) {

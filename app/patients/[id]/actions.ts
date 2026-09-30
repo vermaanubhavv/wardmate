@@ -143,6 +143,8 @@ export async function editEntry(formData: FormData) {
     confirmed_at: new Date().toISOString(),
     confirmed_by: user.id,
     urgency: o.urgency,
+    task_open: o.task_open ?? null,
+    task_category: o.task_category ?? null,
   }));
 
   if (rows.length > 0) await supabase.from("observations").insert(rows);
