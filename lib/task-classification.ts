@@ -23,7 +23,12 @@ const UPDATE = /\b(given|administered|started|commenced|done|completed|cst|conti
  * claimed to be showing it. This app's whole argument is that absence is shown rather than
  * filled — a stated plan silently deleted for its wording is the opposite of that.
  */
-export function isActionableTask(text: string | null | undefined): boolean {
+export function isActionableTask(
+  text: string | null | undefined,
+  /** Jev's stored judgment (observations.task_open). Only ever true: it can rescue a plan the
+   *  words above would hide, never hide one they show. */
+  taskOpen?: boolean | null
+): boolean {
   const value = (text ?? "").trim();
-  return Boolean(value) && !UPDATE.test(value);
+  return Boolean(value) && (taskOpen === true || !UPDATE.test(value));
 }

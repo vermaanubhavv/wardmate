@@ -156,7 +156,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       supabase
         .from("entries")
         .select(
-          "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, is_case_history, matched_protocol_ids, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at, pac_verdict, ref_low, ref_high, ref_text)"
+          "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, is_case_history, matched_protocol_ids, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at, pac_verdict, task_open, ref_low, ref_high, ref_text)"
         )
         .eq("patient_id", id)
         .order("recorded_at", { ascending: false }),
@@ -702,6 +702,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                                   source_quote: o.source_quote,
                                   needs_confirmation: o.needs_confirmation,
                                   confirmed_at: o.confirmed_at,
+                                  task_open: o.task_open,
                                 }))}
                                 matchedProtocols={(entry.matched_protocol_ids ?? [])
                                   .filter((id) => protocolTitles.has(id))

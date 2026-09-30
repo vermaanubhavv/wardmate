@@ -6,6 +6,7 @@ import { getTree } from "@/lib/history-check/trees";
 import { buildSources, type CheckResult, type HistorySource, type SlotResult } from "@/lib/history-check/sources";
 import { estimateCostUsd, extractHistoryCheck, PROMPT_VERSION, type ExtractionUsage, type PatientLine } from "@/lib/history-check/extract";
 import { validateExtraction } from "@/lib/history-check/validate";
+import { jevCrossCheck } from "@/lib/history-check/jev-check";
 import { AI_MODEL } from "@/lib/model";
 import type { SlotState } from "@/lib/history-check/types";
 
@@ -180,6 +181,7 @@ export async function runHistoryCheck(args: {
   }
 
   const result = validateExtraction(tree, extracted.raw, sources);
+  await jevCrossCheck(tree, result);
   const cost = estimateCostUsd(extracted.model, extracted.usage);
 
   // Upsert on the unique key: a previous ERROR run with this hash is replaced by the good one.

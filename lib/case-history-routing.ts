@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { correctTranscript } from "@/lib/glossary";
 import { log } from "@/lib/observability";
+import { askJev, chosenProbability, type JevAnswers } from "@/lib/jev";
 import {
   ROUTABLE_SECTIONS,
   sectionsForSpecialty,
@@ -37,7 +38,6 @@ export type { RoutableSection, RoutedSegment } from "@/lib/case-history-sections
  */
 
 const ROUTING_MODEL = "claude-haiku-4-5-20251001";
-const TYPESAFE_MODEL = "jev-latest";
 // ponytail: fixed bar, untuned — set it from a labelled synthetic eval once fallback rates are in.
 const MIN_PROBABILITY = 0.7;
 
@@ -144,9 +144,6 @@ export async function routeClerkingChunk(
   return routeWithHaiku(corrected, knownComplaints, specialty);
 }
 
-type JevChoice = { choice: string; probabilities: Record<string, number> };
-type JevAnswers = Record<string, { choice?: string; probabilities?: Record<string, number>; noul?: number }>;
-
 async function routeWithTypeSafe(
   corrected: string,
   knownComplaints: string[],
@@ -191,33 +188,11 @@ async function routeWithTypeSafe(
     }
   });
 
-  let answers: JevAnswers;
-  let model = TYPESAFE_MODEL;
-  try {
-    const res = await fetch("https://api.typesafe.ai/v1/systemone", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.TYPESAFE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: TYPESAFE_MODEL,
-        state: { complaints_already_mentioned: knownComplaints, sentences },
-        questions,
-      }),
-      // Live dictation: a slow answer is worth less than Haiku's.
-      signal: AbortSignal.timeout(4000),
-    });
-    if (!res.ok) return { fallback: `http ${res.status}` };
-    const body = (await res.json()) as { model?: string; answers?: JevAnswers };
-    answers = body.answers ?? {};
-    model = body.model ?? model;
-  } catch (e) {
-    return { fallback: e instanceof Error ? e.name : "error" };
-  }
+  const jev = await askJev({ complaints_already_mentioned: knownComplaints, sentences }, questions);
+  if ("fallback" in jev) return jev;
 
-  const result = segmentsFromJev(sentences, answers, knownComplaints, allowed);
-  return "segments" in result ? { segments: result.segments, model } : result;
+  const result = segmentsFromJev(sentences, jev.answers, knownComplaints, allowed);
+  return "segments" in result ? { segments: result.segments, model: jev.model } : result;
 }
 
 /** Deepgram's smart_format punctuates, so sentence boundaries are real. */
@@ -238,11 +213,11 @@ export function segmentsFromJev(
 ): { segments: RoutedSegment[] } | { fallback: string } {
   const segments: RoutedSegment[] = [];
   for (let i = 0; i < sentences.length; i++) {
-    const section = answers[`section_${i}`] as JevChoice | undefined;
+    const section = answers[`section_${i}`];
     const mixed = answers[`mixed_${i}`]?.noul;
     if (!section?.choice || mixed == null) return { fallback: "missing answer" };
     if (mixed >= 0.5) return { fallback: "mixed sentence" };
-    if ((section.probabilities?.[section.choice] ?? 0) < MIN_PROBABILITY) return { fallback: "unsure section" };
+    if (chosenProbability(section) < MIN_PROBABILITY) return { fallback: "unsure section" };
     if (section.choice === "none") continue;
     const key = section.choice as RoutableSection;
     // Same rule as Haiku's path: never file into a section this unit does not have.
@@ -252,9 +227,9 @@ export function segmentsFromJev(
       segments.push({ section: key, text: sentences[i] });
       continue;
     }
-    const c = answers[`complaint_${i}`] as JevChoice | undefined;
+    const c = answers[`complaint_${i}`];
     const idx = c?.choice?.startsWith("c") ? Number(c.choice.slice(1)) : NaN;
-    if (!c || !knownComplaints[idx] || (c.probabilities?.[c.choice] ?? 0) < MIN_PROBABILITY) {
+    if (!knownComplaints[idx] || chosenProbability(c) < MIN_PROBABILITY) {
       return { fallback: "hopi complaint unknown" };
     }
     segments.push({ section: "hopi", complaint: knownComplaints[idx], text: sentences[i] });

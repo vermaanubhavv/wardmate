@@ -3,6 +3,7 @@ import { compareBeds } from "@/lib/patients";
 import { effectiveUrgency, urgencyRank, type Urgency } from "@/lib/urgency";
 import { dedupeTasks } from "@/lib/dedupe-tasks";
 import { isActionableTask } from "@/lib/task-classification";
+import type { TaskCategory } from "@/lib/task-category";
 
 export type WardTask = {
   id: string;
@@ -13,6 +14,8 @@ export type WardTask = {
   urgency: Urgency;
   graded_at: string | null;
   recorded_at: string;
+  /** Jev's stored bucket for the "By type" view (patch 0103); null = keywords decide. */
+  task_category?: TaskCategory | "other" | null;
   patient: { display_name: string; bed: string };
   /** What the colour means today, once the calendar has been taken into account. */
   effective: Urgency;
@@ -44,7 +47,7 @@ export async function getWardTasks(wardId: string): Promise<WardTask[]> {
 
   const { data: tasks } = await supabase
     .from("observations")
-    .select("id, patient_id, label, value_text, source_quote, urgency, graded_at, recorded_at")
+    .select("id, patient_id, label, value_text, source_quote, urgency, graded_at, recorded_at, task_open, task_category")
     .in(
       "patient_id",
       patients.map((p) => p.id)
@@ -57,7 +60,7 @@ export async function getWardTasks(wardId: string): Promise<WardTask[]> {
   // Repeats folded per patient, never across the ward: two patients both needing a drain out
   // are two jobs, and merging them would hide one entirely.
   const byPatientTasks = new Map<string, NonNullable<typeof tasks>>();
-  for (const t of (tasks ?? []).filter((t) => isActionableTask(t.value_text ?? t.label))) {
+  for (const t of (tasks ?? []).filter((t) => isActionableTask(t.value_text ?? t.label, t.task_open))) {
     const list = byPatientTasks.get(t.patient_id) ?? [];
     list.push(t);
     byPatientTasks.set(t.patient_id, list);

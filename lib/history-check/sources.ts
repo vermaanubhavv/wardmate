@@ -90,7 +90,9 @@ export type Rejection = {
     | "value_not_in_source"
     | "value_missing"
     | "unknown_slot"
-    | "conflict_quote_not_in_source";
+    | "conflict_quote_not_in_source"
+    /** Jev (lib/history-check/jev-check.ts) confidently read the quote the other way. */
+    | "quote_means_otherwise";
   quote: string | null;
 };
 
