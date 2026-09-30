@@ -47,9 +47,12 @@ const MAX_SECONDS = 180;
 export default function Recorder({
   patientId,
   onBusyChange,
+  idleActions,
 }: {
   patientId: string;
   onBusyChange?: (busy: boolean) => void;
+  /** Sits in the same row as the mic while nothing is recording — the bar's other controls. */
+  idleActions?: React.ReactNode;
 }) {
   const router = useRouter();
   const [status, setStatus] = useState<Status>("idle");
@@ -61,6 +64,8 @@ export default function Recorder({
   const [message, setMessage] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<string | null>(null);
   const [findings, setFindings] = useState<Finding[]>([]);
+  /** A live transcript whose save failed — kept so it can be retried without re-dictating. */
+  const [unsaved, setUnsaved] = useState<string | null>(null);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -207,13 +212,20 @@ export default function Recorder({
   /** Try the live streaming path. Resolves false on anything short of a working socket, so the
    *  caller can fall back to record-then-upload without the resident seeing a failed attempt. */
   async function startLive(): Promise<boolean> {
+    // On one bar of signal the token request can sit unanswered for a minute, leaving the
+    // button on "Starting…". Three seconds is long enough for a working connection and short
+    // enough that falling back to record-then-upload still feels like one tap.
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), 3000);
     try {
       const res = await fetch("/api/transcribe/live-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ patientId }),
+        signal: abort.signal,
       });
       const data = (await res.json()) as { token?: string; keyterms?: string[] };
+      clearTimeout(timer);
       if (!res.ok || !data.token) return false;
 
       const session = await openLiveDictation({
@@ -242,6 +254,7 @@ export default function Recorder({
       liveSessionRef.current = session;
       return true;
     } catch {
+      clearTimeout(timer);
       return false;
     }
   }
@@ -332,6 +345,12 @@ export default function Recorder({
     }
 
     setTranscript(text);
+    await saveWords(text);
+  }
+
+  /** Files finished words through /api/entries/text. Also what "Save these words" calls after a
+   *  failed attempt — the same transcript, so nothing has to be said twice. */
+  async function saveWords(text: string) {
     try {
       const res = await fetch("/api/entries/text", {
         method: "POST",
@@ -342,10 +361,13 @@ export default function Recorder({
       setStatus("idle");
 
       if (!res.ok) {
+        // A 5xx is the server, not the words — worth another go. A 4xx will fail the same way.
+        if (res.status >= 500) keepUnsaved(text);
         setMessage(data.error ?? "Something went wrong.");
         return;
       }
 
+      setUnsaved((u) => (u === text ? null : u));
       setFindings(normaliseFindings(data.observations));
       setMessage(
         data.error ??
@@ -354,11 +376,25 @@ export default function Recorder({
       );
       router.refresh();
     } catch {
-      // Unlike a blob, finished words have nowhere to queue — but they are already on screen,
-      // word for word, so nothing said is actually lost, only not yet filed.
+      // Unlike a blob, finished words have nowhere to queue (lib/outbox.ts holds audio only) —
+      // but they are already on screen, word for word, and held here for the retry button.
       setStatus("idle");
-      setMessage("No signal to save that. The words are shown above — try again once connected.");
+      keepUnsaved(text);
+      setMessage("No signal to save that. The words are shown above — not saved yet.");
     }
+  }
+
+  /** Holds failed words for the retry. A second failure before the first is retried is added
+   *  on rather than replacing it — both were said about this patient, and neither is refiled. */
+  function keepUnsaved(text: string) {
+    setUnsaved((u) => (u && u !== text && !u.endsWith(text) ? joinSpoken(u, text) : u ?? text));
+  }
+
+  function retrySave() {
+    if (!unsaved) return;
+    setStatus("working");
+    setMessage(null);
+    void saveWords(unsaved);
   }
 
   async function send(mimeType: string) {
@@ -453,18 +489,26 @@ export default function Recorder({
       <span className="sr-only" role="status">
         {status === "recording" ? "Recording" : status === "working" ? "Transcribing" : ""}
       </span>
+      {/* At rest, one compact row — a round mic beside its label, with the bar's other controls
+          after it — so the bar does not sit a second full-width teal button under the page's
+          own "Make Today's Note". Once tapped, the full-width button below takes over: stopping
+          is the one thing that matters then, and it should be impossible to miss. */}
+      {status === "idle" ? (
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={start} className="flex min-h-12 min-w-0 flex-1 items-center gap-3 text-left active:opacity-70">
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-line bg-card text-accent shadow-sm">
+              <MicIcon className="h-6 w-6" />
+            </span>
+            <span className="truncate text-body font-medium">Speak at the bedside</span>
+          </button>
+          {idleActions}
+        </div>
+      ) : (
       <button
         type="button"
-        onClick={recording ? stop : start}
-        disabled={status === "working" || status === "starting"}
-        className={
-          "btn w-full transition-colors " +
-          (recording
-            ? "bg-recording text-white"
-            : status === "working" || status === "starting"
-              ? "bg-chip text-muted"
-              : "btn-primary")
-        }
+        onClick={stop}
+        disabled={!recording}
+        className={"btn w-full transition-colors " + (recording ? "bg-recording text-white" : "bg-chip text-muted")}
       >
         {recording ? (
           <span className="flex items-center justify-center gap-3">
@@ -481,13 +525,9 @@ export default function Recorder({
             <Mark className="h-5 w-5" spinning />
             Transcribing…
           </span>
-        ) : (
-          <>
-            <MicIcon className="h-5 w-5" />
-            Tap to speak
-          </>
-        )}
+        ) : null}
       </button>
+      )}
 
       {/* While a live socket is open, the words themselves ARE the "it's working" signal — no
           need to wait for the round to end to see whether it heard anything. */}
@@ -518,6 +558,17 @@ export default function Recorder({
             </li>
           ))}
         </ul>
+      )}
+
+      {unsaved && status === "idle" && (
+        <div className="flex flex-col gap-2">
+          {transcript !== unsaved && (
+            <p className="rounded-lg bg-chip/60 px-3 py-2 text-footnote leading-relaxed text-muted">“{unsaved}”</p>
+          )}
+          <button type="button" onClick={retrySave} className="btn btn-secondary w-full text-accent">
+            Save these words
+          </button>
+        </div>
       )}
 
       {message && <p role="status" className="text-center text-subhead text-muted">{message}</p>}

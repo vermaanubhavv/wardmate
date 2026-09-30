@@ -317,7 +317,7 @@ export default function EntryCard({
           <form action={acceptEntry}>
             <input type="hidden" name="entry_id" value={entryId} />
             <input type="hidden" name="patient_id" value={patientId} />
-            <button className="min-h-9 rounded-full bg-accent px-3 text-footnote font-semibold text-accent-ink">
+            <button className="min-h-11 rounded-full bg-accent px-4 text-footnote font-semibold text-accent-ink">
               Accept
             </button>
           </form>

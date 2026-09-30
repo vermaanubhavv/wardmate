@@ -10,8 +10,8 @@ type MissingItem = { item: { label: string; hint: string | null } };
 /**
  * The two things you do at a bedside, and a quiet way in to typing.
  *
- * At rest this is exactly two buttons — speak and photograph. Typing replaces them while it
- * is open rather than sitting alongside them, so the bar never grows a third control.
+ * At rest this is one compact row — speak, type, photograph — under a single line of what is
+ * still to cover. Typing replaces the row while it is open; recording expands it.
  */
 export default function BedsideBar({
   patientId,
@@ -26,6 +26,8 @@ export default function BedsideBar({
   const [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  /** The last save did not go through. The typed words stay in the box either way. */
+  const [failed, setFailed] = useState(false);
 
   // Stable across renders so the Recorder's effect does not re-fire on every keystroke here.
   const onBusyChange = useCallback((b: boolean) => setRecording(b), []);
@@ -36,6 +38,7 @@ export default function BedsideBar({
 
     setBusy(true);
     setMessage(null);
+    setFailed(false);
 
     try {
       const res = await fetch("/api/entries/text", {
@@ -47,7 +50,8 @@ export default function BedsideBar({
       setBusy(false);
 
       if (!res.ok) {
-        setMessage(data.error ?? "Could not save that.");
+        setFailed(true);
+        setMessage(data.error ?? "Could not save that. Your note is still in the box.");
         return;
       }
 
@@ -62,7 +66,10 @@ export default function BedsideBar({
       router.refresh();
     } catch {
       setBusy(false);
-      setMessage("No connection. Nothing was saved.");
+      // Typed words have no audio for lib/outbox.ts to queue — so they stay in the box, and the
+      // same button sends them again once there is signal.
+      setFailed(true);
+      setMessage("No connection — not saved yet. Your note is still in the box.");
     }
   }
 
@@ -84,6 +91,7 @@ export default function BedsideBar({
             onClick={() => {
               setTyping(false);
               setMessage(null);
+              setFailed(false);
             }}
             className="btn btn-secondary flex-1 text-muted"
           >
@@ -95,7 +103,7 @@ export default function BedsideBar({
             disabled={busy || !text.trim()}
             className="btn btn-primary flex-[2]"
           >
-            {busy ? "Saving…" : "Save note"}
+            {busy ? "Saving…" : failed ? "Try again" : "Save note"}
           </button>
         </div>
         {message && <p role="status" className="text-center text-subhead text-muted">{message}</p>}
@@ -104,34 +112,37 @@ export default function BedsideBar({
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* Hidden while recording so it cannot be hit by accident mid-note. */}
-      {!recording && (
-        <button
-          type="button"
-          onClick={() => setTyping(true)}
-          className="tap self-end text-footnote text-accent"
-        >
-          Type instead
-        </button>
-      )}
+    <div className="flex flex-col gap-2">
       {/* What is left to cover — from whichever checklist/protocol the patient is currently
-          on, see lib/templates.ts getTemplateForPatient(). Not truncated, and bolder while the
-          mic is actually live: this is exactly the moment it needs to be read, not the moment
-          before tapping the button. */}
+          on, see lib/templates.ts getTemplateForPatient(). One line at rest so the bar stays
+          small; two lines, and bolder, while the mic is actually live: that is exactly the
+          moment it needs to be read, not the moment before tapping the button. */}
       {missing.length > 0 && (
         <p
           className={
-            "line-clamp-2 " +
-            (recording ? "text-subhead font-medium text-warn-fg" : "text-footnote text-muted")
+            recording ? "line-clamp-2 text-subhead font-medium text-warn-fg" : "truncate text-footnote text-muted"
           }
         >
           <span className={recording ? undefined : "text-warn-fg"}>Still to cover:</span>{" "}
           {missing.map((m) => m.item.hint ?? m.item.label).join(" · ")}
         </p>
       )}
-      <Recorder patientId={patientId} onBusyChange={onBusyChange} />
-      <PhotoButton patientId={patientId} />
+      <Recorder
+        patientId={patientId}
+        onBusyChange={onBusyChange}
+        idleActions={
+          <>
+            <button
+              type="button"
+              onClick={() => setTyping(true)}
+              className="min-h-11 shrink-0 rounded-full border border-line bg-card px-4 text-subhead font-medium text-accent active:opacity-70"
+            >
+              Type
+            </button>
+            <PhotoButton patientId={patientId} />
+          </>
+        }
+      />
       {message && <p role="status" className="text-center text-subhead text-muted">{message}</p>}
     </div>
   );

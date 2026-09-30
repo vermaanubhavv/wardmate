@@ -211,3 +211,54 @@ export function groupByDay<T extends { recorded_at: string }>(
 
   return days;
 }
+
+/** A stored "post-op day 2" / "POD 2". Stale the morning after it is said — the page shows
+ *  the day it computes from the operation date instead, so these are never displayed as a
+ *  current finding. Kept in the record; only hidden from the where-things-stand view. */
+export function isDayCountLabel(kind: string, label: string): boolean {
+  return kind === "day_number" || /^(post[- ]?op(erative)?\s*day|pod)\b/i.test(label.trim());
+}
+
+const NEGATING = new Set(["no", "not", "nil", "absent", "without", "denies", "denied", "negative", "non"]);
+
+function words(s: string): string[] {
+  return s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+}
+
+/**
+ * Indexes of lines that only repeat another line in the same list, for hiding (never deleting):
+ * - the same label said twice → the later one stays;
+ * - a line whose words all appear in a fuller one ("P/A soft, non-tender" inside "P/A soft,
+ *   non-tender, non-distended") → the fuller one stays, unless the fuller one adds a negation
+ *   ("anaemia" is not covered by "no anaemia").
+ * Lines with no value are gaps, not repeats, and are never hidden or used to hide another.
+ *
+ * ponytail: bag-of-words subset, O(n²) — fine for a section's dozen lines; a word-order or
+ * number-aware comparison if a real case collapses two different findings.
+ */
+export function repeatedLines(
+  lines: { label: string; value: string | null; at: string | null }[]
+): Set<number> {
+  const toks = lines.map((l) => (l.value?.trim() ? new Set(words(`${l.label} ${l.value}`)) : null));
+  const labels = lines.map((l) => words(l.label).join(" "));
+  const hidden = new Set<number>();
+  lines.forEach((a, i) => {
+    const ta = toks[i];
+    if (!ta) return;
+    for (let j = 0; j < lines.length; j++) {
+      const tb = toks[j];
+      if (j === i || !tb) continue;
+      const atA = a.at ?? "";
+      const atB = lines[j].at ?? "";
+      // Ties go to the fuller line, then to the first one listed.
+      const beats = tb.size > ta.size || (tb.size === ta.size && (atB > atA || (atB === atA && j < i)));
+      if (labels[i] === labels[j]) {
+        if (atB > atA || (atB === atA && beats)) hidden.add(i);
+        continue;
+      }
+      const covered = [...ta].every((w) => tb.has(w)) && ![...tb].some((w) => NEGATING.has(w) && !ta.has(w));
+      if (covered && beats) hidden.add(i);
+    }
+  });
+  return hidden;
+}
