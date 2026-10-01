@@ -23,9 +23,13 @@ import type { TaskCategory } from "@/lib/task-category";
  * No key, an error or a timeout: every observation goes through exactly as before.
  */
 
-// ponytail: fixed bars, untuned — set from a labelled synthetic eval once there is traffic.
+// ponytail: untuned — give these an eval like the rescue's (scripts/eval-task-open.ts).
 const UNSUPPORTED_BELOW = 0.5;
-const RESCUE_AT = 0.7;
+// Rescue bar from scripts/eval-task-open.ts (2026-10-02, jev-1.13.0, 3 runs, ±0.03 run to run):
+// every job scored >= 0.47 and every non-job <= 0.41 ("MRCP done") across the tuning and
+// held-out sets. A missed job stays hidden while a wrong rescue is one extra line to tick, so
+// the bar sits nearer the non-jobs: "MRCP done" is sometimes rescued, no job is ever missed.
+const RESCUE_AT = 0.4;
 const CATEGORY_AT = 0.7;
 
 export type TaskCategoryJudgment = TaskCategory | "other";
@@ -37,6 +41,19 @@ const CATEGORY_CRITERIA: Record<TaskCategoryJudgment, string> = {
   consent: "consent paperwork to obtain or complete",
   other: "any other job: a review, a referral, a drug change, discharge, counselling, monitoring",
 };
+
+/** The rescue question, about the plan text at `path` in the state. Exported so
+ *  scripts/eval-task-open.ts scores exactly what production asks. */
+export function openQuestion(path: string) {
+  return {
+    type: "noul",
+    instructions: `A surgical resident dictated \`${path}\` as part of a ward-round plan. Does it leave anything for the ward team to do, check or follow up?`,
+    criteria: {
+      true: "Something is still to be done or watched: a test to send or repeat, a report awaited or to review, a tube, drain, catheter or sutures to remove, a diet to change, charting or monitoring to keep up, someone to inform on a condition, a shift to OT",
+      false: "It only records what was given, done, started or simply goes on unchanged — a drug, fluid, transfusion or dressing — with nothing further for anyone to do or check",
+    },
+  };
+}
 
 export async function judgeObservations(observations: ExtractedObservation[]): Promise<void> {
   const questions: Record<string, unknown> = {};
@@ -53,14 +70,7 @@ export async function judgeObservations(observations: ExtractedObservation[]): P
     }
     if (o.kind !== "plan") return;
     if (!isActionableTask(o.value_text || o.label)) {
-      questions[`open_${i}`] = {
-        type: "noul",
-        instructions: `Does \`observations[${i}].value\` contain a job someone still has to do, as opposed to only a treatment already given or simply being continued?`,
-        criteria: {
-          true: "At least one unfinished future action (repeat, send, arrange, review, remove…)",
-          false: "Only a record of treatment already given, done or continued unchanged",
-        },
-      };
+      questions[`open_${i}`] = openQuestion(`observations[${i}].value`);
     }
     questions[`category_${i}`] = {
       type: "choice",
