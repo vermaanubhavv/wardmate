@@ -189,13 +189,13 @@ export async function finaliseDischargeSummary(
         .from("discharge_summaries")
         .insert({ patient_id: patientId, ward_id: context.wardId, created_by: user.id, ...patch });
   if (error) return { ok: false, error: error.message };
-  // Proofread AFTER locking, so its checkedAt is the newest stamp and Print does not repeat it.
-  await proofreadDischarge(patientId);
+  // No proofread here: the print sheet starts it the moment it opens (print-button.tsx), so
+  // Finalise does not wait on the model.
   return { ok: true };
 }
 
 /**
- * Sonnet's proofread of the summary — run on Finalise, Print and Word download.
+ * Sonnet's proofread of the summary — run each time the print sheet opens, and on Word download.
  *
  * The Clinical Course is re-punctuated and re-framed (polishProse); every other text field gets
  * the mechanical fixes only (finalCheck), and its questions are kept beside the summary, never
