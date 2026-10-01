@@ -325,3 +325,35 @@ export function summariseCaseHistory<
 
   return { sections, other };
 }
+
+/**
+ * Seed the case-history workspace's HOPI card from the stored rows. The card rewrites the whole
+ * section when it is saved, so every row must land on a page the resident can see: rows for the
+ * same complaint are joined, and a row for a complaint the card has no page for (or with no
+ * "complaint:" prefix at all — a photo or a long dictation) folds whole into the first page.
+ */
+export function seedHopi(values: string[], pages: string[]): { text: Record<string, string>; dur: Record<string, string> } {
+  const text: Record<string, string> = {};
+  const dur: Record<string, string> = {};
+  const add = (page: string, body: string) => {
+    if (body) text[page] = text[page] ? `${text[page]}; ${body}` : body;
+  };
+  for (const raw of values) {
+    const v = raw.trim();
+    if (!v) continue;
+    const m = v.match(/^([^:]{2,40}):\s*([\s\S]+)$/);
+    const page = m ? pages.find((p) => p.toLowerCase() === m[1].trim().toLowerCase()) : undefined;
+    if (!m || !page) {
+      add(pages[0], v);
+      continue;
+    }
+    let body = m[2].trim();
+    const dm = body.match(/^\(([^)]{1,40})\)\s*([\s\S]*)$/);
+    if (dm) {
+      dur[page] ??= dm[1].trim();
+      body = dm[2].trim();
+    }
+    add(page, body);
+  }
+  return { text, dur };
+}
