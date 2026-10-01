@@ -96,4 +96,11 @@ describe("progress-note configs", () => {
     expect(psych).toContain('"mood": string');
     expect(psych).not.toContain('"abdomen": string');
   });
+
+  it("general surgery prints Wound and a drains line, and a dictated drain output lands on it", () => {
+    const todays = [obs("drain", "drain output", "Pelvic drain 40 ml serous")];
+    const note = buildProgressNote(patient, todays, todays, null, { noteConfig: PROGRESS_NOTE_CONFIGS.general_surgery });
+    expect(note.observation.some((l) => l.startsWith("Wound -"))).toBe(true);
+    expect(note.observation).toContain("Drains / tubes / I-O - Pelvic drain 40 ml serous");
+  });
 });

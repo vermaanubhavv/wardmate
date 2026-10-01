@@ -42,18 +42,58 @@ export type DischargeCheckContext = {
 
 export function buildCheckContext(context: DischargeContext): DischargeCheckContext {
   const FOLLOW_UP_MENTION = /\b(opd|follow[\s-]?up|review|clinic|come back|revisit)\b/i;
-  const DRAIN_REMOVED = /\b(removed|out|taken out|de-?roof)\b/i;
   return {
     activeMedicationCount: context.medications.length,
     followUpInOpenTasks: context.patientState.openTasks.some((t) =>
       FOLLOW_UP_MENTION.test(t.value_text ?? t.label)
     ),
-    drainInSituOnRecord: context.observations.some(
-      (o) =>
-        (o.kind === "drain" || /drain/i.test(o.label)) &&
-        !DRAIN_REMOVED.test(`${o.label} ${o.value_text ?? ""}`)
-    ),
+    drainInSituOnRecord: drainStillIn(context.observations),
   };
+}
+
+/**
+ * Whether the record shows a drain still in, judged on the latest drain observation only:
+ * POD 1's "drain serous" is superseded by POD 3's "drain removed", and "No drain" / "nil" never
+ * meant one was in.
+ * ponytail: latest drain line wins; two drains with one removed reads as removed — add per-drain
+ * tracking if units document drains separately.
+ */
+export function drainStillIn(observations: { kind: string; label: string; value_text: string | null; recorded_at: string }[]): boolean {
+  const DRAIN_REMOVED = /\b(removed|out|taken out|de-?roof|no drain|nil)\b/i;
+  const latest = observations
+    .filter((o) => o.kind === "drain" || /drain/i.test(o.label))
+    .sort((a, b) => b.recorded_at.localeCompare(a.recorded_at))[0];
+  return !!latest && !DRAIN_REMOVED.test(`${latest.label} ${latest.value_text ?? ""}`);
+}
+
+/** A template blank — `[ … ]` — still in the text. Defaults print as written, so a blank left
+ *  prints visibly unfinished; this names the sections that still carry one. */
+export function sectionsWithBlanks(texts: [DischargeSectionId, string][]): DischargeSectionId[] {
+  const BLANK = /\[[^\]]*\]/;
+  return [...new Set(texts.filter(([, t]) => BLANK.test(t)).map(([id]) => id))];
+}
+
+const NSAID = /\b(diclofenac|ibuprofen|aceclofenac|naproxen|ketorolac|etoricoxib|piroxicam|mefenamic|indomethacin|nimesulide)\b/i;
+const THINNER = /\b(enoxaparin|heparin|warfarin|acitrom|acenocoumarol|apixaban|rivaroxaban|dabigatran|clopidogrel|aspirin)\b/i;
+const GI_RISK = /perforat|peptic|\bulcer\b|ha?ematemesis|mela?ena|gi bleed|varic/i;
+
+/** An NSAID on the discharge list beside a blood thinner, or after a peptic ulcer, a perforation
+ *  or a GI bleed (Schwartz 11e ch. 26). Warnings only — the resident may have a reason. */
+export function nsaidConcerns(
+  medications: { generic: string; status: string }[],
+  diagnoses: { text: string }[]
+): string[] {
+  const live = medications.filter((m) => m.status !== "stopped");
+  const nsaid = live.find((m) => NSAID.test(m.generic));
+  if (!nsaid) return [];
+  const out: string[] = [];
+  if (live.some((m) => m !== nsaid && THINNER.test(m.generic))) {
+    out.push(`${nsaid.generic} is listed with a blood thinner — check the bleeding risk.`);
+  }
+  if (diagnoses.some((d) => GI_RISK.test(d.text))) {
+    out.push(`${nsaid.generic} is listed after a peptic ulcer, perforation or GI bleed — check it is intended.`);
+  }
+  return out;
 }
 
 const FOLLOW_UP_MENTION = /\b(opd|follow[\s-]?up|review|clinic|come back|revisit)\b/i;
@@ -167,6 +207,22 @@ export function runDischargeChecks(
       "Condition at Discharge is incomplete — set at least five of the variables, or add free text."
     );
   }
+
+  // --- Template blanks and medication safety -------------------------------------------
+  const blankSections = sectionsWithBlanks([
+    ["indication", draft.indicationForAdmission.text],
+    ["diagnoses", draft.diagnoses.map((d) => d.text).join(" ")],
+    ["procedures", draft.procedures.map((p) => [p.name, p.anaesthesia, p.findings, p.drains, p.complications, p.outcome].join(" ")).join(" ")],
+    ["clinicalCourse", course.text],
+    ["medications", draft.medications.map((m) => [m.generic, m.strength, m.dose, m.duration, m.indication].join(" ")).join(" ")],
+    ["patientActions", draft.patientActions.join(" ")],
+    ["primaryCareActions", draft.primaryCareActions.join(" ")],
+    ["advice", draft.advice.included ? draft.advice.items.map((a) => a.text).join(" ") : ""],
+  ]);
+  for (const section of blankSections) {
+    warn(`blank-${section}`, section, "A template blank [ … ] is still in this section — fill it in or delete it; it prints as written.");
+  }
+  nsaidConcerns(draft.medications, draft.diagnoses).forEach((message, i) => warn(`nsaid-${i}`, "medications", message));
 
   // --- Authentication -------------------------------------------------------------
   if (!draft.authentication.doctorName?.trim()) {

@@ -329,7 +329,8 @@ export const EVAL_CASES: EvalCase[] = [
       circumferential_burn: "unasked",
       electrical_high_voltage: "unasked",
       chemical_ongoing: "unasked",
-      large_area_extremes_of_age: "unasked",
+      // large_area_extremes_of_age is deliberately unscored: since the Schwartz review it asks the
+      // area alone, and "face, neck, chest and both arms" reads either way to the model.
       pain_sensation: "unasked",
       tetanus_status: "unasked",
       comorbidity: "unasked",

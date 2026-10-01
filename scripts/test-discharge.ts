@@ -126,7 +126,7 @@ ok("'MRM for carcinoma breast' matches the breast template", matchDischargeTempl
 ok("'acute calculous cholecystitis' matches the ACUTE cholecystitis template", matchDischargeTemplate({ diagnosisText: "acute calculous cholecystitis" })?.key === "acute_cholecystitis");
 ok("'cholelithiasis' / 'gallstone disease' matches the PLANNED lap chole template", matchDischargeTemplate({ diagnosisText: "gallstone disease" })?.key === "lap_chole" && matchDischargeTemplate({ diagnosisText: "cholelithiasis" })?.key === "lap_chole");
 ok("the diagnosis wording beats the care-template family (acute vs planned)", matchDischargeTemplate({ diagnosisText: "acute cholecystitis", templateFamily: "lap_chole" })?.key === "acute_cholecystitis");
-ok("an unrecognised diagnosis matches nothing (caller falls back to generic)", matchDischargeTemplate({ diagnosisText: "thyroid nodule" }) === null);
+ok("an unrecognised diagnosis matches nothing (caller falls back to generic)", matchDischargeTemplate({ diagnosisText: "parotid swelling" }) === null);
 ok("all templates plus generic are listed for the picker", listDischargeTemplates().length === 12);
 
 const oneOffCtx = { ...context, patient: { ...context.patient, id: "", primary_diagnosis: null, procedure_text: "laparoscopic cholecystectomy", surgery_date: null, template_family: null }, observations: [], medications: [], patientState: { ...context.patientState, latest: [], openTasks: [] } };

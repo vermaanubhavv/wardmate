@@ -456,3 +456,107 @@ sit under a "Hamilton Bailey" comment in each file.
 | `post_op_problem` | redness spreading beyond the wound (red flag); drip or cannula site; urine leaking from the vagina after pelvic surgery |
 
 `post_burn_contracture` gains only the §11.1 background.
+
+## 12. Senior review against Schwartz, and the daily note and discharge
+
+*Schwartz's Principles of Surgery*, 11th ed. (Brunicardi et al., McGraw Hill 2019), was split into
+its 54 chapters and read, chapter by chapter, against the 27 surgical trees, the general-surgery
+progress note and the general-surgery discharge templates, as a senior surgeon would review a
+resident's work: correct what is wrong, remove what is duplicated, keep the ward round short.
+Slots added from it sit under a "Schwartz" comment in each tree.
+
+### 12.1 History trees
+
+**Clinical corrections** (the ones that changed what a resident would record):
+
+- *Biliary colic* — the `periodicity` teach said gallbladder pain grumbles on between attacks;
+  Schwartz describes discrete attacks with the patient well in between.
+- *Torsion* — the age clause made torsion read as an adolescent-only diagnosis; it now asks
+  abrupt onset at a definite moment or waking from sleep, at any age. Das's "almost always an
+  exciting cause" is kept but marked as not reassuring when absent.
+- *Testicular tumour* — "hard painless mass" now asks a hard lump within the testis, painful or
+  not (most present with pain or a mass).
+- *Goitrogens* — sulphonylureas removed; amiodarone, lithium and iodide added (Schwartz Table 38-3).
+- *Burns* — lime and cement are brushed off before washing; the "large area / extremes of age"
+  slot no longer asks age (it comes from the record) or matches every "years".
+- *Tetanus* — asked as course and timing together, not the last injection only.
+- *Post-operative fever* — "early fever points away from the chest" was wrong; the teach now
+  separates fever in the first two days from fever that starts or climbs after the third.
+- *Pre-op* — stent type as well as date; decompensated heart failure joins the unstable-cardiac
+  red flag; last meal (fasting) back on the ward round; steroids and implants core; hormone pill,
+  reflux and a stopped antiplatelet asked.
+- *Spinal shock* — the complete-loss teach no longer reads an early complete deficit as final.
+- *Inflammatory breast cancer*, *pulsatile lump / groin swelling* (aneurysm or false aneurysm before
+  a needle), *intersphincteric abscess*, *carbon monoxide after smoke*, *aorto-enteric fistula* —
+  missing must-not-miss red flags, added.
+
+**Duplicates removed** — slots added by different passes that asked the same thing (for example
+`femoral_position` / `position`, `lump_in_testis` / `hard_painless_mass`, `hoarseness_with_dysphagia`
+/ `hoarseness`, `flatus_stools` / `obstruction`, `anticoagulants` / `surg_blood_thinners`), each
+deleted with its differential references repointed.
+
+**Red flags** — kept only where a positive changes urgency; risk factors (family history, past
+radiation, smoking, a clot years ago) moved to exposure. `tier` on a red flag is a no-op (red flags
+always show), so those were regrouped rather than left misleading.
+
+**Ward-round length** — Ward mode shows red flags and core slots. The shared blocks alone put
+15–16 core questions on every tree, so `surgicalBackground()` gained `detailed: [...]` and
+`core: [...]` beside `omit`, the elective pre-op items (anaesthetic trouble, exercise tolerance,
+bleeding tendency) are academic on a non-acute tree, transfusion always is, and the injury trees
+spread `TRAUMA_BG` — an AMPLE-sized core with the rest in academic mode. Core slots per tree went
+from 28–39 to 18–31; nothing was deleted to get there, only moved to Academic.
+
+### 12.2 The daily progress note (general surgery)
+
+- New **Wound** line (shared `WOUND` section, plus induration, staples, port sites).
+- New **Drains / tubes / I-O** line — each drain's output and character, Ryle's aspirate,
+  catheter and urine output, stoma, intake/output. Dictation already extracted these
+  observations; until now the surgical sheet had nowhere to print them.
+- Complaint chips: the flatus / stool chips (already the Flatus / Stool card) removed; nausea,
+  wound discharge, retention and calf pain added.
+- Plan chips: the diet ladder (NBM → sips → liquids → soft → normal), tubes out, mobilise,
+  incentive spirometry, dressing, suture / staple removal, stoma care, DVT-prophylaxis review,
+  step down / stop antibiotics, culture follow-up (Schwartz ch. 6, 12, 50).
+- **What to check today** — the matching discharge template's per-diagnosis `progressNote` now
+  shows, collapsed and read-only, above the note's card stack. Never saved, prefilled or sent to
+  the AI. Those strings were corrected first (pancreatitis: CT does not predict severity, same-
+  admission cholecystectomy for mild gallstone disease; perforation: antibiotic duration after
+  source control; strings that stated expected findings rewritten as things to check).
+- The discharge drain check now reads the latest drain observation, so "drain serous" on POD 1
+  no longer outlives "drain removed" on POD 3, and "No drain" never reads as one in situ.
+
+### 12.3 Discharges (general surgery)
+
+- **Conditional drugs** — a drug given only in some patients now carries its condition inside a
+  `[ … ]` generic name, so an unedited row prints visibly unfinished instead of as a prescription
+  every patient received. A test enforces it. Second drugs hidden inside another drug's
+  `indication` (tramadol, metronidazole, cefixime) became their own rows.
+- **Antibiotics** — default post-discharge courses removed where current practice finishes them
+  in hospital: STOP-IT (about 4 days after source control), Tokyo 2018 (≤ 24 h after
+  cholecystectomy for grade I–II), none after clean elective surgery.
+- **Condition at discharge** — "healthy surgical wounds" and "drain removed" are no longer
+  pre-marked by any template (a conservatively managed patient has neither); the resident marks
+  them. This is in the shared engine, so it applies to every department.
+- **Corrections** — pancreatitis (goal-directed balanced crystalloid, not "aggressive";
+  cholecystectomy timing; imaging at four weeks only if severe; chronic pancreatitis no longer
+  matches), perforation (H. pylori test-and-treat, mandatory endoscopy after a gastric
+  perforation, enteric and tubercular rows), obstruction (no bulk laxative after adhesive
+  obstruction; volvulus and hernia follow-up), hernia (return to activity as pain allows —
+  HerniaSurge — with the 4–6-week restriction kept for large ventral repairs), colorectal
+  (lactulose not with an ileostomy, loperamide for high output, stoma closure and CEA /
+  colonoscopy surveillance), gastric (no PPI after total gastrectomy, domperidone ≤ 7 days,
+  lifelong B12), perianal, lap chole (carcinoma on histopathology), generic (no NSAID default).
+- **Matching** — benign cases no longer reach the cancer templates (breast lump, ileocaecal TB
+  hemicolectomy, corrosive gastric outlet obstruction); hiatus hernia, chronic pancreatitis and
+  gynaecomastia no longer match; perforated appendix and gallbladder reach their own templates;
+  gallstone ileus reaches obstruction. A matching test covers 27 typed diagnoses.
+- **Nine new templates** — benign breast lump, thyroidectomy, liver abscess, CBD stones /
+  cholangitis / obstructive jaundice, blunt abdominal trauma, varicose veins, diabetic foot,
+  abscess / soft-tissue infection, lipoma / cyst / minor lump; and the urology hydrocele template
+  reused with a Surgery-OPD follow-up.
+- **Checks** (warnings, never blocking) — a `[ … ]` template blank left in any section; an NSAID
+  beside a blood thinner, or after a peptic ulcer, perforation or GI bleed.
+
+All of §12 is **pending the unit's clinical sign-off**: the surgical trees stay
+`pending_clinician_review`, the progress-note config says so in its header, and the discharge
+templates file records it.

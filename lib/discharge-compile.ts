@@ -451,10 +451,14 @@ export function applyDischargeTemplate(
 
   const noVarSet = CONDITION_VARIABLES.every((v) => draft.conditionAtDischarge.vars[v.key] === null);
   if (s.conditionAllSatisfactory && noVarSet) {
-    const vars = Object.fromEntries(CONDITION_VARIABLES.map((v) => [v.key, true])) as Record<
-      ConditionVariableKey,
-      ConditionVariableValue
-    >;
+    // Wound and drain are never pre-marked: "healthy surgical wounds" and "drain removed" are
+    // findings, and a template cannot know there was a wound or a drain at all (a conservatively
+    // managed patient has neither). The resident marks them; the other seven are the standard
+    // fitness-for-discharge state the resident strikes through where untrue.
+    const NOT_SEEDED: ConditionVariableKey[] = ["wound", "drain"];
+    const vars = Object.fromEntries(
+      CONDITION_VARIABLES.map((v) => [v.key, NOT_SEEDED.includes(v.key) ? null : true])
+    ) as Record<ConditionVariableKey, ConditionVariableValue>;
     next.conditionAtDischarge = { vars, prose: buildConditionProse(vars), proseEdited: false, freeText: null };
   }
 

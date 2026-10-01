@@ -9,15 +9,16 @@ import type { SpecialtyKey } from "@/lib/specialty/types";
  * issues, plan and medications. Which LAYOUT a ward prints on (ESIC sheet vs SOAP) is a separate,
  * per-ward switch (wards.is_esic_faridabad) and has nothing to do with this file.
  *
- * general_surgery is the sheet as it was before this file existed — P/Abdomen, Chest,
- * Flatus / Stool, the same aliases, chips and AI wording — so a surgical unit's note is unchanged.
+ * general_surgery prints P/Abdomen, Wound, Drains / tubes / I-O, Chest and Flatus / Stool — the
+ * wound and drain lines were added after a senior-surgeon review against Schwartz 11e (ch. 12, 50),
+ * since dictated drain and intake/output observations had no line to print on.
  *
  * Rules every entry follows, the same as every other clinical text in the app: chips are words a
  * resident says, never a dose; an exam line that nobody spoke prints its heading and nothing
  * else; nothing here decides a finding.
  *
- * CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma) — general_surgery is the sheet as it already
- * was; every other department was read and signed off with the PR that added it.
+ * CLINICAL CONTENT: general_surgery PENDING REVIEW since the wound / drains lines and the chip
+ * changes; every other department was read and signed off with the PR that added it.
  */
 
 export type NoteExamSection = {
@@ -131,34 +132,78 @@ const MEDICINE_PLAN = [
 
 const GENERAL_SURGERY: ProgressNoteConfig = {
   wardPhrase: "a general-surgery ward",
-  registerHint: "P/A soft, NT, ND, BS+, NVBS, B/L air entry equal",
+  registerHint:
+    "P/A soft, NT, ND, BS+; wound healthy; drain output and character as said; Ryle's aspirate as said; UO as said; NVBS, B/L air entry equal",
   complaintPills: [
     "No fresh complaints",
     "Pain",
+    "Nausea",
     "Vomiting",
     "Fever",
-    "Not passed flatus",
-    "Not passed stool",
-    "Not tolerating orals",
     "Abdominal distension",
+    "Not tolerating orals",
+    "Wound discharge",
+    "Unable to pass urine",
     "Cough",
     "Breathlessness",
+    "Calf pain",
     "Giddiness",
   ],
-  examSections: [ABDOMEN, CHEST],
+  // A surgical round is about the wound and every tube in the patient, so both get a line of
+  // their own (Schwartz 11e ch. 12 and 50). Dictation already extracts `drain` and
+  // `intake_output` observations; without this line they never reached the printed note.
+  examSections: [
+    ABDOMEN,
+    { ...WOUND, pills: [...WOUND.pills, "Induration", "Staples intact", "Port sites healthy"] },
+    {
+      id: "drains",
+      title: "Drains, tubes & output",
+      printLabel: "Drains / tubes / I-O",
+      label: "drains",
+      // ponytail: one line, first match prints; several dictated tubes under different labels show
+      // only one. The card is where all of them get written.
+      aliases: [
+        "drains", "drain", "drain output", "abdominal drain", "pelvic drain", "subhepatic drain",
+        "ryle's tube", "ryles tube", "ryle's tube output", "rt aspirate", "rt output", "nasogastric tube", "ng output",
+        "catheter", "foley", "urine output", "stoma", "stoma output",
+        "intake output", "intake / output", "input / output", "i/o",
+      ],
+      pills: [
+        "No drain", "Drain serous", "Drain serosanguinous", "Drain haemorrhagic", "Drain bilious", "Drain feculent", "Drain removed",
+        "Ryle's aspirate clear", "Ryle's aspirate bilious", "Ryle's removed",
+        "Catheter draining clear", "Catheter removed", "Voiding well",
+        "Stoma pink, functioning", "Stoma dusky",
+      ],
+      placeholder: "Each drain / tube: output in ml and character; urine output; intake / output, as measured",
+    },
+    CHEST,
+  ],
   bowelLine: true,
+  // The decisions a surgical round actually makes: the diet ladder, tubes out, mobilisation,
+  // chest, wound, stoma, thromboprophylaxis and antibiotics (Schwartz 11e ch. 6, 12, 50).
   planPills: [
     "Continue same treatment",
-    "Start orals",
-    "Step down antibiotics",
+    "NBM",
+    "Sips",
+    "Liquids",
+    "Soft diet",
+    "Normal diet",
     "Stop IV fluids",
-    "Remove drain",
+    "Clamp Ryle's tube",
+    "Remove Ryle's tube",
     "Remove catheter",
-    "Suture removal",
-    "Chest physiotherapy",
-    "Ambulate",
+    "Remove drain",
+    "Mobilise out of bed",
+    "Incentive spirometry / chest physio",
+    "Dressing change",
+    "Suture / staple removal",
+    "Stoma care / teaching",
+    "DVT prophylaxis review",
+    "Step down antibiotics",
+    "Stop antibiotics",
+    "Culture report follow-up",
     "Repeat CBC",
-    "Repeat RFT",
+    "Repeat RFT / electrolytes",
     "PAC / consent",
     "Plan for discharge",
     "Refer",

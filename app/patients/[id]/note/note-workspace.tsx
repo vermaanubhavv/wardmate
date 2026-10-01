@@ -67,6 +67,7 @@ export default function NoteWorkspace({
   currentMeds,
   suggestedAssessment = "",
   noteConfig,
+  focus = null,
 }: {
   patientId: string;
   dateLabel: string;
@@ -80,6 +81,9 @@ export default function NoteWorkspace({
   suggestedAssessment?: string;
   /** This department's exam cards and chips — lib/progress-note-config.ts. */
   noteConfig: ProgressNoteConfig;
+  /** What to check today for this diagnosis — the matching discharge template's `progressNote`.
+   *  Read-only: never saved, never prefilled into a card, never sent to the AI compile. */
+  focus?: string | null;
 }) {
   const STEPS = useMemo(() => stepsFor(noteConfig), [noteConfig]);
   const sectionById = (id: string) => noteConfig.examSections.find((sec) => sec.id === id);
@@ -487,6 +491,12 @@ export default function NoteWorkspace({
 
   return (
     <div className="flex flex-col gap-3 px-4 pb-[var(--bar-height)]">
+      {focus && (
+        <details className="ios-group px-4 py-3">
+          <summary className="tap cursor-pointer text-footnote font-medium text-accent">What to check today</summary>
+          <p className="mt-2 text-caption leading-[1.45] text-muted">{focus}</p>
+        </details>
+      )}
       <div className="ios-group overflow-hidden">
         <div className="px-4 pt-4 pb-3">
           <p className="text-caption2 font-semibold uppercase tracking-[0.03em] text-muted">

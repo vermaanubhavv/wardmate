@@ -152,7 +152,9 @@ exercise tolerance, implants, last food and fluid, and from Sabiston a personal 
 bleeding tendency, steroid in the past year, weight loss over six months and snoring with pauses, and from S. Das whether the patient was well before, other and past
 illnesses, family illness, menstrual and obstetric history, and occupation and residence, and from Hamilton Bailey
 recreational drugs and the patient's own idea of the cause. A tree
-that already asks one of these in its own words drops it with `omit: [...]`. All `exposure`, ids prefixed `surg_` so a
+that already asks one of these in its own words drops it with `omit: [...]`; `detailed: [...]`
+and `core: [...]` move a shared slot between the academic and ward tiers, and the injury trees
+spread `TRAUMA_BG` (an AMPLE-sized ward core — `docs/surgical-history.md` §12.1). All `exposure`, ids prefixed `surg_` so a
 tree can carry both these and its own "previous hernia surgery". `surgicalBackground({ acute:
 true })` promotes the last-meal question from the long case to the ward round. Last food and
 fluid is deliberately not a red flag: a red-flag positive raises the safety level of the whole
