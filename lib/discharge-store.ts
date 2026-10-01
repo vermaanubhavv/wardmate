@@ -99,6 +99,15 @@ export async function writeDischargeSection(
     created_by: user.id,
     [column]: value,
   });
+  // The workspace drafts its AI sections in parallel, so a sibling write can create the row
+  // between our select and insert (unique patient_id). The row is a fresh draft: just update it.
+  if (error?.code === "23505") {
+    const { error: upErr } = await supabase
+      .from("discharge_summaries")
+      .update({ [column]: value, updated_at: now })
+      .eq("patient_id", patientId);
+    return upErr ? { ok: false, error: upErr.message } : { ok: true };
+  }
   return error ? { ok: false, error: error.message } : { ok: true };
 }
 
