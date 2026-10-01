@@ -254,8 +254,8 @@ async function routeWithHaiku(
     model: ROUTING_MODEL,
     max_tokens: 700,
     system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
+    // No `effort`: Haiku 4.5 rejects it with a 400, which failed every fallback fragment.
     output_config: {
-      effort: "low",
       format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> },
     },
     messages: [
