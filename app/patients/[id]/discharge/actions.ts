@@ -20,15 +20,26 @@ import type { DischargeCheck } from "@/lib/discharge-checks";
  * The value is already in the section's own shape (see lib/discharge-entities.ts) — the client
  * holds the whole draft and sends back the section the resident just changed. Nothing here
  * interprets it; storage is exactly what the workspace showed.
+ *
+ * `revalidate` is false for the autosave while the resident types: any revalidatePath makes
+ * Next re-render the current page (the whole discharge context) into the action's response,
+ * and the workspace keeps its own draft and ignores it. The workspace revalidates once on the
+ * way out instead (revalidateDischargeAction), so other pages and a return visit read fresh.
  */
 export async function saveDischargeSection(
   patientId: string,
   sectionId: DischargeSectionId,
-  value: unknown
+  value: unknown,
+  revalidate = true
 ): Promise<{ ok: boolean; error?: string }> {
   const result = await writeDischargeSection(patientId, sectionId, value);
-  if (result.ok) revalidatePath(`/patients/${patientId}/discharge`);
+  if (result.ok && revalidate) revalidatePath(`/patients/${patientId}/discharge`);
   return result;
+}
+
+/** The workspace's one revalidation after quiet autosaves — see saveDischargeSection. */
+export async function revalidateDischargeAction(patientId: string): Promise<void> {
+  revalidatePath(`/patients/${patientId}/discharge`);
 }
 
 /** Approve an AI-written section — it cannot be part of a finalised summary until this happens. */

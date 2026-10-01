@@ -27,6 +27,7 @@ import DiagnosisCombobox from "../../diagnosis-combobox";
 import { IconCheck, statusChip, SelChip, OptionRow, Toggle, genBtn, approveBtn } from "../card-kit";
 import {
   saveDischargeSection,
+  revalidateDischargeAction,
   approveDischargeSectionAction,
   finaliseDischargeAction,
   reopenDischargeAction,
@@ -257,7 +258,9 @@ export default function DischargeWorkspace({
       authentication: d.authentication,
     })[section];
 
-  const flushSaves = async (): Promise<boolean> => {
+  // Autosaves skip revalidation (saveDischargeSection); this notes one owed on the way out.
+  const savedQuietly = useRef(false);
+  const flushSaves = async (revalidate = false): Promise<boolean> => {
     if (saveTimer.current) {
       clearTimeout(saveTimer.current);
       saveTimer.current = null;
@@ -267,8 +270,9 @@ export default function DischargeWorkspace({
     setSaveState("saving");
     let ok = true;
     for (const section of sections) {
-      const result = await saveDischargeSection(patientId, section, sectionValue(draftRef.current, section));
+      const result = await saveDischargeSection(patientId, section, sectionValue(draftRef.current, section), revalidate);
       if (result.ok) {
+        if (!revalidate) savedQuietly.current = true;
         setDirty((s) => {
           const n = new Set(s);
           n.delete(section);
@@ -292,7 +296,8 @@ export default function DischargeWorkspace({
   // Anything still unsaved when the resident leaves — flush it without blocking the navigation.
   useEffect(() => {
     return () => {
-      if (dirtyRef.current.size > 0) void flushSaves();
+      if (dirtyRef.current.size > 0) void flushSaves(true);
+      else if (savedQuietly.current) void revalidateDischargeAction(patientId);
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

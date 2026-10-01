@@ -94,7 +94,10 @@ export async function replaceCaseHistorySection(
   if (!user) return { ok: false, error: "Not signed in." };
 
   const clean = lines.map((l) => l.trim()).filter(Boolean);
-  const entryIds = await caseHistoryEntryIds(supabase, patientId);
+  const [entryIds, entryId] = await Promise.all([
+    caseHistoryEntryIds(supabase, patientId),
+    clean.length > 0 ? manualEntryId(supabase, patientId, user.id) : null,
+  ]);
 
   if (entryIds.length > 0) {
     const { error: delErr } = await supabase
@@ -107,7 +110,6 @@ export async function replaceCaseHistorySection(
   }
 
   if (clean.length > 0) {
-    const entryId = await manualEntryId(supabase, patientId, user.id);
     if (!entryId) return { ok: false, error: "Could not open the case history." };
     const now = new Date().toISOString();
     const { error } = await supabase.from("observations").insert(
@@ -144,8 +146,14 @@ export async function replaceCaseHistoryExam(
   const user = await currentUser(supabase);
   if (!user) return { ok: false, error: "Not signed in." };
 
-  const entryIds = await caseHistoryEntryIds(supabase, patientId);
   const labels = entries.map((e) => e.label);
+  const rows = entries
+    .filter((e) => (e.value ?? "").trim())
+    .map((e) => ({ ...e, value: (e.value as string).trim() }));
+  const [entryIds, manualId] = await Promise.all([
+    caseHistoryEntryIds(supabase, patientId),
+    rows.length > 0 ? manualEntryId(supabase, patientId, user.id) : null,
+  ]);
 
   if (entryIds.length > 0 && labels.length > 0) {
     const { error: delErr } = await supabase
@@ -157,12 +165,7 @@ export async function replaceCaseHistoryExam(
     if (delErr) return { ok: false, error: delErr.message };
   }
 
-  const rows = entries
-    .filter((e) => (e.value ?? "").trim())
-    .map((e) => ({ ...e, value: (e.value as string).trim() }));
-
   if (rows.length > 0) {
-    const manualId = await manualEntryId(supabase, patientId, user.id);
     if (!manualId) return { ok: false, error: "Could not open the case history." };
     const now = new Date().toISOString();
     const { error } = await supabase.from("observations").insert(
@@ -223,22 +226,26 @@ export async function applyCompiledCaseHistory(
     .filter((s) => s.text && allowed.has(s.label));
   if (clean.length === 0) return { ok: true };
 
-  const entryIds = await caseHistoryEntryIds(supabase, patientId);
-  const manualId = await manualEntryId(supabase, patientId, user.id);
+  const [entryIds, manualId] = await Promise.all([
+    caseHistoryEntryIds(supabase, patientId),
+    manualEntryId(supabase, patientId, user.id),
+  ]);
   if (!manualId) return { ok: false, error: "Could not open the case history." };
   const now = new Date().toISOString();
 
-  for (const s of clean) {
-    if (entryIds.length > 0) {
-      const { error: delErr } = await supabase
-        .from("observations")
-        .delete()
-        .eq("patient_id", patientId)
-        .in("entry_id", entryIds)
-        .ilike("label", s.label);
-      if (delErr) return { ok: false, error: delErr.message };
-    }
-    const { error } = await supabase.from("observations").insert({
+  // Each section's deletes run together (a label per request — ilike keeps the case-insensitive
+  // match), then one insert for all of them.
+  if (entryIds.length > 0) {
+    const deletes = await Promise.all(
+      clean.map((s) =>
+        supabase.from("observations").delete().eq("patient_id", patientId).in("entry_id", entryIds).ilike("label", s.label)
+      )
+    );
+    const delErr = deletes.find((d) => d.error)?.error;
+    if (delErr) return { ok: false, error: delErr.message };
+  }
+  const { error } = await supabase.from("observations").insert(
+    clean.map((s) => ({
       entry_id: manualId,
       patient_id: patientId,
       kind: "note",
@@ -248,9 +255,9 @@ export async function applyCompiledCaseHistory(
       needs_confirmation: false,
       confirmed_at: now,
       confirmed_by: user.id,
-    });
-    if (error) return { ok: false, error: error.message };
-  }
+    }))
+  );
+  if (error) return { ok: false, error: error.message };
 
   revalidateEverywhere(patientId);
   return { ok: true };
