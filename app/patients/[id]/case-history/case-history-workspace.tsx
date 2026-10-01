@@ -594,6 +594,11 @@ export default function CaseHistoryWorkspace({
     medications: [],
     uncertain: [],
   });
+  // Diagnosis and plan are proposals until approved. One generated or edited and not yet approved
+  // makes that card's Next "Approve & next", so walking on does not silently drop it.
+  const [unapproved, setUnapproved] = useState<Set<"diagnosis" | "plan">>(new Set());
+  const touch = (section: "diagnosis" | "plan") => setUnapproved((u) => new Set(u).add(section));
+  const editDiagnosis = (d: typeof diagnosis) => { setDiagnosis(d); touch("diagnosis"); };
   const [planTab, setPlanTab] = useState<"workup" | "conservative" | "medications">("workup");
   /** Which medication-class chip's drug dropdown is open, if any. */
   const [drugPicker, setDrugPicker] = useState<string | null>(null);
@@ -820,6 +825,7 @@ export default function CaseHistoryWorkspace({
       if (!r.ok) {
         setMessage(data.error ?? "Could not generate.");
       } else if (section === "diagnosis") {
+        touch("diagnosis");
         setDiagnosis((d) => ({
           ...d,
           text: String(data.text ?? ""),
@@ -830,6 +836,7 @@ export default function CaseHistoryWorkspace({
         setNegatives({ text: String(data.text ?? ""), uncertain: data.uncertainPoints ?? [] });
         if (String(data.text ?? "").trim()) mark("negatives");
       } else if (section === "plan") {
+        touch("plan");
         setPlan({
           workup: Array.isArray(data.workup) ? data.workup : [],
           conservative: Array.isArray(data.conservative) ? data.conservative : [],
@@ -862,7 +869,7 @@ export default function CaseHistoryWorkspace({
     });
   }
 
-  function approve(section: "diagnosis" | "plan") {
+  function approve(section: "diagnosis" | "plan", thenNext = false) {
     startTransition(async () => {
       const res =
         section === "diagnosis"
@@ -872,9 +879,15 @@ export default function CaseHistoryWorkspace({
         setMessage(res.error ?? "Could not save.");
         return;
       }
+      setUnapproved((u) => {
+        const n = new Set(u);
+        n.delete(section);
+        return n;
+      });
       setMessage(
         section === "diagnosis" ? "Diagnosis and differentials saved." : "Plan added to the to-do list."
       );
+      if (thenNext) goTo(step + 1);
       router.refresh();
     });
   }
@@ -1477,7 +1490,7 @@ export default function CaseHistoryWorkspace({
             {generating === "diagnosis" ? "Generating…" : diagnosis.text ? "Regenerate with AI" : "Generate with AI"}
           </button>
           <UncertainList points={diagnosis.uncertain} />
-          <Area value={diagnosis.text} onChange={(v) => setDiagnosis({ ...diagnosis, text: v })} rows={3} placeholder="Provisional diagnosis" />
+          <Area value={diagnosis.text} onChange={(v) => editDiagnosis({ ...diagnosis, text: v })} rows={3} placeholder="Provisional diagnosis" />
 
           <div className="flex flex-col gap-2">
             <span className="text-caption font-medium text-muted">Differential diagnosis</span>
@@ -1485,15 +1498,15 @@ export default function CaseHistoryWorkspace({
               <div key={i} className="flex gap-2">
                 <input
                   value={d}
-                  onChange={(e) => setDiagnosis({ ...diagnosis, differentials: diagnosis.differentials.map((x, j) => (j === i ? e.target.value : x)) })}
+                  onChange={(e) => editDiagnosis({ ...diagnosis, differentials: diagnosis.differentials.map((x, j) => (j === i ? e.target.value : x)) })}
                   className="h-10 flex-1 rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
                 />
-                <button type="button" onClick={() => setDiagnosis({ ...diagnosis, differentials: diagnosis.differentials.filter((_, j) => j !== i) })} className="shrink-0 px-2 text-footnote text-muted">
+                <button type="button" onClick={() => editDiagnosis({ ...diagnosis, differentials: diagnosis.differentials.filter((_, j) => j !== i) })} className="shrink-0 px-2 text-footnote text-muted">
                   Remove
                 </button>
               </div>
             ))}
-            <button type="button" onClick={() => setDiagnosis({ ...diagnosis, differentials: [...diagnosis.differentials, ""] })} className="self-start text-footnote font-medium text-accent">
+            <button type="button" onClick={() => editDiagnosis({ ...diagnosis, differentials: [...diagnosis.differentials, ""] })} className="self-start text-footnote font-medium text-accent">
               + Add a differential
             </button>
           </div>
@@ -1542,7 +1555,7 @@ export default function CaseHistoryWorkspace({
         { id: "medications", title: "Medications" },
       ];
       const list = plan[planTab];
-      const setList = (items: string[]) => setPlan({ ...plan, [planTab]: items });
+      const setList = (items: string[]) => { setPlan({ ...plan, [planTab]: items }); touch("plan"); };
       return (
         <>
           <p className="text-caption leading-[1.45] text-muted">
@@ -1592,6 +1605,8 @@ export default function CaseHistoryWorkspace({
     const missing: string[] = [];
     if (complaints.length === 0) missing.push("no complaints recorded");
     if (!diagnosis.text.trim() && !primaryDiagnosis) missing.push("no provisional diagnosis");
+    if (unapproved.has("diagnosis")) missing.push("diagnosis not approved");
+    if (unapproved.has("plan")) missing.push("plan not approved");
     return (
       <>
         <span
@@ -1673,6 +1688,9 @@ export default function CaseHistoryWorkspace({
   }
 
   const pct = Math.round(((step + 1) / STEPS.length) * 100);
+  const approveOnNext =
+    (current.id === "diagnosis" && unapproved.has("diagnosis") && !!diagnosis.text.trim()) ||
+    (current.id === "plan" && unapproved.has("plan") && [...plan.workup, ...plan.conservative, ...plan.medications].some((i) => i.trim()));
 
   const dictationFilled: Record<string, boolean> = {
     complaints: complaints.length > 0,
@@ -1774,8 +1792,13 @@ export default function CaseHistoryWorkspace({
               Done
             </Link>
           ) : (
-            <button type="button" onClick={() => goTo(step + 1)} className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-callout font-semibold text-accent-ink">
-              {dirty.has(current.id) ? "Save & next" : "Next"}
+            <button
+              type="button"
+              onClick={() => (approveOnNext ? approve(current.id as "diagnosis" | "plan", true) : goTo(step + 1))}
+              disabled={approveOnNext && pending}
+              className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-callout font-semibold text-accent-ink disabled:opacity-60"
+            >
+              {approveOnNext ? "Approve & next" : dirty.has(current.id) ? "Save & next" : "Next"}
             </button>
           )}
         </div>
