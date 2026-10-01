@@ -140,6 +140,9 @@ export default function DischargeSheet({
           <p className="text-caption2 italic text-black print:hidden">Not yet approved by the resident.</p>
         )}
 
+        {/* On paper, page 1 ends at the course in hospital; investigations onward start page 2. */}
+        <div className="print:break-before-page" aria-hidden />
+
         {/* 7. Relevant Investigations */}
         {doc.investigations.length > 0 && (
           <>
