@@ -5,7 +5,7 @@ import { mergeDischargeDraft } from "@/lib/discharge-store";
 import { buildDischargeDocument, formatDischargePlainText } from "@/lib/discharge-render";
 import { buildEsicPayload } from "@/lib/esic-payload";
 import { stripPatientHonorific } from "@/lib/patients";
-import PrintButton from "../../note/print-button";
+import DischargePrintButton from "../print-button";
 import CopyNoteButton from "../../note/copy-button";
 import DownloadWordButton from "../download-word-button";
 import CopyForEsic from "../copy-for-esic";
@@ -55,7 +55,7 @@ export default async function DischargePrintPage({ params }: { params: Promise<{
       />
 
       <section className="flex flex-col gap-2 px-4 pb-10 print:hidden">
-        <PrintButton />
+        <DischargePrintButton patientId={id} />
         <DownloadWordButton patientId={id} />
         {context.formularySize > 0 && <CopyForEsic payload={esicPayload} />}
         <CopyNoteButton text={plainText} />

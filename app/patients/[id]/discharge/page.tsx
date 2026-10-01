@@ -4,6 +4,7 @@ import { getDischargeContext } from "@/lib/discharge-data";
 import { mergeDischargeDraft } from "@/lib/discharge-store";
 import { buildCheckContext } from "@/lib/discharge-checks";
 import { stripPatientHonorific } from "@/lib/patients";
+import type { FinalFix } from "@/lib/final-check";
 import DischargeWorkspace from "./discharge-workspace";
 
 /**
@@ -49,6 +50,7 @@ export default async function DischargeWorkspacePage({ params }: { params: Promi
         wardId={context.wardId}
         formularyAvailable={context.formularySize > 0}
         aiReady={aiReady}
+        finalCheck={(context.row?.final_check as { fixes: FinalFix[]; questions: string[] } | null) ?? null}
       />
     </div>
   );
