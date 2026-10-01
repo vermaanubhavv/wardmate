@@ -54,6 +54,10 @@ export default function DischargeSheet({
   return (
     <section className="px-4 pb-4 print:px-0">
       <div className="ios-group px-5 py-5 text-footnote leading-snug text-black print:rounded-none print:border-0 print:p-0 print:shadow-none">
+        {/* Page 1 on paper: heading through the course in hospital. Held to at least one page
+            tall, so investigations onward start page 2; a course that spills onto page 2 is
+            followed straight on, never pushed to page 3. */}
+        <div className="print:min-h-[100vh]">
         {/* Heading */}
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element -- ward-uploaded logo via a
@@ -139,6 +143,8 @@ export default function DischargeSheet({
         {doc.clinicalCourse && !doc.clinicalCourseApproved && (
           <p className="text-caption2 italic text-black print:hidden">Not yet approved by the resident.</p>
         )}
+
+        </div>
 
         {/* 7. Relevant Investigations */}
         {doc.investigations.length > 0 && (
