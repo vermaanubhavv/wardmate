@@ -23,24 +23,38 @@ import type { TaskCategory } from "@/lib/task-category";
  * No key, an error or a timeout: every observation goes through exactly as before.
  */
 
-// ponytail: untuned — give these an eval like the rescue's (scripts/eval-task-open.ts).
+// ponytail: untuned — give it an eval like the rescue's (scripts/eval-task-open.ts).
 const UNSUPPORTED_BELOW = 0.5;
 // Rescue bar from scripts/eval-task-open.ts (2026-10-02, jev-1.13.0, 3 runs, ±0.03 run to run):
 // every job scored >= 0.47 and every non-job <= 0.41 ("MRCP done") across the tuning and
 // held-out sets. A missed job stays hidden while a wrong rescue is one extra line to tick, so
 // the bar sits nearer the non-jobs: "MRCP done" is sometimes rescued, no job is ever missed.
 const RESCUE_AT = 0.4;
-const CATEGORY_AT = 0.7;
+// Category bar from scripts/eval-task-category.ts (2026-10-02, jev-1.13.0, 3 runs): 38/38 tuning
+// and 25/25 held-out at 0.7-0.8, against 27/38 and 17/25 for the keywords alone. Its one
+// confident mistake ("discuss goals of care" as consent) scored 0.61-0.68, so 0.8 keeps it out;
+// below the bar the keywords decide, as before.
+const CATEGORY_AT = 0.8;
 
 export type TaskCategoryJudgment = TaskCategory | "other";
 
-const CATEGORY_CRITERIA: Record<TaskCategoryJudgment, string> = {
-  sampling: "a blood, urine or other sample to send, or a lab test to repeat or chase",
-  radiology: "an imaging study to arrange, repeat or review: X-ray, ultrasound, CT, MRI, Doppler, echo",
-  procedure: "a bedside procedure: drain, dressing, sutures, catheter, tube, aspiration, shifting the patient",
-  consent: "consent paperwork to obtain or complete",
-  other: "any other job: a review, a referral, a drug change, discharge, counselling, monitoring",
+export const CATEGORY_CRITERIA: Record<TaskCategoryJudgment, string> = {
+  sampling: "collecting a specimen or sending, repeating or chasing a lab test: blood, urine, body fluid, swab, culture, bedside glucose",
+  radiology: "an imaging study to arrange, repeat or review: X-ray, ultrasound, CT, MRI, MRCP, Doppler, echo",
+  procedure: "a hands-on task done to the patient: removing or inserting a drain, tube, catheter or sutures, a dressing, a tap, debridement, incision and drainage, shifting to OT",
+  consent: "taking or completing a consent",
+  other: "anything else: a review, a referral, a drug or diet change, discharge, counselling, charting or monitoring, mobilising",
 };
+
+/** The "By type" question, about the plan text at `path`. Exported so
+ *  scripts/eval-task-category.ts scores exactly what production asks. */
+export function categoryQuestion(path: string) {
+  return {
+    type: "choice",
+    instructions: `\`${path}\` is a job from a surgical ward-round plan. Which ward work-stream does the job itself belong to? Judge by the action to be done, not by a word mentioned in passing.`,
+    criteria: CATEGORY_CRITERIA,
+  };
+}
 
 /** The rescue question, about the plan text at `path` in the state. Exported so
  *  scripts/eval-task-open.ts scores exactly what production asks. */
@@ -72,11 +86,7 @@ export async function judgeObservations(observations: ExtractedObservation[]): P
     if (!isActionableTask(o.value_text || o.label)) {
       questions[`open_${i}`] = openQuestion(`observations[${i}].value`);
     }
-    questions[`category_${i}`] = {
-      type: "choice",
-      instructions: `Who carries out the ward job in \`observations[${i}].value\`?`,
-      criteria: CATEGORY_CRITERIA,
-    };
+    questions[`category_${i}`] = categoryQuestion(`observations[${i}].value`);
   });
 
   const state = {
