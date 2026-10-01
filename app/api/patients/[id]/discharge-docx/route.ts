@@ -229,6 +229,10 @@ function buildBody(doc: DischargeDocument, logoBytes: Buffer | null): (Paragraph
   if (doc.clinicalCourse && !doc.clinicalCourseApproved)
     out.push(new Paragraph({ children: [new TextRun({ text: "Not yet approved by the resident.", italics: true, size: 18 })] }));
 
+  // Condition at Discharge — right after the course, matching the printed sheet.
+  out.push(heading("Condition at Discharge"));
+  out.push(body(doc.condition || BLANK));
+
   // 7. Relevant Investigations
   if (doc.investigations.length > 0) {
     out.push(heading("Relevant Investigations and Results"));
@@ -251,10 +255,6 @@ function buildBody(doc: DischargeDocument, logoBytes: Buffer | null): (Paragraph
   out.push(heading("Medications on Discharge"));
   if (doc.medications.length === 0) out.push(body(BLANK));
   doc.medications.forEach((m, i) => out.push(new Paragraph({ children: [plain(`${i + 1}. ${medLine(m)}`)] })));
-
-  // 10. Condition at Discharge
-  out.push(heading("Condition at Discharge"));
-  out.push(body(doc.condition || BLANK));
 
   // 11. Primary Care Actions
   out.push(heading("Primary Care Actions"));

@@ -122,7 +122,7 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   return (
     <div
       className={
-        "px-4 py-2 text-footnote " +
+        "px-4 py-2 text-footnote print:hidden " +
         (online ? "bg-chip text-foreground" : "bg-warn-fg text-accent-ink")
       }
       role="status"

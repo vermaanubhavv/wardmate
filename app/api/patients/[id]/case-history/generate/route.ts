@@ -10,6 +10,7 @@ import {
   generatePlan,
   generateRelevantNegatives,
 } from "@/lib/case-history-ai";
+import { finalCheck } from "@/lib/final-check";
 
 /**
  * A first draft of a case-history AI card: "compile" turns the tapped fragments into prose,
@@ -83,7 +84,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     : digest;
 
   try {
-    if (body.section === "compile") return NextResponse.json(await compileCaseHistory(digest, ctx, admissionPhrase));
+    if (body.section === "compile") {
+      // The finished history gets Sonnet's proofread before the resident sees it — lib/final-check.ts.
+      const compiled = await compileCaseHistory(digest, ctx, admissionPhrase);
+      const checked = await finalCheck(Object.fromEntries(compiled.sections.map((s) => [s.label, s.text])), "case history");
+      return NextResponse.json({
+        ...compiled,
+        sections: compiled.sections.map((s) => ({ ...s, text: checked.fields[s.label] ?? s.text })),
+        uncertainPoints: [...compiled.uncertainPoints, ...checked.questions],
+      });
+    }
     if (body.section === "diagnosis") return NextResponse.json(await generateDiagnosis(withCtx, admissionPhrase));
     if (body.section === "plan") return NextResponse.json(await generatePlan(withCtx, admissionPhrase));
     if (body.section === "negatives")

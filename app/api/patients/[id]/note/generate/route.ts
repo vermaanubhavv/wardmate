@@ -4,6 +4,7 @@ import { plainAiError } from "@/lib/ai-error";
 import { istDayKey } from "@/lib/patient-state";
 import { MANAGEMENT_CHOICES } from "@/lib/patients";
 import { compileProgressNote } from "@/lib/progress-note-ai";
+import { finalCheck } from "@/lib/final-check";
 import { progressNoteConfigFor } from "@/lib/progress-note-config";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { getWardSpecialtyStored } from "@/lib/ward";
@@ -78,7 +79,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       status,
       procedure: patient?.procedure_text ?? null,
     }, noteConfig);
-    return NextResponse.json(compiled);
+    // Sonnet's proofread of the finished note before the resident sees it — lib/final-check.ts.
+    const checked = await finalCheck(
+      { ...compiled.fields, ...Object.fromEntries(compiled.plan.map((p, i) => [`plan ${i + 1}`, p])) },
+      "progress note"
+    );
+    return NextResponse.json({
+      ...compiled,
+      fields: Object.fromEntries(Object.keys(compiled.fields).map((k) => [k, checked.fields[k] ?? compiled.fields[k]])),
+      plan: compiled.plan.map((p, i) => checked.fields[`plan ${i + 1}`] ?? p),
+      uncertainPoints: [...compiled.uncertainPoints, ...checked.questions],
+    });
   } catch (e) {
     return NextResponse.json({ error: plainAiError(e) }, { status: 502 });
   }
