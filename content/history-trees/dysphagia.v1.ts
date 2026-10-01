@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, BAILEY_LOVE, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * DYSPHAGIA — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * DYSPHAGIA — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
  * Adult surgical / medicine ward, north India. Three questions carry most of the weight: solids
  * or liquids, progressive or intermittent, and at what level food sticks. Solids-then-liquids
  * progressing over weeks with weight loss is a mechanical narrowing until shown otherwise.
@@ -12,13 +12,13 @@ import { commonHpi, BAILEY_LOVE, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, SABISTO
  */
 export const dysphagiaV1: HistoryTree = {
   id: "dysphagia",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Difficulty swallowing",
   triggers: ["dysphagia", "difficulty swallowing", "difficulty in swallowing", "food sticking", "food gets stuck", "cannot swallow", "unable to swallow", "trouble swallowing", "nigalne me dikkat", "odynophagia"],
   setting: "Adult surgical / medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
-  references: [MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
+  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
   slots: [
     ...commonHpi("difficulty swallowing"),
     val("hpi", "solids_liquids", "Solids or liquids", "Is the difficulty with solid food, with liquids, or with both?", ["solids", "solid food", "liquids", "water", "both", "roti", "rice", "only solids", "even water", "semi solids"]),
@@ -48,16 +48,26 @@ export const dysphagiaV1: HistoryTree = {
     yn("exposure", "family_cancer", "Family history of gastrointestinal cancer", "Any family history of cancer of the food pipe or stomach?", ["family history", "oesophageal cancer", "stomach cancer", "gastric", "father", "mother", "sibling"], { tier: "detailed" }),
     yn("exposure", "hot_beverages_diet", "Very hot drinks / diet", "Any habit of very hot tea, or a diet low in fruit and vegetables?", ["hot tea", "very hot", "scalding", "diet", "fruit", "vegetables", "pickles", "smoked food"], { tier: "detailed" }),
     yn("exposure", "previous_surgery_radiation", "Previous neck or chest surgery / radiotherapy", "Any previous surgery or radiotherapy to the neck or chest?", ["surgery", "radiotherapy", "radiation", "neck", "chest", "operation", "thyroid surgery"], { tier: "detailed" }),
-    ...surgicalBackground(),
+    // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
+    yn("hpi", "liquids_before_solids", "Liquids harder than solids", "Did the difficulty start with liquids before solids, or are liquids harder to get down than solid food?", ["liquids first", "water first", "liquids harder", "solids easier", "liquids before solids", "paradoxical", "solids first"], { teach: "Das contrasts this order with the usual solids-then-liquids march: when liquids stick first, the weight of solid food helps push past a muscle that will not relax." }),
+    yn("associated", "blood_in_vomit", "Blood in what comes back up", "Has there been any blood, fresh or dark, in the vomit or in what comes back up?", ["blood in vomit", "vomiting blood", "haematemesis", "blood stained", "coffee ground", "dark blood", "no blood in vomit"], { teach: "Das asks about blood in the vomit because it points to an ulcerated or inflamed lining rather than a simple narrowing." }),
+    yn("exposure", "previous_instrumentation", "Previous endoscopy or dilatation", "Has the patient had a tube passed into the food pipe before — an endoscopy, a dilatation, or a feeding tube kept for long?", ["endoscopy", "scopy", "dilatation", "dilated", "bougie", "ryles tube", "feeding tube", "nasogastric tube", "no endoscopy"], { tier: "detailed", teach: "Das lists instrumentation alongside corrosives and radiation as a cause of a benign narrowing, so it belongs in the past history of any dysphagia." }),
+    yn("exposure", "previous_hiatus_vagotomy", "Previous hiatus hernia repair or vagotomy", "Has the patient had an operation for a hiatus hernia or reflux, or a vagotomy for an ulcer?", ["hiatus hernia repair", "fundoplication", "reflux operation", "vagotomy", "ulcer operation", "upper abdominal operation", "no such operation"], { tier: "detailed", teach: "Das names these operations because a repair made too tight, or scarring after vagotomy, can narrow the lower food pipe." }),
+    yn("exposure", "past_diphtheria", "Past diphtheria", "Did the patient ever have diphtheria, or a throat infection followed by nasal speech or fluids coming out of the nose?", ["diphtheria", "throat infection", "nasal voice", "nasal speech", "fluids through nose", "palate paralysis", "no diphtheria"], { tier: "detailed", teach: "Das lists diphtheria in the past history because it can weaken the palate and leave a swallowing difficulty that is neurological rather than mechanical." }),
+    // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
+    yn("red_flag", "retching_chest_pain", "Severe chest pain after retching", "Did severe chest pain going through to the back start after a bout of forceful vomiting or retching?", ["chest pain after vomiting", "pain after retching", "pain to the back", "no chest pain after vomiting"], { teach: "Hamilton Bailey describes rupture of the food pipe after retching as severe left chest pain to the back, often with blood in the vomit, and notes that missing it leads to death." }),
+    yn("associated", "early_satiety_fullness", "Early fullness and ache after meals", "Does the patient feel full early or bloated after meals, with a dull chest ache that eases on belching or bringing food up?", ["full early", "fullness after meals", "bloated", "chest ache after food", "relieved by belching", "no fullness"], { tier: "detailed", teach: "Hamilton Bailey describes hiatus hernia as reflux and dysphagia with early satiety, post-meal fullness and a dull chest ache relieved by vomiting, belching or regurgitation." }),
+    yn("exposure", "preserved_food_diet", "Salted, smoked or pickled food", "Does the patient often eat salted, smoked or pickled food, or dried or preserved fish or meat?", ["salted food", "smoked", "pickle", "dried fish", "preserved meat", "no preserved food"], { tier: "detailed", teach: "Hamilton Bailey lists a diet high in nitrosamines alongside smoking, alcohol and lye ingestion as risk factors for cancer of the food pipe." }),
+    ...surgicalBackground({ omit: ["surg_weight_loss", "surg_family_illness"] }),
   ],
   differentials: [
-    { id: "carcinoma", name: "Oesophageal or gastro-oesophageal carcinoma", pointers: ["progressive_solids_to_liquids", "weight_loss_significant", "tobacco_alcohol", "hoarseness_with_dysphagia"], discriminators: ["progressive_solids_to_liquids", "weight_loss_significant", "tobacco_alcohol", "hoarseness_with_dysphagia", "solids_liquids", "level", "neck_swelling", "family_cancer"] },
-    { id: "benign_stricture", name: "Benign stricture (reflux or corrosive)", pointers: ["heartburn", "corrosive_history", "solids_liquids"], discriminators: ["heartburn", "corrosive_history", "progression_pattern", "weight_appetite", "solids_liquids"] },
-    { id: "achalasia", name: "Achalasia", pointers: ["solids_liquids", "regurgitation", "progression_pattern"], discriminators: ["solids_liquids", "regurgitation", "progression_pattern", "nocturnal_cough_aspiration", "level", "duration"] },
+    { id: "carcinoma", name: "Oesophageal or gastro-oesophageal carcinoma", pointers: ["progressive_solids_to_liquids", "weight_loss_significant", "tobacco_alcohol", "hoarseness_with_dysphagia"], discriminators: ["progressive_solids_to_liquids", "weight_loss_significant", "tobacco_alcohol", "hoarseness_with_dysphagia", "solids_liquids", "level", "neck_swelling", "family_cancer", "liquids_before_solids", "blood_in_vomit", "preserved_food_diet"] },
+    { id: "benign_stricture", name: "Benign stricture (reflux or corrosive)", pointers: ["heartburn", "corrosive_history", "solids_liquids"], discriminators: ["heartburn", "corrosive_history", "progression_pattern", "weight_appetite", "solids_liquids", "blood_in_vomit", "previous_instrumentation", "previous_hiatus_vagotomy", "early_satiety_fullness"] },
+    { id: "achalasia", name: "Achalasia", pointers: ["solids_liquids", "regurgitation", "progression_pattern"], discriminators: ["solids_liquids", "regurgitation", "progression_pattern", "nocturnal_cough_aspiration", "level", "duration", "liquids_before_solids"] },
     { id: "web_ring", name: "Oesophageal web or ring", pointers: ["progression_pattern", "anaemia_symptoms", "level"], discriminators: ["progression_pattern", "anaemia_symptoms", "level", "solids_liquids", "weight_appetite"] },
     { id: "pharyngeal_pouch", name: "Pharyngeal pouch", pointers: ["gurgling_neck_swelling", "regurgitation", "level"], discriminators: ["gurgling_neck_swelling", "regurgitation", "level", "nocturnal_cough_aspiration"] },
-    { id: "neurological", name: "Neurological or bulbar dysphagia", pointers: ["neuro_symptoms", "nocturnal_cough_aspiration", "level"], discriminators: ["neuro_symptoms", "nocturnal_cough_aspiration", "level", "solids_liquids", "onset_mode", "aspiration_pneumonia"] },
-    { id: "extrinsic", name: "Extrinsic compression", pointers: ["neck_swelling", "chest_symptoms", "hoarseness"], discriminators: ["neck_swelling", "chest_symptoms", "hoarseness", "level", "previous_surgery_radiation"] },
+    { id: "neurological", name: "Neurological or bulbar dysphagia", pointers: ["neuro_symptoms", "nocturnal_cough_aspiration", "level"], discriminators: ["neuro_symptoms", "nocturnal_cough_aspiration", "level", "solids_liquids", "onset_mode", "aspiration_pneumonia", "past_diphtheria"] },
+    { id: "extrinsic", name: "Extrinsic compression", pointers: ["neck_swelling", "chest_symptoms", "hoarseness"], discriminators: ["neck_swelling", "chest_symptoms", "hoarseness", "level", "previous_surgery_radiation", "previous_hiatus_vagotomy", "early_satiety_fullness"] },
     { id: "infective", name: "Infective oesophagitis", pointers: ["odynophagia", "immunocompromise"], discriminators: ["odynophagia", "immunocompromise", "duration", "solids_liquids", "weight_appetite"] },
   ],
   output: {

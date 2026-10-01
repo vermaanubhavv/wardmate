@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, BAILEY_LOVE, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, rce, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, rce, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * HAEMATEMESIS / UPPER GI BLEEDING — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * HAEMATEMESIS / UPPER GI BLEEDING — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
  * Adult medicine / surgical ward, north India. Two questions run in parallel: how much has been
  * lost and is the patient compensating, and where is it coming from. Differentials: peptic
  * ulcer, oesophageal or gastric varices, Mallory-Weiss tear, erosive gastritis (painkillers,
@@ -10,13 +10,15 @@ import { commonHpi, BAILEY_LOVE, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, rce,
  */
 export const haematemesisV1: HistoryTree = {
   id: "haematemesis",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Vomiting of blood",
   triggers: ["haematemesis", "hematemesis", "vomiting blood", "vomited blood", "blood in vomit", "coffee ground vomit", "coffee ground", "khoon ki ulti", "upper gi bleed", "blood in vomitus"],
   setting: "Adult medicine / surgical ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
+    DAS_CLINICAL_SURGERY,
+    HAMILTON_BAILEY,
     BAILEY_LOVE,
     SABISTON,
     rce("The rational clinical examination. Is this patient hypovolemic?", 1999, "10086438"),
@@ -49,15 +51,25 @@ export const haematemesisV1: HistoryTree = {
     yn("exposure", "alcohol", "Alcohol", "How much alcohol, and when was the last drink?", ["alcohol", "drinking", "last drink", "daily", "binge", "desi", "whisky", "quarter"]),
     yn("exposure", "h_pylori_family_cancer", "Family history of ulcer or stomach cancer", "Any family history of peptic ulcer or stomach cancer?", ["family history", "ulcer", "stomach cancer", "gastric cancer", "father", "mother", "sibling"], { tier: "detailed" }),
     yn("exposure", "caustic_traditional", "Corrosive or traditional remedies", "Any corrosive substance swallowed, or traditional or herbal remedies taken?", ["corrosive", "acid", "caustic", "herbal", "ayurvedic", "traditional", "desi dawa", "swallowed"], { tier: "detailed" }),
-    ...surgicalBackground({ acute: true }),
+    // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
+    yn("exposure", "iron_bismuth", "Iron or bismuth tablets", "Is the patient taking iron or bismuth tablets that could blacken the stool?", ["iron tablets", "iron", "bismuth", "haematinic", "black stools from iron", "no iron"], { teach: "Das points out that iron and bismuth blacken the stool, which is formed and not sticky, unlike true melaena." }),
+    yn("exposure", "smoking", "Smoking", "Does the patient smoke, and how much?", ["smoking", "smoker", "smokes", "bidi", "cigarette", "tobacco", "non smoker", "no smoking"], { tier: "detailed", teach: "Das records smoking in every abdominal case because it bears on peptic ulcer and its perforation." }),
+    val("hpi", "pain_periodicity", "Periodicity of earlier pain", "Did the earlier stomach pain come in spells with pain-free months, and has that pattern changed to constant pain?", ["spells", "pain free months", "seasonal", "periodicity", "now constant", "lost periodicity", "never had pain"], { tier: "detailed", teach: "Das treats loss of the old periodic pattern of ulcer pain as a reason to think beyond a simple ulcer." }),
+    yn("associated", "stale_food_vomiting", "Vomiting of food eaten long before", "Has the patient vomited large amounts containing food eaten many hours or a day earlier?", ["undigested food", "food eaten yesterday", "stale food", "copious vomiting", "projectile", "evening vomiting", "no such vomiting"], { tier: "detailed", teach: "Das reads vomit containing the previous day's food as a sign of an outlet blocked by an ulcer or a growth." }),
+    val("exposure", "dietary_habit", "Dietary habit", "Are the meals regular, and is the food usually very spicy?", ["irregular meals", "skips meals", "odd hours", "spicy food", "chillies", "tea", "coffee", "regular meals"], { tier: "detailed", teach: "Das notes that peptic ulcer patients commonly keep irregular, spicy meals." }),
+    // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
+    yn("exposure", "stress_illness", "Burn, head injury or serious illness", "Is the patient being treated for a burn, a head injury or another serious illness?", ["burns", "head injury", "icu", "ventilator", "sepsis", "major surgery", "critically ill", "no serious illness"], { tier: "detailed", teach: "Hamilton Bailey lists burns, head injury and other severe stress among the causes of stomach and duodenal ulceration." }),
+    yn("exposure", "kidney_failure", "Kidney failure", "Is there known kidney failure, or is the patient on dialysis?", ["kidney failure", "renal failure", "ckd", "dialysis", "high creatinine", "no kidney disease"], { tier: "detailed", teach: "Hamilton Bailey lists kidney failure among the illnesses to ask about when bleeding may come from a clotting fault." }),
+    yn("exposure", "recent_abdominal_injury", "Abdominal injury in recent weeks", "Was there an injury to the abdomen in the weeks before the bleeding?", ["injury", "blow to abdomen", "accident", "fall", "liver injury", "trauma", "no injury"], { tier: "detailed", teach: "Hamilton Bailey notes that a liver injury can bleed into the bile ducts weeks later, with upper gut bleeding, right upper pain and jaundice." }),
+    ...surgicalBackground({ acute: true, omit: ["surg_weight_loss"] }),
   ],
   differentials: [
-    { id: "peptic_ulcer", name: "Peptic ulcer", pointers: ["abdominal_pain", "nsaid_steroid_anticoagulant", "previous_bleed_ulcer", "melaena"], discriminators: ["abdominal_pain", "nsaid_steroid_anticoagulant", "previous_bleed_ulcer", "appearance", "h_pylori_family_cancer"] },
+    { id: "peptic_ulcer", name: "Peptic ulcer", pointers: ["abdominal_pain", "nsaid_steroid_anticoagulant", "previous_bleed_ulcer", "melaena"], discriminators: ["abdominal_pain", "nsaid_steroid_anticoagulant", "previous_bleed_ulcer", "appearance", "h_pylori_family_cancer", "smoking", "pain_periodicity", "stale_food_vomiting", "dietary_habit", "stress_illness"] },
     { id: "varices", name: "Oesophageal or gastric varices", pointers: ["known_liver_disease", "jaundice_swelling", "confusion", "alcohol"], discriminators: ["known_liver_disease", "jaundice_swelling", "confusion", "alcohol", "amount", "appearance"] },
     { id: "mallory_weiss", name: "Mallory-Weiss tear", pointers: ["retching_first"], discriminators: ["retching_first", "amount", "alcohol", "appearance"] },
-    { id: "erosive_gastritis", name: "Erosive gastritis", pointers: ["nsaid_steroid_anticoagulant", "alcohol", "abdominal_pain"], discriminators: ["nsaid_steroid_anticoagulant", "alcohol", "abdominal_pain", "amount", "caustic_traditional"] },
-    { id: "malignancy", name: "Gastric or oesophageal malignancy", pointers: ["weight_appetite_dysphagia", "h_pylori_family_cancer"], discriminators: ["weight_appetite_dysphagia", "h_pylori_family_cancer", "duration", "abdominal_pain", "appearance"] },
-    { id: "coagulopathy", name: "Bleeding disorder / anticoagulation", pointers: ["bleeding_elsewhere", "nsaid_steroid_anticoagulant"], discriminators: ["bleeding_elsewhere", "nsaid_steroid_anticoagulant", "known_liver_disease"] },
+    { id: "erosive_gastritis", name: "Erosive gastritis", pointers: ["nsaid_steroid_anticoagulant", "alcohol", "abdominal_pain"], discriminators: ["nsaid_steroid_anticoagulant", "alcohol", "abdominal_pain", "amount", "caustic_traditional", "stress_illness"] },
+    { id: "malignancy", name: "Gastric or oesophageal malignancy", pointers: ["weight_appetite_dysphagia", "h_pylori_family_cancer"], discriminators: ["weight_appetite_dysphagia", "h_pylori_family_cancer", "duration", "abdominal_pain", "appearance", "pain_periodicity", "stale_food_vomiting"] },
+    { id: "coagulopathy", name: "Bleeding disorder / anticoagulation", pointers: ["bleeding_elsewhere", "nsaid_steroid_anticoagulant"], discriminators: ["bleeding_elsewhere", "nsaid_steroid_anticoagulant", "known_liver_disease", "kidney_failure"] },
     { id: "swallowed_blood", name: "Swallowed blood from nose or chest", pointers: ["nose_throat_bleed"], discriminators: ["nose_throat_bleed", "appearance", "amount", "melaena"] },
   ],
   output: {

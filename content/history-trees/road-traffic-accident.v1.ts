@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { ATLS, commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, surgicalBackground, TINTINALLI, val, yn } from "@/content/history-trees/_helpers";
+import { ATLS, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, surgicalBackground, TINTINALLI, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ROAD TRAFFIC ACCIDENT / MULTIPLE INJURIES — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * ROAD TRAFFIC ACCIDENT / MULTIPLE INJURIES — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
  * Emergency department, north India. The AMPLE history (allergies, medicines, past history,
  * last meal, events) wrapped around the mechanism, because the mechanism predicts the injuries
  * before the examination finds them. The local casemix is dominated by two-wheeler riders
@@ -16,13 +16,13 @@ import { ATLS, commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, surgicalBackground, T
  */
 export const roadTrafficAccidentV1: HistoryTree = {
   id: "road_traffic_accident",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Road traffic accident / multiple injuries",
   triggers: ["road traffic accident", "rta", "road accident", "road traffic injury", "motor vehicle accident", "mva", "polytrauma", "multiple injuries", "multiple trauma", "bike accident", "motorcycle accident", "two wheeler accident", "scooter accident", "car accident", "truck accident", "tractor accident", "bus accident", "hit by vehicle", "hit by a vehicle", "knocked down by vehicle", "pedestrian hit", "vehicle overturned", "gaadi se takkar", "bike se gira", "gaadi palat gayi"],
   setting: "Emergency department, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
-  references: [ATLS, TINTINALLI, MACLEODS, HUTCHISONS],
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
+  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, ATLS, TINTINALLI, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("injury"),
     val("informant", "scene_informant", "Who brought the patient", "Who brought the patient — ambulance crew, police, a bystander or family — and did anyone see the crash happen?", ["ambulance", "108", "police", "bystander", "passer by", "family", "brought by", "witnessed", "no one saw", "found on road"]),
@@ -56,21 +56,29 @@ export const roadTrafficAccidentV1: HistoryTree = {
     yn("red_flag", "intoxicated_at_crash", "Alcohol or drugs", "Had the patient taken alcohol or any drug before the crash?", ["alcohol", "drunk", "daru", "sharab", "smell of alcohol", "intoxicated", "drugs", "under influence"], { teach: "Intoxication blunts pain and dulls consciousness, so a serious head, abdominal or spinal injury can be hidden behind what looks like drunkenness." }),
     PREGNANCY,
     // Background: AMPLE and the rest
+    // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
+    yn("associated", "haemoptysis_crash", "Coughing up blood", "Has the patient coughed up any blood since the crash?", ["coughed blood", "coughing blood", "blood in sputum", "haemoptysis", "blood in cough", "no blood in cough"], { teach: "Das says the patient must always be asked whether blood has been coughed up after a chest injury, as it points to injury of the lung itself." }),
+    yn("associated", "blood_in_vomit_crash", "Blood in the vomit", "Was there blood in anything vomited after the crash?", ["blood in vomit", "vomited blood", "bloody vomit", "coffee coloured vomit", "khoon ki ulti", "no blood in vomit"], { teach: "Das asks what was vomited after an injury and whether it contained blood, as the content points towards the injured organ." }),
+    val("associated", "urge_to_void", "Urge to pass urine", "Since the crash, is there a strong urge to pass urine with only drops of blood coming, or no urge to pass urine at all?", ["strong urge", "urge but cannot pass", "only drops of blood", "drops of blood", "no urge", "no desire to pass urine", "normal urge"], { tier: "detailed", teach: "Das separates the two: a strong urge with only drops of blood points towards a tear outside the peritoneum or in the urethra, while no urge at all raises a bladder tear into the abdomen." }),
+    val("hpi", "body_impact_point", "Where on the body the blow landed", "Where exactly on the body did the blow land, and what struck it?", ["struck on", "hit on", "blow to", "handlebar", "steering wheel", "dashboard", "flank", "left side", "right side", "upper abdomen", "lower abdomen", "ribs"], { teach: "Das asks for the exact spot where the blow struck, because the organ lying beneath that spot is the most likely to be hurt." }),
+    // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
+    yn("hpi", "airbag_deployed", "Airbags opened", "Did the airbags open in the vehicle?", ["airbag", "airbags opened", "airbag deployed", "no airbag", "airbags did not open"], { tier: "detailed", teach: "Hamilton Bailey lists airbag deployment among the crash details to ask, because the force it signals points the examiner to the face and chest." }),
+    yn("hpi", "vehicle_damage", "Damage to the vehicle", "How badly was the vehicle damaged — was the cabin crushed inwards or the steering wheel bent?", ["vehicle damaged", "cabin crushed", "intrusion", "steering wheel bent", "dashboard", "badly damaged", "minor damage", "no damage"], { tier: "detailed", teach: "Hamilton Bailey asks about deformity of the vehicle because the damage to it reflects the energy that reached the occupant and directs the search for hidden injuries." }),
     ...surgicalBackground({ acute: true }),
     yn("exposure", "crash_cause", "Why the crash happened", "Was there giddiness, a blackout, chest pain, a fit, or low sugar before the crash, or did the patient lose control for another reason?", ["giddiness", "blackout", "fainted", "chest pain", "fit", "seizure", "low sugar", "hypoglycaemia", "fell asleep", "lost control", "brakes failed", "pothole"], { teach: "A medical event at the wheel can cause the crash, and the injuries then distract from the illness that started it." }),
     yn("exposure", "tetanus_status", "Tetanus immunisation", "When was the last tetanus immunisation, and is it known at all?", ["tetanus", "tt", "tetanus injection", "last tetanus", "not known", "never"], { tier: "detailed" }),
   ],
   differentials: [
-    { id: "tbi", name: "Traumatic brain injury", pointers: ["consciousness_falling", "consciousness_lost", "vomiting_after", "helmet_belt_worn"], discriminators: ["consciousness_falling", "consciousness_lost", "vomiting_after", "helmet_belt_worn", "intoxicated_at_crash", "surg_blood_thinners"] },
+    { id: "tbi", name: "Traumatic brain injury", pointers: ["consciousness_falling", "consciousness_lost", "vomiting_after", "helmet_belt_worn"], discriminators: ["consciousness_falling", "consciousness_lost", "vomiting_after", "helmet_belt_worn", "intoxicated_at_crash", "surg_blood_thinners", "vehicle_damage"] },
     { id: "spinal_injury", name: "Cervical spine or spinal cord injury", pointers: ["spinal_deficit", "neck_pain_crash", "high_energy_crash"], discriminators: ["spinal_deficit", "neck_pain_crash", "high_energy_crash", "patient_position", "consciousness_lost"] },
-    { id: "pneumo_haemothorax", name: "Pneumothorax or haemothorax", pointers: ["breathing_threat", "chest_injury_symptoms"], discriminators: ["breathing_threat", "chest_injury_symptoms", "bleeding_shock_signs", "speed_impact", "crash_mechanism"] },
-    { id: "chest_wall", name: "Rib fractures or flail segment", pointers: ["chest_injury_symptoms", "breathing_threat", "trapped_crushed"], discriminators: ["chest_injury_symptoms", "breathing_threat", "trapped_crushed", "helmet_belt_worn", "speed_impact"] },
-    { id: "abdominal_bleeding", name: "Intra-abdominal bleeding (liver, spleen, bowel)", pointers: ["abdominal_injury_symptoms", "bleeding_shock_signs", "high_energy_crash"], discriminators: ["abdominal_injury_symptoms", "bleeding_shock_signs", "helmet_belt_worn", "crash_mechanism", "intoxicated_at_crash", "time_since_injury"] },
-    { id: "pelvic_fracture", name: "Pelvic fracture with bleeding", pointers: ["pelvic_injury_signs", "bleeding_shock_signs", "trapped_crushed"], discriminators: ["pelvic_injury_signs", "bleeding_shock_signs", "urine_after", "patient_position", "high_energy_crash"] },
-    { id: "urethral_bladder", name: "Urethral or bladder injury", pointers: ["urine_after", "pelvic_injury_signs"], discriminators: ["urine_after", "pelvic_injury_signs", "abdominal_injury_symptoms", "intoxicated_at_crash"] },
+    { id: "pneumo_haemothorax", name: "Pneumothorax or haemothorax", pointers: ["breathing_threat", "chest_injury_symptoms"], discriminators: ["breathing_threat", "chest_injury_symptoms", "bleeding_shock_signs", "speed_impact", "crash_mechanism", "haemoptysis_crash"] },
+    { id: "chest_wall", name: "Rib fractures or flail segment", pointers: ["chest_injury_symptoms", "breathing_threat", "trapped_crushed"], discriminators: ["chest_injury_symptoms", "breathing_threat", "trapped_crushed", "helmet_belt_worn", "speed_impact", "haemoptysis_crash", "body_impact_point", "airbag_deployed", "vehicle_damage"] },
+    { id: "abdominal_bleeding", name: "Intra-abdominal bleeding (liver, spleen, bowel)", pointers: ["abdominal_injury_symptoms", "bleeding_shock_signs", "high_energy_crash"], discriminators: ["abdominal_injury_symptoms", "bleeding_shock_signs", "helmet_belt_worn", "crash_mechanism", "intoxicated_at_crash", "time_since_injury", "blood_in_vomit_crash", "body_impact_point", "vehicle_damage"] },
+    { id: "pelvic_fracture", name: "Pelvic fracture with bleeding", pointers: ["pelvic_injury_signs", "bleeding_shock_signs", "trapped_crushed"], discriminators: ["pelvic_injury_signs", "bleeding_shock_signs", "urine_after", "patient_position", "high_energy_crash", "vehicle_damage"] },
+    { id: "urethral_bladder", name: "Urethral or bladder injury", pointers: ["urine_after", "pelvic_injury_signs"], discriminators: ["urine_after", "pelvic_injury_signs", "abdominal_injury_symptoms", "intoxicated_at_crash", "urge_to_void"] },
     { id: "long_bone", name: "Long bone fracture, open or closed", pointers: ["limb_deformity", "open_fracture"], discriminators: ["limb_deformity", "open_fracture", "external_bleeding", "time_since_injury", "prehospital_care", "tetanus_status"] },
     { id: "crush_injury", name: "Crush injury with muscle breakdown or compartment swelling", pointers: ["trapped_crushed", "limb_deformity"], discriminators: ["trapped_crushed", "limb_deformity", "urine_after", "time_since_injury", "crash_mechanism"] },
-    { id: "facial_airway", name: "Facial injury threatening the airway", pointers: ["facial_injury", "breathing_threat"], discriminators: ["facial_injury", "breathing_threat", "consciousness_falling", "helmet_belt_worn"] },
+    { id: "facial_airway", name: "Facial injury threatening the airway", pointers: ["facial_injury", "breathing_threat"], discriminators: ["facial_injury", "breathing_threat", "consciousness_falling", "helmet_belt_worn", "airbag_deployed"] },
     { id: "intoxication_masking", name: "Intoxication masking an injury", pointers: ["intoxicated_at_crash"], discriminators: ["intoxicated_at_crash", "consciousness_falling", "abdominal_injury_symptoms", "spinal_deficit", "scene_informant"] },
     { id: "medical_cause_crash", name: "A medical event that caused the crash", pointers: ["crash_cause"], discriminators: ["crash_cause", "scene_informant", "consciousness_lost", "surg_regular_drugs"] },
   ],

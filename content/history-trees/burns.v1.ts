@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { ATLS, BAILEY_LOVE, commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { ATLS, BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BURNS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * BURNS — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
  * Burns and plastic surgery unit, north India, where kitchen flame burns, kerosene stoves and
  * electrical injuries dominate. The history is short and specific: what burned, for how long,
  * in what space, what was poured on it afterwards, and the exact time it happened — that time
@@ -13,13 +13,13 @@ import { ATLS, BAILEY_LOVE, commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, surgical
  */
 export const burnsV1: HistoryTree = {
   id: "burns",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Burns",
   triggers: ["burn", "burns", "burnt", "scald", "flame burn", "fire", "electric burn", "electrocution", "chemical burn", "acid", "jal gaya", "stove burst", "kerosene", "boiling water"],
   setting: "Burns and plastic surgery unit, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
-  references: [BAILEY_LOVE, MACLEODS, HUTCHISONS, ATLS],
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
+  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, BAILEY_LOVE, MACLEODS, HUTCHISONS, ATLS],
   slots: [
     ...commonHpi("burn"),
     val("hpi", "time_of_injury", "Exact time of the burn", "At what time did the burn happen, and how many hours have passed since?", ["time", "hours ago", "this morning", "last night", "am", "pm", "since", "o'clock", "minutes ago"], { numeric: true, teach: "Every calculation that follows a burn is counted from the time of injury, not from the time of arrival." }),
@@ -45,16 +45,18 @@ export const burnsV1: HistoryTree = {
     // A burn goes to theatre for escharotomy or debridement on the day it arrives, so the
     // pre-operative background is asked acute: last food and fluid is a ward-round question
     // here, not a long-case one.
-    ...surgicalBackground({ acute: true }),
+    // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
+    yn("red_flag", "chemical_swallowed", "Chemical swallowed", "Was any of the chemical swallowed, especially by a child?", ["swallowed", "drank", "ingested", "acid", "harpic", "phenyl", "cleaning liquid", "lye", "caustic", "not swallowed"], { teach: "Hamilton Bailey describes chemical burns of the food pipe, usually in children who swallow household cleaners, which can later narrow the gullet." }),
+    ...surgicalBackground({ acute: true, omit: ["surg_other_illnesses"] }),
     PREGNANCY,
   ],
   differentials: [
     { id: "flame_burn", name: "Flame burn", pointers: ["agent", "closed_space", "body_areas"], discriminators: ["agent", "closed_space", "airway_symptoms", "duration_contact", "body_areas"] },
     { id: "scald", name: "Scald", pointers: ["agent", "duration_contact"], discriminators: ["agent", "duration_contact", "body_areas", "circumstances", "first_aid"] },
     { id: "electrical", name: "Electrical injury", pointers: ["electrical_high_voltage", "urine_output"], discriminators: ["electrical_high_voltage", "urine_output", "other_injuries", "body_areas", "pain_sensation"] },
-    { id: "chemical", name: "Chemical burn", pointers: ["chemical_ongoing", "agent"], discriminators: ["chemical_ongoing", "agent", "first_aid", "body_areas", "time_of_injury"] },
+    { id: "chemical", name: "Chemical burn", pointers: ["chemical_ongoing", "agent"], discriminators: ["chemical_ongoing", "agent", "first_aid", "body_areas", "time_of_injury", "chemical_swallowed"] },
     { id: "contact_friction", name: "Contact or friction burn", pointers: ["agent", "body_areas"], discriminators: ["agent", "body_areas", "duration_contact", "other_injuries", "circumstances"] },
-    { id: "inhalational", name: "Inhalational injury", pointers: ["airway_symptoms", "closed_space", "breathing_difficulty"], discriminators: ["airway_symptoms", "closed_space", "breathing_difficulty", "agent", "time_of_injury"] },
+    { id: "inhalational", name: "Inhalational injury", pointers: ["airway_symptoms", "closed_space", "breathing_difficulty"], discriminators: ["airway_symptoms", "closed_space", "breathing_difficulty", "agent", "time_of_injury", "chemical_swallowed"] },
   ],
   output: {
     durationSlot: "duration",

@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, BROWSE, HUTCHISONS, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * GROIN SWELLING — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * GROIN SWELLING — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
  * Adult surgical ward, north India. The history separates a hernia from everything else that
  * sits in the groin, and then asks the only question that changes the timing: does it still go
  * back. Differentials: inguinal hernia, femoral hernia, inguinal lymphadenopathy (reactive,
@@ -11,13 +11,13 @@ import { commonHpi, BROWSE, HUTCHISONS, MACLEODS, SABISTON, surgicalBackground, 
  */
 export const groinSwellingV1: HistoryTree = {
   id: "groin_swelling",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Groin swelling",
   triggers: ["groin swelling", "swelling in groin", "inguinal swelling", "inguinal hernia", "hernia", "lump in groin", "groin lump", "swelling in the groin", "bulge in groin", "femoral swelling"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
-  references: [MACLEODS, HUTCHISONS, BROWSE, SABISTON],
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
+  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BROWSE, SABISTON],
   slots: [
     ...commonHpi("groin swelling"),
     val("hpi", "side", "Which side", "Which side — left, right, or both?", ["left", "right", "both", "one side", "bilateral"]),
@@ -36,25 +36,33 @@ export const groinSwellingV1: HistoryTree = {
     yn("associated", "pulsatile", "Whether the swelling pulsates", "Does the swelling pulsate or throb under the fingers?", ["pulsates", "pulsatile", "throbbing", "beats", "expansile"], { tier: "detailed" }),
     // Red flags
     yn("red_flag", "irreducible_painful", "No longer reducible, painful and tense", "Has a swelling that used to go back become painful, tense, and impossible to push back?", ["no longer goes back", "irreducible", "cannot push back", "painful", "tense", "hard", "suddenly", "stuck"], { teach: "A hernia that used to reduce and now will not, with pain, marks trapped contents, and the blood supply is the thing at risk." }),
-    yn("red_flag", "obstruction_features", "Vomiting with absolute constipation and distension", "Along with the swelling, has the patient stopped passing stool and flatus, with vomiting and a distended abdomen?", ["vomiting", "no stool", "no flatus", "absolute constipation", "distension", "obstipation", "colicky pain", "bilious"], { teach: "A groin swelling with vomiting and no stool or flatus describes bowel obstructed inside the sac, which is a theatre problem rather than a clinic one." }),
+    yn("red_flag", "obstruction_features", "Vomiting with absolute constipation and distension", "Along with the swelling, has the patient stopped passing stool and flatus, with vomiting and a distended abdomen?", ["vomiting", "no stool", "no flatus", "absolute constipation", "distension", "obstipation", "colicky pain", "bilious", "faecal vomiting", "foul smelling vomit"], { teach: "A groin swelling with vomiting and no stool or flatus describes bowel obstructed inside the sac, which is a theatre problem rather than a clinic one." }),
     yn("red_flag", "skin_changes_over_swelling", "Redness, warmth or blackening over the swelling", "Any redness, warmth, blackening, or severe tenderness of the skin over the swelling?", ["redness", "warm", "blackening", "black", "severe tenderness", "discolouration", "necrosis", "shiny"], { teach: "Skin changes over an irreducible groin swelling suggest the contents have been compromised for some time." }),
     yn("red_flag", "femoral_position", "Swelling below the groin crease in a woman", "Is the swelling below and lateral to the pubic tubercle, particularly in a woman?", ["below", "lateral", "pubic tubercle", "femoral", "woman", "female", "small", "thigh", "below the crease"], { teach: "A femoral hernia sits below the groin crease, is commoner in women, and strangulates far more readily than an inguinal one." }),
     yn("red_flag", "sudden_appearance_pain", "Sudden appearance with severe pain", "Did the swelling appear suddenly, with severe pain, during lifting or straining?", ["sudden", "suddenly", "severe pain", "while lifting", "straining", "appeared", "abrupt", "cried out"], { teach: "A swelling that appears suddenly and painfully during a strain is more likely to have caught its contents from the outset." }),
     yn("red_flag", "hard_matted_nodes", "Hard or matted lumps with weight loss", "Are the lumps hard, matted or fixed, with weight loss or lumps elsewhere?", ["hard", "matted", "fixed", "multiple", "weight loss", "lumps elsewhere", "rubbery", "not tender"], { teach: "Hard or matted groin nodes with weight loss raise tuberculosis or a malignant deposit rather than a simple reactive gland." }),
     yn("red_flag", "cold_abscess_features", "Painless fluctuant swelling with back pain", "Is the swelling soft and painless without redness, alongside back pain or night sweats?", ["painless", "fluctuant", "soft", "no redness", "back pain", "night sweats", "cold abscess", "psoas"], { tier: "detailed", teach: "A painless fluctuant groin swelling without redness, with back pain, raises pus tracking down from a tuberculous spine." }),
     yn("exposure", "occupation_straining", "Heavy work / chronic cough / straining", "Any heavy lifting at work, chronic cough, constipation, or straining to pass urine?", ["heavy lifting", "labourer", "farmer", "chronic cough", "constipation", "straining", "prostate", "weight lifting", "load"]),
-    yn("exposure", "previous_hernia_surgery", "Previous hernia or groin surgery", "Any previous hernia repair or other surgery in the groin or lower abdomen?", ["previous hernia", "repair", "mesh", "surgery", "operation", "appendicectomy", "recurrence", "same side"]),
+    yn("exposure", "previous_hernia_surgery", "Previous hernia or groin surgery", "Any previous hernia repair or other surgery in the groin or lower abdomen?", ["previous hernia", "repair", "mesh", "surgery", "operation", "appendicectomy", "recurrence", "same side", "other side", "opposite side"]),
     yn("exposure", "tb_contact", "TB contact / past TB", "Any past tuberculosis or contact with tuberculosis?", ["tb", "tuberculosis", "koch", "att", "akt", "tb contact"]),
     yn("exposure", "sexual_exposure", "Sexual exposure / genital ulcer", "Any recent unprotected sexual contact, genital ulcer, or urethral discharge?", ["unprotected", "sexual contact", "genital ulcer", "urethral discharge", "sti", "new partner"], { tier: "detailed" }),
-    ...surgicalBackground({ acute: true }),
+    // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
+    val("hpi", "first_site_spread", "Where it first appeared", "Where did the swelling first appear, and has it spread down into the scrotum or up from below?", ["first appeared", "started in the groin", "came down into the scrotum", "started in the scrotum", "came up from below", "started below the crease", "spread upwards"], { teach: "Das asks where the swelling began because an inguinal hernia comes from above, a femoral one rises from below the crease, and scrotal swellings grow upward." }),
+    yn("hpi", "testis_absent_same_side", "Testis missing from the scrotum on that side", "Has the testis on that side always been missing from the scrotum, with the swelling present since childhood?", ["empty scrotum", "testis not in scrotum", "undescended", "since childhood", "since birth", "always been there", "testis present"], { teach: "Das notes an ectopic or undescended testis gives a groin swelling that has been in the same place from the beginning." }),
+    yn("exposure", "filarial_attacks", "Recurrent attacks of fever with cord or scrotal swelling", "Have there been repeated attacks of fever with pain and swelling in the cord or scrotum?", ["recurrent fever", "attacks of fever", "filaria", "swelling of cord", "lymph varix", "endemic area", "no such attacks"], { tier: "detailed", teach: "Das treats periodic attacks of fever with pain and swelling of the cord or scrotum as strongly suggestive of filarial infection." }),
+    // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
+    yn("hpi", "post_repair_pain", "Pain since an earlier hernia repair", "Since an earlier hernia repair on this side, has there been a sharp, burning or shooting groin pain?", ["burning", "shooting", "stabbing", "since the repair", "after the operation", "dull pounding", "on activity", "no pain after repair"], { tier: "detailed", teach: "Hamilton Bailey separates dull activity-related pain from sharp burning nerve pain after a hernia repair, while noting a recurrence has to be looked for in each case." }),
+    yn("associated", "anal_lesion", "Sore, lump or bleeding at the anus", "Is there any sore, lump, or bleeding at the anus?", ["anal sore", "lump at anus", "bleeding per rectum", "perianal", "piles", "warts", "no anal complaint"], { tier: "detailed", teach: "Hamilton Bailey lists the perineum and anus among the drainage basins of the groin nodes, and notes anal tumours spread there first." }),
+    yn("associated", "medial_thigh_pain", "Pain down the inner thigh to the knee", "Is there pain running down the inner thigh, sometimes to the knee?", ["inner thigh", "medial thigh", "down to the knee", "knee pain", "thigh pain", "no thigh pain"], { tier: "detailed", teach: "Hamilton Bailey notes an obturator hernia, usually in an elderly woman, may show only as pain along the inner thigh or knee before it obstructs." }),
+    ...surgicalBackground({ acute: true, omit: ["surg_weight_loss", "surg_occupation_residence"] }),
   ],
   differentials: [
-    { id: "inguinal_hernia", name: "Inguinal hernia", pointers: ["reducibility", "cough_impulse_strain", "position", "occupation_straining"], discriminators: ["reducibility", "cough_impulse_strain", "position", "femoral_position", "pain_dragging", "irreducible_painful", "previous_hernia_surgery"] },
-    { id: "femoral_hernia", name: "Femoral hernia", pointers: ["femoral_position", "position", "irreducible_painful"], discriminators: ["femoral_position", "position", "reducibility", "irreducible_painful", "obstruction_features", "size_and_growth"] },
-    { id: "lymphadenopathy", name: "Inguinal lymphadenopathy", pointers: ["urinary_or_genital", "hard_matted_nodes", "weight_loss_fever", "fever_skin_change"], discriminators: ["urinary_or_genital", "hard_matted_nodes", "weight_loss_fever", "reducibility", "cough_impulse_strain", "sexual_exposure", "tb_contact"] },
+    { id: "inguinal_hernia", name: "Inguinal hernia", pointers: ["reducibility", "cough_impulse_strain", "position", "occupation_straining"], discriminators: ["reducibility", "cough_impulse_strain", "position", "femoral_position", "pain_dragging", "irreducible_painful", "previous_hernia_surgery", "first_site_spread", "post_repair_pain"] },
+    { id: "femoral_hernia", name: "Femoral hernia", pointers: ["femoral_position", "position", "irreducible_painful"], discriminators: ["femoral_position", "position", "reducibility", "irreducible_painful", "obstruction_features", "size_and_growth", "first_site_spread", "post_repair_pain", "medial_thigh_pain"] },
+    { id: "lymphadenopathy", name: "Inguinal lymphadenopathy", pointers: ["urinary_or_genital", "hard_matted_nodes", "weight_loss_fever", "fever_skin_change"], discriminators: ["urinary_or_genital", "hard_matted_nodes", "weight_loss_fever", "reducibility", "cough_impulse_strain", "sexual_exposure", "tb_contact", "anal_lesion"] },
     { id: "saphena_varix", name: "Saphena varix", pointers: ["varicose_veins", "reducibility", "cough_impulse_strain"], discriminators: ["varicose_veins", "reducibility", "position", "pain_dragging", "size_and_growth"] },
-    { id: "cord_hydrocele", name: "Hydrocele of the cord or canal of Nuck", pointers: ["position", "size_and_growth"], discriminators: ["position", "reducibility", "cough_impulse_strain", "pain_dragging", "size_and_growth"] },
-    { id: "undescended_testis", name: "Undescended or ectopic testis", pointers: ["position", "size_and_growth"], discriminators: ["position", "reducibility", "size_and_growth", "pain_dragging"] },
+    { id: "cord_hydrocele", name: "Hydrocele of the cord or canal of Nuck", pointers: ["position", "size_and_growth"], discriminators: ["position", "reducibility", "cough_impulse_strain", "pain_dragging", "size_and_growth", "first_site_spread"] },
+    { id: "undescended_testis", name: "Undescended or ectopic testis", pointers: ["position", "size_and_growth"], discriminators: ["position", "reducibility", "size_and_growth", "pain_dragging", "testis_absent_same_side"] },
     { id: "lipoma", name: "Lipoma", pointers: ["size_and_growth", "pain_dragging"], discriminators: ["size_and_growth", "reducibility", "cough_impulse_strain", "pain_dragging", "position"] },
     { id: "psoas_abscess", name: "Psoas abscess", pointers: ["cold_abscess_features", "back_pain", "tb_contact"], discriminators: ["cold_abscess_features", "back_pain", "tb_contact", "weight_loss_fever", "fever_skin_change"] },
     { id: "femoral_aneurysm", name: "Femoral aneurysm", pointers: ["pulsatile"], discriminators: ["pulsatile", "position", "reducibility", "size_and_growth"] },

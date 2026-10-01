@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { BAILEY_LOVE, commonHpi, IMMUNOCOMPROMISE, MACLEODS, SABISTON, SCHWARTZ, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, IMMUNOCOMPROMISE, MACLEODS, SABISTON, SCHWARTZ, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * PROBLEM AFTER AN OPERATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * PROBLEM AFTER AN OPERATION — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
  * Adult surgical ward, north India. The one presentation where the post-operative day and the
  * operation itself are half the history: the same fever means different things on day two and
  * day seven. Differentials: surgical site infection, anastomotic leak, intra-abdominal
@@ -16,13 +16,13 @@ import { BAILEY_LOVE, commonHpi, IMMUNOCOMPROMISE, MACLEODS, SABISTON, SCHWARTZ,
  */
 export const postOpProblemV1: HistoryTree = {
   id: "post_op_problem",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Problem after an operation",
   triggers: ["post op", "post-op", "postoperative", "post operative", "after surgery", "after the operation", "after operation", "fever after surgery", "wound discharge", "wound gaping", "not passed flatus", "drain output", "operated on day"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
-  references: [BAILEY_LOVE, SABISTON, SCHWARTZ, MACLEODS],
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
+  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, BAILEY_LOVE, SABISTON, SCHWARTZ, MACLEODS],
   slots: [
     ...commonHpi("problem"),
     val("hpi", "which_operation", "Which operation, and when", "What operation was done, on what date, and was it planned or an emergency?", ["operation", "operated on", "laparotomy", "laparoscopy", "appendicectomy", "hernia repair", "resection", "planned", "elective", "emergency", "post operative day", "pod"], { numeric: true }),
@@ -50,16 +50,24 @@ export const postOpProblemV1: HistoryTree = {
     yn("red_flag", "urine_output_fall", "Falling urine output", "Has the urine output dropped, or has the patient passed no urine for several hours?", ["reduced urine", "no urine", "oliguria", "catheter dry", "less than before", "not passed urine", "adequate urine"], { teach: "A falling urine output after an operation is worth asking about early, because the patient or the nurse has often noticed it before anyone looks for it." }),
     IMMUNOCOMPROMISE,
     // Background
+    // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
+    yn("associated", "haemoptysis_postop", "Coughing up blood", "Has the patient coughed up any blood since the operation?", ["coughed blood", "blood in sputum", "haemoptysis", "blood stained sputum", "no blood in sputum"], { teach: "Das puts haemoptysis with fever, chest pain, cough and sputum among the questions for a chest problem in the early post-operative period." }),
+    yn("associated", "hiccups_postop", "Hiccups", "Has the patient had hiccups since the operation, and do they keep coming back?", ["hiccups", "hiccough", "hichki", "repeated hiccups", "persistent hiccups", "no hiccups"], { tier: "detailed", teach: "Das gives early post-operative hiccups surgical weight, linking them to a distended stomach or bowel pressing on the diaphragm, pus under the diaphragm, or failing kidneys." }),
+    yn("associated", "vomit_while_drowsy", "Vomiting while still drowsy after the anaesthetic", "Did the patient vomit while still drowsy from the anaesthetic?", ["vomited after anaesthesia", "vomited while drowsy", "vomited in recovery", "choked", "vomit on pillow", "no vomiting after anaesthesia"], { tier: "detailed", teach: "Das describes breathlessness on waking from a general anaesthetic after the semiconscious patient vomits and inhales it." }),
+    // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
+    yn("red_flag", "spreading_redness_wall", "Redness spreading beyond the wound", "Is redness spreading across the skin of the abdomen or perineum beyond the wound?", ["spreading redness", "redness spreading", "skin turning dark", "foul smell", "crackling under skin", "severe pain", "redness only at wound"], { teach: "Hamilton Bailey calls spreading infection across the abdominal wall after surgery a grave sentinel sign of deep necrotising infection or an enteric leak." }),
+    yn("associated", "drip_site", "Drip or cannula site", "Is the drip or cannula site painful, red or swollen?", ["cannula site", "drip site", "iv site", "line site", "red streak", "swollen arm", "line removed", "cannula fine"], { teach: "Hamilton Bailey lists infected intravenous lines and thrombophlebitis among the post-operative sources of fever and sepsis." }),
+    yn("associated", "urine_leak_vagina", "Urine leaking from the vagina", "After a pelvic operation, is urine leaking continuously from the vagina?", ["leaking urine", "continuous leak", "wet all the time", "urine from vagina", "pad always wet", "no leak"], { tier: "detailed", teach: "Hamilton Bailey describes continuous leakage, with fever and flank pain, after pelvic surgery when a ureter has been injured." }),
     ...surgicalBackground({ acute: true }),
   ],
   differentials: [
-    { id: "ssi", name: "Surgical site infection", pointers: ["wound_problem", "fever", "day_of_onset"], discriminators: ["wound_problem", "fever", "day_of_onset", "fever_with_rigors_late", "sugar_control", "wound_gaping_gush"] },
-    { id: "anastomotic_leak", name: "Anastomotic leak", pointers: ["bilious_faeculent_discharge", "abdominal_pain_distension", "fever_with_rigors_late", "drain_change"], discriminators: ["bilious_faeculent_discharge", "abdominal_pain_distension", "drain_change", "day_of_onset", "operative_course", "oral_intake", "urine_output_fall"] },
-    { id: "collection", name: "Intra-abdominal collection", pointers: ["fever_with_rigors_late", "abdominal_pain_distension", "operative_course"], discriminators: ["fever_with_rigors_late", "abdominal_pain_distension", "day_of_onset", "flatus_stool", "drain_change", "oral_intake"] },
-    { id: "ileus_obstruction", name: "Ileus against mechanical obstruction", pointers: ["flatus_stool", "vomiting", "abdominal_pain_distension"], discriminators: ["flatus_stool", "vomiting", "abdominal_pain_distension", "day_of_onset", "oral_intake", "which_operation"] },
-    { id: "chest", name: "Chest infection or collapse", pointers: ["breathing_cough", "fever", "mobilisation"], discriminators: ["breathing_cough", "fever", "mobilisation", "day_of_onset", "sudden_breathlessness_chest_pain"] },
-    { id: "uti", name: "Urinary infection", pointers: ["urine_catheter", "fever"], discriminators: ["urine_catheter", "fever", "day_of_onset", "urine_output_fall"] },
-    { id: "vte", name: "Deep vein thrombosis or pulmonary embolism", pointers: ["calf_leg", "sudden_breathlessness_chest_pain", "mobilisation"], discriminators: ["calf_leg", "sudden_breathlessness_chest_pain", "mobilisation", "day_of_onset", "breathing_cough"] },
+    { id: "ssi", name: "Surgical site infection", pointers: ["wound_problem", "fever", "day_of_onset"], discriminators: ["wound_problem", "fever", "day_of_onset", "fever_with_rigors_late", "sugar_control", "wound_gaping_gush", "spreading_redness_wall", "drip_site"] },
+    { id: "anastomotic_leak", name: "Anastomotic leak", pointers: ["bilious_faeculent_discharge", "abdominal_pain_distension", "fever_with_rigors_late", "drain_change"], discriminators: ["bilious_faeculent_discharge", "abdominal_pain_distension", "drain_change", "day_of_onset", "operative_course", "oral_intake", "urine_output_fall", "spreading_redness_wall"] },
+    { id: "collection", name: "Intra-abdominal collection", pointers: ["fever_with_rigors_late", "abdominal_pain_distension", "operative_course"], discriminators: ["fever_with_rigors_late", "abdominal_pain_distension", "day_of_onset", "flatus_stool", "drain_change", "oral_intake", "hiccups_postop", "urine_leak_vagina"] },
+    { id: "ileus_obstruction", name: "Ileus against mechanical obstruction", pointers: ["flatus_stool", "vomiting", "abdominal_pain_distension"], discriminators: ["flatus_stool", "vomiting", "abdominal_pain_distension", "day_of_onset", "oral_intake", "which_operation", "hiccups_postop"] },
+    { id: "chest", name: "Chest infection or collapse", pointers: ["breathing_cough", "fever", "mobilisation"], discriminators: ["breathing_cough", "fever", "mobilisation", "day_of_onset", "sudden_breathlessness_chest_pain", "haemoptysis_postop", "vomit_while_drowsy"] },
+    { id: "uti", name: "Urinary infection", pointers: ["urine_catheter", "fever"], discriminators: ["urine_catheter", "fever", "day_of_onset", "urine_output_fall", "urine_leak_vagina"] },
+    { id: "vte", name: "Deep vein thrombosis or pulmonary embolism", pointers: ["calf_leg", "sudden_breathlessness_chest_pain", "mobilisation"], discriminators: ["calf_leg", "sudden_breathlessness_chest_pain", "mobilisation", "day_of_onset", "breathing_cough", "haemoptysis_postop"] },
     { id: "bleeding", name: "Post-operative bleeding", pointers: ["bleeding_soaked", "drain_change"], discriminators: ["bleeding_soaked", "drain_change", "day_of_onset", "operative_course", "surg_blood_thinners", "urine_output_fall"] },
     { id: "dehiscence", name: "Wound dehiscence", pointers: ["wound_gaping_gush", "wound_problem"], discriminators: ["wound_gaping_gush", "wound_problem", "day_of_onset", "sugar_control", "breathing_cough"] },
     { id: "drug_transfusion", name: "Reaction to a drug or to blood", pointers: ["fever", "surg_transfusion", "surg_allergy"], discriminators: ["fever", "surg_transfusion", "surg_allergy", "day_of_onset", "wound_problem"] },

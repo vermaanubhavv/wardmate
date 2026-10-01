@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, BAILEY_LOVE, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ABDOMINAL DISTENSION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * ABDOMINAL DISTENSION — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
  * Adult surgical / medicine ward, north India. The classical "five Fs": fluid, flatus, faeces,
  * fat, foetus (and a mass). Differentials: ascites (portal hypertension, tuberculous, malignant,
  * cardiac, nephrotic), intestinal obstruction, organomegaly or a mass, urinary retention,
@@ -10,13 +10,13 @@ import { commonHpi, BAILEY_LOVE, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, surg
  */
 export const abdominalDistensionV1: HistoryTree = {
   id: "abdominal_distension",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Abdominal distension",
   triggers: ["abdominal distension", "distension of abdomen", "distended abdomen", "swelling of abdomen", "abdominal swelling", "bloating", "bloated", "increased abdominal girth", "swollen abdomen", "belly swelling"],
   setting: "Adult surgical / medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
-  references: [MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
+  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
   slots: [
     ...commonHpi("abdominal distension"),
     val("hpi", "pattern", "Constant or intermittent", "Is the distension constant, or does it come and go with meals or through the day?", ["constant", "intermittent", "after meals", "worse in evening", "comes and goes", "throughout the day", "gradual"]),
@@ -44,16 +44,26 @@ export const abdominalDistensionV1: HistoryTree = {
     yn("exposure", "tb_contact", "TB contact / past TB", "Any past tuberculosis or contact with tuberculosis?", ["tb", "tuberculosis", "koch", "att", "akt", "tb contact"]),
     yn("exposure", "cardiac_renal", "Known heart or kidney disease", "Any known heart failure, kidney disease, or nephrotic syndrome?", ["heart failure", "cardiac", "kidney disease", "ckd", "nephrotic", "renal", "protein in urine"], { tier: "detailed" }),
     yn("exposure", "previous_surgery", "Previous abdominal surgery", "Any previous abdominal surgery or hernia?", ["surgery", "operation", "laparotomy", "hernia", "adhesions"], { tier: "detailed" }),
-    ...surgicalBackground({ acute: true }),
+    // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
+    yn("red_flag", "pain_became_constant", "Colicky pain turned constant", "Has colicky pain changed to a constant, burning pain?", ["became constant", "now constant", "continuous pain", "burning pain", "was colicky", "no longer comes and goes"], { teach: "Das warns that colic of obstruction turning constant is the change seen when the blood supply of the gut is threatened." }),
+    yn("red_flag", "blood_mucus_stool", "Blood and mucus per rectum", "Any fresh blood or mucus passed per rectum with the distension?", ["blood per rectum", "blood and mucus", "mucus in stool", "red currant jelly", "jelly like stool", "bloody stool", "no blood in stool"], { teach: "Das reads blood and mucus with obstructive pain as a pointer to intussusception or a strangulated or thrombosed gut." }),
+    val("hpi", "vomiting_timing", "When vomiting began", "Did vomiting start together with the pain, some hours later, or only after the belly swelled?", ["with the pain", "same time", "hours later", "later", "after distension", "late", "no vomiting"], { tier: "detailed", teach: "Das uses the timing of vomiting against pain to judge how high in the gut a blockage lies." }),
+    yn("hpi", "laxative_escalation", "Needing more and more laxatives", "Has the patient needed more and more laxative to open the bowels?", ["more laxatives", "increasing laxatives", "purgatives", "needs laxative daily", "laxative not working", "no laxatives"], { tier: "detailed", teach: "Das names constipation needing ever more purgatives as the presenting symptom of a narrowing growth in the left colon." }),
+    // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
+    yn("exposure", "previous_cancer", "Earlier cancer", "Has the patient ever been treated for a cancer, and where?", ["cancer", "malignancy", "treated for cancer", "chemotherapy", "radiotherapy", "operated for cancer", "tumour", "no cancer"], { teach: "Hamilton Bailey asks about a known cancer because spread to the peritoneum explains new fluid or a blocked bowel in such a patient." }),
+    yn("associated", "postmenopausal_bleeding", "Bleeding after menopause", "In a woman past menopause, has there been any bleeding per vaginum?", ["postmenopausal bleeding", "bleeding after menopause", "bleeding per vaginum", "spotting", "no bleeding after menopause"], { tier: "detailed", teach: "Hamilton Bailey pairs bleeding after menopause, a growing girth and weight loss as the history that points toward a pelvic cancer." }),
+    yn("hpi", "previous_attacks", "Earlier attacks that settled", "Has the belly swollen up like this before and settled on its own?", ["similar attacks", "happened before", "previous episodes", "settled on its own", "relieved by passing gas", "first time", "no previous attacks"], { teach: "Hamilton Bailey reads earlier attacks of pain, swelling and constipation that went away as earlier twists of the sigmoid colon that untwisted." }),
+    yn("hpi", "meal_after_fast", "Large meal after a fast", "Did the swelling begin after a large meal following a religious fast?", ["after fasting", "broke fast", "after roza", "after vrat", "navratri", "large meal", "heavy meal", "no fasting"], { tier: "detailed", teach: "Hamilton Bailey lists a large meal after religious fasting among the triggers of sigmoid volvulus." }),
+    ...surgicalBackground({ acute: true, omit: ["surg_weight_loss", "surg_menstrual_obstetric"] }),
   ],
   differentials: [
     { id: "ascites_portal", name: "Ascites (portal hypertension)", pointers: ["alcohol_liver", "jaundice", "leg_swelling", "gi_bleed"], discriminators: ["alcohol_liver", "jaundice", "leg_swelling", "gi_bleed", "confusion", "appetite_weight"] },
-    { id: "ascites_tb_malignant", name: "Ascites (tuberculous / malignant)", pointers: ["fever_sweats", "tb_contact", "appetite_weight", "weight_loss_mass"], discriminators: ["fever_sweats", "tb_contact", "appetite_weight", "weight_loss_mass", "pain"] },
+    { id: "ascites_tb_malignant", name: "Ascites (tuberculous / malignant)", pointers: ["fever_sweats", "tb_contact", "appetite_weight", "weight_loss_mass"], discriminators: ["fever_sweats", "tb_contact", "appetite_weight", "weight_loss_mass", "pain", "previous_cancer", "postmenopausal_bleeding"] },
     { id: "ascites_cardiac_renal", name: "Ascites (cardiac / nephrotic)", pointers: ["cardiac_renal", "leg_swelling", "breathlessness"], discriminators: ["cardiac_renal", "leg_swelling", "breathlessness", "urine"] },
-    { id: "obstruction", name: "Intestinal obstruction", pointers: ["obstruction", "vomiting", "pain", "flatus_stools"], discriminators: ["obstruction", "flatus_stools", "vomiting", "pain", "previous_surgery"] },
-    { id: "mass", name: "Mass / organomegaly", pointers: ["weight_loss_mass", "appetite_weight"], discriminators: ["weight_loss_mass", "appetite_weight", "pain", "girth"] },
+    { id: "obstruction", name: "Intestinal obstruction", pointers: ["obstruction", "vomiting", "pain", "flatus_stools"], discriminators: ["obstruction", "flatus_stools", "vomiting", "pain", "previous_surgery", "pain_became_constant", "blood_mucus_stool", "vomiting_timing", "laxative_escalation", "previous_cancer", "previous_attacks", "meal_after_fast"] },
+    { id: "mass", name: "Mass / organomegaly", pointers: ["weight_loss_mass", "appetite_weight"], discriminators: ["weight_loss_mass", "appetite_weight", "pain", "girth", "laxative_escalation", "postmenopausal_bleeding"] },
     { id: "pregnancy", name: "Pregnancy", pointers: ["menstrual_pregnancy", "pregnancy"], discriminators: ["menstrual_pregnancy", "pregnancy", "girth"] },
-    { id: "gas_functional", name: "Gaseous distension / functional", pointers: ["gas_belching", "pattern"], discriminators: ["gas_belching", "pattern", "flatus_stools", "appetite_weight"] },
+    { id: "gas_functional", name: "Gaseous distension / functional", pointers: ["gas_belching", "pattern"], discriminators: ["gas_belching", "pattern", "flatus_stools", "appetite_weight", "previous_attacks"] },
   ],
   output: {
     durationSlot: "duration",

@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, BAILEY_LOVE, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, SABISTON, rce, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ABDOMINAL PAIN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * ABDOMINAL PAIN — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
  * Adult medicine / surgery ward, north India. Differentials: acute appendicitis, acute
  * cholecystitis / biliary colic, acute pancreatitis, peptic ulcer / perforation, intestinal
  * obstruction, renal colic / pyelonephritis, acute gastroenteritis, abdominal tuberculosis,
@@ -10,13 +10,15 @@ import { commonHpi, BAILEY_LOVE, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, SABISTON
  */
 export const abdominalPainV1: HistoryTree = {
   id: "abdominal_pain",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Abdominal pain",
   triggers: ["abdominal pain", "pain abdomen", "pain in abdomen", "stomach pain", "pain in stomach", "epigastric pain", "acute abdomen", "abdomen pain"],
   setting: "Adult medicine / general surgery ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
+    DAS_CLINICAL_SURGERY,
+    HAMILTON_BAILEY,
     BAILEY_LOVE,
     SABISTON,
     rce("Does this patient have appendicitis?", 1996, "8918857"),
@@ -35,7 +37,7 @@ export const abdominalPainV1: HistoryTree = {
     val("hpi", "character_change", "Change in the character of the pain", "Has the pain changed in character since it began — from coming in waves to constant, or from one place to all over?", ["became constant", "now constant", "was colicky", "changed", "all over", "spread", "more severe", "no change in character", "same character"]),
     val("hpi", "radiation", "Radiation", "Does the pain go to the back, shoulder, groin, or chest?", ["radiating", "radiates", "radiation", "to the back", "to back", "shoulder", "right shoulder", "scapula", "groin", "testis", "loin to groin", "chest", "band like"]),
     val("hpi", "severity", "Severity", "How severe is the pain?", ["severe", "mild", "moderate", "worst", "10/10", "out of 10", "severity", "excruciating", "unbearable"], { numeric: true }),
-    val("hpi", "aggravating_relieving", "Aggravating / relieving factors", "What makes it worse or better — food, fasting, movement, lying still, passing stool or flatus, vomiting, antacids?", ["worse after food", "after food", "after meals", "on eating", "empty stomach", "fasting", "relieved by food", "movement", "lying still", "still", "passing stool", "passing flatus", "relieved by vomiting", "antacid", "relieved by", "aggravated by", "worse on", "better on"]),
+    val("hpi", "aggravating_relieving", "Aggravating / relieving factors", "What makes it worse or better — food, fasting, movement, lying still, passing stool or flatus, vomiting, antacids?", ["worse after food", "after food", "after meals", "on eating", "empty stomach", "fasting", "relieved by food", "movement", "lying still", "still", "passing stool", "passing flatus", "relieved by vomiting", "antacid", "relieved by", "aggravated by", "worse on", "better on", "sitting up", "leaning forward"]),
     val("hpi", "relation_to_meals_bowel", "Relation to meals / bowel / urine", "Is the pain related to meals, to bowel movements, or to passing urine?", ["meals", "food", "fatty food", "oily food", "bowel", "defecation", "stool", "urination", "micturition", "passing urine"]),
     yn("associated", "nausea_vomiting", "Vomiting", "Any vomiting — and did it begin before or after the pain, and what did it contain (bilious, blood, faeculent)?", ["vomiting", "vomit", "vomited", "nausea", "bilious", "green", "blood in vomit", "faeculent", "feculent", "coffee ground", "vomitings"]),
     yn("associated", "bowel_change", "Bowel change", "Any diarrhoea, constipation, or complete inability to pass stool and flatus?", ["diarrhoea", "diarrhea", "loose stools", "loose motions", "constipation", "constipated", "not passing stool", "not passed stool", "not passing flatus", "obstipation", "absolute constipation", "bowels"]),
@@ -65,18 +67,29 @@ export const abdominalPainV1: HistoryTree = {
     yn("exposure", "water_food", "Outside food / unsafe water", "Any outside food, street food, or unsafe drinking water, or similar illness in contacts?", ["outside food", "street food", "unsafe water", "contaminated water", "hotel food", "similar complaints", "others at home", "food poisoning"]),
     yn("exposure", "tb_contact", "TB contact / past TB", "Any past tuberculosis or contact with a TB patient?", ["tb", "tuberculosis", "koch", "att", "akt", "dots", "tb contact", "past tb"], { tier: "detailed" }),
     yn("exposure", "rash", "Rash over the painful area", "Any vesicular rash in a band over the painful area?", ["rash", "vesicles", "blisters", "herpes", "zoster", "band"], { tier: "detailed" }),
-    ...surgicalBackground({ acute: true }),
+    // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
+    yn("exposure", "smoking", "Smoking", "Does the patient smoke, and how much?", ["smoking", "smoker", "smokes", "bidi", "cigarette", "tobacco", "non smoker", "no smoking"], { tier: "detailed", teach: "Das records smoking in every abdominal case because it bears on peptic ulcer and its perforation." }),
+    yn("associated", "blood_mucus_stool", "Blood and mucus per rectum", "Any fresh blood or mucus passed per rectum with the pain?", ["blood per rectum", "blood and mucus", "mucus in stool", "red currant jelly", "jelly like stool", "bloody stool", "no blood in stool"], { teach: "Das reads blood and mucus with obstructive pain as a pointer to intussusception or a strangulated or thrombosed gut." }),
+    val("hpi", "periodicity", "Periodicity of attacks", "Does the pain come in spells lasting weeks with pain-free months in between, or does it never fully go?", ["comes in spells", "attacks", "pain free interval", "free in between", "every few months", "seasonal", "never fully goes", "periodicity", "continuous since"], { tier: "detailed", teach: "Das separates peptic ulcer, with true pain-free intervals, from gallbladder and appendicular pain, which grumble on between attacks." }),
+    yn("hpi", "precipitant", "Precipitating event", "Did anything bring the pain on — a purgative, straining, or a jolting ride?", ["after purgative", "after laxative", "after straining", "lifting", "jolting", "bumpy ride", "nothing brought it on"], { tier: "detailed", teach: "Das lists purgatives, straining and jolting as triggers that point toward a particular organ." }),
+    yn("hpi", "pressure_effect", "Effect of pressure on the pain", "Is the pain eased by pressing on the abdomen, or made worse by it?", ["relieved by pressing", "presses abdomen", "better with pressure", "worse on pressing", "cannot bear touch", "pressure makes it worse"], { tier: "detailed", teach: "Das uses the response to pressure to separate the colic of a blocked tube from inflamed peritoneum." }),
+    // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
+    yn("hpi", "night_pain", "Pain waking at night", "Does the pain wake the patient from sleep, around midnight or in the early hours?", ["wakes at night", "night pain", "midnight", "early morning pain", "disturbs sleep", "no night pain"], { tier: "detailed", teach: "Hamilton Bailey describes duodenal ulcer pain returning hours after a meal and around midnight, when acid output peaks and no food is there to buffer it." }),
+    yn("red_flag", "af_recent_mi", "Irregular heartbeat or recent heart attack", "Is there a known irregular heartbeat, or a heart attack in the recent weeks?", ["atrial fibrillation", "af", "irregular heartbeat", "irregular pulse", "recent heart attack", "recent mi", "no heart problem"], { teach: "Hamilton Bailey notes that a clot thrown from the heart to the gut artery usually follows atrial fibrillation or a recent heart attack, and the pain then outstrips what the abdomen shows." }),
+    yn("exposure", "ectopic_risk", "Earlier ectopic, tubal surgery, IUCD or fertility treatment", "In a woman, has there been an earlier ectopic pregnancy, surgery on the tubes or pelvis, a copper-T in place, or treatment for infertility?", ["previous ectopic", "ectopic before", "tubal surgery", "tubectomy", "pelvic surgery", "copper t", "iucd", "iud", "infertility treatment", "ivf", "no ectopic"], { tier: "detailed", teach: "Hamilton Bailey lists an earlier ectopic, tubal or pelvic surgery, an intrauterine device and infertility treatment as the main risks for implantation in the tube." }),
+    val("hpi", "fever_before_pain", "Fever before the pain", "Was there a fever for a week or more before the abdominal pain began?", ["fever for a week", "fever first", "fever before pain", "typhoid", "enteric fever", "two weeks of fever", "no fever before"], { tier: "detailed", teach: "Hamilton Bailey describes typhoid as fever in the first week, pain in the second and bleeding or perforation of the ileum in the third, so the order of fever and pain matters." }),
+    ...surgicalBackground({ acute: true, omit: ["surg_weight_loss", "surg_menstrual_obstetric"] }),
   ],
   differentials: [
-    { id: "appendicitis", name: "Acute appendicitis", pointers: ["migration", "site", "fever", "appetite_weight"], discriminators: ["migration", "site", "fever", "nausea_vomiting", "appetite_weight", "peritonism_symptoms", "menstrual"] },
-    { id: "biliary", name: "Acute cholecystitis / biliary colic", pointers: ["site", "relation_to_meals_bowel", "alcohol_gallstones", "jaundice"], discriminators: ["site", "relation_to_meals_bowel", "radiation", "fever", "jaundice", "alcohol_gallstones", "previous_episodes"] },
+    { id: "appendicitis", name: "Acute appendicitis", pointers: ["migration", "site", "fever", "appetite_weight"], discriminators: ["migration", "site", "fever", "nausea_vomiting", "appetite_weight", "peritonism_symptoms", "menstrual", "precipitant"] },
+    { id: "biliary", name: "Acute cholecystitis / biliary colic", pointers: ["site", "relation_to_meals_bowel", "alcohol_gallstones", "jaundice"], discriminators: ["site", "relation_to_meals_bowel", "radiation", "fever", "jaundice", "alcohol_gallstones", "previous_episodes", "periodicity", "pressure_effect"] },
     { id: "pancreatitis", name: "Acute pancreatitis", pointers: ["radiation", "alcohol_gallstones", "nausea_vomiting", "severity"], discriminators: ["radiation", "alcohol_gallstones", "nausea_vomiting", "aggravating_relieving", "severity", "distension", "urine_output"] },
-    { id: "peptic", name: "Peptic ulcer / perforation", pointers: ["aggravating_relieving", "nsaid_steroid", "sudden_severe", "gi_bleed"], discriminators: ["aggravating_relieving", "nsaid_steroid", "sudden_severe", "peritonism_symptoms", "gi_bleed", "previous_episodes"] },
-    { id: "obstruction", name: "Intestinal obstruction", pointers: ["bilious_faeculent_vomiting", "obstipation", "distension", "previous_surgery"], discriminators: ["character", "bilious_faeculent_vomiting", "obstipation", "distension", "previous_surgery", "bowel_change"] },
-    { id: "renal", name: "Renal colic / pyelonephritis", pointers: ["urinary", "radiation", "character"], discriminators: ["urinary", "radiation", "character", "fever", "site"] },
+    { id: "peptic", name: "Peptic ulcer / perforation", pointers: ["aggravating_relieving", "nsaid_steroid", "sudden_severe", "gi_bleed"], discriminators: ["aggravating_relieving", "nsaid_steroid", "sudden_severe", "peritonism_symptoms", "gi_bleed", "previous_episodes", "smoking", "periodicity", "night_pain"] },
+    { id: "obstruction", name: "Intestinal obstruction", pointers: ["bilious_faeculent_vomiting", "obstipation", "distension", "previous_surgery"], discriminators: ["character", "bilious_faeculent_vomiting", "obstipation", "distension", "previous_surgery", "bowel_change", "blood_mucus_stool"] },
+    { id: "renal", name: "Renal colic / pyelonephritis", pointers: ["urinary", "radiation", "character"], discriminators: ["urinary", "radiation", "character", "fever", "site", "precipitant", "pressure_effect"] },
     { id: "gastroenteritis", name: "Acute gastroenteritis", pointers: ["bowel_change", "water_food", "nausea_vomiting"], discriminators: ["bowel_change", "water_food", "nausea_vomiting", "fever", "urine_output"] },
     { id: "abdominal_tb", name: "Abdominal tuberculosis", pointers: ["tb_contact", "appetite_weight", "distension", "fever"], discriminators: ["tb_contact", "appetite_weight", "distension", "fever", "bowel_change", "duration"] },
-    { id: "gynaecological", name: "Gynaecological (ectopic, torsion, PID)", pointers: ["menstrual", "pregnancy", "syncope_giddiness"], discriminators: ["menstrual", "pregnancy", "syncope_giddiness", "fever", "urinary"] },
+    { id: "gynaecological", name: "Gynaecological (ectopic, torsion, PID)", pointers: ["menstrual", "pregnancy", "syncope_giddiness"], discriminators: ["menstrual", "pregnancy", "syncope_giddiness", "fever", "urinary", "ectopic_risk"] },
     { id: "medical_mimic", name: "Medical mimic (DKA, inferior MI, zoster)", pointers: ["diabetic_symptoms", "cardiac_symptoms", "rash"], discriminators: ["diabetic_symptoms", "cardiac_symptoms", "rash", "site"] },
   ],
   output: {

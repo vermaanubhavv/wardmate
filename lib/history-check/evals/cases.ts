@@ -340,6 +340,136 @@ export const EVAL_CASES: EvalCase[] = [
     note: "The airway questions must come out of the words that carry them (hoarse, soot, singed) and the chemical and electrical branches must stay unasked for a flame burn.",
   },
   {
+    id: "preop-elderly-cholecystectomy",
+    title: "Older patient posted for an elective gallbladder operation",
+    treeId: "preop_assessment",
+    patient: { bed: "SW-4", age_years: 68, sex: "female" },
+    entries: [
+      voice(
+        "e1",
+        "Posted for laparoscopic cholecystectomy, elective, for gallstones since 2 years. History given by patient and her son. Diabetic for 10 years on tablets. Had a stent put in the heart last year in March, on blood thinners since. Climbs two flights of stairs with breathlessness. No chest pain at rest. Snores loudly per son. Son says she has become forgetful over the past year. No bleeding after tooth extraction. Lives with son."
+      ),
+    ],
+    expect: {
+      planned_operation: "positive",
+      diabetes: "positive",
+      recent_mi_or_stent: "positive",
+      angina_exertion: "positive",
+      unstable_cardiac: "negative",
+      surg_blood_thinners: "positive",
+      surg_snoring_apnoea: "positive",
+      memory_cognition: "positive",
+      surg_bleeding_tendency: "negative",
+      previous_clot: "unasked",
+      surg_steroid_past_year: "unasked",
+      surg_weight_loss: "unasked",
+      alcohol: "unasked",
+    },
+    note: "The stent and its date are a red flag that must come out positive; the son's report of forgetfulness counts. Breathless on two flights is exertional (positive); 'no chest pain at rest' belongs to the at-rest red flag, not the exertional question. Clots, steroids, weight and alcohol were never mentioned and must stay unasked.",
+  },
+  {
+    id: "varicose-standing-job",
+    title: "Prominent leg veins in a man who stands all day",
+    treeId: "varicose_veins",
+    patient: { bed: "OPD-7", age_years: 42, sex: "male" },
+    entries: [
+      voice(
+        "e1",
+        "Prominent veins over left calf and inner thigh since 5 years. Heaviness of the leg, worse in the evening after standing, better on raising the leg. Works as a traffic constable, stands 8 hours a day. Itching above the ankle. No ulcer. No bleeding from vein. Father had varicose veins."
+      ),
+    ],
+    expect: {
+      side_extent: "positive",
+      aching_heaviness: "positive",
+      worse_standing_evening: "positive",
+      occupation_standing: "positive",
+      skin_change: "positive",
+      family_history: "positive",
+      venous_ulcer: "negative",
+      variceal_bleed: "negative",
+      tender_cord: "unasked",
+      sudden_leg_swelling: "unasked",
+      previous_dvt_injury: "unasked",
+      arterial_symptoms: "unasked",
+    },
+    note: "Ulcer and bleeding were explicitly denied; thrombophlebitis, DVT history and arterial symptoms were never asked and must not become negatives.",
+  },
+  {
+    id: "ventral-paraumbilical",
+    title: "Swelling above the navel in a middle-aged woman",
+    treeId: "ventral_hernia",
+    patient: { bed: "SW-9", age_years: 52, sex: "female" },
+    entries: [
+      voice(
+        "e1",
+        "Swelling just above the navel since 3 years, goes back on lying down, comes out on coughing. Gets bouts of pain abdomen on and off. Has put on weight over the years. Three normal deliveries. Previous operation: none. No vomiting, passing stool and flatus normally."
+      ),
+    ],
+    expect: {
+      site_on_abdomen: "positive",
+      reducibility: "positive",
+      cough_impulse_strain: "positive",
+      intermittent_abdominal_pain: "positive",
+      weight_gain: "positive",
+      obstruction_features: "negative",
+      irreducible_painful: "unasked",
+      skin_changes_over_swelling: "unasked",
+      scar_wound_infection: "unasked",
+      raised_abdominal_pressure: "unasked",
+    },
+    note: "Das's para-umbilical picture. Obstruction is explicitly denied; an irreducible painful swelling and skin change were never mentioned and must stay unasked.",
+  },
+  {
+    id: "sinus-neck-tb",
+    title: "Discharging opening in the neck after a gland",
+    treeId: "sinus_fistula",
+    patient: { bed: "SW-14", age_years: 24, sex: "male" },
+    entries: [
+      voice(
+        "e1",
+        "Discharging sinus on the right side of the neck since 1 month. Before that a painless lump in the neck for 1 year which slowly softened and burst. Thin watery discharge. Evening fever and loss of weight. Brother was on ATT last year. No stool or urine from the opening."
+      ),
+    ],
+    expect: {
+      sinus_site: "positive",
+      previous_gland_swelling: "positive",
+      how_it_began: "positive",
+      discharge_nature: "positive",
+      weight_loss_sinus: "positive",
+      tb_history: "positive",
+      viscus_discharge: "negative",
+      bone_pieces_out: "unasked",
+      since_birth: "unasked",
+      operation_at_site: "unasked",
+    },
+    note: "Das's tuberculous sinus story: gland, cold abscess, burst. Stool or urine is explicitly denied; bone chips, birth and operation were never mentioned.",
+  },
+  {
+    id: "abdominal-lump-rif",
+    title: "Lump in the right iliac fossa with altered bowel habit",
+    treeId: "abdominal_lump",
+    patient: { bed: "SW-21", age_years: 61, sex: "male" },
+    entries: [
+      voice(
+        "e1",
+        "Lump in right lower abdomen noticed by chance while bathing 2 months back, slowly growing, painless. Constipation alternating with loose stools. Feels tired, looks pale. Lost about 6 kg. No vomiting. No jaundice."
+      ),
+    ],
+    expect: {
+      site: "positive",
+      first_noticed: "positive",
+      bowel_change: "positive",
+      pallor: "positive",
+      weight_loss: "positive",
+      stale_food_vomiting: "negative",
+      jaundice: "negative",
+      blood_mucus_stool: "unasked",
+      fever_rigor: "unasked",
+      worms: "unasked",
+    },
+    note: "Das's caecal growth picture. Vomiting and jaundice are explicitly denied; blood in stool, rigors and worms were never mentioned and must stay unasked.",
+  },
+  {
     id: "empty-ish",
     title: "Nothing clinical",
     patient: { bed: "MW-2", age_years: 30, sex: "male" },

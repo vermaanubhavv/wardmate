@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, BROWSE, HUTCHISONS, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SCROTAL SWELLING OR PAIN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * SCROTAL SWELLING OR PAIN — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
  * Adult surgical / urology ward, north India. One question dominates: how suddenly did the pain
  * start, and in whom. Sudden severe pain in an adolescent or young adult is torsion until
  * excluded, and the testis is salvageable only for a few hours. Differentials: testicular
@@ -11,13 +11,13 @@ import { commonHpi, BROWSE, HUTCHISONS, MACLEODS, SABISTON, surgicalBackground, 
  */
 export const scrotalSwellingV1: HistoryTree = {
   id: "scrotal_swelling",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Scrotal swelling or pain",
   triggers: ["scrotal swelling", "scrotum swelling", "swelling of scrotum", "testicular pain", "testis pain", "pain in testis", "scrotal pain", "swollen testicle", "testicular swelling", "hydrocele", "varicocele"],
   setting: "Adult surgical / urology ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
-  references: [MACLEODS, HUTCHISONS, BROWSE, SABISTON],
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
+  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BROWSE, SABISTON],
   slots: [
     ...commonHpi("scrotal swelling"),
     val("hpi", "side", "Which side", "Which side is affected — left, right, or both?", ["left", "right", "both", "one side", "bilateral", "unilateral"]),
@@ -45,18 +45,28 @@ export const scrotalSwellingV1: HistoryTree = {
     yn("exposure", "undescended_testis", "Undescended testis / previous scrotal surgery", "Was either testis ever undescended, or has there been previous surgery on the groin or scrotum?", ["undescended", "not descended", "orchidopexy", "previous surgery", "hernia repair", "childhood surgery", "empty scrotum"]),
     yn("exposure", "mumps_tb", "Mumps / tuberculosis", "Any recent mumps, parotid swelling, or past tuberculosis?", ["mumps", "parotid", "swelling of cheek", "tuberculosis", "tb", "koch", "att"], { tier: "detailed" }),
     yn("exposure", "filaria_endemic", "Living in a filaria-endemic area", "Does the patient live in or come from an area where filaria is common?", ["filaria", "endemic", "village", "area", "mosquito", "elephantiasis", "recurrent attacks"], { tier: "detailed" }),
-    ...surgicalBackground({ acute: true }),
+    // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
+    yn("hpi", "pain_trigger_strain", "What the pain started with", "Did the pain start while straining at stool, lifting something heavy, or during intercourse?", ["straining", "lifting heavy", "during intercourse", "after sex", "while passing stool", "exertion", "at rest", "no trigger"], { teach: "Das notes torsion almost always has an exciting cause such as straining, lifting or coitus, from sudden contraction of the cremaster." }),
+    yn("red_flag", "haematuria_new_varicocele", "Blood in urine with a quickly appearing varicocele", "Has the swelling of veins appeared quickly, with blood in the urine?", ["blood in urine", "haematuria", "red urine", "appeared quickly", "recent varicocele", "left side", "no blood in urine"], { teach: "Das links a rapidly appearing left varicocele with haematuria to a kidney growth on that side, which moves the search away from the scrotum." }),
+    yn("associated", "upper_abdominal_lump", "Lump in the upper abdomen", "Has a lump been noticed in the upper abdomen or around the navel?", ["lump in abdomen", "abdominal lump", "upper abdomen", "near the navel", "epigastric lump", "no abdominal lump"], { teach: "Das notes a testicular growth may go unnoticed and first show as an upper-abdominal lump from spread to the lymph nodes." }),
+    yn("red_flag", "urethral_injury_stricture", "Fall astride, urethral stricture or a burst abscess near the urethra", "Was there a fall astride something, a known narrowing of the urine passage, or an abscess near the urethra that burst before the swelling?", ["fall astride", "straddle injury", "stricture", "narrow stream for years", "abscess near urethra", "periurethral", "swelling after passing urine", "no injury"], { teach: "Das gives urethral injury or a burst periurethral abscess on a stricture as the usual story behind urine leaking into the scrotum, which spreads quickly." }),
+    yn("exposure", "occupation_soot_tar_oil", "Work with soot, tar or oil", "Has the work involved years of contact with soot, tar, or mineral oil?", ["soot", "chimney", "tar", "mineral oil", "machine oil", "factory", "mechanic", "no such exposure"], { tier: "detailed", teach: "Das links long occupational contact with soot, tar or oil to cancer of the scrotal skin." }),
+    // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
+    yn("exposure", "recurrent_uti_antibiotics", "Repeated antibiotic courses for urine infection", "Has the patient had repeated courses of antibiotics for urine infections that kept coming back?", ["repeated antibiotics", "recurrent urine infection", "uti again and again", "many courses", "burning urine for months", "no recurrent infection"], { tier: "detailed", teach: "Hamilton Bailey notes genitourinary tuberculosis is often treated with several antibiotic courses for supposed recurrent urine infection before tuberculosis is suspected." }),
+    yn("associated", "scrotal_sinus", "Discharging opening on the scrotum", "Is there an opening on the scrotum that keeps discharging?", ["discharging sinus", "opening on scrotum", "pus from scrotum", "keeps draining", "wound that does not heal", "no discharge"], { tier: "detailed", teach: "Hamilton Bailey describes a discharging scrotal sinus in severe tuberculous infection of the epididymis, which turns the history towards tuberculosis." }),
+    yn("red_flag", "perianal_source", "Abscess or boil near the anus before the scrotal swelling", "Was there an abscess or boil near the anus or in the perineum before the scrotal redness began?", ["perianal abscess", "boil near anus", "perineal abscess", "piles operation", "anal pain before", "no perianal problem"], { teach: "Hamilton Bailey names the large bowel, urinary tract and genital skin as the usual sources of Fournier's gangrene, so the story looks for where the infection entered." }),
+    ...surgicalBackground({ acute: true, omit: ["surg_weight_loss"] }),
   ],
   differentials: [
-    { id: "torsion", name: "Testicular torsion", pointers: ["sudden_severe_pain", "high_riding_horizontal", "previous_similar_episodes", "nausea_vomiting"], discriminators: ["sudden_severe_pain", "high_riding_horizontal", "previous_similar_episodes", "nausea_vomiting", "fever", "urinary_symptoms", "pain_severity"] },
-    { id: "epididymo_orchitis", name: "Epididymo-orchitis", pointers: ["fever", "urinary_symptoms", "sexual_exposure", "pain_severity"], discriminators: ["fever", "urinary_symptoms", "sexual_exposure", "pain_severity", "onset_mode", "sudden_severe_pain", "mumps_tb"] },
+    { id: "torsion", name: "Testicular torsion", pointers: ["sudden_severe_pain", "high_riding_horizontal", "previous_similar_episodes", "nausea_vomiting"], discriminators: ["sudden_severe_pain", "high_riding_horizontal", "previous_similar_episodes", "nausea_vomiting", "fever", "urinary_symptoms", "pain_severity", "pain_trigger_strain"] },
+    { id: "epididymo_orchitis", name: "Epididymo-orchitis", pointers: ["fever", "urinary_symptoms", "sexual_exposure", "pain_severity"], discriminators: ["fever", "urinary_symptoms", "sexual_exposure", "pain_severity", "onset_mode", "sudden_severe_pain", "mumps_tb", "recurrent_uti_antibiotics", "scrotal_sinus"] },
     { id: "hernia", name: "Inguinoscrotal hernia", pointers: ["size_variation", "irreducible_hernia", "swelling_character"], discriminators: ["size_variation", "irreducible_hernia", "swelling_character", "abdominal_pain", "undescended_testis"] },
     { id: "hydrocele", name: "Hydrocele", pointers: ["swelling_character", "transillumination_history"], discriminators: ["swelling_character", "transillumination_history", "pain_severity", "size_variation", "duration"] },
-    { id: "varicocele", name: "Varicocele", pointers: ["swelling_character", "infertility_heaviness", "size_variation"], discriminators: ["swelling_character", "infertility_heaviness", "size_variation", "side", "pain_severity"] },
-    { id: "tumour", name: "Testicular tumour", pointers: ["hard_painless_mass", "lump_in_testis", "weight_loss_cough", "undescended_testis"], discriminators: ["hard_painless_mass", "lump_in_testis", "weight_loss_cough", "undescended_testis", "swelling_character", "trauma"] },
+    { id: "varicocele", name: "Varicocele", pointers: ["swelling_character", "infertility_heaviness", "size_variation"], discriminators: ["swelling_character", "infertility_heaviness", "size_variation", "side", "pain_severity", "haematuria_new_varicocele"] },
+    { id: "tumour", name: "Testicular tumour", pointers: ["hard_painless_mass", "lump_in_testis", "weight_loss_cough", "undescended_testis"], discriminators: ["hard_painless_mass", "lump_in_testis", "weight_loss_cough", "undescended_testis", "swelling_character", "trauma", "upper_abdominal_lump", "recurrent_uti_antibiotics"] },
     { id: "trauma_haematocele", name: "Trauma / haematocele", pointers: ["trauma", "pain_severity", "swelling_character"], discriminators: ["trauma", "pain_severity", "swelling_character", "onset_mode", "lump_in_testis"] },
-    { id: "filarial", name: "Filarial scrotal swelling", pointers: ["limb_swelling", "filaria_endemic"], discriminators: ["limb_swelling", "filaria_endemic", "swelling_character", "duration", "fever"] },
-    { id: "necrotising_infection", name: "Necrotising scrotal infection", pointers: ["skin_changes_sepsis", "fever"], discriminators: ["skin_changes_sepsis", "fever", "pain_severity", "onset_mode"] },
+    { id: "filarial", name: "Filarial scrotal swelling", pointers: ["limb_swelling", "filaria_endemic"], discriminators: ["limb_swelling", "filaria_endemic", "swelling_character", "duration", "fever", "scrotal_sinus"] },
+    { id: "necrotising_infection", name: "Necrotising scrotal infection", pointers: ["skin_changes_sepsis", "fever"], discriminators: ["skin_changes_sepsis", "fever", "pain_severity", "onset_mode", "urethral_injury_stricture", "perianal_source"] },
   ],
   output: {
     durationSlot: "duration",

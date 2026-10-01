@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { BAILEY_LOVE, BROWSE, commonHpi, HAMILTON_BAILEY, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * NECK SWELLING (THYROID) — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * NECK SWELLING (THYROID) — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
  * Adult surgical ward, north India. The generic `lump` tree also fires on a neck swelling and
  * the card is built to show both; this one adds what the texts ask only of a thyroid — whether
  * it moves on swallowing, what it presses on, and whether the gland is working too hard or too
@@ -11,13 +11,13 @@ import { BAILEY_LOVE, BROWSE, commonHpi, HAMILTON_BAILEY, MACLEODS, SABISTON, su
  */
 export const thyroidSwellingV1: HistoryTree = {
   id: "thyroid_swelling",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Neck swelling (thyroid)",
   triggers: ["thyroid", "thyroid swelling", "goitre", "goiter", "swelling in front of neck", "swelling in the neck", "neck swelling", "front of neck", "gale me sujan"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
-  references: [BROWSE, BAILEY_LOVE, HAMILTON_BAILEY, SABISTON, MACLEODS],
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
+  references: [DAS_CLINICAL_SURGERY, BROWSE, BAILEY_LOVE, HAMILTON_BAILEY, SABISTON, MACLEODS],
   slots: [
     ...commonHpi("neck swelling"),
     val("hpi", "site_side", "Where in the neck", "Whereabouts in the neck is the swelling — in the middle, to one side, or both sides?", ["midline", "middle", "one side", "both sides", "right", "left", "front of neck", "below the jaw", "side of neck"]),
@@ -25,7 +25,7 @@ export const thyroidSwellingV1: HistoryTree = {
     val("hpi", "size_change", "Change in size", "Has the swelling grown, shrunk or stayed the same, and over how long?", ["increased", "grown", "same size", "static", "decreased", "months", "years", "weeks", "suddenly increased"], { numeric: true }),
     yn("hpi", "pain", "Pain or tenderness", "Is the swelling painful or tender, and did the pain come on suddenly?", ["painful", "tender", "painless", "sudden pain", "ache", "sore", "pain on touching"]),
     yn("associated", "pressure_symptoms", "Pressure symptoms", "Any difficulty swallowing, difficulty breathing, or a change in the voice?", ["difficulty swallowing", "dysphagia", "difficulty breathing", "breathless", "stridor", "change in voice", "hoarse", "hoarseness", "noisy breathing"]),
-    yn("associated", "lying_flat_breathing", "Breathing worse lying flat", "Is the breathing worse on lying flat, or does the patient sleep propped up because of the swelling?", ["worse lying flat", "cannot lie flat", "sleeps propped", "sleeps sitting", "choking at night", "worse at night"], { tier: "detailed" }),
+    yn("associated", "lying_flat_breathing", "Breathing worse lying flat", "Is the breathing worse on lying flat, or does the patient sleep propped up because of the swelling?", ["worse lying flat", "cannot lie flat", "sleeps propped", "sleeps sitting", "choking at night", "worse at night", "worse on bending neck"], { tier: "detailed" }),
     yn("associated", "overactive_features", "Features of an overactive gland", "Any weight loss despite a good appetite, palpitations, tremor, excessive sweating, heat intolerance, or loose stools?", ["weight loss", "good appetite", "palpitations", "tremor", "trembling", "sweating", "heat intolerance", "cannot tolerate heat", "loose stools", "irritable", "anxious"]),
     yn("associated", "underactive_features", "Features of an underactive gland", "Any weight gain, cold intolerance, constipation, dry skin, hair fall, or excessive sleepiness?", ["weight gain", "cold intolerance", "feels cold", "constipation", "dry skin", "hair fall", "sleepy", "lethargy", "puffiness", "slow"]),
     yn("associated", "eye_symptoms", "Eye symptoms", "Any prominence of the eyes, watering, double vision, or difficulty closing the eyes?", ["prominent eyes", "bulging eyes", "protruding", "watering", "double vision", "cannot close eyes", "staring", "gritty"]),
@@ -39,17 +39,28 @@ export const thyroidSwellingV1: HistoryTree = {
     yn("red_flag", "family_thyroid_cancer", "Family history of thyroid cancer or neck lumps", "Any thyroid cancer, or an operation on the thyroid, in a blood relative?", ["family history", "mother", "father", "sister", "brother", "thyroid cancer", "thyroid operation", "goitre in family", "no family history"], { teach: "A thyroid cancer in a blood relative raises the pre-test question for a new nodule." }),
     // Exposures and background
     yn("exposure", "known_thyroid_treatment", "Already known and treated", "Was the thyroid ever tested or treated before — tablets, an operation, or an injection of radioactive iodine?", ["thyroid test", "tft", "thyroid tablets", "thyroxine", "carbimazole", "operated", "thyroid surgery", "radioactive iodine", "rai", "never treated"]),
-    yn("exposure", "iodine_diet_water", "Diet and water", "Does the family use iodised salt, and is the patient from a hilly or a known goitre area?", ["iodised salt", "iodized salt", "rock salt", "hills", "hilly area", "goitre area", "endemic", "well water", "same problem in the village"], { tier: "detailed" }),
+    yn("exposure", "iodine_diet_water", "Diet and water", "Does the family use iodised salt, and is the patient from a hilly or a known goitre area?", ["iodised salt", "iodized salt", "rock salt", "hills", "hilly area", "goitre area", "endemic", "well water", "same problem in the village", "cabbage", "sea fish"], { tier: "detailed" }),
+    // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
+    yn("associated", "sleepless_nights", "Sleep at night", "How does the patient sleep at night — any sleepless nights?", ["sleepless nights", "cannot sleep", "insomnia", "poor sleep", "wakes at night", "worried", "tense", "sleeps well", "no sleep problem"], { teach: "Das asks every thyroid patient how they sleep, because sleepless nights and constant worry are among the earliest complaints of an overactive gland." }),
+    yn("associated", "irregular_heartbeat", "Irregular or missed heartbeats", "Does the heartbeat feel irregular, or seem to miss or skip beats?", ["irregular heartbeat", "irregular pulse", "missed beats", "skipped beats", "extra beats", "heart flutters", "regular heartbeat", "no irregular beats"], { tier: "detailed", teach: "Das notes that when a long-standing nodular goitre becomes overactive, the heart bears the brunt more than the nerves, so an irregular beat may be the only clue." }),
+    yn("exposure", "family_goitre", "Goitre or overactive gland in the family", "Has anyone else in the family had a goitre or an overactive thyroid?", ["goitre in family", "mother has goitre", "sister has goitre", "family members with goitre", "overactive thyroid in family", "thyroid in family", "no family history of goitre"], { tier: "detailed", teach: "Das points out that goitre and an overactive gland both cluster in families, whether from a shared iodine-poor diet or an inherited defect in hormone making." }),
+    yn("exposure", "goitrogenic_drugs", "Medicines that can enlarge the gland", "Has the patient taken any TB medicine such as PAS, or a sugar tablet of the sulphonylurea group, for a long time?", ["pas", "para aminosalicylic", "tb medicine", "sulphonylurea", "glibenclamide", "glimepiride", "sugar tablets", "no such medicines"], { tier: "detailed", teach: "Das lists these medicines in the past history because some drugs interfere with hormone making and can enlarge the gland." }),
+    yn("exposure", "previous_neck_abscess", "Previous abscess in the front of the neck", "Was there ever an abscess in the front of the neck that was cut open or burst on its own?", ["abscess", "pus", "cut open", "incised", "drained", "burst", "discharging", "no abscess"], { tier: "detailed", teach: "Das asks this because a midline swelling that once formed an abscess and was drained points to a developmental tract rather than the gland itself." }),
+    // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
+    yn("hpi", "puberty_pregnancy_onset", "Onset at puberty or around pregnancy", "Did the swelling first appear at puberty, during a pregnancy, or in the months after a delivery?", ["puberty", "during pregnancy", "after delivery", "after childbirth", "postpartum", "not related to pregnancy"], { teach: "Hamilton Bailey describes diffuse enlargement at puberty and in pregnancy as a response to metabolic demand, and lists postpartum thyroiditis; the timing separates a physiological goitre from thyroiditis." }),
+    yn("exposure", "family_endocrine_tumours", "Family endocrine or polyp syndromes", "Has any blood relative had an adrenal tumour, attacks of very high blood pressure, a parathyroid or calcium problem, or many polyps in the bowel?", ["adrenal tumour", "phaeochromocytoma", "parathyroid", "high calcium", "bowel polyps", "polyposis", "no family history"], { tier: "detailed", teach: "Hamilton Bailey notes that about a fifth of medullary cancers are hereditary within the multiple endocrine neoplasia syndromes, and lists other familial syndromes that carry thyroid cancer, so a family history beyond thyroid disease changes the work-up." }),
+    yn("associated", "proximal_weakness", "Weakness climbing stairs or rising", "Is there difficulty climbing stairs, getting up from squatting, or lifting the arms, or any attacks of sudden weakness?", ["weakness", "difficulty climbing stairs", "cannot get up from squatting", "periodic paralysis", "sudden weakness", "no weakness"], { tier: "detailed", teach: "Hamilton Bailey lists proximal muscle weakness, wasting and periodic paralysis among the features of an overactive gland." }),
+    yn("associated", "hypercalcaemia_features", "Stones, bone pain, thirst", "Any kidney stones, bone pain or a bone that broke easily, passing a lot of urine, or long-standing tiredness and low mood?", ["kidney stone", "bone pain", "fracture", "passing a lot of urine", "thirst", "low mood", "no stones"], { tier: "detailed", teach: "Hamilton Bailey summarises raised parathyroid activity as stones, bones, abdominal groans and psychic moans; it usually presents without any neck swelling, so the history is where it surfaces." }),
     ...surgicalBackground(),
   ],
   differentials: [
-    { id: "simple_goitre", name: "Simple or multinodular goitre", pointers: ["moves_on_swallowing", "size_change", "iodine_diet_water"], discriminators: ["moves_on_swallowing", "size_change", "iodine_diet_water", "pressure_symptoms", "overactive_features", "rapid_growth_hard"] },
-    { id: "solitary_nodule", name: "Solitary thyroid nodule", pointers: ["site_side", "size_change"], discriminators: ["site_side", "size_change", "rapid_growth_hard", "family_thyroid_cancer", "neck_radiation", "other_neck_lumps"] },
-    { id: "thyroiditis", name: "Thyroiditis", pointers: ["pain", "onset_mode", "overactive_features"], discriminators: ["pain", "onset_mode", "overactive_features", "underactive_features", "size_change", "duration"] },
-    { id: "graves", name: "Graves' disease", pointers: ["overactive_features", "eye_symptoms"], discriminators: ["overactive_features", "eye_symptoms", "site_side", "size_change", "known_thyroid_treatment"] },
+    { id: "simple_goitre", name: "Simple or multinodular goitre", pointers: ["moves_on_swallowing", "size_change", "iodine_diet_water"], discriminators: ["moves_on_swallowing", "size_change", "iodine_diet_water", "pressure_symptoms", "overactive_features", "rapid_growth_hard", "irregular_heartbeat", "family_goitre", "goitrogenic_drugs", "puberty_pregnancy_onset"] },
+    { id: "solitary_nodule", name: "Solitary thyroid nodule", pointers: ["site_side", "size_change"], discriminators: ["site_side", "size_change", "rapid_growth_hard", "family_thyroid_cancer", "neck_radiation", "other_neck_lumps", "family_endocrine_tumours"] },
+    { id: "thyroiditis", name: "Thyroiditis", pointers: ["pain", "onset_mode", "overactive_features"], discriminators: ["pain", "onset_mode", "overactive_features", "underactive_features", "size_change", "duration", "puberty_pregnancy_onset"] },
+    { id: "graves", name: "Graves' disease", pointers: ["overactive_features", "eye_symptoms"], discriminators: ["overactive_features", "eye_symptoms", "site_side", "size_change", "known_thyroid_treatment", "sleepless_nights", "family_goitre", "proximal_weakness"] },
     { id: "hypothyroid_goitre", name: "Goitre with an underactive gland", pointers: ["underactive_features", "menstrual_change"], discriminators: ["underactive_features", "menstrual_change", "size_change", "known_thyroid_treatment"] },
-    { id: "thyroid_malignancy", name: "Thyroid malignancy", pointers: ["rapid_growth_hard", "voice_change", "other_neck_lumps", "neck_radiation"], discriminators: ["rapid_growth_hard", "voice_change", "other_neck_lumps", "neck_radiation", "family_thyroid_cancer", "pain", "breathing_difficulty"] },
-    { id: "not_thyroid", name: "A neck swelling that is not the thyroid", pointers: ["other_neck_lumps", "site_side"], discriminators: ["moves_on_swallowing", "site_side", "other_neck_lumps", "pain", "size_change"] },
+    { id: "thyroid_malignancy", name: "Thyroid malignancy", pointers: ["rapid_growth_hard", "voice_change", "other_neck_lumps", "neck_radiation"], discriminators: ["rapid_growth_hard", "voice_change", "other_neck_lumps", "neck_radiation", "family_thyroid_cancer", "pain", "breathing_difficulty", "family_endocrine_tumours"] },
+    { id: "not_thyroid", name: "A neck swelling that is not the thyroid", pointers: ["other_neck_lumps", "site_side"], discriminators: ["moves_on_swallowing", "site_side", "other_neck_lumps", "pain", "size_change", "previous_neck_abscess"] },
   ],
   output: {
     durationSlot: "duration",

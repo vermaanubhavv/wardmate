@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { APLEY, ATLS, BAILEY_LOVE, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { APLEY, ATLS, BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LIMP / DIFFICULTY WALKING FROM HIP OR KNEE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * LIMP / DIFFICULTY WALKING FROM HIP OR KNEE — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
  * Orthopaedics ward and casualty, north India, all ages. The causes change with age, but age
  * comes from the patient record, not from a slot; the questions are written so each one reads
  * sensibly for a toddler, an adolescent and an older adult. A child's hip often hurts at the
@@ -14,13 +14,13 @@ import { APLEY, ATLS, BAILEY_LOVE, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACL
  */
 export const limpV1: HistoryTree = {
   id: "limp",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Limp / difficulty walking from hip or knee",
   triggers: ["limp", "limping", "limps", "hip pain", "pain in hip", "pain in the hip", "refuses to walk", "not bearing weight", "abnormal gait", "waddling gait", "langdana", "langda kar chalna"],
   setting: "Orthopaedics ward and casualty, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
-  references: [APLEY, BAILEY_LOVE, MACLEODS, HUTCHISONS, ATLS],
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
+  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, APLEY, BAILEY_LOVE, MACLEODS, HUTCHISONS, ATLS],
   slots: [
     ...commonHpi("limp"),
     val("hpi", "limp_site", "Side and site of pain", "Which leg, and where is the pain felt — groin, buttock, thigh, knee, shin or foot?", ["left leg", "right leg", "both legs", "groin", "buttock", "hip", "thigh", "knee", "shin", "ankle", "foot", "site"], { teach: "Pain from the hip is often felt only in the thigh or knee, especially in a child, so the site of pain may not be the site of the problem." }),
@@ -42,7 +42,7 @@ export const limpV1: HistoryTree = {
     yn("red_flag", "limp_injury", "Injury before the limp", "Was there an injury before the limp, even a minor fall or twist?", ["injury", "fall", "twist", "trauma", "knock", "hit", "accident", "minor fall"], { teach: "A toddler can break the shin with a simple twist, and an older adult the hip with a trivial fall, so no injury is too small to record." }),
     yn("red_flag", "story_fits_injury", "Account that does not fit the injury", "In a child, does the account of the injury fit the child's age and the injury seen, and has it stayed the same each time it was told?", ["story changed", "different story", "does not fit", "unexplained", "delay in presentation", "not seen", "no one saw", "bruises", "previous injuries"], { teach: "An account that changes, does not match the child's stage of development, or comes late is a reason to ask more and to involve senior colleagues." }),
     yn("red_flag", "elderly_cannot_stand", "Older patient unable to stand after a fall", "In an older patient, is there inability to stand or walk after a fall, or groin pain on weight bearing?", ["elderly", "older", "cannot stand", "cannot get up", "after a fall", "groin pain", "short leg", "turned out", "lying on floor"], { teach: "A hip fracture in an older person may follow a trivial fall and may still allow a painful walk, and delay to surgery shapes the outcome." }),
-    yn("red_flag", "limp_night_pain", "Night pain / pain at rest", "Is there pain at rest or pain that wakes the patient at night?", ["night pain", "wakes at night", "at rest", "constant", "not relieved", "worse at night"], { teach: "Bone pain at night or at rest raises infection or a tumour of the bone rather than a strained joint." }),
+    yn("red_flag", "limp_night_pain", "Night pain / pain at rest", "Is there pain at rest or pain that wakes the patient at night?", ["night pain", "wakes at night", "at rest", "constant", "not relieved", "worse at night", "night cry", "cries at night", "cries in sleep"], { teach: "Bone pain at night or at rest raises infection or a tumour of the bone rather than a strained joint." }),
     yn("red_flag", "limp_cancer_history", "Known cancer", "Any known cancer, or previous treatment for a malignancy?", ["cancer", "malignancy", "tumour", "chemotherapy", "radiotherapy", "leukaemia", "breast", "prostate", "known case"], { teach: "In someone with a known cancer a new limp raises a deposit in the pelvis or femur, where a fracture may follow." }),
     yn("red_flag", "back_bladder_limp", "Back pain with leg weakness or bladder change", "Any back pain with leg weakness, numbness, or change in passing urine?", ["back pain", "leg weakness", "numbness", "bladder", "retention", "incontinence", "spine", "saddle"], { tier: "detailed", teach: "A limp can come from the spine rather than the leg, and bladder change makes that urgent." }),
     IMMUNOCOMPROMISE,
@@ -51,19 +51,28 @@ export const limpV1: HistoryTree = {
     yn("exposure", "birth_breech_swaddling", "Breech birth / first-born / tight swaddling", "In a young child, was the birth breech, was the child first-born, and were the legs wrapped straight and tight in infancy?", ["breech", "first born", "firstborn", "swaddling", "wrapped tight", "legs straight", "hip check"], { tier: "detailed" }),
     yn("exposure", "family_hip_muscle", "Family history of hip or muscle problems", "Any family history of hip problems from infancy, muscle weakness, or sickle cell disease?", ["family history", "hip problem", "hip dislocation", "muscle weakness", "muscular dystrophy", "sickle cell", "brother", "sister", "mother"], { tier: "detailed" }),
     yn("exposure", "previous_leg_problem", "Previous problem, injection or surgery in that leg", "Any previous fracture, surgery, injection into the buttock or thigh, or infection in that leg?", ["previous fracture", "surgery", "operated", "injection", "buttock injection", "infection", "plaster", "polio", "same leg"], { tier: "detailed" }),
-    ...surgicalBackground(),
+    // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
+    val("hpi", "pain_character_limp", "Character of the pain", "Is the pain a dull ache or throbbing?", ["dull ache", "aching", "dull", "throbbing", "pulsating", "sharp", "no pain"], { teach: "Das separates the dull ache of chronic and tuberculous arthritis from the throbbing pain of acute arthritis." }),
+    yn("exposure", "past_urethral_discharge", "Urethral discharge or sexually transmitted infection in the past", "Has the patient ever had a discharge from the urethra or been treated for a sexually transmitted infection?", ["urethral discharge", "discharge from penis", "gonorrhoea", "syphilis", "std", "sti", "sexually transmitted", "no discharge"], { tier: "detailed", teach: "Das asks about past gonorrhoea, syphilis and urethral discharge because both infections can seed or damage a joint." }),
+    yn("exposure", "past_typhoid_pneumonia", "Typhoid or pneumonia in the past", "Has the patient had typhoid fever or pneumonia in the past?", ["typhoid", "enteric fever", "pneumonia", "chest infection", "admitted with fever", "no typhoid"], { tier: "detailed", teach: "Das lists past typhoid and pneumonia alongside tuberculosis as illnesses whose history gives a clue to the cause of a joint problem." }),
+    yn("exposure", "family_gout_rheumatism", "Gout or rheumatism in the family", "Does anyone in the family have gout or rheumatism?", ["gout", "uric acid", "rheumatism", "rheumatoid", "joint pains in family", "no family history"], { tier: "detailed", teach: "Das notes that gout and rheumatism, like tuberculosis and haemophilia, often run in families." }),
+    // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
+    val("hpi", "walking_distance_function", "Walking distance and daily tasks", "How far can the patient walk before the limp or pain stops them, and is putting on shoes and socks difficult?", ["walking distance", "can walk", "metres", "stops after", "shoes", "socks", "difficulty bending", "no limitation"], { tier: "detailed", teach: "Hamilton Bailey describes a hip that makes shoes and socks hard to put on, and a walking distance that falls as the joint worsens." }),
+    yn("exposure", "low_birth_weight", "Low birth weight", "In a child, was the birth weight low or the baby born small?", ["low birth weight", "small baby", "underweight at birth", "premature", "nicu", "normal birth weight"], { tier: "detailed", teach: "Hamilton Bailey links Perthes disease with low birth weight, an abnormal birth presentation and a family history." }),
+    yn("exposure", "packaging_problems", "Neck tilt or foot deformity at birth", "In a young child, was there a tilted neck, a curved foot, or too little fluid around the baby in pregnancy?", ["torticollis", "tilted neck", "wry neck", "curved foot", "metatarsus adductus", "club foot", "oligohydramnios", "less water", "no deformity"], { tier: "detailed", teach: "Hamilton Bailey groups hip dysplasia with other packaging problems of a cramped womb, such as torticollis and metatarsus adductus, and with too little fluid around the baby." }),
+    ...surgicalBackground({ omit: ["surg_weight_loss"] }),
   ],
   differentials: [
-    { id: "septic_arthritis", name: "Septic arthritis of hip or knee", pointers: ["hot_joint_fever", "fever_unwell", "joint_swelling_warmth"], discriminators: ["hot_joint_fever", "fever_unwell", "joint_swelling_warmth", "weight_bearing_limp", "recent_viral_illness", "immunocompromise"] },
+    { id: "septic_arthritis", name: "Septic arthritis of hip or knee", pointers: ["hot_joint_fever", "fever_unwell", "joint_swelling_warmth"], discriminators: ["hot_joint_fever", "fever_unwell", "joint_swelling_warmth", "weight_bearing_limp", "recent_viral_illness", "immunocompromise", "pain_character_limp", "past_urethral_discharge", "past_typhoid_pneumonia"] },
     { id: "transient_synovitis", name: "Transient synovitis of the hip", pointers: ["recent_viral_illness", "painful_or_painless"], discriminators: ["recent_viral_illness", "fever_unwell", "hot_joint_fever", "weight_bearing_limp", "onset_mode"] },
-    { id: "ddh", name: "Developmental dysplasia of the hip", pointers: ["leg_shape_length", "walking_milestone", "birth_breech_swaddling"], discriminators: ["leg_shape_length", "walking_milestone", "birth_breech_swaddling", "painful_or_painless", "family_hip_muscle"] },
-    { id: "perthes", name: "Perthes disease", pointers: ["painful_or_painless", "limp_site"], discriminators: ["painful_or_painless", "limp_site", "limp_timing", "fever_unwell", "progression"] },
+    { id: "ddh", name: "Developmental dysplasia of the hip", pointers: ["leg_shape_length", "walking_milestone", "birth_breech_swaddling"], discriminators: ["leg_shape_length", "walking_milestone", "birth_breech_swaddling", "painful_or_painless", "family_hip_muscle", "packaging_problems"] },
+    { id: "perthes", name: "Perthes disease", pointers: ["painful_or_painless", "limp_site"], discriminators: ["painful_or_painless", "limp_site", "limp_timing", "fever_unwell", "progression", "low_birth_weight"] },
     { id: "scfe", name: "Slipped capital femoral epiphysis", pointers: ["growth_spurt_weight", "limp_site", "leg_shape_length"], discriminators: ["growth_spurt_weight", "limp_site", "leg_shape_length", "weight_bearing_limp", "onset_mode"] },
-    { id: "tb_joint", name: "Tuberculosis of hip or knee", pointers: ["tb_contact", "limp_constitutional", "limp_night_pain"], discriminators: ["tb_contact", "limp_constitutional", "limp_night_pain", "joint_swelling_warmth", "locking_giving_way", "immunocompromise"] },
-    { id: "osteomyelitis", name: "Osteomyelitis of femur or tibia", pointers: ["fever_unwell", "limp_night_pain", "joint_swelling_warmth"], discriminators: ["fever_unwell", "limp_night_pain", "joint_swelling_warmth", "previous_leg_problem", "immunocompromise", "avn_risk"] },
+    { id: "tb_joint", name: "Tuberculosis of hip or knee", pointers: ["tb_contact", "limp_constitutional", "limp_night_pain"], discriminators: ["tb_contact", "limp_constitutional", "limp_night_pain", "joint_swelling_warmth", "locking_giving_way", "immunocompromise", "pain_character_limp"] },
+    { id: "osteomyelitis", name: "Osteomyelitis of femur or tibia", pointers: ["fever_unwell", "limp_night_pain", "joint_swelling_warmth"], discriminators: ["fever_unwell", "limp_night_pain", "joint_swelling_warmth", "previous_leg_problem", "immunocompromise", "avn_risk", "past_typhoid_pneumonia"] },
     { id: "fracture", name: "Fracture (toddler's fracture, neck of femur, stress fracture)", pointers: ["limp_injury", "elderly_cannot_stand", "injury_mechanism"], discriminators: ["limp_injury", "elderly_cannot_stand", "injury_mechanism", "weight_bearing_limp", "leg_shape_length", "story_fits_injury"] },
-    { id: "avn", name: "Avascular necrosis of the femoral head", pointers: ["avn_risk", "limp_site"], discriminators: ["avn_risk", "limp_site", "limp_timing", "onset_mode", "progression"] },
-    { id: "osteoarthritis", name: "Osteoarthritis of hip or knee", pointers: ["limp_timing", "locking_giving_way"], discriminators: ["limp_timing", "locking_giving_way", "limp_night_pain", "previous_leg_problem", "progression"] },
+    { id: "avn", name: "Avascular necrosis of the femoral head", pointers: ["avn_risk", "limp_site"], discriminators: ["avn_risk", "limp_site", "limp_timing", "onset_mode", "progression", "walking_distance_function"] },
+    { id: "osteoarthritis", name: "Osteoarthritis of hip or knee", pointers: ["limp_timing", "locking_giving_way"], discriminators: ["limp_timing", "locking_giving_way", "limp_night_pain", "previous_leg_problem", "progression", "walking_distance_function"] },
     { id: "tumour", name: "Bone tumour or metastasis", pointers: ["limp_night_pain", "limp_cancer_history", "limp_constitutional"], discriminators: ["limp_night_pain", "limp_cancer_history", "limp_constitutional", "joint_swelling_warmth", "progression"] },
     { id: "leg_length", name: "Leg-length discrepancy", pointers: ["leg_shape_length", "painful_or_painless"], discriminators: ["leg_shape_length", "painful_or_painless", "previous_leg_problem", "walking_milestone"] },
     { id: "neuromuscular", name: "Neuromuscular cause (cerebral palsy, muscular dystrophy, old polio, nerve injury)", pointers: ["weakness_falls", "walking_milestone"], discriminators: ["weakness_falls", "walking_milestone", "family_hip_muscle", "previous_leg_problem", "painful_or_painless"] },

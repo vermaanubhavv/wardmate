@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, BAILEY_LOVE, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * CONSTIPATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * CONSTIPATION — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
  * Adult surgical / medicine ward, north India. Separates the constipation of a functional or
  * dietary cause from obstruction and from a colorectal lesion. Differentials: functional /
  * low-fibre, drug-induced, hypothyroidism and hypercalcaemia, colorectal cancer, large-bowel
@@ -10,17 +10,17 @@ import { commonHpi, BAILEY_LOVE, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, surg
  */
 export const constipationV1: HistoryTree = {
   id: "constipation",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Constipation",
   triggers: ["constipation", "not passing stools", "hard stools", "difficulty passing stools", "unable to pass stools", "infrequent stools", "obstipation"],
   setting: "Adult surgical / medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
-  references: [MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
+  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
   slots: [
     ...commonHpi("constipation"),
     val("hpi", "frequency", "Frequency", "How often are stools passed now, and how often were they passed before?", ["once in", "every", "times a week", "days", "daily", "usual", "earlier", "before", "frequency"]),
-    val("hpi", "consistency", "Consistency / size", "Are the stools hard and pellet-like, or thin and pencil-like?", ["hard", "pellet", "pencil", "thin", "narrow", "ribbon", "soft", "watery", "consistency"]),
+    val("hpi", "consistency", "Consistency / size", "Are the stools hard and pellet-like, or thin and pencil-like?", ["hard", "pellet", "pencil", "thin", "narrow", "ribbon", "soft", "watery", "consistency", "pipe stem", "tooth paste"]),
     yn("hpi", "straining", "Straining / incomplete emptying", "Any straining, a feeling of incomplete emptying, or need to use fingers?", ["straining", "incomplete", "incomplete emptying", "tenesmus", "fingers", "digital"]),
     yn("hpi", "flatus", "Passage of flatus", "Is flatus being passed?", ["flatus", "gas", "passing gas", "not passing flatus"]),
     yn("associated", "abdominal_pain", "Abdominal pain / distension", "Any abdominal pain, colicky pain, or distension?", ["pain", "colicky", "distension", "bloating", "cramps", "swollen abdomen"]),
@@ -42,14 +42,20 @@ export const constipationV1: HistoryTree = {
     yn("exposure", "constipating_drugs", "Constipating drugs", "Any opioids, iron, calcium, antacids, anticholinergics, or antidepressants?", ["opioid", "tramadol", "iron", "calcium", "antacid", "anticholinergic", "antidepressant", "verapamil", "codeine", "morphine"]),
     yn("exposure", "neuro_immobility", "Immobility / neurological disease", "Any immobility, spinal problem, stroke, diabetes, or Parkinson's disease?", ["immobile", "bedridden", "spinal", "stroke", "diabetes", "parkinson", "neuropathy", "paraplegia"], { tier: "detailed" }),
     yn("exposure", "abdominal_surgery", "Previous abdominal surgery", "Any previous abdominal or pelvic surgery, or hernia?", ["surgery", "operation", "laparotomy", "hernia", "adhesions", "hysterectomy"], { tier: "detailed" }),
-    ...surgicalBackground(),
+    // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
+    yn("hpi", "laxative_escalation", "Needing more and more laxatives", "Has the patient needed more and more laxative to open the bowels?", ["more laxatives", "increasing laxatives", "purgatives", "needs laxative daily", "laxative not working", "no laxatives"], {  teach: "Das names constipation needing ever more purgatives as the presenting symptom of a narrowing growth in the left colon." }),
+    val("hpi", "stool_colour", "Colour of the stool", "What colour are the stools — normal, black and tarry, or pale and clay-coloured?", ["black stools", "tarry", "pale stools", "clay coloured", "white stools", "offensive", "normal colour"], { tier: "detailed", teach: "Das asks stool colour because black, pale or bulky offensive stools each point to a different part of the gut." }),
+    yn("red_flag", "pain_became_constant", "Colicky pain turned constant", "Has colicky pain changed to a constant, burning pain?", ["became constant", "now constant", "continuous pain", "burning pain", "was colicky", "no longer comes and goes"], { teach: "Das warns that colic of obstruction turning constant is the change seen when the blood supply of the gut is threatened." }),
+    // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
+    yn("hpi", "previous_attacks", "Earlier attacks that settled", "Has there been an earlier attack of constipation with a swollen belly that settled on its own?", ["similar attacks", "happened before", "previous episodes", "settled on its own", "first time", "no previous attacks"], { tier: "detailed", teach: "Hamilton Bailey reads earlier attacks of pain, swelling and constipation that went away as earlier twists of the sigmoid colon that untwisted." }),
+    ...surgicalBackground({ omit: ["surg_weight_loss"] }),
   ],
   differentials: [
     { id: "functional", name: "Functional / low-fibre constipation", pointers: ["fluid_diet", "straining"], discriminators: ["fluid_diet", "straining", "consistency", "frequency", "onset_mode"] },
     { id: "drug", name: "Drug-induced constipation", pointers: ["constipating_drugs"], discriminators: ["constipating_drugs", "onset", "neuro_immobility"] },
-    { id: "metabolic", name: "Hypothyroidism / hypercalcaemia / dehydration", pointers: ["thyroid_features", "hypercalcaemia"], discriminators: ["thyroid_features", "hypercalcaemia", "appetite_weight", "fluid_diet"] },
-    { id: "colorectal_lesion", name: "Colorectal lesion", pointers: ["rectal_bleeding", "weight_loss", "change_in_habit", "family_bowel_cancer"], discriminators: ["rectal_bleeding", "weight_loss", "change_in_habit", "family_bowel_cancer", "consistency", "alternating", "anaemia_symptoms"] },
-    { id: "obstruction", name: "Large-bowel obstruction", pointers: ["obstruction", "abdominal_pain", "vomiting", "flatus"], discriminators: ["obstruction", "flatus", "vomiting", "abdominal_pain", "abdominal_surgery"] },
+    { id: "metabolic", name: "Hypothyroidism / hypercalcaemia / dehydration", pointers: ["thyroid_features", "hypercalcaemia"], discriminators: ["thyroid_features", "hypercalcaemia", "appetite_weight", "fluid_diet", "stool_colour"] },
+    { id: "colorectal_lesion", name: "Colorectal lesion", pointers: ["rectal_bleeding", "weight_loss", "change_in_habit", "family_bowel_cancer"], discriminators: ["rectal_bleeding", "weight_loss", "change_in_habit", "family_bowel_cancer", "consistency", "alternating", "anaemia_symptoms", "laxative_escalation", "stool_colour"] },
+    { id: "obstruction", name: "Large-bowel obstruction", pointers: ["obstruction", "abdominal_pain", "vomiting", "flatus"], discriminators: ["obstruction", "flatus", "vomiting", "abdominal_pain", "abdominal_surgery", "pain_became_constant", "previous_attacks"] },
     { id: "anorectal", name: "Anorectal disease (fissure, piles)", pointers: ["blood_mucus", "straining"], discriminators: ["blood_mucus", "straining", "consistency"] },
   ],
   output: {

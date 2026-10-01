@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, BROWSE, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, SABISTON, ebem, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { BROWSE, commonHpi, DAS_CLINICAL_SURGERY, ebem, HAMILTON_BAILEY, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LEG ULCER / NON-HEALING WOUND — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * LEG ULCER / NON-HEALING WOUND — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
  * Adult surgical ward, north India. Site, pain and the state of the circulation separate most of
  * this list: an ulcer above the medial malleolus in a heavy aching leg is venous, a painful
  * punched-out ulcer on the toes with rest pain is arterial, and a painless ulcer under the
@@ -12,13 +12,15 @@ import { commonHpi, BROWSE, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, SABISTON, eb
  */
 export const legUlcerV1: HistoryTree = {
   id: "leg_ulcer",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Leg ulcer / non-healing wound",
   triggers: ["leg ulcer", "ulcer", "non healing wound", "wound not healing", "foot ulcer", "diabetic foot", "sore on leg", "wound on foot", "chronic ulcer", "ghaav", "gangrene", "blackening of toes"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
+    DAS_CLINICAL_SURGERY,
+    HAMILTON_BAILEY,
     BROWSE,
     SABISTON,
     ebem("Does the clinical examination predict lower extremity peripheral arterial disease?", 2009, "19185391"),
@@ -59,19 +61,28 @@ export const legUlcerV1: HistoryTree = {
     yn("exposure", "footwear_occupation", "Footwear and work", "What footwear is worn, and does the work involve walking barefoot, standing for long, or exposure to water?", ["footwear", "barefoot", "chappal", "slippers", "standing", "walking", "water", "field", "farmer", "ill fitting"]),
     yn("exposure", "tb_contact", "TB contact / past TB", "Any past tuberculosis or contact with tuberculosis?", ["tb", "tuberculosis", "koch", "att", "akt", "tb contact"], { tier: "detailed" }),
     yn("exposure", "leprosy_contact", "Loss of sensation elsewhere / patches on skin", "Any pale or numb patches on the skin, thickened nerves, or deformity of the hands?", ["pale patch", "numb patch", "hypopigmented", "thickened nerve", "claw hand", "leprosy", "deformity", "loss of sensation"], { tier: "detailed" }),
-    ...surgicalBackground(),
+    // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
+    yn("hpi", "began_as_swelling", "Began as a lump that broke down", "Did the ulcer begin as a lump or swelling that later burst or broke open?", ["lump", "swelling", "gland", "burst", "broke open", "lump first", "swelling first", "started as a swelling", "no lump before"], { teach: "Das notes that a spontaneous ulcer may follow a swelling — matted tuberculous nodes, a gumma, or a fast-growing tumour — so what was there before the ulcer narrows the list." }),
+    yn("exposure", "nerve_spine_disease", "Disease of the spine, spinal cord or nerves", "Has the patient any known disease of the spine, spinal cord or nerves — a past spinal injury, a cavity in the cord, or nerve damage from another cause?", ["spinal injury", "spine injury", "spinal cord", "syringomyelia", "myelitis", "tabes", "nerve damage", "nerve injury", "peripheral neuritis", "paralysis", "no nerve disease"], { tier: "detailed", teach: "Das lists tabes dorsalis, syringomyelia, transverse myelitis and peripheral neuritis as causes of a trophic ulcer; numbness from a cause other than diabetes is missed unless the nerve disease itself is asked." }),
+    yn("exposure", "past_syphilis", "Past syphilis / genital sore", "Has the patient ever had syphilis or a genital sore?", ["syphilis", "genital sore", "chancre", "vdrl", "sexually transmitted", "std", "no genital sore"], { tier: "detailed", teach: "Das lists syphilis among the diseases behind an ulcer; a gummatous ulcer typically lies over a bone close to the skin such as the tibia." }),
+    // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
+    yn("hpi", "pain_before_ulcer", "Pain before the ulcer appeared", "Was the spot painful before the skin broke down into an ulcer?", ["pain before", "painful before", "pain first", "pain then ulcer", "tender spot", "ulcer came first", "no pain before"], { tier: "detailed", teach: "Hamilton Bailey notes that vasculitic ulcers can be very painful and that the pain may come before the ulcer, which helps separate them from the less painful venous and neuropathic ulcers." }),
+    yn("exposure", "foot_self_check", "Able to check own feet", "Can the patient see and reach their own feet to check them, or does someone else look at the feet regularly?", ["poor eyesight", "cannot see", "weak vision", "cannot reach feet", "checks feet daily", "family checks", "never checks", "no one checks"], { tier: "detailed", teach: "Hamilton Bailey points out that neuropathic ulcers are painless and often out of sight on the sole, and that poor vision in diabetes makes them easier to miss, so whether anyone looks at the feet explains a late presentation." }),
+    yn("hpi", "bandage_plaster_pressure", "Bandage, plaster or splint over the spot", "Was a tight bandage, plaster cast or splint pressing on the place where the ulcer formed?", ["bandage", "tight bandage", "plaster", "cast", "splint", "pressed on", "no bandage"], { tier: "detailed", teach: "Hamilton Bailey describes a bandage over a tendon at the ankle stopping skin blood flow as readily as lying in bed, so a recent dressing or cast is asked about when an ulcer sits over a tendon or bony point." }),
+    yn("exposure", "radiotherapy_site", "Radiotherapy to the area", "Has the area of the ulcer ever been treated with radiotherapy?", ["radiotherapy", "radiation", "radiation treatment", "cancer treatment", "no radiotherapy"], { tier: "detailed", teach: "Hamilton Bailey lists chronic radiation damage, alongside a chronic ulcer or scar, as ground in which a squamous carcinoma can arise, so earlier radiotherapy to the site matters when a leg ulcer will not heal." }),
+    ...surgicalBackground({ omit: ["surg_weight_loss", "surg_occupation_residence"] }),
   ],
   differentials: [
     { id: "venous", name: "Venous ulcer", pointers: ["site", "leg_swelling_varicose", "pain_character", "dvt_history"], discriminators: ["site", "leg_swelling_varicose", "pain_character", "dvt_history", "edge_floor", "claudication_rest_pain", "discharge_smell"] },
     { id: "arterial", name: "Arterial ulcer", pointers: ["claudication_rest_pain", "critical_ischaemia", "colour_change_toes", "smoking"], discriminators: ["claudication_rest_pain", "critical_ischaemia", "colour_change_toes", "smoking", "site", "edge_floor", "pain_character", "vascular_risk"] },
-    { id: "neuropathic", name: "Diabetic neuropathic ulcer", pointers: ["diabetes", "numbness_burning", "painless_deep_ulcer", "site"], discriminators: ["diabetes", "numbness_burning", "painless_deep_ulcer", "site", "footwear_occupation", "pain_character", "probing_to_bone"] },
-    { id: "diabetic_foot_infection", name: "Diabetic foot infection / osteomyelitis", pointers: ["diabetes", "probing_to_bone", "spreading_infection_sepsis", "fever_spreading"], discriminators: ["diabetes", "probing_to_bone", "spreading_infection_sepsis", "fever_spreading", "discharge_smell", "colour_change_toes"] },
-    { id: "pressure", name: "Pressure ulcer", pointers: ["immobility", "site"], discriminators: ["immobility", "site", "how_it_started", "edge_floor", "numbness_burning"] },
-    { id: "tuberculous", name: "Tuberculous ulcer", pointers: ["tb_contact", "weight_loss_cough", "edge_floor"], discriminators: ["tb_contact", "weight_loss_cough", "edge_floor", "discharge_smell", "duration", "pain_character"] },
-    { id: "malignant", name: "Malignant ulcer", pointers: ["chronic_ulcer_change", "edge_floor", "size_progression"], discriminators: ["chronic_ulcer_change", "edge_floor", "size_progression", "duration", "discharge_smell", "weight_loss_cough"] },
-    { id: "vasculitic", name: "Vasculitic ulcer", pointers: ["joint_skin_disease", "pain_character"], discriminators: ["joint_skin_disease", "pain_character", "site", "edge_floor", "size_progression"] },
+    { id: "neuropathic", name: "Diabetic neuropathic ulcer", pointers: ["diabetes", "numbness_burning", "painless_deep_ulcer", "site"], discriminators: ["diabetes", "numbness_burning", "painless_deep_ulcer", "site", "footwear_occupation", "pain_character", "probing_to_bone", "nerve_spine_disease", "foot_self_check"] },
+    { id: "diabetic_foot_infection", name: "Diabetic foot infection / osteomyelitis", pointers: ["diabetes", "probing_to_bone", "spreading_infection_sepsis", "fever_spreading"], discriminators: ["diabetes", "probing_to_bone", "spreading_infection_sepsis", "fever_spreading", "discharge_smell", "colour_change_toes", "foot_self_check"] },
+    { id: "pressure", name: "Pressure ulcer", pointers: ["immobility", "site"], discriminators: ["immobility", "site", "how_it_started", "edge_floor", "numbness_burning", "bandage_plaster_pressure"] },
+    { id: "tuberculous", name: "Tuberculous ulcer", pointers: ["tb_contact", "weight_loss_cough", "edge_floor"], discriminators: ["tb_contact", "weight_loss_cough", "edge_floor", "discharge_smell", "duration", "pain_character", "began_as_swelling"] },
+    { id: "malignant", name: "Malignant ulcer", pointers: ["chronic_ulcer_change", "edge_floor", "size_progression"], discriminators: ["chronic_ulcer_change", "edge_floor", "size_progression", "duration", "discharge_smell", "weight_loss_cough", "began_as_swelling", "radiotherapy_site"] },
+    { id: "vasculitic", name: "Vasculitic ulcer", pointers: ["joint_skin_disease", "pain_character"], discriminators: ["joint_skin_disease", "pain_character", "site", "edge_floor", "size_progression", "pain_before_ulcer"] },
     { id: "acute_ischaemia", name: "Acute limb ischaemia", pointers: ["sudden_cold_painful_limb", "colour_change_toes"], discriminators: ["sudden_cold_painful_limb", "colour_change_toes", "onset_mode", "claudication_rest_pain", "vascular_risk"] },
-    { id: "traumatic", name: "Traumatic ulcer", pointers: ["how_it_started", "footwear_occupation"], discriminators: ["how_it_started", "footwear_occupation", "size_progression", "numbness_burning", "diabetes"] },
+    { id: "traumatic", name: "Traumatic ulcer", pointers: ["how_it_started", "footwear_occupation"], discriminators: ["how_it_started", "footwear_occupation", "size_progression", "numbness_burning", "diabetes", "bandage_plaster_pressure"] },
   ],
   output: {
     durationSlot: "duration",

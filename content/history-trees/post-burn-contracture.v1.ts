@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { BAILEY_LOVE, commonHpi, GRABB_SMITH, HUTCHISONS, MACLEODS, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, GRABB_SMITH, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SCAR TIGHTENING AFTER A BURN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * SCAR TIGHTENING AFTER A BURN — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
  * Burns and plastic surgery unit, north India, where many burns heal at home without grafting or
  * splinting and arrive months or years later as tight bands across the neck, armpit, elbow,
  * hand or face. The history is about the old burn, what the tightness now stops the patient
@@ -13,13 +13,13 @@ import { BAILEY_LOVE, commonHpi, GRABB_SMITH, HUTCHISONS, MACLEODS, surgicalBack
  */
 export const postBurnContractureV1: HistoryTree = {
   id: "post_burn_contracture",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Scar tightening after a burn",
   triggers: ["post burn contracture", "burn contracture", "contracture", "burn scar", "old burn", "scar tightening", "tight scar", "scar pulling", "hypertrophic scar", "keloid", "raised scar", "neck contracture", "cannot raise arm after burn", "cannot open mouth after burn", "jale ka nishan", "khinchav"],
   setting: "Burns and plastic surgery unit, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
-  references: [GRABB_SMITH, BAILEY_LOVE, MACLEODS, HUTCHISONS],
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
+  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, GRABB_SMITH, BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("scar tightening"),
     val("hpi", "original_burn", "The original burn", "How long ago was the burn, what caused it, and how much of the body was involved?", ["years ago", "months ago", "in childhood", "flame", "kerosene", "stove", "scald", "hot water", "electric", "acid", "chemical", "large area", "small area"]),
@@ -45,7 +45,7 @@ export const postBurnContractureV1: HistoryTree = {
     yn("exposure", "nutrition_contracture", "Eating and weight", "Is the patient eating well and keeping weight, or has there been weight loss?", ["eating well", "poor appetite", "weight loss", "thin", "malnourished", "gaining weight"], { tier: "detailed" }),
     yn("exposure", "smoking_contracture", "Smoking", "Does the patient smoke or use tobacco?", ["smoking", "smoker", "bidi", "cigarette", "tobacco", "non smoker"], { tier: "detailed" }),
     // Release is a planned operation; the pre-operative background is asked in the long case.
-    ...surgicalBackground(),
+    ...surgicalBackground({ omit: ["surg_weight_loss"] }),
   ],
   differentials: [
     { id: "neck_contracture", name: "Post-burn contracture of the neck", pointers: ["contracture_sites", "movement_lost"], discriminators: ["contracture_sites", "movement_lost", "mouth_airway_restriction", "child_growth_effect", "previous_release"] },

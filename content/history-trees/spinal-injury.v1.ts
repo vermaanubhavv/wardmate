@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { ATLS, BAILEY_LOVE, commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, surgicalBackground, val, yn, YOUMANS } from "@/content/history-trees/_helpers";
+import { ATLS, BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, surgicalBackground, val, yn, YOUMANS } from "@/content/history-trees/_helpers";
 
 /**
- * INJURY TO THE SPINE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * INJURY TO THE SPINE — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
  * Neurosurgery ward and casualty, north India. Falls from a tree, a roof or a height and road
  * traffic injury make up most of the casemix, with diving into shallow water and assault
  * behind them. The history fixes the time of injury, how the patient was lifted and carried,
@@ -16,17 +16,17 @@ import { ATLS, BAILEY_LOVE, commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, surgical
  */
 export const spinalInjuryV1: HistoryTree = {
   id: "spinal_injury",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Injury to the spine",
   triggers: ["spinal injury", "spine injury", "injury to the spine", "spinal cord injury", "cord injury", "neck injury", "back injury", "fall from tree", "fell from tree", "fell from roof", "diving injury", "cervical fracture", "vertebral fracture", "fracture spine", "kamar me chot", "gardan me chot", "reedh ki haddi me chot", "legs not moving after fall"],
   setting: "Neurosurgery ward and casualty, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
-  references: [ATLS, YOUMANS, BAILEY_LOVE, MACLEODS, HUTCHISONS],
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
+  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, ATLS, YOUMANS, BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("spinal injury"),
     val("informant", "scene_account", "Account from the scene", "Who was with the patient at the time of injury, and what did they see — did the patient move the arms and legs at the scene?", ["witnessed", "saw", "bystander", "family", "police", "no one saw", "moving legs at scene", "moving hands", "found lying", "brought by"]),
-    val("hpi", "injury_mechanism", "Mechanism", "How did the injury happen — a fall from a tree, roof or height, a road traffic collision, a dive into shallow water, a heavy load falling on the back, or an assault?", ["fall", "tree", "roof", "chhat", "height", "road traffic", "motorcycle", "pillion", "dive", "diving", "shallow water", "canal", "pond", "load fell", "wall collapse", "assault", "beaten"]),
+    val("hpi", "injury_mechanism", "Mechanism", "How did the injury happen — a fall from a tree, roof or height, a road traffic collision, a dive into shallow water, a heavy load falling on the back, or an assault?", ["fall", "tree", "roof", "chhat", "height", "road traffic", "motorcycle", "pillion", "dive", "diving", "shallow water", "canal", "pond", "load fell", "wall collapse", "assault", "beaten", "lifting weight", "lifted from bent position", "sudden jolt", "seat belt", "sudden brake"]),
     val("hpi", "fall_height_landing", "Height of fall and how the patient landed", "How far was the fall, and did the patient land on the feet, the buttocks, the back or the head first?", ["feet", "metres", "storey", "landed on feet", "landed on buttocks", "landed on back", "head first", "on the head", "speed", "thrown", "ejected"], { numeric: true }),
     val("hpi", "time_of_injury", "Time of injury", "At what time did the injury happen, and how many hours has it been since?", ["time", "o'clock", "morning", "evening", "night", "hours ago", "hours since", "yesterday", "at about"], { numeric: true }),
     val("hpi", "extrication_transport", "How the patient was moved and brought", "How was the patient lifted and carried — by hand, on a cot or charpai, on a board or stretcher, with the neck supported or not — and was the patient taken anywhere else first?", ["lifted", "carried", "charpai", "cot", "stretcher", "board", "collar", "neck supported", "sat up", "made to walk", "auto", "ambulance", "referred", "other hospital", "private hospital"], { teach: "Unsupported lifting, sitting the patient up or making them walk can turn an unstable fracture into a cord injury, so how they arrived matters as much as how they fell." }),
@@ -50,19 +50,26 @@ export const spinalInjuryV1: HistoryTree = {
     PREGNANCY,
     yn("exposure", "intoxication", "Alcohol or drugs at the time", "Had the patient taken alcohol or any intoxicant at the time of injury?", ["alcohol", "drunk", "intoxicated", "smell of alcohol", "bhang", "under influence"], { teach: "Intoxication blunts pain and makes the neurological examination unreliable, so the spine is treated as injured until cleared." }),
     yn("exposure", "prior_neck_symptoms", "Neck or limb symptoms before the injury", "Before the injury, was there neck pain, tingling in the hands, or unsteadiness in walking?", ["neck pain before", "tingling before", "old neck problem", "unsteady before", "spondylosis", "already weak"], { tier: "detailed", teach: "A narrow, arthritic neck can suffer a cord injury from a minor fall without any fracture, typically with the hands worse than the legs." }),
+    // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
+    yn("hpi", "girdle_pain", "Band-like tightness around the trunk", "Is there a feeling of a tight band or constriction around the chest or abdomen, and at what level?", ["band around chest", "tight band", "girdle pain", "constriction", "belt like", "around the trunk", "at the level of", "no girdle pain"], { teach: "Das asks every spinal injury about a sense of constriction around the trunk and has its level noted, because the level marks the upper edge of the cord or root damage." }),
+    // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
+    val("hpi", "before_the_fall", "What happened before the fall", "What happened just before the fall — a slip, giddiness, a blackout or a fit?", ["slipped", "lost balance", "giddiness", "blackout", "fainted", "fit", "seizure", "epilepsy", "no warning"], { teach: "Hamilton Bailey asks about the circumstances before a fall, since an illness such as epilepsy may have caused it and needs its own care." }),
+    val("hpi", "landing_surface", "Surface landed on", "What did the patient land on — concrete, hard ground, soft soil, sand or water?", ["concrete", "cemented floor", "hard ground", "stone", "soft soil", "mud", "sand", "water", "haystack"], { tier: "detailed", teach: "Hamilton Bailey lists the type of surface at impact with the height of a fall, because a hard surface transmits more force to the spine." }),
+    yn("exposure", "fragile_bones", "Weak bones or easy fractures", "Has the patient been told of weak or thin bones, or broken a bone before from a minor fall?", ["thin bones", "weak bones", "osteoporosis", "low bone density", "fracture from minor fall", "previous fracture", "lost height", "no bone problem"], { tier: "detailed", teach: "Hamilton Bailey notes vertebral compression fractures in fragile bone after only the mildest stress, so a trivial mechanism does not lower the suspicion." }),
+    yn("exposure", "cancer_history_spine", "Known cancer", "Has the patient ever been treated for a cancer — of the breast, lung, prostate, kidney or thyroid?", ["cancer", "malignancy", "tumour", "breast cancer", "lung cancer", "prostate", "kidney", "thyroid", "lymphoma", "chemotherapy", "radiotherapy", "no cancer"], { tier: "detailed", teach: "Hamilton Bailey names these primaries as the common sources of vertebral deposits, which can let a vertebra give way after minor injury." }),
     ...surgicalBackground({ acute: true }),
   ],
   differentials: [
-    { id: "cervical_fracture", name: "Cervical spine fracture or dislocation", pointers: ["breathing_difficulty", "burning_hands", "head_injury_loc"], discriminators: ["injury_mechanism", "spinal_pain_site", "weakness_pattern", "breathing_difficulty", "burning_hands", "head_injury_loc"] },
-    { id: "thoracolumbar_fracture", name: "Thoracolumbar fracture", pointers: ["other_injuries", "spinal_pain_site"], discriminators: ["fall_height_landing", "spinal_pain_site", "other_injuries", "weakness_pattern", "sensory_level"] },
-    { id: "complete_cord", name: "Complete spinal cord injury", pointers: ["complete_loss", "priapism", "bladder_bowel"], discriminators: ["complete_loss", "sensory_level", "saddle_numbness", "weakness_onset", "priapism"] },
-    { id: "incomplete_cord", name: "Incomplete spinal cord injury", pointers: ["worsening_deficit", "walked_after"], discriminators: ["weakness_pattern", "sensory_level", "saddle_numbness", "weakness_onset", "worsening_deficit", "walked_after"] },
+    { id: "cervical_fracture", name: "Cervical spine fracture or dislocation", pointers: ["breathing_difficulty", "burning_hands", "head_injury_loc"], discriminators: ["injury_mechanism", "spinal_pain_site", "weakness_pattern", "breathing_difficulty", "burning_hands", "head_injury_loc", "before_the_fall", "landing_surface", "cancer_history_spine"] },
+    { id: "thoracolumbar_fracture", name: "Thoracolumbar fracture", pointers: ["other_injuries", "spinal_pain_site"], discriminators: ["fall_height_landing", "spinal_pain_site", "other_injuries", "weakness_pattern", "sensory_level", "girdle_pain", "before_the_fall", "landing_surface", "fragile_bones", "cancer_history_spine"] },
+    { id: "complete_cord", name: "Complete spinal cord injury", pointers: ["complete_loss", "priapism", "bladder_bowel"], discriminators: ["complete_loss", "sensory_level", "saddle_numbness", "weakness_onset", "priapism", "girdle_pain"] },
+    { id: "incomplete_cord", name: "Incomplete spinal cord injury", pointers: ["worsening_deficit", "walked_after"], discriminators: ["weakness_pattern", "sensory_level", "saddle_numbness", "weakness_onset", "worsening_deficit", "walked_after", "girdle_pain"] },
     { id: "central_cord", name: "Central cord syndrome in a spondylotic neck", pointers: ["burning_hands", "prior_neck_symptoms", "rigid_spine"], discriminators: ["weakness_pattern", "burning_hands", "prior_neck_symptoms", "fall_height_landing", "walked_after"] },
     { id: "cauda_equina", name: "Cauda equina or conus injury", pointers: ["saddle_numbness", "bladder_bowel"], discriminators: ["saddle_numbness", "bladder_bowel", "spinal_pain_site", "weakness_pattern", "fall_height_landing"] },
     { id: "neurogenic_shock", name: "Spinal / neurogenic shock", pointers: ["faint_low_bp", "complete_loss"], discriminators: ["faint_low_bp", "complete_loss", "weakness_pattern", "other_injuries"] },
     { id: "associated_bleeding", name: "Bleeding from an associated head, chest or abdominal injury", pointers: ["other_injuries", "head_injury_loc", "faint_low_bp"], discriminators: ["other_injuries", "head_injury_loc", "faint_low_bp", "injury_mechanism", "surg_blood_thinners"] },
     { id: "ankylosed_spine_fracture", name: "Fracture through a rigid spine (ankylosing spondylitis or fused spine)", pointers: ["rigid_spine"], discriminators: ["rigid_spine", "fall_height_landing", "worsening_deficit", "spinal_pain_site"] },
-    { id: "soft_tissue", name: "Soft-tissue injury without fracture or cord damage", pointers: ["walked_after"], discriminators: ["walked_after", "spinal_pain_site", "sensory_level", "weakness_pattern", "intoxication"] },
+    { id: "soft_tissue", name: "Soft-tissue injury without fracture or cord damage", pointers: ["walked_after"], discriminators: ["walked_after", "spinal_pain_site", "sensory_level", "weakness_pattern", "intoxication", "fragile_bones"] },
   ],
   output: {
     durationSlot: "duration",

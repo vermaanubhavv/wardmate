@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { BAILEY_LOVE, commonHpi, GRABB_SMITH, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, GRABB_SMITH, HAMILTON_BAILEY, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BED SORE / PRESSURE SORE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * BED SORE / PRESSURE SORE — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
  * Burns and plastic surgery unit, north India, where most sores arrive from home after a spinal
  * injury, a stroke or a long illness, cared for by family with no air mattress and little help
  * with turning. The sore is the end of a story about immobility, lost sensation, wet skin and
@@ -14,13 +14,13 @@ import { BAILEY_LOVE, commonHpi, GRABB_SMITH, HUTCHISONS, IMMUNOCOMPROMISE, MACL
  */
 export const pressureSoreV1: HistoryTree = {
   id: "pressure_sore",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Bed sore / pressure sore",
   triggers: ["bed sore", "bedsore", "bed sores", "pressure sore", "pressure ulcer", "pressure injury", "decubitus", "sacral sore", "sore on back", "sore on buttock", "heel sore", "sore over hip", "trochanteric sore", "ischial sore", "kamar par ghaav", "lete lete ghaav"],
   setting: "Burns and plastic surgery unit, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
-  references: [GRABB_SMITH, BAILEY_LOVE, MACLEODS, HUTCHISONS],
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
+  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, GRABB_SMITH, BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("sore"),
     val("hpi", "sore_sites", "Where the sores are", "Where are the sores — over the tailbone, the hips, the buttocks, the heels, the back of the head, or elsewhere — and how many are there?", ["sacrum", "tailbone", "lower back", "hip", "trochanter", "buttock", "ischium", "sitting bone", "heel", "ankle", "back of head", "occiput", "shoulder blade", "elbow", "multiple", "one"]),
@@ -47,14 +47,18 @@ export const pressureSoreV1: HistoryTree = {
     IMMUNOCOMPROMISE,
     yn("exposure", "diabetes_sore", "Diabetes", "Is the patient diabetic, and how well controlled are the sugars?", ["diabetes", "diabetic", "sugar", "insulin", "uncontrolled", "controlled", "hba1c"], { tier: "detailed" }),
     yn("exposure", "smoking_sore", "Smoking", "Does the patient smoke or use tobacco?", ["smoking", "smoker", "bidi", "cigarette", "tobacco", "non smoker"], { tier: "detailed" }),
-    ...surgicalBackground(),
+    // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
+    yn("exposure", "kidney_disease_sore", "Kidney disease", "Has the patient been told of any kidney disease?", ["kidney disease", "kidney failure", "weak kidneys", "nephritis", "dialysis", "creatinine high", "no kidney disease"], { tier: "detailed", teach: "Das names nephritis alongside diabetes and tuberculosis as general diseases behind an ulcer that will not heal." }),
+    // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
+    yn("hpi", "device_pressure", "Plaster, splint or bandage pressing on the skin", "Was a plaster, splint or tight bandage pressing on the skin where the sore formed?", ["plaster", "cast", "splint", "bandage", "tight bandage", "brace", "pressed on", "no plaster or splint"], { tier: "detailed", teach: "Hamilton Bailey notes that a bandage over a tendon at the ankle can cut off skin blood flow as surely as lying in bed, so a sore under a cast, splint or bandage is traced to it rather than to position alone." }),
+    ...surgicalBackground({ omit: ["surg_weight_loss"] }),
   ],
   differentials: [
-    { id: "pressure_injury_stage", name: "Pressure injury (graded by depth)", pointers: ["sore_sites", "turning_positioning", "sensation_loss"], discriminators: ["sore_depth_appearance", "sore_sites", "how_sore_began", "turning_positioning", "sensation_loss", "bone_exposed_sore"] },
+    { id: "pressure_injury_stage", name: "Pressure injury (graded by depth)", pointers: ["sore_sites", "turning_positioning", "sensation_loss"], discriminators: ["sore_depth_appearance", "sore_sites", "how_sore_began", "turning_positioning", "sensation_loss", "bone_exposed_sore", "device_pressure"] },
     { id: "infected_sore", name: "Infected sore with cellulitis", pointers: ["fever_spreading_sore", "discharge_smell_sore", "drowsy_unwell"], discriminators: ["fever_spreading_sore", "discharge_smell_sore", "drowsy_unwell", "sore_depth_appearance", "diabetes_sore", "immunocompromise"] },
     { id: "osteomyelitis", name: "Osteomyelitis beneath the sore", pointers: ["bone_exposed_sore"], discriminators: ["bone_exposed_sore", "sore_depth_appearance", "discharge_smell_sore", "duration", "dressing_history"] },
     { id: "marjolin_ulcer", name: "Marjolin's ulcer in a long-standing sore", pointers: ["long_standing_sore_change"], discriminators: ["long_standing_sore_change", "duration", "discharge_smell_sore", "weight_loss_marked", "sore_depth_appearance"] },
-    { id: "malnutrition", name: "Malnutrition delaying healing", pointers: ["weight_loss_marked", "nutrition_intake"], discriminators: ["nutrition_intake", "weight_loss_marked", "home_care", "cause_of_immobility", "progression"] },
+    { id: "malnutrition", name: "Malnutrition delaying healing", pointers: ["weight_loss_marked", "nutrition_intake"], discriminators: ["nutrition_intake", "weight_loss_marked", "home_care", "cause_of_immobility", "progression", "kidney_disease_sore"] },
     { id: "spinal_cord_injury", name: "Spinal cord injury / paraplegia", pointers: ["cause_of_immobility", "sensation_loss", "autonomic_dysreflexia"], discriminators: ["cause_of_immobility", "sensation_loss", "continence", "spasms_contractures", "autonomic_dysreflexia", "urinary_symptoms_sore"] },
     { id: "incontinence_dermatitis", name: "Incontinence-associated dermatitis", pointers: ["skin_around_wet", "continence"], discriminators: ["skin_around_wet", "continence", "sore_sites", "sore_depth_appearance", "how_sore_began"] },
   ],

@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, BROWSE, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, rce, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, rce, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BREAST LUMP OR BREAST COMPLAINT — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * BREAST LUMP OR BREAST COMPLAINT — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
  * Adult surgical ward, north India. Age drives the differential more than any single feature:
  * a mobile rubbery lump in a woman of twenty and a hard fixed lump in a woman of fifty-five are
  * different problems from the first sentence. Differentials: fibroadenoma, fibrocystic change,
@@ -11,13 +11,15 @@ import { commonHpi, BROWSE, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, rce, surg
  */
 export const breastLumpV1: HistoryTree = {
   id: "breast_lump",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Breast lump",
   triggers: ["breast lump", "lump in breast", "breast swelling", "breast mass", "nipple discharge", "breast pain", "mastalgia", "lump in the breast", "breast complaint", "gynaecomastia"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
+    DAS_CLINICAL_SURGERY,
+    HAMILTON_BAILEY,
     BROWSE,
     SABISTON,
     rce("The rational clinical examination. Does this patient have breast cancer? The screening clinical breast examination: should it be done? How?", 1999, "10517431"),
@@ -33,7 +35,7 @@ export const breastLumpV1: HistoryTree = {
     yn("hpi", "pain", "Pain or tenderness", "Is the lump painful or tender?", ["pain", "painful", "tender", "painless", "ache", "sore"]),
     yn("hpi", "cyclical_variation", "Change with the menstrual cycle", "Does the lump or the pain change with the periods — worse before, better after?", ["cyclical", "before periods", "after periods", "with the cycle", "premenstrual", "no change", "varies with periods"]),
     val("hpi", "lactation_history", "Breastfeeding history", "Is the patient breastfeeding now, or when did breastfeeding last stop, and for how long did it go on?", ["breastfeeding", "lactating", "feeding the baby", "stopped feeding", "weaned", "months", "years", "never breastfed"], { numeric: true }),
-    yn("associated", "nipple_discharge", "Nipple discharge", "Any discharge from the nipple, and what colour — milky, green, or blood-stained?", ["discharge", "milky", "green", "yellow", "blood stained", "bloody", "clear", "from one duct", "spontaneous", "on squeezing"]),
+    yn("associated", "nipple_discharge", "Nipple discharge", "Any discharge from the nipple, and what colour — milky, green, or blood-stained?", ["discharge", "milky", "green", "yellow", "blood stained", "bloody", "clear", "from one duct", "spontaneous", "on squeezing", "pus"]),
     yn("associated", "nipple_skin_change", "Nipple or skin change", "Any pulling in of the nipple, dimpling of the skin, orange-peel appearance, ulceration, or eczema of the nipple?", ["nipple retraction", "pulled in", "inversion", "dimpling", "puckering", "orange peel", "peau d orange", "ulceration", "eczema", "scaly nipple", "redness"]),
     yn("associated", "axillary_lump", "Lump in the armpit", "Any lump or swelling in the armpit or above the collar bone?", ["armpit", "axilla", "axillary", "lump in armpit", "collar bone", "supraclavicular", "gland"]),
     yn("associated", "arm_swelling", "Swelling of the arm", "Any swelling or heaviness of the arm on that side?", ["arm swelling", "heaviness", "swollen arm", "lymphoedema", "tight"], { tier: "detailed" }),
@@ -54,19 +56,28 @@ export const breastLumpV1: HistoryTree = {
     yn("exposure", "previous_breast_problem", "Previous breast lump, biopsy or surgery", "Any previous breast lump, biopsy, aspiration, or breast surgery?", ["previous lump", "biopsy", "fnac", "aspiration", "surgery", "excised", "removed", "same breast", "other breast"]),
     yn("exposure", "radiation_drugs", "Chest radiotherapy / hormone or other drugs", "Any radiotherapy to the chest, or long-term hormone, anti-ulcer or heart medicines?", ["radiotherapy", "radiation", "chest", "hormone", "spironolactone", "anti ulcer", "digoxin", "steroids", "long term"], { tier: "detailed" }),
     yn("exposure", "tb_contact", "TB contact / past TB", "Any past tuberculosis or contact with tuberculosis?", ["tb", "tuberculosis", "koch", "att", "akt", "tb contact", "discharging sinus"], { tier: "detailed" }),
-    ...surgicalBackground(),
+    // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
+    val("hpi", "nipple_retraction_since", "When the nipple turned in", "If the nipple is pulled in, has it been like that since puberty or only recently?", ["since puberty", "always been", "since childhood", "long time", "recently", "recent", "new", "last few months", "nipple normal"], { teach: "Das separates a nipple pulled in since puberty from one pulled in recently, because only the recent change points to a lesion pulling on it from beneath." }),
+    yn("exposure", "previous_breast_abscess", "Previous breast abscess", "Has there been an abscess in either breast before that needed draining?", ["previous abscess", "abscess before", "pus drained", "incised", "drained", "recurrent abscess", "came back", "no previous abscess"], { tier: "detailed", teach: "Das notes that abscesses recur, particularly behind a nipple that has been turned in since birth and in tuberculosis of the breast." }),
+    yn("hpi", "throbbing_pain", "Throbbing pain", "Is the pain throbbing, keeping the patient awake?", ["throbbing", "throbs", "pulsating pain", "keeps awake", "cannot sleep with pain", "dull pain", "not throbbing"], { tier: "detailed", teach: "Das describes a throbbing pain in a hot breast as the point at which pus has formed." }),
+    // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
+    yn("associated", "discharge_spontaneous", "Discharge on its own or only on squeezing", "Does the nipple discharge come on its own, staining the bra or nightclothes, or only when the nipple is squeezed, and from one breast or both?", ["on its own", "stains bra", "stains clothes", "only on squeezing", "one breast", "both breasts", "no discharge"], { teach: "Hamilton Bailey asks whether discharge is spontaneous or elicited and whether one breast or both, because spontaneous discharge is more often linked to a disease process." }),
+    yn("exposure", "personal_cancer_history", "Past cancer elsewhere or lymphoma treatment", "Has the patient had cancer before — of the other breast, the ovary or the womb — or radiation to the neck or chest for a lymphoma?", ["previous cancer", "other breast", "ovarian cancer", "uterine cancer", "lymphoma", "hodgkin", "radiation to neck", "no previous cancer"], { teach: "Hamilton Bailey notes that a previous cancer of the other breast, ovary or endometrium, and mantle irradiation for Hodgkin's disease, each raise breast-cancer risk." }),
+    val("exposure", "smoking", "Smoking", "Does the patient smoke, how much, and for how long?", ["smoker", "smokes", "cigarettes", "bidi", "tobacco", "non smoker", "never smoked"], { teach: "Hamilton Bailey describes recurring subareolar abscess in smokers in their late twenties and early thirties, and lists smoking among breast-cancer risk factors." }),
+    yn("associated", "male_gynaecomastia_causes", "In a man: testis, steroids, cannabis", "In a male patient, any lump or swelling in a testicle, use of body-building steroids, or cannabis use?", ["testicular lump", "testis swelling", "body building steroids", "anabolic steroids", "cannabis", "ganja", "no steroid use"], { tier: "detailed", teach: "Hamilton Bailey says the causes of male breast enlargement must be sought in a detailed history, naming testicular tumours, anabolic steroids, cannabis and liver or kidney failure." }),
+    ...surgicalBackground({ omit: ["surg_weight_loss"] }),
   ],
   differentials: [
     { id: "fibroadenoma", name: "Fibroadenoma", pointers: ["consistency_mobility", "pain", "size_change"], discriminators: ["consistency_mobility", "pain", "size_change", "age_new_lump", "cyclical_variation", "hard_fixed_lump"] },
-    { id: "fibrocystic", name: "Fibrocystic change", pointers: ["cyclical_variation", "pain", "side_site"], discriminators: ["cyclical_variation", "pain", "consistency_mobility", "nipple_discharge", "size_change"] },
-    { id: "carcinoma", name: "Breast carcinoma", pointers: ["hard_fixed_lump", "skin_nipple_changes", "axillary_nodes", "age_new_lump", "bloody_single_duct_discharge"], discriminators: ["hard_fixed_lump", "skin_nipple_changes", "axillary_nodes", "age_new_lump", "bloody_single_duct_discharge", "family_history_cancer", "constitutional", "consistency_mobility"] },
-    { id: "abscess_mastitis", name: "Breast abscess or mastitis", pointers: ["fever_lactation", "pain"], discriminators: ["fever_lactation", "pain", "consistency_mobility", "onset_mode", "skin_nipple_changes"] },
+    { id: "fibrocystic", name: "Fibrocystic change", pointers: ["cyclical_variation", "pain", "side_site"], discriminators: ["cyclical_variation", "pain", "consistency_mobility", "nipple_discharge", "size_change", "discharge_spontaneous"] },
+    { id: "carcinoma", name: "Breast carcinoma", pointers: ["hard_fixed_lump", "skin_nipple_changes", "axillary_nodes", "age_new_lump", "bloody_single_duct_discharge"], discriminators: ["hard_fixed_lump", "skin_nipple_changes", "axillary_nodes", "age_new_lump", "bloody_single_duct_discharge", "family_history_cancer", "constitutional", "consistency_mobility", "nipple_retraction_since", "discharge_spontaneous", "personal_cancer_history"] },
+    { id: "abscess_mastitis", name: "Breast abscess or mastitis", pointers: ["fever_lactation", "pain"], discriminators: ["fever_lactation", "pain", "consistency_mobility", "onset_mode", "skin_nipple_changes", "previous_breast_abscess", "throbbing_pain", "smoking"] },
     { id: "cyst", name: "Simple breast cyst", pointers: ["consistency_mobility", "cyclical_variation", "onset_mode"], discriminators: ["consistency_mobility", "cyclical_variation", "onset_mode", "size_change", "pain"] },
     { id: "fat_necrosis", name: "Fat necrosis", pointers: ["trauma", "consistency_mobility"], discriminators: ["trauma", "consistency_mobility", "skin_nipple_changes", "size_change"] },
     { id: "phyllodes", name: "Phyllodes tumour", pointers: ["size_change", "consistency_mobility"], discriminators: ["size_change", "consistency_mobility", "age_new_lump", "previous_breast_problem", "axillary_nodes"] },
-    { id: "duct_ectasia", name: "Duct ectasia", pointers: ["nipple_discharge", "side_site"], discriminators: ["nipple_discharge", "bloody_single_duct_discharge", "side_site", "skin_nipple_changes", "age_new_lump"] },
-    { id: "tuberculous_mastitis", name: "Tuberculous mastitis", pointers: ["tb_contact", "constitutional"], discriminators: ["tb_contact", "constitutional", "fever_lactation", "consistency_mobility", "duration"] },
-    { id: "gynaecomastia", name: "Gynaecomastia", pointers: ["male_patient_lump", "radiation_drugs"], discriminators: ["male_patient_lump", "radiation_drugs", "consistency_mobility", "side_site", "hard_fixed_lump"] },
+    { id: "duct_ectasia", name: "Duct ectasia", pointers: ["nipple_discharge", "side_site"], discriminators: ["nipple_discharge", "bloody_single_duct_discharge", "side_site", "skin_nipple_changes", "age_new_lump", "nipple_retraction_since", "previous_breast_abscess", "discharge_spontaneous", "smoking"] },
+    { id: "tuberculous_mastitis", name: "Tuberculous mastitis", pointers: ["tb_contact", "constitutional"], discriminators: ["tb_contact", "constitutional", "fever_lactation", "consistency_mobility", "duration", "previous_breast_abscess"] },
+    { id: "gynaecomastia", name: "Gynaecomastia", pointers: ["male_patient_lump", "radiation_drugs"], discriminators: ["male_patient_lump", "radiation_drugs", "consistency_mobility", "side_site", "hard_fixed_lump", "male_gynaecomastia_causes"] },
   ],
   output: {
     durationSlot: "duration",

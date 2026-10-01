@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, BAILEY_LOVE, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ANORECTAL PAIN AND PERIANAL COMPLAINT — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * ANORECTAL PAIN AND PERIANAL COMPLAINT — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
  * Adult surgical ward, north India. The relationship of the pain to passing stool separates most
  * of this list: pain during and after defaecation with bright bleeding is a fissure, constant
  * throbbing pain with fever is a collection. Differentials: anal fissure, perianal or
@@ -11,13 +11,13 @@ import { commonHpi, BAILEY_LOVE, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, SABISTO
  */
 export const anorectalPainV1: HistoryTree = {
   id: "anorectal_pain",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Anal pain / perianal swelling",
   triggers: ["anal pain", "pain in anus", "perianal swelling", "perianal pain", "painful defaecation", "pain while passing stool", "perianal abscess", "fissure", "fistula", "piles", "haemorrhoids", "pilonidal", "swelling near anus", "discharge near anus"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
-  references: [MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
+  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
   slots: [
     ...commonHpi("anal pain"),
     val("hpi", "relation_to_defaecation", "Relation to passing stool", "Is the pain during passing stool, after it, or unrelated to it, and how long does it last?", ["during", "while passing", "after passing", "hours after", "unrelated", "constant", "all the time", "minutes", "lasts", "before"]),
@@ -47,17 +47,27 @@ export const anorectalPainV1: HistoryTree = {
     yn("exposure", "anal_intercourse_sti", "Anal intercourse / sexually transmitted infection", "Any history of anal intercourse, a sexually transmitted infection, or genital warts?", ["anal intercourse", "anal sex", "sti", "warts", "hiv", "sexually transmitted", "unprotected"], { tier: "detailed" }),
     yn("exposure", "previous_anal_surgery", "Previous anal surgery or procedure", "Any previous operation, banding, or injection for piles, fissure, or fistula?", ["previous surgery", "operation", "banding", "injection", "piles", "fissure", "fistula", "sclerotherapy", "stapler"], { tier: "detailed" }),
     yn("exposure", "diet_fibre", "Diet and fluid intake", "How much water, fruit, vegetables and fibre are taken daily?", ["water", "fluids", "fruit", "vegetables", "fibre", "diet", "low fibre", "spicy"], { tier: "detailed" }),
-    ...surgicalBackground({ acute: true }),
+    // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
+    yn("hpi", "pain_eases_with_discharge", "Pain that builds and settles when it discharges", "Does the pain build up over days and then ease once pus or fluid drains out?", ["builds up", "eases when it bursts", "relieved after discharge", "comes and goes", "pain then pus", "settles after draining", "no relation to discharge"], { teach: "Das describes fistula pain as intermittent: it rises as discharge collects behind a closed opening and goes when the opening bursts, unlike the steady pain of an abscess or the stool-linked pain of a fissure." }),
+    yn("exposure", "previous_anal_abscess", "Previous abscess near the anus", "Was there ever an abscess near the anus that burst on its own or was cut and drained?", ["abscess before", "boil near anus", "burst on its own", "drained", "incised", "cut and drained", "no previous abscess"], { teach: "Das notes that a fistula in ano usually has a history of an earlier anal abscess that burst or was incised." }),
+    val("hpi", "prolapse_length", "How much comes out", "How long is the part that comes out — a small bead or a long tube of bowel?", ["small", "slight", "long", "tube", "finger length", "large mass", "whole bowel", "length"], { tier: "detailed", teach: "Das asks the length of the protrusion because a slight one is a mucosal prolapse and a long one involves the full wall of the rectum." }),
+    yn("exposure", "past_dysentery", "Past dysentery or severe diarrhoea", "Was there ever an attack of dysentery or severe diarrhoea before the prolapse began?", ["dysentery", "blood and mucus diarrhoea", "severe diarrhoea", "loose motions for weeks", "no dysentery"], { tier: "detailed", teach: "Das links rectal prolapse to past dysentery: the straining and wasting it brings weaken the support of the rectum." }),
+    yn("exposure", "family_anorectal", "Family history of piles, polyps or bowel cancer", "Has any blood relative had piles, polyps, or cancer of the rectum or bowel?", ["family history", "father had piles", "polyps in family", "polyposis", "bowel cancer in family", "no family history"], { tier: "detailed", teach: "Das records polyposis as hereditary and notes a family history in piles, fissure, prolapse and rectal cancer." }),
+    // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
+    yn("hpi", "stool_avoidance", "Holding back stool for fear of pain", "Is the patient putting off passing stool because of fear of the pain?", ["afraid to pass stool", "fear of pain", "holds back", "avoids going", "delays passing stool", "no fear of passing stool"], { teach: "Hamilton Bailey describes the fissure patient avoiding stool for fear of the next painful motion, so constipation and the tear worsen in a cycle; asking about it shows that cycle in the story." }),
+    yn("associated", "boils_elsewhere", "Recurring boils in the armpits or groins", "Has the patient had repeated boils or discharging lumps in the armpits, groins, or around the buttocks?", ["boils", "armpit", "axilla", "groin boils", "recurrent boils", "multiple lumps", "discharging lumps", "no boils elsewhere"], { tier: "detailed", teach: "Hamilton Bailey separates perianal sepsis from the skin (boils, pilonidal disease, hidradenitis of the armpits and groins) from sepsis arising inside the anal canal; boils at other sites point to the skin." }),
+    yn("associated", "perianal_blisters", "Painful blisters or sores around the anus", "Have small painful blisters or sores appeared around the anus?", ["blisters", "vesicles", "sores", "small ulcers", "painful spots", "no blisters"], { tier: "detailed", teach: "Hamilton Bailey notes herpes gives painful anal vesicles with pain on defaecation, and a syphilitic chancre can be taken for a fissure, so sores around the anus send the history towards sexual exposure." }),
+    ...surgicalBackground({ acute: true, omit: ["surg_weight_loss", "surg_occupation_residence"] }),
   ],
   differentials: [
-    { id: "fissure", name: "Anal fissure", pointers: ["relation_to_defaecation", "character_severity", "bleeding", "constipation_straining"], discriminators: ["relation_to_defaecation", "character_severity", "bleeding", "constipation_straining", "swelling", "fever", "discharge"] },
-    { id: "abscess", name: "Perianal or ischiorectal abscess", pointers: ["abscess_features", "fever", "swelling", "diabetes_immunosuppression"], discriminators: ["abscess_features", "fever", "swelling", "relation_to_defaecation", "diabetes_immunosuppression", "urinary_retention", "discharge"] },
-    { id: "fistula", name: "Fistula in ano", pointers: ["discharge", "recurrent_fistula_tb_crohn", "swelling"], discriminators: ["discharge", "recurrent_fistula_tb_crohn", "swelling", "fever", "previous_anal_surgery", "back_natal_cleft"] },
+    { id: "fissure", name: "Anal fissure", pointers: ["relation_to_defaecation", "character_severity", "bleeding", "constipation_straining"], discriminators: ["relation_to_defaecation", "character_severity", "bleeding", "constipation_straining", "swelling", "fever", "discharge", "stool_avoidance", "perianal_blisters"] },
+    { id: "abscess", name: "Perianal or ischiorectal abscess", pointers: ["abscess_features", "fever", "swelling", "diabetes_immunosuppression"], discriminators: ["abscess_features", "fever", "swelling", "relation_to_defaecation", "diabetes_immunosuppression", "urinary_retention", "discharge", "pain_eases_with_discharge", "boils_elsewhere"] },
+    { id: "fistula", name: "Fistula in ano", pointers: ["discharge", "recurrent_fistula_tb_crohn", "swelling"], discriminators: ["discharge", "recurrent_fistula_tb_crohn", "swelling", "fever", "previous_anal_surgery", "back_natal_cleft", "pain_eases_with_discharge", "previous_anal_abscess", "boils_elsewhere"] },
     { id: "thrombosed_pile", name: "Thrombosed external pile", pointers: ["severe_pain_thrombosis", "swelling", "onset_mode"], discriminators: ["severe_pain_thrombosis", "swelling", "onset_mode", "relation_to_defaecation", "prolapse", "fever"] },
-    { id: "prolapsed_pile", name: "Prolapsed haemorrhoids", pointers: ["prolapse", "bleeding", "constipation_straining"], discriminators: ["prolapse", "bleeding", "constipation_straining", "relation_to_defaecation", "discharge", "incontinence"] },
-    { id: "pilonidal", name: "Pilonidal sinus or abscess", pointers: ["back_natal_cleft", "discharge", "occupation_sitting"], discriminators: ["back_natal_cleft", "discharge", "occupation_sitting", "swelling", "relation_to_defaecation"] },
-    { id: "proctalgia_fugax", name: "Proctalgia fugax", pointers: ["character_severity", "relation_to_defaecation"], discriminators: ["character_severity", "relation_to_defaecation", "swelling", "bleeding", "fever", "discharge"] },
-    { id: "anal_carcinoma", name: "Anal carcinoma", pointers: ["mass_weight_loss", "weight_loss_habit_change", "anal_intercourse_sti"], discriminators: ["mass_weight_loss", "weight_loss_habit_change", "anal_intercourse_sti", "bleeding", "discharge", "incontinence"] },
+    { id: "prolapsed_pile", name: "Prolapsed haemorrhoids", pointers: ["prolapse", "bleeding", "constipation_straining"], discriminators: ["prolapse", "bleeding", "constipation_straining", "relation_to_defaecation", "discharge", "incontinence", "prolapse_length"] },
+    { id: "pilonidal", name: "Pilonidal sinus or abscess", pointers: ["back_natal_cleft", "discharge", "occupation_sitting"], discriminators: ["back_natal_cleft", "discharge", "occupation_sitting", "swelling", "relation_to_defaecation", "boils_elsewhere"] },
+    { id: "proctalgia_fugax", name: "Proctalgia fugax", pointers: ["character_severity", "relation_to_defaecation"], discriminators: ["character_severity", "relation_to_defaecation", "swelling", "bleeding", "fever", "discharge", "stool_avoidance"] },
+    { id: "anal_carcinoma", name: "Anal carcinoma", pointers: ["mass_weight_loss", "weight_loss_habit_change", "anal_intercourse_sti"], discriminators: ["mass_weight_loss", "weight_loss_habit_change", "anal_intercourse_sti", "bleeding", "discharge", "incontinence", "perianal_blisters"] },
     { id: "necrotising_infection", name: "Necrotising perineal infection", pointers: ["spreading_necrosis", "diabetes_immunosuppression", "fever"], discriminators: ["spreading_necrosis", "diabetes_immunosuppression", "fever", "urinary_retention", "onset_mode"] },
   ],
   output: {

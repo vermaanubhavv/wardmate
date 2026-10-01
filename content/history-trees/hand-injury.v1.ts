@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { ATLS, BAILEY_LOVE, commonHpi, GRABB_SMITH, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { ATLS, BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, GRABB_SMITH, HAMILTON_BAILEY, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * HAND INJURY — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * HAND INJURY — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
  * Burns and plastic surgery unit, north India, where fodder-cutting machines (chaff cutter,
  * toka machine), threshers, glass and knife cuts, door and crush injuries, and fist-to-mouth
  * wounds make up most hand trauma. Which hand, which hand writes, and what the patient does for
@@ -14,19 +14,19 @@ import { ATLS, BAILEY_LOVE, commonHpi, GRABB_SMITH, HUTCHISONS, IMMUNOCOMPROMISE
  */
 export const handInjuryV1: HistoryTree = {
   id: "hand_injury",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Hand injury",
   triggers: ["hand injury", "injury to hand", "finger injury", "cut finger", "finger cut", "cut on hand", "hand cut", "crush hand", "crushed finger", "finger amputation", "fingertip injury", "tendon injury", "tendon cut", "chaff cutter", "toka machine", "thresher injury", "machine injury hand", "degloving hand", "fight bite", "injection injury", "paronychia", "felon", "whitlow", "infected finger", "ungli kat gayi", "haath kat gaya", "ungli pak gayi"],
   setting: "Burns and plastic surgery unit, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
-  references: [GRABB_SMITH, BAILEY_LOVE, MACLEODS, HUTCHISONS, ATLS],
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
+  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, GRABB_SMITH, BAILEY_LOVE, MACLEODS, HUTCHISONS, ATLS],
   slots: [
     ...commonHpi("hand injury"),
     val("hpi", "hand_dominance", "Which hand is dominant", "Which hand does the patient write and eat with, and is the injured hand the dominant one?", ["right handed", "left handed", "dominant", "non dominant", "writes with", "eats with", "ambidextrous"], { teach: "The dominant hand carries most of a person's work, so the same injury costs more there and the aims of repair are weighed differently." }),
     val("hpi", "occupation_hand_use", "Occupation and hand use", "What work does the patient do with the hands — farm, factory, driving, typing, a musical instrument, or fine work?", ["farmer", "labourer", "factory", "driver", "typing", "computer", "tailor", "carpenter", "mason", "musician", "student", "housewife", "fine work", "occupation"], { teach: "The work the hand must return to decides which movements matter most, and how long the patient can afford to be away from it." }),
     val("hpi", "time_of_injury_hand", "Exact time of the injury", "At what time did the injury happen, and how many hours have passed since?", ["time", "hours ago", "this morning", "last night", "o'clock", "minutes ago", "am", "pm"], { numeric: true, teach: "The hours since injury set the contamination risk of the wound and the window in which an amputated part can still be used." }),
-    val("hpi", "mechanism_hand", "What caused the injury", "What caused the injury — glass, knife, a fodder-cutting or threshing machine, a door, a heavy object, a fall, a punch, or a bite?", ["glass", "knife", "blade", "sickle", "chaff cutter", "toka", "thresher", "machine", "door", "heavy object", "crush", "punch", "teeth", "bite", "fall", "saw", "grinder"]),
+    val("hpi", "mechanism_hand", "What caused the injury", "What caused the injury — glass, knife, a fodder-cutting or threshing machine, a door, a heavy object, a fall, a punch, or a bite?", ["glass", "knife", "blade", "sickle", "chaff cutter", "toka", "thresher", "machine", "door", "heavy object", "crush", "punch", "teeth", "bite", "fall", "saw", "grinder", "prick", "abrasion", "scratch"]),
     val("hpi", "hand_position_at_injury", "Position of the hand at injury", "Was the fist clenched or the fingers straight when the injury happened?", ["clenched", "fist", "fingers straight", "gripping", "open hand", "fingers bent", "holding"], { tier: "detailed", teach: "A tendon cut with the fingers bent retracts away from the skin wound, so the cut in the tendon lies at a different level from the cut in the skin." }),
     val("hpi", "site_hand", "Which fingers and which surface", "Which fingers or which part of the hand are injured, and is it the palm side or the back?", ["thumb", "index", "middle", "ring", "little finger", "palm", "back of hand", "dorsum", "fingertip", "nail", "wrist", "web space", "knuckle"]),
     yn("hpi", "cannot_bend_finger", "Unable to bend a finger", "Is the patient unable to bend any finger or the thumb, fully or at one joint?", ["cannot bend", "unable to bend", "finger straight", "cannot make a fist", "cannot flex", "tip does not bend", "weak grip"], { teach: "A finger that lies straight while the others curl asks whether a flexor tendon has been divided, even when the skin wound looks small." }),
@@ -51,20 +51,28 @@ export const handInjuryV1: HistoryTree = {
     yn("exposure", "smoking_hand", "Smoking", "Does the patient smoke or use tobacco, and how much?", ["smoking", "smoker", "bidi", "cigarette", "tobacco", "hookah", "non smoker"], { tier: "detailed" }),
     // A cut tendon, a lost fingertip or a machine injury usually goes to theatre the same day,
     // so the pre-operative background is asked acute.
-    ...surgicalBackground({ acute: true }),
+    // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
+    yn("associated", "burning_pain_after_injury", "Constant burning pain since the injury", "Is there a constant, intense burning pain in the hand since the injury, even where the wound has healed?", ["burning pain", "constant burning", "jalan", "burning after healing", "cannot bear touch", "no burning pain"], { tier: "detailed", teach: "Das asks after a constant burning pain following an injury, which may begin at once or weeks later once the wound has healed, because it points to a partial nerve injury." }),
+    yn("associated", "wound_infected_healing", "Wound became infected or healed slowly", "Did the wound become infected, discharge pus, or take long to heal?", ["wound infected", "pus from wound", "septic", "slow healing", "took long to heal", "healed well", "no infection"], { tier: "detailed", teach: "Das asks this when numbness or weakness is first noticed after the wound heals, because infection leaves scarring that stops a nerve regrowing." }),
+    // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
+    yn("exposure", "alcohol_hand", "Alcohol", "Does the patient drink alcohol, and how much?", ["alcohol", "drinks", "daru", "beer", "whisky", "occasional", "daily", "teetotal", "no alcohol"], { tier: "detailed", teach: "Hamilton Bailey asks about alcohol alongside smoking in every hand history as a modifiable habit that can alter the prognosis." }),
+    yn("exposure", "nail_biting_care", "Nail biting or nail care", "Does the patient bite the nails, suck the thumb, or cut the nails close or trim the cuticles?", ["nail biting", "bites nails", "thumb sucking", "manicure", "cuts cuticle", "ingrown nail", "no nail biting"], { tier: "detailed", teach: "Hamilton Bailey records trauma to the digit, improper nail care and thumb biting as the usual history before an infection around the nail." }),
+    yn("associated", "infection_elsewhere_hand", "Infection elsewhere", "Has the patient recently had an infection elsewhere — a urethral discharge, burning urine, or a fever before the finger swelled?", ["urethral discharge", "burning urine", "infection elsewhere", "fever before", "boil", "no other infection"], { tier: "detailed", teach: "Hamilton Bailey notes that flexor sheath infection can follow an infection elsewhere, such as a gonococcal urinary infection, rather than a wound." }),
+    yn("exposure", "autoimmune_vascular_hand", "Autoimmune or vascular disease", "Does the patient have rheumatoid arthritis, lupus, fingers that turn white in the cold, or any disease of the blood vessels?", ["rheumatoid", "lupus", "sle", "raynaud", "fingers turn white", "vasculitis", "scleroderma", "vascular disease", "no autoimmune disease"], { tier: "detailed", teach: "Hamilton Bailey asks for vascular and autoimmune disease in the medical history because they can produce or worsen hand signs." }),
+    ...surgicalBackground({ acute: true, omit: ["surg_occupation_residence"] }),
   ],
   differentials: [
-    { id: "flexor_tendon", name: "Flexor tendon injury", pointers: ["cannot_bend_finger", "site_hand"], discriminators: ["cannot_bend_finger", "site_hand", "hand_position_at_injury", "mechanism_hand", "numb_finger"] },
+    { id: "flexor_tendon", name: "Flexor tendon injury", pointers: ["cannot_bend_finger", "site_hand"], discriminators: ["cannot_bend_finger", "site_hand", "hand_position_at_injury", "mechanism_hand", "numb_finger", "wound_infected_healing"] },
     { id: "extensor_tendon", name: "Extensor tendon injury", pointers: ["cannot_straighten_finger"], discriminators: ["cannot_straighten_finger", "site_hand", "mechanism_hand", "deformity_hand", "fight_bite"] },
-    { id: "digital_nerve", name: "Digital nerve injury", pointers: ["numb_finger"], discriminators: ["numb_finger", "site_hand", "mechanism_hand", "cannot_bend_finger", "finger_colour_cold"] },
+    { id: "digital_nerve", name: "Digital nerve injury", pointers: ["numb_finger"], discriminators: ["numb_finger", "site_hand", "mechanism_hand", "cannot_bend_finger", "finger_colour_cold", "burning_pain_after_injury", "wound_infected_healing"] },
     { id: "fracture_dislocation", name: "Fracture or dislocation", pointers: ["deformity_hand", "mechanism_hand"], discriminators: ["deformity_hand", "mechanism_hand", "site_hand", "tense_hand_pain", "previous_hand_problem"] },
     { id: "fingertip_amputation", name: "Fingertip injury or amputation", pointers: ["tissue_loss_hand"], discriminators: ["tissue_loss_hand", "site_hand", "time_of_injury_hand", "finger_colour_cold", "hand_dominance", "occupation_hand_use"] },
     { id: "crush_degloving", name: "Crush and degloving injury", pointers: ["machine_entrapment", "tissue_loss_hand", "tense_hand_pain"], discriminators: ["machine_entrapment", "tissue_loss_hand", "tense_hand_pain", "finger_colour_cold", "wound_contamination"] },
     { id: "high_pressure_injection", name: "High-pressure injection injury", pointers: ["high_pressure_injection"], discriminators: ["high_pressure_injection", "occupation_hand_use", "time_of_injury_hand", "tense_hand_pain", "site_hand"] },
     { id: "fight_bite", name: "Fight bite", pointers: ["fight_bite"], discriminators: ["fight_bite", "site_hand", "infection_symptoms_hand", "time_of_injury_hand", "cannot_straighten_finger"] },
-    { id: "machine_injury", name: "Machine injury (chaff cutter, thresher)", pointers: ["machine_entrapment", "mechanism_hand"], discriminators: ["machine_entrapment", "mechanism_hand", "wound_contamination", "tissue_loss_hand", "finger_colour_cold", "tetanus_status_hand"] },
-    { id: "hand_infection", name: "Hand infection (paronychia, pulp space, flexor sheath)", pointers: ["infection_symptoms_hand", "flexor_sheath_signs"], discriminators: ["infection_symptoms_hand", "flexor_sheath_signs", "foreign_body_hand", "fight_bite", "immunocompromise", "site_hand"] },
-    { id: "compartment_syndrome_hand", name: "Compartment syndrome of the hand", pointers: ["tense_hand_pain", "machine_entrapment"], discriminators: ["tense_hand_pain", "machine_entrapment", "mechanism_hand", "high_pressure_injection", "finger_colour_cold"] },
+    { id: "machine_injury", name: "Machine injury (chaff cutter, thresher)", pointers: ["machine_entrapment", "mechanism_hand"], discriminators: ["machine_entrapment", "mechanism_hand", "wound_contamination", "tissue_loss_hand", "finger_colour_cold", "tetanus_status_hand", "alcohol_hand"] },
+    { id: "hand_infection", name: "Hand infection (paronychia, pulp space, flexor sheath)", pointers: ["infection_symptoms_hand", "flexor_sheath_signs"], discriminators: ["infection_symptoms_hand", "flexor_sheath_signs", "foreign_body_hand", "fight_bite", "immunocompromise", "site_hand", "alcohol_hand", "nail_biting_care", "infection_elsewhere_hand", "autoimmune_vascular_hand"] },
+    { id: "compartment_syndrome_hand", name: "Compartment syndrome of the hand", pointers: ["tense_hand_pain", "machine_entrapment"], discriminators: ["tense_hand_pain", "machine_entrapment", "mechanism_hand", "high_pressure_injection", "finger_colour_cold", "autoimmune_vascular_hand"] },
   ],
   output: {
     durationSlot: "duration",
