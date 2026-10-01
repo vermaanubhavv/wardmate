@@ -184,7 +184,7 @@ export default function DischargeSheet({
         {doc.medications.length === 0 ? (
           <p className="text-caption">{BLANK}</p>
         ) : (
-          <ol className="list-decimal pl-5 text-caption">
+          <ol className="list-decimal pl-8 text-caption">
             {doc.medications.map((m) => (
               <li key={m.id} className="mb-0.5">
                 {medLine(m)}
