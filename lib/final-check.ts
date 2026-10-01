@@ -135,8 +135,10 @@ const SCHEMA = {
   additionalProperties: false,
 } as const;
 
-/** Run the pass. `what` names the document ("discharge summary"). Never throws. */
-export async function finalCheck(fields: Record<string, string>, what: string): Promise<FinalCheck> {
+/** Run the pass. `what` names the document ("discharge summary"). Never throws. Sonnet by
+ *  default; the case history and progress note pass FAST_MODEL (Haiku) — the code guards above
+ *  decide what is applied whichever model proposes it. */
+export async function finalCheck(fields: Record<string, string>, what: string, model: string = AI_MODEL): Promise<FinalCheck> {
   let proposed: { field: string; kind: string; before: string; after: string }[] = [];
   let questions: string[] = [];
   const key = process.env.ANTHROPIC_API_KEY;
@@ -144,11 +146,12 @@ export async function finalCheck(fields: Record<string, string>, what: string): 
     try {
       const response = await new Anthropic({ apiKey: key }).messages.create(
         {
-          model: AI_MODEL,
+          model,
           max_tokens: 2000,
           system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
           output_config: {
-            effort: "low",
+            // Haiku rejects `effort` outright (400), which the failsafe would swallow as "skipped".
+            ...(model === AI_MODEL ? { effort: "low" as const } : {}),
             format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> },
           },
           messages: [{ role: "user", content: `The finished ${what}, field by field:\n\n${JSON.stringify(fields, null, 2)}` }],

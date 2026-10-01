@@ -5,6 +5,7 @@ import { istDayKey } from "@/lib/patient-state";
 import { MANAGEMENT_CHOICES } from "@/lib/patients";
 import { compileProgressNote } from "@/lib/progress-note-ai";
 import { finalCheck } from "@/lib/final-check";
+import { FAST_MODEL } from "@/lib/model";
 import { progressNoteConfigFor } from "@/lib/progress-note-config";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { getWardSpecialtyStored } from "@/lib/ward";
@@ -82,7 +83,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     // Sonnet's proofread of the finished note before the resident sees it — lib/final-check.ts.
     const checked = await finalCheck(
       { ...compiled.fields, ...Object.fromEntries(compiled.plan.map((p, i) => [`plan ${i + 1}`, p])) },
-      "progress note"
+      "progress note",
+      FAST_MODEL
     );
     return NextResponse.json({
       ...compiled,

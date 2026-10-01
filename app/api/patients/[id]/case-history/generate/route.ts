@@ -11,6 +11,7 @@ import {
   generateRelevantNegatives,
 } from "@/lib/case-history-ai";
 import { finalCheck } from "@/lib/final-check";
+import { FAST_MODEL } from "@/lib/model";
 
 /**
  * A first draft of a case-history AI card: "compile" turns the tapped fragments into prose,
@@ -87,7 +88,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (body.section === "compile") {
       // The finished history gets Sonnet's proofread before the resident sees it — lib/final-check.ts.
       const compiled = await compileCaseHistory(digest, ctx, admissionPhrase);
-      const checked = await finalCheck(Object.fromEntries(compiled.sections.map((s) => [s.label, s.text])), "case history");
+      const checked = await finalCheck(Object.fromEntries(compiled.sections.map((s) => [s.label, s.text])), "case history", FAST_MODEL);
       return NextResponse.json({
         ...compiled,
         sections: compiled.sections.map((s) => ({ ...s, text: checked.fields[s.label] ?? s.text })),
