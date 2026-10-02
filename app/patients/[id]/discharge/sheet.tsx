@@ -5,6 +5,7 @@ import {
   letterheadNamesUnit,
   procedureLines,
   medLine,
+  adviceLines,
   BLANK,
   type DischargeDocument,
 } from "@/lib/discharge-render";
@@ -99,6 +100,7 @@ export default function DischargeSheet({
           </tbody>
         </table>
 
+        <div data-print="encounter">
         {/* 2. Encounter Details */}
         <SectionHeading editBase={editBase} section="encounter">Encounter Details</SectionHeading>
         <div className="grid grid-cols-2 gap-x-4 text-caption">
@@ -109,18 +111,24 @@ export default function DischargeSheet({
             </p>
           ))}
         </div>
+        </div>
 
+        <div data-print="indication">
         {/* 3. Indication for Admission */}
         <SectionHeading editBase={editBase} section="indication">Indication for Admission</SectionHeading>
         <p className="text-caption">{doc.indication || BLANK}</p>
+        </div>
 
+        <div data-print="diagnoses">
         {/* 4. Diagnoses */}
         <SectionHeading editBase={editBase} section="diagnoses">Diagnoses</SectionHeading>
         <DxBlock title="Primary Diagnosis" items={doc.diagnoses.primary} blankIfEmpty />
         <DxBlock title="Secondary Diagnosis" items={doc.diagnoses.secondary} />
         <DxBlock title="Relevant Comorbidities" items={doc.diagnoses.comorbidities} />
         <DxBlock title="Complications" items={doc.diagnoses.complications} />
+        </div>
 
+        <div data-print="procedures">
         {/* 5. Operation / Procedures */}
         {doc.procedures.length > 0 && (
           <>
@@ -136,20 +144,26 @@ export default function DischargeSheet({
             ))}
           </>
         )}
+        </div>
 
+        <div data-print="clinicalCourse">
         {/* 6. Clinical Course */}
         <SectionHeading editBase={editBase} section="clinicalCourse">Clinical Course</SectionHeading>
         <p className="whitespace-pre-wrap text-caption leading-relaxed">{doc.clinicalCourse || BLANK}</p>
         {doc.clinicalCourse && !doc.clinicalCourseApproved && (
           <p className="text-caption2 italic text-black print:hidden">Not yet approved by the resident.</p>
         )}
+        </div>
 
+        <div data-print="conditionAtDischarge">
         {/* Condition at Discharge — right after the course, so page 1 ends with how the patient left. */}
         <SectionHeading editBase={editBase} section="conditionAtDischarge">Condition at Discharge</SectionHeading>
         <p className="text-caption">{doc.condition || BLANK}</p>
+        </div>
 
         </div>
 
+        <div data-print="relevantInvestigations">
         {/* 7. Relevant Investigations */}
         {doc.investigations.length > 0 && (
           <>
@@ -163,7 +177,9 @@ export default function DischargeSheet({
             ))}
           </>
         )}
+        </div>
 
+        <div data-print="histopathology">
         {/* 8. Histopathology */}
         {doc.histopathology.length > 0 && (
           <>
@@ -178,7 +194,9 @@ export default function DischargeSheet({
             ))}
           </>
         )}
+        </div>
 
+        <div data-print="medications">
         {/* 9. Medications on Discharge */}
         <SectionHeading editBase={editBase} section="medications">Medications on Discharge</SectionHeading>
         {doc.medications.length === 0 ? (
@@ -203,55 +221,25 @@ export default function DischargeSheet({
             ))}
           </ol>
         )}
+        </div>
 
-        {/* 11. Primary Care Actions */}
-        <SectionHeading editBase={editBase} section="primaryCareActions">Primary Care Actions</SectionHeading>
-        {doc.primaryCareActions.length === 0 ? (
+        <div data-print="advice">
+        {/* 11–14. Patient actions, advice, primary-care actions and red flags, squashed into one
+            Advice list so page 2 stays short. Each still edits from its own card. */}
+        <SectionHeading editBase={editBase} section="advice">Advice</SectionHeading>
+        {adviceLines(doc).length === 0 ? (
           <p className="text-caption">None.</p>
         ) : (
           <ul className="list-disc pl-5 text-caption">
-            {doc.primaryCareActions.map((a, i) => (
-              <li key={i}>{a}</li>
+            {adviceLines(doc).map((l, i) => (
+              <li key={i}>
+                {l.label && <span className="font-bold">{l.label}: </span>}
+                {l.text}
+              </li>
             ))}
           </ul>
         )}
-
-        {/* 12. Patient Actions */}
-        <SectionHeading editBase={editBase} section="patientActions">Patient Actions</SectionHeading>
-        {doc.patientActions.length === 0 ? (
-          <p className="text-caption">None.</p>
-        ) : (
-          <ul className="list-disc pl-5 text-caption">
-            {doc.patientActions.map((a, i) => (
-              <li key={i}>{a}</li>
-            ))}
-          </ul>
-        )}
-
-        {/* 13. Advice */}
-        {doc.advice && doc.advice.length > 0 && (
-          <>
-            <SectionHeading editBase={editBase} section="advice">Advice</SectionHeading>
-            {doc.advice.map((a) => (
-              <p key={a.id} className="text-caption">
-                <span className="font-bold">{a.module}: </span>
-                {a.text}
-              </p>
-            ))}
-          </>
-        )}
-
-        {/* 14. Red Flags */}
-        {doc.redFlags && doc.redFlags.length > 0 && (
-          <>
-            <SectionHeading editBase={editBase} section="redFlags">When to Seek Medical Attention</SectionHeading>
-            <ul className="list-disc pl-5 text-caption">
-              {doc.redFlags.map((r, i) => (
-                <li key={i}>{r}</li>
-              ))}
-            </ul>
-          </>
-        )}
+        </div>
 
         {/* 15. Authentication */}
         <SectionHeading editBase={editBase} section="authentication">Authentication</SectionHeading>

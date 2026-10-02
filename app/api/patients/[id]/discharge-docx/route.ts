@@ -22,6 +22,7 @@ import {
   letterheadNamesUnit,
   procedureLines,
   medLine,
+  adviceLines,
   BLANK,
   type DischargeDocument,
 } from "@/lib/discharge-render";
@@ -260,27 +261,12 @@ function buildBody(doc: DischargeDocument, logoBytes: Buffer | null): (Paragraph
   if (doc.medications.length === 0) out.push(body(BLANK));
   doc.medications.forEach((m, i) => out.push(new Paragraph({ children: [plain(`${i + 1}. ${medLine(m)}`)] })));
 
-  // 11. Primary Care Actions
-  out.push(heading("Primary Care Actions"));
-  if (doc.primaryCareActions.length === 0) out.push(body("None."));
-  for (const a of doc.primaryCareActions) out.push(new Paragraph({ bullet: { level: 0 }, children: [plain(a)] }));
-
-  // 12. Patient Actions
-  out.push(heading("Patient Actions"));
-  if (doc.patientActions.length === 0) out.push(body("None."));
-  for (const a of doc.patientActions) out.push(new Paragraph({ bullet: { level: 0 }, children: [plain(a)] }));
-
-  // 13. Advice
-  if (doc.advice && doc.advice.length > 0) {
-    out.push(heading("Advice"));
-    for (const a of doc.advice) out.push(new Paragraph({ children: [bold(`${a.module}: `), plain(a.text)] }));
-  }
-
-  // 14. Red Flags
-  if (doc.redFlags && doc.redFlags.length > 0) {
-    out.push(heading("When to Seek Medical Attention"));
-    for (const r of doc.redFlags) out.push(new Paragraph({ bullet: { level: 0 }, children: [plain(r)] }));
-  }
+  // 11–14. One Advice list, matching the printed sheet.
+  out.push(heading("Advice"));
+  const advice = adviceLines(doc);
+  if (advice.length === 0) out.push(body("None."));
+  for (const l of advice)
+    out.push(new Paragraph({ bullet: { level: 0 }, children: [...(l.label ? [bold(`${l.label}: `)] : []), plain(l.text)] }));
 
   // 15. Authentication
   out.push(new Paragraph({ children: [new PageBreak()] }));
