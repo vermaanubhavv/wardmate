@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { caseHistorySectionOf, seedHopi } from "@/lib/case-history";
 import { complaintChipsFor, pastChipsFor } from "@/lib/case-history-chips";
@@ -424,7 +424,6 @@ export default function CaseHistoryWorkspace({
   const oncology = specialty === "medical_oncology";
   const complaintChips = useMemo(() => complaintChipsFor(specialty), [specialty]);
   const pastChips = useMemo(() => pastChipsFor(specialty), [specialty]);
-  const router = useRouter();
   const searchParams = useSearchParams();
   const liveDictationOn = process.env.NEXT_PUBLIC_LIVE_DICTATION === "1";
   const [pending, startTransition] = useTransition();
@@ -784,9 +783,10 @@ export default function CaseHistoryWorkspace({
     if (index < 0 || index >= STEPS.length) return;
     const leaving = current;
     if (dirty.has(leaving.id) && leaving.id !== "review" && leaving.id !== "diagnosis" && leaving.id !== "plan") {
+      // No router.refresh(): the save action revalidates, and Next ships the re-rendered page in
+      // the same response — a refresh here rendered it a second time.
       startTransition(async () => {
         await persist(leaving.id);
-        router.refresh();
       });
     }
     setStep(index);
@@ -878,7 +878,6 @@ export default function CaseHistoryWorkspace({
       }
       setCompiled(null);
       setMessage("Case history rewritten. Any card can still be edited.");
-      router.refresh();
     });
   }
 
@@ -901,7 +900,6 @@ export default function CaseHistoryWorkspace({
         section === "diagnosis" ? "Diagnosis and differentials saved." : "Plan added to the to-do list."
       );
       if (thenNext) goTo(step + 1);
-      router.refresh();
     });
   }
 
