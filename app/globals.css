@@ -342,3 +342,13 @@ summary {
     animation: none;
   }
 }
+
+/* Chrome draws its own date, page URL and page count in the page margins of every printout.
+   Claiming the four corner margin boxes, even empty, switches those off — a discharge summary
+   or note should carry nothing the ward did not write. */
+@page {
+  @top-left { content: ""; }
+  @top-right { content: ""; }
+  @bottom-left { content: ""; }
+  @bottom-right { content: ""; }
+}

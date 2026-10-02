@@ -20,6 +20,7 @@ import { buildConditionProse } from "@/lib/discharge-compile";
 import { runDischargeChecks, type DischargeCheckContext } from "@/lib/discharge-checks";
 import type { DischargeCheck } from "@/lib/discharge-checks";
 import FormularyLink from "./formulary-link";
+import type { FinalFix } from "@/lib/final-check";
 import { Field, Area, StringList, SuggestField, SelectField, SegmentedField } from "./discharge-fields";
 import { DEFAULT_UNIT_CONSULTANTS } from "@/lib/unit-consultants";
 import DiagnosisCombobox from "../../diagnosis-combobox";
@@ -190,6 +191,7 @@ export default function DischargeWorkspace({
   wardId,
   formularyAvailable,
   aiReady,
+  finalCheck,
 }: {
   patientId: string;
   initialDraft: DischargeDraft;
@@ -197,6 +199,8 @@ export default function DischargeWorkspace({
   wardId: string;
   formularyAvailable: boolean;
   aiReady: boolean;
+  /** Sonnet's proofread from the last finalise — lib/final-check.ts. */
+  finalCheck: { fixes: FinalFix[]; questions: string[] } | null;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1282,6 +1286,38 @@ export default function DischargeWorkspace({
           <button type="button" onClick={reopen} className="text-footnote font-medium text-accent" disabled={pending}>
             Reopen to edit
           </button>
+        </div>
+      )}
+
+      {finalised && finalCheck && (finalCheck.fixes.length > 0 || finalCheck.questions.length > 0) && (
+        <div className="ios-group flex flex-col gap-2 px-4 py-3">
+          <p className="text-caption2 font-semibold uppercase tracking-[0.03em] text-muted">Final check</p>
+          {finalCheck.fixes.length > 0 && (
+            <details>
+              <summary className="text-footnote">
+                Tidied {finalCheck.fixes.length} {finalCheck.fixes.length === 1 ? "thing" : "things"} at the last finalise or print
+              </summary>
+              <ul className="mt-1 flex flex-col gap-0.5 text-footnote text-muted">
+                {finalCheck.fixes.map((f, i) => (
+                  <li key={i}>
+                    {f.kind === "reworded"
+                      ? "Clinical Course re-punctuated and re-framed — every number, side and negative kept"
+                      : `“${f.before}” → ${f.after ? `“${f.after}”` : "removed"}`}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+          {finalCheck.questions.length > 0 && (
+            <>
+              <p className="text-footnote">Worth a look — reopen to change anything:</p>
+              <ul className="flex flex-col gap-1 text-footnote text-warn-fg">
+                {finalCheck.questions.map((q, i) => (
+                  <li key={i}>{q}</li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       )}
 

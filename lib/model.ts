@@ -36,3 +36,7 @@
  * mechanism that already exists for surfacing exactly that kind of value for a one-tap check.
  */
 export const AI_MODEL = "claude-sonnet-5";
+
+/** The cheaper model, for small high-volume passes where Sonnet's extra care is not needed: the
+ *  live-dictation router and the final proofread of case histories and progress notes. */
+export const FAST_MODEL = "claude-haiku-4-5-20251001";

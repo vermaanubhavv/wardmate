@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { FAST_MODEL } from "@/lib/model";
 import { correctTranscript } from "@/lib/glossary";
 import { log } from "@/lib/observability";
 import { askJev, chosenProbability, type JevAnswers } from "@/lib/jev";
@@ -37,7 +38,7 @@ export type { RoutableSection, RoutedSegment } from "@/lib/case-history-sections
  * which splits and names as before. No TYPESAFE_API_KEY means Haiku only, exactly as before.
  */
 
-const ROUTING_MODEL = "claude-haiku-4-5-20251001";
+const ROUTING_MODEL = FAST_MODEL;
 // ponytail: fixed bar, untuned — set it from a labelled synthetic eval once fallback rates are in.
 const MIN_PROBABILITY = 0.7;
 
@@ -254,8 +255,8 @@ async function routeWithHaiku(
     model: ROUTING_MODEL,
     max_tokens: 700,
     system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
+    // No `effort`: Haiku 4.5 rejects it with a 400, which failed every fallback fragment.
     output_config: {
-      effort: "low",
       format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> },
     },
     messages: [

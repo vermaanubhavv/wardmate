@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getDischargeContext, type DischargeContext, type DischargeRow } from "@/lib/discharge-data";
 import { compileDischargeDraft } from "@/lib/discharge-compile";
 import { runDischargeChecks, buildCheckContext, type DischargeCheck } from "@/lib/discharge-checks";
-import type { DischargeDraft, DischargeSectionId } from "@/lib/discharge-entities";
+import type { DischargeDraft, DischargeSectionId, Procedure } from "@/lib/discharge-entities";
+import { finalCheck, polishProse, type FinalFix } from "@/lib/final-check";
 
 /**
  * The stored discharge, merged over a freshly compiled one.
@@ -182,16 +183,127 @@ export async function finaliseDischargeSummary(
     updated_at: now,
   };
 
-  if (existing) {
-    const { error } = await supabase.from("discharge_summaries").update(patch).eq("patient_id", patientId);
-    return error ? { ok: false, error: error.message } : { ok: true };
-  }
+  const { error } = existing
+    ? await supabase.from("discharge_summaries").update(patch).eq("patient_id", patientId)
+    : await supabase
+        .from("discharge_summaries")
+        .insert({ patient_id: patientId, ward_id: context.wardId, created_by: user.id, ...patch });
+  if (error) return { ok: false, error: error.message };
+  // No proofread here: the print sheet starts it the moment it opens (print-button.tsx), so
+  // Finalise does not wait on the model.
+  return { ok: true };
+}
 
-  const wardId = context.wardId;
-  const { error } = await supabase
-    .from("discharge_summaries")
-    .insert({ patient_id: patientId, ward_id: wardId, created_by: user.id, ...patch });
-  return error ? { ok: false, error: error.message } : { ok: true };
+/**
+ * Sonnet's proofread of the summary — run each time the print sheet opens, and on Word download.
+ *
+ * The Clinical Course is re-punctuated and re-framed (polishProse); every other text field gets
+ * the mechanical fixes only (finalCheck), and its questions are kept beside the summary, never
+ * applied. Writes straight to the row, finalised or not: this is the app tidying its own output,
+ * recorded in final_check, not the resident editing. Skipped when nothing has changed since the
+ * last proofread. A failed pass changes nothing — lib/final-check.ts.
+ */
+export async function proofreadDischarge(patientId: string): Promise<{ changed: boolean }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const context = await getDischargeContext(patientId);
+  if (!user || !context) return { changed: false };
+
+  const lastCheck = (context.row?.final_check as { checkedAt?: string } | null)?.checkedAt;
+  if (lastCheck && context.row?.updated_at && Date.parse(lastCheck) >= Date.parse(context.row.updated_at)) return { changed: false };
+
+  const draft = mergeDischargeDraft(context);
+  const course = draft.clinicalCourse.text;
+  const [polished, checked] = await Promise.all([
+    polishProse(course, "Clinical Course of a discharge summary"),
+    finalCheck(dischargeFields(draft), "discharge summary"),
+  ]);
+  let fixes: FinalFix[] = checked.fixes;
+  if (polished !== course) {
+    // The reworded course replaces it whole, so the line-level fixes to it are moot.
+    checked.fields.clinicalCourse = polished;
+    fixes = [...fixes.filter((f) => f.field !== "clinicalCourse"), { field: "clinicalCourse", kind: "reworded", before: course, after: polished }];
+  }
+  const fixedDraft = withDischargeFields(draft, checked.fields);
+  const fixedSections = new Set(fixes.map((f) => f.field.split(":")[0] as DischargeSectionId));
+
+  const now = new Date().toISOString();
+  const patch = {
+    updated_at: now,
+    final_check: { checkedAt: now, fixes, questions: checked.questions },
+    ...Object.fromEntries(
+      [...fixedSections].map((id) => [SECTION_COLUMN[id].column, fixedDraft[SECTION_COLUMN[id].key]])
+    ),
+  };
+  const { error } = context.row
+    ? await supabase.from("discharge_summaries").update(patch).eq("patient_id", patientId)
+    : await supabase
+        .from("discharge_summaries")
+        .insert({ patient_id: patientId, ward_id: context.wardId, created_by: user.id, ...patch });
+  if (error) console.warn("final-check: could not save", error.message);
+  return { changed: !error && fixes.length > 0 };
+}
+
+// --- The text the final check may proofread ---------------------------------------------
+// Keys are "<section id>:<row>" so a fix maps back to the one column it changed. Medications
+// are left out on purpose: drug names and doses are never edited, only asked about.
+
+const PROCEDURE_TEXT = ["name", "indication", "findings", "drains", "complications", "outcome"] as const;
+
+function dischargeFields(d: DischargeDraft): Record<string, string> {
+  const f: Record<string, string> = {};
+  const put = (k: string, v: string | null | undefined) => {
+    if (v?.trim()) f[k] = v;
+  };
+  put("indication", d.indicationForAdmission.text);
+  d.diagnoses.forEach((x) => put(`diagnoses:${x.id}`, x.text));
+  d.procedures.forEach((p) => PROCEDURE_TEXT.forEach((k) => put(`procedures:${p.id}:${k}`, p[k])));
+  put("clinicalCourse", d.clinicalCourse.text);
+  d.relevantInvestigations.items.forEach((i) => put(`relevantInvestigations:${i.id}`, i.text));
+  put("conditionAtDischarge:prose", d.conditionAtDischarge.prose);
+  put("conditionAtDischarge:freeText", d.conditionAtDischarge.freeText);
+  d.primaryCareActions.forEach((a, i) => put(`primaryCareActions:${i}`, a));
+  d.patientActions.forEach((a, i) => put(`patientActions:${i}`, a));
+  d.advice.items.forEach((a) => put(`advice:${a.id}`, a.text));
+  d.redFlags.items.forEach((r, i) => put(`redFlags:${i}`, r));
+  return f;
+}
+
+/** Put proofread text back. A row the check emptied (a removed placeholder) is dropped. */
+function withDischargeFields(d: DischargeDraft, f: Record<string, string>): DischargeDraft {
+  const g = (k: string, v: string) => f[k] ?? v;
+  const prose = g("conditionAtDischarge:prose", d.conditionAtDischarge.prose);
+  return {
+    ...d,
+    indicationForAdmission: { ...d.indicationForAdmission, text: g("indication", d.indicationForAdmission.text) },
+    diagnoses: d.diagnoses.map((x) => ({ ...x, text: g(`diagnoses:${x.id}`, x.text) })).filter((x) => x.text.trim()),
+    procedures: d.procedures.map((p) => {
+      const out: Procedure = { ...p };
+      for (const k of PROCEDURE_TEXT) if (p[k] != null) out[k] = g(`procedures:${p.id}:${k}`, p[k] as string);
+      return out;
+    }),
+    clinicalCourse: { ...d.clinicalCourse, text: g("clinicalCourse", d.clinicalCourse.text) },
+    relevantInvestigations: {
+      ...d.relevantInvestigations,
+      items: d.relevantInvestigations.items.map((i) => ({ ...i, text: g(`relevantInvestigations:${i.id}`, i.text) })),
+    },
+    conditionAtDischarge: {
+      ...d.conditionAtDischarge,
+      prose,
+      // A fixed prose is hand-edited from here on, or the next vars change would rebuild the typo.
+      proseEdited: d.conditionAtDischarge.proseEdited || prose !== d.conditionAtDischarge.prose,
+      freeText:
+        d.conditionAtDischarge.freeText == null
+          ? null
+          : g("conditionAtDischarge:freeText", d.conditionAtDischarge.freeText),
+    },
+    primaryCareActions: d.primaryCareActions.map((a, i) => g(`primaryCareActions:${i}`, a)).filter((a) => a.trim()),
+    patientActions: d.patientActions.map((a, i) => g(`patientActions:${i}`, a)).filter((a) => a.trim()),
+    advice: { ...d.advice, items: d.advice.items.map((a) => ({ ...a, text: g(`advice:${a.id}`, a.text) })).filter((a) => a.text.trim()) },
+    redFlags: { ...d.redFlags, items: d.redFlags.items.map((r, i) => g(`redFlags:${i}`, r)).filter((r) => r.trim()) },
+  };
 }
 
 export async function reopenDischargeSummary(patientId: string): Promise<{ ok: boolean; error?: string }> {

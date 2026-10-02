@@ -10,6 +10,7 @@ import {
   finaliseDischargeSummary,
   reopenDischargeSummary,
   resetDischargeSummary,
+  proofreadDischarge,
 } from "@/lib/discharge-store";
 import type { DischargeCheck } from "@/lib/discharge-checks";
 
@@ -46,6 +47,13 @@ export async function finaliseDischargeAction(
 ): Promise<{ ok: boolean; blocking?: DischargeCheck[]; error?: string }> {
   const result = await finaliseDischargeSummary(patientId);
   if (result.ok) revalidatePath(`/patients/${patientId}/discharge`);
+  return result;
+}
+
+/** Sonnet's proofread, run when the print sheet opens — lib/discharge-store.ts proofreadDischarge. */
+export async function proofreadDischargeAction(patientId: string): Promise<{ changed: boolean }> {
+  const result = await proofreadDischarge(patientId);
+  if (result.changed) revalidatePath(`/patients/${patientId}/discharge`);
   return result;
 }
 

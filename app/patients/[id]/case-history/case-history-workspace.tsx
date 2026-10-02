@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { caseHistorySectionOf } from "@/lib/case-history";
+import { caseHistorySectionOf, seedHopi } from "@/lib/case-history";
 import { complaintChipsFor, pastChipsFor } from "@/lib/case-history-chips";
 import { leadsFor, readField, writeField } from "@/lib/case-history-departments";
 import DictationOverlay from "./dictation-overlay";
@@ -468,24 +468,14 @@ export default function CaseHistoryWorkspace({
   const [customComplaint, setCustomComplaint] = useState("");
 
   // HOPI is stored as "<complaint>: (<duration>) <narrative>" — pull the three apart on the way in.
-  const seededHopi = useMemo(() => {
-    const text: Record<string, string> = {};
-    const dur: Record<string, string> = {};
-    for (const o of bySection.hopi ?? []) {
-      const v = (o.value ?? "").trim();
-      const m = v.match(/^([^:]{2,40}):\s*([\s\S]+)$/);
-      if (!m) continue;
-      const key = m[1].trim();
-      let body = m[2].trim();
-      const dm = body.match(/^\(([^)]{1,40})\)\s*([\s\S]*)$/);
-      if (dm) {
-        dur[key] = dm[1].trim();
-        body = dm[2].trim();
-      }
-      text[key] = body;
-    }
-    return { text, dur };
-  }, [bySection]);
+  const seededHopi = useMemo(
+    () =>
+      seedHopi(
+        (bySection.hopi ?? []).map((o) => o.value ?? ""),
+        seededComplaintRows.length > 0 ? seededComplaintRows.map((r) => r.name) : ["Presenting illness"]
+      ),
+    [bySection, seededComplaintRows]
+  );
   const [hopi, setHopi] = useState<Record<string, string>>(() => seededHopi.text);
   const [hopiDur, setHopiDur] = useState<Record<string, string>>(() => seededHopi.dur);
 
@@ -527,13 +517,10 @@ export default function CaseHistoryWorkspace({
     mark("medication");
   }
 
-  const [obstetric, setObstetric] = useState<string>(() =>
-    ((bySection.obstetric ?? [])[0]?.value ?? "").trim()
-  );
-  const [dietary, setDietary] = useState<string>(() => ((bySection.dietary ?? [])[0]?.value ?? "").trim());
-  const [environmental, setEnvironmental] = useState<string>(() =>
-    ((bySection.environmental ?? [])[0]?.value ?? "").trim()
-  );
+  // One text box each, saved as one row — so every stored row is joined in, or saving would drop the rest.
+  const [obstetric, setObstetric] = useState<string>(() => seedText("obstetric"));
+  const [dietary, setDietary] = useState<string>(() => seedText("dietary"));
+  const [environmental, setEnvironmental] = useState<string>(() => seedText("environmental"));
 
   const [piccle, setPiccle] = useState<Record<string, { state: SignState; note: string }>>(() => {
     const out: Record<string, { state: SignState; note: string }> = {};
@@ -594,6 +581,11 @@ export default function CaseHistoryWorkspace({
     medications: [],
     uncertain: [],
   });
+  // Diagnosis and plan are proposals until approved. One generated or edited and not yet approved
+  // makes that card's Next "Approve & next", so walking on does not silently drop it.
+  const [unapproved, setUnapproved] = useState<Set<"diagnosis" | "plan">>(new Set());
+  const touch = (section: "diagnosis" | "plan") => setUnapproved((u) => new Set(u).add(section));
+  const editDiagnosis = (d: typeof diagnosis) => { setDiagnosis(d); touch("diagnosis"); };
   const [planTab, setPlanTab] = useState<"workup" | "conservative" | "medications">("workup");
   /** Which medication-class chip's drug dropdown is open, if any. */
   const [drugPicker, setDrugPicker] = useState<string | null>(null);
@@ -713,8 +705,8 @@ export default function CaseHistoryWorkspace({
         L,
         "note",
         complaintList
-          .filter((c) => (hopi[c] ?? "").trim())
-          .map((c) => `${c}: ${(hopiDur[c] ?? "").trim() ? `(${hopiDur[c].trim()}) ` : ""}${hopi[c].trim()}`)
+          .filter((c) => (hopi[c] ?? "").trim() || (hopiDur[c] ?? "").trim())
+          .map((c) => `${c}: ${(hopiDur[c] ?? "").trim() ? `(${hopiDur[c].trim()}) ` : ""}${(hopi[c] ?? "").trim()}`.trim())
       );
     else if (id === "negatives") res = await applyRelevantNegatives(patientId, negatives.text);
     else if (id === "past") res = await replaceCaseHistorySection(patientId, "past history", "note", composeHistory(past));
@@ -820,6 +812,7 @@ export default function CaseHistoryWorkspace({
       if (!r.ok) {
         setMessage(data.error ?? "Could not generate.");
       } else if (section === "diagnosis") {
+        touch("diagnosis");
         setDiagnosis((d) => ({
           ...d,
           text: String(data.text ?? ""),
@@ -830,6 +823,7 @@ export default function CaseHistoryWorkspace({
         setNegatives({ text: String(data.text ?? ""), uncertain: data.uncertainPoints ?? [] });
         if (String(data.text ?? "").trim()) mark("negatives");
       } else if (section === "plan") {
+        touch("plan");
         setPlan({
           workup: Array.isArray(data.workup) ? data.workup : [],
           conservative: Array.isArray(data.conservative) ? data.conservative : [],
@@ -837,15 +831,41 @@ export default function CaseHistoryWorkspace({
           uncertain: data.uncertainPoints ?? [],
         });
       } else {
-        setCompiled({
-          sections: Array.isArray(data.sections) ? data.sections : [],
-          uncertain: data.uncertainPoints ?? [],
-        });
+        const sections: { label: string; text: string }[] = Array.isArray(data.sections) ? data.sections : [];
+        setCompiled({ sections, uncertain: data.uncertainPoints ?? [] });
+        void proofread(sections);
       }
     } catch {
       setMessage("No signal. Try again.");
     }
     setGenerating(null);
+  }
+
+  // The proofread lands after the prose is on screen. A section the resident has already edited
+  // keeps their text; a newer compile, or prose already applied, drops the late result.
+  const proofreadRun = useRef(0);
+  const [proofreading, setProofreading] = useState(false);
+  async function proofread(sections: { label: string; text: string }[]) {
+    const run = ++proofreadRun.current;
+    setProofreading(true);
+    const data = await fetch(`/api/patients/${patientId}/case-history/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ section: "proofread", sections }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
+    if (run !== proofreadRun.current) return;
+    setProofreading(false);
+    if (!data) return;
+    setCompiled((c) =>
+      c && {
+        sections: c.sections.map((s, i) =>
+          s.text === sections[i]?.text ? { ...s, text: data.fields?.[s.label] ?? s.text } : s
+        ),
+        uncertain: [...c.uncertain, ...(Array.isArray(data.questions) ? data.questions : [])],
+      }
+    );
   }
 
   function applyCompiled() {
@@ -862,7 +882,7 @@ export default function CaseHistoryWorkspace({
     });
   }
 
-  function approve(section: "diagnosis" | "plan") {
+  function approve(section: "diagnosis" | "plan", thenNext = false) {
     startTransition(async () => {
       const res =
         section === "diagnosis"
@@ -872,9 +892,15 @@ export default function CaseHistoryWorkspace({
         setMessage(res.error ?? "Could not save.");
         return;
       }
+      setUnapproved((u) => {
+        const n = new Set(u);
+        n.delete(section);
+        return n;
+      });
       setMessage(
         section === "diagnosis" ? "Diagnosis and differentials saved." : "Plan added to the to-do list."
       );
+      if (thenNext) goTo(step + 1);
       router.refresh();
     });
   }
@@ -1477,7 +1503,7 @@ export default function CaseHistoryWorkspace({
             {generating === "diagnosis" ? "Generating…" : diagnosis.text ? "Regenerate with AI" : "Generate with AI"}
           </button>
           <UncertainList points={diagnosis.uncertain} />
-          <Area value={diagnosis.text} onChange={(v) => setDiagnosis({ ...diagnosis, text: v })} rows={3} placeholder="Provisional diagnosis" />
+          <Area value={diagnosis.text} onChange={(v) => editDiagnosis({ ...diagnosis, text: v })} rows={3} placeholder="Provisional diagnosis" />
 
           <div className="flex flex-col gap-2">
             <span className="text-caption font-medium text-muted">Differential diagnosis</span>
@@ -1485,15 +1511,15 @@ export default function CaseHistoryWorkspace({
               <div key={i} className="flex gap-2">
                 <input
                   value={d}
-                  onChange={(e) => setDiagnosis({ ...diagnosis, differentials: diagnosis.differentials.map((x, j) => (j === i ? e.target.value : x)) })}
+                  onChange={(e) => editDiagnosis({ ...diagnosis, differentials: diagnosis.differentials.map((x, j) => (j === i ? e.target.value : x)) })}
                   className="h-10 flex-1 rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
                 />
-                <button type="button" onClick={() => setDiagnosis({ ...diagnosis, differentials: diagnosis.differentials.filter((_, j) => j !== i) })} className="shrink-0 px-2 text-footnote text-muted">
+                <button type="button" onClick={() => editDiagnosis({ ...diagnosis, differentials: diagnosis.differentials.filter((_, j) => j !== i) })} className="shrink-0 px-2 text-footnote text-muted">
                   Remove
                 </button>
               </div>
             ))}
-            <button type="button" onClick={() => setDiagnosis({ ...diagnosis, differentials: [...diagnosis.differentials, ""] })} className="self-start text-footnote font-medium text-accent">
+            <button type="button" onClick={() => editDiagnosis({ ...diagnosis, differentials: [...diagnosis.differentials, ""] })} className="self-start text-footnote font-medium text-accent">
               + Add a differential
             </button>
           </div>
@@ -1542,7 +1568,7 @@ export default function CaseHistoryWorkspace({
         { id: "medications", title: "Medications" },
       ];
       const list = plan[planTab];
-      const setList = (items: string[]) => setPlan({ ...plan, [planTab]: items });
+      const setList = (items: string[]) => { setPlan({ ...plan, [planTab]: items }); touch("plan"); };
       return (
         <>
           <p className="text-caption leading-[1.45] text-muted">
@@ -1592,6 +1618,8 @@ export default function CaseHistoryWorkspace({
     const missing: string[] = [];
     if (complaints.length === 0) missing.push("no complaints recorded");
     if (!diagnosis.text.trim() && !primaryDiagnosis) missing.push("no provisional diagnosis");
+    if (unapproved.has("diagnosis")) missing.push("diagnosis not approved");
+    if (unapproved.has("plan")) missing.push("plan not approved");
     return (
       <>
         <span
@@ -1625,6 +1653,7 @@ export default function CaseHistoryWorkspace({
           </button>
           {compiled && (
             <>
+              {proofreading && <p className="text-footnote text-muted">Proofreading — small spelling fixes may appear.</p>}
               <UncertainList points={compiled.uncertain} />
               {compiled.sections.map((s, i) => (
                 <div key={s.label} className="flex flex-col gap-1">
@@ -1673,6 +1702,9 @@ export default function CaseHistoryWorkspace({
   }
 
   const pct = Math.round(((step + 1) / STEPS.length) * 100);
+  const approveOnNext =
+    (current.id === "diagnosis" && unapproved.has("diagnosis") && !!diagnosis.text.trim()) ||
+    (current.id === "plan" && unapproved.has("plan") && [...plan.workup, ...plan.conservative, ...plan.medications].some((i) => i.trim()));
 
   const dictationFilled: Record<string, boolean> = {
     complaints: complaints.length > 0,
@@ -1701,8 +1733,9 @@ export default function CaseHistoryWorkspace({
           initialFilled={dictationFilled}
           initialComplaints={complaints}
           onClose={() => {
-            setDictating(false);
-            router.refresh();
+            // The overlay appended to sections these cards already hold, and every card seeded
+            // once — a stale card saved later would overwrite the dictation. Reload so they reseed.
+            window.location.replace(window.location.pathname);
           }}
         />
       )}
@@ -1710,7 +1743,16 @@ export default function CaseHistoryWorkspace({
       {liveDictationOn && !dictating && (
         <button
           type="button"
-          onClick={() => setDictating(true)}
+          onClick={() =>
+            // Save edited cards first: the overlay closes with a reload, which would drop them.
+            startTransition(async () => {
+              for (const id of dirty) {
+                if (id !== "review" && id !== "diagnosis" && id !== "plan" && !(await persist(id))) return;
+              }
+              setDictating(true);
+            })
+          }
+          disabled={pending}
           className="ios-group flex items-center justify-between gap-3 px-4 py-3.5 text-left active:bg-chip"
         >
           <span>
@@ -1774,8 +1816,13 @@ export default function CaseHistoryWorkspace({
               Done
             </Link>
           ) : (
-            <button type="button" onClick={() => goTo(step + 1)} className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-callout font-semibold text-accent-ink">
-              {dirty.has(current.id) ? "Save & next" : "Next"}
+            <button
+              type="button"
+              onClick={() => (approveOnNext ? approve(current.id as "diagnosis" | "plan", true) : goTo(step + 1))}
+              disabled={approveOnNext && pending}
+              className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-callout font-semibold text-accent-ink disabled:opacity-60"
+            >
+              {approveOnNext ? "Approve & next" : dirty.has(current.id) ? "Save & next" : "Next"}
             </button>
           )}
         </div>

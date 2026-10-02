@@ -10,6 +10,8 @@ import {
   generatePlan,
   generateRelevantNegatives,
 } from "@/lib/case-history-ai";
+import { finalCheck } from "@/lib/final-check";
+import { FAST_MODEL } from "@/lib/model";
 
 /**
  * A first draft of a case-history AI card: "compile" turns the tapped fragments into prose,
@@ -26,11 +28,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
-  let body: { section?: string; diagnosis?: string; differentials?: string[] };
+  let body: { section?: string; diagnosis?: string; differentials?: string[]; sections?: { label: string; text: string }[] };
   try {
-    body = (await request.json()) as { section?: string; diagnosis?: string; differentials?: string[] };
+    body = (await request.json()) as typeof body;
   } catch {
     return NextResponse.json({ error: "Malformed request." }, { status: 400 });
+  }
+
+  // The proofread of compiled prose already on the resident's screen — lib/final-check.ts. Asked
+  // for separately so the prose shows without waiting on it; needs nothing from the record.
+  if (body.section === "proofread") {
+    const fields = Object.fromEntries(
+      (Array.isArray(body.sections) ? body.sections : []).map((s) => [String(s.label), String(s.text)])
+    );
+    return NextResponse.json(await finalCheck(fields, "case history", FAST_MODEL));
   }
 
   const [{ data: entriesData }, { data: patient }] = await Promise.all([
@@ -83,7 +94,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     : digest;
 
   try {
-    if (body.section === "compile") return NextResponse.json(await compileCaseHistory(digest, ctx, admissionPhrase));
+    if (body.section === "compile") {
+      // Proofread separately ("proofread" above) once the resident can already read this.
+      return NextResponse.json(await compileCaseHistory(digest, ctx, admissionPhrase));
+    }
     if (body.section === "diagnosis") return NextResponse.json(await generateDiagnosis(withCtx, admissionPhrase));
     if (body.section === "plan") return NextResponse.json(await generatePlan(withCtx, admissionPhrase));
     if (body.section === "negatives")

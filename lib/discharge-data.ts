@@ -57,6 +57,8 @@ export type DischargeRow = {
   advice: unknown;
   red_flags: unknown;
   authentication: unknown;
+  final_check: unknown;
+  updated_at: string | null;
 };
 
 type DischargeDoctor = {
@@ -101,7 +103,7 @@ export type DischargeContext = {
 };
 
 const DISCHARGE_ROW_COLUMNS =
-  "id, status, finalised_at, indication_for_admission, encounter, diagnoses, procedures, clinical_course, relevant_investigations, histopathology, medications, condition_at_discharge, primary_care_actions, patient_actions, advice, red_flags, authentication";
+  "id, status, finalised_at, indication_for_admission, encounter, diagnoses, procedures, clinical_course, relevant_investigations, histopathology, medications, condition_at_discharge, primary_care_actions, patient_actions, advice, red_flags, authentication, final_check, updated_at";
 
 export async function getDischargeContext(patientId: string): Promise<DischargeContext | null> {
   const supabase = await createClient();

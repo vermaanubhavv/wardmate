@@ -16,7 +16,7 @@ import {
 } from "docx";
 import { createClient } from "@/lib/supabase/server";
 import { getDischargeContext } from "@/lib/discharge-data";
-import { mergeDischargeDraft } from "@/lib/discharge-store";
+import { mergeDischargeDraft, proofreadDischarge } from "@/lib/discharge-store";
 import {
   buildDischargeDocument,
   letterheadNamesUnit,
@@ -38,6 +38,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+
+  // Same proofread as Print (lib/final-check.ts), so the Word file is never the untidied copy.
+  // Skipped when nothing changed since the last check; a failed check changes nothing.
+  await proofreadDischarge(id);
 
   const context = await getDischargeContext(id);
   if (!context) return NextResponse.json({ error: "Patient not found." }, { status: 404 });
@@ -229,6 +233,10 @@ function buildBody(doc: DischargeDocument, logoBytes: Buffer | null): (Paragraph
   if (doc.clinicalCourse && !doc.clinicalCourseApproved)
     out.push(new Paragraph({ children: [new TextRun({ text: "Not yet approved by the resident.", italics: true, size: 18 })] }));
 
+  // Condition at Discharge — right after the course, matching the printed sheet.
+  out.push(heading("Condition at Discharge"));
+  out.push(body(doc.condition || BLANK));
+
   // 7. Relevant Investigations
   if (doc.investigations.length > 0) {
     out.push(heading("Relevant Investigations and Results"));
@@ -251,10 +259,6 @@ function buildBody(doc: DischargeDocument, logoBytes: Buffer | null): (Paragraph
   out.push(heading("Medications on Discharge"));
   if (doc.medications.length === 0) out.push(body(BLANK));
   doc.medications.forEach((m, i) => out.push(new Paragraph({ children: [plain(`${i + 1}. ${medLine(m)}`)] })));
-
-  // 10. Condition at Discharge
-  out.push(heading("Condition at Discharge"));
-  out.push(body(doc.condition || BLANK));
 
   // 11. Primary Care Actions
   out.push(heading("Primary Care Actions"));

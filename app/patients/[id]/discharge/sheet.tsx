@@ -54,6 +54,10 @@ export default function DischargeSheet({
   return (
     <section className="px-4 pb-4 print:px-0">
       <div className="ios-group px-5 py-5 text-footnote leading-snug text-black print:rounded-none print:border-0 print:p-0 print:shadow-none">
+        {/* Page 1 on paper: heading through the course and the condition at discharge. Held to at least one page
+            tall, so investigations onward start page 2; a course that spills onto page 2 is
+            followed straight on, never pushed to page 3. */}
+        <div className="print:min-h-[100vh]">
         {/* Heading */}
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element -- ward-uploaded logo via a
@@ -140,6 +144,12 @@ export default function DischargeSheet({
           <p className="text-caption2 italic text-black print:hidden">Not yet approved by the resident.</p>
         )}
 
+        {/* Condition at Discharge — right after the course, so page 1 ends with how the patient left. */}
+        <SectionHeading editBase={editBase} section="conditionAtDischarge">Condition at Discharge</SectionHeading>
+        <p className="text-caption">{doc.condition || BLANK}</p>
+
+        </div>
+
         {/* 7. Relevant Investigations */}
         {doc.investigations.length > 0 && (
           <>
@@ -174,7 +184,7 @@ export default function DischargeSheet({
         {doc.medications.length === 0 ? (
           <p className="text-caption">{BLANK}</p>
         ) : (
-          <ol className="list-decimal pl-5 text-caption">
+          <ol className="list-decimal pl-8 text-caption">
             {doc.medications.map((m) => (
               <li key={m.id} className="mb-0.5">
                 {medLine(m)}
@@ -193,10 +203,6 @@ export default function DischargeSheet({
             ))}
           </ol>
         )}
-
-        {/* 10. Condition at Discharge */}
-        <SectionHeading editBase={editBase} section="conditionAtDischarge">Condition at Discharge</SectionHeading>
-        <p className="text-caption">{doc.condition || BLANK}</p>
 
         {/* 11. Primary Care Actions */}
         <SectionHeading editBase={editBase} section="primaryCareActions">Primary Care Actions</SectionHeading>
