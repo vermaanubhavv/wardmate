@@ -28,6 +28,10 @@ export const ROUTABLE_SECTIONS = [
   "abdomen",
   "chest",
   "local",
+  // Medical wards' exam cards (lib/specialty/clerking.ts examStepsFor). A surgical unit has no
+  // such card and is never offered these.
+  "cvs",
+  "cns",
   "examination", // general / PICCLE / vitals narrative — held for the resident to place
   "diagnosis",
   "plan",
@@ -80,6 +84,10 @@ const SPECIALTY_HISTORY_SECTIONS: Record<string, RoutableSection[]> = {
 };
 
 const SPECIALTY_EXAM_SECTIONS: Record<string, RoutableSection[]> = {
+  internal_medicine: ["cvs", "cns"],
+  paediatrics: ["cvs", "cns"],
+  pulmonary_medicine: ["cvs", "cns"],
+  emergency_medicine: ["cvs", "cns"],
   // NCCN/ASCO-style oncology survey: what a routine surgical exam has no place to record —
   // node-station-by-node-station findings, mucositis and skin toxicity, and the line the
   // chemotherapy actually goes through. Performance status sits with these because, like them,
@@ -108,6 +116,8 @@ export const EXAM_SECTION_LABEL: Record<string, string> = {
   abdomen: "per abdomen",
   chest: "chest",
   local: "local examination",
+  cvs: "cardiovascular system",
+  cns: "central nervous system",
 };
 
 /** Sorted but not written — the resident places these (structured toggles, or the

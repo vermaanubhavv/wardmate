@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { stripPatientHonorific } from "@/lib/patients";
+import { getWardSpecialtyStored } from "@/lib/ward";
+import { getSpecialtyPack } from "@/lib/specialty";
 import CaseHistoryCapture from "../../case-history-capture";
 
 /**
@@ -31,7 +33,7 @@ export default async function NewCaseHistoryPage({
   const [{ data: patient }, { count: existing }] = await Promise.all([
     supabase
       .from("current_patients")
-      .select("id, display_name, bed")
+      .select("id, ward_id, display_name, bed")
       .eq("id", id)
       .maybeSingle(),
     supabase
@@ -45,6 +47,7 @@ export default async function NewCaseHistoryPage({
   if (existing && existing > 0) redirect(`/patients/${id}/case-history`);
 
   const name = stripPatientHonorific(patient.display_name);
+  const specialty = getSpecialtyPack(await getWardSpecialtyStored(patient.ward_id)).key;
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
@@ -71,6 +74,7 @@ export default async function NewCaseHistoryPage({
           <CaseHistoryCapture
             patientId={id}
             variant="speak"
+            specialty={specialty}
             savedHref={`/patients/${id}/case-history`}
           />
         </div>

@@ -6,6 +6,15 @@ import Link from "next/link";
 import { caseHistorySectionOf, seedHopi } from "@/lib/case-history";
 import { complaintChipsFor, pastChipsFor } from "@/lib/case-history-chips";
 import { leadsFor, readField, writeField } from "@/lib/case-history-departments";
+import {
+  CNS_PILLS,
+  CVS_PILLS,
+  EXAM_CARD,
+  examStepsFor,
+  hopiAttrsFor,
+  type ExamCardId,
+  type HopiAttr,
+} from "@/lib/specialty/clerking";
 import DictationOverlay from "./dictation-overlay";
 import { ExamDiagrams, hasExamDiagram } from "./print/diagrams";
 import type { Observation } from "@/lib/patient-state";
@@ -127,180 +136,8 @@ const PICCLE_SIGNS = [
 // symptom — a row of quick pills each, plus free text for the narrative. Pills are matched
 // against and written into the same one free-text string that gets stored, so the card
 // round-trips: tap "Colicky" and it appears in the sentence; re-open and the pill reads as on.
-type HopiAttr = { label: string; options: string[] };
-
-const GENERIC_HOPI: HopiAttr[] = [
-  { label: "Onset", options: ["Sudden", "Gradual"] },
-  { label: "Duration", options: ["<1 day", "1–3 days", "<1 week", "1–4 weeks", ">1 month"] },
-  { label: "Progression", options: ["Improving", "Static", "Worsening"] },
-  { label: "Severity", options: ["Mild", "Moderate", "Severe"] },
-  { label: "Timing", options: ["Constant", "Intermittent", "Worse at night", "After food"] },
-];
-
-const SYMPTOM_TEMPLATES: { match: RegExp; attrs: HopiAttr[] }[] = [
-  {
-    // Checked before the generic pain/ache template below, which would otherwise catch
-    // "headache" too (it contains "ache") and ask abdominal-pain questions for it.
-    match: /headache|migraine|cephalgia/i,
-    attrs: [
-      { label: "Site", options: ["Unilateral", "Bilateral", "Frontal", "Occipital", "Temporal", "Generalised"] },
-      { label: "Onset", options: ["Sudden (thunderclap)", "Gradual"] },
-      { label: "Character", options: ["Throbbing", "Pressing / tightening", "Sharp / stabbing", "Dull ache"] },
-      { label: "Severity", options: ["Mild", "Moderate", "Severe — worst ever"] },
-      { label: "Duration", options: ["<1 day", "1–3 days", "<1 week", "1–4 weeks", ">1 month"] },
-      { label: "Pattern", options: ["First episode", "Recurrent", "Chronic daily"] },
-      { label: "Aggravated by", options: ["Straining / coughing", "Bending forward", "Light", "Noise", "Movement"] },
-      { label: "Relieved by", options: ["Rest", "Dark quiet room", "Analgesics", "Sleep"] },
-      { label: "Associated with", options: ["Nausea / vomiting", "Photophobia", "Phonophobia", "Visual disturbance", "Neck stiffness", "Fever", "Weakness / numbness", "Loss of consciousness", "Seizure"] },
-    ],
-  },
-  {
-    match: /pain|ache/i,
-    attrs: [
-      { label: "Site", options: ["Epigastric", "RUQ", "LUQ", "RIF", "LIF", "Periumbilical", "Suprapubic", "Loin", "Generalised", "Shifting"] },
-      { label: "Onset", options: ["Sudden", "Gradual", "After meals", "At night"] },
-      { label: "Character", options: ["Colicky", "Dull ache", "Burning", "Cramping", "Sharp / stabbing", "Constant"] },
-      { label: "Radiation", options: ["To back", "To right shoulder", "To groin", "To tip of shoulder", "None"] },
-      { label: "Severity", options: ["Mild", "Moderate", "Severe"] },
-      { label: "Duration", options: ["<1 day", "1–3 days", "<1 week", "1–4 weeks", ">1 month"] },
-      { label: "Progression", options: ["Improving", "Static", "Worsening"] },
-      { label: "Aggravated by", options: ["Movement", "Food", "Fatty food", "Coughing", "Deep breath"] },
-      { label: "Relieved by", options: ["Rest", "Vomiting", "Leaning forward", "Antacids", "Passing stool / flatus"] },
-      { label: "Associated with", options: ["Vomiting", "Fever", "Distension", "Constipation", "Loose stools", "Anorexia", "Jaundice", "Dysuria", "Haematuria"] },
-    ],
-  },
-  {
-    match: /vomit|emesis/i,
-    attrs: [
-      { label: "Onset", options: ["Sudden", "Gradual"] },
-      { label: "Duration", options: ["<1 day", "1–3 days", "<1 week", ">1 week"] },
-      { label: "Frequency", options: ["1–2 / day", "3–5 / day", ">5 / day"] },
-      { label: "Content", options: ["Food particles", "Bilious", "Blood / coffee-ground", "Feculent", "Watery"] },
-      { label: "Relation to food", options: ["Soon after eating", "Delayed", "Unrelated"] },
-      { label: "Nature", options: ["Projectile", "Effortless", "Preceded by nausea"] },
-      { label: "Progression", options: ["Improving", "Static", "Worsening"] },
-      { label: "Associated with", options: ["Pain abdomen", "Distension", "Constipation", "Obstipation", "Fever", "Weight loss"] },
-    ],
-  },
-  {
-    match: /fever|pyrexia/i,
-    attrs: [
-      { label: "Onset", options: ["Sudden", "Gradual"] },
-      { label: "Duration", options: ["<3 days", "<1 week", "1–4 weeks", ">1 month"] },
-      { label: "Grade", options: ["Low-grade", "High-grade", "Documented >101°F"] },
-      { label: "Pattern", options: ["Continuous", "Intermittent", "Remittent", "Evening rise"] },
-      { label: "Chills / rigors", options: ["With rigors", "With chills only", "No chills"] },
-      { label: "Progression", options: ["Improving", "Static", "Worsening"] },
-      { label: "Associated with", options: ["Night sweats", "Weight loss", "Cough", "Dysuria", "Pain abdomen", "Loose stools", "Rash"] },
-    ],
-  },
-  {
-    match: /jaundice|icterus|yellow/i,
-    attrs: [
-      { label: "Onset", options: ["Sudden", "Gradual"] },
-      { label: "Duration", options: ["<1 week", "1–4 weeks", ">1 month"] },
-      { label: "Progression", options: ["Increasing", "Decreasing", "Fluctuating"] },
-      { label: "Pain", options: ["Painful", "Painless"] },
-      { label: "Urine", options: ["High-coloured", "Normal"] },
-      { label: "Stools", options: ["Clay-coloured", "Pale", "Normal"] },
-      { label: "Pruritus", options: ["Present", "Absent"] },
-      { label: "Associated with", options: ["Fever", "Weight loss", "Anorexia", "Vomiting", "Abdominal lump"] },
-    ],
-  },
-  {
-    match: /lump|swelling|mass/i,
-    attrs: [
-      { label: "Site", options: ["Groin", "Umbilical", "Epigastric", "Scrotal", "Neck", "Breast", "Abdominal wall", "Other"] },
-      { label: "Duration", options: ["<1 month", "1–6 months", "6–12 months", ">1 year"] },
-      { label: "Onset", options: ["Noticed incidentally", "After straining / lifting"] },
-      { label: "Progression", options: ["Increasing in size", "Static", "Decreasing"] },
-      { label: "Pain", options: ["Painful", "Painless"] },
-      { label: "Reducibility", options: ["Reducible", "Irreducible", "Reducible on lying down"] },
-      { label: "Cough impulse", options: ["Present", "Absent"] },
-      { label: "Associated with", options: ["Pain abdomen", "Vomiting", "Constipation", "Skin changes", "Other lumps", "Weight loss"] },
-    ],
-  },
-  {
-    match: /distension|distention|bloat/i,
-    attrs: [
-      { label: "Onset", options: ["Sudden", "Gradual"] },
-      { label: "Duration", options: ["<1 day", "1–3 days", "<1 week", ">1 week"] },
-      { label: "Extent", options: ["Localised", "Generalised"] },
-      { label: "Progression", options: ["Increasing", "Static", "Decreasing"] },
-      { label: "Flatus / stool", options: ["Passing normally", "Reduced", "Absent (obstipation)"] },
-      { label: "Associated with", options: ["Pain abdomen", "Vomiting", "Constipation", "Breathlessness", "Visible peristalsis"] },
-    ],
-  },
-  {
-    match: /constipat/i,
-    attrs: [
-      { label: "Duration", options: ["<1 week", "1–4 weeks", ">1 month", "Long-standing"] },
-      { label: "Bowel frequency", options: ["Once in 2–3 days", "Once in 4–7 days", "<Once a week"] },
-      { label: "Stool", options: ["Hard", "Pellet-like", "Narrow calibre"] },
-      { label: "Pattern", options: ["Progressive", "Alternating with diarrhoea"] },
-      { label: "Blood / mucus", options: ["Blood in stool", "Mucus", "Neither"] },
-      { label: "Associated with", options: ["Pain abdomen", "Distension", "Tenesmus", "Weight loss", "Anorexia"] },
-    ],
-  },
-  {
-    match: /loose stool|diarrh|motions/i,
-    attrs: [
-      { label: "Onset", options: ["Sudden", "Gradual"] },
-      { label: "Duration", options: ["<3 days", "<1 week", "1–4 weeks", ">1 month"] },
-      { label: "Frequency", options: ["3–5 / day", "6–10 / day", ">10 / day"] },
-      { label: "Consistency", options: ["Watery", "Semi-formed", "Mucoid"] },
-      { label: "Blood / mucus", options: ["Blood present", "Mucus present", "Neither"] },
-      { label: "Timing", options: ["Nocturnal", "Post-prandial", "Tenesmus"] },
-      { label: "Associated with", options: ["Fever", "Pain abdomen", "Vomiting", "Dehydration", "Weight loss"] },
-    ],
-  },
-  {
-    match: /bleeding per rectum|per rectal bleed|pr bleed|blood in stool|melena|melaena/i,
-    attrs: [
-      { label: "Duration", options: ["<1 week", "1–4 weeks", ">1 month", "Recurrent"] },
-      { label: "Colour", options: ["Bright red", "Dark red", "Altered / maroon", "Melena (black tarry)"] },
-      { label: "Amount", options: ["Streaks on stool", "Mixed with stool", "Splash in the pan", "Dripping after stool"] },
-      { label: "Relation to defecation", options: ["During", "After", "Unrelated"] },
-      { label: "Pain", options: ["Painful", "Painless"] },
-      { label: "Associated with", options: ["Mucus", "Mass / prolapse", "Change in bowel habit", "Weight loss", "Pallor / giddiness"] },
-    ],
-  },
-  {
-    match: /burning micturition|dysuria|urin/i,
-    attrs: [
-      { label: "Onset", options: ["Sudden", "Gradual"] },
-      { label: "Duration", options: ["<3 days", "<1 week", "1–4 weeks", ">1 month"] },
-      { label: "Voiding", options: ["Increased frequency", "Urgency", "Poor stream", "Incomplete emptying", "Terminal dribbling"] },
-      { label: "Urine", options: ["Haematuria", "Cloudy / turbid", "Foul-smelling", "Clear"] },
-      { label: "Pain site", options: ["Suprapubic", "Loin", "Urethral"] },
-      { label: "Associated with", options: ["Fever", "Rigors", "Loin pain", "Nausea / vomiting"] },
-    ],
-  },
-  {
-    match: /appetite/i,
-    attrs: [
-      { label: "Duration", options: ["<1 month", "1–3 months", ">3 months"] },
-      { label: "Severity", options: ["Mild", "Marked", "Aversion to food"] },
-      { label: "Progression", options: ["Improving", "Static", "Worsening"] },
-      { label: "Associated with", options: ["Weight loss", "Nausea", "Early satiety", "Pain abdomen", "Altered taste"] },
-    ],
-  },
-  {
-    match: /weight/i,
-    attrs: [
-      { label: "Amount", options: ["2–5 kg", "5–10 kg", ">10 kg", "Not quantified"] },
-      { label: "Over", options: ["<1 month", "1–3 months", "3–6 months", ">6 months"] },
-      { label: "Appetite", options: ["Preserved", "Reduced"] },
-      { label: "Associated with", options: ["Fever", "Night sweats", "Cough", "Bowel change", "Lump", "Anorexia"] },
-    ],
-  },
-];
-
+// The templates themselves, and which complaint gets which, live in lib/specialty/clerking.ts.
 const DURATION_QUICK = ["1 day", "3 days", "1 week", "2 weeks", "1 month"];
-
-function hopiAttrsFor(complaint: string): HopiAttr[] {
-  return SYMPTOM_TEMPLATES.find((t) => t.match.test(complaint))?.attrs ?? GENERIC_HOPI;
-}
 
 // --- medical oncology --------------------------------------------------------------------
 // Quick taps for the four oncology history cards. Each writes its own words into the same free
@@ -394,6 +231,8 @@ type StepId =
   | "vitals"
   | "abdomen"
   | "chest"
+  | "cvs"
+  | "cns"
   | "local"
   | "diagnosis"
   | "plan"
@@ -544,11 +383,21 @@ export default function CaseHistoryWorkspace({
     return out;
   });
 
-  const [abdomen, setAbdomen] = useState<string>(() =>
-    examValue(["per abdomen", "abdomen", "p/a", "pa"])
+  const [abdomen, setAbdomen] = useState<string>(() => examValue(EXAM_CARD.abdomen.aliases));
+  const [chest, setChest] = useState<string>(() => examValue(EXAM_CARD.chest.aliases));
+  const [cvs, setCvs] = useState<string>(() => examValue(EXAM_CARD.cvs.aliases));
+  const [cns, setCns] = useState<string>(() => examValue(EXAM_CARD.cns.aliases));
+  const [local, setLocal] = useState<string>(() => examValue(EXAM_CARD.local.aliases));
+  // The department's examination cards. A card it does not walk still shows when the record
+  // already holds a value for it — a medicine patient's earlier local examination is not hidden.
+  const examSteps = useMemo(
+    () =>
+      examStepsFor(specialty, (id) =>
+        id !== "piccle" && id !== "vitals" && !!examValue(EXAM_CARD[id].aliases).trim()
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [specialty, observations]
   );
-  const [chest, setChest] = useState<string>(() => examValue(["chest", "respiratory system", "rs"]));
-  const [local, setLocal] = useState<string>(() => examValue(["local examination", "local exam"]));
 
   const seededDifferentials = useMemo(() => {
     const row = observations.find((o) => o.label.toLowerCase().trim() === "differential diagnosis");
@@ -666,11 +515,10 @@ export default function CaseHistoryWorkspace({
           { id: "onco_mucosa_line" as StepId, title: "Mucosa, skin & line" },
         ]
       : []),
-    { id: "piccle", title: "General examination" },
-    { id: "vitals", title: "Vitals" },
-    { id: "abdomen", title: "Per abdomen" },
-    { id: "chest", title: "Chest" },
-    { id: "local", title: "Local examination" },
+    ...examSteps.map((id: ExamCardId) => ({
+      id,
+      title: id === "piccle" ? "General examination" : id === "vitals" ? "Vitals" : EXAM_CARD[id].title,
+    })),
     { id: "diagnosis", title: "Provisional diagnosis" },
     { id: "plan", title: "Plan" },
     { id: "review", title: "Review" },
@@ -764,6 +612,10 @@ export default function CaseHistoryWorkspace({
       res = await replaceCaseHistoryExam(patientId, [{ label: "per abdomen", kind: "exam", value: abdomen.trim() || null }]);
     else if (id === "chest")
       res = await replaceCaseHistoryExam(patientId, [{ label: "chest", kind: "exam", value: chest.trim() || null }]);
+    else if (id === "cvs")
+      res = await replaceCaseHistoryExam(patientId, [{ label: EXAM_CARD.cvs.label, kind: "exam", value: cvs.trim() || null }]);
+    else if (id === "cns")
+      res = await replaceCaseHistoryExam(patientId, [{ label: EXAM_CARD.cns.label, kind: "exam", value: cns.trim() || null }]);
     else if (id === "local")
       res = await replaceCaseHistoryExam(patientId, [{ label: "local examination", kind: "exam", value: local.trim() || null }]);
 
@@ -1109,7 +961,7 @@ export default function CaseHistoryWorkspace({
 
     if (id === "hopi") {
       const c = current._c ?? complaintList[0];
-      const attrs = hopiAttrsFor(c);
+      const attrs = hopiAttrsFor(c, specialty);
       const set = (v: string) => { setHopi({ ...hopi, [c]: v }); mark("hopi"); };
       return (
         <>
@@ -1301,6 +1153,16 @@ export default function CaseHistoryWorkspace({
 
     if (id === "abdomen") return <PillsAndText pills={ABDOMEN_PILLS} value={abdomen} onChange={(v) => { setAbdomen(v); mark("abdomen"); }} placeholder="Anything else on the abdomen" />;
     if (id === "chest") return <PillsAndText pills={CHEST_PILLS} value={chest} onChange={(v) => { setChest(v); mark("chest"); }} placeholder="Anything else on the chest" />;
+    if (id === "cvs") return <PillsAndText pills={CVS_PILLS} value={cvs} onChange={(v) => { setCvs(v); mark("cvs"); }} placeholder="Apex, heart sounds, murmur (site, grade, radiation), JVP" />;
+    if (id === "cns")
+      return (
+        <PillsAndText
+          pills={CNS_PILLS}
+          value={cns}
+          onChange={(v) => { setCns(v); mark("cns"); }}
+          placeholder="GCS as E V M, higher functions, power per limb, tone, reflexes, plantars, meningeal signs"
+        />
+      );
 
     if (id === "local")
       return (
@@ -1700,6 +1562,18 @@ export default function CaseHistoryWorkspace({
   }
 
   const pct = Math.round(((step + 1) / STEPS.length) * 100);
+  // "Not asked" is its own state, distinct from "No relevant history": an untouched card stores
+  // nothing and prints NR. The skip only walks on — it writes nothing, so it can never record a
+  // negative, and it is offered only while the card is still empty.
+  const notAskedEmpty: Partial<Record<StepId, boolean>> = {
+    past: past.mode === "unset",
+    personal: personal.mode === "unset",
+    family: family.mode === "unset",
+    surgical: surgical.mode === "unset",
+    dietary: !dietary.trim(),
+    environmental: !environmental.trim(),
+  };
+  const canSkipNotAsked = notAskedEmpty[current.id] === true && !dirty.has(current.id);
   const approveOnNext =
     (current.id === "diagnosis" && unapproved.has("diagnosis") && !!diagnosis.text.trim()) ||
     (current.id === "plan" && unapproved.has("plan") && [...plan.workup, ...plan.conservative, ...plan.medications].some((i) => i.trim()));
@@ -1717,6 +1591,8 @@ export default function CaseHistoryWorkspace({
     examination: PICCLE_SIGNS.some((s) => piccle[s.label].state !== "unset") || VITALS.some((v) => (vitals[v.key] ?? "").trim()),
     abdomen: abdomen.trim().length > 0,
     chest: chest.trim().length > 0,
+    cvs: cvs.trim().length > 0,
+    cns: cns.trim().length > 0,
     local: local.trim().length > 0,
     diagnosis: diagnosis.text.trim().length > 0,
     plan: plan.workup.length > 0 || plan.conservative.length > 0 || plan.medications.length > 0,
@@ -1779,6 +1655,15 @@ export default function CaseHistoryWorkspace({
         <div className="flex flex-col gap-3 px-4 py-4">
           {departmentPrompts()}
           {body()}
+          {canSkipNotAsked && (
+            <button
+              type="button"
+              onClick={() => goTo(step + 1)}
+              className="self-start text-footnote font-medium text-muted underline underline-offset-4"
+            >
+              Not asked — skip, record nothing
+            </button>
+          )}
         </div>
       </div>
 
