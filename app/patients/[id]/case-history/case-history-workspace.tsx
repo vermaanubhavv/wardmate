@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { caseHistorySectionOf } from "@/lib/case-history";
+import { caseHistorySectionOf, seedHopi } from "@/lib/case-history";
 import { complaintChipsFor, pastChipsFor } from "@/lib/case-history-chips";
 import { leadsFor, readField, writeField } from "@/lib/case-history-departments";
 import DictationOverlay from "./dictation-overlay";
@@ -468,24 +468,14 @@ export default function CaseHistoryWorkspace({
   const [customComplaint, setCustomComplaint] = useState("");
 
   // HOPI is stored as "<complaint>: (<duration>) <narrative>" — pull the three apart on the way in.
-  const seededHopi = useMemo(() => {
-    const text: Record<string, string> = {};
-    const dur: Record<string, string> = {};
-    for (const o of bySection.hopi ?? []) {
-      const v = (o.value ?? "").trim();
-      const m = v.match(/^([^:]{2,40}):\s*([\s\S]+)$/);
-      if (!m) continue;
-      const key = m[1].trim();
-      let body = m[2].trim();
-      const dm = body.match(/^\(([^)]{1,40})\)\s*([\s\S]*)$/);
-      if (dm) {
-        dur[key] = dm[1].trim();
-        body = dm[2].trim();
-      }
-      text[key] = body;
-    }
-    return { text, dur };
-  }, [bySection]);
+  const seededHopi = useMemo(
+    () =>
+      seedHopi(
+        (bySection.hopi ?? []).map((o) => o.value ?? ""),
+        seededComplaintRows.length > 0 ? seededComplaintRows.map((r) => r.name) : ["Presenting illness"]
+      ),
+    [bySection, seededComplaintRows]
+  );
   const [hopi, setHopi] = useState<Record<string, string>>(() => seededHopi.text);
   const [hopiDur, setHopiDur] = useState<Record<string, string>>(() => seededHopi.dur);
 
@@ -527,13 +517,10 @@ export default function CaseHistoryWorkspace({
     mark("medication");
   }
 
-  const [obstetric, setObstetric] = useState<string>(() =>
-    ((bySection.obstetric ?? [])[0]?.value ?? "").trim()
-  );
-  const [dietary, setDietary] = useState<string>(() => ((bySection.dietary ?? [])[0]?.value ?? "").trim());
-  const [environmental, setEnvironmental] = useState<string>(() =>
-    ((bySection.environmental ?? [])[0]?.value ?? "").trim()
-  );
+  // One text box each, saved as one row — so every stored row is joined in, or saving would drop the rest.
+  const [obstetric, setObstetric] = useState<string>(() => seedText("obstetric"));
+  const [dietary, setDietary] = useState<string>(() => seedText("dietary"));
+  const [environmental, setEnvironmental] = useState<string>(() => seedText("environmental"));
 
   const [piccle, setPiccle] = useState<Record<string, { state: SignState; note: string }>>(() => {
     const out: Record<string, { state: SignState; note: string }> = {};
@@ -713,8 +700,8 @@ export default function CaseHistoryWorkspace({
         L,
         "note",
         complaintList
-          .filter((c) => (hopi[c] ?? "").trim())
-          .map((c) => `${c}: ${(hopiDur[c] ?? "").trim() ? `(${hopiDur[c].trim()}) ` : ""}${hopi[c].trim()}`)
+          .filter((c) => (hopi[c] ?? "").trim() || (hopiDur[c] ?? "").trim())
+          .map((c) => `${c}: ${(hopiDur[c] ?? "").trim() ? `(${hopiDur[c].trim()}) ` : ""}${(hopi[c] ?? "").trim()}`.trim())
       );
     else if (id === "negatives") res = await applyRelevantNegatives(patientId, negatives.text);
     else if (id === "past") res = await replaceCaseHistorySection(patientId, "past history", "note", composeHistory(past));
@@ -1701,8 +1688,9 @@ export default function CaseHistoryWorkspace({
           initialFilled={dictationFilled}
           initialComplaints={complaints}
           onClose={() => {
-            setDictating(false);
-            router.refresh();
+            // The overlay appended to sections these cards already hold, and every card seeded
+            // once — a stale card saved later would overwrite the dictation. Reload so they reseed.
+            window.location.replace(window.location.pathname);
           }}
         />
       )}
@@ -1710,7 +1698,16 @@ export default function CaseHistoryWorkspace({
       {liveDictationOn && !dictating && (
         <button
           type="button"
-          onClick={() => setDictating(true)}
+          onClick={() =>
+            // Save edited cards first: the overlay closes with a reload, which would drop them.
+            startTransition(async () => {
+              for (const id of dirty) {
+                if (id !== "review" && id !== "diagnosis" && id !== "plan" && !(await persist(id))) return;
+              }
+              setDictating(true);
+            })
+          }
+          disabled={pending}
           className="ios-group flex items-center justify-between gap-3 px-4 py-3.5 text-left active:bg-chip"
         >
           <span>
