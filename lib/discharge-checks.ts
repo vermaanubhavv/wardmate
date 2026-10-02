@@ -1,6 +1,7 @@
 import type { DischargeContext } from "@/lib/discharge-data";
 import type { DischargeDraft, DischargeSectionId } from "@/lib/discharge-entities";
-import { CONDITION_VARIABLES } from "@/lib/discharge-entities";
+import { ALL_CONDITION_VARIABLES } from "@/lib/discharge-entities";
+import { dischargeProfileFor } from "@/lib/specialty/discharge";
 
 /**
  * The completeness and consistency checks the protocol (section 16) requires before a discharge
@@ -38,6 +39,9 @@ export type DischargeCheckContext = {
   followUpInOpenTasks: boolean;
   /** Drain observations still reading as in situ (not removed). */
   drainInSituOnRecord: boolean;
+  /** Condition-at-Discharge variables that must be set, per the unit (lib/specialty/discharge.ts).
+   *  Absent = 5, the surgical rule. */
+  conditionMinimum?: number;
 };
 
 export function buildCheckContext(context: DischargeContext): DischargeCheckContext {
@@ -48,6 +52,7 @@ export function buildCheckContext(context: DischargeContext): DischargeCheckCont
       FOLLOW_UP_MENTION.test(t.value_text ?? t.label)
     ),
     drainInSituOnRecord: drainStillIn(context.observations),
+    conditionMinimum: dischargeProfileFor(context.pack).conditionMinimum,
   };
 }
 
@@ -100,12 +105,12 @@ const FOLLOW_UP_MENTION = /\b(opd|follow[\s-]?up|review|clinic|come back|revisit
 const DRAIN_MENTION = /\bdrain\b/i;
 const DRAIN_REMOVED_IN_TEXT = /\bdrain\b[^.]*\b(removed|out|taken out)\b|\b(removed|took out)\b[^.]*\bdrain\b/i;
 
-function conditionComplete(draft: DischargeDraft): boolean {
-  const set = CONDITION_VARIABLES.filter((v) => {
+function conditionComplete(draft: DischargeDraft, minimum: number): boolean {
+  const set = ALL_CONDITION_VARIABLES.filter((v) => {
     const val = draft.conditionAtDischarge.vars[v.key];
     return val === true || (typeof val === "string" && val.trim().length > 0);
   }).length;
-  return set >= 5 || !!draft.conditionAtDischarge.freeText?.trim();
+  return set >= minimum || !!draft.conditionAtDischarge.freeText?.trim();
 }
 
 export function runDischargeChecks(
@@ -200,11 +205,12 @@ export function runDischargeChecks(
   }
 
   // --- Condition at Discharge --------------------------------------------------------
-  if (!conditionComplete(draft)) {
+  const conditionMinimum = checkContext.conditionMinimum ?? 5;
+  if (!conditionComplete(draft, conditionMinimum)) {
     block(
       "condition-incomplete",
       "conditionAtDischarge",
-      "Condition at Discharge is incomplete — set at least five of the variables, or add free text."
+      `Condition at Discharge is incomplete — set at least ${conditionMinimum === 5 ? "five" : conditionMinimum} of the variables, or add free text.`
     );
   }
 

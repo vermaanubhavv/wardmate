@@ -6,10 +6,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ADVICE_MODULES,
-  CONDITION_VARIABLES,
+  ALL_CONDITION_VARIABLES,
   DISCHARGE_SECTIONS,
   MEDICATION_STATUSES,
   RED_FLAG_SUGGESTIONS,
+  NO_PROCEDURE_NAME,
+  type ConditionVariableKey,
   type DischargeDraft,
   type DischargeSectionId,
   type Diagnosis,
@@ -20,6 +22,7 @@ import { buildConditionProse } from "@/lib/discharge-compile";
 import { runDischargeChecks, type DischargeCheckContext } from "@/lib/discharge-checks";
 import type { DischargeCheck } from "@/lib/discharge-checks";
 import FormularyLink from "./formulary-link";
+import type { DischargeProfile } from "@/lib/specialty/discharge";
 import type { FinalFix } from "@/lib/final-check";
 import { Field, Area, StringList, SuggestField, SelectField, SegmentedField } from "./discharge-fields";
 import { DEFAULT_UNIT_CONSULTANTS } from "@/lib/unit-consultants";
@@ -46,74 +49,8 @@ const UNIT_SUGGESTIONS = ["Unit Alpha", "Unit 1", "Unit 2", "Unit 3", "Unit 4"];
 const CONSULTANT_SUGGESTIONS = Array.from(new Set(Object.values(DEFAULT_UNIT_CONSULTANTS)));
 const ADMISSION_TYPES = ["Emergency", "Elective"];
 
-// The ~50 operations a general-surgery ward performs most often, offered under the Procedure
-// box the same way the diagnosis box offers COMMON_DIAGNOSES (lib/patients.ts) — a suggestion,
-// never a constraint. Naming matches the regexes in lib/discharge-templates.ts and
-// lib/discharge-compile.ts (SPECIMEN_RULES) wherever it can, so picking one from here also
-// picks up the right discharge template and histopathology default.
-const PROCEDURE_SUGGESTIONS = [
-  "Laparoscopic cholecystectomy",
-  "Open cholecystectomy",
-  "Laparoscopic appendicectomy",
-  "Appendicectomy (open)",
-  "Inguinal hernioplasty (mesh repair)",
-  "Laparoscopic hernia repair (TEP)",
-  "Umbilical hernia repair",
-  "Incisional hernia repair",
-  "Ventral hernia repair",
-  "Femoral hernia repair",
-  "Exploratory laparotomy",
-  "Graham's patch closure for perforated duodenal ulcer",
-  "Small bowel resection and anastomosis",
-  "Adhesiolysis for intestinal obstruction",
-  "Right hemicolectomy",
-  "Left hemicolectomy",
-  "Sigmoidectomy",
-  "Anterior resection",
-  "Abdominoperineal resection (APR)",
-  "Hartmann's procedure",
-  "Total colectomy",
-  "Loop ileostomy formation",
-  "Colostomy formation",
-  "Stoma closure",
-  "Modified radical mastectomy (MRM)",
-  "Breast conservation surgery with axillary clearance",
-  "Wide local excision with sentinel lymph node biopsy",
-  "Excision biopsy of a breast lump",
-  "Total thyroidectomy",
-  "Hemithyroidectomy",
-  "Haemorrhoidectomy",
-  "Fistulectomy for fistula in ano",
-  "Lateral internal sphincterotomy",
-  "Incision and drainage of abscess",
-  "Pilonidal sinus excision",
-  "Excision of sebaceous cyst",
-  "Excision of lipoma",
-  "Varicose vein stripping / EVLT",
-  "Hydrocelectomy (eversion of sac)",
-  "Orchidectomy",
-  "Circumcision",
-  "Splenectomy",
-  "Whipple's procedure (pancreaticoduodenectomy)",
-  "Distal pancreatectomy",
-  "Subtotal gastrectomy",
-  "Total gastrectomy",
-  "Gastrojejunostomy",
-  "Feeding jejunostomy",
-  "CBD exploration with T-tube drainage",
-  "Drainage of liver abscess",
-];
-
-// The resident's usual post-op discharge set — one tap fills in all five instead of five
-// separate "Add a medication" rounds. Never auto-inserted; only added on request, same as any
-// other drug the resident types in by hand.
-const STANDARD_DISCHARGE_MEDICATIONS: { generic: string; strength: string | null; dose: string | null; route: string | null; frequency: string }[] = [
-  { generic: "Pantop", strength: "40 mg", dose: null, route: "Oral", frequency: "OD" },
-  { generic: "Paracetamol", strength: "500 mg", dose: null, route: "Oral", frequency: "TDS" },
-  { generic: "Ondansetron", strength: "4 mg", dose: null, route: "Oral", frequency: "OD" },
-  { generic: "Diclofenac", strength: "50 mg", dose: null, route: "Oral", frequency: "SOS" },
-  { generic: "MVI", strength: null, dose: "1 tablet", route: "Oral", frequency: "OD" },
-];
+// The operation list, the one-tap drug set and the condition chips are per specialty — see
+// dischargeProfileFor() in lib/specialty/discharge.ts; general surgery's are unchanged there.
 
 // --- the look ------------------------------------------------------------------
 //
@@ -132,7 +69,7 @@ type StepId = DischargeSectionId | "review";
 // Indication: the indication reads against the diagnosis, and the review preview already
 // lists it first. Only the cards move; the printed order is DISCHARGE_SECTIONS' own.
 const CARD_SECTIONS = DISCHARGE_SECTIONS.filter((s) => s.id !== "patientActions" && s.id !== "redFlags");
-const STEPS: { id: StepId; title: string; required: boolean }[] = [
+const ALL_STEPS: { id: StepId; title: string; required: boolean }[] = [
   ...[
     ...CARD_SECTIONS.filter((s) => s.id === "diagnoses"),
     ...CARD_SECTIONS.filter((s) => s.id !== "diagnoses"),
@@ -143,6 +80,15 @@ const STEPS: { id: StepId; title: string; required: boolean }[] = [
   })),
   { id: "review", title: "Review & sign", required: true },
 ];
+
+/** The cards this unit walks through. A non-operating unit sees "Procedures", and no
+ *  Histopathology card unless the draft already holds a specimen — nothing on record is hidden. */
+function stepsFor(profile: DischargeProfile, hasHistopathology: boolean) {
+  if (profile.operative) return ALL_STEPS;
+  return ALL_STEPS.filter((s) => s.id !== "histopathology" || hasHistopathology).map((s) =>
+    s.id === "procedures" ? { ...s, title: "Procedures" } : s
+  );
+}
 
 /** Sections whose checks/nav should surface on the Advice card now that they share it. */
 function cardSections(id: StepId): DischargeSectionId[] {
@@ -193,6 +139,7 @@ export default function DischargeWorkspace({
   formularyAvailable,
   aiReady,
   finalCheck,
+  profile,
 }: {
   patientId: string;
   initialDraft: DischargeDraft;
@@ -202,10 +149,17 @@ export default function DischargeWorkspace({
   aiReady: boolean;
   /** Sonnet's proofread from the last finalise — lib/final-check.ts. */
   finalCheck: { fixes: FinalFix[]; questions: string[] } | null;
+  /** What this unit's specialty offers — lib/specialty/discharge.ts. */
+  profile: DischargeProfile;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [draft, setDraft] = useState<DischargeDraft>(initialDraft);
+  // Fixed for the visit: a card must not vanish under the resident mid-edit.
+  const STEPS = useMemo(
+    () => stepsFor(profile, initialDraft.histopathology.length > 0),
+    [profile, initialDraft.histopathology.length]
+  );
   const [dirty, setDirty] = useState<Set<DischargeSectionId>>(new Set());
   const [pending, startTransition] = useTransition();
   const [isFinalising, setIsFinalising] = useState(false);
@@ -549,7 +503,13 @@ export default function DischargeWorkspace({
   }
 
   const dc = draft.conditionAtDischarge;
-  const setConditionVar = (key: (typeof CONDITION_VARIABLES)[number]["key"], value: null | true | string) => {
+  // This unit's chips in its own order, plus any other variable that already holds a value
+  // (compiled from the record or set earlier), so nothing on the draft is ever hidden.
+  const conditionVars = [
+    ...profile.conditionKeys.flatMap((k) => ALL_CONDITION_VARIABLES.filter((v) => v.key === k)),
+    ...ALL_CONDITION_VARIABLES.filter((v) => !profile.conditionKeys.includes(v.key) && dc.vars[v.key] != null),
+  ];
+  const setConditionVar = (key: ConditionVariableKey, value: null | true | string) => {
     const vars = { ...dc.vars, [key]: value };
     patch("conditionAtDischarge", "conditionAtDischarge", {
       ...dc,
@@ -579,7 +539,7 @@ export default function DischargeWorkspace({
         return draft.medications.length > 0;
       case "conditionAtDischarge":
         return (
-          CONDITION_VARIABLES.some((v) => {
+          ALL_CONDITION_VARIABLES.some((v) => {
             const x = dc.vars[v.key];
             return x === true || (typeof x === "string" && x.trim().length > 0);
           }) || !!dc.freeText?.trim()
@@ -676,7 +636,7 @@ export default function DischargeWorkspace({
         return (
           <div className="grid grid-cols-2 gap-3">
             <SuggestField label="Department" value={draft.encounter.department} options={DEPARTMENT_SUGGESTIONS} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, department: v })} />
-            <SuggestField label="Specialty" value={draft.encounter.specialty} options={DEPARTMENT_SUGGESTIONS} placeholder="General Surgery" onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, specialty: v })} />
+            <SuggestField label="Specialty" value={draft.encounter.specialty} options={DEPARTMENT_SUGGESTIONS} placeholder={profile.specialtyLabel} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, specialty: v })} />
             <Field label="Ward" value={draft.encounter.ward} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, ward: v })} />
             <Field label="Bed" value={draft.encounter.bed} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, bed: v })} />
             <SelectField label="Consultant" value={draft.encounter.consultant} options={CONSULTANT_SUGGESTIONS} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, consultant: v })} />
@@ -700,6 +660,7 @@ export default function DischargeWorkspace({
                     value={d.text}
                     onChange={(v) => setD({ text: v })}
                     placeholder="Diagnosis"
+                    specialty={profile.specialty}
                     className="h-11 w-full rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
                   />
                   <div className="flex flex-wrap gap-1.5">
@@ -736,9 +697,19 @@ export default function DischargeWorkspace({
             {draft.procedures.map((p, i) => {
               const setP = (patchObj: Partial<typeof p>) =>
                 patch("procedures", "procedures", draft.procedures.map((x, j) => (j === i ? { ...x, ...patchObj } : x)));
+              if (p.name === NO_PROCEDURE_NAME)
+                return (
+                  <div key={p.id} className="flex items-center gap-2 rounded-[10px] border border-line px-3 py-2.5">
+                    <span className="flex-1 text-footnote font-semibold">{NO_PROCEDURE_NAME}</span>
+                    <span className="text-caption2 text-muted">recorded by you</span>
+                    <button type="button" onClick={() => patch("procedures", "procedures", draft.procedures.filter((_, j) => j !== i))} className="min-h-11 text-caption text-accent">
+                      Undo
+                    </button>
+                  </div>
+                );
               return (
                 <div key={p.id} className="flex flex-col gap-2 rounded-[10px] border border-line p-2.5">
-                  <SuggestField label="Procedure" value={p.name} options={PROCEDURE_SUGGESTIONS} onChange={(v) => setP({ name: v })} />
+                  <SuggestField label="Procedure" value={p.name} options={profile.procedureSuggestions} onChange={(v) => setP({ name: v })} />
                   <Field label="Date" type="date" value={p.date} onChange={(v) => setP({ date: v || null })} />
                   <Field label="Indication" value={p.indication} onChange={(v) => setP({ indication: v })} />
                   <Field label="Anaesthesia" value={p.anaesthesia} onChange={(v) => setP({ anaesthesia: v })} />
@@ -763,6 +734,20 @@ export default function DischargeWorkspace({
             >
               ＋ Add a procedure
             </OptionRow>
+            {/* A positive statement the resident makes, never a default: offered only on an
+                empty card, and stored as a row that prints as written. */}
+            {!profile.operative && draft.procedures.length === 0 && (
+              <OptionRow
+                dashed
+                onClick={() =>
+                  patch("procedures", "procedures", [
+                    { id: uid(), name: NO_PROCEDURE_NAME, date: null, indication: null, anaesthesia: null, findings: null, drains: null, complications: null, outcome: null, source: "resident" as const },
+                  ])
+                }
+              >
+                No procedure done
+              </OptionRow>
+            )}
           </>
         );
 
@@ -1017,16 +1002,17 @@ export default function DischargeWorkspace({
             >
               ＋ Add a medication
             </OptionRow>
+            {profile.usualMedicationSet.length > 0 && (
             <OptionRow
               dashed
               onClick={() =>
                 patch("medications", "medications", [
                   ...draft.medications,
-                  ...STANDARD_DISCHARGE_MEDICATIONS.map((m) => ({
+                  ...profile.usualMedicationSet.map((m) => ({
                     id: uid(),
                     ...m,
                     duration: null,
-                    indication: null,
+                    indication: m.indication ?? null,
                     status: "new" as const,
                     reason: null,
                     drugKey: "",
@@ -1035,17 +1021,20 @@ export default function DischargeWorkspace({
                 ])
               }
             >
-              ＋ Add usual discharge set (Pantop, Paracetamol, Ondansetron, Diclofenac, MVI)
+              ＋ Add usual discharge set ({profile.usualMedicationSet.map((m) => m.generic).join(", ")})
             </OptionRow>
+            )}
           </>
         );
 
       case "conditionAtDischarge":
         return (
           <>
-            <p className="text-caption leading-[1.45] text-muted">Tap what is true today. Set at least five, or add free text.</p>
+            <p className="text-caption leading-[1.45] text-muted">
+              Tap what is true today. Set at least {profile.conditionMinimum === 5 ? "five" : profile.conditionMinimum}, or add free text.
+            </p>
             <div className="flex flex-wrap gap-2">
-              {CONDITION_VARIABLES.map((v) => {
+              {conditionVars.map((v) => {
                 const val = dc.vars[v.key];
                 const active = val === true;
                 const note = typeof val === "string" ? val.trim() : "";
@@ -1061,10 +1050,10 @@ export default function DischargeWorkspace({
                 );
               })}
             </div>
-            {CONDITION_VARIABLES.some((v) => typeof dc.vars[v.key] === "string" && (dc.vars[v.key] as string).trim()) && (
+            {conditionVars.some((v) => typeof dc.vars[v.key] === "string" && (dc.vars[v.key] as string).trim()) && (
               <div className="flex flex-col gap-2 rounded-[10px] border border-line p-2.5">
                 <span className="text-footnote text-muted">Findings that carry a note — edit or clear</span>
-                {CONDITION_VARIABLES.filter((v) => typeof dc.vars[v.key] === "string" && (dc.vars[v.key] as string).trim()).map((v) => (
+                {conditionVars.filter((v) => typeof dc.vars[v.key] === "string" && (dc.vars[v.key] as string).trim()).map((v) => (
                   <Field key={v.key} label={v.label} value={dc.vars[v.key] as string} onChange={(nv) => setConditionVar(v.key, nv || null)} />
                 ))}
               </div>
@@ -1239,11 +1228,13 @@ export default function DischargeWorkspace({
               <PreviewLine label="Investigations" onEdit={() => goTo(stepIndexOf("relevantInvestigations"))}>
                 {acceptedInv.length ? acceptedInv.map((i) => i.group).filter(Boolean).join(", ") : <em className="text-muted">none</em>}
               </PreviewLine>
-              <PreviewLine label="Histopathology" onEdit={() => goTo(stepIndexOf("histopathology"))}>
-                {draft.histopathology.length
-                  ? draft.histopathology.map((h) => `${h.specimen || "specimen"} (${h.status})`).join("; ")
-                  : <em className="text-muted">none</em>}
-              </PreviewLine>
+              {stepIndexOf("histopathology") >= 0 && (
+                <PreviewLine label="Histopathology" onEdit={() => goTo(stepIndexOf("histopathology"))}>
+                  {draft.histopathology.length
+                    ? draft.histopathology.map((h) => `${h.specimen || "specimen"} (${h.status})`).join("; ")
+                    : <em className="text-muted">none</em>}
+                </PreviewLine>
+              )}
               <PreviewLine label="Medication" onEdit={() => goTo(stepIndexOf("medications"))}>
                 {draft.medications.length ? draft.medications.map((m) => m.generic).filter(Boolean).join(", ") : <em className="text-muted">none listed</em>}
               </PreviewLine>
