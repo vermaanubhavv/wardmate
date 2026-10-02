@@ -16,7 +16,7 @@ import Wordmark from "../wordmark";
 import Mark from "../mark";
 import { createClient } from "@/lib/supabase/server";
 import { countWardPendingConfirmations } from "@/lib/confirm-queue";
-import { criticalFlag, isDischargeable, type WardFlag } from "@/lib/ward-flags";
+import { criticalFlags, isDischargeable, type WardFlag } from "@/lib/ward-flags";
 import { getWardTasks } from "@/lib/todo";
 import type { getWardScoringTasks } from "@/lib/scoring/read";
 import { buildWardTodoPreview, countWardOutstanding } from "@/lib/ward-todo-preview";
@@ -88,8 +88,10 @@ export default async function Home({
   const patients = screenPatients.map((p) => ({ ...p, open_task_count: jobCounts.get(p.id) ?? 0 }));
   const noSuggestions: Awaited<ReturnType<typeof getWardScoringTasks>> = new Map();
 
+  // Every hit, worst first: the chip shows the first and counts the rest ("K⁺ 6.4 +1").
+  const allFlags = new Map(patients.map((p) => [p.id, criticalFlags(p, pack.key)]));
   const flags = new Map<string, WardFlag | null>(
-    patients.map((p) => [p.id, criticalFlag(p)])
+    [...allFlags].map(([id, f]) => [id, f[0] ?? null])
   );
   const criticalCount = [...flags.values()].filter(Boolean).length;
   const dischargeableCount = patients.filter((p) => isDischargeable(p, flags.get(p.id) ?? null)).length;
@@ -298,6 +300,7 @@ export default async function Home({
                 key={p.id}
                 patient={p}
                 flag={flags.get(p.id) ?? null}
+                moreFlags={Math.max(0, (allFlags.get(p.id)?.length ?? 0) - 1)}
                 dischargeable={isDischargeable(p, flags.get(p.id) ?? null)}
                 procedures={procedures}
                 templateChoices={templateChoices}
@@ -388,6 +391,7 @@ function NavTile({
 function PatientRow({
   patient,
   flag,
+  moreFlags,
   dischargeable,
   procedures,
   templateChoices,
@@ -396,6 +400,8 @@ function PatientRow({
   patient: WardPatient;
   /** The one genuinely critical vital or blood result on this patient, if any — see lib/ward-flags.ts. */
   flag: WardFlag | null;
+  /** How many further critical findings sit behind `flag` — shown as "+N". */
+  moreFlags: number;
   /** Nothing critical, nothing outstanding — see isDischargeable() above. */
   dischargeable: boolean;
   procedures: Map<string, string>;
@@ -458,7 +464,10 @@ function PatientRow({
             // exactly the reading recorded, never a diagnosis about it. See lib/ward-flags.ts
             // for exactly what counts as critical (it is a short, fixed list).
             const chip = flag
-              ? { text: [flag.label, flag.value].filter(Boolean).join(" "), tone: "critical" as const }
+              ? {
+                  text: [flag.label, flag.value, moreFlags > 0 && `+${moreFlags}`].filter(Boolean).join(" "),
+                  tone: "critical" as const,
+                }
               : patient.unconfirmed_count > 0
                 ? { text: `${patient.unconfirmed_count} to confirm`, tone: "warn" as const }
                 : patient.open_task_count > 0

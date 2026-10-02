@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { criticalFlag, isDischargeable } from "@/lib/ward-flags";
+import { criticalFlag, criticalFlags, isDischargeable } from "@/lib/ward-flags";
 import type { WardPatient } from "@/lib/patients";
 
 function patient(over: Partial<WardPatient>): WardPatient {
@@ -93,6 +93,57 @@ describe("criticalFlag — only genuinely critical findings", () => {
     expect(criticalFlag(patient({ management: "POD 2, on noradrenaline, ventilated" }))?.reason).toBe(
       "vasopressor support"
     );
+  });
+});
+
+describe("criticalFlags — per department, every hit", () => {
+  const medicine = (over: Partial<WardPatient>) => criticalFlags(patient(over), "internal_medicine");
+
+  it("leaves surgery exactly as it was: no electrolyte, glucose, RR or GCS alarms; TLC > 16,000", () => {
+    const p = patient({
+      vitals: [vital("RR", "34"), vital("GCS", "E1V2M3"), vital("GRBS", "52")],
+      labs: [lab("K", "6.8"), lab("Na", "116"), lab("Creatinine", "5.2"), lab("TLC", "18200")],
+    });
+    for (const key of [undefined, null, "general_surgery", "orthopaedics"]) {
+      expect(criticalFlags(p, key).map((f) => f.reason)).toEqual(["leucocytosis"]);
+    }
+  });
+
+  it("flags K⁺ at either end on a medical ward", () => {
+    expect(medicine({ labs: [lab("Potassium", "5.9")] })).toEqual([]);
+    expect(medicine({ labs: [lab("Potassium", "6.4")] })[0]).toEqual({ label: "K⁺", value: "6.4", reason: "hyperkalaemia" });
+    expect(medicine({ labs: [lab("S. potassium", "2.4")] })[0]?.reason).toBe("hypokalaemia");
+    expect(criticalFlags(patient({ labs: [lab("K", "6.4")] }), "pulmonary_medicine")[0]?.label).toBe("K⁺");
+  });
+
+  it("flags Na⁺ ≤ 120 or ≥ 160 on a medical ward", () => {
+    expect(medicine({ labs: [lab("Na", "121")] })).toEqual([]);
+    expect(medicine({ labs: [lab("Sodium", "118 mmol/L")] })[0]?.reason).toBe("severe hyponatraemia");
+    expect(medicine({ labs: [lab("Na", "162")] })[0]?.reason).toBe("severe hypernatraemia");
+  });
+
+  it("raises the TLC bar for medicine", () => {
+    expect(medicine({ labs: [lab("TLC", "22000")] })).toEqual([]);
+    expect(medicine({ labs: [lab("TLC", "34000")] })[0]?.reason).toBe("leucocytosis");
+  });
+
+  it("reads glucose, RR and GCS on a medical ward, and never flags creatinine alone", () => {
+    expect(medicine({ vitals: [vital("GRBS", "54 mg/dL")] })[0]?.reason).toBe("hypoglycaemia");
+    expect(medicine({ vitals: [vital("GRBS", "3.1 mmol/L")] })[0]?.reason).toBe("hypoglycaemia");
+    expect(medicine({ labs: [lab("RBS", "450")] })[0]?.reason).toBe("severe hyperglycaemia");
+    expect(medicine({ vitals: [vital("GRBS", "110")] })).toEqual([]);
+    expect(medicine({ labs: [lab("Sr. creatinine", "6.2")] })).toEqual([]);
+    expect(medicine({ vitals: [vital("RR", "30 /min")] })[0]?.reason).toBe("tachypnoea");
+    expect(medicine({ vitals: [vital("GCS", "E2V2M4")] })[0]?.value).toBe("E2V2M4");
+    expect(medicine({ vitals: [vital("GCS", "9/15")] })).toEqual([]);
+    expect(medicine({ vitals: [vital("GCS", "E2VTM4")] })).toEqual([]);
+  });
+
+  it("returns every hit, worst first, and criticalFlag() is the first of them", () => {
+    const p = patient({ vitals: [vital("SpO2", "86%")], labs: [lab("K", "6.4"), lab("Na", "118")] });
+    expect(criticalFlags(p, "internal_medicine").map((f) => f.label)).toEqual(["SpO₂", "K⁺", "Na⁺"]);
+    expect(criticalFlag(p, "internal_medicine")?.label).toBe("SpO₂");
+    expect(criticalFlags(patient({ vitals: [vital("BP", "84/50")], labs: [lab("Hb", "4.2")] })).length).toBe(2);
   });
 });
 
