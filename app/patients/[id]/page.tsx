@@ -286,7 +286,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // The banner's left edge, same language as the ward row: red for a flagged latest vital,
   // amber while something is unconfirmed, green once nothing is open. A colour, not a verdict —
   // nothing here is stored or claimed beyond what the numbers below already show.
-  const hasFlaggedVital = latestVitalTiles(allObservations).some((t) => t.flag);
+  const hasFlaggedVital = latestVitalTiles(allObservations).some((t) => t.flag && !t.takenAt);
   const bannerEdge = hasFlaggedVital
     ? "border-l-critical-dot"
     : pending.length > 0
@@ -294,7 +294,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       : openTasks.length + scoringTasks.length === 0
         ? "border-l-good-dot"
         : "border-l-transparent";
-  const openCount = openTasks.length + scoringTasks.length;
+  // Jobs a resident said — the scoring engine's suggestions are listed below but not counted.
+  const openCount = openTasks.length;
 
   const procedure = procedureFor(patient, procedures);
   const caseHistoryDiagnosis = caseHistoryEntries
@@ -1146,9 +1147,19 @@ const VITAL_ORDER: { key: string; label: string }[] = [
   { key: "rr", label: "RR" },
 ];
 
-type VitalTile = { id: string; key: string; label: string; value: string | null; flag: string | null; range: string };
+type VitalTile = {
+  id: string;
+  key: string;
+  label: string;
+  value: string | null;
+  flag: string | null;
+  range: string;
+  /** Set when this vital's latest reading is older than the latest set — its own time. */
+  takenAt: string | null;
+};
 
-/** Readings grouped by the moment they were said, newest first, plus the latest set's tiles. */
+/** Readings grouped by the moment they were said, newest first, plus one tile per vital: its own
+ *  latest reading, which need not be in the latest set ("RR 15" said an hour before the BP). */
 function vitalSets(observations: Observation[]) {
   const readings = observations.filter(
     (o) => CHARTED_VITALS.has(matchVitalLabel(o.label) ?? "") && o.value_text
@@ -1162,9 +1173,13 @@ function vitalSets(observations: Observation[]) {
   const latest = sets[0];
   const tiles: VitalTile[] = latest
     ? VITAL_ORDER.map(({ key, label }) => {
-        const o = latest[1].find((x) => matchVitalLabel(x.label) === key);
+        const found = sets
+          .map(([time, obs]) => ({ time, o: obs.find((x) => matchVitalLabel(x.label) === key) }))
+          .find((x) => x.o && classifyVital(x.o.label, x.o.value_text).length > 0);
+        const o = found?.o;
         const parts = o ? classifyVital(o.label, o.value_text) : [];
-        if (!o || parts.length === 0) return { id: key, key, label, value: null, flag: null, range: "" };
+        if (!o || parts.length === 0)
+          return { id: key, key, label, value: null, flag: null, range: "", takenAt: null };
         // classifyVital splits a BP into systolic and diastolic so each can flag on its own
         // range; on the tile they read back as the one "127/81" that was said.
         const flagged = parts.find((p) => p.flag);
@@ -1175,6 +1190,7 @@ function vitalSets(observations: Observation[]) {
           value: parts.map((p) => p.value).join("/"),
           flag: flagged?.flag ?? null,
           range: flagged?.range ?? "",
+          takenAt: found.time === latest[0] ? null : found.time,
         };
       })
     : [];
@@ -1252,6 +1268,7 @@ function VitalsPanel({ observations }: { observations: Observation[] }) {
                     a colour with no stated reason is exactly the "trust me" the rival app asks
                     for. This one shows its work. */}
                 {t.flag && <span className="ml-1 text-caption2 font-medium text-critical-fg">({t.range})</span>}
+                {t.takenAt && <span className="block text-caption2 text-muted">{vitalsWhen(t.takenAt)}</span>}
               </div>
             </div>
           );
