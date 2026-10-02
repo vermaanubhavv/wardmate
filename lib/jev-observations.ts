@@ -23,7 +23,10 @@ import type { TaskCategory } from "@/lib/task-category";
  * No key, an error or a timeout: every observation goes through exactly as before.
  */
 
-// ponytail: untuned — give it an eval like the rescue's (scripts/eval-task-open.ts).
+// Amber bar from scripts/eval-supported.ts (2026-10-02, jev-1.13.0, 3 runs, one row per
+// request): every unsupported row (25/25, tuning and held-out) scored < 0.3, every supported
+// row >= 0.55 but one plan ("drain can come out tomorrow" -> "remove drain", ~0.25, amber).
+// A wrong value left green is the dangerous miss, so the bar sits well above the wrong rows.
 const UNSUPPORTED_BELOW = 0.5;
 // Rescue bar from scripts/eval-task-open.ts (2026-10-02, jev-1.13.0, 3 runs, ±0.03 run to run):
 // every job scored >= 0.47 and every non-job <= 0.41 ("MRCP done") across the tuning and
@@ -45,6 +48,19 @@ export const CATEGORY_CRITERIA: Record<TaskCategoryJudgment, string> = {
   consent: "taking or completing a consent",
   other: "anything else: a review, a referral, a drug or diet change, discharge, counselling, charting or monitoring, mobilising",
 };
+
+/** The amber question, about the {label, value, quote} row at `row` in the state. Exported
+ *  so scripts/eval-supported.ts scores exactly what production asks. */
+export function supportedQuestion(row: string) {
+  return {
+    type: "noul",
+    instructions: `\`${row}.quote\` is what a doctor dictated on a ward round; \`${row}.value\` is what was recorded from it as the \`${row}.label\`. Would a careful resident reading only the quote record that value?`,
+    criteria: {
+      true: "Yes: the quote says it, in the same words, shorthand or a paraphrase — including a stated absence when the value is a negative",
+      false: "No: the quote denies it, names a different side or site, only suspects it (rule out, ?), says it of someone else, puts it at a different time (planned, earlier, not yet), adds a condition the value drops, or is about something else",
+    },
+  };
+}
 
 /** The "By type" question, about the plan text at `path`. Exported so
  *  scripts/eval-task-category.ts scores exactly what production asks. */
@@ -73,14 +89,7 @@ export async function judgeObservations(observations: ExtractedObservation[]): P
   const questions: Record<string, unknown> = {};
   observations.forEach((o, i) => {
     if (!o.needs_confirmation) {
-      questions[`supported_${i}`] = {
-        type: "noul",
-        instructions: `Does \`observations[${i}].quote\` (words a doctor dictated on a ward round) actually state \`observations[${i}].value\` as the \`observations[${i}].label\`?`,
-        criteria: {
-          true: "The quote says this, in these or equivalent words — including a stated absence when the value is a negative",
-          false: "The quote says something different, the opposite, or does not mention it",
-        },
-      };
+      questions[`supported_${i}`] = supportedQuestion(`observations[${i}]`);
     }
     if (o.kind !== "plan") return;
     if (!isActionableTask(o.value_text || o.label)) {
