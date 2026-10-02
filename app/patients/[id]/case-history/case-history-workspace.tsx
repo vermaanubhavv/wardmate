@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { caseHistorySectionOf, seedHopi } from "@/lib/case-history";
 import { complaintChipsFor, pastChipsFor } from "@/lib/case-history-chips";
@@ -424,7 +424,6 @@ export default function CaseHistoryWorkspace({
   const oncology = specialty === "medical_oncology";
   const complaintChips = useMemo(() => complaintChipsFor(specialty), [specialty]);
   const pastChips = useMemo(() => pastChipsFor(specialty), [specialty]);
-  const router = useRouter();
   const searchParams = useSearchParams();
   const liveDictationOn = process.env.NEXT_PUBLIC_LIVE_DICTATION === "1";
   const [pending, startTransition] = useTransition();
