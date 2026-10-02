@@ -154,7 +154,7 @@ export default function SpeakPatient({
       ) : (
         status === "idle" && (
           <p className="text-center text-footnote text-muted">
-            e.g. &ldquo;Madina, 50 year old female, bed 5, abdominal lump&rdquo;. Nothing is
+            e.g. &ldquo;Madina, 50 year old female, bed 5, fever for five days&rdquo;. Nothing is
             saved until you press Add.
           </p>
         )

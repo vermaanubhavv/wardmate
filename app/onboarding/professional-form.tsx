@@ -22,7 +22,7 @@ export default function ProfessionalForm() {
       <Field label="Full name" name="name" placeholder="Dr. Asha Mehta" autoCapitalize="words" />
       <Field label="Medical registration or intern ID" name="registration_number" placeholder="e.g. DMC/R/12345" autoCapitalize="characters" />
       <Field label="Hospital" name="hospital" placeholder="Name of hospital" autoCapitalize="words" />
-      <Field label="Department" name="department" placeholder="e.g. General Surgery" autoCapitalize="words" />
+      <Field label="Department" name="department" placeholder="Your department" autoCapitalize="words" />
       <label className="flex flex-col gap-1.5">
         <span className="text-subhead text-muted">Designation</span>
         <select name="designation" required defaultValue="" className="h-12 rounded-[10px] border border-line bg-card px-3 text-body outline-none focus:border-accent">

@@ -34,9 +34,8 @@ type TemplateChoice = { family: string; variant: string | null; label: string };
 /**
  * The ⋯ on a patient's card.
  *
- * Both edit items open the same dialog — it already holds bed, name, age and sex — but they
- * are listed separately because at a bedside you are looking for the thing you came to
- * change, not for a screen that contains it.
+ * One edit item: the dialog it opens holds bed, name, age, sex and the rest. Two items that
+ * opened the same dialog read as two different things and were not.
  */
 export default function PatientMenu({
   patient,
@@ -141,14 +140,7 @@ export default function PatientMenu({
               onClick={openEditor}
               className="block w-full px-4 py-3 text-left text-body active:bg-chip"
             >
-              Change bed
-            </button>
-            <button
-              type="button"
-              onClick={openEditor}
-              className="block w-full border-t border-line px-4 py-3 text-left text-body active:bg-chip"
-            >
-              Change name, age, sex
+              Edit patient details
             </button>
 
             <form action={dischargePatient} className="border-t border-line">

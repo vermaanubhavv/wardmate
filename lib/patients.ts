@@ -1,4 +1,5 @@
-import { generalSurgeryPack, type DayCountPatient, type SpecialtyPack } from "@/lib/specialty";
+import { generalSurgeryPack, getSpecialtyPack, type DayCountPatient, type SpecialtyPack } from "@/lib/specialty";
+import { hasOperationClock } from "@/lib/specialty/intake";
 
 export type WardPatient = {
   id: string;
@@ -131,70 +132,21 @@ export const MANAGEMENT_CHOICES = [
 ] as const;
 
 /**
- * Common general-surgery diagnoses, offered as typing suggestions.
- *
- * A datalist, exactly like the operation field: picking one is faster than typing it out, but
- * it is never the only option — anything typed is kept as written, so a diagnosis outside this
- * list is never blocked or silently corrected to the nearest match.
+ * The Management select's options for this unit. A unit without an operation clock (medicine,
+ * oncology…) is not offered Pre-op/Post-op, and "Conservative" reads "On treatment" there — the
+ * stored value is the same. A stored pre-op/post-op is still listed so that saving an edit never
+ * silently clears it.
  */
-/**
- * The 50 diagnoses a general-surgery ward admits most often, **ordered by frequency** — so the
- * combobox can show the top few before the resident has typed anything and narrow as they do.
- * The order is the ranking; slice(0, 5) is "the common ones". Anything typed that is not on
- * this list is still kept exactly as written — this only offers, never constrains.
- */
-export const COMMON_DIAGNOSES = [
-  "Cholelithiasis",
-  "Acute appendicitis",
-  "Acute calculous cholecystitis",
-  "Inguinal hernia",
-  "Fissure in ano",
-  "Haemorrhoids",
-  "Fistula in ano",
-  "Hydrocele",
-  "Acute pancreatitis",
-  "Perforation peritonitis",
-  "Intestinal obstruction",
-  "Umbilical hernia",
-  "Incisional hernia",
-  "Diabetic foot",
-  "Soft tissue abscess",
-  "Cellulitis",
-  "Lipoma",
-  "Sebaceous cyst",
-  "Perianal abscess",
-  "Pilonidal sinus",
-  "Carcinoma breast",
-  "Carcinoma stomach",
-  "Carcinoma rectum",
-  "Carcinoma colon",
-  "Choledocholithiasis",
-  "Gastric outlet obstruction",
-  "Thyroid swelling",
-  "Varicose veins",
-  "Blunt abdominal trauma",
-  "Chronic pancreatitis",
-  "Acute cholangitis",
-  "Liver abscess",
-  "Perforated peptic ulcer",
-  "Carcinoma gallbladder",
-  "Carcinoma pancreas",
-  "Splenic injury",
-  "Rectal prolapse",
-  "Breast abscess",
-  "Thyroid nodule",
-  "Multinodular goitre",
-  "Femoral hernia",
-  "Ventral hernia",
-  "Necrotising fasciitis",
-  "Mirizzi syndrome",
-  "Ischiorectal abscess",
-  "Volvulus",
-  "Intussusception",
-  "Empyema gallbladder",
-  "Strangulated hernia",
-  "Biliary colic",
-] as const;
+export function managementChoicesFor(
+  specialty: string | null | undefined,
+  current = ""
+): { value: string; label: string }[] {
+  const all = [...MANAGEMENT_CHOICES, { value: "postop", label: "Post-op" }];
+  if (hasOperationClock(getSpecialtyPack(specialty))) return all;
+  return all
+    .filter((c) => (c.value !== "preop" && c.value !== "postop") || c.value === current)
+    .map((c) => (c.value === "conservative" ? { ...c, label: "On treatment" } : c));
+}
 
 /**
  * What kind of management the patient is under.
@@ -204,10 +156,19 @@ export const COMMON_DIAGNOSES = [
  * operation is recorded. The other three are stored decisions; a patient nobody has
  * classified yet shows nothing rather than a guess.
  */
-export function managementLabel(p: {
-  surgery_date: string | null;
-  management: string | null;
-}): string | null {
+export function managementLabel(
+  p: {
+    surgery_date: string | null;
+    management: string | null;
+  },
+  pack: SpecialtyPack = generalSurgeryPack
+): string | null {
+  // No operation clock (medicine, oncology…): pre-op/post-op mean nothing on that ward, so only
+  // the two decisions it does make are shown, in its own words.
+  if (!hasOperationClock(pack)) {
+    if (p.management === "conservative") return "ON TREATMENT";
+    return p.management === "workup" ? "WORKUP" : null;
+  }
   if (p.surgery_date) return "POST OP";
   const found = MANAGEMENT_CHOICES.find((c) => c.value === p.management);
   return found ? found.label.toUpperCase() : null;

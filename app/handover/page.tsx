@@ -83,7 +83,7 @@ function PatientGroup({ title, patients, pack }: { title: string; patients: Hand
 function PatientSummary({ patient, pack }: { patient: HandoverPatient; pack: SpecialtyPack }) {
   const { openTasks, pending, missing } = patient.state;
   const clear = openTasks.length === 0 && pending.length === 0 && missing.length === 0;
-  const management = managementLabel(patient);
+  const management = managementLabel(patient, pack);
 
   return (
     // The Link stops short of the "not yet recorded" fold: a <details> inside an <a> would

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { createWard, type CreateWardState } from "../unit/actions";
 import type { SpecialtyKey } from "@/lib/specialty";
 
@@ -25,9 +25,23 @@ export default function CreateUnitForm({
   specialties?: { key: SpecialtyKey; label: string; blurb: string }[];
 }) {
   const [state, formAction, pending] = useActionState(createWard, initialState);
+  // Nothing is pre-selected: a department that can never be changed must be chosen, not
+  // defaulted to. A submit without one is stopped here and says why, rather than quietly
+  // creating a general-surgery unit.
+  const [missingDepartment, setMissingDepartment] = useState(false);
+  const picker = specialties.length > 1;
 
   return (
-    <form action={formAction} className="ios-group flex flex-col gap-3 p-4">
+    <form
+      action={formAction}
+      onSubmit={(e) => {
+        if (picker && !new FormData(e.currentTarget).get("specialty")) {
+          e.preventDefault();
+          setMissingDepartment(true);
+        }
+      }}
+      className="ios-group flex flex-col gap-3 p-4"
+    >
       <label className="flex flex-col gap-1.5">
         <span className="text-subhead text-muted">Name your unit</span>
         <input
@@ -40,15 +54,15 @@ export default function CreateUnitForm({
           className="h-12 w-full rounded-[10px] border border-line bg-card px-3 text-body outline-none focus:border-accent"
         />
       </label>
-      {specialties.length > 1 && (
-        <fieldset className="flex flex-col gap-1.5">
+      {picker && (
+        <fieldset className="flex flex-col gap-1.5" onChange={() => setMissingDepartment(false)}>
           <legend className="text-subhead text-muted">Department</legend>
           <p className="text-footnote leading-relaxed text-muted">
             This cannot be changed later — it decides how the unit counts days, what its
             checklists ask and how its discharge summaries read.
           </p>
           <div className="mt-1 flex flex-col gap-2">
-            {specialties.map((s, i) => (
+            {specialties.map((s) => (
               <label
                 key={s.key}
                 className="flex items-start gap-3 rounded-[10px] border border-line bg-card px-3 py-2.5"
@@ -57,7 +71,6 @@ export default function CreateUnitForm({
                   type="radio"
                   name="specialty"
                   value={s.key}
-                  defaultChecked={i === 0}
                   className="mt-1 size-4 accent-[var(--accent)]"
                 />
                 <span className="min-w-0">
@@ -68,6 +81,11 @@ export default function CreateUnitForm({
             ))}
           </div>
         </fieldset>
+      )}
+      {missingDepartment && (
+        <p role="alert" className="text-footnote text-critical-fg">
+          Choose the unit&rsquo;s department above — it cannot be changed later.
+        </p>
       )}
       {state.error && <p className="text-footnote text-critical-fg">{state.error}</p>}
       <button

@@ -5,7 +5,7 @@ import { updatePatientIdentity, type EditPatientState } from "./actions";
 import DiagnosisCombobox from "./diagnosis-combobox";
 import {
   LOCATION_CHOICES,
-  MANAGEMENT_CHOICES,
+  managementChoicesFor,
   stripPatientHonorific,
 } from "@/lib/patients";
 
@@ -58,7 +58,6 @@ type TemplateChoice = { family: string; variant: string | null; label: string };
  */
 function checklistFieldLabel(specialty: string): string {
   if (specialty === "medical_oncology") return "Chemo cycle / checklist";
-  if (specialty === "internal_medicine") return "Working diagnosis (for checklist)";
   if (specialty === "general_surgery") return "Operation";
   return "Checklist";
 }
@@ -253,6 +252,7 @@ export default function EditIdentity({
             <DiagnosisCombobox
               name="primary_diagnosis"
               defaultValue={patient.primary_diagnosis ?? ""}
+              specialty={specialty}
               className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-body outline-none focus:border-accent"
             />
           </label>
@@ -270,12 +270,13 @@ export default function EditIdentity({
               className="w-full rounded-[10px] border border-line bg-card px-4 py-3 text-body outline-none focus:border-accent"
             >
               <option value="">Not stated</option>
-              {MANAGEMENT_CHOICES.map((c) => (
+              {/* Keyed on what is stored, so a legacy pre-op/post-op on a medicine unit still
+                  shows (and its dates survive a save) — see managementChoicesFor. */}
+              {managementChoicesFor(specialty, currentManagementChoice(patient)).map((c) => (
                 <option key={c.value} value={c.value}>
                   {c.label}
                 </option>
               ))}
-              <option value="postop">Post-op</option>
             </select>
           </label>
 

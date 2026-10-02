@@ -217,7 +217,7 @@ export function formatHandoverText(handover: WardHandover): string {
   }
 
   for (const p of handover.patients) {
-    const management = managementLabel(p);
+    const management = managementLabel(p, handover.pack);
     lines.push(
       `${p.bed} · ${patientName(p)} · ${dayLabel(p, handover.pack)}${p.procedure ? ` ${p.procedure}` : ""} · ${p.primary_diagnosis || "no diagnosis recorded"}${management ? ` · ${management}` : ""}`
     );
