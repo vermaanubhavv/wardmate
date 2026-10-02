@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { startDischargeWarmup } from "@/lib/discharge-warmup";
 
 /**
  * The discharge tab: one button, and the summary being written before it is pressed.
@@ -49,21 +50,14 @@ export default function DischargeTab({
     started.current = true;
 
     const cancelled = { current: false };
-    (async () => {
-      try {
-        const res = await fetch(`/api/patients/${patientId}/discharge/generate`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ section: "all" }),
-        });
-        if (!cancelled.current) setReady(res.ok);
-      } catch {
-        // A failed warm-up is not an error worth showing: the workspace generates on arrival
-        // exactly as it did before, so the only thing lost is the head start.
-      } finally {
-        if (!cancelled.current) setWarming(false);
-      }
-    })();
+    // A failed warm-up is not an error worth showing: the workspace generates on arrival
+    // exactly as it did before, so the only thing lost is the head start. The workspace picks
+    // up this same request if it opens before it lands (lib/discharge-warmup.ts).
+    void startDischargeWarmup(patientId).then((data) => {
+      if (cancelled.current) return;
+      setReady(!!data);
+      setWarming(false);
+    });
 
     return () => {
       cancelled.current = true;

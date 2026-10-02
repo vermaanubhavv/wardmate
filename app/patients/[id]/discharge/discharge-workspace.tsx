@@ -1,6 +1,7 @@
 "use client";
 
 import { ActionSheet } from "../../../action-sheet";
+import { takeDischargeWarmup } from "@/lib/discharge-warmup";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -295,39 +296,53 @@ export default function DischargeWorkspace({
   useEffect(() => {
     if (autoGenStarted.current) return;
     autoGenStarted.current = true;
-    for (const section of autoGen) {
-      void (async () => {
-        try {
-          const res = await fetch(`/api/patients/${patientId}/discharge/generate`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ section }),
-          });
-          const data = await res.json();
-          // Only drop the AI draft in where the resident has not started that section
-          // themselves while it was compiling.
-          if (res.ok && data.section)
-            setDraft((d) =>
-              section === "clinical_course"
-                ? d.clinicalCourse.text.trim() ? d : { ...d, clinicalCourse: data.section }
-                : section === "indication"
-                  ? d.indicationForAdmission.text.trim() || !data.section.text?.trim()
-                    ? d
-                    : { ...d, indicationForAdmission: data.section }
-                  : d.relevantInvestigations.items.length > 0 || data.section.items?.length === 0
-                    ? d
-                    : { ...d, relevantInvestigations: data.section }
-            );
-        } catch {
-          // No signal — the resident falls back to the manual buttons.
-        }
-        setAutoGen((s) => {
-          const n = new Set(s);
-          n.delete(section);
-          return n;
+    // Only drop the AI draft in where the resident has not started that section themselves
+    // while it was compiling.
+    const apply = (section: AutoSection, value: unknown) => {
+      const v = value as DischargeDraft[keyof DischargeDraft] & { text?: string; items?: unknown[] };
+      if (!v) return;
+      setDraft((d) =>
+        section === "clinical_course"
+          ? d.clinicalCourse.text.trim() ? d : { ...d, clinicalCourse: v as DischargeDraft["clinicalCourse"] }
+          : section === "indication"
+            ? d.indicationForAdmission.text.trim() || !v.text?.trim()
+              ? d
+              : { ...d, indicationForAdmission: v as DischargeDraft["indicationForAdmission"] }
+            : d.relevantInvestigations.items.length > 0 || v.items?.length === 0
+              ? d
+              : { ...d, relevantInvestigations: v as DischargeDraft["relevantInvestigations"] }
+      );
+    };
+    const done = (sections: AutoSection[]) =>
+      setAutoGen((s) => new Set([...s].filter((x) => !sections.includes(x))));
+    const draftOne = async (section: AutoSection) => {
+      try {
+        const res = await fetch(`/api/patients/${patientId}/discharge/generate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ section }),
         });
-      })();
-    }
+        const data = await res.json();
+        if (res.ok) apply(section, data.section);
+      } catch {
+        // No signal — the resident falls back to the manual buttons.
+      }
+      done([section]);
+    };
+
+    const warmup = takeDischargeWarmup(patientId);
+    const needed = [...autoGen];
+    if (needed.length === 0) return;
+    if (!warmup) return void needed.forEach((s) => void draftOne(s));
+    // The tab already asked for all three: wait for that rather than asking again. Only if it
+    // failed outright does the workspace draft them itself.
+    void warmup.then((data) => {
+      if (!data) return void needed.forEach((s) => void draftOne(s));
+      apply("clinical_course", data.clinicalCourse);
+      apply("indication", data.indication);
+      apply("investigations", data.relevantInvestigations);
+      done(needed);
+    });
   }, [autoGen, patientId]);
 
   const checks = useMemo(() => runDischargeChecks(draft, checkContext), [draft, checkContext]);
