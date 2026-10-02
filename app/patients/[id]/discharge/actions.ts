@@ -50,7 +50,7 @@ export async function finaliseDischargeAction(
   return result;
 }
 
-/** Sonnet's proofread, run when Print is pressed — lib/discharge-store.ts proofreadDischarge. */
+/** Sonnet's proofread, run when the print sheet opens — lib/discharge-store.ts proofreadDischarge. */
 export async function proofreadDischargeAction(patientId: string): Promise<{ changed: boolean }> {
   const result = await proofreadDischarge(patientId);
   if (result.changed) revalidatePath(`/patients/${patientId}/discharge`);

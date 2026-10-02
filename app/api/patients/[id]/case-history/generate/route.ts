@@ -28,11 +28,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
-  let body: { section?: string; diagnosis?: string; differentials?: string[] };
+  let body: { section?: string; diagnosis?: string; differentials?: string[]; sections?: { label: string; text: string }[] };
   try {
-    body = (await request.json()) as { section?: string; diagnosis?: string; differentials?: string[] };
+    body = (await request.json()) as typeof body;
   } catch {
     return NextResponse.json({ error: "Malformed request." }, { status: 400 });
+  }
+
+  // The proofread of compiled prose already on the resident's screen — lib/final-check.ts. Asked
+  // for separately so the prose shows without waiting on it; needs nothing from the record.
+  if (body.section === "proofread") {
+    const fields = Object.fromEntries(
+      (Array.isArray(body.sections) ? body.sections : []).map((s) => [String(s.label), String(s.text)])
+    );
+    return NextResponse.json(await finalCheck(fields, "case history", FAST_MODEL));
   }
 
   const [{ data: entriesData }, { data: patient }] = await Promise.all([
@@ -86,14 +95,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   try {
     if (body.section === "compile") {
-      // The finished history gets Sonnet's proofread before the resident sees it — lib/final-check.ts.
-      const compiled = await compileCaseHistory(digest, ctx, admissionPhrase);
-      const checked = await finalCheck(Object.fromEntries(compiled.sections.map((s) => [s.label, s.text])), "case history", FAST_MODEL);
-      return NextResponse.json({
-        ...compiled,
-        sections: compiled.sections.map((s) => ({ ...s, text: checked.fields[s.label] ?? s.text })),
-        uncertainPoints: [...compiled.uncertainPoints, ...checked.questions],
-      });
+      // Proofread separately ("proofread" above) once the resident can already read this.
+      return NextResponse.json(await compileCaseHistory(digest, ctx, admissionPhrase));
     }
     if (body.section === "diagnosis") return NextResponse.json(await generateDiagnosis(withCtx, admissionPhrase));
     if (body.section === "plan") return NextResponse.json(await generatePlan(withCtx, admissionPhrase));

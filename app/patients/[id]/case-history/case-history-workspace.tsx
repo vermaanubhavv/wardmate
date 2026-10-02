@@ -824,15 +824,41 @@ export default function CaseHistoryWorkspace({
           uncertain: data.uncertainPoints ?? [],
         });
       } else {
-        setCompiled({
-          sections: Array.isArray(data.sections) ? data.sections : [],
-          uncertain: data.uncertainPoints ?? [],
-        });
+        const sections: { label: string; text: string }[] = Array.isArray(data.sections) ? data.sections : [];
+        setCompiled({ sections, uncertain: data.uncertainPoints ?? [] });
+        void proofread(sections);
       }
     } catch {
       setMessage("No signal. Try again.");
     }
     setGenerating(null);
+  }
+
+  // The proofread lands after the prose is on screen. A section the resident has already edited
+  // keeps their text; a newer compile, or prose already applied, drops the late result.
+  const proofreadRun = useRef(0);
+  const [proofreading, setProofreading] = useState(false);
+  async function proofread(sections: { label: string; text: string }[]) {
+    const run = ++proofreadRun.current;
+    setProofreading(true);
+    const data = await fetch(`/api/patients/${patientId}/case-history/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ section: "proofread", sections }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
+    if (run !== proofreadRun.current) return;
+    setProofreading(false);
+    if (!data) return;
+    setCompiled((c) =>
+      c && {
+        sections: c.sections.map((s, i) =>
+          s.text === sections[i]?.text ? { ...s, text: data.fields?.[s.label] ?? s.text } : s
+        ),
+        uncertain: [...c.uncertain, ...(Array.isArray(data.questions) ? data.questions : [])],
+      }
+    );
   }
 
   function applyCompiled() {
@@ -1612,6 +1638,7 @@ export default function CaseHistoryWorkspace({
           </button>
           {compiled && (
             <>
+              {proofreading && <p className="text-footnote text-muted">Proofreading — small spelling fixes may appear.</p>}
               <UncertainList points={compiled.uncertain} />
               {compiled.sections.map((s, i) => (
                 <div key={s.label} className="flex flex-col gap-1">
