@@ -247,7 +247,9 @@ type RedFlags = {
   included: boolean;
 };
 
-/** Procedure-specific suggestions offered (never auto-inserted) for post-operative patients. */
+/** Post-operative warning signs. Pre-selected (and the section switched on) for an operated
+ *  patient whose diagnosis matched no template — see compileDischargeDraft; offered as chips
+ *  otherwise. */
 export const RED_FLAG_SUGGESTIONS = [
   "Persistent fever",
   "Increasing wound redness",
