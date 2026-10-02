@@ -15,6 +15,7 @@ import { labReading } from "../../investigations-section";
 import PrintButton from "../../note/print-button";
 import FitPage from "./fit-page";
 import { ExamDiagrams, hasExamDiagram } from "./diagrams";
+import { EXAM_CARD, examStepsFor } from "@/lib/specialty/clerking";
 
 /**
  * The printable patient history sheet — one A4 sheet, front and back, for every patient.
@@ -42,12 +43,16 @@ const BASE_HISTORY: HistorySection["key"][] = [
 ];
 const ONCO_HISTORY: HistorySection["key"][] = ["onco_disease", "onco_treatment", "onco_cycle", "onco_toxicity"];
 
-/** The examination cards after general examination and vitals — label as stored, heading as printed. */
-const BASE_EXAM = [
-  { label: "per abdomen", heading: "Per abdomen" },
-  { label: "chest", heading: "Chest" },
-  { label: "local examination", heading: "Local examination" },
-];
+/** The examination cards after general examination and vitals — label as stored, heading as
+ *  printed — in the order this department's workspace walks them (lib/specialty/clerking.ts). */
+function baseExam(specialty: string, recorded: (label: string) => boolean) {
+  return examStepsFor(specialty, (id) => id !== "piccle" && id !== "vitals" && recorded(EXAM_CARD[id].label))
+    .filter((id) => id !== "piccle" && id !== "vitals")
+    .map((id) => {
+      const card = EXAM_CARD[id as keyof typeof EXAM_CARD];
+      return { label: card.label, heading: card.title };
+    });
+}
 const ONCO_EXAM = [
   { label: "lymph node survey", heading: "Lymph node survey" },
   { label: "mucosa, skin and vascular access", heading: "Mucosa, skin & line" },
@@ -307,10 +312,13 @@ export default async function CaseHistoryPrintPage({
   const restCards = remainder.filter((c) => !lead.has(c.key));
 
   // ---- Back: examination -----------------------------------------------------------------
+  const BASE_EXAM = baseExam(pack.key, (label) => other.some((o) => norm(o.label) === label && (o.value_text ?? "").trim()));
   const examCards = [
     ...BASE_EXAM,
     ...(oncology || other.some((o) => ONCO_EXAM.some((c) => c.label === norm(o.label))) ? ONCO_EXAM : []),
   ];
+  // Only a card that prints is kept out of the findings list, so a CVS line on a surgical sheet
+  // still prints there as it always has.
   const cardLabels = new Set([...BASE_EXAM, ...ONCO_EXAM].map((c) => c.label));
   const performance = byKey.get("performance")!;
   const isInv = (o: Observation) => isImaging(o) || ["lab", "lab_report", "investigation"].includes(o.kind);

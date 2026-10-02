@@ -39,10 +39,14 @@ export default async function LearnHistoryPage({ params }: { params: Promise<{ t
             <h1 className="text-title3 font-semibold">{tree.complaint}</h1>
             {statusChip(tree.reviewStatus === "reviewed" ? `Reviewed · ${tree.reviewedBy}` : "Pending clinician review", tree.reviewStatus === "reviewed" ? "ok" : "warn")}
           </div>
-          <p className="mt-1 text-footnote text-muted">{tree.setting} · tree v{tree.version}</p>
+          <p className="mt-1 text-footnote text-muted">{tree.setting}</p>
           <p className="mt-2 text-footnote">
             Questions marked <span className="font-semibold">detailed</span> belong to the long case; the rest are asked on every ward
             patient. Red flags are asked of everyone, always.
+          </p>
+          <p className="mt-2 text-caption text-muted">
+            On the case sheet a yes/no question is recorded as present, explicitly absent, or not asked; the others in the
+            patient&apos;s own words. A number stays unconfirmed until checked. Version {tree.version}.
           </p>
         </div>
       </section>
@@ -60,11 +64,7 @@ export default async function LearnHistoryPage({ params }: { params: Promise<{ t
                     <p className="text-subhead">{s.question}</p>
                     {s.tier === "detailed" ? statusChip("detailed", "muted") : null}
                   </div>
-                  <p className="mt-0.5 text-caption text-muted">
-                    {s.label}
-                    {s.numeric ? " · a number: stays unconfirmed until checked" : ""}
-                    {s.kind === "yes_no" ? " · record present, explicitly absent, or not asked" : " · record the patient's own words"}
-                  </p>
+                  <p className="mt-0.5 text-caption text-muted">{s.label}</p>
                   {s.teach && <p className="mt-1 text-footnote">{s.teach}</p>}
                 </li>
               ))}

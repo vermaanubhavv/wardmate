@@ -6,6 +6,7 @@ import { medicationFields } from "@/lib/medication-fields";
 import { drugKey } from "@/lib/drug-key";
 import {
   CONDITION_VARIABLES,
+  ALL_CONDITION_VARIABLES,
   compiledRowId,
   type ConditionAtDischarge,
   type ConditionVariableKey,
@@ -130,7 +131,7 @@ function latestByKinds(observations: Observation[], kinds: string[]): Observatio
  *  variables the resident has marked satisfactory. Deterministic, never AI. */
 export function buildConditionProse(vars: Record<ConditionVariableKey, ConditionVariableValue>): string {
   const phrases: string[] = [];
-  for (const v of CONDITION_VARIABLES) {
+  for (const v of ALL_CONDITION_VARIABLES) {
     const value = vars[v.key];
     if (value === true) phrases.push(v.satisfactory);
     else if (typeof value === "string" && value.trim()) phrases.push(value.trim());

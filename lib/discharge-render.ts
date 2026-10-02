@@ -6,7 +6,7 @@ import type {
   HistopathologySpecimen,
   Procedure,
 } from "@/lib/discharge-entities";
-import { CONDITION_VARIABLES } from "@/lib/discharge-entities";
+import { ALL_CONDITION_VARIABLES } from "@/lib/discharge-entities";
 import { stripPatientHonorific } from "@/lib/patients";
 
 /**
@@ -137,7 +137,7 @@ export function buildDischargeDocument(
   const conditionParts: string[] = [];
   if (draft.conditionAtDischarge.prose.trim()) conditionParts.push(draft.conditionAtDischarge.prose.trim());
   else {
-    const set = CONDITION_VARIABLES.map((v) => {
+    const set = ALL_CONDITION_VARIABLES.map((v) => {
       const val = draft.conditionAtDischarge.vars[v.key];
       if (val === true) return v.satisfactory;
       if (typeof val === "string" && val.trim()) return `${v.label.toLowerCase()}: ${val.trim()}`;

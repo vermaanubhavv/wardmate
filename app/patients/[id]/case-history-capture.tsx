@@ -6,39 +6,11 @@ import Mark from "@/app/mark";
 import { ImageIcon, MicIcon, StopIcon } from "@/app/icons";
 import { prepareImageForUpload } from "@/lib/image-for-upload";
 import { useDictation } from "@/lib/use-dictation";
+import { clerkingFormatFor } from "@/lib/specialty/clerking";
 
 /** No one dictates a clerking for 15 minutes on purpose — this is only the "forgotten and left
  *  open" backstop, generous enough to never interrupt a real one. */
 const MAX_SECONDS = 900;
-
-/**
- * What a full clerking covers, in the order it is taken. Shown next to the mic in the "speak"
- * variant so the resident can dictate straight down the list and see at a glance what is still
- * to say. Mirrors the card walk in case-history-workspace so a spoken note sorts cleanly.
- */
-const CLERKING_FORMAT: { title: string; hint: string }[] = [
-  { title: "Chief complaints", hint: "each problem and how long it has been there — worst first" },
-  {
-    title: "History of present illness",
-    hint: "for each complaint: onset, duration, progression, character, what makes it better or worse, associated symptoms",
-  },
-  { title: "Past history", hint: "diabetes, hypertension, TB, asthma, heart disease, similar episodes before" },
-  { title: "Family history", hint: "relevant illnesses running in the family" },
-  { title: "Medication history", hint: "current medicines and doses, any drug allergy" },
-  { title: "Surgical history", hint: "previous operations, any anaesthetic trouble" },
-  { title: "Menstrual & obstetric history", hint: "if applicable — last period, cycle, pregnancies and deliveries" },
-  { title: "Personal history", hint: "diet, appetite, bowel and bladder, sleep, smoking, alcohol" },
-  {
-    title: "General examination",
-    hint: "build and nutrition, pallor, icterus, cyanosis, clubbing, lymph nodes, oedema",
-  },
-  { title: "Vitals", hint: "pulse, blood pressure, temperature, respiratory rate, SpO₂" },
-  { title: "Per abdomen", hint: "inspection, palpation, percussion, auscultation" },
-  { title: "Other systems", hint: "chest, cardiovascular, neurological — whatever is relevant" },
-  { title: "Local examination", hint: "the lump, wound or affected part in detail" },
-  { title: "Provisional diagnosis", hint: "what you think this is" },
-  { title: "Plan", hint: "investigations, treatment, consent, referrals" },
-];
 
 /**
  * Getting the admission clerking note into the app, the one time it is needed per patient.
@@ -54,8 +26,12 @@ export default function CaseHistoryCapture({
   defaultOpen = false,
   savedHref,
   variant = "menu",
+  specialty,
 }: {
   patientId: string;
+  /** The unit's department. Picks the "speak" variant's format list — the same examination
+   *  cards the workspace walks (lib/specialty/clerking.ts); unset reads as general surgery. */
+  specialty?: string | null;
   /** "menu" — the collapsible photo/dictate control used on the patient page.
    *  "speak" — a dedicated dictation panel: the clerking format checklist beside one big
    *  Speak button, no photo option, no collapsing. Used on the new-clerking screen. */
@@ -157,7 +133,9 @@ export default function CaseHistoryCapture({
         </p>
 
         <ol className="ios-group mt-3 divide-y divide-line">
-          {CLERKING_FORMAT.map((s, i) => (
+          {/* What a full clerking covers on this unit, in the order it is taken — dictate
+              straight down it. Mirrors the workspace's card walk so a spoken note sorts cleanly. */}
+          {clerkingFormatFor(specialty).map((s, i) => (
             <li key={s.title} className="flex gap-3 px-4 py-2.5">
               <span className="text-footnote font-semibold tabular-nums text-muted">{i + 1}</span>
               <span>

@@ -1,11 +1,11 @@
 "use client";
 
 import { useId, useMemo, useRef, useState } from "react";
-import { COMMON_DIAGNOSES } from "@/lib/patients";
+import { commonDiagnosesFor } from "@/lib/specialty/intake";
 
 /**
- * The diagnosis box, with the ward's 30 commonest diagnoses behind it (lib/patients.ts,
- * frequency-ordered). Before the resident types, the top five are offered; as they type, the
+ * The diagnosis box, with the unit's commonest diagnoses behind it (lib/specialty/intake.ts,
+ * frequency-ordered, per department). Before the resident types, the top five are offered; as they type, the
  * list narrows to what matches — the ward's own past diagnoses first, then the standard list.
  *
  * A native <datalist> was tried and does not do this: Chrome shows every partial match with no
@@ -23,6 +23,7 @@ export default function DiagnosisCombobox({
   className,
   extraSuggestions = [],
   autoFocus,
+  specialty,
 }: {
   name?: string;
   value?: string;
@@ -33,6 +34,8 @@ export default function DiagnosisCombobox({
   /** The ward's own past diagnoses, offered ahead of the standard list. */
   extraSuggestions?: string[];
   autoFocus?: boolean;
+  /** The unit's department — decides the standard list. Omitted means general surgery. */
+  specialty?: string;
 }) {
   const controlled = value !== undefined && onChange !== undefined;
   const [inner, setInner] = useState(defaultValue ?? "");
@@ -50,7 +53,7 @@ export default function DiagnosisCombobox({
   const options = useMemo(() => {
     const seen = new Set<string>();
     const all: string[] = [];
-    for (const d of [...extraSuggestions, ...COMMON_DIAGNOSES]) {
+    for (const d of [...extraSuggestions, ...commonDiagnosesFor(specialty)]) {
       const key = d.trim().toLowerCase();
       if (!d.trim() || seen.has(key)) continue;
       seen.add(key);
@@ -61,7 +64,7 @@ export default function DiagnosisCombobox({
     const starts = all.filter((d) => d.toLowerCase().startsWith(q));
     const contains = all.filter((d) => !d.toLowerCase().startsWith(q) && d.toLowerCase().includes(q));
     return [...starts, ...contains].slice(0, 8);
-  }, [text, extraSuggestions]);
+  }, [text, extraSuggestions, specialty]);
 
   const exact = options.length === 1 && options[0].toLowerCase() === text.trim().toLowerCase();
   const show = open && options.length > 0 && !exact;

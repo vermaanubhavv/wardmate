@@ -110,7 +110,17 @@ const SCHEMA = {
  * sections are. Sent as part of the varying half of the prompt, after the cached block, so
  * adding a specialty never invalidates the shared prefix cache.
  */
+const MEDICAL_EXAM_BLOCK = `Extra sections for this unit:
+- "cvs" — cardiovascular examination findings: heart sounds, murmurs, JVP, pedal oedema found on examination ("S1 S2 heard, no murmur", "JVP raised")
+- "cns" — nervous system examination findings: sensorium, GCS, higher functions, power, tone, reflexes, plantars, neck stiffness ("power 3 by 5 in the right upper limb, plantar extensor")
+
+Filing between these: chest and lung findings stay in "chest"; a symptom the patient reports (breathlessness, weakness) is history, not examination.`;
+
 const SPECIALTY_SECTION_BLOCKS: Record<string, string> = {
+  internal_medicine: MEDICAL_EXAM_BLOCK,
+  paediatrics: MEDICAL_EXAM_BLOCK,
+  pulmonary_medicine: MEDICAL_EXAM_BLOCK,
+  emergency_medicine: MEDICAL_EXAM_BLOCK,
   medical_oncology: `Extra sections for this unit (medical oncology):
 - "onco_disease" — what the cancer IS: primary site, histology, immunohistochemistry, stage, when it was diagnosed, biopsy or scan findings that establish it ("carcinoma left breast, IDC grade 2, ER positive, cT2N1M0, diagnosed March")
 - "onco_treatment" — what has ALREADY been given for it: previous surgery, radiotherapy, earlier lines of chemotherapy with how many cycles and what the response was ("six cycles of FOLFOX last year, partial response")

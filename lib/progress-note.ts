@@ -223,7 +223,13 @@ export function buildProgressNote(
   // patient is, printed with the rest of the chart rather than buried.
   const icuObs = todaysObservations.find((o) => o.kind === "vital" && norm(o.label) === "icu");
   const icuLine = icuObs?.value_text?.trim() ? `ICU: ${icuObs.value_text.trim()}` : null;
-  const line5c = [...otherVitals, icuLine].filter(Boolean).join("   ");
+  // GCS and urine output — the medicine Vitals card's extra fields — print the same way, and
+  // only when recorded.
+  const extraLines = (["GCS", "Urine output"] as const).map((label) => {
+    const obs = todaysObservations.find((o) => o.kind === "vital" && norm(o.label) === norm(label));
+    return obs?.value_text?.trim() ? `${label}: ${obs.value_text.trim()}` : null;
+  });
+  const line5c = [...otherVitals, icuLine, ...extraLines].filter(Boolean).join("   ");
 
   // 6–7. The department's exam lines — P/Abdomen and Chest on a surgical ward, the local eye
   // examination on an eye ward, and so on (lib/progress-note-config.ts). Each is said today and

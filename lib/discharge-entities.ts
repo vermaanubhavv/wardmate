@@ -83,6 +83,10 @@ export type Procedure = {
   source: SectionSource;
 };
 
+/** The row a resident adds to say, positively, that no procedure was done this admission.
+ *  Only ever added by their tap — never compiled or defaulted — and prints as written. */
+export const NO_PROCEDURE_NAME = "No procedure done";
+
 // --- 6. Clinical Course (AI, mandatory) ----------------------------------------------------
 
 type ClinicalCourse = SectionMeta & {
@@ -181,7 +185,13 @@ export type ConditionVariableKey =
   | "bowel"
   | "pain"
   | "wound"
-  | "drain";
+  | "drain"
+  // Medicine-unit variables (lib/specialty/discharge.ts). Never set on a surgical draft, and
+  // absent from drafts saved before they existed, so readers treat a missing key as unassessed.
+  | "spo2"
+  | "sugars"
+  | "bp"
+  | "sensorium";
 
 export const CONDITION_VARIABLES: {
   key: ConditionVariableKey;
@@ -200,7 +210,20 @@ export const CONDITION_VARIABLES: {
   { key: "drain", label: "Drain", satisfactory: "drain removed" },
 ];
 
-/** null = not assessed, true = satisfactory, string = the resident's own note for it. */
+/** The medicine-unit variables, kept out of CONDITION_VARIABLES so a surgical draft compiles,
+ *  seeds and is shown exactly as before. Each phrase reads after "Patient is …". */
+export const MEDICINE_CONDITION_VARIABLES: typeof CONDITION_VARIABLES = [
+  { key: "spo2", label: "SpO₂ on room air", satisfactory: "maintaining SpO₂ on room air" },
+  { key: "sugars", label: "Blood sugars", satisfactory: "with blood sugars controlled" },
+  { key: "bp", label: "Blood pressure", satisfactory: "with blood pressure controlled" },
+  { key: "sensorium", label: "Sensorium", satisfactory: "conscious and oriented" },
+];
+
+/** Every variable any unit can set — what prose, print and the completeness count read. */
+export const ALL_CONDITION_VARIABLES = [...CONDITION_VARIABLES, ...MEDICINE_CONDITION_VARIABLES];
+
+/** null = not assessed, true = satisfactory, string = the resident's own note for it.
+ *  A key missing from `vars` (a medicine key on an older draft) also means not assessed. */
 export type ConditionVariableValue = null | true | string;
 
 export type ConditionAtDischarge = {

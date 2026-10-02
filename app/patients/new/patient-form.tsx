@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { addPatient, type AddPatientState } from "../actions";
-import { LOCATION_CHOICES, MANAGEMENT_CHOICES } from "@/lib/patients";
+import { LOCATION_CHOICES, managementChoicesFor } from "@/lib/patients";
 import DiagnosisCombobox from "../diagnosis-combobox";
 import SpeakPatient from "./speak-patient";
 import type { SpokenPatient } from "@/lib/read-new-patient";
@@ -25,7 +25,6 @@ const REGIMEN_SUGGESTIONS = [
  *  and label both had to stop assuming every patient is a surgical one. */
 function checklistFieldLabel(specialty: string): string {
   if (specialty === "medical_oncology") return "Chemo cycle / checklist";
-  if (specialty === "internal_medicine") return "Working diagnosis (for checklist)";
   if (specialty === "general_surgery") return "Operation";
   return "Checklist";
 }
@@ -242,6 +241,7 @@ export default function PatientForm({
           value={fields.primary_diagnosis}
           onChange={set("primary_diagnosis")}
           extraSuggestions={diagnosisSuggestions}
+          specialty={specialty}
           className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
         />
       </Field>
@@ -308,12 +308,12 @@ export default function PatientForm({
               className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
             >
               <option value="">Not stated</option>
-              {MANAGEMENT_CHOICES.map((c) => (
+              {/* No Pre-op/Post-op on a unit without an operation clock — see managementChoicesFor. */}
+              {managementChoicesFor(specialty).map((c) => (
                 <option key={c.value} value={c.value}>
                   {c.label}
                 </option>
               ))}
-              <option value="postop">Post-op</option>
             </select>
           </Field>
 

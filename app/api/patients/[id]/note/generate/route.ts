@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { plainAiError } from "@/lib/ai-error";
 import { istDayKey } from "@/lib/patient-state";
-import { MANAGEMENT_CHOICES } from "@/lib/patients";
+import { managementChoicesFor } from "@/lib/patients";
 import { compileProgressNote } from "@/lib/progress-note-ai";
 import { finalCheck } from "@/lib/final-check";
 import { FAST_MODEL } from "@/lib/model";
@@ -63,14 +63,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       })
       .join("\n") || "(nothing)";
 
+  const specialtyKey = getSpecialtyPack(
+    patient?.ward_id ? await getWardSpecialtyStored(patient.ward_id) : null
+  ).key;
   const status = patient?.surgery_date
     ? `Post Op Day (${patient.post_op_day ?? "—"})`
-    : MANAGEMENT_CHOICES.find((c) => c.value === patient?.management)?.label ?? null;
+    : managementChoicesFor(specialtyKey, patient?.management ?? "").find((c) => c.value === patient?.management)
+        ?.label ?? null;
 
   // This department's exam lines and ward wording — lib/progress-note-config.ts.
-  const noteConfig = progressNoteConfigFor(
-    getSpecialtyPack(patient?.ward_id ? await getWardSpecialtyStored(patient.ward_id) : null).key
-  );
+  const noteConfig = progressNoteConfigFor(specialtyKey);
 
   try {
     const compiled = await compileProgressNote(digest, {
