@@ -7,6 +7,7 @@ import NoteWorkspace, { type NoteObs } from "../note-workspace";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { progressNoteConfigFor } from "@/lib/progress-note-config";
+import { matchDischargeTemplateFor } from "@/lib/specialty/discharge";
 
 /**
  * Build today's progress note as a card stack — one pass through the sheet's own lines, mostly
@@ -19,7 +20,7 @@ export default async function BuildNotePage({ params }: { params: Promise<{ id: 
 
   const { data: patient } = await supabase
     .from("current_patients")
-    .select("id, ward_id, display_name, bed")
+    .select("id, ward_id, display_name, bed, primary_diagnosis, procedure_text, template_family")
     .eq("id", id)
     .maybeSingle();
   if (!patient) notFound();
@@ -44,7 +45,16 @@ export default async function BuildNotePage({ params }: { params: Promise<{ id: 
     getWardSpecialtyStored(patient.ward_id),
   ]);
   // This department's cards and chips — lib/progress-note-config.ts.
-  const noteConfig = progressNoteConfigFor(getSpecialtyPack(specialty).key);
+  const pack = getSpecialtyPack(specialty);
+  const noteConfig = progressNoteConfigFor(pack.key);
+  // The diagnosis's own daily focus (the matching discharge template's `progressNote`), shown as a
+  // read-only reminder. Nothing when the diagnosis matches no template — never the generic one.
+  const focus =
+    matchDischargeTemplateFor(pack, {
+      procedureText: patient.procedure_text,
+      diagnosisText: patient.primary_diagnosis,
+      templateFamily: patient.template_family,
+    })?.progressNote ?? null;
 
   const seenDrug = new Set<string>();
   const currentMeds = ((medRows ?? []) as { label: string; value_text: string | null }[])
@@ -127,6 +137,7 @@ export default async function BuildNotePage({ params }: { params: Promise<{ id: 
         currentMeds={currentMeds}
         suggestedAssessment={suggestedAssessment}
         noteConfig={noteConfig}
+        focus={focus}
       />
     </div>
   );

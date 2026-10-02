@@ -101,6 +101,11 @@ import { squintV1 } from "@/content/history-trees/squint.v1";
 import { ptosisV1 } from "@/content/history-trees/ptosis.v1";
 import { flashesFloatersV1 } from "@/content/history-trees/flashes-floaters.v1";
 import { proptosisV1 } from "@/content/history-trees/proptosis.v1";
+import { preopAssessmentV1 } from "@/content/history-trees/preop-assessment.v1";
+import { varicoseVeinsV1 } from "@/content/history-trees/varicose-veins.v1";
+import { ventralHerniaV1 } from "@/content/history-trees/ventral-hernia.v1";
+import { sinusFistulaV1 } from "@/content/history-trees/sinus-fistula.v1";
+import { abdominalLumpV1 } from "@/content/history-trees/abdominal-lump.v1";
 
 /**
  * Every complaint tree the app ships, every version. Adding a complaint is a new file beside
@@ -212,4 +217,9 @@ export const HISTORY_TREES: readonly HistoryTree[] = [
   ptosisV1,
   flashesFloatersV1,
   proptosisV1,
+  preopAssessmentV1,
+  varicoseVeinsV1,
+  ventralHerniaV1,
+  sinusFistulaV1,
+  abdominalLumpV1,
 ];

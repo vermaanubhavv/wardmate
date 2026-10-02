@@ -40,7 +40,7 @@ export function traced<T>(
 
 /** Add attributes to the currently active span (e.g. token counts once a response is back). */
 function annotateSpan(attrs: Attrs): void {
-  const span = Sentry.getActiveSpan();
+  const span = Sentry.getActiveSpan?.();
   if (span) span.setAttributes(clean(attrs));
 }
 

@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { APLEY, BAILEY_LOVE, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { APLEY, BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SWELLING OR PAIN IN A BONE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * SWELLING OR PAIN IN A BONE — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
  * Orthopaedics ward and casualty, north India. The history separates infection from tumour
  * from injury: how fast it grew, whether it hurts at night, whether there was fever or pus,
  * and whether there is a cancer elsewhere. Chronic osteomyelitis with a discharging sinus and
@@ -13,13 +13,13 @@ import { APLEY, BAILEY_LOVE, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, 
  */
 export const boneSwellingV1: HistoryTree = {
   id: "bone_swelling",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Swelling or pain in a bone",
   triggers: ["bone swelling", "swelling in bone", "swelling of bone", "bony swelling", "bony lump", "bone pain", "pain in bone", "bone tumour", "bone tumor", "osteomyelitis", "discharging sinus", "pus from bone", "exostosis", "haddi me sujan", "haddi me dard"],
   setting: "Orthopaedics ward and casualty, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
-  references: [APLEY, BAILEY_LOVE, MACLEODS, HUTCHISONS],
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
+  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, APLEY, BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("bone swelling"),
     val("hpi", "bone_site", "Site", "Which bone is involved, and is the swelling near the end of the bone by a joint or in the middle of the shaft?", ["femur", "thigh", "tibia", "shin", "humerus", "arm", "forearm", "pelvis", "rib", "skull", "spine", "near the knee", "near the shoulder", "near a joint", "middle of the bone", "site"], { teach: "Each bone tumour and infection has favourite sites, so the bone and the part of it narrow the list before any film is taken." }),
@@ -38,25 +38,32 @@ export const boneSwellingV1: HistoryTree = {
     yn("red_flag", "rapid_growth_night_pain", "Rapid growth / pain at night", "Is the swelling growing quickly, or is the pain worse at night or at rest?", ["rapid", "growing quickly", "night pain", "wakes at night", "at rest", "constant", "worse at night", "not relieved"], { teach: "A bone swelling that grows over weeks and hurts at night needs a tumour kept in mind until imaging and biopsy say otherwise, and a biopsy done elsewhere can spoil later surgery." }),
     yn("red_flag", "pathological_fracture", "Bone broke with little force", "Did the bone break after very little force, or was there pain in the bone before it broke?", ["broke", "fracture", "little force", "trivial", "minor fall", "pain before", "snapped", "weak bone"], { teach: "A break through a bone that was already painful or swollen raises a lesion weakening the bone rather than a simple injury." }),
     yn("red_flag", "acute_bone_fever", "Sudden severe bone pain with fever / not using the limb", "Is there sudden severe pain in the bone with high fever, or refusal to use or move the limb?", ["high fever", "severe pain", "sudden", "refuses to move", "not using limb", "cannot touch", "rigors", "cries on moving"], { teach: "Acute bone infection in the first days may show only fever and a limb that is not used, and delay in recognition shapes whether the bone survives." }),
-    yn("red_flag", "known_cancer", "Known cancer elsewhere", "Any known cancer, or a lump in the breast, thyroid, kidney or prostate trouble?", ["cancer", "malignancy", "breast lump", "thyroid", "kidney", "prostate", "lung", "chemotherapy", "radiotherapy", "known case"], { teach: "Most destructive bone lesions after middle age are deposits from a cancer elsewhere, so the primary is asked about before the bone." }),
-    yn("red_flag", "chest_symptoms", "Cough / breathlessness / blood in sputum", "Any cough, breathlessness or blood in the sputum?", ["cough", "breathlessness", "breathless", "blood in sputum", "haemoptysis", "chest pain"], { tier: "detailed", teach: "Bone sarcomas spread to the lungs first, and a lung cancer can present with a bone deposit." }),
+    yn("red_flag", "known_cancer", "Known cancer elsewhere", "Has the patient ever had a cancer, or is there a known lump in the breast, thyroid, kidney or prostate?", ["cancer", "malignancy", "breast lump", "thyroid", "kidney", "prostate", "lung", "chemotherapy", "radiotherapy", "known case"], { teach: "Most destructive bone lesions after middle age are deposits from a cancer elsewhere, so the primary is asked about before the bone." }),
+    yn("associated", "chest_symptoms", "Cough / breathlessness / blood in sputum", "Any cough, breathlessness or blood in the sputum?", ["cough", "breathlessness", "breathless", "blood in sputum", "haemoptysis", "chest pain"], { tier: "detailed", teach: "Bone sarcomas spread to the lungs first, and a lung cancer can present with a bone deposit." }),
     yn("red_flag", "limb_neuro_deficit", "Numbness / weakness beyond the swelling", "Any numbness, tingling or weakness beyond the swelling, or leg weakness and bladder change with a spinal swelling?", ["numbness", "tingling", "weakness", "foot drop", "cannot move", "bladder", "retention", "legs weak"], { teach: "A swelling pressing on a nerve or the cord changes the urgency of everything that follows." }),
     IMMUNOCOMPROMISE,
     yn("exposure", "tb_contact", "TB contact / past TB", "Any past tuberculosis or contact with tuberculosis?", ["tb", "tuberculosis", "koch", "att", "akt", "tb contact", "cough in family"]),
     yn("exposure", "previous_injury_site", "Previous fracture, wound or surgery at the site", "Any previous fracture, open wound, surgery, implant or traditional bone-setting at the same site?", ["previous fracture", "open wound", "surgery", "operated", "plate", "nail", "implant", "bone setter", "massage", "same site", "old injury"], { teach: "Infection months or years after an open fracture or an implant is a common cause of chronic bone infection." }),
     yn("exposure", "sickle_cell", "Sickle cell disease", "Any sickle cell disease or recurrent painful crises in the patient or family?", ["sickle cell", "sickle", "hbss", "painful crises", "crisis", "family"], { tier: "detailed" }),
-    yn("exposure", "family_bone_swellings", "Family history of bony swellings", "Any similar bony swellings in parents or siblings?", ["family history", "father", "mother", "brother", "sister", "similar swelling", "runs in family"], { tier: "detailed" }),
-    ...surgicalBackground(),
+    yn("exposure", "family_bone_swellings", "Family history of bony swellings", "Has anyone in the family had similar bony swellings, bones that broke easily, or a known bone disorder?", ["family history", "father", "mother", "brother", "sister", "similar swelling", "runs in family", "brittle bones", "short stature"], { tier: "detailed" }),
+    // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
+    yn("hpi", "pain_before_swelling", "Pain before the swelling appeared", "Was there pain in the bone for some time before any swelling was noticed?", ["pain first", "pain before swelling", "pain for weeks before", "swelling came later", "swelling first", "painless swelling", "no pain before"], { tier: "detailed", teach: "Das singles out osteosarcoma as the bone tumour in which mild pain comes first and swelling later; other tumours are painless to start with." }),
+    yn("exposure", "preceding_infection", "Infection elsewhere before the bone trouble", "Before the bone trouble began, was there an ear discharge, pneumonia, typhoid, or crops of boils?", ["ear discharge", "ear infection", "otitis", "pneumonia", "typhoid", "boils", "skin infection", "no recent infection"], { tier: "detailed", teach: "Das records otitis media, pneumonia, typhoid and multiple boils in the past history of osteomyelitis, the source from which organisms may have reached the bone." }),
+    yn("hpi", "flare_ups", "Flare-ups of pain, swelling and fever", "In a long-standing bone problem, have there been bouts of fresh pain, swelling and fever, settling in between?", ["flare up", "flares", "bouts", "attacks", "on and off", "fever again", "swelling again", "quiet in between", "no flare ups"], { tier: "detailed", teach: "Das notes that chronic osteomyelitis begins insidiously but acute exacerbations are common, so each bout is worth timing." }),
+    yn("hpi", "repeated_fractures", "Many fractures since childhood", "Has the patient had many fractures since birth or childhood?", ["many fractures", "repeated fractures", "fractures since birth", "broke bones as a child", "brittle bones", "bent bones", "single fracture only"], { tier: "detailed", teach: "Das describes brittle-bone disease presenting with multiple fractures and deformity from birth, or later towards the end of the first decade." }),
+    // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
+    yn("red_flag", "longstanding_swelling_growing", "Long-standing bony swelling now growing", "Has a bony swelling that stayed the same for years recently started to grow or become painful?", ["started growing", "recently enlarging", "growing again", "same for years", "static for years", "now painful", "no recent change"], { teach: "Hamilton Bailey gives a ten per cent risk of sarcomatous change with multiple exostoses and describes chondrosarcoma presenting as enlargement of a long-standing swelling, so fresh growth after years of quiet is asked for directly." }),
+    ...surgicalBackground({ omit: ["surg_weight_loss"] }),
   ],
   differentials: [
-    { id: "acute_osteomyelitis", name: "Acute osteomyelitis", pointers: ["acute_bone_fever", "local_heat_fever"], discriminators: ["acute_bone_fever", "local_heat_fever", "onset_mode", "sickle_cell", "immunocompromise", "joint_function"] },
-    { id: "chronic_osteomyelitis", name: "Chronic osteomyelitis with discharging sinus", pointers: ["sinus_discharge", "previous_injury_site"], discriminators: ["sinus_discharge", "previous_injury_site", "local_heat_fever", "growth_rate", "sickle_cell"] },
+    { id: "acute_osteomyelitis", name: "Acute osteomyelitis", pointers: ["acute_bone_fever", "local_heat_fever"], discriminators: ["acute_bone_fever", "local_heat_fever", "onset_mode", "sickle_cell", "immunocompromise", "joint_function", "preceding_infection"] },
+    { id: "chronic_osteomyelitis", name: "Chronic osteomyelitis with discharging sinus", pointers: ["sinus_discharge", "previous_injury_site"], discriminators: ["sinus_discharge", "previous_injury_site", "local_heat_fever", "growth_rate", "sickle_cell", "preceding_infection", "flare_ups"] },
     { id: "brodie", name: "Brodie's abscess", pointers: ["rapid_growth_night_pain", "bone_pain"], discriminators: ["bone_pain", "rapid_growth_night_pain", "local_heat_fever", "bone_site", "growth_rate"] },
     { id: "tb_bone", name: "Tuberculosis of bone", pointers: ["tb_contact", "bone_constitutional", "sinus_discharge"], discriminators: ["tb_contact", "bone_constitutional", "sinus_discharge", "growth_rate", "immunocompromise"] },
-    { id: "osteosarcoma", name: "Osteosarcoma", pointers: ["rapid_growth_night_pain", "bone_site", "skin_over_swelling"], discriminators: ["rapid_growth_night_pain", "bone_site", "skin_over_swelling", "chest_symptoms", "pathological_fracture", "noticed_after_injury"] },
+    { id: "osteosarcoma", name: "Osteosarcoma", pointers: ["rapid_growth_night_pain", "bone_site", "skin_over_swelling"], discriminators: ["rapid_growth_night_pain", "bone_site", "skin_over_swelling", "chest_symptoms", "pathological_fracture", "noticed_after_injury", "pain_before_swelling", "longstanding_swelling_growing"] },
     { id: "ewing", name: "Ewing's sarcoma", pointers: ["rapid_growth_night_pain", "local_heat_fever", "bone_constitutional"], discriminators: ["rapid_growth_night_pain", "local_heat_fever", "bone_constitutional", "bone_site", "chest_symptoms"] },
     { id: "gct", name: "Giant cell tumour", pointers: ["bone_site", "joint_function"], discriminators: ["bone_site", "joint_function", "growth_rate", "pathological_fracture", "bone_pain"] },
-    { id: "osteochondroma", name: "Osteochondroma or exostosis", pointers: ["other_bone_swellings", "family_bone_swellings"], discriminators: ["other_bone_swellings", "family_bone_swellings", "growth_rate", "bone_pain", "bone_site"] },
+    { id: "osteochondroma", name: "Osteochondroma or exostosis", pointers: ["other_bone_swellings", "family_bone_swellings"], discriminators: ["other_bone_swellings", "family_bone_swellings", "growth_rate", "bone_pain", "bone_site", "longstanding_swelling_growing"] },
     { id: "metastasis", name: "Metastatic deposit", pointers: ["known_cancer", "pathological_fracture", "bone_constitutional"], discriminators: ["known_cancer", "pathological_fracture", "bone_constitutional", "chest_symptoms", "limb_neuro_deficit"] },
     { id: "myeloma", name: "Multiple myeloma", pointers: ["anaemia_kidney", "pathological_fracture"], discriminators: ["anaemia_kidney", "pathological_fracture", "other_bone_swellings", "bone_constitutional", "limb_neuro_deficit"] },
     { id: "fracture_callus", name: "Fracture or healing callus", pointers: ["noticed_after_injury", "previous_injury_site"], discriminators: ["noticed_after_injury", "previous_injury_site", "growth_rate", "pathological_fracture", "bone_pain"] },

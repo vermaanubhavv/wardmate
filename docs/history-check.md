@@ -13,8 +13,13 @@ return 404, and nothing under `lib/history-check/` is queried. Off by default.
 Clinical content carries `reviewStatus` and `reviewedBy`, and the card and learning pages show
 a chip for each: amber "Pending clinician review", or green "Reviewed · <reviewer>".
 
-**All hundred and two trees, all eighteen examination checklists and the safety-level
-thresholds are reviewed and signed off by Dr Anubhav Verma.** As with the scoring pathways, that
+**Eighty of the hundred and seven trees, all eighteen examination checklists and the safety-level
+thresholds are reviewed and signed off by Dr Anubhav Verma.** Pending clinician review: the five
+trees added from Sabiston and S. Das (`preop_assessment`, `varicose_veins`, `ventral_hernia`,
+`sinus_fistula`, `abdominal_lump`), and the twenty-two surgical trees that carry
+`surgicalBackground()`, which came off the list when Sabiston's and Das's background questions
+were added to the helper and Das's per-chapter questions to the trees (`docs/surgical-history.md`
+§9.4 and §10). As with the scoring pathways, that
 is a single-clinician sign-off covering content that spans nine specialties; departmental review
 is still outstanding.
 
@@ -92,7 +97,7 @@ triggered it. Numeric values render amber with "(unconfirmed)"; there is no conf
 
 ### Trees — `content/history-trees/`
 
-A hundred and two complaints: fever, chest pain, breathlessness, abdominal pain, jaundice, cough,
+A hundred and seven complaints: fever, chest pain, breathlessness, abdominal pain, jaundice, cough,
 oedema, headache, altered sensorium / seizures, limb weakness, diarrhoea / vomiting, generalised
 weakness, giddiness, decreased urine output, constipation, abdominal distension, lump, bleeding
 per rectum, burning micturition, loss of weight / appetite, palpitations, joint pain,
@@ -115,7 +120,9 @@ with a brain shunt, and swelling on the back or head of a baby; and wheeze / tig
 cough worsening over months, problem while on TB treatment, road traffic accident / multiple
 injuries, heat illness, and animal bite.
 
-A hundred and two trees in all, spanning general medicine, general surgery, emergency medicine,
+A hundred and seven trees in all — the last five, before an operation (pre-operative
+assessment) and varicose veins from Sabiston, and swelling of the abdominal wall, discharging
+sinus / fistula and lump in the abdomen from S. Das (`docs/surgical-history.md` §9–§10) — spanning general medicine, general surgery, emergency medicine,
 paediatrics, medical oncology, obstetrics and gynaecology, orthopaedics, urology and
 neurosurgery — the specialty order set by the product owner — and then the departments that
 had no tree at all: ENT, ophthalmology, dermatology, psychiatry, burns and plastic surgery,
@@ -141,7 +148,13 @@ negative. Nothing in them is scored, ranked, or turned into a disposition.
 
 Surgical trees add `surgicalBackground()` from `_helpers.ts`: previous operations and what went
 wrong with them, anaesthetic and transfusion history, blood thinners, regular medicines, allergy,
-exercise tolerance, implants, and last food and fluid. All `exposure`, ids prefixed `surg_` so a
+exercise tolerance, implants, last food and fluid, and from Sabiston a personal or family
+bleeding tendency, steroid in the past year, weight loss over six months and snoring with pauses, and from S. Das whether the patient was well before, other and past
+illnesses, family illness, menstrual and obstetric history, and occupation and residence, and from Hamilton Bailey
+recreational drugs and the patient's own idea of the cause. A tree
+that already asks one of these in its own words drops it with `omit: [...]`; `detailed: [...]`
+and `core: [...]` move a shared slot between the academic and ward tiers, and the injury trees
+spread `TRAUMA_BG` (an AMPLE-sized ward core — `docs/surgical-history.md` §12.1). All `exposure`, ids prefixed `surg_` so a
 tree can carry both these and its own "previous hernia surgery". `surgicalBackground({ acute:
 true })` promotes the last-meal question from the long case to the ward round. Last food and
 fluid is deliberately not a red flag: a red-flag positive raises the safety level of the whole
