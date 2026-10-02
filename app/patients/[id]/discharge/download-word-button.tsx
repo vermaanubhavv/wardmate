@@ -1,14 +1,32 @@
 "use client";
 
-/** A plain link to the .docx route does the whole job — the browser handles the download from
- *  the Content-Disposition header, no client-side blob juggling needed. */
+import { useState } from "react";
+import { proofreadDischargeAction } from "./actions";
+
+/** Runs Sonnet's proofread first (showing "Checking…" while it does), then hands the .docx route
+ *  to the browser — the download itself comes from its Content-Disposition header. The route
+ *  runs the same check, which is skipped here because nothing changed since this one. */
 export default function DownloadWordButton({ patientId }: { patientId: string }) {
+  const [checking, setChecking] = useState(false);
+
+  async function onDownload() {
+    setChecking(true);
+    await proofreadDischargeAction(patientId).catch(() => null);
+    setChecking(false);
+    // A link click, not router.push: this is a file download, not a page.
+    const link = document.createElement("a");
+    link.href = `/api/patients/${patientId}/discharge-docx`;
+    link.click();
+  }
+
   return (
-    <a
-      href={`/api/patients/${patientId}/discharge-docx`}
-      className="w-full rounded-xl bg-card px-4 py-3 text-center text-body font-semibold text-accent active:opacity-70 print:hidden"
+    <button
+      type="button"
+      onClick={() => void onDownload()}
+      disabled={checking}
+      className="w-full rounded-xl bg-card px-4 py-3 text-center text-body font-semibold text-accent active:opacity-70 disabled:opacity-60 print:hidden"
     >
-      Download as Word
-    </a>
+      {checking ? "Checking the summary…" : "Download as Word"}
+    </button>
   );
 }
