@@ -41,3 +41,20 @@ describe("buildDischargeDocument hospital branding", () => {
     expect(doc.unitName).toBe("Unit 3");
   });
 });
+
+describe("red flags on a post-op summary", () => {
+  function draftFor(surgeryDate: string | null) {
+    const context = oneOffContext({ name: "Test Patient" }, ward, null, new Map(), [], derivePatientState([], null), []);
+    return compileDischargeDraft({ ...context, patient: { ...context.patient, surgery_date: surgeryDate } });
+  }
+
+  it("is switched on, with warnings, once the patient is operated", () => {
+    const { redFlags } = draftFor("2026-09-28");
+    expect(redFlags.included).toBe(true);
+    expect(redFlags.items.length).toBeGreaterThan(0);
+  });
+
+  it("stays off for a patient never operated", () => {
+    expect(draftFor(null).redFlags.included).toBe(false);
+  });
+});

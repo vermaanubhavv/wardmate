@@ -15,6 +15,7 @@ import {
   type DischargeMedication,
   type HistopathologySpecimen,
   type Procedure,
+  RED_FLAG_SUGGESTIONS,
 } from "@/lib/discharge-entities";
 import { type DischargeTemplate } from "@/lib/discharge-templates";
 import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
@@ -524,5 +525,15 @@ export function compileDischargeDraft(
       templateFamily: patient.template_family,
     });
 
-  return template ? applyDischargeTemplate(base, template, options?.seedAll ?? false) : base;
+  const drafted = template ? applyDischargeTemplate(base, template, options?.seedAll ?? false) : base;
+
+  // An operated patient leaves with the "when to come back" warnings switched ON: missing them
+  // on a post-op summary is the costlier mistake, and the resident can still untick any or turn
+  // the section off. The template's own list when it has one, else the generic post-op list.
+  // Only reaches a draft whose red-flag section was never saved — a stored choice still wins.
+  if (patient.surgery_date) {
+    const items = drafted.redFlags.items.length > 0 ? drafted.redFlags.items : [...RED_FLAG_SUGGESTIONS];
+    return { ...drafted, redFlags: { items, included: true } };
+  }
+  return drafted;
 }
