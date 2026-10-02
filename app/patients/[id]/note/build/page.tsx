@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { stripPatientHonorific } from "@/lib/patients";
 import { istDayKey } from "@/lib/patient-state";
 import NoteWorkspace, { type NoteObs } from "../note-workspace";
+import { medPresetsFor } from "../med-presets";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { progressNoteConfigFor } from "@/lib/progress-note-config";
@@ -137,6 +138,7 @@ export default async function BuildNotePage({ params }: { params: Promise<{ id: 
         currentMeds={currentMeds}
         suggestedAssessment={suggestedAssessment}
         noteConfig={noteConfig}
+        medPresets={medPresetsFor(pack.key)}
         focus={focus}
       />
     </div>

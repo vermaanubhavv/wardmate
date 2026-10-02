@@ -9,6 +9,8 @@ import {
 import { SPECIALTY_KEYS } from "@/lib/specialty/types";
 import { TREATMENT_ADVICE } from "@/lib/history-check/schema";
 import type { Observation } from "@/lib/patient-state";
+import { matchVitalLabel } from "@/lib/vital-ranges";
+import { MED_PRESETS, medPresetsFor } from "@/app/patients/[id]/note/med-presets";
 
 const obs = (kind: string, label: string, value_text: string | null): Observation =>
   ({
@@ -102,5 +104,45 @@ describe("progress-note configs", () => {
     const note = buildProgressNote(patient, todays, todays, null, { noteConfig: PROGRESS_NOTE_CONFIGS.general_surgery });
     expect(note.observation.some((l) => l.startsWith("Wound -"))).toBe(true);
     expect(note.observation).toContain("Drains / tubes / I-O - Pelvic drain 40 ml serous");
+  });
+});
+
+describe("medicine's daily note", () => {
+  const im = PROGRESS_NOTE_CONFIGS.internal_medicine;
+  const gs = PROGRESS_NOTE_CONFIGS.general_surgery;
+
+  it("general surgery is unchanged: its four exam cards, no extra vitals, the surgical Type example", () => {
+    expect(gs.examSections.map((s) => s.id)).toEqual(["abdomen", "wound", "drains", "chest"]);
+    expect(gs.extraVitals).toBeUndefined();
+    expect(gs.bedsideExample).toBeUndefined();
+  });
+
+  it("medicine has a CNS card, nothing pre-filled, printing once and not on the OE line", () => {
+    expect(im.examSections.map((s) => s.id)).toEqual(["cvs", "chest", "abdomen", "nervous_system"]);
+    const cns = im.examSections.find((s) => s.id === "nervous_system")!;
+    expect(cns.pills).toEqual(expect.arrayContaining(["Plantars flexor", "Neck stiffness", "Reflexes brisk"]));
+    const todays = [obs("exam", "nervous system", "Power 4/5 right upper limb, plantars flexor")];
+    const note = buildProgressNote(patient, todays, todays, null, { noteConfig: im });
+    expect(note.observation).toContain("CNS - Power 4/5 right upper limb, plantars flexor");
+    expect(note.observation).toContain("OE - Conscious Oriented");
+  });
+
+  it("medicine's Vitals card adds urine output / I-O and GCS, neither read as another vital", () => {
+    expect(im.extraVitals?.map((v) => v.key)).toEqual(["Urine output", "GCS"]);
+    for (const v of im.extraVitals ?? []) {
+      expect(matchVitalLabel(v.key), v.key).toBeNull();
+      for (const a of v.aliases) expect(matchVitalLabel(a), a).toBeNull();
+    }
+  });
+});
+
+describe("medication presets", () => {
+  it("medicine gets its own short set with no NSAID; every ward's chip still saves amber", () => {
+    const im = medPresetsFor("internal_medicine");
+    expect(im).toContain("Inj Pantoprazole 40 mg IV OD");
+    for (const p of im) expect(p, p).not.toMatch(/diclofenac|ibuprofen|aceclofenac|ketorolac|naproxen|tramadol/i);
+    expect(medPresetsFor("general_surgery")).toContain("Inj Tramadol 50 mg IV SOS");
+    expect(medPresetsFor("no_such_ward")).toEqual(medPresetsFor("general_surgery"));
+    for (const key of SPECIALTY_KEYS) for (const p of medPresetsFor(key)) expect(MED_PRESETS, p).toContain(p);
   });
 });

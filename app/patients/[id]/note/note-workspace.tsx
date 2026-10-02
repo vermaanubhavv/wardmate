@@ -21,14 +21,15 @@ import {
   replaceActiveMedications,
   applyCompiledNote,
 } from "./actions";
-import { MED_PRESETS } from "./med-presets";
-import type { ProgressNoteConfig } from "@/lib/progress-note-config";
+import { medPresetsFor } from "./med-presets";
+import type { NoteVitalField, ProgressNoteConfig } from "@/lib/progress-note-config";
 
 export type NoteObs = { kind: string; label: string; value: string | null };
 
+const SENSORIUM_ALIASES = ["sensorium", "cns", "gcs"];
 const SENSORIUM = ["Conscious & oriented", "Drowsy", "Altered sensorium", "Irritable"];
 const ASSESSMENT = ["Satisfactory", "Stable", "Improving", "Static", "Deteriorating"];
-const VITALS: { key: string; label: string; ph: string; aliases: string[] }[] = [
+const SHARED_VITALS: NoteVitalField[] = [
   { key: "BP", label: "BP", ph: "120/80", aliases: ["bp", "blood pressure"] },
   { key: "PR", label: "PR", ph: "84 /min", aliases: ["pr", "pulse", "pulse rate"] },
   { key: "RR", label: "RR", ph: "18 /min", aliases: ["rr", "respiratory rate"] },
@@ -67,6 +68,7 @@ export default function NoteWorkspace({
   currentMeds,
   suggestedAssessment = "",
   noteConfig,
+  medPresets = medPresetsFor(null),
   focus = null,
 }: {
   patientId: string;
@@ -81,11 +83,16 @@ export default function NoteWorkspace({
   suggestedAssessment?: string;
   /** This department's exam cards and chips — lib/progress-note-config.ts. */
   noteConfig: ProgressNoteConfig;
+  /** This ward's one-tap drugs — ./med-presets.ts medPresetsFor(). */
+  medPresets?: string[];
   /** What to check today for this diagnosis — the matching discharge template's `progressNote`.
    *  Read-only: never saved, never prefilled into a card, never sent to the AI compile. */
   focus?: string | null;
 }) {
   const STEPS = useMemo(() => stepsFor(noteConfig), [noteConfig]);
+  const VITALS = useMemo(() => [...SHARED_VITALS, ...(noteConfig.extraVitals ?? [])], [noteConfig]);
+  // A label one of this ward's vitals fields owns (a GCS field) is not also the Sensorium card's.
+  const sensoriumAliases = SENSORIUM_ALIASES.filter((a) => !VITALS.some((v) => v.aliases.includes(a)));
   const sectionById = (id: string) => noteConfig.examSections.find((sec) => sec.id === id);
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -112,7 +119,7 @@ export default function NoteWorkspace({
   );
 
   const [complaints, setComplaints] = useState(() => val(["complaints", "c/o", "complaint"]));
-  const [sensorium, setSensorium] = useState(() => val(["sensorium", "cns", "gcs"]));
+  const [sensorium, setSensorium] = useState(() => val(sensoriumAliases));
   const [vitals, setVitals] = useState<Record<string, string>>(() =>
     Object.fromEntries(VITALS.map((v) => [v.key, val(v.aliases)]))
   );
@@ -283,7 +290,7 @@ export default function NoteWorkspace({
             </OptionRow>
           ))}
           <DictateArea value={sensorium} onChange={(v) => { setSensorium(v); mark("sensorium"); }} placeholder="Or describe it" rows={2} />
-          <YesterdayButton text={yVal(["sensorium", "cns", "gcs"])} onUse={(v) => { setSensorium(v); mark("sensorium"); carry("sensorium"); }} />
+          <YesterdayButton text={yVal(sensoriumAliases)} onUse={(v) => { setSensorium(v); mark("sensorium"); carry("sensorium"); }} />
         </div>
       );
     if (id === "vitals")
@@ -407,7 +414,7 @@ export default function NoteWorkspace({
             what was stopped, add what was started. This becomes the drug list on today&rsquo;s sheet.
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {MED_PRESETS.filter((p) => !meds.some((m) => m.toLowerCase().startsWith(p.split(/\s+\d/)[0].toLowerCase()))).map((p) => (
+            {medPresets.filter((p) => !meds.some((m) => m.toLowerCase().startsWith(p.split(/\s+\d/)[0].toLowerCase()))).map((p) => (
               <SelChip key={p} selected={false} onClick={() => { setMeds([...meds, p]); mark("meds"); }}>
                 + {p}
               </SelChip>

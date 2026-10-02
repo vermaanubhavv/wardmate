@@ -11,7 +11,7 @@ import { getWardLabRanges } from "@/lib/ward-lab-ranges";
 import { getWardIsEsicFaridabad, getWardSpecialtyStored } from "@/lib/ward";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { progressNoteConfigFor } from "@/lib/progress-note-config";
-import { MANAGEMENT_CHOICES } from "@/lib/patients";
+import { managementChoicesFor } from "@/lib/patients";
 import { getProcedureLabels, procedureFor } from "@/lib/templates";
 import CopyNoteButton from "./copy-button";
 import PrintButton from "./print-button";
@@ -113,7 +113,8 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
   // patient who has since gone to theatre is never still shown as Pre-op.
   const status = patient.surgery_date
     ? `Post Op Day (${patient.post_op_day ?? "—"})`
-    : (MANAGEMENT_CHOICES.find((c) => c.value === patient.management)?.label ?? null);
+    : (managementChoicesFor(specialty, patient.management ?? "").find((c) => c.value === patient.management)
+        ?.label ?? null);
 
   // Clinical score line(s), computed by lib/scoring from recorded values only. Kept fresh
   // first, then read — the same "computed on read" pattern as the patient page. Both calls are

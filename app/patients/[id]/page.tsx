@@ -20,7 +20,7 @@ import {
   type Observation,
   type PacVerdict,
 } from "@/lib/patient-state";
-import { isIdentifierLabel, stripPatientHonorific, MANAGEMENT_CHOICES } from "@/lib/patients";
+import { isIdentifierLabel, stripPatientHonorific, managementChoicesFor } from "@/lib/patients";
 import { describeWhen, effectiveUrgency } from "@/lib/urgency";
 import BedsideBar from "./bedside-bar";
 import PatientTabs from "./patient-tabs";
@@ -862,7 +862,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                     {diagnosis ?? "Diagnosis not recorded"}
                   </p>
                   {(() => {
-                    const managementChoice = MANAGEMENT_CHOICES.find((c) => c.value === patient.management);
+                    const managementChoice = managementChoicesFor(pack.key, patient.management ?? "").find(
+                      (c) => c.value === patient.management
+                    );
                     return managementChoice ? (
                       <p className="mt-0.5 text-footnote text-muted">({managementChoice.label})</p>
                     ) : null;
@@ -911,7 +913,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
       {/* Fixed, so the button is under your thumb no matter how long the record has grown. */}
       <BottomBar>
-        <BedsideBar patientId={patient.id} missing={missing} />
+        <BedsideBar patientId={patient.id} missing={missing} specialty={pack.key} />
       </BottomBar>
     </div>
   );

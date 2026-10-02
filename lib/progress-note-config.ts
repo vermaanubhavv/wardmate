@@ -49,7 +49,15 @@ export type ProgressNoteConfig = {
    *  post-operative abdominal question, kept where the ward operates on or near the gut. */
   bowelLine: boolean;
   planPills: string[];
+  /** Vitals card fields this ward charts beyond the shared BP, PR, RR, Temp, SpO₂, GRBS and
+   *  ICU. `key` is the label the value is stored under (a `vital` observation) — never one
+   *  lib/vital-ranges.ts matchVitalLabel() reads as another vital. Absent: the shared set only. */
+  extraVitals?: NoteVitalField[];
+  /** The example in the patient page's "Type" box. Absent: the surgical one. */
+  bedsideExample?: string;
 };
+
+export type NoteVitalField = { key: string; label: string; ph: string; aliases: string[] };
 
 /** Card ids the workspace uses for the lines every department shares. */
 export const RESERVED_SECTION_IDS = ["complaints", "sensorium", "vitals", "bowel", "assessment", "plan", "meds", "review"];
@@ -84,6 +92,22 @@ const CVS: NoteExamSection = {
   aliases: ["cvs", "cardiovascular system", "cardiovascular", "heart", "s1 s2", "s1s2"],
   pills: ["S1 S2 heard", "No murmur", "Murmur", "Gallop", "Raised JVP", "Pedal oedema", "Peripheries warm", "Peripheries cold"],
   placeholder: "Anything else on the heart and circulation",
+};
+
+// The neurological examination beyond the OE / sensorium line. Labelled "nervous system" — not
+// "cns", which lib/progress-note.ts already reads as the OE line — so a finding prints once.
+const CNS: NoteExamSection = {
+  id: "nervous_system",
+  title: "Nervous system",
+  printLabel: "CNS",
+  label: "nervous system",
+  aliases: ["nervous system", "cns examination", "power", "tone", "reflexes", "plantars", "plantar", "neck stiffness", "meningeal signs"],
+  pills: [
+    "Moving all four limbs", "Weakness", "Tone normal", "Tone increased", "Tone decreased",
+    "Reflexes normal", "Reflexes brisk", "Reflexes diminished",
+    "Plantars flexor", "Plantar extensor", "No neck stiffness", "Neck stiffness",
+  ],
+  placeholder: "Power as graded in each limb, and anything else found; GCS goes on the Vitals card",
 };
 
 const WOUND: NoteExamSection = {
@@ -214,9 +238,21 @@ const INTERNAL_MEDICINE: ProgressNoteConfig = {
   wardPhrase: "an internal-medicine ward",
   registerHint: "S1 S2 +, no murmur, NVBS, B/L air entry equal, crepts, P/A soft, NT",
   complaintPills: MEDICINE_COMPLAINTS,
-  examSections: [CVS, CHEST, ABDOMEN],
+  examSections: [CVS, CHEST, ABDOMEN, CNS],
   bowelLine: false,
   planPills: MEDICINE_PLAN,
+  // Neither label is a vital lib/vital-ranges.ts knows, so neither is flagged against a range;
+  // "urine output" and "GCS" are the labels a photographed chart is read under (read-lab-photo).
+  extraVitals: [
+    {
+      key: "Urine output",
+      label: "Urine output / I-O",
+      ph: "e.g. 1.2 L / 24 h",
+      aliases: ["urine output", "uo", "intake output", "intake / output", "input / output", "i/o", "i-o"],
+    },
+    { key: "GCS", label: "GCS", ph: "E_V_M_", aliases: ["gcs", "glasgow coma scale"] },
+  ],
+  bedsideExample: "HD 3, afebrile, BP 120/80, plan repeat RFT…",
 };
 
 const MEDICAL_ONCOLOGY: ProgressNoteConfig = {
