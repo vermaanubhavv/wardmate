@@ -322,40 +322,59 @@ export default function DischargeWorkspace({
     return { course, indication, investigations, any: course || indication || investigations };
   }, [finalised, aiReady, initialDraft]);
 
-  const [autoGen, setAutoGen] = useState<"idle" | "running">(autoGenNeeds.any ? "running" : "idle");
+  // One request per missing section, in parallel, so each card fills the moment its own draft
+  // lands — the short Indication no longer waits on the long Clinical Course.
+  type AutoSection = "clinical_course" | "indication" | "investigations";
+  const [autoGen, setAutoGen] = useState<Set<AutoSection>>(
+    () =>
+      new Set(
+        (
+          [
+            autoGenNeeds.course && "clinical_course",
+            autoGenNeeds.indication && "indication",
+            autoGenNeeds.investigations && "investigations",
+          ] as const
+        ).filter((x): x is AutoSection => !!x)
+      )
+  );
   const autoGenStarted = useRef(false);
   useEffect(() => {
-    if (autoGen !== "running" || autoGenStarted.current) return;
+    if (autoGenStarted.current) return;
     autoGenStarted.current = true;
-    (async () => {
-      try {
-        const res = await fetch(`/api/patients/${patientId}/discharge/generate`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ section: "all" }),
-        });
-        const data = await res.json();
-        if (res.ok) {
+    for (const section of autoGen) {
+      void (async () => {
+        try {
+          const res = await fetch(`/api/patients/${patientId}/discharge/generate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ section }),
+          });
+          const data = await res.json();
           // Only drop the AI draft in where the resident has not started that section
           // themselves while it was compiling.
-          setDraft((d) => ({
-            ...d,
-            clinicalCourse:
-              data.clinicalCourse && !d.clinicalCourse.text.trim() ? data.clinicalCourse : d.clinicalCourse,
-            indicationForAdmission:
-              data.indication && !d.indicationForAdmission.text.trim() ? data.indication : d.indicationForAdmission,
-            relevantInvestigations:
-              data.relevantInvestigations && d.relevantInvestigations.items.length === 0
-                ? data.relevantInvestigations
-                : d.relevantInvestigations,
-          }));
+          if (res.ok && data.section)
+            setDraft((d) =>
+              section === "clinical_course"
+                ? d.clinicalCourse.text.trim() ? d : { ...d, clinicalCourse: data.section }
+                : section === "indication"
+                  ? d.indicationForAdmission.text.trim() || !data.section.text?.trim()
+                    ? d
+                    : { ...d, indicationForAdmission: data.section }
+                  : d.relevantInvestigations.items.length > 0 || data.section.items?.length === 0
+                    ? d
+                    : { ...d, relevantInvestigations: data.section }
+            );
+        } catch {
+          // No signal — the resident falls back to the manual buttons.
         }
-      } catch {
-        // No signal — the resident falls back to the manual buttons.
-      }
-      setAutoGen("idle");
-    })();
-  }, [autoGen, autoGenNeeds, patientId]);
+        setAutoGen((s) => {
+          const n = new Set(s);
+          n.delete(section);
+          return n;
+        });
+      })();
+    }
+  }, [autoGen, patientId]);
 
   const checks = useMemo(() => runDischargeChecks(draft, checkContext), [draft, checkContext]);
   const blockingBySection = useMemo(() => {
@@ -630,7 +649,7 @@ export default function DischargeWorkspace({
   function renderSection(id: StepId): React.ReactNode {
     switch (id) {
       case "indication": {
-        const drafting = autoGen === "running" && !draft.indicationForAdmission.text.trim();
+        const drafting = autoGen.has("indication") && !draft.indicationForAdmission.text.trim();
         return (
           <>
             <p className="text-caption leading-[1.45] text-muted">
@@ -748,7 +767,7 @@ export default function DischargeWorkspace({
         );
 
       case "clinicalCourse": {
-        const drafting = autoGen === "running" && !draft.clinicalCourse.text.trim();
+        const drafting = autoGen.has("clinical_course") && !draft.clinicalCourse.text.trim();
         return (
           <>
             <p className="text-caption leading-[1.45] text-muted">
@@ -787,7 +806,7 @@ export default function DischargeWorkspace({
       }
 
       case "relevantInvestigations": {
-        const drafting = autoGen === "running" && draft.relevantInvestigations.items.length === 0;
+        const drafting = autoGen.has("investigations") && draft.relevantInvestigations.items.length === 0;
         return (
           <>
             <p className="text-caption leading-[1.45] text-muted">
