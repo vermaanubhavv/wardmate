@@ -16,7 +16,7 @@ import {
 } from "docx";
 import { createClient } from "@/lib/supabase/server";
 import { getDischargeContext } from "@/lib/discharge-data";
-import { mergeDischargeDraft } from "@/lib/discharge-store";
+import { mergeDischargeDraft, proofreadDischarge } from "@/lib/discharge-store";
 import {
   buildDischargeDocument,
   letterheadNamesUnit,
@@ -38,6 +38,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+
+  // Same proofread as Print (lib/final-check.ts), so the Word file is never the untidied copy.
+  // Skipped when nothing changed since the last check; a failed check changes nothing.
+  await proofreadDischarge(id);
 
   const context = await getDischargeContext(id);
   if (!context) return NextResponse.json({ error: "Patient not found." }, { status: 404 });

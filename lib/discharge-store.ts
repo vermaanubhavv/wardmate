@@ -195,7 +195,7 @@ export async function finaliseDischargeSummary(
 }
 
 /**
- * Sonnet's proofread of the summary — run on Finalise and every time Print is pressed.
+ * Sonnet's proofread of the summary — run on Finalise, Print and Word download.
  *
  * The Clinical Course is re-punctuated and re-framed (polishProse); every other text field gets
  * the mechanical fixes only (finalCheck), and its questions are kept beside the summary, never
