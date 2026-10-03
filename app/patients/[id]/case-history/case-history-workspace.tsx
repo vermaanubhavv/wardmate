@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { startWait } from "@/lib/track";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { MicIcon } from "@/app/icons";
 import { caseHistorySectionOf, seedHopi } from "@/lib/case-history";
 import { complaintChipsFor, pastChipsFor } from "@/lib/case-history-chips";
 import { leadsFor, readField, writeField } from "@/lib/case-history-departments";
@@ -1644,7 +1645,7 @@ export default function CaseHistoryWorkspace({
               Speak in any order — each part is sorted into its card as you go.
             </span>
           </span>
-          <span aria-hidden className="text-title3">🎤</span>
+          <span aria-hidden className="text-accent"><MicIcon className="h-6 w-6" /></span>
         </button>
       )}
 
@@ -1668,7 +1669,7 @@ export default function CaseHistoryWorkspace({
             <button
               type="button"
               onClick={() => goTo(step + 1)}
-              className="self-start text-footnote font-medium text-muted underline underline-offset-4"
+              className="min-h-11 self-start text-footnote font-medium text-muted underline underline-offset-4"
             >
               Not asked — skip, record nothing
             </button>

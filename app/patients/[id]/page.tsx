@@ -68,6 +68,7 @@ import { etiologyFromDiagnosis, type EtiologyKey } from "@/lib/imaging-summary";
 import { classifyVital, matchVitalLabel } from "@/lib/vital-ranges";
 import { getWardLabRanges } from "@/lib/ward-lab-ranges";
 import { getSpecialtyPack } from "@/lib/specialty";
+import { hasOperationClock } from "@/lib/specialty/intake";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { getUser } from "@/lib/auth";
 import HistoryCheckCard from "./history-check-card";
@@ -591,8 +592,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           thing most likely to stop a list, so "nobody has recorded one" has to be visible
           rather than inferred from a section that isn't there. It sits below Today rather
           than above it: the verdict is a standing fact about the admission, and the question
-          asked first at a bedside is still how the patient is this morning. */}
-      {beforeSurgery && <PacSection pac={pac} />}
+          asked first at a bedside is still how the patient is this morning. A unit with no
+          operation clock (medicine, oncology…) shows it only once a PAC has been recorded. */}
+      {beforeSurgery && (hasOperationClock(pack) || pac.length > 0) && <PacSection pac={pac} />}
     </>
   );
 

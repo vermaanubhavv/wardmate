@@ -174,6 +174,10 @@ export default function DischargeWorkspace({
     const i = s ? STEPS.findIndex((step) => step.id === s) : -1;
     return i >= 0 ? i : 0;
   });
+  // Condition at Discharge starts empty by design (nothing is pre-marked), so its "set at least
+  // N" blocker would greet every resident as a red error. It is shown once they have reached
+  // Review & sign — the only place Finalise lives.
+  const [reachedReview, setReachedReview] = useState(() => STEPS[step].id === "review");
   const [menuOpen, setMenuOpen] = useState(false);
   const [askReset, setAskReset] = useState(false);
   const [openMed, setOpenMed] = useState<string | null>(null);
@@ -356,6 +360,9 @@ export default function DischargeWorkspace({
     for (const c of checks.blocking) m.set(c.section, [...(m.get(c.section) ?? []), c]);
     return m;
   }, [checks]);
+  /** A card's red errors — Condition at Discharge's held back until Review has been reached. */
+  const blockingFor = (s: DischargeSectionId) =>
+    s === "conditionAtDischarge" && !reachedReview ? [] : (blockingBySection.get(s) ?? []);
 
   const current = STEPS[step];
   const stepIndexOf = (id: StepId) => STEPS.findIndex((s) => s.id === id);
@@ -390,6 +397,7 @@ export default function DischargeWorkspace({
   /** Move between cards. Autosave has the card being left; navigation never waits. */
   function goTo(index: number) {
     if (index < 0 || index >= STEPS.length) return;
+    if (STEPS[index].id === "review") setReachedReview(true);
     setStep(index);
     setMenuOpen(false);
     setOpenMed(null);
@@ -1401,10 +1409,10 @@ export default function DischargeWorkspace({
         </div>
 
         <div className="flex flex-col gap-3 px-4 py-4">
-          {current.id !== "review" && cardSections(current.id).some((s) => blockingBySection.has(s)) && (
+          {current.id !== "review" && cardSections(current.id).some((s) => blockingFor(s).length > 0) && (
             <div className="rounded-[10px] bg-critical-bg px-3 py-2">
               {cardSections(current.id)
-                .flatMap((s) => blockingBySection.get(s) ?? [])
+                .flatMap(blockingFor)
                 .map((c) => (
                   <p key={c.id} className="text-footnote text-critical-fg">
                     {c.message}
