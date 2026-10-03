@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { AI_MODEL } from "@/lib/model";
+import { judgeRegisterRows, type TaskCategoryJudgment } from "@/lib/jev-observations";
 
 export type RegisterRow = {
   /** Patient name as written in the register. Empty if the row has none. */
@@ -12,8 +13,11 @@ export type RegisterRow = {
   findings: { label: string; value_text: string }[];
   /** Anything to be done, as written. */
   plans: string[];
-  /** Handwriting unclear, cut off, overwritten, or ambiguous. */
+  /** Handwriting unclear, cut off, overwritten, or ambiguous — or Jev read a finding or plan
+   *  as not in its own row (lib/jev-observations.ts). */
   uncertain: boolean;
+  /** One per plan, same order: Jev's to-do rescue and bucket. Absent on reads from before. */
+  plan_judgments?: { task_open: boolean | null; task_category: TaskCategoryJudgment | null }[];
 };
 
 export type RegisterResult = {
@@ -123,5 +127,8 @@ export async function readRegister(
   const text = response.content.find((b) => b.type === "text");
   const parsed = text && text.type === "text" ? JSON.parse(text.text) : { rows: [] };
 
-  return { rows: parsed.rows ?? [], model, raw: parsed };
+  const rows: RegisterRow[] = parsed.rows ?? [];
+  // Second look before anything is shown: see judgeRegisterRows. No key or an error: unchanged.
+  await judgeRegisterRows(rows);
+  return { rows, model, raw: parsed };
 }
