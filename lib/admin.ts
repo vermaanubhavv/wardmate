@@ -129,6 +129,19 @@ export type EventSummary = {
 };
 export const getEventSummary = () => callRows<EventSummary>("admin_event_summary");
 
+export type WaitSummary = {
+  what: string;
+  waits: number;
+  people: number;
+  p50_ms: number;
+  p90_ms: number;
+  max_ms: number;
+  failed: number;
+  last_seen: string;
+};
+/** Last 30 days of `wait` events, slowest 90th percentile first — patch 0105. */
+export const getWaitSummary = () => callRows<WaitSummary>("admin_wait_summary");
+
 export type FeedbackResponse = {
   id: string;
   discovered: string;

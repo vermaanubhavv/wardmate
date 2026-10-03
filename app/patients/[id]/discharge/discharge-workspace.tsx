@@ -1,6 +1,7 @@
 "use client";
 
 import { ActionSheet } from "../../../action-sheet";
+import { startWait } from "@/lib/track";
 import { takeDischargeWarmup } from "@/lib/discharge-warmup";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -316,6 +317,8 @@ export default function DischargeWorkspace({
     const done = (sections: AutoSection[]) =>
       setAutoGen((s) => new Set([...s].filter((x) => !sections.includes(x))));
     const draftOne = async (section: AutoSection) => {
+      const stop = startWait(`discharge_draft_${section}`);
+      let ok = false;
       try {
         const res = await fetch(`/api/patients/${patientId}/discharge/generate`, {
           method: "POST",
@@ -323,10 +326,12 @@ export default function DischargeWorkspace({
           body: JSON.stringify({ section }),
         });
         const data = await res.json();
+        ok = res.ok;
         if (res.ok) apply(section, data.section);
       } catch {
         // No signal — the resident falls back to the manual buttons.
       }
+      stop(ok);
       done([section]);
     };
 
@@ -395,6 +400,7 @@ export default function DischargeWorkspace({
   async function generate(section: "clinical_course" | "indication" | "investigations") {
     setGenerating(section);
     setMessage(null);
+    const stop = startWait(`discharge_draft_${section}`);
     try {
       const res = await fetch(`/api/patients/${patientId}/discharge/generate`, {
         method: "POST",
@@ -402,6 +408,7 @@ export default function DischargeWorkspace({
         body: JSON.stringify({ section }),
       });
       const data = await res.json();
+      stop(res.ok);
       if (!res.ok) {
         setMessage(data.error ?? "Could not generate.");
         setGenerating(null);
@@ -478,9 +485,14 @@ export default function DischargeWorkspace({
 
   function finalise() {
     setIsFinalising(true);
+    const stop = startWait("discharge_finalise");
     startTransition(async () => {
-      if (!(await flushSaves())) return setIsFinalising(false);
+      if (!(await flushSaves())) {
+        stop(false);
+        return setIsFinalising(false);
+      }
       const result = await finaliseDischargeAction(patientId);
+      stop(result.ok);
       if (!result.ok) {
         setIsFinalising(false);
         setMessage(

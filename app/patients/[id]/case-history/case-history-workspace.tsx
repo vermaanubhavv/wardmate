@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { startWait } from "@/lib/track";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { caseHistorySectionOf, seedHopi } from "@/lib/case-history";
@@ -543,6 +544,7 @@ export default function CaseHistoryWorkspace({
   }
 
   async function persist(id: StepId): Promise<boolean> {
+    const stop = startWait("case_history_save");
     const L = "history of presenting illness";
     let res: { ok: boolean; error?: string } = { ok: true };
     if (id === "complaints") res = await replaceCaseHistorySection(patientId, "chief complaints", "note", orderedComplaints());
@@ -619,6 +621,7 @@ export default function CaseHistoryWorkspace({
     else if (id === "local")
       res = await replaceCaseHistoryExam(patientId, [{ label: "local examination", kind: "exam", value: local.trim() || null }]);
 
+    stop(res.ok);
     if (!res.ok) {
       setMessage(res.error ?? "Could not save — your edits are still here.");
       return false;
@@ -650,6 +653,8 @@ export default function CaseHistoryWorkspace({
   async function generate(section: "diagnosis" | "plan" | "compile" | "negatives") {
     setGenerating(section);
     setMessage(null);
+    const stop = startWait(`case_history_${section}`);
+    let ok = false;
     try {
       const r = await fetch(`/api/patients/${patientId}/case-history/generate`, {
         method: "POST",
@@ -687,9 +692,11 @@ export default function CaseHistoryWorkspace({
         setCompiled({ sections, uncertain: data.uncertainPoints ?? [] });
         void proofread(sections);
       }
+      ok = r.ok;
     } catch {
       setMessage("No signal. Try again.");
     }
+    stop(ok);
     setGenerating(null);
   }
 
@@ -700,6 +707,7 @@ export default function CaseHistoryWorkspace({
   async function proofread(sections: { label: string; text: string }[]) {
     const run = ++proofreadRun.current;
     setProofreading(true);
+    const stop = startWait("case_history_proofread");
     const data = await fetch(`/api/patients/${patientId}/case-history/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -707,6 +715,7 @@ export default function CaseHistoryWorkspace({
     })
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null);
+    stop(!!data);
     if (run !== proofreadRun.current) return;
     setProofreading(false);
     if (!data) return;

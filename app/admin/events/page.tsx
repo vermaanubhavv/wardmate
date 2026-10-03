@@ -1,10 +1,10 @@
-import { getEventSummary } from "@/lib/admin";
+import { getEventSummary, getWaitSummary } from "@/lib/admin";
 import { Cell, Empty, ErrorNote, Row, Section, Table, ago } from "../ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminEventsPage() {
-  const { rows, error } = await getEventSummary();
+  const [{ rows, error }, waits] = await Promise.all([getEventSummary(), getWaitSummary()]);
   if (error) return <ErrorNote message={error} />;
 
   if (rows.length === 0)
@@ -22,6 +22,30 @@ export default async function AdminEventsPage() {
 
   return (
     <>
+      <Section title="Waits" subtitle="What residents sit and watch, last 30 days — slowest first">
+        {waits.error ? (
+          <p className="ios-group px-4 py-3 text-footnote text-muted">{waits.error}</p>
+        ) : waits.rows.length === 0 ? (
+          <p className="ios-group px-4 py-3 text-footnote text-muted">No waits timed yet.</p>
+        ) : (
+          <Table head={["Wait", "Times", "People", "Median", "90%", "Slowest", "Failed"]}>
+            {waits.rows.map((r) => (
+              <Row key={r.what}>
+                <Cell>{r.what}</Cell>
+                <Cell num>{r.waits}</Cell>
+                <Cell num>{r.people}</Cell>
+                <Cell num>{secs(r.p50_ms)}</Cell>
+                <Cell num>{secs(r.p90_ms)}</Cell>
+                <Cell num muted>
+                  {secs(r.max_ms)}
+                </Cell>
+                <Cell num>{r.failed}</Cell>
+              </Row>
+            ))}
+          </Table>
+        )}
+      </Section>
+
       <Section title="Named events" subtitle="Feature-level events the app reports explicitly">
         {named.length === 0 ? (
           <p className="ios-group px-4 py-3 text-footnote text-muted">
@@ -63,4 +87,8 @@ export default async function AdminEventsPage() {
       </Section>
     </>
   );
+}
+
+function secs(ms: number | null): string {
+  return ms == null ? "—" : `${(ms / 1000).toFixed(1)} s`;
 }
