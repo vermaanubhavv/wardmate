@@ -31,7 +31,8 @@ describe("tree registry", () => {
     // A tree must not drift into "reviewed" as a side effect of an edit — the chip on the card
     // is the only thing telling a resident whether the content was read by a clinician.
     //
-    // Eighty of the hundred and seven are signed off. The twenty-two trees that carry
+    // Seventy-seven of the hundred and seven are signed off. head_injury, limb_injury and
+    // jaundice came off after the Schwartz review corrected errors in them. The twenty-two trees that carry
     // surgicalBackground() came off this list when Sabiston's four background questions were
     // added to it (docs/surgical-history.md §9–§10) and go back on only when re-read. The five
     // trees built from Sabiston and S. Das have not been reviewed.
@@ -49,9 +50,9 @@ describe("tree registry", () => {
       "decreased_urine_output", "diarrhoea", "difficulty_passing_urine", "double_vision",
       "ear_discharge", "earache", "epistaxis", "erythroderma", "eye_injury", "eyelid_swelling",
       "febrile_neutropenia", "fever", "fever_with_rash", "flashes_floaters", "foreign_body_ent",
-      "generalised_weakness", "giddiness", "haematuria", "haemoptysis", "head_injury", "headache",
-      "heat_illness", "hoarseness", "hypopigmented_patch", "jaundice", "joint_pain", "labour_pains",
-      "limb_injury", "limb_ischaemia", "limb_weakness", "loin_pain", "loss_of_weight_appetite",
+      "generalised_weakness", "giddiness", "haematuria", "haemoptysis", "headache",
+      "heat_illness", "hoarseness", "hypopigmented_patch", "joint_pain", "labour_pains",
+      "limb_ischaemia", "limb_weakness", "loin_pain", "loss_of_weight_appetite",
       "low_back_pain", "low_mood", "mass_per_vaginum", "memory_loss", "nasal_obstruction",
       "neck_pain", "neural_tube_swelling", "oedema", "paediatric_abdominal_pain",
       "paediatric_breathing", "paediatric_diarrhoea", "paediatric_fever", "paediatric_seizure",
