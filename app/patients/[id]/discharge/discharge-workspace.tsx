@@ -1048,6 +1048,27 @@ export default function DischargeWorkspace({
             <p className="text-caption leading-[1.45] text-muted">
               Tap what is true today. Set at least {profile.conditionMinimum === 5 ? "five" : profile.conditionMinimum}, or add free text.
             </p>
+            {/* The resident's own one-tap statement, offered only on an untouched card. Wound and
+                drain are findings, and sugars and BP apply only to some patients, so none of those
+                is included — the resident taps them separately where true. */}
+            {conditionVars.every((v) => dc.vars[v.key] == null) && (
+              <button
+                type="button"
+                onClick={() => {
+                  const skip: ConditionVariableKey[] = ["wound", "drain", "sugars", "bp"];
+                  const vars = { ...dc.vars };
+                  for (const v of conditionVars) if (!skip.includes(v.key)) vars[v.key] = true;
+                  patch("conditionAtDischarge", "conditionAtDischarge", {
+                    ...dc,
+                    vars,
+                    prose: dc.proseEdited ? dc.prose : buildConditionProse(vars),
+                  });
+                }}
+                className="min-h-11 self-start rounded-[10px] border border-line bg-card px-3.5 text-subhead font-medium text-accent active:opacity-60"
+              >
+                Mark the standard items satisfactory
+              </button>
+            )}
             <div className="flex flex-wrap gap-2">
               {conditionVars.map((v) => {
                 const val = dc.vars[v.key];

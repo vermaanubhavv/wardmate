@@ -189,3 +189,8 @@ export type UsageFriction = {
   last_seen: string | null;
 };
 export const getUsageFriction = () => callRows<UsageFriction>("admin_usage_friction");
+/** Patch 0105 — the funnel per department, and usage friction for one department. */
+export type FunnelBySpecialty = FunnelStep & { specialty: string };
+export const getFunnelBySpecialty = () => callRows<FunnelBySpecialty>("admin_funnel_by_specialty");
+export const getUsageFrictionFor = (specialty: string) =>
+  callRows<UsageFriction>("admin_usage_friction_for", { p_specialty: specialty });

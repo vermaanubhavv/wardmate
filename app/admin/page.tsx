@@ -9,9 +9,10 @@ import {
   getScreenUsage,
   getFeedbackResponses,
   getUsageFriction,
+  getFunnelBySpecialty,
 } from "@/lib/admin";
-import { recommend, tallyFeedback } from "@/lib/admin-insights";
-import { Empty, ErrorNote, Section, Stat, StatGrid, SeverityDot, Bars } from "./ui";
+import { funnelByDepartment, recommend, tallyFeedback } from "@/lib/admin-insights";
+import { Empty, ErrorNote, Section, Stat, StatGrid, SeverityDot, Bars, Table, Row, Cell } from "./ui";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ export const dynamic = "force-dynamic";
  * usage is growing, where new people get stuck, and what they say — then the raw totals.
  */
 export default async function AdminInsightsPage() {
-  const [ov, fr, wk, fn, us, st, sc, fb, uf] = await Promise.all([
+  const [ov, fr, wk, fn, us, st, sc, fb, uf, fd] = await Promise.all([
     getOverview(),
     getFriction(),
     getWeeklyActive(),
@@ -30,6 +31,7 @@ export default async function AdminInsightsPage() {
     getScreenUsage(),
     getFeedbackResponses(),
     getUsageFriction(),
+    getFunnelBySpecialty(),
   ]);
 
   if (ov.error) return <ErrorNote message={ov.error} />;
@@ -53,6 +55,8 @@ export default async function AdminInsightsPage() {
   const prevFull = weeks.at(-3)?.active_users ?? 0;
   const top = fn.rows[0]?.users ?? 0;
   const feedback = tallyFeedback(fb.rows);
+  // Patch 0105; until it is run the RPC errors and the table is simply not shown.
+  const departments = fd.error ? [] : funnelByDepartment(fd.rows);
 
   return (
     <>
@@ -126,6 +130,26 @@ export default async function AdminInsightsPage() {
           </div>
         )}
       </Section>
+
+      {departments.length > 0 && (
+        <Section
+          title="By department"
+          subtitle="The same steps, per department. Someone in units of two departments counts in both."
+        >
+          <Table head={["Department", "Signed up", "Unit", "Patient", "Recorded", "Came back", "Last 14d"]}>
+            {departments.map((d) => (
+              <Row key={d.specialty}>
+                <Cell>{d.label}</Cell>
+                {d.counts.map((n, i) => (
+                  <Cell key={i} num muted={n === 0}>
+                    {n}
+                  </Cell>
+                ))}
+              </Row>
+            ))}
+          </Table>
+        </Section>
+      )}
 
       <Section title="What people say" subtitle={`From ${feedback.total} feedback form response${feedback.total === 1 ? "" : "s"}.`}>
         {feedback.total === 0 ? (

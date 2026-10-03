@@ -6,7 +6,8 @@
  * it and a link to the tab that shows the detail, so the owner can check before acting.
  */
 
-import type { FeatureUsage, FeedbackResponse, Friction, FunnelStep, ScreenUsage, SttRow, UsageFriction, WeekActive } from "./admin";
+import type { FeatureUsage, FeedbackResponse, Friction, FunnelBySpecialty, FunnelStep, ScreenUsage, SttRow, UsageFriction, WeekActive } from "./admin";
+import { getSpecialtyPack, isSpecialtyKey } from "./specialty";
 
 export type Priority = "high" | "medium" | "low";
 export type Recommendation = { priority: Priority; title: string; evidence: string; action: string; href: string };
@@ -60,6 +61,25 @@ const FEATURE_SCREENS = [
   "/register/:id",
   "/confirm",
 ];
+
+/** A department's display name. 'none' is people in no unit; an unknown key shows as-is. */
+export function departmentLabel(key: string): string {
+  if (key === "none") return "Not in a unit";
+  return isSpecialtyKey(key) ? getSpecialtyPack(key).label : key.replace(/_/g, " ");
+}
+
+/** admin_funnel_by_specialty rows → one row per department, counts in step order, biggest first. */
+export function funnelByDepartment(rows: FunnelBySpecialty[]) {
+  const by = new Map<string, number[]>();
+  for (const r of [...rows].sort((a, b) => a.step - b.step)) {
+    if (!by.has(r.specialty)) by.set(r.specialty, []);
+    by.get(r.specialty)!.push(Number(r.users));
+  }
+  return [...by.entries()]
+    .filter(([, counts]) => (counts[0] ?? 0) > 0)
+    .map(([specialty, counts]) => ({ specialty, label: departmentLabel(specialty), counts }))
+    .sort((a, b) => b.counts[0] - a.counts[0]);
+}
 
 export function screenLabel(path: string): string {
   // Learn ids are slugs, not uuids, so page-view.tsx leaves them in; collapse them here.
