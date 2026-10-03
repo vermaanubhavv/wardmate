@@ -66,6 +66,14 @@ describe("clerkingFormatFor", () => {
       "Provisional diagnosis", "Plan",
     ]);
   });
+  it("drops the menstrual step only for a recorded male, on every unit", () => {
+    for (const unit of ["internal_medicine", "general_surgery"]) {
+      const has = (sex?: string | null) =>
+        clerkingFormatFor(unit, sex).some((f) => /menstrual/i.test(f.title));
+      expect(has("M")).toBe(false);
+      expect(has("F")).toBe(has(null));
+    }
+  });
   it("medicine lists CVS and CNS, no local examination", () => {
     const t = titles("internal_medicine");
     expect(t).toContain("Cardiovascular system");
