@@ -1,4 +1,6 @@
 import type { ExtractedObservation } from "@/lib/extract";
+import type { ReadLabValue } from "@/lib/read-lab-photo";
+import type { RegisterRow } from "@/lib/read-register";
 import { askJev, chosenProbability, type JevAnswers } from "@/lib/jev";
 import { log } from "@/lib/observability";
 import { isActionableTask } from "@/lib/task-classification";
@@ -122,4 +124,51 @@ export function applyJudgments(observations: ExtractedObservation[], answers: Je
       o.task_category = category.choice as TaskCategoryJudgment;
     }
   });
+}
+
+/** A read value in the shape judgeObservations asks about. needs_confirmation starts false so
+ *  the "does the quote say it" question is asked; the caller reads the answer back. */
+function asObservation(kind: ExtractedObservation["kind"], label: string, value: string, quote: string): ExtractedObservation {
+  return {
+    kind, label, value_text: value, value_num: null, unit: null, source_quote: quote,
+    needs_confirmation: false, urgency: null, pac_verdict: null,
+  };
+}
+
+/**
+ * Lab photo (lib/read-lab-photo.ts): every value is amber already, so a value its own printed
+ * line does not support — the neighbouring line's number, a range read as the result — is
+ * marked `uncertain`, which every caller shows as "check against the photo" and which keeps a
+ * misread range from teaching the ward its lab ranges. Checked on photo lines in
+ * scripts/eval-supported.ts --lines: 8/8 misreads caught, 0/8 false, at the same bar.
+ */
+export async function judgeLabValues(values: ReadLabValue[]): Promise<void> {
+  const obs = values.map((v) => asObservation(v.category === "vital" ? "vital" : "lab", v.label, v.value_text, v.source_quote));
+  await judgeObservations(obs);
+  obs.forEach((o, i) => {
+    if (o.needs_confirmation) values[i].uncertain = true;
+  });
+}
+
+/**
+ * Register (lib/read-register.ts), one Jev request per row as dictation sends one note: a
+ * finding or plan its own row does not say marks the row `uncertain` ("check against the
+ * register photo"), and each plan gets the to-do rescue and "By type" bucket that dictated
+ * plans get — register plans were the ones without them.
+ */
+export async function judgeRegisterRows(rows: RegisterRow[]): Promise<void> {
+  await Promise.all(
+    rows.map(async (row) => {
+      const obs = [
+        ...row.findings.map((f) => asObservation("note", f.label, f.value_text, row.source_quote)),
+        ...row.plans.map((p) => asObservation("plan", "plan", p, row.source_quote)),
+      ];
+      if (obs.length === 0) return;
+      await judgeObservations(obs);
+      if (obs.some((o) => o.needs_confirmation)) row.uncertain = true;
+      row.plan_judgments = obs
+        .slice(row.findings.length)
+        .map((o) => ({ task_open: o.task_open ?? null, task_category: o.task_category ?? null }));
+    })
+  );
 }
