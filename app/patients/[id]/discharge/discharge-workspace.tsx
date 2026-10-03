@@ -23,6 +23,7 @@ import { buildConditionProse } from "@/lib/discharge-compile";
 import { runDischargeChecks, type DischargeCheckContext } from "@/lib/discharge-checks";
 import type { DischargeCheck } from "@/lib/discharge-checks";
 import FormularyLink from "./formulary-link";
+import LiveDictation, { DictateButton, routeVia, type LiveLine, type LiveSection } from "../live-dictation";
 import type { DischargeProfile } from "@/lib/specialty/discharge";
 import type { FinalFix } from "@/lib/final-check";
 import { Field, Area, StringList, SuggestField, SelectField, SegmentedField } from "./discharge-fields";
@@ -380,6 +381,47 @@ export default function DischargeWorkspace({
       approvedAt: null,
       approvedBy: null,
     });
+  }
+
+  // Live dictation. Free-text sections take the words straight into the draft (and autosave
+  // them like any edit — an AI section loses its approval, exactly as when typed); drugs, the
+  // diagnosis and anything unplaced are shown for the resident to put on their card.
+  const [live, setLive] = useState<LiveSection[] | null>(null);
+  const liveSections = (): LiveSection[] => [
+    { key: "indication", label: "Indication for admission", existing: draft.indicationForAdmission.text },
+    { key: "diagnoses", label: "Diagnosis", existing: draft.diagnoses.map((d) => d.text).filter(Boolean).join("; "), held: true },
+    { key: "clinicalCourse", label: "Clinical course", existing: draft.clinicalCourse.text },
+    { key: "medications", label: "Discharge medications", held: true, drug: true },
+    { key: "condition", label: "Condition at discharge", existing: draft.conditionAtDischarge.freeText ?? "" },
+    { key: "primaryCareActions", label: "For the local doctor", existing: draft.primaryCareActions.join("; ") },
+    { key: "patientActions", label: "Follow-up", existing: draft.patientActions.join("; ") },
+    { key: "other", label: "Other — place by hand", held: true },
+  ];
+  function applyDictation(lines: LiveLine[]) {
+    const add = (prev: string, t: string) => (prev.trim() ? `${prev.trim()} ${t}` : t);
+    const touched = new Set<DischargeSectionId>();
+    setDraft((d) => {
+      let n = d;
+      for (const { section, text } of lines) {
+        if (section === "indication") {
+          n = { ...n, indicationForAdmission: { ...n.indicationForAdmission, text: add(n.indicationForAdmission.text, text), source: "resident", approvedAt: null, approvedBy: null } };
+          touched.add("indication");
+        } else if (section === "clinicalCourse") {
+          n = { ...n, clinicalCourse: { ...n.clinicalCourse, text: add(n.clinicalCourse.text, text), source: "resident", approvedAt: null, approvedBy: null } };
+          touched.add("clinicalCourse");
+        } else if (section === "condition") {
+          n = { ...n, conditionAtDischarge: { ...n.conditionAtDischarge, freeText: add(n.conditionAtDischarge.freeText ?? "", text) } };
+          touched.add("conditionAtDischarge");
+        } else if (section === "primaryCareActions" || section === "patientActions") {
+          n = { ...n, [section]: [...n[section], text] };
+          touched.add(section);
+        }
+      }
+      return n;
+    });
+    if (touched.size === 0) return;
+    setDirty((s) => new Set([...s, ...touched]));
+    scheduleSave();
   }
 
   /** Move between cards. Autosave has the card being left; navigation never waits. */
@@ -1331,6 +1373,24 @@ export default function DischargeWorkspace({
 
   return (
     <div className="flex flex-col gap-3 px-4 pb-[var(--bar-height)]">
+      {live && (
+        <LiveDictation
+          patientId={patientId}
+          title="Dictating the discharge"
+          example="e.g. “admitted with acute appendicitis… underwent lap appendicectomy on day one, uneventful recovery… review in surgery OPD after a week…”"
+          sections={live}
+          route={routeVia(patientId, live)}
+          onLines={applyDictation}
+          onClose={() => setLive(null)}
+        />
+      )}
+      {!finalised && !live && (
+        <DictateButton
+          title="Dictate the discharge"
+          sub="Speak the summary — each part fills its section as you talk."
+          onClick={() => setLive(liveSections())}
+        />
+      )}
       {finalised && (
         <div className="ios-group flex items-center justify-between px-4 py-3">
           <span className="text-subhead font-medium text-accent">Finalised</span>

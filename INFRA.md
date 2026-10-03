@@ -36,7 +36,6 @@ NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 ANTHROPIC_API_KEY
 DEEPGRAM_API_KEY
-NEXT_PUBLIC_LIVE_DICTATION
 NEXT_PUBLIC_SENTRY_DSN     # empty = Sentry off; a real DSN turns it on. Not a secret.
 SENTRY_ORG                # build-time only, for source-map upload
 SENTRY_PROJECT            # build-time only
@@ -45,13 +44,13 @@ SENTRY_AUTH_TOKEN         # build-time only, IS a secret — set in Vercel, not 
 
 `DEEPGRAM_API_KEY` is used only on the server (the API routes call `lib/stt`); it is never sent to the browser.
 
-**Live case-history dictation** (`NEXT_PUBLIC_LIVE_DICTATION=1`) adds a "Dictate the whole
-clerking" flow: the browser streams the microphone straight to Deepgram Nova-3 Medical and
-each pause-delimited thought is sorted into its card as the resident speaks. It needs
-`DEEPGRAM_API_KEY` (it mints a 30-second Deepgram token in
-`/api/transcribe/live-token`; the long-lived key never reaches the browser). Every other
-"Speak" button is unaffected and uses a prerecorded Deepgram pass. Leave the flag unset to hide
-the feature.
+**Live dictation** ("Dictate the whole clerking", "Dictate today's note", "Dictate the
+discharge") streams the microphone straight to Deepgram Nova-3 Medical; at each pause the
+thought is sorted into its section and shown filling the form while the resident speaks
+(`app/patients/[id]/live-dictation.tsx`). It needs `DEEPGRAM_API_KEY` (a 30-second token is
+minted in `/api/transcribe/live-token`; the long-lived key never reaches the browser) and
+`ANTHROPIC_API_KEY` for the sorting. Without the Deepgram key the panel says so and the card
+Speak buttons still work.
 
 The Supabase key is the **publishable** (anon) key, not the service role key — deliberately.
 The app never uses a service-role key from application code; every read and write goes through

@@ -6,8 +6,9 @@ import { buildDeepgramParams } from "@/lib/transcription/buildDeepgramUrl";
  *
  * This is the ONLY streaming path in WardMate. Every other "Speak" button records a whole clip
  * and POSTs it to /api/transcribe (one prerecorded Deepgram pass).
- * That path is untouched; this one exists for the case-history "dictate the whole clerking"
- * flow, where the words have to land in the right card while the resident is still talking.
+ * That path is untouched; this one serves the bedside mic and the live dictation panel
+ * (app/patients/[id]/live-dictation.tsx — clerking, progress note, discharge), where the words
+ * have to land in the right section while the resident is still talking.
  *
  * Auth: the server mints a 30-second Deepgram token (/api/transcribe/live-token) and the
  * browser opens the socket with it as a WebSocket subprotocol — `new WebSocket(url, ["token",
@@ -89,8 +90,9 @@ export async function openLiveDictation(
     extra: {
       smart_format: true,
       interim_results: true,
-      // A finalised utterance is emitted after ~1.5 s of silence; UtteranceEnd fires with it.
-      utterance_end_ms: 1500,
+      // UtteranceEnd after 1 s of silence (Deepgram's minimum) — each thought lands in its
+      // section as soon as the resident pauses.
+      utterance_end_ms: 1000,
       vad_events: true,
     },
   });

@@ -175,7 +175,9 @@ export async function replaceTodayNoteExam(
  */
 export async function replaceTodayNoteVitals(
   patientId: string,
-  entries: { label: string; value: string | null }[]
+  entries: { label: string; value: string | null }[],
+  /** Dictated rather than typed — every reading stays amber until confirmed. */
+  dictated = false
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient();
   const user = await currentUser(supabase);
@@ -212,7 +214,7 @@ export async function replaceTodayNoteVitals(
         label: e.label,
         value_text: e.value,
         source_quote: e.value,
-        ...confirmation(keep.has(`${e.label}\n${e.value}`), user.id, now),
+        ...confirmation(dictated || keep.has(`${e.label}\n${e.value}`), user.id, now),
       }))
     );
     if (error) return { ok: false, error: error.message };
@@ -232,7 +234,9 @@ export async function replaceTodayNoteVitals(
  */
 export async function replaceActiveMedications(
   patientId: string,
-  lines: string[]
+  lines: string[],
+  /** Lines that came from live dictation — amber until confirmed, like a preset's dose. */
+  dictated: string[] = []
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient();
   const user = await currentUser(supabase);
@@ -263,7 +267,7 @@ export async function replaceActiveMedications(
         label: (text.split(/[,0-9]/)[0] || text).trim().slice(0, 60) || text.slice(0, 60),
         value_text: text,
         source_quote: text,
-        ...confirmation(keep.has(text) || MED_PRESETS.includes(text), user.id, now),
+        ...confirmation(keep.has(text) || MED_PRESETS.includes(text) || dictated.includes(text), user.id, now),
       }))
     );
     if (error) return { ok: false, error: error.message };
