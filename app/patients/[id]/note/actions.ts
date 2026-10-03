@@ -298,11 +298,13 @@ export async function applyCompiledNote(
     ...config.examSections.map((s): [string, string, string] => [s.label, "exam", field(s.id)]),
     ["assessment", "note", field("assessment")],
   ];
+  // Approved wording, but AI-written: any line carrying a number (a value, a dose) saves amber,
+  // the same as a "Same as yesterday" fill — numbers and doses stay unconfirmed until confirmed.
   for (const [label, kind, text] of map) {
-    const err = await rewriteToday(supabase, patientId, user.id, label, kind, text ? [text] : []);
+    const err = await rewriteToday(supabase, patientId, user.id, label, kind, text ? [text] : [], true);
     if (err) return { ok: false, error: err };
   }
-  const perr = await rewriteToday(supabase, patientId, user.id, "plan", "plan", compiled.plan);
+  const perr = await rewriteToday(supabase, patientId, user.id, "plan", "plan", compiled.plan, true);
   if (perr) return { ok: false, error: perr };
 
   revalidateEverywhere(patientId);
