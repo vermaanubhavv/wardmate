@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { recommend, screenLabel, groupScreens } from "@/lib/admin-insights";
+import { recommend, screenLabel, groupScreens, funnelByDepartment } from "@/lib/admin-insights";
 
 const empty = { funnel: [], weeks: [], usage: [], stt: [], screens: [], friction: [], feedback: [] };
 
@@ -59,5 +59,16 @@ describe("admin insights", () => {
     expect(recs[0].title).toBe("Ward round: round dictations thrown away");
     expect(recs[0].evidence).toContain("4 of 7 (57%)");
     expect(recs.some((r) => r.title.startsWith("Discharge"))).toBe(false);
+  });
+
+  it("groups the department funnel, labels departments, and drops empty ones", () => {
+    const row = (specialty: string, step: number, users: number) => ({ specialty, step, label: "", users });
+    const out = funnelByDepartment([
+      row("internal_medicine", 2, 3), row("internal_medicine", 1, 4),
+      row("general_surgery", 1, 9), row("general_surgery", 2, 9),
+      row("none", 1, 0),
+    ]);
+    expect(out.map((d) => d.label)).toEqual(["General Surgery", expect.any(String)]);
+    expect(out[1].counts).toEqual([4, 3]);
   });
 });

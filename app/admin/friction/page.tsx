@@ -1,12 +1,23 @@
-import { getFriction, getUsageFriction, type UsageFriction } from "@/lib/admin";
+import Link from "next/link";
+import { getFriction, getFunnelBySpecialty, getUsageFriction, getUsageFrictionFor, type UsageFriction } from "@/lib/admin";
+import { funnelByDepartment } from "@/lib/admin-insights";
+import { isSpecialtyKey } from "@/lib/specialty";
 import { Empty, ErrorNote, Section, SeverityDot, ago } from "../ui";
 
 export const dynamic = "force-dynamic";
 
 const ORDER: Record<string, number> = { high: 3, medium: 2, low: 1 };
 
-export default async function AdminFrictionPage() {
-  const [{ rows, error }, usage] = await Promise.all([getFriction(), getUsageFriction()]);
+export default async function AdminFrictionPage({ searchParams }: { searchParams: Promise<{ dept?: string }> }) {
+  const { dept: asked } = await searchParams;
+  const dept = asked === "none" || isSpecialtyKey(asked) ? asked! : "";
+  const [{ rows, error }, usage, fd] = await Promise.all([
+    getFriction(),
+    dept ? getUsageFrictionFor(dept) : getUsageFriction(),
+    getFunnelBySpecialty(),
+  ]);
+  // Departments come from patch 0105; until it is run the chips are hidden and this is "All".
+  const departments = fd.error ? [] : funnelByDepartment(fd.rows);
   if (error) return <ErrorNote message={error} />;
 
   const usageSection = (
@@ -15,9 +26,23 @@ export default async function AdminFrictionPage() {
         title="Seen during use · last 30 days"
         subtitle="Places the app got in someone's way while they were using it — failures, corrections, screens opened and abandoned, work thrown away. Worst first."
       >
+        {departments.length > 0 && (
+          <div className="-mx-4 mb-2 overflow-x-auto px-4">
+            <div className="flex gap-1.5 whitespace-nowrap pb-1">
+              <Chip href="/admin/friction" active={!dept}>All departments</Chip>
+              {departments.map((d) => (
+                <Chip key={d.specialty} href={`/admin/friction?dept=${d.specialty}`} active={dept === d.specialty}>
+                  {d.label}
+                </Chip>
+              ))}
+            </div>
+          </div>
+        )}
         {usage.error ? (
           <p className="ios-group px-4 py-3 text-footnote text-warn-fg">
-            Unavailable — run <code>supabase/patches/0101_admin_activity_feed_usage_friction.sql</code> ({usage.error}).
+            Unavailable — run{" "}
+            <code>supabase/patches/{dept ? "0105_admin_by_specialty.sql" : "0101_admin_activity_feed_usage_friction.sql"}</code> (
+            {usage.error}).
           </p>
         ) : usage.rows.length === 0 ? (
           <p className="ios-group px-4 py-3 text-footnote text-muted">Nothing got in anyone&apos;s way in the last 30 days.</p>
@@ -98,5 +123,16 @@ function UsageRow({ f }: { f: UsageFriction }) {
         {f.last_seen && <div className="text-caption2 text-muted/80">last {ago(f.last_seen)}</div>}
       </div>
     </div>
+  );
+}
+
+function Chip({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className={`rounded-full px-3 py-1 text-footnote ${active ? "bg-accent text-white" : "bg-chip text-foreground/70 active:opacity-60"}`}
+    >
+      {children}
+    </Link>
   );
 }
