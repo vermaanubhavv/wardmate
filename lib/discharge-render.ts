@@ -326,3 +326,17 @@ export function formatDischargePlainText(doc: DischargeDocument): string {
 }
 
 export { medLine, procedureLines };
+
+/** The one Advice list the sheet and the Word download both print, in reading order:
+ *  what the patient does, the advice modules, what the primary-care doctor does, then
+ *  when to come back. Empty parts drop out. */
+export function adviceLines(doc: DischargeDocument): { label?: string; text: string }[] {
+  return [
+    ...doc.patientActions.map((text) => ({ text })),
+    ...(doc.advice ?? []).map((a) => ({ label: a.module, text: a.text })),
+    ...doc.primaryCareActions.map((text) => ({ label: "Primary care", text })),
+    ...(doc.redFlags && doc.redFlags.length > 0
+      ? [{ label: "Seek medical attention if", text: doc.redFlags.join("; ") }]
+      : []),
+  ];
+}
