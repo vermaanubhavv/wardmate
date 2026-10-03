@@ -195,8 +195,8 @@ function buildBody(doc: DischargeDocument, logoBytes: Buffer | null): (Paragraph
     })
   );
 
-  // 2. Encounter Details
-  out.push(heading("Encounter Details"));
+  // 2. Admission Details
+  out.push(heading("Admission Details"));
   for (const row of doc.encounter) out.push(new Paragraph({ children: [bold(`${row.label}: `), plain(row.value || BLANK)] }));
 
   // 3. Indication for Admission

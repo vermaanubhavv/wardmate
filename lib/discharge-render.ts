@@ -246,7 +246,7 @@ export function formatDischargePlainText(doc: DischargeDocument): string {
   out.push(`Age: ${doc.patient.age || BLANK}    Sex: ${doc.patient.sex || BLANK}`);
   out.push(`Contact: ${doc.patient.contact || BLANK}`);
 
-  heading("Encounter details");
+  heading("Admission details");
   for (const row of doc.encounter) out.push(`  ${row.label}: ${row.value || BLANK}`);
 
   heading("Indication for admission");

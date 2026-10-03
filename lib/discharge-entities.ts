@@ -40,7 +40,7 @@ type IndicationForAdmission = SectionMeta & {
   text: string;
 };
 
-// --- 2. Encounter Details ------------------------------------------------------------------
+// --- 2. Admission Details ------------------------------------------------------------------
 
 type EncounterDetails = {
   admittedAt: string | null;
@@ -346,7 +346,7 @@ export const DISCHARGE_SECTIONS: {
   required: boolean;
 }[] = [
   { id: "indication", title: "Indication for Admission", aiGenerated: true, required: false },
-  { id: "encounter", title: "Encounter Details", aiGenerated: false, required: false },
+  { id: "encounter", title: "Admission Details", aiGenerated: false, required: false },
   { id: "diagnoses", title: "Diagnoses", aiGenerated: false, required: true },
   { id: "procedures", title: "Operation / Procedures", aiGenerated: false, required: false },
   { id: "clinicalCourse", title: "Clinical Course", aiGenerated: true, required: true },

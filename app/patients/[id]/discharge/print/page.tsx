@@ -58,7 +58,7 @@ export default async function DischargePrintPage({ params }: { params: Promise<{
       <section className="flex flex-col gap-2 px-4 pb-10 print:hidden">
         <PrintSections
           sections={[
-            { id: "encounter", title: "Encounter Details" },
+            { id: "encounter", title: "Admission Details" },
             { id: "indication", title: "Indication for Admission" },
             { id: "diagnoses", title: "Diagnoses" },
             ...(doc.procedures.length > 0 ? [{ id: "procedures", title: "Operation / Procedures" }] : []),
