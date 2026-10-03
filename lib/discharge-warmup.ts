@@ -6,17 +6,24 @@
  *
  * Client-side and per page load: a full reload loses it, and the workspace then drafts as before.
  */
+import { startWait } from "@/lib/track";
+
 type WarmupResult = Record<string, unknown> | null;
 const inFlight = new Map<string, Promise<WarmupResult>>();
 
 export function startDischargeWarmup(patientId: string): Promise<WarmupResult> {
+  const stop = startWait("discharge_warmup");
   const p = fetch(`/api/patients/${patientId}/discharge/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ section: "all" }),
   })
     .then((r) => (r.ok ? (r.json() as Promise<Record<string, unknown>>) : null))
-    .catch(() => null);
+    .catch(() => null)
+    .then((data) => {
+      stop(!!data);
+      return data;
+    });
   inFlight.set(patientId, p);
   return p;
 }
