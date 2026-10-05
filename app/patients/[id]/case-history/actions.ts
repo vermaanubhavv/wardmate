@@ -293,7 +293,12 @@ export async function appendCaseHistoryDictation(
   const entryId = await manualEntryId(supabase, patientId, user.id);
   if (!entryId) return { ok: false, error: "Could not open the case history.", written: 0 };
   const now = new Date().toISOString();
-  const stamp = { needs_confirmation: false, confirmed_at: now, confirmed_by: user.id };
+  // Numbers, drugs and doses stay amber until the resident confirms them; the rest is their
+  // own words, filed as said.
+  const stamp = (text: string, section: string) =>
+    section === "medication" || /\d/.test(text)
+      ? { needs_confirmation: true, confirmed_at: null, confirmed_by: null }
+      : { needs_confirmation: false, confirmed_at: now, confirmed_by: user.id };
 
   const rows: Record<string, unknown>[] = [];
 
@@ -302,10 +307,10 @@ export async function appendCaseHistoryDictation(
   for (const s of clean) {
     if (s.section === "hopi") {
       const value = `${s.complaint || "Presenting illness"}: ${s.text}`;
-      rows.push({ entry_id: entryId, patient_id: patientId, kind: "note", label: "history of presenting illness", value_text: value, source_quote: value, ...stamp });
+      rows.push({ entry_id: entryId, patient_id: patientId, kind: "note", label: "history of presenting illness", value_text: value, source_quote: value, ...stamp(value, s.section) });
     } else if (HISTORY_SECTION_LABEL[s.section]) {
       const label = HISTORY_SECTION_LABEL[s.section];
-      rows.push({ entry_id: entryId, patient_id: patientId, kind: "note", label, value_text: s.text, source_quote: s.text, ...stamp });
+      rows.push({ entry_id: entryId, patient_id: patientId, kind: "note", label, value_text: s.text, source_quote: s.text, ...stamp(s.text, s.section) });
     }
   }
 
@@ -339,13 +344,13 @@ export async function appendCaseHistoryDictation(
         const merged = [existing.value_text?.trim(), addition].filter(Boolean).join("; ");
         const { error } = await supabase
           .from("observations")
-          .update({ value_text: merged, source_quote: merged })
+          .update({ value_text: merged, source_quote: merged, ...(/\d/.test(addition) ? stamp(addition, section) : {}) })
           .eq("id", existing.id);
         if (error) return { ok: false, error: error.message, written: 0 };
       } else {
         const { error } = await supabase
           .from("observations")
-          .insert({ entry_id: entryId, patient_id: patientId, kind: "exam", label, value_text: addition, source_quote: addition, ...stamp });
+          .insert({ entry_id: entryId, patient_id: patientId, kind: "exam", label, value_text: addition, source_quote: addition, ...stamp(addition, section) });
         if (error) return { ok: false, error: error.message, written: 0 };
       }
     }
