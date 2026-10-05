@@ -380,6 +380,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           <ConfirmDictation
             pending={pending}
             patientId={patient.id}
+            wardId={patient.ward_id}
             computedDay={day.n}
             procedureChoices={templateChoices.map((c) => c.label)}
           />
