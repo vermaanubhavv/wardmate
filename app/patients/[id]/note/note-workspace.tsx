@@ -33,12 +33,14 @@ export type NoteObs = { kind: string; label: string; value: string | null };
 const SENSORIUM_ALIASES = ["sensorium", "cns", "gcs"];
 const SENSORIUM = ["Conscious & oriented", "Drowsy", "Altered sensorium", "Irritable"];
 const ASSESSMENT = ["Satisfactory", "Stable", "Improving", "Static", "Deteriorating"];
+// Placeholders are a dash, never a plausible reading: a grey "120/80" in an empty field reads
+// as a recorded value at a glance on a phone.
 const SHARED_VITALS: NoteVitalField[] = [
-  { key: "BP", label: "BP", ph: "120/80", aliases: ["bp", "blood pressure"] },
-  { key: "PR", label: "PR", ph: "84 /min", aliases: ["pr", "pulse", "pulse rate"] },
-  { key: "RR", label: "RR", ph: "18 /min", aliases: ["rr", "respiratory rate"] },
-  { key: "Temp", label: "Temp", ph: "Afebrile", aliases: ["temp", "temperature"] },
-  { key: "SpO2", label: "SpO₂", ph: "98% RA", aliases: ["spo2", "saturation", "oxygen saturation"] },
+  { key: "BP", label: "BP", ph: "—", aliases: ["bp", "blood pressure"] },
+  { key: "PR", label: "PR", ph: "—", aliases: ["pr", "pulse", "pulse rate"] },
+  { key: "RR", label: "RR", ph: "—", aliases: ["rr", "respiratory rate"] },
+  { key: "Temp", label: "Temp", ph: "—", aliases: ["temp", "temperature"] },
+  { key: "SpO2", label: "SpO₂", ph: "—", aliases: ["spo2", "saturation", "oxygen saturation"] },
   { key: "GRBS", label: "GRBS", ph: "—", aliases: ["grbs", "rbs", "cbg"] },
   // Anything here means the patient is on the ICU/HDU — it flags them Critical on the ward
   // list. Free text so the resident can note the support ("on noradrenaline 0.08", "HFNC").

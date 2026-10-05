@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { proofreadDischargeAction } from "./actions";
+import { startWait } from "@/lib/track";
 
 /**
  * Print, with Sonnet's proofread (lib/final-check.ts) started the moment the sheet opens, so it
@@ -15,14 +16,16 @@ export default function DischargePrintButton({ patientId }: { patientId: string 
   const started = useRef(false);
   const [checking, setChecking] = useState(true);
   const [refreshing, startRefresh] = useTransition();
-  const printWhenReady = useRef(false);
+  const printWhenReady = useRef<((ok?: boolean) => void) | null>(null);
   const [waiting, setWaiting] = useState(false);
 
   useEffect(() => {
     if (started.current) return;
     started.current = true;
+    const stop = startWait("discharge_proofread");
     proofreadDischargeAction(patientId)
-      .catch(() => ({ changed: false }))
+      .then((r) => (stop(true), r))
+      .catch(() => (stop(false), { changed: false }))
       .then(({ changed }) => {
         setChecking(false);
         if (changed) startRefresh(() => router.refresh());
@@ -32,14 +35,21 @@ export default function DischargePrintButton({ patientId }: { patientId: string 
   // window.print() only once the proofread sheet has rendered.
   useEffect(() => {
     if (printWhenReady.current && !checking && !refreshing) {
-      printWhenReady.current = false;
+      printWhenReady.current();
+      printWhenReady.current = null;
       window.print();
     }
   }, [checking, refreshing]);
 
+  // Every press is timed, so the console shows how often Print opens at once and how long it
+  // waits when it does not.
   function onPrint() {
-    if (!checking && !refreshing) return window.print();
-    printWhenReady.current = true;
+    const stop = startWait("discharge_print");
+    if (!checking && !refreshing) {
+      stop();
+      return window.print();
+    }
+    printWhenReady.current = stop;
     setWaiting(true);
   }
 

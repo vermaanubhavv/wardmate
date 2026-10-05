@@ -202,13 +202,15 @@ describe("internal medicine counts by the hospital day", () => {
     expect(p.dayCount({ post_op_day: null, admission_day: 3 })).toEqual({
       clock: "admission",
       n: 3,
-      text: "Day 3",
+      text: "HD 4",
     });
+    // The admission date (admission_day 0) is hospital day 1, never "Day 0".
+    expect(p.dayCount({ post_op_day: null, admission_day: 0 }).text).toBe("HD 1");
     // A bedside procedure (a tap, a line) must not flip a medicine patient to POD 0.
-    expect(p.dayCount({ post_op_day: 0, admission_day: 4 }).text).toBe("Day 4");
+    expect(p.dayCount({ post_op_day: 0, admission_day: 4 }).text).toBe("HD 5");
     // Stray chemo fields (wrong-pack data) are ignored too.
     expect(p.dayCount({ post_op_day: null, admission_day: 5, cycle_day: 2, cycle_number: 1 }).text)
-      .toBe("Day 5");
+      .toBe("HD 6");
   });
 
   it("its extraction prompt is a physician's note and keeps every shared safety rule", () => {

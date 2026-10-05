@@ -32,3 +32,13 @@ export function track(
     // ignore
   }
 }
+
+/**
+ * Time something the resident sits and waits on — an AI draft, a save, Finalise, Print — and
+ * record it as one `wait` event: `{ what, ms, ok }`. Call the returned function when the wait
+ * ends. Read back on the admin Events tab (admin_wait_summary, patch 0105).
+ */
+export function startWait(what: string): (ok?: boolean) => void {
+  const t0 = performance.now();
+  return (ok = true) => track("wait", { what, ms: Math.round(performance.now() - t0), ok });
+}

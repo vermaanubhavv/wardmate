@@ -33,7 +33,7 @@ export default async function NewCaseHistoryPage({
   const [{ data: patient }, { count: existing }] = await Promise.all([
     supabase
       .from("current_patients")
-      .select("id, ward_id, display_name, bed")
+      .select("id, ward_id, display_name, bed, sex")
       .eq("id", id)
       .maybeSingle(),
     supabase
@@ -75,6 +75,7 @@ export default async function NewCaseHistoryPage({
             patientId={id}
             variant="speak"
             specialty={specialty}
+            sex={patient.sex}
             savedHref={`/patients/${id}/case-history`}
           />
         </div>

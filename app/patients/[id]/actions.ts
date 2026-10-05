@@ -197,6 +197,8 @@ export async function updateObservation(formData: FormData) {
   const id = String(formData.get("observation_id") ?? "");
   const patientId = String(formData.get("patient_id") ?? "");
   const value = String(formData.get("value_text") ?? "").trim();
+  // Set only by the structured medication editor, where changing the drug changes the label.
+  const label = String(formData.get("label") ?? "").trim();
   if (!id || !patientId) return;
 
   const supabase = await createClient();
@@ -208,13 +210,14 @@ export async function updateObservation(formData: FormData) {
   // An emptied value deletes the observation rather than storing a blank: a value the
   // resident has cleared is one the app should never have recorded, and a row reading
   // "temperature:" with nothing after it is worse than no row.
-  if (!value) {
+  if (!value && !label) {
     await supabase.from("observations").delete().eq("id", id).eq("patient_id", patientId);
   } else {
     await supabase
       .from("observations")
       .update({
-        value_text: value,
+        value_text: value || null,
+        ...(label ? { label } : {}),
         needs_confirmation: false,
         confirmed_at: new Date().toISOString(),
         confirmed_by: user.id,

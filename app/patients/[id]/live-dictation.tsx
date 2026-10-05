@@ -75,34 +75,33 @@ export default function LiveDictation({
   const routeBuffered = useCallback(async () => {
     // One fragment at a time; whatever is said meanwhile waits in the buffer and goes next.
     if (routingRef.current) return;
-    const text = finalBufRef.current.trim();
-    if (!text) return;
-    finalBufRef.current = "";
-    setBufText("");
-    setSorting(text);
     routingRef.current = true;
-    setState((s) => (s === "listening" ? "sorting" : s));
-    try {
-      const res = await routeRef.current(text);
-      if (res.error) setMessage(res.error);
-      if (res.lines.length > 0) {
-        const start = countRef.current;
-        countRef.current += res.lines.length;
-        setLines((l) => [...l, ...res.lines.map((x, i) => ({ ...x, n: start + i }))]);
-        setLatest(start);
-        onLinesRef.current?.(res.lines);
-        tableRefs.current[res.lines[0].section]?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-      } else if (!res.error) {
-        setMessage(`Not placed: “${text}” — add it on the card if it matters.`);
+    let text: string;
+    while ((text = finalBufRef.current.trim())) {
+      finalBufRef.current = "";
+      setBufText("");
+      setSorting(text);
+      setState((s) => (s === "listening" ? "sorting" : s));
+      try {
+        const res = await routeRef.current(text);
+        if (res.error) setMessage(res.error);
+        if (res.lines.length > 0) {
+          const start = countRef.current;
+          countRef.current += res.lines.length;
+          setLines((l) => [...l, ...res.lines.map((x, i) => ({ ...x, n: start + i }))]);
+          setLatest(start);
+          onLinesRef.current?.(res.lines);
+          tableRefs.current[res.lines[0].section]?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        } else if (!res.error) {
+          setMessage(`Not placed: “${text}” — add it on the card if it matters.`);
+        }
+      } catch {
+        setMessage(`Could not sort “${text}” — no signal. Add it on the card.`);
       }
-    } catch {
-      setMessage(`Could not sort “${text}” — no signal. Add it on the card.`);
-    } finally {
-      routingRef.current = false;
-      setSorting("");
-      setState((s) => (s === "sorting" ? "listening" : s));
-      if (finalBufRef.current.trim()) void routeBuffered();
     }
+    routingRef.current = false;
+    setSorting("");
+    setState((s) => (s === "sorting" ? "listening" : s));
   }, []);
 
   useEffect(() => {

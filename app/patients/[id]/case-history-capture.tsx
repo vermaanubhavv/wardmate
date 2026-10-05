@@ -27,11 +27,14 @@ export default function CaseHistoryCapture({
   savedHref,
   variant = "menu",
   specialty,
+  sex,
 }: {
   patientId: string;
   /** The unit's department. Picks the "speak" variant's format list — the same examination
    *  cards the workspace walks (lib/specialty/clerking.ts); unset reads as general surgery. */
   specialty?: string | null;
+  /** The patient's recorded sex — a recorded male's list drops the menstrual step. */
+  sex?: string | null;
   /** "menu" — the collapsible photo/dictate control used on the patient page.
    *  "speak" — a dedicated dictation panel: the clerking format checklist beside one big
    *  Speak button, no photo option, no collapsing. Used on the new-clerking screen. */
@@ -135,7 +138,7 @@ export default function CaseHistoryCapture({
         <ol className="ios-group mt-3 divide-y divide-line">
           {/* What a full clerking covers on this unit, in the order it is taken — dictate
               straight down it. Mirrors the workspace's card walk so a spoken note sorts cleanly. */}
-          {clerkingFormatFor(specialty).map((s, i) => (
+          {clerkingFormatFor(specialty, sex).map((s, i) => (
             <li key={s.title} className="flex gap-3 px-4 py-2.5">
               <span className="text-footnote font-semibold tabular-nums text-muted">{i + 1}</span>
               <span>
