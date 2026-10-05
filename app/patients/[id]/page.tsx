@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getActivePatients } from "@/lib/ward";
 import {
   getTemplateForPatient,
   getProcedureLabels,
@@ -20,7 +19,7 @@ import {
   type Observation,
   type PacVerdict,
 } from "@/lib/patient-state";
-import { isIdentifierLabel, stripPatientHonorific, managementChoicesFor } from "@/lib/patients";
+import { compareBeds, isIdentifierLabel, stripPatientHonorific, managementChoicesFor } from "@/lib/patients";
 import { describeWhen, effectiveUrgency } from "@/lib/urgency";
 import BedsideBar from "./bedside-bar";
 import PatientTabs from "./patient-tabs";
@@ -121,7 +120,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
   // The unit's department, resolved once: it decides how this patient's day is counted, which
   // checklist rows the picker offers, and whether the edit dialog shows chemotherapy fields.
-  const pack = getSpecialtyPack(await getWardSpecialtyStored(patient.ward_id));
+  // Started here and awaited inside the batch below, so the reads that do not need it are not
+  // queueing behind it.
+  const packP = getWardSpecialtyStored(patient.ward_id).then(getSpecialtyPack);
 
   // The burn columns (patch 0085) are read in a second, tiny query instead of being named in
   // the select above, and only for a burns unit. The select above runs for EVERY patient on
@@ -130,8 +131,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // burns unit if 0085 has run, so asking here is always safe. Same reasoning as includeChemo
   // in lib/ward.ts, arrived at the other way round — there the pack is known before the query,
   // here it is only known after it.
-  const burns =
-    pack.key === "burns_plastic_surgery"
+  const burnsP = packP.then(async (p) =>
+    p.key === "burns_plastic_surgery"
       ? (
           await supabase
             .from("current_patients")
@@ -139,13 +140,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             .eq("id", patient.id)
             .maybeSingle()
         ).data
-      : null;
-  const patientWithBurn = { ...patient, ...(burns ?? {}) };
+      : null
+  );
 
-  // The next bed in walking order, so finishing one patient and starting the next is one tap
-  // rather than a trip back through the ward list.
   const [
-    { patients: ward },
+    pack,
+    burns,
+    { data: wardBeds },
     { data: entriesData },
     procedures,
     templateChoices,
@@ -155,7 +156,17 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     ,
     { data: dischargeWork },
   ] = await Promise.all([
-      getActivePatients(patient.ward_id, pack.key !== "general_surgery", pack.key === "burns_plastic_surgery"),
+      packP,
+      burnsP,
+      // The next bed in walking order, so finishing one patient and starting the next is one
+      // tap rather than a trip back through the ward list. Only ids and beds: getActivePatients
+      // also pulls every observation and entry on the ward for the list's badges, which this
+      // screen never shows and which grew with the ward — it was most of this page's wait.
+      supabase
+        .from("current_patients")
+        .select("id, bed")
+        .eq("ward_id", patient.ward_id)
+        .eq("status", "active"),
       supabase
         .from("entries")
         .select(
@@ -163,8 +174,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         )
         .eq("patient_id", id)
         .order("recorded_at", { ascending: false }),
-      getProcedureLabels(pack.key),
-      listTemplateChoices(pack.key),
+      packP.then((p) => getProcedureLabels(p.key)),
+      packP.then((p) => listTemplateChoices(p.key)),
       // Needs only fields already in hand from the patient row, so it was queueing behind the
       // batch for nothing.
       getTemplateForPatient(patient),
@@ -185,6 +196,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       // so it can never look empty and re-run the AI over a resident's edits.
       supabase.from("discharge_summaries").select("discharge_worked_on").eq("patient_id", id).maybeSingle(),
     ]);
+  const patientWithBurn = { ...patient, ...(burns ?? {}) };
+  const ward = (wardBeds ?? []).sort((a, b) => compareBeds(a.bed, b.bed));
   const dischargeStatus =
     dischargeRow?.status === "draft" &&
     (dischargeWork as { discharge_worked_on?: boolean } | null)?.discharge_worked_on === false
