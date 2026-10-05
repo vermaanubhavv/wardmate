@@ -47,6 +47,8 @@ import {
 } from "lucide-react";
 import { quoteAddsNothing } from "@/lib/dedupe-tasks";
 import Tick from "./tick";
+import SwipeDelete from "./swipe-delete";
+import PacSelect from "./pac-select";
 import EntryCard from "./entry-card";
 import CaseHistoryCapture from "./case-history-capture";
 import { CaseHistoryCard, ObjectiveSummaryView } from "./case-history-card";
@@ -408,7 +410,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 // arm's length; an ungraded job keeps a bare edge rather than looking decided.
                 const edge = TODO_EDGE[effectiveUrgency(o).urgency ?? "none"];
                 return (
-                <li key={o.id} className={"flex items-start gap-3 border-l-[3px] py-3 pl-3 pr-4 " + edge}>
+                <SwipeDelete
+                  key={o.id}
+                  ids={o.ids}
+                  patientId={patient.id}
+                  label={jobText}
+                  className={"flex items-start gap-3 border-l-[3px] py-3 pl-3 pr-4 " + edge}
+                >
                   <Tick
                     observationId={o.id}
                     patientId={patient.id}
@@ -446,7 +454,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                       </p>
                     )}
                   </div>
-                </li>
+                </SwipeDelete>
                 );
               })}
             </ul>
@@ -589,13 +597,12 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
       <ScoreCards cards={scoreCards} />
 
-      {/* Only before surgery, and shown even when empty — an unanswered PAC is the single
-          thing most likely to stop a list, so "nobody has recorded one" has to be visible
-          rather than inferred from a section that isn't there. It sits below Today rather
-          than above it: the verdict is a standing fact about the admission, and the question
-          asked first at a bedside is still how the patient is this morning. A unit with no
-          operation clock (medicine, oncology…) shows it only once a PAC has been recorded. */}
-      {beforeSurgery && (hasOperationClock(pack) || pac.length > 0) && <PacSection pac={pac} />}
+      {/* Every surgical unit (any unit with an operation clock) always shows it, even empty —
+          an unanswered PAC is the single thing most likely to stop a list. A unit with no
+          operation clock (medicine, oncology…) shows it only before surgery once one is recorded. */}
+      {(hasOperationClock(pack) || (beforeSurgery && pac.length > 0)) && (
+        <PacSection pac={pac} patientId={patient.id} />
+      )}
     </>
   );
 
@@ -756,6 +763,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     extra.length === 0 &&
     medications.length === 0 &&
     !beforeSurgery &&
+    !hasOperationClock(pack) &&
     !allObservations.some((o) => CHARTED_VITALS.has(matchVitalLabel(o.label) ?? "") && o.value_text);
 
   return (
@@ -831,17 +839,15 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             is no operation to lead with, so the diagnosis takes the same top spot instead, with
             the phase of care (Pre-op / Conservative / Workup) as its own parenthetical. */}
         <div className={"ios-group mt-5 border-l-[4px] " + bannerEdge}>
-          {/* The day count and what it counts from, with the note one tap away — read together,
-              because the banner is where the eye lands and "what did we write today" is the
-              question most often asked from it. */}
-          <div className="flex items-start justify-between gap-3 px-4 py-3">
+          {/* Diagnosis, then co-morbidities on the next line. Nothing recorded, nothing shown. */}
+          <div className="px-4 py-2.5">
             <div className="min-w-0">
               {day.clock !== "admission" ? (
                 <>
                   {/* The headline is the day count and what it counts from — "POD 0 Lap chole"
                       on a surgical ward, "C2 D3 R-CHOP" on an oncology one. Both are the one
                       fact a round leads with; the diagnosis drops to a parenthetical below. */}
-                  <p className="text-title3 font-bold leading-snug">
+                  <p className="text-body font-semibold leading-snug">
                     {day.text}
                     {day.clock === "cycle"
                       ? patient.regimen
@@ -851,19 +857,19 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                         ? ` ${procedure}`
                         : ""}
                   </p>
+                  {(diagnosis ?? derivedDiagnosis?.text) && (
                   <p className="mt-0.5 text-footnote text-muted">
                     {/* A derived diagnosis reads exactly like a recorded one. It is a fixed
                         mapping from the operation — see lib/diagnosis-from-procedure.ts — and
                         the unit reads "lap chole" as gall stone disease without being told so
                         every time it opens a patient. Nothing is stored either way. */}
-                    ({diagnosis ?? derivedDiagnosis?.text ?? "diagnosis not recorded"})
+                    ({diagnosis ?? derivedDiagnosis?.text})
                   </p>
+                  )}
                 </>
               ) : (
                 <>
-                  <p className="text-title3 font-bold leading-snug">
-                    {diagnosis ?? "Diagnosis not recorded"}
-                  </p>
+                  {diagnosis && <p className="text-body font-semibold leading-snug">{diagnosis}</p>}
                   {(() => {
                     const managementChoice = managementChoicesFor(pack.key, patient.management ?? "").find(
                       (c) => c.value === patient.management
@@ -875,18 +881,10 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 </>
               )}
             </div>
-            <Link
-              href={`/patients/${patient.id}/note`}
-              className="tap flex shrink-0 items-center pt-0.5 text-footnote font-semibold text-accent active:opacity-60"
-            >
-              Print sheet
-              <ChevronIcon className="h-3 w-3" />
-            </Link>
+            {comorbidities.length > 0 && (
+              <p className="mt-0.5 text-footnote leading-snug">{comorbidities.join(" · ")}</p>
+            )}
           </div>
-          <SummaryRow
-            label="Co-morbidities"
-            value={comorbidities.length > 0 ? comorbidities.join(" · ") : "Not recorded"}
-          />
         </div>
 
         {/* The three counts this page already works out, so they need not be added up from the
@@ -1118,7 +1116,7 @@ const PAC_META: Record<
     dot: "bg-critical-dot",
   },
   pending: {
-    word: "Pending",
+    word: "Not done",
     chip: "bg-warn-bg text-warn-fg",
     dot: "bg-warn-dot",
   },
@@ -1325,41 +1323,24 @@ function vitalsWhen(iso: string): string {
  * said anything, this says exactly that instead of guessing from the fact that a patient is on
  * a list.
  */
-function PacSection({ pac }: { pac: Observation[] }) {
+function PacSection({ pac, patientId }: { pac: Observation[]; patientId: string }) {
   const [latest, ...earlier] = pac;
   const meta = latest?.pac_verdict ? PAC_META[latest.pac_verdict] : null;
 
   return (
     <section className="px-4 pb-6">
-      <details className="ios-group [&[open]_.pac-chev]:rotate-90">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-subhead font-semibold active:bg-chip [&::-webkit-details-marker]:hidden">
+      <div className="ios-group">
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 text-subhead font-semibold">
           <span className="flex items-center gap-2">
             <Stethoscope className="h-4 w-4 text-accent" strokeWidth={2.2} />
             Pre-anaesthetic checkup
           </span>
-          <span className="flex items-center gap-2">
-            {/* The verdict rides on the closed card, because on the morning of a list this one
-                word is the entire reason anyone opens this patient. */}
-            <span
-              className={
-                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-caption font-semibold " +
-                (meta ? meta.chip : "bg-warn-bg text-warn-fg")
-              }
-            >
-              {meta ? meta.word : "Not recorded"}
-            </span>
-            <ChevronIcon className="pac-chev h-4 w-4 text-muted transition-transform" />
-          </span>
-        </summary>
+          <PacSelect patientId={patientId} verdict={latest?.pac_verdict ?? null} />
+        </div>
 
-        <div className="border-t border-line px-4 py-3">
-          {!latest || !meta ? (
-            <p className="text-subhead text-warn-fg">
-              Nobody has said whether this patient is fit for surgery.
-            </p>
-          ) : (
-            <>
-              {/* The chip above is the app's reading of the sentence. This is the sentence,
+        {latest && meta && (
+          <div className="border-t border-line px-4 py-3">
+              {/* The dropdown above is the app's reading of the sentence. This is the sentence,
                   kept beside it and never replaced by it. */}
               <p className="text-subhead leading-snug">{latest.value_text ?? latest.label}</p>
               <p className="mt-0.5 text-footnote text-muted">{pacWhen(latest.recorded_at)}</p>
@@ -1394,10 +1375,9 @@ function PacSection({ pac }: { pac: Observation[] }) {
                   ))}
                 </ul>
               )}
-            </>
-          )}
-        </div>
-      </details>
+          </div>
+        )}
+      </div>
     </section>
   );
 }
@@ -1610,25 +1590,6 @@ function CameDue({ observation }: { observation: Observation }) {
   if (!effective.note) return null;
 
   return <span className="ml-2 whitespace-nowrap text-caption text-critical-fg">— {effective.note}</span>;
-}
-
-/** A fact in the patient identity block. The long text gets room; the label stays scannable. */
-function SummaryRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="ios-row flex items-start gap-2.5 px-4 py-3">
-      <HeartPulse className="mt-0.5 h-4 w-4 shrink-0 text-muted" strokeWidth={2.2} />
-      <div className="min-w-0">
-        <dt className="text-caption2 font-medium uppercase tracking-[0.08em] text-muted">{label}</dt>
-        <dd className="mt-0.5 text-callout leading-snug">{value}</dd>
-      </div>
-    </div>
-  );
 }
 
 /** One of the header's three counts — same look as the ward page's StatTile, without the link. */
