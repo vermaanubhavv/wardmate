@@ -42,7 +42,7 @@ import {
 
 const uid = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `r-${Math.round(Math.random() * 1e9)}`);
 
-// The Encounter card's option lists — real ones, kept short. Department/Specialty/Unit are
+// The Admission Details card's option lists — real ones, kept short. Department/Specialty/Unit are
 // suggestions only; typing anything else is still fine. Consultant is a closed set on purpose —
 // which unit a discharge is written on already says who the consultant is (compiled in from the
 // ward's own setting, lib/unit-consultants.ts), so this is a dropdown to correct it, not a box
@@ -204,7 +204,7 @@ export default function DischargeWorkspace({
   const sectionValue = (d: DischargeDraft, section: DischargeSectionId): unknown =>
     ({
       indication: d.indicationForAdmission,
-      encounter: d.encounter,
+      admission: d.admission,
       diagnoses: d.diagnoses,
       procedures: d.procedures,
       clinicalCourse: d.clinicalCourse,
@@ -600,7 +600,7 @@ export default function DischargeWorkspace({
     switch (id) {
       case "indication":
         return !!draft.indicationForAdmission.text.trim();
-      case "encounter":
+      case "admission":
         return true;
       case "diagnoses":
         return draft.diagnoses.some((d) => d.category === "primary" && d.text.trim());
@@ -640,7 +640,7 @@ export default function DischargeWorkspace({
           : draft.indicationForAdmission.text
             ? statusChip("review", "warn")
             : statusChip("empty", "muted");
-      case "encounter":
+      case "admission":
         return statusChip("compiled", "muted");
       case "diagnoses":
         return draft.diagnoses.some((d) => d.category === "primary")
@@ -709,17 +709,17 @@ export default function DischargeWorkspace({
         );
       }
 
-      case "encounter":
+      case "admission":
         return (
           <div className="grid grid-cols-2 gap-3">
-            <SuggestField label="Department" value={draft.encounter.department} options={DEPARTMENT_SUGGESTIONS} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, department: v })} />
-            <SuggestField label="Specialty" value={draft.encounter.specialty} options={DEPARTMENT_SUGGESTIONS} placeholder={profile.specialtyLabel} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, specialty: v })} />
-            <Field label="Ward" value={draft.encounter.ward} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, ward: v })} />
-            <Field label="Bed" value={draft.encounter.bed} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, bed: v })} />
-            <SelectField label="Consultant" value={draft.encounter.consultant} options={CONSULTANT_SUGGESTIONS} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, consultant: v })} />
-            <SuggestField label="Unit" value={draft.encounter.unit} options={UNIT_SUGGESTIONS} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, unit: v })} />
+            <SuggestField label="Department" value={draft.admission.department} options={DEPARTMENT_SUGGESTIONS} onChange={(v) => patch("admission", "admission", { ...draft.admission, department: v })} />
+            <SuggestField label="Specialty" value={draft.admission.specialty} options={DEPARTMENT_SUGGESTIONS} placeholder={profile.specialtyLabel} onChange={(v) => patch("admission", "admission", { ...draft.admission, specialty: v })} />
+            <Field label="Ward" value={draft.admission.ward} onChange={(v) => patch("admission", "admission", { ...draft.admission, ward: v })} />
+            <Field label="Bed" value={draft.admission.bed} onChange={(v) => patch("admission", "admission", { ...draft.admission, bed: v })} />
+            <SelectField label="Consultant" value={draft.admission.consultant} options={CONSULTANT_SUGGESTIONS} onChange={(v) => patch("admission", "admission", { ...draft.admission, consultant: v })} />
+            <SuggestField label="Unit" value={draft.admission.unit} options={UNIT_SUGGESTIONS} onChange={(v) => patch("admission", "admission", { ...draft.admission, unit: v })} />
             <div className="col-span-2">
-              <SegmentedField label="Admission type" value={draft.encounter.admissionType} options={ADMISSION_TYPES} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, admissionType: v })} />
+              <SegmentedField label="Admission type" value={draft.admission.admissionType} options={ADMISSION_TYPES} onChange={(v) => patch("admission", "admission", { ...draft.admission, admissionType: v })} />
             </div>
           </div>
         );

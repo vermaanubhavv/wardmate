@@ -479,7 +479,7 @@ export function compileDischargeDraft(
     finalisedAt: null,
 
     indicationForAdmission: { text: "", source: "compiled" },
-    encounter: {
+    admission: {
       admittedAt: patient.admitted_on,
       dischargedAt: null,
       department: doctor?.department ?? null,
