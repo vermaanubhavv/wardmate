@@ -1192,17 +1192,15 @@ export default function DischargeWorkspace({
               <>
                 {draft.advice.items.map((a, i) => (
                   <div key={a.id} className="flex flex-col gap-2 rounded-[10px] border border-line p-2.5">
-                    <div className="flex flex-wrap gap-1.5">
-                      {ADVICE_MODULES.map((mod) => (
-                        <SelChip
-                          key={mod}
-                          selected={a.module === mod}
-                          onClick={() => patch("advice", "advice", { ...draft.advice, items: draft.advice.items.map((x, j) => (j === i ? { ...x, module: mod } : x)) })}
-                        >
-                          {mod}
-                        </SelChip>
-                      ))}
-                    </div>
+                    {/* A dropdown, not a row of 13 chips: "Wound care" was the first chip, right
+                        where a thumb lands, and one stray tap retagged diet advice as wound care
+                        on a printed summary. Changing a heading should take a deliberate pick. */}
+                    <SelectField
+                      label="Heading"
+                      value={a.module}
+                      onChange={(mod) => patch("advice", "advice", { ...draft.advice, items: draft.advice.items.map((x, j) => (j === i ? { ...x, module: mod } : x)) })}
+                      options={[...ADVICE_MODULES]}
+                    />
                     <Area value={a.text} onChange={(v) => patch("advice", "advice", { ...draft.advice, items: draft.advice.items.map((x, j) => (j === i ? { ...x, text: v } : x)) })} rows={2} />
                     <button type="button" onClick={() => patch("advice", "advice", { ...draft.advice, items: draft.advice.items.filter((_, j) => j !== i) })} className="self-start text-caption text-muted">
                       Remove
