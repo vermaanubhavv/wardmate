@@ -12,12 +12,13 @@ import {
   putChunk,
   saveRecording,
 } from "@/lib/outbox";
-import { openLiveDictation, type LiveDictationSession } from "@/lib/stt/live";
+import LiveDictation, { type LiveLine, type LiveSection } from "./live-dictation";
 
 type Status = "idle" | "starting" | "recording" | "working";
-type Mode = "live" | "batch" | null;
+type Mode = "batch" | null;
 
 type Finding = {
+  kind: string;
   label: string;
   value_text: string;
   source_quote: string;
@@ -36,13 +37,13 @@ const MAX_SECONDS = 180;
  * began after release and never ended. With two separate taps the slow part no longer sits
  * inside a gesture.
  *
- * Every tap tries LIVE dictation first (lib/stt/live.ts — the same Nova-3 streaming socket the
- * case-history clerking flow uses): the words appear on screen as they're said. If the token
- * request fails (offline, not configured) it falls back to the original record-then-upload
- * path silently — nobody has to know or choose which one ran. Either way the moment the round
- * comes back, the transcript is shown with every captured phrase highlighted in it, and the
- * findings drop in one by one — so a bad recording, or a finding the app missed, is caught at
- * a glance while re-saying it is still cheap.
+ * Every tap tries LIVE dictation first: the shared panel (./live-dictation.tsx) streams the
+ * words as they are said, and at each pause files that thought through /api/entries/text — the
+ * same extractor, verbatim-quote check and amber rules as a recording — so each finding drops
+ * into its table (vitals, examination, plan…) while the resident is still talking. If live
+ * cannot start (offline, not configured) it falls back to the original record-then-upload path
+ * silently. After a recording, the transcript is shown with every captured phrase highlighted
+ * and the findings drop in one by one.
  */
 export default function Recorder({
   patientId,
@@ -59,8 +60,8 @@ export default function Recorder({
   const [mode, setMode] = useState<Mode>(null);
   const [seconds, setSeconds] = useState(0);
   const [level, setLevel] = useState(0);
-  const [speaking, setSpeaking] = useState(false);
-  const [liveText, setLiveText] = useState("");
+  const [live, setLive] = useState(false);
+  const filedRef = useRef(0);
   const [message, setMessage] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<string | null>(null);
   const [findings, setFindings] = useState<Finding[]>([]);
@@ -73,8 +74,6 @@ export default function Recorder({
   const autoStoppedRef = useRef(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const rafRef = useRef<number | null>(null);
-  const liveSessionRef = useRef<LiveDictationSession | null>(null);
-  const liveFinalRef = useRef("");
   // One id per recording, used as the IndexedDB key, the per-chunk key, and the server's
   // dedup `client_uuid` — so a salvage, a clean save and a queue retry are all the same row.
   const recIdRef = useRef<string>("");
@@ -89,8 +88,8 @@ export default function Recorder({
   }, [mode]);
 
   useEffect(() => {
-    onBusyChange?.(status === "recording" || status === "starting");
-  }, [status, onBusyChange]);
+    onBusyChange?.(live || status === "recording" || status === "starting");
+  }, [live, status, onBusyChange]);
 
   // Nothing is holding a finger down any more, so the elapsed count is the signal that the
   // app is still listening.
@@ -111,7 +110,7 @@ export default function Recorder({
   // Phone locked / swiped away / killed mid-dictation: write what the batch recorder has to
   // IndexedDB now, before the tab can be frozen. A later clean stop re-saves the fuller take
   // under the same id, so this never doubles it. The live path needs none of this — its words
-  // are already on screen and filed sentence by sentence.
+  // are filed at every pause.
   const salvage = useCallback(() => {
     if (modeRef.current !== "batch") return;
     if (statusRef.current !== "recording" && statusRef.current !== "working") return;
@@ -150,7 +149,6 @@ export default function Recorder({
       document.removeEventListener("visibilitychange", onHide);
       salvage();
       stopMeter();
-      liveSessionRef.current?.stop();
     };
   }, [salvage]);
 
@@ -198,64 +196,55 @@ export default function Recorder({
     setMessage(null);
     setTranscript(null);
     setFindings([]);
-    setLiveText("");
     setSeconds(0);
     autoStoppedRef.current = false;
-    liveFinalRef.current = "";
     recIdRef.current = crypto.randomUUID();
     seqRef.current = 0;
 
-    if (await startLive()) return;
-    await startBatch();
+    if (!navigator.onLine) return void startBatch();
+    filedRef.current = 0;
+    setStatus("idle");
+    setLive(true);
   }
 
-  /** Try the live streaming path. Resolves false on anything short of a working socket, so the
-   *  caller can fall back to record-then-upload without the resident seeing a failed attempt. */
-  async function startLive(): Promise<boolean> {
-    // On one bar of signal the token request can sit unanswered for a minute, leaving the
-    // button on "Starting…". Three seconds is long enough for a working connection and short
-    // enough that falling back to record-then-upload still feels like one tap.
-    const abort = new AbortController();
-    const timer = setTimeout(() => abort.abort(), 3000);
+  const LIVE_SECTIONS: LiveSection[] = [
+    { key: "history", label: "Complaints & history" },
+    { key: "vital", label: "Vitals" },
+    { key: "exam", label: "Examination" },
+    { key: "drain", label: "Drains & intake/output" },
+    { key: "dx", label: "Diagnosis & procedure" },
+    { key: "medication", label: "Medications", drug: true },
+    { key: "lab", label: "Investigations" },
+    { key: "plan", label: "Plan & to-do" },
+  ];
+
+  /** One pause of live dictation, filed exactly as a typed note is. Words that could not be
+   *  sent are held for "Save these words" — at a bedside nothing said may be lost. */
+  async function fileFragment(text: string): Promise<{ lines: LiveLine[]; error?: string }> {
     try {
-      const res = await fetch("/api/transcribe/live-token", {
+      const res = await fetch("/api/entries/text", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ patientId }),
-        signal: abort.signal,
+        body: JSON.stringify({ patient_id: patientId, text }),
       });
-      const data = (await res.json()) as { token?: string; keyterms?: string[] };
-      clearTimeout(timer);
-      if (!res.ok || !data.token) return false;
-
-      const session = await openLiveDictation({
-        token: data.token,
-        keyterms: data.keyterms ?? [],
-        onOpen: () => {
-          setMode("live");
-          setStatus("recording");
-          navigator.vibrate?.(30);
-        },
-        onSpeechStart: () => setSpeaking(true),
-        onPartial: (t) => setLiveText(joinSpoken(liveFinalRef.current, t)),
-        onFinal: (t) => {
-          liveFinalRef.current = joinSpoken(liveFinalRef.current, t);
-          setLiveText(liveFinalRef.current);
-          setSpeaking(false);
-        },
-        onError: (msg) => {
-          // The socket dropped mid-round. Whatever was caught before the drop is still worth
-          // keeping — finish exactly as a normal stop would, just with a word about why.
-          setMessage(msg);
-          void finishLive();
-        },
-        onClose: () => {},
-      });
-      liveSessionRef.current = session;
-      return true;
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status >= 500) keepUnsaved(text);
+        return { lines: [], error: data.error ?? "Could not file that." };
+      }
+      const found = normaliseFindings(data.observations);
+      filedRef.current += found.length;
+      return {
+        lines: found.map((f) => ({
+          section: SECTION_OF_KIND[f.kind] ?? "history",
+          text: `${f.label}: ${f.value_text}`,
+          check: f.needs_confirmation,
+        })),
+        error: data.error ?? (found.length === 0 ? `Nothing clinical in “${text}”.` : undefined),
+      };
     } catch {
-      clearTimeout(timer);
-      return false;
+      keepUnsaved(text);
+      return { lines: [], error: `No signal — “${text}” is kept to save after you stop.` };
     }
   }
 
@@ -308,13 +297,6 @@ export default function Recorder({
   }
 
   function stop() {
-    if (mode === "live") {
-      setStatus("working");
-      navigator.vibrate?.(15);
-      void finishLive();
-      return;
-    }
-
     stopMeter();
     if (recorderRef.current?.state === "recording") {
       recorderRef.current.stop();
@@ -327,29 +309,8 @@ export default function Recorder({
     streamRef.current = null;
   }
 
-  /** The live socket's words, already transcribed, structured the same way a batch recording
-   *  is — through /api/entries/text rather than /api/entries/voice, since there is no audio
-   *  left to send, only the finished sentence. */
-  async function finishLive() {
-    liveSessionRef.current?.stop();
-    liveSessionRef.current = null;
-    setMode(null);
-    setLiveText("");
-
-    const text = liveFinalRef.current.trim();
-    liveFinalRef.current = "";
-    if (!text) {
-      setStatus("idle");
-      setMessage((m) => m ?? "That was too short to hear anything.");
-      return;
-    }
-
-    setTranscript(text);
-    await saveWords(text);
-  }
-
-  /** Files finished words through /api/entries/text. Also what "Save these words" calls after a
-   *  failed attempt — the same transcript, so nothing has to be said twice. */
+  /** "Save these words": files words a live pause could not send — the same transcript, so
+   *  nothing has to be said twice. */
   async function saveWords(text: string) {
     try {
       const res = await fetch("/api/entries/text", {
@@ -486,6 +447,25 @@ export default function Recorder({
 
   return (
     <div className="flex flex-col gap-2">
+      {live && (
+        <LiveDictation
+          patientId={patientId}
+          title="Speaking at the bedside"
+          example="e.g. “no fresh complaints… BP 120 by 80, pulse 84… abdomen soft… drain 50 ml serous… start oral sips…”"
+          sections={LIVE_SECTIONS}
+          route={fileFragment}
+          onUnavailable={() => {
+            setLive(false);
+            void startBatch();
+          }}
+          onClose={() => {
+            setLive(false);
+            const n = filedRef.current;
+            setMessage(n > 0 ? `${n} finding${n === 1 ? "" : "s"} filed — anything amber is waiting under Confirm dictation.` : null);
+            router.refresh();
+          }}
+        />
+      )}
       <span className="sr-only" role="status">
         {status === "recording" ? "Recording" : status === "working" ? "Transcribing" : ""}
       </span>
@@ -512,7 +492,7 @@ export default function Recorder({
       >
         {recording ? (
           <span className="flex items-center justify-center gap-3">
-            {mode === "live" ? <PulseDot speaking={speaking} /> : <LevelMeter level={level} />}
+            <LevelMeter level={level} />
             Tap to stop
             <span className="font-mono text-body tabular-nums opacity-90">
               {mm}:{ss}
@@ -527,14 +507,6 @@ export default function Recorder({
           </span>
         ) : null}
       </button>
-      )}
-
-      {/* While a live socket is open, the words themselves ARE the "it's working" signal — no
-          need to wait for the round to end to see whether it heard anything. */}
-      {recording && mode === "live" && liveText && (
-        <p className="rounded-lg bg-chip/60 px-3 py-2 text-footnote leading-relaxed text-muted">
-          “{liveText}”
-        </p>
       )}
 
       {transcript && (
@@ -576,9 +548,27 @@ export default function Recorder({
   );
 }
 
+/** Which live table each extracted kind lands in. */
+const SECTION_OF_KIND: Record<string, string> = {
+  note: "history",
+  vital: "vital",
+  exam: "exam",
+  drain: "drain",
+  intake_output: "drain",
+  diagnosis: "dx",
+  day_number: "dx",
+  planned_procedure: "dx",
+  procedure_done: "dx",
+  pac_status: "dx",
+  medication: "medication",
+  lab: "lab",
+  plan: "plan",
+};
+
 function normaliseFindings(raw: unknown): Finding[] {
   return (Array.isArray(raw) ? raw : []).map(
     (o: Partial<Finding>): Finding => ({
+      kind: o.kind ?? "note",
       label: o.label ?? "",
       value_text: o.value_text ?? "",
       source_quote: o.source_quote ?? "",
@@ -611,17 +601,6 @@ function LevelMeter({ level }: { level: number }) {
           style={{ height: `${6 + Math.min(1, level * f * 1.4) * 14}px`, transition: "height 0.08s linear" }}
         />
       ))}
-    </span>
-  );
-}
-
-/** The live-mode equivalent of the level meter — a ring that swells out from the dot while
- *  Deepgram is reporting speech, still (but present) between sentences. */
-function PulseDot({ speaking }: { speaking: boolean }) {
-  return (
-    <span className="relative inline-flex h-2.5 w-2.5 items-center justify-center" aria-hidden>
-      {speaking && <span className="wm-listen absolute inset-0 rounded-full bg-white/70" />}
-      <span className="relative h-2.5 w-2.5 rounded-full bg-white" />
     </span>
   );
 }
