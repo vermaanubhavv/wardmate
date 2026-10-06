@@ -637,3 +637,27 @@ describe("offersChecklistFamily — the picker follows the department chosen at 
     }
   });
 });
+
+describe("discharge template: the diagnosis head decides, not a trailing mention", () => {
+  const pick = (procedureText: string, diagnosisText: string) =>
+    matchDischargeTemplateFor(generalSurgeryPack, { procedureText, diagnosisText })?.key ?? null;
+
+  it("a trailing SAIO no longer picks the obstruction template", () => {
+    expect(
+      pick(
+        "Incision and drainage",
+        "Deep organ space SSI ? Post op bile leak with s/p lap cholecystectomy with post exp. laparotomy ivo pyoperitoneum and SAIO With I&D"
+      )
+    ).toBe("abscess_drainage");
+  });
+
+  it("the head still wins over a more specific word in the tail", () => {
+    expect(pick("", "Acute appendicitis with localised peritonitis")).toBe("appendicectomy");
+    expect(pick("Exploratory laparotomy", "Duodenal ulcer perforation with peritonitis")).toBe("perforation");
+    expect(pick("", "SAIO due to adhesions")).toBe("obstruction");
+  });
+
+  it("falls back to everything together when the head names nothing", () => {
+    expect(pick("", "Pain abdomen with cholelithiasis")).toBe("lap_chole");
+  });
+});

@@ -33,7 +33,18 @@ export function getDischargeTemplateFor(
  * Same rule as the surgical version it generalises: the diagnosis wording is the most specific
  * signal and is tried first; the care-template family is only a fallback. First match wins, so
  * each pack's array is ordered specific-before-general.
+ *
+ * The diagnosis HEAD is tried before the rest. A resident's diagnosis line names the condition
+ * first and hangs history and incidental findings off it: "Deep organ space SSI ? bile leak with
+ * s/p lap cholecystectomy with post exp. laparotomy ivo pyoperitoneum and SAIO". Matched whole,
+ * the trailing "SAIO" picked the intestinal-obstruction template — its diet and bowel advice
+ * printed on a bile-leak summary. So: the head (before the first "with", "s/p", "post", "in view
+ * of", "k/c/o", comma or semicolon), then the procedure actually done, then everything together
+ * as before. A cause ("due to", "secondary to") stays in the head: the cause is often the point.
  */
+const DIAGNOSIS_TAIL =
+  /\s+(?:with|w\/|s\/p|status post|post|ivo|i\/v\/o|in view of|k\/c\/o|known case of|h\/o|and)\s+|[,;]/i;
+
 export function matchDischargeTemplateFor(
   pack: SpecialtyPack,
   input: {
@@ -42,9 +53,12 @@ export function matchDischargeTemplateFor(
     templateFamily?: string | null;
   }
 ): DischargeTemplate | null {
-  const haystack = `${input.procedureText ?? ""} ${input.diagnosisText ?? ""}`.trim();
-  if (haystack) {
-    const byText = pack.dischargeTemplates.find((t) => t.match.test(haystack));
+  const diagnosis = input.diagnosisText?.trim() ?? "";
+  const procedure = input.procedureText?.trim() ?? "";
+  const head = diagnosis.split(DIAGNOSIS_TAIL)[0].trim();
+  for (const text of [head, procedure, `${procedure} ${diagnosis}`.trim()]) {
+    if (!text) continue;
+    const byText = pack.dischargeTemplates.find((t) => t.match.test(text));
     if (byText) return byText;
   }
   if (input.templateFamily) {
