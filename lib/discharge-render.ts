@@ -273,6 +273,9 @@ export function formatDischargePlainText(doc: DischargeDocument): string {
   out.push(`  ${doc.clinicalCourse || BLANK}`);
   if (!doc.clinicalCourseApproved && doc.clinicalCourse) out.push("  [not yet approved by the resident]");
 
+  heading("Condition at discharge");
+  out.push(`  ${doc.condition || BLANK}`);
+
   if (doc.investigations.length > 0) {
     heading("Relevant investigations and results");
     for (const i of doc.investigations)
@@ -293,9 +296,6 @@ export function formatDischargePlainText(doc: DischargeDocument): string {
   heading("Medications on discharge");
   if (doc.medications.length === 0) out.push(`  ${BLANK}`);
   doc.medications.forEach((m, i) => out.push(`  ${i + 1}. ${medLine(m)}`));
-
-  heading("Condition at discharge");
-  out.push(`  ${doc.condition || BLANK}`);
 
   heading("Primary care actions");
   if (doc.primaryCareActions.length === 0) out.push("  None.");

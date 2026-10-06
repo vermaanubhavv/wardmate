@@ -1321,6 +1321,9 @@ export default function DischargeWorkspace({
               <PreviewLine label="Course" onEdit={() => goTo(stepIndexOf("clinicalCourse"))}>
                 {courseSnippet ? `${courseSnippet}…` : <em className="text-warn-fg">not written</em>}
               </PreviewLine>
+              <PreviewLine label="Condition" onEdit={() => goTo(stepIndexOf("conditionAtDischarge"))}>
+                {dc.prose.trim() || dc.freeText?.trim() || <em className="text-warn-fg">not set</em>}
+              </PreviewLine>
               <PreviewLine label="Investigations" onEdit={() => goTo(stepIndexOf("relevantInvestigations"))}>
                 {acceptedInv.length ? acceptedInv.map((i) => i.group).filter(Boolean).join(", ") : <em className="text-muted">none</em>}
               </PreviewLine>
@@ -1333,9 +1336,6 @@ export default function DischargeWorkspace({
               )}
               <PreviewLine label="Medication" onEdit={() => goTo(stepIndexOf("medications"))}>
                 {draft.medications.length ? draft.medications.map((m) => m.generic).filter(Boolean).join(", ") : <em className="text-muted">none listed</em>}
-              </PreviewLine>
-              <PreviewLine label="Condition" onEdit={() => goTo(stepIndexOf("conditionAtDischarge"))}>
-                {dc.prose.trim() || dc.freeText?.trim() || <em className="text-warn-fg">not set</em>}
               </PreviewLine>
               <PreviewLine label="Patient to" onEdit={() => goTo(stepIndexOf("advice"))}>
                 {draft.patientActions.length ? draft.patientActions.join("; ") : <em className="text-muted">nothing added</em>}
