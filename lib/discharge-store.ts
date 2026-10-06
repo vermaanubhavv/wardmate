@@ -21,7 +21,7 @@ type ColumnKey = keyof Omit<DischargeRow, "id" | "status" | "finalised_at">;
 
 const SECTION_COLUMN: Record<DischargeSectionId, { column: ColumnKey; key: keyof DischargeDraft }> = {
   indication: { column: "indication_for_admission", key: "indicationForAdmission" },
-  encounter: { column: "encounter", key: "encounter" },
+  admission: { column: "encounter", key: "admission" },
   diagnoses: { column: "diagnoses", key: "diagnoses" },
   procedures: { column: "procedures", key: "procedures" },
   clinicalCourse: { column: "clinical_course", key: "clinicalCourse" },
@@ -174,9 +174,9 @@ export async function finaliseDischargeSummary(
     ...draft.authentication,
     completedAt: draft.authentication.completedAt ?? now,
   };
-  const encounter = {
-    ...draft.encounter,
-    dischargedAt: draft.encounter.dischargedAt ?? now,
+  const admission = {
+    ...draft.admission,
+    dischargedAt: draft.admission.dischargedAt ?? now,
   };
 
   const { data: existing } = await supabase
@@ -190,7 +190,7 @@ export async function finaliseDischargeSummary(
     finalised_at: now,
     finalised_by: user.id,
     authentication,
-    encounter,
+    encounter: admission, // the column keeps its original name
     updated_at: now,
   };
 

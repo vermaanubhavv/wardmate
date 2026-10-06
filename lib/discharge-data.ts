@@ -72,7 +72,7 @@ export type DischargeContext = {
   wardId: string;
   wardName: string | null;
   /** Consultant in charge of the unit — stored on the ward, or the seeded default for its
-   *  unit number. Seeds encounter.consultant on a fresh discharge. */
+   *  unit number. Seeds admission.consultant on a fresh discharge. */
   wardConsultant: string | null;
   letterhead: string | null;
   logoUrl: string | null;

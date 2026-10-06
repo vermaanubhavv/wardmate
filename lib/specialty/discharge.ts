@@ -204,7 +204,7 @@ export type DischargeProfile = {
   specialty: SpecialtyPack["key"];
   /** Surgical unit: the Operation card, the operation list and the Histopathology card. */
   operative: boolean;
-  /** The Specialty placeholder on the Encounter card. */
+  /** The Specialty placeholder on the Admission Details card. */
   specialtyLabel: string;
   procedureSuggestions: string[];
   /** [] = no one-tap set is offered. */

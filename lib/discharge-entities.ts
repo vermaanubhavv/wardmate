@@ -40,9 +40,9 @@ type IndicationForAdmission = SectionMeta & {
   text: string;
 };
 
-// --- 2. Encounter Details ------------------------------------------------------------------
+// --- 2. Admission Details ------------------------------------------------------------------
 
-type EncounterDetails = {
+type AdmissionDetails = {
   admittedAt: string | null;
   dischargedAt: string | null;
   department: string | null;
@@ -304,7 +304,7 @@ export type DischargeDraft = {
   finalisedAt: string | null;
 
   indicationForAdmission: IndicationForAdmission;
-  encounter: EncounterDetails;
+  admission: AdmissionDetails;
   diagnoses: Diagnosis[];
   procedures: Procedure[];
   clinicalCourse: ClinicalCourse;
@@ -323,7 +323,7 @@ export type DischargeDraft = {
  *  printable document so a section added to one cannot be forgotten in the other. */
 export type DischargeSectionId =
   | "indication"
-  | "encounter"
+  | "admission"
   | "diagnoses"
   | "procedures"
   | "clinicalCourse"
@@ -346,7 +346,7 @@ export const DISCHARGE_SECTIONS: {
   required: boolean;
 }[] = [
   { id: "indication", title: "Indication for Admission", aiGenerated: true, required: false },
-  { id: "encounter", title: "Encounter Details", aiGenerated: false, required: false },
+  { id: "admission", title: "Admission Details", aiGenerated: false, required: false },
   { id: "diagnoses", title: "Diagnoses", aiGenerated: false, required: true },
   { id: "procedures", title: "Operation / Procedures", aiGenerated: false, required: false },
   { id: "clinicalCourse", title: "Clinical Course", aiGenerated: true, required: true },
