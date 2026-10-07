@@ -59,11 +59,10 @@ export const internalMedicinePack: SpecialtyPack = {
   admissionPhrase: "an internal medicine admission",
 
   // Always the hospital day. A medicine patient has no operation and no cycle; `post_op_day`
-  // and the chemo fields are ignored on purpose. The label reads "HD n", the hospital day, with
-  // the admission date as HD 1 (admission_day is 0 that day) — so a bed on a mixed corridor is
-  // never ambiguous against a surgical "POD n" next to it. `n` stays the raw admission_day: the
-  // checklist day triggers are keyed to it.
-  dayCount: (p) => ({ clock: "admission", n: p.admission_day, text: `HD ${p.admission_day + 1}` }),
+  // and the chemo fields are ignored on purpose. The label says "Day n", with the admission date
+  // as Day 0 — the unit's own convention — so a bed on a mixed corridor is never ambiguous
+  // against a surgical "POD n" next to it.
+  dayCount: (p) => ({ clock: "admission", n: p.admission_day, text: `Day ${p.admission_day}` }),
 
   extractRoleLine:
     "You convert a physician's spoken ward-round note into structured observations.",
