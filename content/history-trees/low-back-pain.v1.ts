@@ -12,12 +12,12 @@ import { commonHpi, ebem, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, val
  */
 export const lowBackPainV1: HistoryTree = {
   id: "low_back_pain",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Low back pain",
   triggers: ["low back pain", "back pain", "backache", "back ache", "lumbar pain", "pain in back", "kamar dard", "lumbago", "pain in lower back", "sciatica"],
   setting: "Adult medicine / orthopaedic ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     ebem("Clinical assessment of low back pain", 2006, "16498707"),
     MACLEODS,

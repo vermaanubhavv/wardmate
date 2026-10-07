@@ -16,7 +16,7 @@ import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, IMMUNOCO
  */
 export const postOpProblemV1: HistoryTree = {
   id: "post_op_problem",
-  version: "1.2.0",
+  version: "1.3.0",
   complaint: "Problem after an operation",
   triggers: ["post op", "post-op", "postoperative", "post operative", "after surgery", "after the operation", "after operation", "fever after surgery", "wound discharge", "wound gaping", "not passed flatus", "drain output", "operated on day"],
   setting: "Adult surgical ward, north India",

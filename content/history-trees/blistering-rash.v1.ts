@@ -13,12 +13,12 @@ import { commonHpi, HUTCHISONS, IADVL, IMMUNOCOMPROMISE, MACLEODS, val, yn } fro
  */
 export const blisteringRashV1: HistoryTree = {
   id: "blistering_rash",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Blisters on the skin",
   triggers: ["blister", "blistering", "bullae", "bulla", "bullous", "vesicles", "fluid filled lesions", "water filled boils", "chhale", "phaphole", "skin coming off", "sjs", "stevens johnson", "pemphigus", "pemphigoid", "shingles", "herpes zoster", "fixed drug eruption"],
   setting: "Dermatology ward and OPD, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [IADVL, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("blisters"),

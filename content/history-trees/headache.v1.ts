@@ -10,12 +10,12 @@ import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "
  */
 export const headacheV1: HistoryTree = {
   id: "headache",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Headache",
   triggers: ["headache", "head ache", "head pain", "pain in head", "migraine"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("Does this patient with headache have a migraine or need neuroimaging?", 2006, "16968852"),
     rce("The rational clinical examination. Does this adult patient have acute meningitis?", 1999, "10411200"),

@@ -10,7 +10,7 @@ import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "
  */
 export const jaundiceV1: HistoryTree = {
   id: "jaundice",
-  version: "1.2.0",
+  version: "1.3.0",
   complaint: "Jaundice",
   triggers: ["jaundice", "yellowish discolouration", "yellow discoloration", "yellowness of eyes", "yellow eyes", "icterus", "yellow urine"],
   setting: "Adult medicine ward, north India",

@@ -587,3 +587,7 @@ templates file records it.
   contradicted the validator's deliberate rules were changed to "unasked" with the reason.
 - `scripts/alias-hook.mjs` resolves extensionless relative imports, so `scripts/test-discharge.ts`
   runs again (36/36).
+- **`IMMUNOCOMPROMISE`** (shared, 42 trees) — diabetes removed from both the question and the
+  terms, on the owner's ruling that diabetes says nothing about immune status: "no diabetes" was
+  being accepted as a denial of immunocompromise. Trees that need diabetes as an infection risk
+  ask it in their own slot. Every tree carrying the flag was version-bumped and set to pending.

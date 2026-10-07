@@ -10,12 +10,12 @@ import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, val, yn }
  */
 export const lossOfWeightAppetiteV1: HistoryTree = {
   id: "loss_of_weight_appetite",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Loss of weight / appetite",
   triggers: ["loss of weight", "weight loss", "loss of appetite", "reduced appetite", "anorexia", "decreased appetite", "not eating", "poor appetite", "wasting", "emaciation", "cachexia"],
   setting: "Adult medicine / surgical / oncology ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("loss of weight or appetite"),

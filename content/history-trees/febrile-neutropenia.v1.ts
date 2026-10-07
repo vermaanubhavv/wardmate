@@ -12,12 +12,12 @@ import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, rce, val, yn } from 
  */
 export const febrileNeutropeniaV1: HistoryTree = {
   id: "febrile_neutropenia",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Fever on chemotherapy",
   triggers: ["fever on chemotherapy", "febrile neutropenia", "fever after chemo", "neutropenic fever", "fever post chemo", "fever after cycle", "low counts fever", "chemo fever"],
   setting: "Medical oncology ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("Does this patient have clubbing?", 2001, "11466101"),
     MACLEODS,

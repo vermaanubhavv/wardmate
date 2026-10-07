@@ -14,12 +14,12 @@ import { commonHpi, DHINGRA, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } f
  */
 export const earacheV1: HistoryTree = {
   id: "earache",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Earache",
   triggers: ["earache", "pain in ear", "pain in the ear", "ear ache", "painful ear", "kaan dard", "kaan me dard", "kaan mein dard", "ear hurts", "ear is paining"],
   setting: "ENT ward and casualty, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DHINGRA, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("ear pain"),

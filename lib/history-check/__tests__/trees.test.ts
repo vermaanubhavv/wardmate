@@ -31,8 +31,9 @@ describe("tree registry", () => {
     // A tree must not drift into "reviewed" as a side effect of an edit — the chip on the card
     // is the only thing telling a resident whether the content was read by a clinician.
     //
-    // Seventy-seven of the hundred and seven are signed off. head_injury, limb_injury and
-    // jaundice came off after the Schwartz review corrected errors in them. The twenty-two trees that carry
+    // Forty-six of the hundred and seven are signed off. head_injury, limb_injury and jaundice
+    // came off after the Schwartz review corrected errors in them, and every tree carrying the
+    // shared IMMUNOCOMPROMISE red flag came off when diabetes was removed from it. The twenty-two trees that carry
     // surgicalBackground() came off this list when Sabiston's four background questions were
     // added to it (docs/surgical-history.md §9–§10) and go back on only when re-read. The five
     // trees built from Sabiston and S. Das have not been reviewed.
@@ -45,21 +46,21 @@ describe("tree registry", () => {
     // Adding an id here is a claim that a named clinician read that tree. Nothing else is.
     const reviewed = listTrees().filter((t) => t.reviewStatus === "reviewed").map((t) => t.id).sort();
     expect(reviewed).toEqual([
-      "altered_behaviour", "altered_sensorium", "animal_bite", "anxiety", "bleeding_pv",
-      "blistering_rash", "breathlessness", "burning_micturition", "chest_pain", "cough",
-      "decreased_urine_output", "diarrhoea", "difficulty_passing_urine", "double_vision",
-      "ear_discharge", "earache", "epistaxis", "erythroderma", "eye_injury", "eyelid_swelling",
-      "febrile_neutropenia", "fever", "fever_with_rash", "flashes_floaters", "foreign_body_ent",
-      "generalised_weakness", "giddiness", "haematuria", "haemoptysis", "headache",
-      "heat_illness", "hoarseness", "hypopigmented_patch", "joint_pain", "labour_pains",
-      "limb_ischaemia", "limb_weakness", "loin_pain", "loss_of_weight_appetite",
-      "low_back_pain", "low_mood", "mass_per_vaginum", "memory_loss", "nasal_obstruction",
-      "neck_pain", "neural_tube_swelling", "oedema", "paediatric_abdominal_pain",
+      "altered_behaviour", "anxiety", "bleeding_pv",
+     
+      "decreased_urine_output", "difficulty_passing_urine", "double_vision",
+      "epistaxis", "eye_injury",
+      "fever", "flashes_floaters", "foreign_body_ent",
+      "giddiness", "haematuria",
+      "heat_illness", "hoarseness", "hypopigmented_patch", "labour_pains",
+      "limb_ischaemia",
+      "low_mood", "mass_per_vaginum", "memory_loss",
+      "neural_tube_swelling", "paediatric_abdominal_pain",
       "paediatric_breathing", "paediatric_diarrhoea", "paediatric_fever", "paediatric_seizure",
       "palpitations", "poisoning_snakebite", "polyuria", "poor_weight_gain",
-      "progressive_breathlessness", "proptosis", "ptosis", "red_eye", "reduced_fetal_movements",
-      "shock", "shunt_problem", "sick_newborn", "skin_lesion", "snoring_sleepiness", "sore_throat",
-      "squint", "substance_use", "tb_treatment_problem", "toothache", "urinary_incontinence",
+      "ptosis", "red_eye", "reduced_fetal_movements",
+      "shunt_problem", "sick_newborn", "snoring_sleepiness",
+      "squint", "substance_use", "tb_treatment_problem", "urinary_incontinence",
       "vaginal_discharge", "vision_loss", "vomiting_in_pregnancy", "watering_eye", "wheeze",
     ]);
   });

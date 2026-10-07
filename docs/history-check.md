@@ -13,14 +13,16 @@ return 404, and nothing under `lib/history-check/` is queried. Off by default.
 Clinical content carries `reviewStatus` and `reviewedBy`, and the card and learning pages show
 a chip for each: amber "Pending clinician review", or green "Reviewed · <reviewer>".
 
-**Seventy-seven of the hundred and seven trees, all eighteen examination checklists and the safety-level
+**Forty-six of the hundred and seven trees, all eighteen examination checklists and the safety-level
 thresholds are reviewed and signed off by Dr Anubhav Verma.** Pending clinician review: the five
 trees added from Sabiston and S. Das (`preop_assessment`, `varicose_veins`, `ventral_hernia`,
 `sinus_fistula`, `abdominal_lump`), and the twenty-two surgical trees that carry
 `surgicalBackground()`, which came off the list when Sabiston's and Das's background questions
 were added to the helper and Das's per-chapter questions to the trees (`docs/surgical-history.md`
 §9.4 and §10); and `head_injury`, `limb_injury` and `jaundice`, which the Schwartz review
-corrected (§12.4). As with the scoring pathways, that
+corrected (§12.4); and the forty-two trees that carry the shared `IMMUNOCOMPROMISE` red flag,
+which came off when diabetes was removed from it — the owner's ruling that diabetes says nothing
+about immune status, so "no diabetes" must never record a patient as not immunocompromised. As with the scoring pathways, that
 is a single-clinician sign-off covering content that spans nine specialties; departmental review
 is still outstanding.
 

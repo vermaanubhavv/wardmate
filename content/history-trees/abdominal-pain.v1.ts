@@ -10,7 +10,7 @@ import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, IMMUNOCO
  */
 export const abdominalPainV1: HistoryTree = {
   id: "abdominal_pain",
-  version: "1.2.0",
+  version: "1.3.0",
   complaint: "Abdominal pain",
   triggers: ["abdominal pain", "pain abdomen", "pain in abdomen", "stomach pain", "pain in stomach", "epigastric pain", "acute abdomen", "abdomen pain"],
   setting: "Adult medicine / general surgery ward, north India",

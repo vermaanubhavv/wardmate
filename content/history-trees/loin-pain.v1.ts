@@ -13,12 +13,12 @@ import { BAILEY_LOVE, CAMPBELL_UROLOGY, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE,
  */
 export const loinPainV1: HistoryTree = {
   id: "loin_pain",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Pain in the loin / renal colic",
   triggers: ["loin pain", "pain in loin", "pain in the loin", "flank pain", "pain in flank", "renal colic", "ureteric colic", "kidney pain", "pain in kidney", "stone pain", "kidney stone pain", "pain in the side", "gurde me dard", "pathri ka dard"],
   setting: "Urology ward and casualty, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [CAMPBELL_UROLOGY, BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("loin pain"),

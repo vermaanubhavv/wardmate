@@ -16,7 +16,7 @@ import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, 
  */
 export const sinusFistulaV1: HistoryTree = {
   id: "sinus_fistula",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Discharging sinus / fistula",
   triggers: ["discharging sinus", "sinus tract", "fistula", "discharging opening", "pus from opening", "opening discharging", "non healing opening", "stitch sinus", "preauricular sinus", "branchial fistula", "faecal fistula", "urinary fistula", "nasoor", "nasur"],
   setting: "Adult surgical ward, north India",

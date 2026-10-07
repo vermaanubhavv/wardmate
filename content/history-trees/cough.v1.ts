@@ -9,12 +9,12 @@ import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, rce, val, yn } from "@/content/h
  */
 export const coughV1: HistoryTree = {
   id: "cough",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Cough",
   triggers: ["cough", "coughing", "expectoration", "haemoptysis", "hemoptysis", "blood in sputum"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     { title: "National TB Elimination Programme: presumptive TB definition (cough > 2 weeks, fever, weight loss, night sweats, contact)", source: "NTEP, Government of India", url: "https://journals.lww.com/ascp/fulltext/2022/10020/national_tb_elimination_program__ntep___at_a.1.aspx" },
     rce("Does this patient have community-acquired pneumonia? Diagnosing pneumonia by history and physical examination", 1997),
