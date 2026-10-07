@@ -2,7 +2,6 @@
 
 import { ActionSheet } from "../../../action-sheet";
 import { startWait } from "@/lib/track";
-import { takeDischargeWarmup } from "@/lib/discharge-warmup";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -340,19 +339,8 @@ export default function DischargeWorkspace({
       done([section]);
     };
 
-    const warmup = takeDischargeWarmup(patientId);
-    const needed = [...autoGen];
-    if (needed.length === 0) return;
-    if (!warmup) return void needed.forEach((s) => void draftOne(s));
-    // The tab already asked for all three: wait for that rather than asking again. Only if it
-    // failed outright does the workspace draft them itself.
-    void warmup.then((data) => {
-      if (!data) return void needed.forEach((s) => void draftOne(s));
-      apply("clinical_course", data.clinicalCourse);
-      apply("indication", data.indication);
-      apply("investigations", data.relevantInvestigations);
-      done(needed);
-    });
+    // Drafted only now, on opening the workspace, from the whole stay as it stands.
+    autoGen.forEach((s) => void draftOne(s));
   }, [autoGen, patientId]);
 
   const checks = useMemo(() => runDischargeChecks(draft, checkContext), [draft, checkContext]);

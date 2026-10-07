@@ -357,9 +357,8 @@ function compilePatientActions(context: DischargeContext): string[] {
  * Only ever for the one-off flow, and only into sections the record left empty. This is the
  * same class of thing as the standard-medication default: an editable scaffold a doctor signs
  * off, carrying `[ … ]` blanks for the parts only they can fill — never a clinical fact.
- * `seedAll` is true for the one-off (no record at all); a real patient's workspace would only
- * ever take the advice / red-flag lists, and even those stay switched off until the resident
- * opts in.
+ * `seedAll` is true for the one-off (no record at all); a real patient's workspace takes only
+ * the advice, red-flag and follow-up lists (switched on, for the resident to untick).
  */
 export function applyDischargeTemplate(
   draft: DischargeDraft,
@@ -369,15 +368,21 @@ export function applyDischargeTemplate(
   const s = template.scaffold;
   const next: DischargeDraft = { ...draft };
 
+  // The diagnosis's standard advice, warnings and follow-up are the ward's own wording, not
+  // clinical findings — so they arrive switched on for every patient, for the resident to
+  // untick what does not apply.
   if (draft.advice.items.length === 0) {
-    next.advice = { items: s.advice.map((a) => ({ ...a })), included: seedAll };
+    next.advice = { items: s.advice.map((a) => ({ ...a })), included: true };
   }
   if (draft.redFlags.items.length === 0) {
-    next.redFlags = { items: [...s.redFlags], included: seedAll };
+    next.redFlags = { items: [...s.redFlags], included: true };
   }
+  if (draft.patientActions.length === 0) next.patientActions = [...s.patientActions];
+  if (draft.primaryCareActions.length === 0) next.primaryCareActions = [...s.primaryCareActions];
 
-  // A ward patient stops here: the record compiles their diagnosis, operation, course and
-  // medications — the template only OFFERS the advice and red-flag cards above (switched off).
+  // A ward patient stops here: the record compiles their diagnosis, operation and medications,
+  // and the AI writes the indication and course from the record ALONG this template
+  // (lib/discharge-ai.ts) — the template's own facts are never copied in as the patient's.
   if (!seedAll) return next;
 
   if (!draft.indicationForAdmission.text.trim()) {
@@ -441,9 +446,6 @@ export function applyDischargeTemplate(
       },
     ];
   }
-  if (draft.patientActions.length === 0) next.patientActions = [...s.patientActions];
-  if (draft.primaryCareActions.length === 0) next.primaryCareActions = [...s.primaryCareActions];
-
   // The specimen the operation sends, pending, with the line that makes the report get traced —
   // now that the procedure name is resolved.
   if (next.histopathology.length === 0) {
@@ -457,6 +459,20 @@ export function applyDischargeTemplate(
   // states it, the draft does not assume it.
 
   return next;
+}
+
+/** The diagnosis template a ward patient's discharge is formed along — shared by the compiler
+ *  and the AI drafts so both follow the same one. */
+export function templateForDischarge(
+  context: DischargeContext,
+  primaryDiagnosis: string | null | undefined,
+  pack: SpecialtyPack = generalSurgeryPack
+): DischargeTemplate | null {
+  return matchDischargeTemplateFor(pack, {
+    procedureText: context.procedure ?? context.patient.procedure_text,
+    diagnosisText: primaryDiagnosis,
+    templateFamily: context.patient.template_family,
+  });
 }
 
 export function compileDischargeDraft(
@@ -516,11 +532,7 @@ export function compileDischargeDraft(
   // record.
   const template =
     options?.template ??
-    matchDischargeTemplateFor(options?.pack ?? generalSurgeryPack, {
-      procedureText: context.procedure ?? patient.procedure_text,
-      diagnosisText: base.diagnoses.find((d) => d.category === "primary")?.text,
-      templateFamily: patient.template_family,
-    });
+    templateForDischarge(context, base.diagnoses.find((d) => d.category === "primary")?.text, options?.pack);
 
   const drafted = template ? applyDischargeTemplate(base, template, options?.seedAll ?? false) : base;
 

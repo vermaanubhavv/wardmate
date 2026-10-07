@@ -246,8 +246,22 @@ export default function PatientForm({
         />
       </Field>
 
+      {/* On the card itself: today unless changed — a patient added the morning after a night
+          admission needs yesterday, and every day count on the ward is counted from it. */}
+      <Field label="Admitted on">
+        <input
+          type="date"
+          name="admitted_on"
+          required
+          value={admittedOn || localToday}
+          max={localToday}
+          onChange={(e) => setAdmittedOn(e.target.value)}
+          className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
+        />
+      </Field>
+
       {/* Everything past bed, name, age/sex and diagnosis waits behind one tap. Most of it has a
-          sensible default (admitted today, management not stated) and a first-time user with a
+          sensible default (management not stated) and a first-time user with a
           ten-box form in front of them was the step people abandoned. <details> keeps the boxes
           in the form, so their values still submit while it is closed. Speech or a paper that
           fills something opens it, so nothing is filled out of sight. */}
@@ -257,7 +271,7 @@ export default function PatientForm({
         className="flex flex-col gap-5"
       >
         <summary className="tap cursor-pointer text-subhead text-accent">
-          {showMore ? "Fewer details" : "More details — IP/MRD no., admission date, management"}
+          {showMore ? "Fewer details" : "More details — IP/MRD no., management"}
         </summary>
         <div className="mt-5 flex flex-col gap-5">
           <div className="flex gap-3">
@@ -282,18 +296,6 @@ export default function PatientForm({
               </Field>
             </div>
           </div>
-
-          <Field label="Admitted on">
-            <input
-              type="date"
-              name="admitted_on"
-              required
-              value={admittedOn || localToday}
-              max={localToday}
-              onChange={(e) => setAdmittedOn(e.target.value)}
-              className="w-full ios-group px-4 py-4 text-body outline-none focus:border-accent"
-            />
-          </Field>
 
           {/* Management leads, and decides what else is worth asking. A conservative or workup
               patient has no operation to name and no date to give, so neither is put in front of
