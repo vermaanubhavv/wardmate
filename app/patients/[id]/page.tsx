@@ -94,28 +94,17 @@ type Entry = {
   observations: Observation[];
 };
 
-// TEMPORARY, with the timing below: read the clock outside render so the purity rule allows it.
-const clock = () => Date.now();
-
 export default async function PatientPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  // TEMPORARY: how long each read takes on production, one log line per page view. Labels and
-  // milliseconds only — no patient data. Remove once the slow step is found.
-  const started = clock();
-  const times: Record<string, number> = {};
-  const timed = <T,>(label: string, p: PromiseLike<T>): Promise<T> => {
-    const s = clock();
-    return Promise.resolve(p).then((v) => ((times[label] = clock() - s), v));
-  };
-  const supabase = await timed("createClient", createClient());
+  const supabase = await createClient();
 
-  const { data: patient } = await timed("patient", supabase
+  const { data: patient } = await supabase
     .from("current_patients")
     .select(
       "id, ward_id, display_name, age_years, sex, bed, uhid_ip_no, mrd_no, primary_diagnosis, admitted_on, surgery_date, planned_surgery_date, post_op_day, admission_day, regimen, cycle_number, cycle_started_on, cycle_day, status, template_family, template_variant, procedure_text, management, location"
     )
     .eq("id", id)
-    .maybeSingle());
+    .maybeSingle();
 
   if (!patient) notFound();
 
@@ -133,7 +122,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // checklist rows the picker offers, and whether the edit dialog shows chemotherapy fields.
   // Started here and awaited inside the batch below, so the reads that do not need it are not
   // queueing behind it.
-  const packP = timed("specialty", getWardSpecialtyStored(patient.ward_id)).then(getSpecialtyPack);
+  const packP = getWardSpecialtyStored(patient.ward_id).then(getSpecialtyPack);
 
   // The burn columns (patch 0085) are read in a second, tiny query instead of being named in
   // the select above, and only for a burns unit. The select above runs for EVERY patient on
@@ -154,6 +143,36 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       : null
   );
 
+  // Made a real promise once: a Supabase query is a thenable that runs again each time it is
+  // awaited, and this one is awaited twice below.
+  const entriesP = Promise.resolve(
+    supabase
+      .from("entries")
+      .select(
+        "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, is_case_history, matched_protocol_ids, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at, pac_verdict, task_open, ref_low, ref_high, ref_text)"
+      )
+      .eq("patient_id", id)
+      .order("recorded_at", { ascending: false })
+  );
+
+  // Short-lived links for the stored photographs (private bucket, one-hour expiry, minted only
+  // here for a doctor already confirmed on this patient's ward) and the titles of any matched
+  // protocols. Both need only the entry list, so they start the moment it lands instead of
+  // waiting for the rest of the batch and the scoring reads after it.
+  const photosAndProtocolsP = entriesP.then(({ data }) => {
+    const rows = (data ?? []) as unknown as Entry[];
+    const photoPaths = rows.map((e) => e.photo_path).filter((p): p is string => Boolean(p));
+    const matchedIds = Array.from(new Set(rows.flatMap((e) => e.matched_protocol_ids ?? [])));
+    return Promise.all([
+      photoPaths.length > 0
+        ? supabase.storage.from("evidence").createSignedUrls(photoPaths, 3600)
+        : Promise.resolve({ data: [] as { path?: string | null; signedUrl?: string | null }[] }),
+      matchedIds.length > 0
+        ? supabase.from("company_protocols").select("id, title").in("id", matchedIds)
+        : Promise.resolve({ data: [] as { id: string; title: string }[] }),
+    ]);
+  });
+
   const [
     pack,
     burns,
@@ -168,46 +187,40 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     { data: dischargeWork },
   ] = await Promise.all([
       packP,
-      timed("burns", burnsP),
+      burnsP,
       // The next bed in walking order, so finishing one patient and starting the next is one
       // tap rather than a trip back through the ward list. Only ids and beds: getActivePatients
       // also pulls every observation and entry on the ward for the list's badges, which this
       // screen never shows and which grew with the ward — it was most of this page's wait.
-      timed("wardBeds", supabase
+      supabase
         .from("current_patients")
         .select("id, bed")
         .eq("ward_id", patient.ward_id)
-        .eq("status", "active")),
-      timed("entries", supabase
-        .from("entries")
-        .select(
-          "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, is_case_history, matched_protocol_ids, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at, pac_verdict, task_open, ref_low, ref_high, ref_text)"
-        )
-        .eq("patient_id", id)
-        .order("recorded_at", { ascending: false })),
-      timed("procedures", packP.then((p) => getProcedureLabels(p.key))),
-      timed("templateChoices", packP.then((p) => listTemplateChoices(p.key))),
+        .eq("status", "active"),
+      entriesP,
+      packP.then((p) => getProcedureLabels(p.key)),
+      packP.then((p) => listTemplateChoices(p.key)),
       // Needs only fields already in hand from the patient row, so it was queueing behind the
       // batch for nothing.
-      timed("template", getTemplateForPatient(patient)),
+      getTemplateForPatient(patient),
       // Just the status line for the discharge fold — the workspace itself fetches the rest.
-      timed("dischargeStatus", supabase.from("discharge_summaries").select("status").eq("patient_id", id).maybeSingle()),
+      supabase.from("discharge_summaries").select("status").eq("patient_id", id).maybeSingle(),
       // This ward's own laboratory ranges, for results that arrived without a report to read.
       // Needs only patient.ward_id, so it belongs in the batch rather than a round trip of its
       // own after it.
-      timed("labRanges", getWardLabRanges(patient.ward_id)),
-      // Keeps scoring pathways in step with the latest observations. Instant no-op unless
-      // NEXT_PUBLIC_SCORING_ENGINE=on (lib/scoring/store.ts), so it costs nothing here today;
-      // when a pilot ward turns it on, the recompute still finishes before the reads below
-      // because this promise is awaited as part of the batch.
-      timed("syncPathways", syncPatientPathways(id)),
+      getWardLabRanges(patient.ward_id),
+      // Keeps scoring pathways in step with the latest observations. A no-op unless
+      // NEXT_PUBLIC_SCORING_ENGINE=on and the ward has opted in (lib/scoring/flag.ts). It IS on
+      // in production: timed there in October 2026 it was the slowest read on this page
+      // (~200 ms typical, 1.3 s seen), because each open pathway is recomputed one query at a
+      // time. Awaited as part of the batch so the scoring reads below see a fresh set.
+      syncPatientPathways(id),
       // Whether anyone has worked on the draft (patch 0102's computed column), read on its own:
       // opening this tab pre-writes AI sections, so "a row exists" is not "someone started".
       // If this read fails the tab behaves exactly as before — the status above is untouched,
       // so it can never look empty and re-run the AI over a resident's edits.
-      timed("dischargeWork", supabase.from("discharge_summaries").select("discharge_worked_on").eq("patient_id", id).maybeSingle()),
+      supabase.from("discharge_summaries").select("discharge_worked_on").eq("patient_id", id).maybeSingle(),
     ]);
-  times.batch = clock() - started;
   const patientWithBurn = { ...patient, ...(burns ?? {}) };
   const ward = (wardBeds ?? []).sort((a, b) => compareBeds(a.bed, b.bed));
   const dischargeStatus =
@@ -237,30 +250,15 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const caseHistoryEntries = allEntries.filter((e) => e.is_case_history);
   const entries = allEntries.filter((e) => !e.is_case_history);
 
-  // Titles for whatever protocols got matched, fetched once for the whole page rather than
-  // once per entry — the same batching reasoning as the photo URLs just above.
-  const matchedIds = Array.from(
-    new Set(allEntries.flatMap((e) => e.matched_protocol_ids ?? []))
-  );
   // Clinical scoring & auto-trigger engine. Inert unless the ward has opted in AND
   // NEXT_PUBLIC_SCORING_ENGINE=on (lib/scoring/flag.ts) — with the flag closed both calls
   // return immediately without touching the database (DOCX test 16). syncPatientPathways
-  // already ran in the batch above, so these reads see a fresh set.
-  const [scoringTasks, scoreCards] = await timed("scoring", Promise.all([getPatientScoringTasks(id), getScoreCards(id)]));
-
-  // Short-lived links for the stored photographs (private bucket, one-hour expiry, minted only
-  // here for a doctor already confirmed on this patient's ward) and the titles of any matched
-  // protocols. Both need the entry list that just came back, and neither needs the other, so
-  // they go out together rather than one after the next.
-  const photoPaths = allEntries.map((e) => e.photo_path).filter((p): p is string => Boolean(p));
-  const [signedRes, matchedProtocolsRes] = await timed("photosAndProtocols", Promise.all([
-    photoPaths.length > 0
-      ? supabase.storage.from("evidence").createSignedUrls(photoPaths, 3600)
-      : Promise.resolve({ data: [] as { path?: string | null; signedUrl?: string | null }[] }),
-    matchedIds.length > 0
-      ? supabase.from("company_protocols").select("id, title").in("id", matchedIds)
-      : Promise.resolve({ data: [] as { id: string; title: string }[] }),
-  ]));
+  // already ran in the batch above, so these reads see a fresh set. The photo links and
+  // protocol titles started off the entries, so they are usually in by now.
+  const [[scoringTasks, scoreCards], [signedRes, matchedProtocolsRes]] = await Promise.all([
+    Promise.all([getPatientScoringTasks(id), getScoreCards(id)]),
+    photosAndProtocolsP,
+  ]);
 
   const photoUrls = new Map<string, string>();
   for (const s of signedRes.data ?? []) {
@@ -353,7 +351,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
   // History check (behind NEXT_PUBLIC_HISTORY_CHECK). Suggestions come from the chief
   // complaints as dictated; the card itself is rendered from stored runs, never live.
-  const historyCheck = await timed("historyCheck", loadHistoryCheckCard(
+  const historyCheck = await loadHistoryCheckCard(
     supabase,
     patient,
     caseHistoryEntries
@@ -361,7 +359,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       .filter((o) => /chief complaint|presenting complaint/i.test(o.label))
       .map((o) => o.value_text ?? o.label),
     pack.historyTreeIds
-  ));
+  );
 
   // Latest of each drug recorded, for the discharge brief. Taken from the same observations
   // the rest of the screen uses, so it can hold nothing that was not said.
@@ -791,8 +789,6 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     !hasOperationClock(pack) &&
     !allObservations.some((o) => CHARTED_VITALS.has(matchVitalLabel(o.label) ?? "") && o.value_text);
 
-  times.total = clock() - started;
-  console.log(`[patient-timing] entries=${allEntries.length} ${JSON.stringify(times)}`);
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
       {/* A real navigation bar: back on the left, where the eye and thumb both go for it, and
