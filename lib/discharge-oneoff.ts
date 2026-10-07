@@ -74,5 +74,6 @@ export function oneOffContext(
     formularyMappings,
     formularySize: 0,
     row: null,
+    aiDraftStale: false,
   };
 }

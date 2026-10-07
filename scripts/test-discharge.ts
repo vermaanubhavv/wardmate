@@ -144,9 +144,9 @@ const herniaSeed = compileDischargeDraft({ ...oneOffCtx, patient: { ...oneOffCtx
 ok("a hernia repair seeds NO histopathology row (nothing routinely sent)", herniaSeed.histopathology.length === 0);
 
 // A WARD patient (seedAll = false): the record still drives everything; the template only
-// OFFERS its advice + red-flag cards, switched off.
+// seeds its advice + red-flag cards, switched on.
 const wardSeeded = compileDischargeDraft(context);
-ok("ward patient: template offers advice, switched off", wardSeeded.advice.items.length > 0 && wardSeeded.advice.included === false);
+ok("ward patient: template seeds advice, switched on", wardSeeded.advice.items.length > 0 && wardSeeded.advice.included === true);
 ok("ward patient: template does NOT seed the clinical course", wardSeeded.clinicalCourse.text === "");
 ok("ward patient: template does NOT overwrite compiled medications", wardSeeded.medications.length === 1 && /amoxicillin/i.test(wardSeeded.medications[0].generic));
 

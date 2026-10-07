@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getPatientDictationKeyterms } from "@/lib/transcription/patient-context";
+import { MEDICAL_KEYTERMS } from "@/lib/stt";
 
 /**
  * Mint a short-lived Deepgram token so the browser can open a live-transcription WebSocket
@@ -35,18 +36,17 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Malformed request." }, { status: 400 });
   }
-  if (!body.patientId) {
-    return NextResponse.json({ error: "No patient given." }, { status: 400 });
+  // No patient yet is the add-patient screen: the general medical vocabulary instead of a
+  // patient's own. A patient given has to be one this user can see — reuse RLS: a row comes
+  // back only for a ward member.
+  if (body.patientId) {
+    const { data: patient } = await supabase
+      .from("current_patients")
+      .select("id")
+      .eq("id", body.patientId)
+      .maybeSingle();
+    if (!patient) return NextResponse.json({ error: "Patient not found." }, { status: 404 });
   }
-
-  // The patient has to be one this user can see — reuse RLS: a row comes back only for a ward
-  // member.
-  const { data: patient } = await supabase
-    .from("current_patients")
-    .select("id")
-    .eq("id", body.patientId)
-    .maybeSingle();
-  if (!patient) return NextResponse.json({ error: "Patient not found." }, { status: 404 });
 
   let token: string;
   let expiresIn = 30;
@@ -73,9 +73,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Could not reach Deepgram." }, { status: 502 });
   }
 
-  const keyterms = await getPatientDictationKeyterms(supabase, body.patientId, {
-    noteType: "ward-round",
-  });
+  const keyterms = body.patientId
+    ? await getPatientDictationKeyterms(supabase, body.patientId, { noteType: "ward-round" })
+    : [...MEDICAL_KEYTERMS];
 
   return NextResponse.json({ token, expiresIn, keyterms });
 }
