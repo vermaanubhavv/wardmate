@@ -34,7 +34,7 @@ export type Observation = {
 export type PacVerdict = "fit" | "fit_with_conditions" | "unfit" | "pending" | null;
 
 /** An outstanding job, with how many earlier sayings of it are folded underneath. */
-type OpenTask = Observation & { repeats: number };
+type OpenTask = Observation & { repeats: number; ids: string[] };
 
 export type PatientState = {
   matched: MatchedItem[];
@@ -93,7 +93,7 @@ export function derivePatientState(
   // outranks. Deduping before sorting matters: the newest saying carries the urgency that
   // decides the order.
   const openTasks: OpenTask[] = dedupeTasks(allPlans.filter((o) => !o.done_at))
-    .map(({ task, repeats }) => ({ ...task, repeats: repeats.length }))
+    .map(({ task, repeats }) => ({ ...task, repeats: repeats.length, ids: [task.id, ...repeats.map((r) => r.id)] }))
     .sort(
       (a, b) =>
         urgencyRank(effectiveUrgency(a).urgency) - urgencyRank(effectiveUrgency(b).urgency)

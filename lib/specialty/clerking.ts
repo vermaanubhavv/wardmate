@@ -498,9 +498,17 @@ const SURGICAL_FORMAT: FormatStep[] = [
   ...CLOSING_FORMAT,
 ];
 
-/** What a full clerking covers on this unit, in the order it is taken. Mirrors the card walk. */
-export function clerkingFormatFor(specialty?: string | null): FormatStep[] {
+/**
+ * What a full clerking covers on this unit, in the order it is taken. Mirrors the card walk.
+ * On every unit a recorded male drops the menstrual & obstetric step;
+ * a female or an unrecorded sex keeps it.
+ */
+export function clerkingFormatFor(specialty?: string | null, sex?: string | null): FormatStep[] {
+  // A recorded male is never asked a menstrual history, on any unit — the card-by-card workspace
+  // already hides that card for him; the spoken list matches it.
+  const forSex = (list: FormatStep[]) =>
+    sex === "M" ? list.filter((s) => s.title !== "Menstrual & obstetric history") : list;
   const steps = EXAM_STEPS[(specialty ?? "") as SpecialtyKey];
-  if (!steps) return SURGICAL_FORMAT;
-  return [...HISTORY_FORMAT, ...steps.map((id) => EXAM_FORMAT[id]), ...CLOSING_FORMAT];
+  if (!steps) return forSex(SURGICAL_FORMAT);
+  return [...forSex(HISTORY_FORMAT), ...steps.map((id) => EXAM_FORMAT[id]), ...CLOSING_FORMAT];
 }

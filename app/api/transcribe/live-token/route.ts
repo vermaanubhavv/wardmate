@@ -6,8 +6,8 @@ import { getPatientDictationKeyterms } from "@/lib/transcription/patient-context
  * Mint a short-lived Deepgram token so the browser can open a live-transcription WebSocket
  * straight to Deepgram without ever seeing DEEPGRAM_API_KEY.
  *
- * Used only by the case-history "dictate the whole clerking" flow (lib/stt/live.ts). Every
- * other dictation path records a clip and POSTs it to /api/transcribe instead.
+ * Used by the bedside mic and the live dictation panel (lib/stt/live.ts). Every other
+ * dictation path records a clip and POSTs it to /api/transcribe instead.
  *
  * The response also carries the patient's medical keyterms — Nova-3 fixes its vocabulary when
  * the socket opens, so the list has to be chosen here, before the browser connects. That list

@@ -22,19 +22,25 @@ import {
   applyCompiledNote,
 } from "./actions";
 import { medPresetsFor } from "./med-presets";
+import LiveDictation, { DictateButton, routeVia, type LiveLine, type LiveSection } from "../live-dictation";
 import type { NoteVitalField, ProgressNoteConfig } from "@/lib/progress-note-config";
+
+const vitalKey = (k: string) => `vital:${k.replace(/\W+/g, "_")}`;
+const appendTo = (prev: string, add: string) => (prev.trim() ? `${prev.trim()}; ${add}` : add);
 
 export type NoteObs = { kind: string; label: string; value: string | null };
 
 const SENSORIUM_ALIASES = ["sensorium", "cns", "gcs"];
 const SENSORIUM = ["Conscious & oriented", "Drowsy", "Altered sensorium", "Irritable"];
 const ASSESSMENT = ["Satisfactory", "Stable", "Improving", "Static", "Deteriorating"];
+// Placeholders are a dash, never a plausible reading: a grey "120/80" in an empty field reads
+// as a recorded value at a glance on a phone.
 const SHARED_VITALS: NoteVitalField[] = [
-  { key: "BP", label: "BP", ph: "120/80", aliases: ["bp", "blood pressure"] },
-  { key: "PR", label: "PR", ph: "84 /min", aliases: ["pr", "pulse", "pulse rate"] },
-  { key: "RR", label: "RR", ph: "18 /min", aliases: ["rr", "respiratory rate"] },
-  { key: "Temp", label: "Temp", ph: "Afebrile", aliases: ["temp", "temperature"] },
-  { key: "SpO2", label: "SpO₂", ph: "98% RA", aliases: ["spo2", "saturation", "oxygen saturation"] },
+  { key: "BP", label: "BP", ph: "—", aliases: ["bp", "blood pressure"] },
+  { key: "PR", label: "PR", ph: "—", aliases: ["pr", "pulse", "pulse rate"] },
+  { key: "RR", label: "RR", ph: "—", aliases: ["rr", "respiratory rate"] },
+  { key: "Temp", label: "Temp", ph: "—", aliases: ["temp", "temperature"] },
+  { key: "SpO2", label: "SpO₂", ph: "—", aliases: ["spo2", "saturation", "oxygen saturation"] },
   { key: "GRBS", label: "GRBS", ph: "—", aliases: ["grbs", "rbs", "cbg"] },
   // Anything here means the patient is on the ICU/HDU — it flags them Critical on the ward
   // list. Free text so the resident can note the support ("on noradrenaline 0.08", "HFNC").
@@ -143,6 +149,65 @@ export default function NoteWorkspace({
   const [carried, setCarried] = useState<Set<StepId>>(() => new Set());
   const carry = (id: StepId) => setCarried((s) => new Set(s).add(id));
 
+  // Live dictation: the sections snapshot what each card held when it opened, so the panel
+  // shows old text and this session's lines apart. Dictated lines land in the cards' own state
+  // and are saved as amber wherever they carry a number or a drug.
+  const [live, setLive] = useState<LiveSection[] | null>(null);
+  const dictatedMeds = useRef(new Set<string>());
+  const toSave = useRef(new Set<StepId>());
+  const liveSections = (): LiveSection[] => [
+    { key: "complaints", label: "Complaints / overnight", existing: complaints },
+    { key: "sensorium", label: "Sensorium", existing: sensorium },
+    ...VITALS.map((v) => ({ key: vitalKey(v.key), label: v.label, existing: vitals[v.key] })),
+    ...noteConfig.examSections.map((sec) => ({ key: sec.id, label: sec.title, existing: exam[sec.id] })),
+    ...(noteConfig.bowelLine
+      ? [
+          { key: "flatus", label: "Flatus", existing: flatus },
+          { key: "stool", label: "Stool", existing: stool },
+        ]
+      : []),
+    { key: "assessment", label: "Assessment", existing: assessment },
+    { key: "plan", label: "Plan", existing: planItems.join("; ") },
+    { key: "meds", label: "Medications", existing: meds.join("; "), drug: true },
+  ];
+  function applyDictation(lines: LiveLine[]) {
+    const touched = new Set<StepId>();
+    for (const { section: k, text } of lines) {
+      const vital = VITALS.find((v) => vitalKey(v.key) === k);
+      if (k === "complaints") setComplaints((p) => appendTo(p, text));
+      else if (k === "sensorium") setSensorium((p) => appendTo(p, text));
+      else if (vital) setVitals((p) => ({ ...p, [vital.key]: text }));
+      else if (sectionById(k)) setExam((p) => ({ ...p, [k]: appendTo(p[k] ?? "", text) }));
+      else if (k === "flatus" || k === "stool") {
+        if (!/^(not )?passed\.?$/i.test(text)) continue;
+        (k === "flatus" ? setFlatus : setStool)(/^not/i.test(text) ? "Not passed" : "Passed");
+      } else if (k === "assessment") setAssessment((p) => appendTo(p, text));
+      else if (k === "plan") setPlanItems((p) => [...p, text]);
+      else if (k === "meds") {
+        dictatedMeds.current.add(text);
+        setMeds((p) => [...p, text]);
+      } else continue;
+      touched.add(vital ? "vitals" : k === "flatus" || k === "stool" ? "bowel" : k);
+    }
+    setDirty((s) => new Set([...s, ...touched]));
+    setCarried((s) => new Set([...s, ...touched]));
+    touched.forEach((id) => toSave.current.add(id));
+  }
+  // Save every card dictation touched once the panel closes — they are not all the card on
+  // screen, and leaving the page only flushes that one. Runs after the render that holds them.
+  const [saveTick, setSaveTick] = useState(0);
+  useEffect(() => {
+    const ids = [...toSave.current];
+    toSave.current.clear();
+    if (ids.length === 0) return;
+    startTransition(async () => {
+      for (const id of ids) if (!(await persist(id))) return;
+      setMessage(`${ids.length} card(s) filled by dictation and saved — anything amber needs your check.`);
+      router.refresh();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveTick]);
+
   const current = STEPS[step];
   const mark = (id: StepId) => {
     setDirty((s) => new Set(s).add(id));
@@ -157,7 +222,8 @@ export default function NoteWorkspace({
     else if (id === "vitals")
       res = await replaceTodayNoteVitals(
         patientId,
-        VITALS.map((v) => ({ label: v.key, value: vitals[v.key]?.trim() || null }))
+        VITALS.map((v) => ({ label: v.key, value: vitals[v.key]?.trim() || null })),
+        c
       );
     else if (sectionById(id)) {
       const sec = sectionById(id)!;
@@ -168,9 +234,9 @@ export default function NoteWorkspace({
         { label: "flatus", kind: "exam", value: flatus || null, carried: c },
         { label: "stool", kind: "exam", value: stool || null, carried: c },
       ]);
-    else if (id === "assessment") res = await replaceTodayNoteSection(patientId, "assessment", "note", assessment ? [assessment] : []);
-    else if (id === "plan") res = await replaceTodayNoteSection(patientId, "plan", "plan", planItems);
-    else if (id === "meds") res = await replaceActiveMedications(patientId, meds);
+    else if (id === "assessment") res = await replaceTodayNoteSection(patientId, "assessment", "note", assessment ? [assessment] : [], c);
+    else if (id === "plan") res = await replaceTodayNoteSection(patientId, "plan", "plan", planItems, c);
+    else if (id === "meds") res = await replaceActiveMedications(patientId, meds, [...dictatedMeds.current]);
 
     if (!res.ok) {
       setMessage(res.error ?? "Could not save — your edits are still here.");
@@ -498,6 +564,27 @@ export default function NoteWorkspace({
 
   return (
     <div className="flex flex-col gap-3 px-4 pb-[var(--bar-height)]">
+      {live && (
+        <LiveDictation
+          patientId={patientId}
+          title="Dictating today's note"
+          example="e.g. “no fresh complaints overnight… BP 120 by 80, pulse 84… abdomen soft… start oral sips…”"
+          sections={live}
+          route={routeVia(patientId, live)}
+          onLines={applyDictation}
+          onClose={() => {
+            setLive(null);
+            setSaveTick((t) => t + 1);
+          }}
+        />
+      )}
+      {!live && (
+        <DictateButton
+          title="Dictate today's note"
+          sub="Speak the whole round — each part fills its card as you talk."
+          onClick={() => setLive(liveSections())}
+        />
+      )}
       {focus && (
         <details className="ios-group px-4 py-3">
           <summary className="tap cursor-pointer text-footnote font-medium text-accent">What to check today</summary>

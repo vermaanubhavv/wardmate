@@ -2,6 +2,7 @@ import type { DischargeContext } from "@/lib/discharge-data";
 import type { DischargeDraft, DischargeSectionId } from "@/lib/discharge-entities";
 import { ALL_CONDITION_VARIABLES } from "@/lib/discharge-entities";
 import { dischargeProfileFor } from "@/lib/specialty/discharge";
+import { dateAnchors, structuredDateQuestions } from "@/lib/date-check";
 
 /**
  * The completeness and consistency checks the protocol (section 16) requires before a discharge
@@ -234,6 +235,12 @@ export function runDischargeChecks(
   if (!draft.authentication.doctorName?.trim()) {
     block("auth-no-name", "authentication", "The discharging doctor's name is missing.");
   }
+
+  // --- Dates -------------------------------------------------------------------
+  // An operation dated in the future, before admission or after discharge. Code only, so it runs
+  // as the resident edits; the dates inside the free text are read by Haiku on Print
+  // (lib/date-check-ai.ts) and come back as questions on the summary.
+  structuredDateQuestions(dateAnchors(draft)).forEach((q, i) => warn(`date-${i}`, "procedures", q));
 
   // --- Internal inconsistencies -----------------------------------------------------
   if (

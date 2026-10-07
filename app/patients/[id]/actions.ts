@@ -197,6 +197,8 @@ export async function updateObservation(formData: FormData) {
   const id = String(formData.get("observation_id") ?? "");
   const patientId = String(formData.get("patient_id") ?? "");
   const value = String(formData.get("value_text") ?? "").trim();
+  // Set only by the structured medication editor, where changing the drug changes the label.
+  const label = String(formData.get("label") ?? "").trim();
   if (!id || !patientId) return;
 
   const supabase = await createClient();
@@ -208,13 +210,14 @@ export async function updateObservation(formData: FormData) {
   // An emptied value deletes the observation rather than storing a blank: a value the
   // resident has cleared is one the app should never have recorded, and a row reading
   // "temperature:" with nothing after it is worse than no row.
-  if (!value) {
+  if (!value && !label) {
     await supabase.from("observations").delete().eq("id", id).eq("patient_id", patientId);
   } else {
     await supabase
       .from("observations")
       .update({
-        value_text: value,
+        value_text: value || null,
+        ...(label ? { label } : {}),
         needs_confirmation: false,
         confirmed_at: new Date().toISOString(),
         confirmed_by: user.id,
@@ -493,4 +496,94 @@ async function setTaskDone(formData: FormData, done: boolean) {
   revalidatePath("/handover"); // handover's open/done split reads done_at the same way
   revalidatePath("/ward"); // open_task_count on the ward list
   // Not "/": task completion never changes a patient's location or count.
+}
+
+/**
+ * The PAC dropdown. One tap is the resident saying the verdict, so it is stored the same way a
+ * spoken one is — a manual entry whose transcript is the words, and a confirmed pac_status row
+ * quoting them. Unfit or not done puts one "Get PAC" job on the to-do list (never a second while
+ * one is open); fit ticks that job off.
+ */
+const PAC_CHOICES = {
+  fit: { word: "Fit", verdict: "fit" },
+  unfit: { word: "Unfit", verdict: "unfit" },
+  not_done: { word: "Not done", verdict: "pending" },
+} as const;
+
+export async function setPacVerdict(patientId: string, choice: keyof typeof PAC_CHOICES) {
+  const pick = PAC_CHOICES[choice];
+  if (!pick) return;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const transcript = `PAC ${pick.word}`;
+  const now = new Date().toISOString();
+  const { data: entry } = await supabase
+    .from("entries")
+    .insert({ patient_id: patientId, author_id: user.id, source: "manual", transcript })
+    .select("id")
+    .single();
+  if (!entry) return;
+
+  const confirmed = { needs_confirmation: false, confirmed_at: now, confirmed_by: user.id };
+  const rows: Record<string, unknown>[] = [
+    {
+      entry_id: entry.id,
+      patient_id: patientId,
+      kind: "pac_status",
+      label: "PAC",
+      value_text: pick.word,
+      pac_verdict: pick.verdict,
+      source_quote: transcript,
+      ...confirmed,
+    },
+  ];
+
+  const { data: openGetPac } = await supabase
+    .from("observations")
+    .select("id")
+    .eq("patient_id", patientId)
+    .eq("kind", "plan")
+    .eq("label", "Get PAC")
+    .is("done_at", null);
+
+  if (choice === "fit") {
+    if (openGetPac?.length) {
+      await supabase
+        .from("observations")
+        .update({ done_at: now, done_by: user.id })
+        .in("id", openGetPac.map((o) => o.id));
+    }
+  } else if (!openGetPac?.length) {
+    rows.push({
+      entry_id: entry.id,
+      patient_id: patientId,
+      kind: "plan",
+      label: "Get PAC",
+      value_text: "Get PAC",
+      task_open: true,
+      source_quote: transcript,
+      ...confirmed,
+    });
+  }
+
+  await supabase.from("observations").insert(rows);
+  revalidateEverywhere(patientId);
+}
+
+/** Swipe-to-delete on a to-do. Every id of the job (its repeats too), plans only. */
+export async function deleteTasks(patientId: string, ids: string[]) {
+  if (ids.length === 0) return;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase.from("observations").delete().eq("patient_id", patientId).eq("kind", "plan").in("id", ids);
+  revalidateEverywhere(patientId);
 }

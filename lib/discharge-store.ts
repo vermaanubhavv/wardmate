@@ -4,6 +4,8 @@ import { compileDischargeDraft } from "@/lib/discharge-compile";
 import { runDischargeChecks, buildCheckContext, type DischargeCheck } from "@/lib/discharge-checks";
 import type { DischargeDraft, DischargeSectionId, Procedure } from "@/lib/discharge-entities";
 import { finalCheck, polishProse, type FinalFix } from "@/lib/final-check";
+import { checkDates } from "@/lib/date-check-ai";
+import { dateAnchors } from "@/lib/date-check";
 
 /**
  * The stored discharge, merged over a freshly compiled one.
@@ -19,7 +21,7 @@ type ColumnKey = keyof Omit<DischargeRow, "id" | "status" | "finalised_at">;
 
 const SECTION_COLUMN: Record<DischargeSectionId, { column: ColumnKey; key: keyof DischargeDraft }> = {
   indication: { column: "indication_for_admission", key: "indicationForAdmission" },
-  encounter: { column: "encounter", key: "encounter" },
+  admission: { column: "encounter", key: "admission" },
   diagnoses: { column: "diagnoses", key: "diagnoses" },
   procedures: { column: "procedures", key: "procedures" },
   clinicalCourse: { column: "clinical_course", key: "clinicalCourse" },
@@ -172,9 +174,9 @@ export async function finaliseDischargeSummary(
     ...draft.authentication,
     completedAt: draft.authentication.completedAt ?? now,
   };
-  const encounter = {
-    ...draft.encounter,
-    dischargedAt: draft.encounter.dischargedAt ?? now,
+  const admission = {
+    ...draft.admission,
+    dischargedAt: draft.admission.dischargedAt ?? now,
   };
 
   const { data: existing } = await supabase
@@ -188,7 +190,7 @@ export async function finaliseDischargeSummary(
     finalised_at: now,
     finalised_by: user.id,
     authentication,
-    encounter,
+    encounter: admission, // the column keeps its original name
     updated_at: now,
   };
 
@@ -225,9 +227,12 @@ export async function proofreadDischarge(patientId: string): Promise<{ changed: 
 
   const draft = mergeDischargeDraft(context);
   const course = draft.clinicalCourse.text;
-  const [polished, checked] = await Promise.all([
+  const fields = dischargeFields(draft);
+  const [polished, checked, dateQuestions] = await Promise.all([
     polishProse(course, "Clinical Course of a discharge summary"),
-    finalCheck(dischargeFields(draft), "discharge summary"),
+    finalCheck(fields, "discharge summary"),
+    // Haiku reads the dates, code compares them — lib/date-check.ts.
+    checkDates(Object.values(fields).join("\n"), dateAnchors(draft)),
   ]);
   let fixes: FinalFix[] = checked.fixes;
   if (polished !== course) {
@@ -241,7 +246,7 @@ export async function proofreadDischarge(patientId: string): Promise<{ changed: 
   const now = new Date().toISOString();
   const patch = {
     updated_at: now,
-    final_check: { checkedAt: now, fixes, questions: checked.questions },
+    final_check: { checkedAt: now, fixes, questions: [...new Set([...dateQuestions, ...checked.questions])] },
     ...Object.fromEntries(
       [...fixedSections].map((id) => [SECTION_COLUMN[id].column, fixedDraft[SECTION_COLUMN[id].key]])
     ),

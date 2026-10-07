@@ -1,6 +1,7 @@
 "use client";
 
 import { ActionSheet } from "../../../action-sheet";
+import { startWait } from "@/lib/track";
 import { takeDischargeWarmup } from "@/lib/discharge-warmup";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -23,6 +24,7 @@ import { buildConditionProse } from "@/lib/discharge-compile";
 import { runDischargeChecks, type DischargeCheckContext } from "@/lib/discharge-checks";
 import type { DischargeCheck } from "@/lib/discharge-checks";
 import FormularyLink from "./formulary-link";
+import LiveDictation, { DictateButton, routeVia, type LiveLine, type LiveSection } from "../live-dictation";
 import type { DischargeProfile } from "@/lib/specialty/discharge";
 import type { FinalFix } from "@/lib/final-check";
 import { Field, Area, StringList, SuggestField, SelectField, SegmentedField } from "./discharge-fields";
@@ -40,7 +42,7 @@ import {
 
 const uid = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `r-${Math.round(Math.random() * 1e9)}`);
 
-// The Encounter card's option lists — real ones, kept short. Department/Specialty/Unit are
+// The Admission Details card's option lists — real ones, kept short. Department/Specialty/Unit are
 // suggestions only; typing anything else is still fine. Consultant is a closed set on purpose —
 // which unit a discharge is written on already says who the consultant is (compiled in from the
 // ward's own setting, lib/unit-consultants.ts), so this is a dropdown to correct it, not a box
@@ -173,6 +175,10 @@ export default function DischargeWorkspace({
     const i = s ? STEPS.findIndex((step) => step.id === s) : -1;
     return i >= 0 ? i : 0;
   });
+  // Condition at Discharge starts empty by design (nothing is pre-marked), so its "set at least
+  // N" blocker would greet every resident as a red error. It is shown once they have reached
+  // Review & sign — the only place Finalise lives.
+  const [reachedReview, setReachedReview] = useState(() => STEPS[step].id === "review");
   const [menuOpen, setMenuOpen] = useState(false);
   const [askReset, setAskReset] = useState(false);
   const [openMed, setOpenMed] = useState<string | null>(null);
@@ -198,7 +204,7 @@ export default function DischargeWorkspace({
   const sectionValue = (d: DischargeDraft, section: DischargeSectionId): unknown =>
     ({
       indication: d.indicationForAdmission,
-      encounter: d.encounter,
+      admission: d.admission,
       diagnoses: d.diagnoses,
       procedures: d.procedures,
       clinicalCourse: d.clinicalCourse,
@@ -316,6 +322,8 @@ export default function DischargeWorkspace({
     const done = (sections: AutoSection[]) =>
       setAutoGen((s) => new Set([...s].filter((x) => !sections.includes(x))));
     const draftOne = async (section: AutoSection) => {
+      const stop = startWait(`discharge_draft_${section}`);
+      let ok = false;
       try {
         const res = await fetch(`/api/patients/${patientId}/discharge/generate`, {
           method: "POST",
@@ -323,10 +331,12 @@ export default function DischargeWorkspace({
           body: JSON.stringify({ section }),
         });
         const data = await res.json();
+        ok = res.ok;
         if (res.ok) apply(section, data.section);
       } catch {
         // No signal — the resident falls back to the manual buttons.
       }
+      stop(ok);
       done([section]);
     };
 
@@ -351,6 +361,9 @@ export default function DischargeWorkspace({
     for (const c of checks.blocking) m.set(c.section, [...(m.get(c.section) ?? []), c]);
     return m;
   }, [checks]);
+  /** A card's red errors — Condition at Discharge's held back until Review has been reached. */
+  const blockingFor = (s: DischargeSectionId) =>
+    s === "conditionAtDischarge" && !reachedReview ? [] : (blockingBySection.get(s) ?? []);
 
   const current = STEPS[step];
   const stepIndexOf = (id: StepId) => STEPS.findIndex((s) => s.id === id);
@@ -382,9 +395,51 @@ export default function DischargeWorkspace({
     });
   }
 
+  // Live dictation. Free-text sections take the words straight into the draft (and autosave
+  // them like any edit — an AI section loses its approval, exactly as when typed); drugs, the
+  // diagnosis and anything unplaced are shown for the resident to put on their card.
+  const [live, setLive] = useState<LiveSection[] | null>(null);
+  const liveSections = (): LiveSection[] => [
+    { key: "indication", label: "Indication for admission", existing: draft.indicationForAdmission.text },
+    { key: "diagnoses", label: "Diagnosis", existing: draft.diagnoses.map((d) => d.text).filter(Boolean).join("; "), held: true },
+    { key: "clinicalCourse", label: "Clinical course", existing: draft.clinicalCourse.text },
+    { key: "medications", label: "Discharge medications", held: true, drug: true },
+    { key: "condition", label: "Condition at discharge", existing: draft.conditionAtDischarge.freeText ?? "" },
+    { key: "primaryCareActions", label: "For the local doctor", existing: draft.primaryCareActions.join("; ") },
+    { key: "patientActions", label: "Follow-up", existing: draft.patientActions.join("; ") },
+    { key: "other", label: "Other — place by hand", held: true },
+  ];
+  function applyDictation(lines: LiveLine[]) {
+    const add = (prev: string, t: string) => (prev.trim() ? `${prev.trim()} ${t}` : t);
+    const touched = new Set<DischargeSectionId>();
+    setDraft((d) => {
+      let n = d;
+      for (const { section, text } of lines) {
+        if (section === "indication") {
+          n = { ...n, indicationForAdmission: { ...n.indicationForAdmission, text: add(n.indicationForAdmission.text, text), source: "resident", approvedAt: null, approvedBy: null } };
+          touched.add("indication");
+        } else if (section === "clinicalCourse") {
+          n = { ...n, clinicalCourse: { ...n.clinicalCourse, text: add(n.clinicalCourse.text, text), source: "resident", approvedAt: null, approvedBy: null } };
+          touched.add("clinicalCourse");
+        } else if (section === "condition") {
+          n = { ...n, conditionAtDischarge: { ...n.conditionAtDischarge, freeText: add(n.conditionAtDischarge.freeText ?? "", text) } };
+          touched.add("conditionAtDischarge");
+        } else if (section === "primaryCareActions" || section === "patientActions") {
+          n = { ...n, [section]: [...n[section], text] };
+          touched.add(section);
+        }
+      }
+      return n;
+    });
+    if (touched.size === 0) return;
+    setDirty((s) => new Set([...s, ...touched]));
+    scheduleSave();
+  }
+
   /** Move between cards. Autosave has the card being left; navigation never waits. */
   function goTo(index: number) {
     if (index < 0 || index >= STEPS.length) return;
+    if (STEPS[index].id === "review") setReachedReview(true);
     setStep(index);
     setMenuOpen(false);
     setOpenMed(null);
@@ -395,6 +450,7 @@ export default function DischargeWorkspace({
   async function generate(section: "clinical_course" | "indication" | "investigations") {
     setGenerating(section);
     setMessage(null);
+    const stop = startWait(`discharge_draft_${section}`);
     try {
       const res = await fetch(`/api/patients/${patientId}/discharge/generate`, {
         method: "POST",
@@ -402,6 +458,7 @@ export default function DischargeWorkspace({
         body: JSON.stringify({ section }),
       });
       const data = await res.json();
+      stop(res.ok);
       if (!res.ok) {
         setMessage(data.error ?? "Could not generate.");
         setGenerating(null);
@@ -478,9 +535,14 @@ export default function DischargeWorkspace({
 
   function finalise() {
     setIsFinalising(true);
+    const stop = startWait("discharge_finalise");
     startTransition(async () => {
-      if (!(await flushSaves())) return setIsFinalising(false);
+      if (!(await flushSaves())) {
+        stop(false);
+        return setIsFinalising(false);
+      }
       const result = await finaliseDischargeAction(patientId);
+      stop(result.ok);
       if (!result.ok) {
         setIsFinalising(false);
         setMessage(
@@ -538,7 +600,7 @@ export default function DischargeWorkspace({
     switch (id) {
       case "indication":
         return !!draft.indicationForAdmission.text.trim();
-      case "encounter":
+      case "admission":
         return true;
       case "diagnoses":
         return draft.diagnoses.some((d) => d.category === "primary" && d.text.trim());
@@ -578,7 +640,7 @@ export default function DischargeWorkspace({
           : draft.indicationForAdmission.text
             ? statusChip("review", "warn")
             : statusChip("empty", "muted");
-      case "encounter":
+      case "admission":
         return statusChip("compiled", "muted");
       case "diagnoses":
         return draft.diagnoses.some((d) => d.category === "primary")
@@ -647,17 +709,17 @@ export default function DischargeWorkspace({
         );
       }
 
-      case "encounter":
+      case "admission":
         return (
           <div className="grid grid-cols-2 gap-3">
-            <SuggestField label="Department" value={draft.encounter.department} options={DEPARTMENT_SUGGESTIONS} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, department: v })} />
-            <SuggestField label="Specialty" value={draft.encounter.specialty} options={DEPARTMENT_SUGGESTIONS} placeholder={profile.specialtyLabel} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, specialty: v })} />
-            <Field label="Ward" value={draft.encounter.ward} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, ward: v })} />
-            <Field label="Bed" value={draft.encounter.bed} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, bed: v })} />
-            <SelectField label="Consultant" value={draft.encounter.consultant} options={CONSULTANT_SUGGESTIONS} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, consultant: v })} />
-            <SuggestField label="Unit" value={draft.encounter.unit} options={UNIT_SUGGESTIONS} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, unit: v })} />
+            <SuggestField label="Department" value={draft.admission.department} options={DEPARTMENT_SUGGESTIONS} onChange={(v) => patch("admission", "admission", { ...draft.admission, department: v })} />
+            <SuggestField label="Specialty" value={draft.admission.specialty} options={DEPARTMENT_SUGGESTIONS} placeholder={profile.specialtyLabel} onChange={(v) => patch("admission", "admission", { ...draft.admission, specialty: v })} />
+            <Field label="Ward" value={draft.admission.ward} onChange={(v) => patch("admission", "admission", { ...draft.admission, ward: v })} />
+            <Field label="Bed" value={draft.admission.bed} onChange={(v) => patch("admission", "admission", { ...draft.admission, bed: v })} />
+            <SelectField label="Consultant" value={draft.admission.consultant} options={CONSULTANT_SUGGESTIONS} onChange={(v) => patch("admission", "admission", { ...draft.admission, consultant: v })} />
+            <SuggestField label="Unit" value={draft.admission.unit} options={UNIT_SUGGESTIONS} onChange={(v) => patch("admission", "admission", { ...draft.admission, unit: v })} />
             <div className="col-span-2">
-              <SegmentedField label="Admission type" value={draft.encounter.admissionType} options={ADMISSION_TYPES} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, admissionType: v })} />
+              <SegmentedField label="Admission type" value={draft.admission.admissionType} options={ADMISSION_TYPES} onChange={(v) => patch("admission", "admission", { ...draft.admission, admissionType: v })} />
             </div>
           </div>
         );
@@ -1048,6 +1110,27 @@ export default function DischargeWorkspace({
             <p className="text-caption leading-[1.45] text-muted">
               Tap what is true today. Set at least {profile.conditionMinimum === 5 ? "five" : profile.conditionMinimum}, or add free text.
             </p>
+            {/* The resident's own one-tap statement, offered only on an untouched card. Wound and
+                drain are findings, and sugars and BP apply only to some patients, so none of those
+                is included — the resident taps them separately where true. */}
+            {conditionVars.every((v) => dc.vars[v.key] == null) && (
+              <button
+                type="button"
+                onClick={() => {
+                  const skip: ConditionVariableKey[] = ["wound", "drain", "sugars", "bp"];
+                  const vars = { ...dc.vars };
+                  for (const v of conditionVars) if (!skip.includes(v.key)) vars[v.key] = true;
+                  patch("conditionAtDischarge", "conditionAtDischarge", {
+                    ...dc,
+                    vars,
+                    prose: dc.proseEdited ? dc.prose : buildConditionProse(vars),
+                  });
+                }}
+                className="min-h-11 self-start rounded-[10px] border border-line bg-card px-3.5 text-subhead font-medium text-accent active:opacity-60"
+              >
+                Mark the standard items satisfactory
+              </button>
+            )}
             <div className="flex flex-wrap gap-2">
               {conditionVars.map((v) => {
                 const val = dc.vars[v.key];
@@ -1109,17 +1192,15 @@ export default function DischargeWorkspace({
               <>
                 {draft.advice.items.map((a, i) => (
                   <div key={a.id} className="flex flex-col gap-2 rounded-[10px] border border-line p-2.5">
-                    <div className="flex flex-wrap gap-1.5">
-                      {ADVICE_MODULES.map((mod) => (
-                        <SelChip
-                          key={mod}
-                          selected={a.module === mod}
-                          onClick={() => patch("advice", "advice", { ...draft.advice, items: draft.advice.items.map((x, j) => (j === i ? { ...x, module: mod } : x)) })}
-                        >
-                          {mod}
-                        </SelChip>
-                      ))}
-                    </div>
+                    {/* A dropdown, not a row of 13 chips: "Wound care" was the first chip, right
+                        where a thumb lands, and one stray tap retagged diet advice as wound care
+                        on a printed summary. Changing a heading should take a deliberate pick. */}
+                    <SelectField
+                      label="Heading"
+                      value={a.module}
+                      onChange={(mod) => patch("advice", "advice", { ...draft.advice, items: draft.advice.items.map((x, j) => (j === i ? { ...x, module: mod } : x)) })}
+                      options={[...ADVICE_MODULES]}
+                    />
                     <Area value={a.text} onChange={(v) => patch("advice", "advice", { ...draft.advice, items: draft.advice.items.map((x, j) => (j === i ? { ...x, text: v } : x)) })} rows={2} />
                     <button type="button" onClick={() => patch("advice", "advice", { ...draft.advice, items: draft.advice.items.filter((_, j) => j !== i) })} className="self-start text-caption text-muted">
                       Remove
@@ -1240,6 +1321,9 @@ export default function DischargeWorkspace({
               <PreviewLine label="Course" onEdit={() => goTo(stepIndexOf("clinicalCourse"))}>
                 {courseSnippet ? `${courseSnippet}…` : <em className="text-warn-fg">not written</em>}
               </PreviewLine>
+              <PreviewLine label="Condition" onEdit={() => goTo(stepIndexOf("conditionAtDischarge"))}>
+                {dc.prose.trim() || dc.freeText?.trim() || <em className="text-warn-fg">not set</em>}
+              </PreviewLine>
               <PreviewLine label="Investigations" onEdit={() => goTo(stepIndexOf("relevantInvestigations"))}>
                 {acceptedInv.length ? acceptedInv.map((i) => i.group).filter(Boolean).join(", ") : <em className="text-muted">none</em>}
               </PreviewLine>
@@ -1252,9 +1336,6 @@ export default function DischargeWorkspace({
               )}
               <PreviewLine label="Medication" onEdit={() => goTo(stepIndexOf("medications"))}>
                 {draft.medications.length ? draft.medications.map((m) => m.generic).filter(Boolean).join(", ") : <em className="text-muted">none listed</em>}
-              </PreviewLine>
-              <PreviewLine label="Condition" onEdit={() => goTo(stepIndexOf("conditionAtDischarge"))}>
-                {dc.prose.trim() || dc.freeText?.trim() || <em className="text-warn-fg">not set</em>}
               </PreviewLine>
               <PreviewLine label="Patient to" onEdit={() => goTo(stepIndexOf("advice"))}>
                 {draft.patientActions.length ? draft.patientActions.join("; ") : <em className="text-muted">nothing added</em>}
@@ -1310,6 +1391,24 @@ export default function DischargeWorkspace({
 
   return (
     <div className="flex flex-col gap-3 px-4 pb-[var(--bar-height)]">
+      {live && (
+        <LiveDictation
+          patientId={patientId}
+          title="Dictating the discharge"
+          example="e.g. “admitted with acute appendicitis… underwent lap appendicectomy on day one, uneventful recovery… review in surgery OPD after a week…”"
+          sections={live}
+          route={routeVia(patientId, live)}
+          onLines={applyDictation}
+          onClose={() => setLive(null)}
+        />
+      )}
+      {!finalised && !live && (
+        <DictateButton
+          title="Dictate the discharge"
+          sub="Speak the summary — each part fills its section as you talk."
+          onClick={() => setLive(liveSections())}
+        />
+      )}
       {finalised && (
         <div className="ios-group flex items-center justify-between px-4 py-3">
           <span className="text-subhead font-medium text-accent">Finalised</span>
@@ -1368,10 +1467,10 @@ export default function DischargeWorkspace({
         </div>
 
         <div className="flex flex-col gap-3 px-4 py-4">
-          {current.id !== "review" && cardSections(current.id).some((s) => blockingBySection.has(s)) && (
+          {current.id !== "review" && cardSections(current.id).some((s) => blockingFor(s).length > 0) && (
             <div className="rounded-[10px] bg-critical-bg px-3 py-2">
               {cardSections(current.id)
-                .flatMap((s) => blockingBySection.get(s) ?? [])
+                .flatMap(blockingFor)
                 .map((c) => (
                   <p key={c.id} className="text-footnote text-critical-fg">
                     {c.message}

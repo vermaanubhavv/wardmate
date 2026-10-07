@@ -451,18 +451,10 @@ export function applyDischargeTemplate(
     if (row) next.histopathology = [row];
   }
 
-  const noVarSet = CONDITION_VARIABLES.every((v) => draft.conditionAtDischarge.vars[v.key] === null);
-  if (s.conditionAllSatisfactory && noVarSet) {
-    // Wound and drain are never pre-marked: "healthy surgical wounds" and "drain removed" are
-    // findings, and a template cannot know there was a wound or a drain at all (a conservatively
-    // managed patient has neither). The resident marks them; the other seven are the standard
-    // fitness-for-discharge state the resident strikes through where untrue.
-    const NOT_SEEDED: ConditionVariableKey[] = ["wound", "drain"];
-    const vars = Object.fromEntries(
-      CONDITION_VARIABLES.map((v) => [v.key, NOT_SEEDED.includes(v.key) ? null : true])
-    ) as Record<ConditionVariableKey, ConditionVariableValue>;
-    next.conditionAtDischarge = { vars, prose: buildConditionProse(vars), proseEdited: false, freeText: null };
-  }
+  // Condition at discharge is never pre-marked from a template, even when the template calls
+  // the usual case "all satisfactory": a ticked "afebrile" nobody said is an invented finding.
+  // The workspace offers a one-tap "Mark the standard items satisfactory" instead — the resident
+  // states it, the draft does not assume it.
 
   return next;
 }
@@ -487,7 +479,7 @@ export function compileDischargeDraft(
     finalisedAt: null,
 
     indicationForAdmission: { text: "", source: "compiled" },
-    encounter: {
+    admission: {
       admittedAt: patient.admitted_on,
       dischargedAt: null,
       department: doctor?.department ?? null,

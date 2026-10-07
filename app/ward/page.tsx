@@ -42,16 +42,17 @@ export default async function Home({
     // Pinned by id: profiles_ward_read (0018) exposes co-members' profiles, so an unfiltered
     // .maybeSingle() throws on any shared unit. getUser() is request-cached.
     getUser().then((u) =>
-      supabase.from("profiles").select("department, designation").eq("id", u?.id ?? "").maybeSingle()
+      supabase.from("profiles").select("designation").eq("id", u?.id ?? "").maybeSingle()
     ),
   ]);
   const params = await searchParams;
   const deleteFailed = params.delete_failed;
   const filter = params.filter;
   const dischargedId = params.discharged;
-  const department = profile?.department?.trim() || null;
   const designation = profile?.designation?.trim() || null;
-  const departmentLabel = department === "General Surgery" ? "Gen. Surgery" : department;
+  // The unit's department, not the resident's profile one — a surgeon covering a medicine
+  // unit is on a medicine ward.
+  const departmentLabel = pack.key === "general_surgery" ? "Gen. Surgery" : pack.label;
 
   if (!wardError && !ward) redirect("/onboarding");
 

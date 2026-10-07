@@ -129,6 +129,19 @@ export type EventSummary = {
 };
 export const getEventSummary = () => callRows<EventSummary>("admin_event_summary");
 
+export type WaitSummary = {
+  what: string;
+  waits: number;
+  people: number;
+  p50_ms: number;
+  p90_ms: number;
+  max_ms: number;
+  failed: number;
+  last_seen: string;
+};
+/** Last 30 days of `wait` events, slowest 90th percentile first — patch 0105. */
+export const getWaitSummary = () => callRows<WaitSummary>("admin_wait_summary");
+
 export type FeedbackResponse = {
   id: string;
   discovered: string;
@@ -189,3 +202,8 @@ export type UsageFriction = {
   last_seen: string | null;
 };
 export const getUsageFriction = () => callRows<UsageFriction>("admin_usage_friction");
+/** Patch 0105 — the funnel per department, and usage friction for one department. */
+export type FunnelBySpecialty = FunnelStep & { specialty: string };
+export const getFunnelBySpecialty = () => callRows<FunnelBySpecialty>("admin_funnel_by_specialty");
+export const getUsageFrictionFor = (specialty: string) =>
+  callRows<UsageFriction>("admin_usage_friction_for", { p_specialty: specialty });

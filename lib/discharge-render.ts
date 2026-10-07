@@ -75,7 +75,7 @@ export type DischargeDocument = {
     sex: string;
     contact: string | null;
   };
-  encounter: { label: string; value: string | null }[];
+  admission: { label: string; value: string | null }[];
   indication: string | null;
   diagnoses: { primary: string[]; secondary: string[]; comorbidities: string[]; complications: string[] };
   procedures: Procedure[];
@@ -117,8 +117,8 @@ export function buildDischargeDocument(
     complications: draft.diagnoses.filter((d) => d.category === "complication").map((d) => d.text),
   };
 
-  const e = draft.encounter;
-  const encounter: { label: string; value: string | null }[] = [
+  const e = draft.admission;
+  const admission: { label: string; value: string | null }[] = [
     { label: "Date & time of admission", value: istDateTime(e.admittedAt) },
     { label: "Date & time of discharge", value: istDateTime(e.dischargedAt) },
     { label: "Department", value: e.department },
@@ -168,7 +168,7 @@ export function buildDischargeDocument(
       sex: sexWord(patient.sex),
       contact: null,
     },
-    encounter,
+    admission,
     indication: draft.indicationForAdmission.text.trim() || null,
     diagnoses,
     procedures: draft.procedures,
@@ -246,8 +246,8 @@ export function formatDischargePlainText(doc: DischargeDocument): string {
   out.push(`Age: ${doc.patient.age || BLANK}    Sex: ${doc.patient.sex || BLANK}`);
   out.push(`Contact: ${doc.patient.contact || BLANK}`);
 
-  heading("Encounter details");
-  for (const row of doc.encounter) out.push(`  ${row.label}: ${row.value || BLANK}`);
+  heading("Admission Details");
+  for (const row of doc.admission) out.push(`  ${row.label}: ${row.value || BLANK}`);
 
   heading("Indication for admission");
   out.push(`  ${doc.indication || BLANK}`);
@@ -273,6 +273,9 @@ export function formatDischargePlainText(doc: DischargeDocument): string {
   out.push(`  ${doc.clinicalCourse || BLANK}`);
   if (!doc.clinicalCourseApproved && doc.clinicalCourse) out.push("  [not yet approved by the resident]");
 
+  heading("Condition at discharge");
+  out.push(`  ${doc.condition || BLANK}`);
+
   if (doc.investigations.length > 0) {
     heading("Relevant investigations and results");
     for (const i of doc.investigations)
@@ -293,9 +296,6 @@ export function formatDischargePlainText(doc: DischargeDocument): string {
   heading("Medications on discharge");
   if (doc.medications.length === 0) out.push(`  ${BLANK}`);
   doc.medications.forEach((m, i) => out.push(`  ${i + 1}. ${medLine(m)}`));
-
-  heading("Condition at discharge");
-  out.push(`  ${doc.condition || BLANK}`);
 
   heading("Primary care actions");
   if (doc.primaryCareActions.length === 0) out.push("  None.");

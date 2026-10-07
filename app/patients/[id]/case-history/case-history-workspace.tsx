@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { startWait } from "@/lib/track";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { caseHistorySectionOf, seedHopi } from "@/lib/case-history";
@@ -16,6 +17,7 @@ import {
   type HopiAttr,
 } from "@/lib/specialty/clerking";
 import DictationOverlay from "./dictation-overlay";
+import { DictateButton } from "../live-dictation";
 import { ExamDiagrams, hasExamDiagram } from "./print/diagrams";
 import type { Observation } from "@/lib/patient-state";
 import type { WardRanges } from "@/lib/exam-summary";
@@ -264,10 +266,9 @@ export default function CaseHistoryWorkspace({
   const complaintChips = useMemo(() => complaintChipsFor(specialty), [specialty]);
   const pastChips = useMemo(() => pastChipsFor(specialty), [specialty]);
   const searchParams = useSearchParams();
-  const liveDictationOn = process.env.NEXT_PUBLIC_LIVE_DICTATION === "1";
   const [pending, startTransition] = useTransition();
   const [step, setStep] = useState(0);
-  const [dictating, setDictating] = useState(() => liveDictationOn && searchParams.get("dictate") === "1");
+  const [dictating, setDictating] = useState(() => searchParams.get("dictate") === "1");
   const [menuOpen, setMenuOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [dirty, setDirty] = useState<Set<StepId>>(new Set());
@@ -543,6 +544,7 @@ export default function CaseHistoryWorkspace({
   }
 
   async function persist(id: StepId): Promise<boolean> {
+    const stop = startWait("case_history_save");
     const L = "history of presenting illness";
     let res: { ok: boolean; error?: string } = { ok: true };
     if (id === "complaints") res = await replaceCaseHistorySection(patientId, "chief complaints", "note", orderedComplaints());
@@ -619,6 +621,7 @@ export default function CaseHistoryWorkspace({
     else if (id === "local")
       res = await replaceCaseHistoryExam(patientId, [{ label: "local examination", kind: "exam", value: local.trim() || null }]);
 
+    stop(res.ok);
     if (!res.ok) {
       setMessage(res.error ?? "Could not save — your edits are still here.");
       return false;
@@ -650,6 +653,8 @@ export default function CaseHistoryWorkspace({
   async function generate(section: "diagnosis" | "plan" | "compile" | "negatives") {
     setGenerating(section);
     setMessage(null);
+    const stop = startWait(`case_history_${section}`);
+    let ok = false;
     try {
       const r = await fetch(`/api/patients/${patientId}/case-history/generate`, {
         method: "POST",
@@ -687,9 +692,11 @@ export default function CaseHistoryWorkspace({
         setCompiled({ sections, uncertain: data.uncertainPoints ?? [] });
         void proofread(sections);
       }
+      ok = r.ok;
     } catch {
       setMessage("No signal. Try again.");
     }
+    stop(ok);
     setGenerating(null);
   }
 
@@ -700,6 +707,7 @@ export default function CaseHistoryWorkspace({
   async function proofread(sections: { label: string; text: string }[]) {
     const run = ++proofreadRun.current;
     setProofreading(true);
+    const stop = startWait("case_history_proofread");
     const data = await fetch(`/api/patients/${patientId}/case-history/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -707,6 +715,7 @@ export default function CaseHistoryWorkspace({
     })
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null);
+    stop(!!data);
     if (run !== proofreadRun.current) return;
     setProofreading(false);
     if (!data) return;
@@ -1578,24 +1587,37 @@ export default function CaseHistoryWorkspace({
     (current.id === "diagnosis" && unapproved.has("diagnosis") && !!diagnosis.text.trim()) ||
     (current.id === "plan" && unapproved.has("plan") && [...plan.workup, ...plan.conservative, ...plan.medications].some((i) => i.trim()));
 
-  const dictationFilled: Record<string, boolean> = {
-    complaints: complaints.length > 0,
-    hopi: Object.values(hopi).some((t) => (t ?? "").trim()),
-    past: past.mode !== "unset",
-    family: family.mode !== "unset",
-    medication: medication.none || medication.text.trim().length > 0,
-    surgical: surgical.mode !== "unset",
-    obstetric: obstetric.trim().length > 0,
-    dietary: dietary.trim().length > 0,
-    environmental: environmental.trim().length > 0,
-    examination: PICCLE_SIGNS.some((s) => piccle[s.label].state !== "unset") || VITALS.some((v) => (vitals[v.key] ?? "").trim()),
-    abdomen: abdomen.trim().length > 0,
-    chest: chest.trim().length > 0,
-    cvs: cvs.trim().length > 0,
-    cns: cns.trim().length > 0,
-    local: local.trim().length > 0,
-    diagnosis: diagnosis.text.trim().length > 0,
-    plan: plan.workup.length > 0 || plan.conservative.length > 0 || plan.medications.length > 0,
+  // What each card already holds, shown muted in the live dictation's tables.
+  const hist = (h: { mode: Mode; text: string }) => (h.mode === "none" ? "Nil significant" : h.text);
+  const dictationExisting: Record<string, string> = {
+    complaints: complaints.join(", "),
+    hopi: Object.entries(hopi).filter(([, t]) => (t ?? "").trim()).map(([c, t]) => `${c}: ${t}`).join(" · "),
+    past: hist(past),
+    personal: hist(personal),
+    family: hist(family),
+    medication: medication.none ? "None" : medication.text,
+    surgical: hist(surgical),
+    obstetric,
+    dietary,
+    environmental,
+    onco_disease: oncoDisease,
+    onco_treatment: oncoTreatment,
+    onco_cycle: oncoCycle,
+    onco_toxicity: oncoToxicity,
+    performance,
+    onco_nodes: oncoNodes,
+    onco_mucosa_line: oncoMucosaLine,
+    examination:
+      PICCLE_SIGNS.some((s) => piccle[s.label].state !== "unset") || VITALS.some((v) => (vitals[v.key] ?? "").trim())
+        ? "Recorded on the card"
+        : "",
+    abdomen,
+    chest,
+    cvs,
+    cns,
+    local,
+    diagnosis: diagnosis.text,
+    plan: [...plan.workup, ...plan.conservative, ...plan.medications].filter((i) => i.trim()).join("; "),
   };
 
   return (
@@ -1604,7 +1626,7 @@ export default function CaseHistoryWorkspace({
         <DictationOverlay
           specialty={specialty}
           patientId={patientId}
-          initialFilled={dictationFilled}
+          initialText={dictationExisting}
           initialComplaints={complaints}
           onClose={() => {
             // The overlay appended to sections these cards already hold, and every card seeded
@@ -1614,9 +1636,11 @@ export default function CaseHistoryWorkspace({
         />
       )}
 
-      {liveDictationOn && !dictating && (
-        <button
-          type="button"
+      {!dictating && (
+        <DictateButton
+          title="Dictate the whole clerking"
+          sub="Speak in any order — each part fills its card as you talk."
+          disabled={pending}
           onClick={() =>
             // Save edited cards first: the overlay closes with a reload, which would drop them.
             startTransition(async () => {
@@ -1626,17 +1650,7 @@ export default function CaseHistoryWorkspace({
               setDictating(true);
             })
           }
-          disabled={pending}
-          className="ios-group flex items-center justify-between gap-3 px-4 py-3.5 text-left active:bg-chip"
-        >
-          <span>
-            <span className="block text-subhead font-semibold text-accent">Dictate the whole clerking</span>
-            <span className="block text-footnote text-muted">
-              Speak in any order — each part is sorted into its card as you go.
-            </span>
-          </span>
-          <span aria-hidden className="text-title3">🎤</span>
-        </button>
+        />
       )}
 
       <div className="ios-group overflow-hidden">
@@ -1659,7 +1673,7 @@ export default function CaseHistoryWorkspace({
             <button
               type="button"
               onClick={() => goTo(step + 1)}
-              className="self-start text-footnote font-medium text-muted underline underline-offset-4"
+              className="min-h-11 self-start text-footnote font-medium text-muted underline underline-offset-4"
             >
               Not asked — skip, record nothing
             </button>
