@@ -12,7 +12,7 @@ import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISO
  */
 export const dysphagiaV1: HistoryTree = {
   id: "dysphagia",
-  version: "1.2.0",
+  version: "1.3.0",
   complaint: "Difficulty swallowing",
   triggers: ["dysphagia", "difficulty swallowing", "difficulty in swallowing", "food sticking", "food gets stuck", "cannot swallow", "unable to swallow", "trouble swallowing", "nigalne me dikkat", "odynophagia"],
   setting: "Adult surgical / medicine ward, north India",

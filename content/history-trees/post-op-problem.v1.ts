@@ -16,7 +16,7 @@ import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, IMMUNOCO
  */
 export const postOpProblemV1: HistoryTree = {
   id: "post_op_problem",
-  version: "1.1.0",
+  version: "1.3.0",
   complaint: "Problem after an operation",
   triggers: ["post op", "post-op", "postoperative", "post operative", "after surgery", "after the operation", "after operation", "fever after surgery", "wound discharge", "wound gaping", "not passed flatus", "drain output", "operated on day"],
   setting: "Adult surgical ward, north India",
@@ -31,7 +31,7 @@ export const postOpProblemV1: HistoryTree = {
     yn("hpi", "fever", "Fever", "Has there been fever, and does it come at a particular time of day or with chills?", ["fever", "temperature", "chills", "rigors", "spikes", "evening rise", "afebrile", "no fever"]),
     yn("hpi", "wound_problem", "The wound", "Is the wound painful, red, swollen, or discharging anything — and has the dressing needed changing more often?", ["wound", "stitch line", "red", "redness", "swollen", "discharge", "pus", "serous", "dressing", "wound clean"]),
     yn("hpi", "drain_change", "The drain", "Is there a drain, and has what comes out of it changed in amount, colour or smell?", ["drain", "drain output", "increased", "decreased", "bilious", "faeculent", "feculent", "blood", "turbid", "smell", "clear", "drain removed", "no drain"]),
-    yn("hpi", "flatus_stool", "Flatus and stool", "Has the patient passed flatus and stool since the operation, and when was the last time?", ["passed flatus", "not passed flatus", "passed stool", "no motion", "gas passed", "bowels opened", "obstipation", "since the operation"]),
+    yn("hpi", "flatus_stool", "No flatus or stool since the operation", "Is passage of flatus and stool still absent since the operation, and when was each last passed?", ["not passed flatus", "has not passed flatus", "no flatus", "not passed stool", "no motion", "no stool", "obstipation", "not opened bowels"], { teach: "Asked as the problem — not passing flatus or stool — so a positive answer is the one that raises ileus or obstruction; a patient passing both has this item answered no." }),
     yn("hpi", "oral_intake", "Tolerating food and fluid", "Is the patient keeping food and fluid down, and was oral intake stopped again after being started?", ["taking orally", "tolerating", "vomited after", "stopped orally", "nil orally", "ryles tube", "nasogastric", "not tolerating", "sips"]),
     yn("associated", "vomiting", "Vomiting", "Is there vomiting, and what does the vomit look like?", ["vomiting", "vomited", "bilious", "greenish", "faeculent", "feculent", "coffee ground", "large amount", "no vomiting"]),
     yn("associated", "abdominal_pain_distension", "Abdominal pain or distension", "Is the abdomen painful or distended beyond the expected soreness of the wound, and is it getting worse after it had been settling?", ["abdominal pain", "distension", "distended", "tight", "bloated", "worse than before", "diffuse pain", "away from the wound", "soft abdomen"]),

@@ -10,12 +10,12 @@ import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, rce, val, yn } from "@/content/h
  */
 export const chestPainV1: HistoryTree = {
   id: "chest_pain",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Chest pain",
   triggers: ["chest pain", "pain in chest", "chest discomfort", "chest heaviness", "retrosternal pain", "angina"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("Does this patient with chest pain have acute coronary syndrome? The Rational Clinical Examination systematic review", 2015, "26547467"),
     rce("Does this patient have an acute thoracic aortic dissection?", 2002, "11980527"),

@@ -13,12 +13,12 @@ import { APLEY, ATLS, BAILEY_LOVE, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACL
  */
 export const neckPainV1: HistoryTree = {
   id: "neck_pain",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Neck pain",
   triggers: ["neck pain", "pain in neck", "pain in the neck", "neck ache", "cervical pain", "cervicalgia", "cervical spondylosis", "whiplash", "gardan dard", "gardan me dard", "pain radiating to arm"],
   setting: "Orthopaedics ward and casualty, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [APLEY, BAILEY_LOVE, MACLEODS, HUTCHISONS, ATLS],
   slots: [
     ...commonHpi("neck pain"),

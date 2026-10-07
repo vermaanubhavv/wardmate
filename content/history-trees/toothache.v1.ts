@@ -14,12 +14,12 @@ import { BAILEY_LOVE, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn
  */
 export const toothacheV1: HistoryTree = {
   id: "toothache",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Toothache / facial swelling",
   triggers: ["toothache", "tooth pain", "dental pain", "facial swelling", "swelling of face", "cheek swelling", "gum swelling", "gum bleeding", "loose tooth", "wisdom tooth", "jaw pain", "cannot open mouth", "daant dard", "mouth ulcer not healing"],
   setting: "Dental and maxillofacial ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("tooth pain"),

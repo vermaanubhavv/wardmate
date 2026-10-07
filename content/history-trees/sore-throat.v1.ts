@@ -12,12 +12,12 @@ import { commonHpi, ebem, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce
  */
 export const soreThroatV1: HistoryTree = {
   id: "sore_throat",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Sore throat",
   triggers: ["sore throat", "throat pain", "pain in throat", "painful swallowing", "odynophagia", "pharyngitis", "tonsillitis", "gala kharab", "throat infection", "scratchy throat"],
   setting: "Adult medicine / ENT ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("The rational clinical examination. Does this patient have strep throat?", 2000, "11147989"),
     rce("Does this patient have infectious mononucleosis? The Rational Clinical Examination systematic review", 2016, "27115266"),

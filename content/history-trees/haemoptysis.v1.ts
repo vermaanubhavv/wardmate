@@ -14,12 +14,12 @@ import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, rce, val, yn } from 
  */
 export const haemoptysisV1: HistoryTree = {
   id: "haemoptysis",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Coughing blood",
   triggers: ["haemoptysis", "hemoptysis", "coughing blood", "blood in sputum", "blood in cough", "blood stained sputum", "spitting blood", "khansi mein khoon", "blood while coughing", "streaks of blood"],
   setting: "Pulmonary medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     { title: "National TB Elimination Programme: presumptive TB definition", source: "NTEP, Government of India", url: "https://journals.lww.com/ascp/fulltext/2022/10020/national_tb_elimination_program__ntep___at_a.1.aspx" },
     { title: "Hemoptysis: evaluation and management", source: "American Family Physician (PubMed)", pmid: "25955625" },

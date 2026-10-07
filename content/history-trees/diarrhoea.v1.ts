@@ -10,12 +10,12 @@ import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "
  */
 export const diarrhoeaV1: HistoryTree = {
   id: "diarrhoea",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Diarrhoea / vomiting",
   triggers: ["diarrhoea", "diarrhea", "loose stools", "loose motions", "loose motion", "watery stools", "vomiting", "vomitings", "gastroenteritis", "dysentery", "blood in stool", "frequent stools"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("Is this patient hypovolemic?", 1999, "10086438"),
     { title: "Infectious Diseases Society of America clinical practice guidelines for the diagnosis and management of infectious diarrhea", source: "Clin Infect Dis", year: 2017, pmid: "29053792" },

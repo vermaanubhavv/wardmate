@@ -10,12 +10,12 @@ import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "
  */
 export const limbWeaknessV1: HistoryTree = {
   id: "limb_weakness",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Weakness of limbs",
   triggers: ["weakness", "weakness of limbs", "hemiparesis", "hemiplegia", "paraparesis", "paraplegia", "quadriparesis", "unable to walk", "cannot walk", "not able to walk", "limb weakness", "paralysis", "difficulty walking", "unable to move"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("Is this patient having a stroke?", 2005, "15900010"),
     { title: "Diagnosis and management of Guillain-Barré syndrome in ten steps", source: "Nat Rev Neurol", year: 2019, pmid: "31541214" },

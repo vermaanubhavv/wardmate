@@ -13,7 +13,7 @@ import { APLEY, BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, H
  */
 export const boneSwellingV1: HistoryTree = {
   id: "bone_swelling",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Swelling or pain in a bone",
   triggers: ["bone swelling", "swelling in bone", "swelling of bone", "bony swelling", "bony lump", "bone pain", "pain in bone", "bone tumour", "bone tumor", "osteomyelitis", "discharging sinus", "pus from bone", "exostosis", "haddi me sujan", "haddi me dard"],
   setting: "Orthopaedics ward and casualty, north India",

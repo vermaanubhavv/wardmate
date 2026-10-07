@@ -11,12 +11,12 @@ import { commonHpi, HUTCHISONS, MACLEODS, rce, val, yn } from "@/content/history
  */
 export const limbInjuryV1: HistoryTree = {
   id: "limb_injury",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Limb injury",
   triggers: ["limb injury", "fracture", "broken bone", "injury to leg", "injury to arm", "dislocation", "twisted ankle", "fall on hand", "hadi toot", "deformity after fall", "cannot bear weight"],
   setting: "Orthopaedic / emergency ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("Does this patient with shoulder pain have rotator cuff disease? The Rational Clinical Examination systematic review", 2013, "23982370"),
     MACLEODS,
@@ -43,9 +43,9 @@ export const limbInjuryV1: HistoryTree = {
     yn("red_flag", "deformity_dislocation", "Obvious deformity or a joint locked out of position", "Is the limb obviously deformed, shortened or rotated, or is a joint fixed and unable to move?", ["deformity", "shortened", "rotated", "locked", "fixed", "cannot move joint", "out of position", "dislocated"], { teach: "A dislocated joint left in position damages the cartilage and the vessels around it, so recognising it early matters as much as the fracture." }),
     yn("red_flag", "hip_fracture_elderly", "Elderly patient unable to bear weight after a fall", "Is an older patient unable to stand or bear weight after a fall, with the leg short or turned outwards?", ["elderly", "older", "cannot stand", "cannot bear weight", "after a fall", "short", "turned out", "externally rotated", "groin pain"], { teach: "In an older person a hip fracture may follow a trivial fall, and the delay to surgery is a strong determinant of the outcome." }),
     yn("red_flag", "pathological_fracture", "Fracture after a trivial injury", "Did the bone break after very little force, or was there pain in that bone before the injury?", ["trivial", "little force", "minor fall", "pain before", "night pain", "cancer", "known malignancy", "weak bone", "steroid"], { teach: "A break after minimal force, or bone pain preceding it, raises a lesion weakening the bone rather than a simple injury." }),
-    yn("red_flag", "cause_of_fall_limb", "Why the fall happened", "Was there giddiness, chest pain, palpitations, a blackout or a seizure that caused the fall?", ["giddiness", "chest pain", "palpitations", "blackout", "fainted", "seizure", "collapsed", "slipped", "tripped", "sugar"], { teach: "The fracture is sometimes the least important part of the episode, and a collapse that caused the fall needs its own history." }),
+    yn("red_flag", "cause_of_fall_limb", "Why the fall happened", "Was there giddiness, chest pain, palpitations, a blackout or a seizure that caused the fall?", ["giddiness", "chest pain", "palpitations", "blackout", "fainted", "seizure", "collapsed", "sugar"], { teach: "The fracture is sometimes the least important part of the episode, and a collapse that caused the fall needs its own history." }),
     yn("red_flag", "spine_injury_limb", "Neck or back pain, or weakness", "Any neck or back pain, or weakness, numbness or bladder change since the injury?", ["neck pain", "back pain", "spine", "weakness", "numbness", "bladder", "cannot move legs", "tingling"], { tier: "detailed", teach: "A high-energy limb injury travels with spinal injury often enough that the spine is asked about before the patient is moved." }),
-    yn("exposure", "tetanus_status", "Tetanus immunisation", "When was the last tetanus immunisation?", ["tetanus", "tt", "immunisation", "booster", "last", "years ago", "not taken", "unknown"]),
+    yn("exposure", "tetanus_status", "Tetanus immunisation", "Has the patient had a full course of tetanus immunisation, and when was the last dose?", ["tetanus", "tt", "immunisation", "booster", "last", "years ago", "not taken", "unknown", "full course", "three doses"], { teach: "Schwartz decides tetanus cover by the course and its timing together: fewer than three doses, more than five years since the last, or not known." }),
     yn("exposure", "comorbidity_limb", "Diabetes, steroids or bone disease", "Any diabetes, long-term steroids, thin bones, or known bone disease?", ["diabetes", "steroid", "steroids", "osteoporosis", "thin bones", "bone disease", "previous fractures"]),
     yn("exposure", "anticoagulant_limb", "Blood thinners", "Is the patient on blood thinners or aspirin?", ["blood thinner", "warfarin", "aspirin", "clopidogrel", "anticoagulant"]),
     yn("exposure", "first_aid_given", "First aid before arrival", "What was done before arrival — a splint, a bandage, traditional bone-setting, or manipulation?", ["splint", "bandage", "plaster", "bone setter", "traditional", "massage", "manipulated", "tied", "outside"], { tier: "detailed" }),

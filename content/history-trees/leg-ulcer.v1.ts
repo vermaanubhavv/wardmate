@@ -12,7 +12,7 @@ import { BROWSE, commonHpi, DAS_CLINICAL_SURGERY, ebem, HAMILTON_BAILEY, HUTCHIS
  */
 export const legUlcerV1: HistoryTree = {
   id: "leg_ulcer",
-  version: "1.2.0",
+  version: "1.3.0",
   complaint: "Leg ulcer / non-healing wound",
   triggers: ["leg ulcer", "ulcer", "non healing wound", "wound not healing", "foot ulcer", "diabetic foot", "sore on leg", "wound on foot", "chronic ulcer", "ghaav", "gangrene", "blackening of toes"],
   setting: "Adult surgical ward, north India",

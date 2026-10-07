@@ -10,12 +10,12 @@ import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "
  */
 export const oedemaV1: HistoryTree = {
   id: "oedema",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Swelling of the body",
   triggers: ["swelling", "oedema", "edema", "anasarca", "pedal oedema", "pedal edema", "swelling of feet", "swelling of legs", "facial puffiness", "puffiness"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("Does this dyspneic patient in the emergency department have congestive heart failure?", 2005, "16234501"),
     rce("Does this patient with liver disease have cirrhosis?", 2012, "22357834"),

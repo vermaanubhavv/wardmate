@@ -13,12 +13,12 @@ import { commonHpi, FISHMAN, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } f
  */
 export const progressiveBreathlessnessV1: HistoryTree = {
   id: "progressive_breathlessness",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Breathlessness and dry cough getting worse over months",
   triggers: ["progressive breathlessness", "gradually increasing breathlessness", "breathlessness for months", "dry cough for months", "ild", "interstitial lung disease", "pulmonary fibrosis", "lung fibrosis", "ipf", "silicosis", "pneumoconiosis", "hypersensitivity pneumonitis", "sarcoidosis", "fibrosis of lungs"],
   setting: "Pulmonary medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [FISHMAN, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("breathlessness"),

@@ -12,12 +12,12 @@ import { commonHpi, ebem, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce
  */
 export const jointPainV1: HistoryTree = {
   id: "joint_pain",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Joint pain",
   triggers: ["joint pain", "joint pains", "arthritis", "arthralgia", "pain in joints", "swollen joint", "joint swelling", "knee pain", "painful joints", "polyarthritis", "jodon me dard"],
   setting: "Adult medicine / orthopaedic ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     ebem("Septic arthritis in emergency department patients with joint pain: searching for the optimal diagnostic tool", 2008, "18294730"),
     rce("Does this patient with shoulder pain have rotator cuff disease? The Rational Clinical Examination systematic review", 2013, "23982370"),

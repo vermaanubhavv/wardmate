@@ -12,12 +12,12 @@ import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val,
  */
 export const shockV1: HistoryTree = {
   id: "shock",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Shock / low blood pressure",
   triggers: ["shock", "hypotension", "low bp", "low blood pressure", "collapse", "collapsed", "unrecordable bp", "cold peripheries", "pulse not felt", "fainting", "peripheries cold"],
   setting: "Emergency ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("The rational clinical examination. Is this patient hypovolemic?", 1999, "10086438"),
     rce("Does this patient with chest pain have acute coronary syndrome? The Rational Clinical Examination systematic review", 2015, "26547467"),
