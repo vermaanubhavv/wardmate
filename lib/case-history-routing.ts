@@ -40,7 +40,7 @@ export type { RoutableSection, RoutedSegment } from "@/lib/case-history-sections
 
 const ROUTING_MODEL = FAST_MODEL;
 // ponytail: fixed bar, untuned — set it from a labelled synthetic eval once fallback rates are in.
-const MIN_PROBABILITY = 0.7;
+export const MIN_PROBABILITY = 0.7;
 
 function client(): Anthropic {
   const apiKey = process.env.ANTHROPIC_API_KEY;

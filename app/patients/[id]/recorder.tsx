@@ -205,18 +205,24 @@ export default function Recorder({
     recIdRef.current = crypto.randomUUID();
     seqRef.current = 0;
 
-    if (await startLive()) return;
+    const live = await startLive();
+    if (live === true) return;
+    // Said, not hidden: a silent fallback looked exactly like live dictation being broken.
+    setMessage(`Live words unavailable (${live}) — recording; the transcript appears when you stop.`);
     await startBatch();
   }
 
-  /** Try the live streaming path. Resolves false on anything short of a working socket, so the
-   *  caller can fall back to record-then-upload without the resident seeing a failed attempt. */
-  async function startLive(): Promise<boolean> {
+  /** Try the live streaming path. Resolves true once the socket is OPEN, or the reason it could
+   *  not be, so the caller records instead and says why. */
+  async function startLive(): Promise<true | string> {
     // On one bar of signal the token request can sit unanswered for a minute, leaving the
-    // button on "Starting…". Three seconds is long enough for a working connection and short
-    // enough that falling back to record-then-upload still feels like one tap.
+    // button on "Starting…". Six seconds covers a cold server plus a slow phone connection and
+    // still falls back to recording within a breath.
+    const LIVE_DEADLINE_MS = 6000;
     const abort = new AbortController();
-    const timer = setTimeout(() => abort.abort(), 3000);
+    const timer = setTimeout(() => abort.abort(), LIVE_DEADLINE_MS);
+    let token: string;
+    let keyterms: string[];
     try {
       const res = await fetch("/api/transcribe/live-token", {
         method: "POST",
@@ -224,17 +230,34 @@ export default function Recorder({
         body: JSON.stringify({ patientId }),
         signal: abort.signal,
       });
-      const data = (await res.json()) as { token?: string; keyterms?: string[] };
+      const data = (await res.json()) as { token?: string; keyterms?: string[]; error?: string };
+      if (!res.ok || !data.token) {
+        clearTimeout(timer);
+        return data.error ?? `token request failed, ${res.status}`;
+      }
+      token = data.token;
+      keyterms = data.keyterms ?? [];
+    } catch {
       clearTimeout(timer);
-      if (!res.ok || !data.token) return false;
+      return abort.signal.aborted ? "no answer from the server in 6 s" : "no connection";
+    }
 
-      const session = await openLiveDictation({
-        token: data.token,
-        keyterms: data.keyterms ?? [],
+    // Wait for the socket to actually open. An error before that is a fallback, not a lost
+    // recording; an error after it is a dropped round, finished like a normal stop.
+    let opened = false;
+    let settle: (v: true | string) => void = () => {};
+    const ready = new Promise<true | string>((r) => (settle = r));
+    abort.signal.addEventListener("abort", () => settle("Deepgram did not connect in 6 s"));
+    try {
+      liveSessionRef.current = await openLiveDictation({
+        token,
+        keyterms,
         onOpen: () => {
+          opened = true;
           setMode("live");
           setStatus("recording");
           navigator.vibrate?.(30);
+          settle(true);
         },
         onSpeechStart: () => setSpeaking(true),
         onPartial: (t) => setLiveText(joinSpoken(liveFinalRef.current, t)),
@@ -244,6 +267,7 @@ export default function Recorder({
           setSpeaking(false);
         },
         onError: (msg) => {
+          if (!opened) return settle("Deepgram refused the connection");
           // The socket dropped mid-round. Whatever was caught before the drop is still worth
           // keeping — finish exactly as a normal stop would, just with a word about why.
           setMessage(msg);
@@ -251,12 +275,17 @@ export default function Recorder({
         },
         onClose: () => {},
       });
-      liveSessionRef.current = session;
-      return true;
-    } catch {
+    } catch (e) {
       clearTimeout(timer);
-      return false;
+      return e instanceof Error ? e.message : "microphone unavailable";
     }
+    const result = await ready;
+    clearTimeout(timer);
+    if (result !== true) {
+      liveSessionRef.current?.stop();
+      liveSessionRef.current = null;
+    }
+    return result;
   }
 
   async function startBatch() {
