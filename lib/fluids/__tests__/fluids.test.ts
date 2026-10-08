@@ -21,7 +21,9 @@ describe("IV Fluid and Electrolyte Correction topics", () => {
 
   it("pins exactly which topics a clinician has signed off", () => {
     // Adding an id here is a claim that a named clinician read that topic. Nothing else is.
-    expect(listFluidTopics().filter((t) => t.reviewStatus === "reviewed").map((t) => t.id).sort()).toEqual([]);
+    expect(listFluidTopics().filter((t) => t.reviewStatus === "reviewed").map((t) => t.id).sort()).toEqual([
+      "hypercalcaemia", "hyperkalaemia", "hypernatraemia", "hypocalcaemia", "hypokalaemia", "hyponatraemia",
+    ]);
   });
 
   it("rejects a ragged table, an unknown calculator, a reviewed topic with no reviewer, and a missing source", () => {

@@ -2,7 +2,7 @@ import type { FluidTopic } from "@/lib/fluids/types";
 import { PANDYA, caution, points, quote, steps, table } from "@/content/fluids/_helpers";
 
 /**
- * HYPERCALCAEMIA — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * HYPERCALCAEMIA — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Digest of chapter 25 of the full edition. Page numbers are printed book pages. Every number
  * below is the book's; the quotes give the page it came from. The chapter prints no corrected
@@ -15,8 +15,8 @@ export const hypercalcaemiaV1: FluidTopic = {
   group: "electrolytes",
   summary: "Severity cut-offs, PTH-led work-up, and the book's saline, calcitonin, bisphosphonate, denosumab, steroid and dialysis regimens with cause-specific treatment.",
   setting: "Adult medical and surgical wards",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PANDYA],
   source: { chapters: ["25 Hypercalcemia"], pages: "299–309", pageKind: "book" },
   sections: [

@@ -2,7 +2,7 @@ import type { FluidTopic } from "@/lib/fluids/types";
 import { PANDYA, caution, points, quote, steps, table } from "@/content/fluids/_helpers";
 
 /**
- * HYPERKALAEMIA — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * HYPERKALAEMIA — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Digest of chapter 23 of the full edition. Every number below is the book's; the quotes give
  * the printed book page it came from.
@@ -14,8 +14,8 @@ export const hyperkalaemiaV1: FluidTopic = {
   group: "electrolytes",
   summary: "Protect the heart with calcium, shift potassium with insulin-dextrose and salbutamol, remove it with diuretics, binders or dialysis, and keep RAAS blockers safe.",
   setting: "Adult medical and surgical wards",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PANDYA],
   source: { chapters: ["23 Hyperkalemia"], pages: "269–283", pageKind: "book" },
   sections: [

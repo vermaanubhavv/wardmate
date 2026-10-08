@@ -2,7 +2,7 @@ import type { FluidTopic } from "@/lib/fluids/types";
 import { PANDYA, caution, formula, points, quote, steps, table } from "@/content/fluids/_helpers";
 
 /**
- * HYPERNATRAEMIA — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * HYPERNATRAEMIA — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Digest of chapter 21 of the full edition. Page numbers are the printed book pages.
  */
@@ -13,8 +13,8 @@ export const hypernatraemiaV1: FluidTopic = {
   group: "electrolytes",
   summary: "Sodium above 145 mEq/L: causes by volume status, how to read the work-up, the water deficit formulas, which fluid by which route, and how fast to bring sodium down.",
   setting: "Adult medical and surgical wards",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PANDYA],
   source: { chapters: ["21 Hypernatremia"], pages: "246–252", pageKind: "book" },
   sections: [

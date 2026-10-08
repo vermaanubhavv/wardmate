@@ -2,7 +2,7 @@ import type { FluidTopic } from "@/lib/fluids/types";
 import { PANDYA, caution, formula, points, quote, steps, table } from "@/content/fluids/_helpers";
 
 /**
- * HYPOCALCAEMIA — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * HYPOCALCAEMIA — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Digest of chapter 24 of the full edition. Every number below is the book's; quote pages are
  * printed book pages.
@@ -14,8 +14,8 @@ export const hypocalcaemiaV1: FluidTopic = {
   group: "electrolytes",
   summary: "Total, corrected and ionised calcium, the PTH-led work-up, IV calcium gluconate bolus and infusion, magnesium first when tetany persists, and long-term calcium and vitamin D.",
   setting: "Adult medical and surgical wards",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PANDYA],
   source: { chapters: ["24 Hypocalcemia"], pages: "288–297", pageKind: "book" },
   sections: [

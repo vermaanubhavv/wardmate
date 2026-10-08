@@ -2,7 +2,7 @@ import type { FluidTopic } from "@/lib/fluids/types";
 import { PANDYA, caution, formula, points, quote, steps, table } from "@/content/fluids/_helpers";
 
 /**
- * HYPONATRAEMIA — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * HYPONATRAEMIA — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Digest of chapter 20 of the full edition (book pages 219–242). Every number below is the
  * book's; the quotes give the printed page it came from.
@@ -14,8 +14,8 @@ export const hyponatraemiaV1: FluidTopic = {
   group: "electrolytes",
   summary: "Low serum sodium: the stepwise work-up, hypertonic saline boluses for severe symptoms, safe correction limits, SIADH and its second-line drugs.",
   setting: "Adult medical and surgical wards",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PANDYA],
   source: { chapters: ["20 Hyponatremia"], pages: "219–242", pageKind: "book" },
   sections: [
