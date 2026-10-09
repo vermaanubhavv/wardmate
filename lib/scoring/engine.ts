@@ -286,18 +286,6 @@ function evaluateComponentRaw(
 // Card-level
 // ---------------------------------------------------------------------------
 
-/**
- * Whether a card may be marked `verified` by a clinician. Never true while a mandatory
- * component is `unknown` — a score is not verifiable until every required input has a value
- * or an explicit not-applicable (DOCX safety rule: missing is not zero).
- */
-export function canVerifyCard(r: CardResult): { ok: boolean; reason?: string } {
-  if (r.state === "not_started") return { ok: false, reason: "nothing computed yet" };
-  if (r.missingRequiredCount > 0) return { ok: false, reason: `${r.missingRequiredCount} required component(s) unknown` };
-  if (r.state === "incomplete") return { ok: false, reason: "card incomplete" };
-  return { ok: true };
-}
-
 export function evaluateCard(card: CardDefinition, ctx: EvaluateContext): CardResult {
   const checkpointAt =
     card.lockedUntilCheckpoint != null

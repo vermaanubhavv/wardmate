@@ -1,6 +1,6 @@
 import { DISCHARGE_TEMPLATES, GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates";
 import type { FormatKind } from "@/lib/formats";
-import type { SpecialtyPack } from "./types";
+import { surgicalDayCount, type SpecialtyPack } from "./types";
 
 /**
  * The general-surgery pack — WardMate exactly as it has always behaved.
@@ -14,27 +14,15 @@ export const generalSurgeryPack: SpecialtyPack = {
   label: "General Surgery",
   blurb: "Counts post-operative days. Operation-keyed checklists and discharge summaries.",
 
-  terminology: {
-    dayLabel: "POD",
-    admissionNoun: "operation",
-  },
-
   admissionPhrase: "a general-surgery admission",
 
   // Operated patients are counted from the operation, everyone else from admission — and the
   // label always says which. This is lib/patients.ts dayLabel(), moved, not changed.
-  dayCount: (p) => {
-    if (p.post_op_day !== null) {
-      return { clock: "post_op", n: p.post_op_day, text: `POD ${p.post_op_day}` };
-    }
-    return { clock: "admission", n: p.admission_day, text: `Day ${p.admission_day}` };
-  },
+  dayCount: surgicalDayCount,
 
   extractRoleLine:
     "You convert a surgical resident's spoken ward-round note into structured observations.",
   extractGuidance: "",
-
-  checklistAnchor: "post_op",
 
   dischargeTemplates: DISCHARGE_TEMPLATES,
   genericDischargeTemplate: GENERIC_DISCHARGE_TEMPLATE,

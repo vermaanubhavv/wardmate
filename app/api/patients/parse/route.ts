@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
 import { getUser } from "@/lib/auth";
-import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
+import { transcribe } from "@/lib/stt";
 import { correctTranscript } from "@/lib/glossary";
 import { readSpokenPatient } from "@/lib/read-new-patient";
 
@@ -36,8 +36,7 @@ export async function POST(request: Request) {
     }
 
     try {
-      const stt = getTranscriber();
-      const result = await stt.transcribe(audio, MEDICAL_VOCABULARY_HINT);
+      const result = await transcribe(audio);
       transcript = (await correctTranscript(result.text)).text;
     } catch (e) {
       return NextResponse.json(

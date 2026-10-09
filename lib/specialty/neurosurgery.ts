@@ -1,6 +1,6 @@
 import { NEUROSURGERY_DISCHARGE_TEMPLATES, NEUROSURGERY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-neurosurgery";
 import type { FormatKind } from "@/lib/formats";
-import type { SpecialtyPack } from "./types";
+import { surgicalDayCount, type SpecialtyPack } from "./types";
 
 /**
  * The neurosurgery pack — head injury, the brain, the spine and the shunt.
@@ -46,19 +46,9 @@ export const neurosurgeryPack: SpecialtyPack = {
   label: "Neurosurgery",
   blurb: "Head injury, brain, spine and shunts. Counts post-operative days; conscious level and its change first.",
 
-  terminology: {
-    dayLabel: "POD",
-    admissionNoun: "operation",
-  },
-
   admissionPhrase: "a neurosurgical admission",
 
-  dayCount: (p) => {
-    if (p.post_op_day !== null) {
-      return { clock: "post_op", n: p.post_op_day, text: `POD ${p.post_op_day}` };
-    }
-    return { clock: "admission", n: p.admission_day, text: `Day ${p.admission_day}` };
-  },
+  dayCount: surgicalDayCount,
 
   extractRoleLine:
     "You convert a neurosurgical resident's spoken ward-round note into structured observations.",
@@ -77,8 +67,6 @@ Neurosurgical ward — what the words mean here:
 - ANTI-EPILEPTICS AND OSMOTHERAPY are drugs with doses as spoken: "levetiracetam 500 twice daily", "mannitol 100 ml eighth hourly", "3 percent saline running", "phenytoin loaded". Amber until confirmed, like every drug.
 - Abbreviations to leave AS SAID: "GCS", "EVD", "VP shunt", "SDH", "EDH", "SAH", "ICH", "ICP", "ACDF", "TBI", "DC" (decompressive craniectomy — store the letters said).
 `.trim(),
-
-  checklistAnchor: "post_op",
 
   dischargeTemplates: NEUROSURGERY_DISCHARGE_TEMPLATES,
   genericDischargeTemplate: NEUROSURGERY_GENERIC_DISCHARGE_TEMPLATE,

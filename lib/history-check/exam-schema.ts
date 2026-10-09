@@ -1,4 +1,4 @@
-import { DIAGNOSIS_CLAIM, TREATMENT_ADVICE, validateReference, type ValidationResult } from "@/lib/history-check/schema";
+import { DIAGNOSIS_CLAIM, TREATMENT_ADVICE, validateContentHeader, type ValidationResult } from "@/lib/history-check/schema";
 import type { ExamChecklist, ExamItem, ExamSection } from "@/lib/history-check/exam-types";
 
 const ID = /^[a-z][a-z0-9_]*$/;
@@ -15,16 +15,9 @@ export function validateExamChecklist(list: unknown): ValidationResult {
     return { ok: false, issues: [{ path: "$", message: "checklist must be an object" }] };
   }
   const c = list as Partial<ExamChecklist>;
-  if (!c.id || !ID.test(c.id)) add("$.id", "required, lowercase snake_case");
-  if (!c.version || !/^\d+\.\d+\.\d+$/.test(c.version)) add("$.version", "semver required");
+  validateContentHeader(c, add, "checklist");
   if (!c.title) add("$.title", "required");
   if (!c.setting) add("$.setting", "required");
-  if (c.reviewStatus !== "pending_clinician_review" && c.reviewStatus !== "reviewed") {
-    add("$.reviewStatus", "must be pending_clinician_review or reviewed");
-  }
-  if (c.reviewStatus === "reviewed" && !c.reviewedBy) add("$.reviewedBy", "a reviewed checklist must name its reviewer");
-  if (!Array.isArray(c.references) || c.references.length === 0) add("$.references", "at least one reference required");
-  else c.references.forEach((r, i) => validateReference(r, `$.references[${i}]`, add));
 
   if (!Array.isArray(c.sections) || c.sections.length === 0) {
     add("$.sections", "at least one section required");

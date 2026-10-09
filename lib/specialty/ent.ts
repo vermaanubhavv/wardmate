@@ -1,6 +1,6 @@
 import { ENT_DISCHARGE_TEMPLATES, ENT_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-ent";
 import type { FormatKind } from "@/lib/formats";
-import type { SpecialtyPack } from "./types";
+import { surgicalDayCount, type SpecialtyPack } from "./types";
 
 /**
  * The ENT pack — otorhinolaryngology, head and neck surgery.
@@ -46,21 +46,11 @@ export const entPack: SpecialtyPack = {
   label: "ENT (Otorhinolaryngology)",
   blurb: "Ear, nose, throat, head and neck. Counts post-operative days; airway and laterality first.",
 
-  terminology: {
-    dayLabel: "POD",
-    admissionNoun: "operation",
-  },
-
   admissionPhrase: "an ENT admission",
 
   // The surgical clock, unchanged: operated patients from the operation, everyone else from
   // admission, and the label always says which.
-  dayCount: (p) => {
-    if (p.post_op_day !== null) {
-      return { clock: "post_op", n: p.post_op_day, text: `POD ${p.post_op_day}` };
-    }
-    return { clock: "admission", n: p.admission_day, text: `Day ${p.admission_day}` };
-  },
+  dayCount: surgicalDayCount,
 
   extractRoleLine:
     "You convert an ENT resident's spoken ward-round note into structured observations.",
@@ -78,8 +68,6 @@ ENT ward — what the words mean here:
 - TOBACCO, GUTKA AND ARECA NUT are exposures this ward asks about on every head-and-neck admission. Record the substance and the duration exactly as spoken.
 - Abbreviations to leave AS SAID: "RT" (ambiguous — radiotherapy or Ryle's tube), "MRM" (modified radical mastoidectomy here, but store the letters said), "FESS", "SMR", "DNS", "PTA", "IDL", "DNE", "CSOM", "BERA".
 `.trim(),
-
-  checklistAnchor: "post_op",
 
   // General surgery's templates, on purpose — see the header for what to add and when.
   dischargeTemplates: ENT_DISCHARGE_TEMPLATES,

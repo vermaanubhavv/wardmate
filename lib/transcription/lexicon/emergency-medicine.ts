@@ -1,5 +1,5 @@
 import type { MedicalLexiconEntry } from "./types";
-import { PRIORITY } from "./types";
+import { PRIORITY, specialtyEntry } from "./types";
 
 /**
  * The emergency medicine keyterm core.
@@ -19,24 +19,7 @@ import { PRIORITY } from "./types";
 
 const EM = "emergency-medicine" as const;
 
-function entry(
-  term: string,
-  categories: MedicalLexiconEntry["categories"],
-  aliases: string[] = [],
-  triggers: string[] = [],
-  priority: number = PRIORITY.SPECIALTY
-): MedicalLexiconEntry {
-  return {
-    term,
-    aliases,
-    categories,
-    specialties: [EM],
-    triggers: [term, ...aliases, ...triggers]
-      .map((t) => t.toLowerCase())
-      .filter((t) => t.length >= 5),
-    priority,
-  };
-}
+const entry = specialtyEntry(EM);
 
 const dx = (t: string, a: string[] = [], tr: string[] = []) =>
   entry(t, ["diagnosis"], a, tr, PRIORITY.EXACT_PATIENT);

@@ -175,7 +175,7 @@ selection exceeds 400 tokens, the **lowest-scoring** terms are dropped first. In
 ```
 
 `buildDeepgramParams` uses `URLSearchParams.append` (never `.set`) for keyterms, so every one
-survives. `lib/stt/deepgram.ts` is the only caller in the app.
+survives. `lib/stt/index.ts` (`transcribe`) and `lib/stt/live.ts` are its only callers.
 
 ---
 
@@ -208,17 +208,12 @@ charted diagnosis matches the family tokens.
 
 ## 10. Hospital-specific lexicon extension
 
-The layered model (`GLOBAL wardmate-india → SPECIALTY general-surgery → HOSPITAL ESIC →
-PATIENT`) is supported without a new admin UI:
-
-- `DictationContext.customTerms` — pass extra `MedicalLexiconEntry[]` straight into the selector.
-- `SelectKeytermOptions.extraTerms` — same, at the call site.
-- `LexiconProvider` (in `lexicon/index.ts`) — the interface a database-backed provider
-  implements to load a ward's / hospital's vocabulary (consultant names, ward names, local drug
-  brands, local operation names) and hand it to `mergeLexicon`.
-
-A custom entry whose `term` matches a base term **replaces** it (re-prioritise / re-spell);
-otherwise it is appended.
+Not built. The layered model (`GLOBAL wardmate-india → SPECIALTY general-surgery → HOSPITAL
+ESIC → PATIENT`) has no caller yet, so the selector reads `MASTER_LEXICON` only. Hospital
+vocabulary today means adding entries to a category file. When a ward / hospital pack (consultant
+names, ward names, local drug brands, local operation names) is needed, merge it onto
+`MASTER_LEXICON` before scoring — a custom entry whose `term` matches a base term replacing it,
+anything else appended.
 
 ### Future learning loop
 

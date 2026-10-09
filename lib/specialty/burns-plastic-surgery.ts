@@ -1,6 +1,6 @@
 import { BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES, BURNS_PLASTIC_SURGERY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-burns-plastic-surgery";
 import type { FormatKind } from "@/lib/formats";
-import type { SpecialtyPack } from "./types";
+import { surgicalDayCount, type SpecialtyPack } from "./types";
 
 /**
  * The burns and plastic surgery pack.
@@ -61,11 +61,6 @@ export const burnsPlasticSurgeryPack: SpecialtyPack = {
   label: "Burns & Plastic Surgery",
   blurb: "Counts post-burn days from the date of the injury, not from admission. Grafts and flaps keep the operative clock.",
 
-  terminology: {
-    dayLabel: "PBD",
-    admissionNoun: "burn",
-  },
-
   admissionPhrase: "a burns and plastic surgery admission",
 
   // Burn first, then the operation, then admission. A burned patient who has been grafted is
@@ -74,10 +69,7 @@ export const burnsPlasticSurgeryPack: SpecialtyPack = {
     if (p.burn_day != null) {
       return { clock: "burn", n: p.burn_day, text: `PBD ${p.burn_day}` };
     }
-    if (p.post_op_day !== null) {
-      return { clock: "post_op", n: p.post_op_day, text: `POD ${p.post_op_day}` };
-    }
-    return { clock: "admission", n: p.admission_day, text: `Day ${p.admission_day}` };
+    return surgicalDayCount(p);
   },
 
   extractRoleLine:
@@ -98,11 +90,6 @@ Burns and plastic surgery ward — what the words mean here:
 - TETANUS STATUS AND FIRST AID ARE PART OF THE ADMISSION RECORD: "tetanus toxoid given outside", "immunisation status not known", "poured cold water for 10 minutes", "toothpaste applied at home". Record what was said, without comment.
 - Abbreviations to leave AS SAID: "PBD", "TBSA", "STSG", "FTSG", "SSD" (silver sulphadiazine), "NPWT", "RL" (Ringer lactate). Store the letters that were said.
 `.trim(),
-
-  // The wound, the dressings and the grafts hang off the operation where there is one; the
-  // burn's own clock is a count, not a checklist anchor, and the engine anchors it knows are
-  // post_op, cycle and admission. Grafting is what the checklists here will key to.
-  checklistAnchor: "post_op",
 
   dischargeTemplates: BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES,
   genericDischargeTemplate: BURNS_PLASTIC_SURGERY_GENERIC_DISCHARGE_TEMPLATE,

@@ -78,20 +78,6 @@ export async function loadSources(supabase: Supa, patientId: string): Promise<Hi
   );
 }
 
-/** The newest run of a tree for a patient, if any. Null when the flag is off. */
-export async function latestRun(supabase: Supa, patientId: string, treeId: string): Promise<HistoryCheckRun | null> {
-  if (!historyCheckEnabled()) return null;
-  const { data } = await supabase
-    .from("history_checks")
-    .select(RUN_COLUMNS)
-    .eq("patient_id", patientId)
-    .eq("tree_id", treeId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return (data as HistoryCheckRun | null) ?? null;
-}
-
 export type RunOutcome =
   | { ok: true; run: HistoryCheckRun; reused: boolean }
   | { ok: false; status: 404 | 409 | 422 | 429 | 502; error: string };

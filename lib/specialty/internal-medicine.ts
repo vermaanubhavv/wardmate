@@ -3,7 +3,7 @@ import {
   MEDICINE_GENERIC_DISCHARGE_TEMPLATE,
 } from "@/lib/discharge-templates-medicine";
 import type { FormatKind } from "@/lib/formats";
-import type { SpecialtyPack } from "./types";
+import { admissionDayCount, type SpecialtyPack } from "./types";
 
 /**
  * The internal medicine pack.
@@ -19,7 +19,7 @@ import type { SpecialtyPack } from "./types";
  *    patient with no surgery date, so the checklist picker is filed under that phase — the
  *    same reasoning the oncology pack documents.
  *
- * 2. THE ADMISSION IS A PROBLEM, NOT A PROCEDURE. `admissionNoun` is "problem". The round
+ * 2. THE ADMISSION IS A PROBLEM, NOT A PROCEDURE. The round
  *    thinks in a problem list — "fever with thrombocytopenia", "uncontrolled diabetes with a
  *    foot infection" — and the discharge templates are keyed to conditions, not operations.
  *
@@ -51,18 +51,13 @@ export const internalMedicinePack: SpecialtyPack = {
   label: "Internal Medicine",
   blurb: "Counts hospital days. Problem-list rounds, infection-first checklists and medical discharge summaries.",
 
-  terminology: {
-    dayLabel: "HD",
-    admissionNoun: "problem",
-  },
-
   admissionPhrase: "an internal medicine admission",
 
   // Always the hospital day. A medicine patient has no operation and no cycle; `post_op_day`
   // and the chemo fields are ignored on purpose. The label says "Day n", with the admission date
   // as Day 0 — the unit's own convention — so a bed on a mixed corridor is never ambiguous
   // against a surgical "POD n" next to it.
-  dayCount: (p) => ({ clock: "admission", n: p.admission_day, text: `Day ${p.admission_day}` }),
+  dayCount: admissionDayCount,
 
   extractRoleLine:
     "You convert a physician's spoken ward-round note into structured observations.",
@@ -81,11 +76,6 @@ Internal medicine ward — what the words mean here:
 - BLOOD PRESSURE in this group is often the reason for admission. Record every spoken BP exactly. "hypertensive emergency", "hypertensive urgency", "target organ damage", "on labetalol infusion", "GTN drip" — keep the wording as said; do not decide urgency versus emergency yourself.
 - Abbreviations to leave EXPANDED-AS-SAID and never rewrite: "RT" (ambiguous — radiotherapy or Ryle's tube), "MP" (malaria parasite), "AFB" (acid-fast bacilli), "ATT"/"HRZE" (anti-tubercular therapy), "PUO"/"FUO" (fever of unknown origin), "DKA"/"HHS", "AKI"/"CKD", "ILD". Store the letters that were said.
 `.trim(),
-
-  // Fever, counts and the hospital day drive the checklist here, and none of them hang off an
-  // operation. See lib/checklist-triggers.ts — the admission-anchored conditions
-  // (hours_since_admission_gte, lab, history) already exist and need no new code.
-  checklistAnchor: "admission",
 
   dischargeTemplates: MEDICINE_DISCHARGE_TEMPLATES,
   genericDischargeTemplate: MEDICINE_GENERIC_DISCHARGE_TEMPLATE,

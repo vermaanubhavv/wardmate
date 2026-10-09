@@ -21,7 +21,7 @@ import { detectTriggers, isWorkingDiagnosis } from "./triggers";
 import { evaluateCard, hashResult, type EvaluateContext } from "./engine";
 import { toEngineInputs, type ObservationRow, type PatientFacts } from "./observations-adapter";
 import { planPathwayTasks, type ExistingWorld } from "./tasks";
-import { dueCheckpoints } from "./checkpoints";
+import { checkpointDueInstant, dueCheckpoints } from "./checkpoints";
 import type {
   CardDefinition,
   CardResult,
@@ -167,28 +167,12 @@ type InstanceRow = {
   classification_inputs: Record<string, unknown>;
 };
 
-async function loadDefinition(
-  supabase: Supa,
-  pathwayId: string,
-  version: string
-): Promise<PathwayDefinition | null> {
-  // DB override for this exact version wins; otherwise the built-in.
-  const { data: row } = await supabase
-    .from("pathway_definitions")
-    .select("definition, status")
-    .eq("pathway_id", pathwayId)
-    .eq("pathway_version", version)
-    .maybeSingle();
-  if (row?.definition) return row.definition as PathwayDefinition;
-  return getDefinition(pathwayId, version);
-}
-
 async function recomputeInstanceRow(
   supabase: Supa,
   inst: InstanceRow,
   trigger: string
 ): Promise<void> {
-  const def = await loadDefinition(supabase, inst.pathway_id, inst.pathway_version);
+  const def = getDefinition(inst.pathway_id, inst.pathway_version);
   if (!def) return;
 
   const { data: patient } = await supabase
@@ -357,7 +341,7 @@ async function ensureCheckpoints(
   pathwayId: string,
   version: string
 ): Promise<void> {
-  const def = await loadDefinition(supabase, pathwayId, version);
+  const def = getDefinition(pathwayId, version);
   if (!def) return;
   const { data: patient } = await supabase
     .from("patients")
@@ -365,10 +349,10 @@ async function ensureCheckpoints(
     .eq("id", patientId)
     .maybeSingle();
   if (!patient) return;
-  const admittedAt = Date.parse(toInstant(patient.admitted_on));
+  const admittedAt = toInstant(patient.admitted_on);
 
   for (const cp of def.checkpoints) {
-    const dueAt = new Date(admittedAt + cp.dueAtHours * 3_600_000).toISOString();
+    const dueAt = checkpointDueInstant(admittedAt, cp);
     await supabase
       .from("pathway_checkpoints")
       .upsert(
@@ -678,6 +662,3 @@ export async function audit(
     detail: a.detail,
   });
 }
-
-// Re-export for actions.ts
-export { getDefinition } from "./definitions/registry";

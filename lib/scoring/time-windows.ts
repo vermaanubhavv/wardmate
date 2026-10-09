@@ -13,6 +13,7 @@ import type {
   TimeWindow,
   WindowAnchor,
 } from "./types";
+import { round } from "./units";
 
 const HOUR_MS = 3_600_000;
 
@@ -133,9 +134,4 @@ export function changeFromBaseline(
   const current = select(inputs, key, rw);
   if (!baseline || !current || baseline.value == null || current.value == null) return null;
   return { delta: round(current.value - baseline.value, 2), current, baseline };
-}
-
-function round(n: number, dp = 1): number {
-  const f = 10 ** dp;
-  return Math.round(n * f) / f;
 }

@@ -8,9 +8,6 @@ import { describe, it, expect } from "vitest";
 import {
   getSpecialtyPack,
   generalSurgeryPack,
-  medicalOncologyPack,
-  internalMedicinePack,
-  obstetricsGynaecologyPack,
   listSpecialties,
   offersChecklistFamily,
 } from "@/lib/specialty";
@@ -145,7 +142,7 @@ describe("burns counts from the burn, which happened before the admission", () =
 });
 
 describe("medical oncology counts by the cycle", () => {
-  const p = medicalOncologyPack;
+  const p = getSpecialtyPack("medical_oncology");
 
   it("names the cycle and the day within it", () => {
     expect(p.dayCount({ post_op_day: null, admission_day: 2, cycle_day: 3, cycle_number: 2 }).text)
@@ -196,7 +193,7 @@ describe("medical oncology counts by the cycle", () => {
 });
 
 describe("internal medicine counts by the hospital day", () => {
-  const p = internalMedicinePack;
+  const p = getSpecialtyPack("internal_medicine");
 
   it("always reads the admission day — never POD, never a cycle", () => {
     expect(p.dayCount({ post_op_day: null, admission_day: 3 })).toEqual({
@@ -240,10 +237,6 @@ describe("internal medicine counts by the hospital day", () => {
     expect(p.scoringKeys).not.toContain("nsti");
     expect(p.scoringKeys).not.toContain("perforation_peritonitis");
     expect(p.formatKinds).not.toContain("ot_notes");
-  });
-
-  it("anchors its checklist on admission, not the operation", () => {
-    expect(p.checklistAnchor).toBe("admission");
   });
 
   it("ships the condition-keyed templates plus the generic fallback (published 2026-09-13)", () => {
@@ -333,7 +326,7 @@ describe("every department's own discharge templates", () => {
 });
 
 describe("obstetrics & gynaecology counts like a surgical unit, not a medicine one", () => {
-  const p = obstetricsGynaecologyPack;
+  const p = getSpecialtyPack("obstetrics_gynaecology");
 
   it("an operated or delivered patient reads POD; everyone else reads the admission day", () => {
     expect(p.dayCount(surgical)).toEqual({ clock: "post_op", n: 2, text: "POD 2" });
@@ -361,10 +354,6 @@ describe("obstetrics & gynaecology counts like a surgical unit, not a medicine o
 
   it("keeps the OT notes slot — unlike internal medicine, this ward operates", () => {
     expect(p.formatKinds).toContain("ot_notes");
-  });
-
-  it("anchors its (not-yet-seeded) checklist on the operation/delivery, the surgical model", () => {
-    expect(p.checklistAnchor).toBe("post_op");
   });
 
   it("ships its own condition templates — LSCS is picked before a normal delivery", () => {
@@ -418,7 +407,7 @@ describe("cycle-anchored checklist triggers", () => {
 
 describe("discharge templates follow the unit", () => {
   it("febrile neutropenia matches the oncology set, not the surgical one", () => {
-    const onc = matchDischargeTemplateFor(medicalOncologyPack, {
+    const onc = matchDischargeTemplateFor(getSpecialtyPack("medical_oncology"), {
       diagnosisText: "febrile neutropenia post chemotherapy",
     });
     expect(onc?.key).toBe("febrile_neutropenia");
@@ -436,8 +425,8 @@ describe("discharge templates follow the unit", () => {
 
   it("every oncology template goes home with the fever red flag", () => {
     const all = [
-      ...medicalOncologyPack.dischargeTemplates,
-      medicalOncologyPack.genericDischargeTemplate,
+      ...getSpecialtyPack("medical_oncology").dischargeTemplates,
+      getSpecialtyPack("medical_oncology").genericDischargeTemplate,
     ];
     expect(all.length).toBeGreaterThan(5);
     for (const t of all) {
@@ -449,11 +438,11 @@ describe("discharge templates follow the unit", () => {
     // What the ward list sets on a patient (care_templates.family, seeded by patch 0061) has
     // to reach the right discharge template even when nobody typed a diagnosis.
     expect(
-      matchDischargeTemplateFor(medicalOncologyPack, { templateFamily: "febrile_neutropenia" })
+      matchDischargeTemplateFor(getSpecialtyPack("medical_oncology"), { templateFamily: "febrile_neutropenia" })
         ?.key
     ).toBe("febrile_neutropenia");
     expect(
-      matchDischargeTemplateFor(medicalOncologyPack, { templateFamily: "myeloma" })?.key
+      matchDischargeTemplateFor(getSpecialtyPack("medical_oncology"), { templateFamily: "myeloma" })?.key
     ).toBe("myeloma");
   });
 
@@ -461,11 +450,11 @@ describe("discharge templates follow the unit", () => {
     expect(generalSurgeryPack.pickerPhase).toBe("after_surgery");
     // A medical oncology patient never has an operation date, so phaseFor() computes
     // before_surgery for them — the picker has to offer the rows filed under it.
-    expect(medicalOncologyPack.pickerPhase).toBe("before_surgery");
+    expect(getSpecialtyPack("medical_oncology").pickerPhase).toBe("before_surgery");
   });
 
   it("the picker lists the unit's own templates plus its generic fallback", () => {
-    const keys = listDischargeTemplatesFor(medicalOncologyPack).map((t) => t.key);
+    const keys = listDischargeTemplatesFor(getSpecialtyPack("medical_oncology")).map((t) => t.key);
     expect(keys).toContain("chemo_cycle");
     expect(keys).toContain("oncology_generic");
     expect(keys).not.toContain("breast_ca");
@@ -576,10 +565,10 @@ describe("the oncology examination cards", () => {
 
 describe("offersChecklistFamily — the picker follows the department chosen at unit setup", () => {
   it("keeps oncology and medicine apart, though both are filed under before_surgery", () => {
-    expect(offersChecklistFamily(medicalOncologyPack, "chemo_cycle")).toBe(true);
-    expect(offersChecklistFamily(medicalOncologyPack, "dengue")).toBe(false);
-    expect(offersChecklistFamily(internalMedicinePack, "dengue")).toBe(true);
-    expect(offersChecklistFamily(internalMedicinePack, "febrile_neutropenia")).toBe(false);
+    expect(offersChecklistFamily(getSpecialtyPack("medical_oncology"), "chemo_cycle")).toBe(true);
+    expect(offersChecklistFamily(getSpecialtyPack("medical_oncology"), "dengue")).toBe(false);
+    expect(offersChecklistFamily(getSpecialtyPack("internal_medicine"), "dengue")).toBe(true);
+    expect(offersChecklistFamily(getSpecialtyPack("internal_medicine"), "febrile_neutropenia")).toBe(false);
   });
 
   it("offers general surgery its own procedure checklists (0097 / 0098) and no other department", () => {
@@ -629,7 +618,7 @@ describe("offersChecklistFamily — the picker follows the department chosen at 
     // Its casemix, borrowed from medicine along with the discharge templates and Wells scores.
     for (const family of ["cap", "pulmonary_tb", "vte_suspected"]) {
       expect(offersChecklistFamily(pulmonary, family)).toBe(true);
-      expect(offersChecklistFamily(internalMedicinePack, family)).toBe(true);
+      expect(offersChecklistFamily(getSpecialtyPack("internal_medicine"), family)).toBe(true);
     }
     // The rest of medicine's list is not a chest ward's.
     for (const family of ["dka", "sle_flare", "enteric_fever"]) {

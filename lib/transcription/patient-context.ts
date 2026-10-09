@@ -55,7 +55,6 @@ export function deriveDictationContext(input: {
   ward?: string;
   noteType?: NoteType;
   specialty?: Specialty;
-  customTerms?: DictationContext["customTerms"];
 }): DictationContext {
   const { patient, observations = [] } = input;
   const operated = Boolean(patient.surgery_date) || patient.post_op_day != null;
@@ -122,7 +121,6 @@ export function deriveDictationContext(input: {
     investigations,
     postOpDay: patient.post_op_day ?? null,
     freeTextContext: plans.slice(0, 12),
-    customTerms: input.customTerms,
   };
 }
 

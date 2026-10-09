@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
-import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
+import { STT_MODEL, STT_PROVIDER, transcribe } from "@/lib/stt";
 import { getPatientDictationKeyterms } from "@/lib/transcription/patient-context";
 import { extractObservations } from "@/lib/extract";
 import { getWardSpecialtyStored } from "@/lib/ward";
@@ -76,22 +76,18 @@ export async function POST(request: Request) {
 
   let transcript: string;
   let heard: string;
-  let stt;
   try {
-    stt = getTranscriber();
-    const result = await stt.transcribe(audio, MEDICAL_VOCABULARY_HINT, {
-      keyterms: keyterms.length ? keyterms : undefined,
-    });
+    const result = await transcribe(audio, keyterms);
     heard = result.text;
     transcript = (await correctTranscript(heard)).text;
     log.info("dictation transcribed", {
-      "stt.provider": stt.provider,
+      "stt.provider": STT_PROVIDER,
       "transcript.chars": transcript.length,
       "keyterms.count": keyterms.length,
       corrected: heard !== transcript,
     });
   } catch (e) {
-    log.error("dictation transcription failed", { "stt.provider": stt?.provider ?? "unknown" });
+    log.error("dictation transcription failed", { "stt.provider": STT_PROVIDER });
     return NextResponse.json(
       { error: plainAiError(e) },
       { status: 502 }
@@ -126,8 +122,8 @@ export async function POST(request: Request) {
         source: "voice",
         transcript,
         original_transcript: heard === transcript ? null : heard,
-        stt_provider: stt.provider,
-        stt_model: stt.model,
+        stt_provider: STT_PROVIDER,
+        stt_model: STT_MODEL,
         extraction_error: e instanceof Error ? e.message : String(e),
       })
       .select("id")
@@ -154,8 +150,8 @@ export async function POST(request: Request) {
       transcript,
       // Only when the app changed something. Equal strings would just be noise behind the (i).
       original_transcript: heard === transcript ? null : heard,
-      stt_provider: stt.provider,
-      stt_model: stt.model,
+      stt_provider: STT_PROVIDER,
+      stt_model: STT_MODEL,
       extraction_model: extraction.model,
       extraction_raw: extraction.raw as never,
       matched_protocol_ids: extraction.matchedProtocolIds,
