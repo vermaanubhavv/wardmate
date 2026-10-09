@@ -49,3 +49,36 @@ describe("judgeRegisterRows", () => {
     expect(rows[1].plan_judgments).toEqual([]);
   });
 });
+
+describe("redactIdentifiers (what reaches Jev from a register row)", async () => {
+  const { redactIdentifiers } = await import("@/lib/jev-observations");
+
+  it("removes the name and a bed that follows 'bed', keeps the same digits as values", () => {
+    expect(redactIdentifiers("Bed 4 Ramesh Kumar POD 2 temp 100 F, drain 40 ml, 4 hourly vitals", "Ramesh Kumar", "4")).toBe(
+      "Bed [bed] [name] POD 2 temp 100 F, drain 40 ml, 4 hourly vitals"
+    );
+  });
+
+  it("removes a lone part of the name and a ward-label bed anywhere", () => {
+    expect(redactIdentifiers("SW-12 Sita: afebrile, remove drain. sita tolerating orals", "Sita Devi", "SW-12")).toBe(
+      "[bed] [name]: afebrile, remove drain. [name] tolerating orals"
+    );
+  });
+
+  it("leaves text with no name or bed alone", () => {
+    expect(redactIdentifiers("abd soft, BS +", "", "")).toBe("abd soft, BS +");
+  });
+});
+
+describe("judgeRegisterRows sends no name or bed", async () => {
+  it("redacts the row before it leaves", async () => {
+    const jev = await import("@/lib/jev");
+    const spy = vi.spyOn(jev, "askJev");
+    const { judgeRegisterRows } = await import("@/lib/jev-observations");
+    await judgeRegisterRows([{ name: "Ramesh Kumar", bed: "4", source_quote: "Bed 4 Ramesh Kumar temp 100 F / repeat CBC",
+      findings: [{ label: "temp", value_text: "100 F" }], plans: ["repeat CBC"], uncertain: false }]);
+    const sent = JSON.stringify(spy.mock.calls.map((c) => c[0]));
+    expect(sent).not.toMatch(/Ramesh|Kumar|Bed 4/);
+    expect(sent).toContain("[name]");
+  });
+});
