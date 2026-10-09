@@ -78,7 +78,7 @@ export async function editEntry(formData: FormData) {
 
   const { data: patient } = await supabase
     .from("current_patients")
-    .select("id, ward_id, surgery_date, post_op_day, admission_day, template_family, template_variant")
+    .select("id, ward_id, display_name, bed, surgery_date, post_op_day, admission_day, template_family, template_variant")
     .eq("id", patientId)
     .maybeSingle();
   if (!patient) return;
@@ -92,7 +92,7 @@ export async function editEntry(formData: FormData) {
 
   let extraction;
   try {
-    extraction = await extractObservations(corrected, expectedLabels, [], await specialty);
+    extraction = await extractObservations(corrected, expectedLabels, [], await specialty, { name: patient.display_name, bed: patient.bed });
   } catch {
     // Keep the correction even when structuring fails. The words are the evidence, and a
     // resident who has just fixed a mis-hearing should not lose the fix as well.

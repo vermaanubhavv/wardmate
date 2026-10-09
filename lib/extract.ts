@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { judgeObservations, type TaskCategoryJudgment } from "@/lib/jev-observations";
+import { judgeObservations, type PatientIdentifiers, type TaskCategoryJudgment } from "@/lib/jev-observations";
 import { AI_MODEL } from "@/lib/model";
 import { traced, recordAiUsage } from "@/lib/observability";
 import { isIdentifierLabel } from "@/lib/patients";
@@ -207,7 +207,9 @@ export async function extractObservations(
   /** The unit's specialty (wards.specialty). Anything unknown — including undefined, because
    *  patch 0060 has not been run — gets the surgery pack and the prompt this app has always
    *  sent. */
-  specialty?: string | null
+  specialty?: string | null,
+  /** The patient this is about, so their name and bed are kept out of what Jev is sent. */
+  who?: PatientIdentifiers
 ): Promise<ExtractionResult> {
   const pack = getSpecialtyPack(specialty);
   const key = process.env.ANTHROPIC_API_KEY;
@@ -341,7 +343,7 @@ export async function extractObservations(
 
   // A second, independent look at what survived: does each quote actually say its value?
   // Can only add amber and to-do judgments; see lib/jev-observations.ts.
-  await judgeObservations(observations);
+  await judgeObservations(observations, who);
 
   return { observations, rejected, matchedProtocolIds, model, raw: parsed };
 }

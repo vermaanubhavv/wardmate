@@ -82,3 +82,35 @@ describe("judgeRegisterRows sends no name or bed", async () => {
     expect(sent).toContain("[name]");
   });
 });
+
+describe("dictation and history check send no patient name or bed", async () => {
+  const jev = await import("@/lib/jev");
+  const sentText = (spy: ReturnType<typeof vi.spyOn>) => JSON.stringify(spy.mock.calls.map((c) => c[0]));
+
+  it("judgeObservations redacts the dictated quote, keeps the stored row as said", async () => {
+    const spy = vi.spyOn(jev, "askJev");
+    spy.mockClear();
+    const { judgeObservations } = await import("@/lib/jev-observations");
+    const row = {
+      kind: "exam" as const, label: "abdomen", value_text: "soft", value_num: null, unit: null,
+      source_quote: "Ramesh in bed 4, abdomen soft", needs_confirmation: false, urgency: null, pac_verdict: null,
+    };
+    await judgeObservations([row], { name: "Ramesh Kumar", bed: "4" });
+    expect(sentText(spy)).not.toMatch(/Ramesh|bed 4/);
+    expect(row.source_quote).toBe("Ramesh in bed 4, abdomen soft");
+  });
+
+  it("jevCrossCheck redacts history-check quotes", async () => {
+    const spy = vi.spyOn(jev, "askJev");
+    spy.mockClear();
+    const { jevCrossCheck } = await import("@/lib/history-check/jev-check");
+    const tree = { slots: [{ id: "fever", label: "Fever" }] } as never;
+    const result = {
+      slots: [{ id: "fever", state: "positive", evidence: { quote: "Sita has fever since two days", source: 0 }, value: null, conflict: null }],
+      rejections: [], wrongPatient: null,
+    } as never;
+    await jevCrossCheck(tree, result, { name: "Sita Devi", bed: "SW-12" });
+    expect(sentText(spy)).not.toMatch(/Sita/);
+    expect(sentText(spy)).toContain("[name] has fever");
+  });
+});

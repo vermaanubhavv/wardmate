@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   const { data: patient } = await supabase
     .from("current_patients")
     .select(
-      "id, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text"
+      "id, display_name, bed, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text"
     )
     .eq("id", patientId)
     .maybeSingle();
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
 
   let extraction;
   try {
-    extraction = await extractObservations(text, expectedLabels, protocols);
+    extraction = await extractObservations(text, expectedLabels, protocols, undefined, { name: patient.display_name, bed: patient.bed });
   } catch (e) {
     // Keep the note even when structuring fails — the words are the evidence.
     const { data: entry } = await supabase

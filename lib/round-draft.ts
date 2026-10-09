@@ -65,7 +65,13 @@ export async function buildRoundDraft(
     }
 
     try {
-      const extraction = await extractObservations(segment.text, expectedLabels);
+      // The bed's own patient (when matched) is kept out of what Jev is sent, and so is the
+      // bed as spoken.
+      const who = patients.find((p) => p.id === match.patientId);
+      const extraction = await extractObservations(segment.text, expectedLabels, [], undefined, {
+        name: who?.display_name,
+        bed: who?.bed ?? segment.bed,
+      });
       segments.push({ ...segment, observations: extraction.observations });
     } catch {
       // The words survive even when structuring fails — they are the evidence, and the
