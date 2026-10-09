@@ -1,4 +1,3 @@
-import type { DischargeTemplate } from "@/lib/discharge-templates";
 import type { FormatKind } from "@/lib/formats";
 import type { Specialty as LexiconSpecialty } from "@/lib/transcription/lexicon/types";
 
@@ -101,10 +100,9 @@ export type SpecialtyPack = {
    */
   extractGuidance: string;
 
-  /** The discharge templates this unit is offered, most specific first. */
-  dischargeTemplates: DischargeTemplate[];
-  /** The fallback when the typed diagnosis matches none of them. */
-  genericDischargeTemplate: DischargeTemplate;
+  // The discharge templates are NOT on the pack: they are ~600 KB of text and every client
+  // screen that reads a pack (day labels, intake fields) would ship them. They live in
+  // lib/specialty/discharge.ts, keyed by `key` — see dischargeTemplatesFor().
 
   /**
    * The scoring pathways offered to this unit. Empty means "offer nothing" — an empty list is

@@ -1,4 +1,3 @@
-import { DISCHARGE_TEMPLATES, GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates";
 import type { FormatKind } from "@/lib/formats";
 import { surgicalDayCount, type SpecialtyPack } from "./types";
 
@@ -23,9 +22,6 @@ export const generalSurgeryPack: SpecialtyPack = {
   extractRoleLine:
     "You convert a surgical resident's spoken ward-round note into structured observations.",
   extractGuidance: "",
-
-  dischargeTemplates: DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: GENERIC_DISCHARGE_TEMPLATE,
 
   scoringKeys: [
     "acute_pancreatitis",

@@ -14,7 +14,7 @@ import {
 import { buildSystemPrompt } from "@/lib/extract";
 import { dayLabel } from "@/lib/patients";
 import { evaluateTrigger, type TriggerContext } from "@/lib/checklist-triggers";
-import { matchDischargeTemplateFor, listDischargeTemplatesFor } from "@/lib/specialty/discharge";
+import { matchDischargeTemplateFor, listDischargeTemplatesFor, dischargeTemplatesFor } from "@/lib/specialty/discharge";
 import { HISTORY_SECTION_LABEL, sectionsForSpecialty } from "@/lib/case-history-sections";
 import { caseHistorySectionOf, summariseCaseHistory } from "@/lib/case-history";
 
@@ -242,8 +242,8 @@ describe("internal medicine counts by the hospital day", () => {
   it("ships the condition-keyed templates plus the generic fallback (published 2026-09-13)", () => {
     // MEDICINE_DISCHARGE_TEMPLATES was deliberately empty through the pilot build; published
     // for alpha testing on the product owner's direction — see the file header.
-    expect(p.dischargeTemplates.length).toBeGreaterThan(10);
-    expect(listDischargeTemplatesFor(p).map((t) => t.key)).toContain(p.genericDischargeTemplate.key);
+    expect(dischargeTemplatesFor(p).templates.length).toBeGreaterThan(10);
+    expect(listDischargeTemplatesFor(p).map((t) => t.key)).toContain(dischargeTemplatesFor(p).generic.key);
     expect(matchDischargeTemplateFor(p, { diagnosisText: "dengue fever with warning signs" })?.key).toBe("dengue");
   });
 
@@ -251,10 +251,10 @@ describe("internal medicine counts by the hospital day", () => {
     // Changed 2026-09-28 on the product owner's direction: medicine now pre-fills a starting set
     // like every other department. What must still never be guessed is a dose that is titrated
     // on the ward or set by organ function or a specialist.
-    for (const t of p.dischargeTemplates) expect(t.scaffold.medications.length, t.key).toBeGreaterThan(0);
-    expect(p.genericDischargeTemplate.scaffold.medications).toEqual([]);
+    for (const t of dischargeTemplatesFor(p).templates) expect(t.scaffold.medications.length, t.key).toBeGreaterThan(0);
+    expect(dischargeTemplatesFor(p).generic.scaffold.medications).toEqual([]);
     const titrated = /insulin|glargine|amlodipine|telmisartan|chlorthalidone|prednisolone|hydroxychloroquine|mycophenolate|azathioprine|att|isoniazid|rifampicin|tenofovir|dolutegravir|cotrimoxazole|metformin|hypoglycaemic/i;
-    for (const t of p.dischargeTemplates) {
+    for (const t of dischargeTemplatesFor(p).templates) {
       for (const m of t.scaffold.medications.filter((m) => titrated.test(m.generic))) {
         expect(`${m.strength ?? ""} ${m.dose ?? ""}`, `${t.key}: ${m.generic}`).not.toMatch(/\d/);
       }
@@ -283,11 +283,11 @@ describe("every department's own discharge templates", () => {
 
   it("every department has condition templates and a generic that never auto-matches", () => {
     for (const p of packs) {
-      expect(p.dischargeTemplates.length, p.key).toBeGreaterThan(0);
-      const keys = [...p.dischargeTemplates, p.genericDischargeTemplate].map((t) => t.key);
+      expect(dischargeTemplatesFor(p).templates.length, p.key).toBeGreaterThan(0);
+      const keys = [...dischargeTemplatesFor(p).templates, dischargeTemplatesFor(p).generic].map((t) => t.key);
       expect(new Set(keys).size, `${p.key} has a duplicate template key`).toBe(keys.length);
       for (const probe of ["cataract", "tonsillectomy", "fever", "LSCS", "fracture", ""]) {
-        expect(p.genericDischargeTemplate.match.test(probe), `${p.key} generic matched "${probe}"`).toBe(false);
+        expect(dischargeTemplatesFor(p).generic.match.test(probe), `${p.key} generic matched "${probe}"`).toBe(false);
       }
     }
   });
@@ -295,17 +295,17 @@ describe("every department's own discharge templates", () => {
   it("only general surgery and medicine share their sets — nobody borrows any more", () => {
     const owners = new Map<unknown, string>();
     for (const p of packs) {
-      const prior = owners.get(p.dischargeTemplates);
+      const prior = owners.get(dischargeTemplatesFor(p).templates);
       expect(prior, `${p.key} borrows ${prior}'s templates`).toBeUndefined();
-      owners.set(p.dischargeTemplates, p.key);
+      owners.set(dischargeTemplatesFor(p).templates, p.key);
     }
   });
 
   it("a paediatric (or infant) template never states a dose", () => {
     const infant = [
-      ...getSpecialtyPack("paediatrics").dischargeTemplates,
-      ...getSpecialtyPack("neurosurgery").dischargeTemplates.filter((t) => /myelomeningocele/i.test(t.label)),
-      ...getSpecialtyPack("burns_plastic_surgery").dischargeTemplates.filter((t) => /cleft/i.test(t.label)),
+      ...dischargeTemplatesFor(getSpecialtyPack("paediatrics")).templates,
+      ...dischargeTemplatesFor(getSpecialtyPack("neurosurgery")).templates.filter((t) => /myelomeningocele/i.test(t.label)),
+      ...dischargeTemplatesFor(getSpecialtyPack("burns_plastic_surgery")).templates.filter((t) => /cleft/i.test(t.label)),
     ];
     expect(infant.length).toBeGreaterThan(10);
     for (const t of infant) {
@@ -357,8 +357,8 @@ describe("obstetrics & gynaecology counts like a surgical unit, not a medicine o
   });
 
   it("ships its own condition templates — LSCS is picked before a normal delivery", () => {
-    expect(p.dischargeTemplates.length).toBeGreaterThan(5);
-    expect(listDischargeTemplatesFor(p).map((t) => t.key)).toContain(p.genericDischargeTemplate.key);
+    expect(dischargeTemplatesFor(p).templates.length).toBeGreaterThan(5);
+    expect(listDischargeTemplatesFor(p).map((t) => t.key)).toContain(dischargeTemplatesFor(p).generic.key);
     expect(matchDischargeTemplateFor(p, { procedureText: "Emergency LSCS" })?.key).toBe("obg_lscs");
     expect(matchDischargeTemplateFor(p, { procedureText: "Normal vaginal delivery" })?.key).toBe("obg_nvd");
   });
@@ -425,8 +425,8 @@ describe("discharge templates follow the unit", () => {
 
   it("every oncology template goes home with the fever red flag", () => {
     const all = [
-      ...getSpecialtyPack("medical_oncology").dischargeTemplates,
-      getSpecialtyPack("medical_oncology").genericDischargeTemplate,
+      ...dischargeTemplatesFor(getSpecialtyPack("medical_oncology")).templates,
+      dischargeTemplatesFor(getSpecialtyPack("medical_oncology")).generic,
     ];
     expect(all.length).toBeGreaterThan(5);
     for (const t of all) {

@@ -1,4 +1,3 @@
-import { BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES, BURNS_PLASTIC_SURGERY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-burns-plastic-surgery";
 import type { FormatKind } from "@/lib/formats";
 import { surgicalDayCount, type SpecialtyPack } from "./types";
 
@@ -90,9 +89,6 @@ Burns and plastic surgery ward — what the words mean here:
 - TETANUS STATUS AND FIRST AID ARE PART OF THE ADMISSION RECORD: "tetanus toxoid given outside", "immunisation status not known", "poured cold water for 10 minutes", "toothpaste applied at home". Record what was said, without comment.
 - Abbreviations to leave AS SAID: "PBD", "TBSA", "STSG", "FTSG", "SSD" (silver sulphadiazine), "NPWT", "RL" (Ringer lactate). Store the letters that were said.
 `.trim(),
-
-  dischargeTemplates: BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: BURNS_PLASTIC_SURGERY_GENERIC_DISCHARGE_TEMPLATE,
 
   // Empty on purpose: the burns severity indices are exactly the kind of number that would be
   // read as a prognosis at a bedside, and none has been built or reviewed here.

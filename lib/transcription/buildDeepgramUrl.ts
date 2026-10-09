@@ -1,5 +1,3 @@
-import { dedupeCaseInsensitive } from "./selectMedicalKeyterms";
-
 /**
  * Build the Deepgram `/v1/listen` query for WardMate's dictation.
  *
@@ -15,6 +13,19 @@ export const DEEPGRAM_LISTEN_URL = "https://api.deepgram.com/v1/listen";
 
 /** Hard cap on the number of keyterms, matching the selector. */
 export const MAX_KEYTERMS = 80;
+
+/** Case-insensitive dedupe that keeps first-seen casing and trims each entry. */
+export function dedupeCaseInsensitive(terms: readonly string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const t of terms) {
+    const key = t.trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(t.trim());
+  }
+  return out;
+}
 
 /** Any other Deepgram flags the caller uses (smart_format, interim_results, diarize…). */
 type DeepgramFlags = Record<string, string | number | boolean>;

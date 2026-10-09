@@ -19,12 +19,12 @@ import {
   type DiagnosisCategory,
   type HistopathologyStatus,
 } from "@/lib/discharge-entities";
-import { buildConditionProse } from "@/lib/discharge-compile";
+import { buildConditionProse } from "@/lib/discharge-entities";
 import { runDischargeChecks, type DischargeCheckContext } from "@/lib/discharge-checks";
 import type { DischargeCheck } from "@/lib/discharge-checks";
 import FormularyLink from "./formulary-link";
 import LiveDictation, { DictateButton, routeVia, type LiveLine, type LiveSection } from "../live-dictation";
-import type { DischargeProfile } from "@/lib/specialty/discharge";
+import type { DischargeProfile } from "@/lib/specialty/discharge-profile";
 import type { FinalFix } from "@/lib/final-check";
 import { Field, Area, StringList, SuggestField, SelectField, SegmentedField } from "./discharge-fields";
 import { DEFAULT_UNIT_CONSULTANTS } from "@/lib/unit-consultants";

@@ -1,7 +1,3 @@
-import {
-  ONCOLOGY_DISCHARGE_TEMPLATES,
-  ONCOLOGY_GENERIC_DISCHARGE_TEMPLATE,
-} from "@/lib/discharge-templates-oncology";
 import type { FormatKind } from "@/lib/formats";
 import { admissionDayCount, type SpecialtyPack } from "./types";
 
@@ -65,9 +61,6 @@ Medical oncology ward — what the words mean here:
 - FEVER in this patient group is time-critical. Record temperature, "febrile", "spiked", "rigors" exactly as said. Do not soften and do not interpret — "no fever documented" is a valid and useful outcome.
 - Abbreviations to leave EXPANDED-AS-SAID and never rewrite: "RT" (ambiguous — radiotherapy or Ryle's tube), "CR" / "PR" / "SD" / "PD" (response categories), "BM" (bone marrow), "IT" (intrathecal), "FN" (febrile neutropenia), "TLS" (tumour lysis syndrome). Store the letters that were said.
 `.trim(),
-
-  dischargeTemplates: ONCOLOGY_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: ONCOLOGY_GENERIC_DISCHARGE_TEMPLATE,
 
   // Deliberately empty. The surgical pathways (Ranson's, AIR, TG18, Glasgow-Blatchford) are
   // wrong for this ward and showing them would be worse than showing nothing. The oncology

@@ -1,4 +1,3 @@
-import { EMERGENCY_DISCHARGE_TEMPLATES, EMERGENCY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-emergency";
 import type { FormatKind } from "@/lib/formats";
 import { admissionDayCount, type SpecialtyPack } from "./types";
 
@@ -73,9 +72,6 @@ Emergency department — what the words mean here:
 - THE DISPOSITION IS ALWAYS RECORDED AS STATED: "admitted under surgery", "shifted to ICU", "referred to higher centre", "discharged against medical advice", "left without being seen", "declared brought dead at 11:05". It is the outcome of the episode and it is never inferred from what came before.
 - Abbreviations to leave AS SAID: "ROSC", "CPR", "GCS", "FAST", "AMA", "LAMA", "BD" (brought dead — store the letters said), "RTA", "OP poisoning", "ETT", "NIV".
 `.trim(),
-
-  dischargeTemplates: EMERGENCY_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: EMERGENCY_GENERIC_DISCHARGE_TEMPLATE,
 
   // The five an emergency physician reaches for, all active. No triage category and no
   // early-warning score — see the header.
