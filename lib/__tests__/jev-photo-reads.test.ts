@@ -85,7 +85,7 @@ describe("judgeRegisterRows sends no name or bed", async () => {
 
 describe("dictation and history check send no patient name or bed", async () => {
   const jev = await import("@/lib/jev");
-  const sentText = (spy: ReturnType<typeof vi.spyOn>) => JSON.stringify(spy.mock.calls.map((c) => c[0]));
+  const sentText = (spy: { mock: { calls: unknown[][] } }) => JSON.stringify(spy.mock.calls.map((c) => c[0]));
 
   it("judgeObservations redacts the dictated quote, keeps the stored row as said", async () => {
     const spy = vi.spyOn(jev, "askJev");
