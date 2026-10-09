@@ -85,7 +85,7 @@ export default function BedsideBar({
           rows={4}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={progressNoteConfigFor(specialty).bedsideExample ?? "Day 3 post lap chole, afebrile, drain 30 ml serous…"}
+          placeholder={progressNoteConfigFor(specialty).bedsideExample ?? "Day 3, afebrile, BP 120/80, plan repeat CBC…"}
           aria-label="Bedside note"
           className="field"
         />

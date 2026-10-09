@@ -212,7 +212,7 @@ export default async function UnitPage() {
               <input
                 name="department"
                 defaultValue={profile.department ?? ""}
-                placeholder="General Surgery"
+                placeholder="e.g. General Medicine"
                 className="field"
               />
             </label>
@@ -474,7 +474,7 @@ export default async function UnitPage() {
               name="letterhead"
               rows={7}
               defaultValue={ward.letterhead ?? ""}
-              placeholder={"E.S.I.C. MEDICAL COLLEGE & HOSPITAL\nNH-3, N.I.T. FARIDABAD, HARYANA\nDEPARTMENT OF GENERAL SURGERY\nUNIT-II"}
+              placeholder={"E.S.I.C. MEDICAL COLLEGE & HOSPITAL\nNH-3, N.I.T. FARIDABAD, HARYANA\nDEPARTMENT OF …\nUNIT-II"}
               className="field text-subhead leading-relaxed"
             />
             <button className="btn btn-secondary mt-2 w-full">Save heading</button>

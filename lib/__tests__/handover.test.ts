@@ -50,6 +50,16 @@ describe("deriveDoneToday", () => {
     expect(items).toEqual([{ id: "p1", text: "Operated: Lap cholecystectomy" }]);
   });
 
+  it("names it a procedure on a unit that does not operate", () => {
+    const items = deriveDoneToday(
+      [obs({ id: "p1", kind: "procedure_done", label: "Procedure", value_text: "Pleural tap" })],
+      [],
+      TODAY,
+      false
+    );
+    expect(items).toEqual([{ id: "p1", text: "Procedure: Pleural tap" }]);
+  });
+
   it("includes a task completed today, using its own wording", () => {
     const doneToday = obs({ id: "t1", kind: "plan", value_text: "Remove drain", done_at: "2026-09-19T06:00:00Z" });
     expect(deriveDoneToday([], [doneToday], TODAY)).toEqual([{ id: "t1", text: "Remove drain" }]);

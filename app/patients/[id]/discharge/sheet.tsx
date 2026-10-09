@@ -132,7 +132,7 @@ export default function DischargeSheet({
         {/* 5. Operation / Procedures */}
         {doc.procedures.length > 0 && (
           <>
-            <SectionHeading editBase={editBase} section="procedures">Operation / Procedures</SectionHeading>
+            <SectionHeading editBase={editBase} section="procedures">{doc.proceduresHeading}</SectionHeading>
             {doc.procedures.map((p) => (
               <div key={p.id} className="mb-1 text-caption">
                 {procedureLines(p).map((l, i) => (

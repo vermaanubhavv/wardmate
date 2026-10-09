@@ -568,7 +568,7 @@ export default function NoteWorkspace({
         <LiveDictation
           patientId={patientId}
           title="Dictating today's note"
-          example="e.g. “no fresh complaints overnight… BP 120 by 80, pulse 84… abdomen soft… start oral sips…”"
+          example="e.g. “no fresh complaints overnight… BP 120 by 80, pulse 84… chest clear, abdomen soft… continue same treatment…”"
           sections={live}
           route={routeVia(patientId, live)}
           onLines={applyDictation}
