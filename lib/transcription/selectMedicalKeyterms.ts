@@ -1,10 +1,8 @@
 import {
   MASTER_LEXICON,
-  mergeLexicon,
   type MedicalLexiconEntry,
   type DictationContext,
   type SelectedKeyterm,
-  type SelectKeytermOptions,
 } from "./lexicon";
 
 /**
@@ -23,8 +21,6 @@ import {
 const DEFAULTS = {
   /** Hard application safety cap. Deepgram's own limit is higher; this leaves headroom. */
   maxTerms: 80,
-  /** The selector aims to stay at or below this before the hard cap bites. */
-  targetTerms: 50,
   /** If a real patient context produces fewer than this, top up from the specialty core. */
   targetMin: 16,
   /** Application-side token ceiling, well below Deepgram's ~500-token API limit. */
@@ -316,25 +312,17 @@ function dedupe(sorted: Scored[]): Scored[] {
 
 // --- public API -------------------------------------------------------------------
 
-export function selectMedicalKeyterms(
-  context: DictationContext,
-  options: SelectKeytermOptions = {}
-): SelectedKeyterm[] {
-  const cfg = { ...DEFAULTS, ...options };
+export function selectMedicalKeyterms(context: DictationContext): SelectedKeyterm[] {
+  const cfg = DEFAULTS;
   const ctx = shape(context);
 
-  const lexicon = mergeLexicon(MASTER_LEXICON, [
-    ...(options.extraTerms ?? []),
-    ...(context.customTerms ?? []),
-  ]);
-
-  const lexIndex: LexIndexEntry[] = lexicon.map((e) => ({
+  const lexIndex: LexIndexEntry[] = MASTER_LEXICON.map((e) => ({
     names: [e.term, ...(e.aliases ?? [])].map(norm),
     term: e.term,
     dedupeGroup: e.dedupeGroup,
   }));
 
-  const scoredAll = lexicon.map((e) => scoreEntry(e, ctx)).filter((s) => s.score > 0);
+  const scoredAll = MASTER_LEXICON.map((e) => scoreEntry(e, ctx)).filter((s) => s.score > 0);
 
   const primary = scoredAll.filter((s) => s.score >= cfg.inclusionFloor);
   const candidates = [...syntheticPatientTerms(context, lexIndex), ...primary];
@@ -365,11 +353,8 @@ export function selectMedicalKeyterms(
 }
 
 /** The flat list to feed straight into the Deepgram keyterm parameter. */
-export function getDeepgramKeyterms(
-  context: DictationContext,
-  options: SelectKeytermOptions = {}
-): string[] {
-  return selectMedicalKeyterms(context, options).map((s) => s.term);
+export function getDeepgramKeyterms(context: DictationContext): string[] {
+  return selectMedicalKeyterms(context).map((s) => s.term);
 }
 
 /**
@@ -377,10 +362,9 @@ export function getDeepgramKeyterms(
  * no patient name, UHID, phone number or free text — only the chosen terms and why.
  */
 export function describeSelection(
-  context: DictationContext,
-  options: SelectKeytermOptions = {}
+  context: DictationContext
 ): { selectedCount: number; estimatedTokens: number; reasons: string[]; terms: string[] } {
-  const selected = selectMedicalKeyterms(context, options);
+  const selected = selectMedicalKeyterms(context);
   const terms = selected.map((s) => s.term);
   const reasons = Array.from(
     new Set(selected.flatMap((s) => s.reason))

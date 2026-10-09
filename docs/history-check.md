@@ -26,12 +26,8 @@ about immune status, so "no diabetes" must never record a patient as not immunoc
 is a single-clinician sign-off covering content that spans nine specialties; departmental review
 is still outstanding.
 
-For the safety level specifically, read the sign-off narrowly: `safety.ts` says the number is
-not a validated instrument and no published one was used to derive it, and **that stays true
-after review** — a clinician agreeing the mapping is sensible is a different claim from the
-number having been validated against outcomes. Anything that comes to render the level must
-render `SAFETY_LEVEL_REVIEW_STATUS` beside it. Nothing renders the level at all today: `view.ts`
-computes `assessSafety` and the card does not read it.
+For the safety level specifically, read the sign-off narrowly — see "Safety levels (not yet
+rendered)" below; the code was removed because nothing rendered it.
 
 `trees.test.ts` pins the exact list, so a tree cannot drift into "reviewed" as a side effect of
 an edit. `burns` is on it because the shipped file was re-read; the earlier sign-off was of a
@@ -213,8 +209,10 @@ worded as "questions that would help separate X / Y". It is never shown as a dia
 4. Add one or two eval cases for it in `lib/history-check/evals/cases.ts` (synthetic only) and
    run the eval script below.
 
-To change a shipped tree, bump `version`; old versions stay in the index so stored runs render
-with the version they were run against.
+To change a shipped tree, bump `version` in place. The registry holds one version per tree id
+(a second registration throws); a stored run on an older version is looked up by
+`getTree(id, version)` and finds nothing. If old versions ever need to render side by side,
+`listTrees()` must go back to picking the newest version of each id.
 
 **Which trees a unit sees first**
 
@@ -248,6 +246,27 @@ Adding one: same rule as the trees — **reset `reviewStatus` to `pending_clinic
 `reviewedBy` to `null`**, because every shipped checklist is `reviewed` and a copied file
 arrives carrying a sign-off nobody gave for your content. `exam.test.ts` asserts every shipped
 checklist is reviewed, so it will not catch this for you; it is on the author.
+
+## Safety levels (not yet rendered)
+
+A 0–4 "safety level" per complaint tree was built (`lib/history-check/safety.ts`) and computed
+on every run view, but no page ever rendered it, so it was removed. The record, for whoever
+builds a renderer:
+
+- **What it is not.** Not a validated clinical score, not a triage category, predicts nothing.
+  No published instrument was used; the thresholds are the app's reading of the tree's own
+  `red_flag` slots. Never render it as a severity score, a priority or an instruction to act.
+- **Sign-off.** Thresholds reviewed and signed off by Dr Anubhav Verma (review status
+  `reviewed`). Read that narrowly: a clinician agreeing the mapping is sensible is not the
+  number being validated against outcomes, and nothing has been. A renderer must show the
+  review status beside the level.
+- **The one rule.** "Not asked" is not reassurance. Level 0 only when every red-flag slot was
+  asked and every one came back explicitly negative; while any is unasked the level cannot fall
+  below 1. A slot still in conflict counts as unasked. A failed run shows no level, not 0.
+- **Mapping** (every `red_flag` slot counts, whatever its ward/academic tier): positives ≥ 3 → 4;
+  2 → 3; 1 → 2; 0 with any unasked → 1; 0 with none unasked → 0.
+- **Wording.** Plain counts only ("1 red flag positive, 2 not asked"; "All red flags asked,
+  none positive"); no advice, urgency or diagnosis. Across complaints, show the worst level.
 
 ## Evals
 

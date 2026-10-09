@@ -224,14 +224,10 @@ export async function getWardScoringTasks(wardId: string): Promise<Map<string, S
     : { data: [] };
   const factsById = new Map((pts ?? []).map((p) => [p.id, { sex: p.sex ?? null, ageYears: p.age_years ?? null }]));
 
-  const out = new Map<string, ScoringTask[]>();
-  for (const row of data ?? []) {
-    const t = mapTask(row, titles, factsById.get(row.patient_id) ?? { sex: null, ageYears: null });
-    const list = out.get(t.patientId) ?? [];
-    list.push(t);
-    out.set(t.patientId, list);
-  }
-  return out;
+  const tasks = (data ?? []).map((row) =>
+    mapTask(row, titles, factsById.get(row.patient_id) ?? { sex: null, ageYears: null })
+  );
+  return Map.groupBy(tasks, (t) => t.patientId);
 }
 
 function mapTask(

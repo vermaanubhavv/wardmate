@@ -163,20 +163,25 @@ export type DictationContext = {
   postOpDay?: number | null;
   /** Anything else worth feeding the matcher — free-text notes, ward name, unit shorthand. */
   freeTextContext?: string[];
-  /** Hospital- or unit-specific vocabulary merged in at selection time. */
-  customTerms?: MedicalLexiconEntry[];
 };
 
-/** Tuning knobs for the selector. Defaults match the WardMate application ceilings. */
-export type SelectKeytermOptions = {
-  /** Hard maximum number of keyterms. Deepgram's own limit is higher; this is our safety cap. */
-  maxTerms?: number;
-  /** Target upper bound — the selector aims for this before the hard cap. */
-  targetTerms?: number;
-  /** Approximate keyterm token ceiling. Deepgram's API limit is ~500; we stay well under. */
-  tokenBudget?: number;
-  /** Minimum score an untriggered term needs to be included. */
-  inclusionFloor?: number;
-  /** Extra lexicon entries (hospital / unit packs) to consider alongside the master lexicon. */
-  extraTerms?: MedicalLexiconEntry[];
-};
+/** The entry builder every specialty lexicon file shares: tags the term with `spec` and makes
+ *  the term, its aliases and any extra triggers (>= 5 chars, lower-cased) its triggers. */
+export function specialtyEntry(spec: Specialty) {
+  return (
+    term: string,
+    categories: MedicalLexiconEntry["categories"],
+    aliases: string[] = [],
+    triggers: string[] = [],
+    priority: number = PRIORITY.SPECIALTY
+  ): MedicalLexiconEntry => ({
+    term,
+    aliases,
+    categories,
+    specialties: [spec],
+    triggers: [term, ...aliases, ...triggers]
+      .map((t) => t.toLowerCase())
+      .filter((t) => t.length >= 5),
+    priority,
+  });
+}

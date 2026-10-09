@@ -1,7 +1,6 @@
 /**
- * The definition registry. Built-in pathway definitions live in code and are validated on
- * load; `pathway_definitions` rows in the database can add or override versions later without
- * a deploy (see `docs/scoring-engine.md` → "Rolling out a new pathway version").
+ * The definition registry. Pathway definitions live in code and are validated on load (see
+ * `docs/scoring-engine.md` → "Rolling out a new pathway version").
  *
  * Historical pathway instances always keep the exact `pathwayVersion` they were started on —
  * the store resolves an instance's definition by (pathwayId, pathwayVersion), never "latest"
@@ -86,16 +85,10 @@ for (const def of BUILT_IN) {
 const byKey = new Map<string, PathwayDefinition>();
 for (const def of BUILT_IN) byKey.set(`${def.pathwayId}@${def.pathwayVersion}`, def);
 
-/**
- * Definitions the trigger engine considers. In production this is `status === "active"`; a
- * `draft` definition (like pancreatitis v1 today) is included only when
- * `SCORING_ENGINE_ALLOW_DRAFTS` is set, so a pilot can exercise it before governance sign-off.
- */
+/** Definitions the trigger engine considers: `status === "active"` only. A `draft` never
+ *  triggers — it is activated by sign-off, not by an environment switch. */
 export function triggerableDefinitions(): PathwayDefinition[] {
-  const allowDrafts = process.env.SCORING_ENGINE_ALLOW_DRAFTS === "on";
-  return BUILT_IN.filter((d) => d.status === "active" || (allowDrafts && d.status === "draft")).map(
-    (d) => (d.status === "draft" && allowDrafts ? { ...d, status: "active" as const } : d)
-  );
+  return BUILT_IN.filter((d) => d.status === "active");
 }
 
 /**

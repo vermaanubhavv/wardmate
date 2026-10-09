@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
-import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
+import { STT_MODEL, STT_PROVIDER, transcribe } from "@/lib/stt";
 import { getPatientDictationKeyterms } from "@/lib/transcription/patient-context";
 import { correctTranscript } from "@/lib/glossary";
 import { readCaseSheet } from "@/lib/read-case-sheet";
@@ -152,12 +152,8 @@ export async function POST(request: Request) {
     });
 
     let heard: string;
-    let stt;
     try {
-      stt = getTranscriber();
-      const result = await stt.transcribe(audioBlob, MEDICAL_VOCABULARY_HINT, {
-        keyterms: keyterms.length ? keyterms : undefined,
-      });
+      const result = await transcribe(audioBlob, keyterms);
       heard = result.text;
     } catch (e) {
       return NextResponse.json(
@@ -180,8 +176,8 @@ export async function POST(request: Request) {
     insertFields = {
       source: "voice",
       original_transcript: heard === transcript ? null : heard,
-      stt_provider: stt.provider,
-      stt_model: stt.model,
+      stt_provider: STT_PROVIDER,
+      stt_model: STT_MODEL,
     };
   }
 

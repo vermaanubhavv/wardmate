@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
-import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
+import { transcribe } from "@/lib/stt";
 import { correctTranscript } from "@/lib/glossary";
 
 /**
@@ -28,8 +28,7 @@ export async function POST(request: Request) {
 
   let heard: string;
   try {
-    const stt = getTranscriber();
-    const result = await stt.transcribe(audio, MEDICAL_VOCABULARY_HINT);
+    const result = await transcribe(audio);
     heard = result.text;
   } catch (e) {
     return NextResponse.json({ error: plainAiError(e) }, { status: 502 });

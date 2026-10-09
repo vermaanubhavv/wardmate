@@ -1,6 +1,6 @@
 import { UROLOGY_DISCHARGE_TEMPLATES, UROLOGY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-urology";
 import type { FormatKind } from "@/lib/formats";
-import type { SpecialtyPack } from "./types";
+import { surgicalDayCount, type SpecialtyPack } from "./types";
 
 /**
  * The urology pack — the kidney, ureter, bladder, prostate and the male genital tract.
@@ -46,19 +46,9 @@ export const urologyPack: SpecialtyPack = {
   label: "Urology",
   blurb: "Stones, prostate, catheters and stents. Counts post-operative days; side, tube and output first.",
 
-  terminology: {
-    dayLabel: "POD",
-    admissionNoun: "operation",
-  },
-
   admissionPhrase: "a urology admission",
 
-  dayCount: (p) => {
-    if (p.post_op_day !== null) {
-      return { clock: "post_op", n: p.post_op_day, text: `POD ${p.post_op_day}` };
-    }
-    return { clock: "admission", n: p.admission_day, text: `Day ${p.admission_day}` };
-  },
+  dayCount: surgicalDayCount,
 
   extractRoleLine:
     "You convert a urology resident's spoken ward-round note into structured observations.",
@@ -77,8 +67,6 @@ Urology ward — what the words mean here:
 - PROSTATE FINDINGS AND PSA ARE RECORDED AS SAID, NOT INTERPRETED: "PSA 18", "hard nodular prostate on DRE", "grade 2 enlargement", "biopsy Gleason 3 plus 4". Never grade a risk the resident did not state.
 - Abbreviations to leave AS SAID: "TURP", "TURBT", "PCNL", "URSL", "RIRS", "ESWL", "DJ", "PCN", "SPC", "BPH", "PSA", "DRE", "LUTS", "RGU", "MCU".
 `.trim(),
-
-  checklistAnchor: "post_op",
 
   dischargeTemplates: UROLOGY_DISCHARGE_TEMPLATES,
   genericDischargeTemplate: UROLOGY_GENERIC_DISCHARGE_TEMPLATE,

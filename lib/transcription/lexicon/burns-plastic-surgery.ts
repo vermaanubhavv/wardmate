@@ -1,5 +1,5 @@
 import type { MedicalLexiconEntry } from "./types";
-import { PRIORITY } from "./types";
+import { PRIORITY, specialtyEntry } from "./types";
 
 /**
  * The burns and plastic surgery keyterm core.
@@ -27,24 +27,7 @@ import { PRIORITY } from "./types";
 
 const BURNS = "burns_plastic_surgery" as const;
 
-function entry(
-  term: string,
-  categories: MedicalLexiconEntry["categories"],
-  aliases: string[] = [],
-  triggers: string[] = [],
-  priority: number = PRIORITY.SPECIALTY
-): MedicalLexiconEntry {
-  return {
-    term,
-    aliases,
-    categories,
-    specialties: [BURNS],
-    triggers: [term, ...aliases, ...triggers]
-      .map((t) => t.toLowerCase())
-      .filter((t) => t.length >= 5),
-    priority,
-  };
-}
+const entry = specialtyEntry(BURNS);
 
 const dx = (t: string, a: string[] = [], tr: string[] = []) =>
   entry(t, ["diagnosis"], a, tr, PRIORITY.EXACT_PATIENT);

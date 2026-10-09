@@ -1,6 +1,6 @@
 import { OPHTHALMOLOGY_DISCHARGE_TEMPLATES, OPHTHALMOLOGY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-ophthalmology";
 import type { FormatKind } from "@/lib/formats";
-import type { SpecialtyPack } from "./types";
+import { surgicalDayCount, type SpecialtyPack } from "./types";
 
 /**
  * The ophthalmology pack.
@@ -47,19 +47,9 @@ export const ophthalmologyPack: SpecialtyPack = {
   label: "Ophthalmology",
   blurb: "Eye unit. Counts post-operative days; every vision and pressure belongs to one named eye.",
 
-  terminology: {
-    dayLabel: "POD",
-    admissionNoun: "operation",
-  },
-
   admissionPhrase: "an ophthalmology admission",
 
-  dayCount: (p) => {
-    if (p.post_op_day !== null) {
-      return { clock: "post_op", n: p.post_op_day, text: `POD ${p.post_op_day}` };
-    }
-    return { clock: "admission", n: p.admission_day, text: `Day ${p.admission_day}` };
-  },
+  dayCount: surgicalDayCount,
 
   extractRoleLine:
     "You convert an ophthalmology resident's spoken ward-round note into structured observations.",
@@ -78,8 +68,6 @@ Eye ward — what the words mean here:
 - INJURY IS RECORDED WITH THE OBJECT AND THE TIME: "hit by a cricket ball two hours ago", "iron piece while hammering", "lime fell into the left eye, washed at home". The object and the interval are the clinical facts.
 - Abbreviations to leave AS SAID: "RE"/"LE"/"BE", "IOL", "PCIOL", "IOP", "NCT", "BCVA", "PL"/"PR", "CF", "HM", "RAPD", "PRP", "OCT", "FFA", "DCR", "ROP", "SICS". Store the letters that were said.
 `.trim(),
-
-  checklistAnchor: "post_op",
 
   dischargeTemplates: OPHTHALMOLOGY_DISCHARGE_TEMPLATES,
   genericDischargeTemplate: OPHTHALMOLOGY_GENERIC_DISCHARGE_TEMPLATE,

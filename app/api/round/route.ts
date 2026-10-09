@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
-import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
+import { STT_MODEL, STT_PROVIDER, transcribe } from "@/lib/stt";
 import { deriveWardDictationContext } from "@/lib/transcription/patient-context";
 import { getDeepgramKeyterms } from "@/lib/transcription/selectMedicalKeyterms";
 import { correctTranscript } from "@/lib/glossary";
@@ -50,15 +50,13 @@ export async function POST(request: Request) {
   const { patients } = await getActivePatients(ward.id);
 
   let transcript = typed;
-  let stt: ReturnType<typeof getTranscriber> | null = null;
+  let spoken = false;
 
   if (!transcript && audio instanceof Blob) {
     try {
-      stt = getTranscriber();
       const keyterms = getDeepgramKeyterms(deriveWardDictationContext(patients, ward.name));
-      const result = await stt.transcribe(audio, MEDICAL_VOCABULARY_HINT, {
-        keyterms: keyterms.length ? keyterms : undefined,
-      });
+      const result = await transcribe(audio, keyterms);
+      spoken = true;
       // Only what the engine heard. `typed` above is the resident's own writing and is left
       // exactly as they wrote it — this fixes mishearings, not people.
       transcript = (await correctTranscript(result.text)).text;
@@ -111,8 +109,8 @@ export async function POST(request: Request) {
       author_id: user.id,
       transcript,
       audio_path: audioPath,
-      stt_provider: stt?.provider ?? null,
-      stt_model: stt?.model ?? null,
+      stt_provider: spoken ? STT_PROVIDER : null,
+      stt_model: spoken ? STT_MODEL : null,
       raw: read.raw as never,
       model: read.model,
     })
@@ -130,7 +128,7 @@ export async function POST(request: Request) {
   await saveReceipt(supabase, clientUuid, user.id, "round", body);
   log.info("round draft built", {
     segments: read.segments.length,
-    "stt.provider": stt?.provider ?? "typed",
+    "stt.provider": spoken ? STT_PROVIDER : "typed",
     "transcript.chars": transcript.length,
     patients: patients.length,
   });

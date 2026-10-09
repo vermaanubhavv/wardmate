@@ -7,6 +7,8 @@
  * rounding beyond one decimal, no clinical judgement: the page shows the number amber with
  * the book's own caveats beside it.
  */
+import { round } from "@/lib/scoring/units";
+
 export type CalcInput = { key: string; label: string; unit: string; min: number; max: number; step?: number };
 export type CalcResult = { value: number; unit: string; note?: string };
 export type Calculator = {
@@ -15,7 +17,7 @@ export type Calculator = {
   run: (v: Record<string, number>) => CalcResult;
 };
 
-const r1 = (n: number) => Math.round(n * 10) / 10;
+const r1 = (n: number) => round(n, 1);
 
 export const CALCULATORS = {
   tbw: {
