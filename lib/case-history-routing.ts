@@ -3,6 +3,7 @@ import { FAST_MODEL } from "@/lib/model";
 import { correctTranscript } from "@/lib/glossary";
 import { log } from "@/lib/observability";
 import { askJev, chosenProbability, type JevAnswers } from "@/lib/jev";
+import { redactFor, type PatientIdentifiers } from "@/lib/jev-observations";
 import {
   ROUTABLE_SECTIONS,
   sectionsForSpecialty,
@@ -138,7 +139,9 @@ export async function routeClerkingChunk(
   knownComplaints: string[],
   /** The unit's department. Decides which extra sections exist; anything unrecognised gets
    *  the base set, which is what every unit had before specialty packs. */
-  specialty?: string | null
+  specialty?: string | null,
+  /** The patient being clerked: their name and bed are kept out of what Jev is sent. */
+  who?: PatientIdentifiers
 ): Promise<{ segments: RoutedSegment[]; model: string }> {
   const text = chunk.trim();
   if (!text) return { segments: [], model: ROUTING_MODEL };
@@ -147,7 +150,7 @@ export async function routeClerkingChunk(
   const corrected = (await correctTranscript(text)).text.trim() || text;
 
   if (process.env.TYPESAFE_API_KEY) {
-    const first = await routeWithTypeSafe(corrected, knownComplaints, specialty);
+    const first = await routeWithTypeSafe(corrected, knownComplaints, specialty, who);
     if ("segments" in first) return first;
     // The reason only, never the dictation.
     log.info("route-dictation: TypeSafe declined, using Haiku", { reason: first.fallback });
@@ -158,7 +161,8 @@ export async function routeClerkingChunk(
 async function routeWithTypeSafe(
   corrected: string,
   knownComplaints: string[],
-  specialty?: string | null
+  specialty?: string | null,
+  who?: PatientIdentifiers
 ): Promise<{ segments: RoutedSegment[]; model: string } | { fallback: string }> {
   const allowed = sectionsForSpecialty(specialty);
   const specialtyBlock = SPECIALTY_SECTION_BLOCKS[(specialty ?? "").trim()] ?? "";
@@ -199,7 +203,14 @@ async function routeWithTypeSafe(
     }
   });
 
-  const jev = await askJev({ complaints_already_mentioned: knownComplaints, sentences }, questions);
+  // Segments are filed from the original sentences; only the copy sent to Jev is redacted.
+  const jev = await askJev(
+    {
+      complaints_already_mentioned: knownComplaints.map((c) => redactFor(c, who)),
+      sentences: sentences.map((s) => redactFor(s, who)),
+    },
+    questions
+  );
   if ("fallback" in jev) return jev;
 
   const result = segmentsFromJev(sentences, jev.answers, knownComplaints, allowed);

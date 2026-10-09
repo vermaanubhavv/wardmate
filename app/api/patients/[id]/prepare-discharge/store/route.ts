@@ -61,7 +61,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const { data: patient } = await supabase
     .from("current_patients")
-    .select("id, ward_id, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text")
+    .select("id, ward_id, display_name, bed, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text")
     .eq("id", patientId)
     .maybeSingle();
   if (!patient) return NextResponse.json({ error: "Patient not found." }, { status: 404 });
@@ -189,7 +189,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     let extraction;
     let extractionError: string | null = null;
     try {
-      extraction = await extractObservations(transcript, expectedLabels, [], await specialty);
+      extraction = await extractObservations(transcript, expectedLabels, [], await specialty, { name: patient.display_name, bed: patient.bed });
     } catch (e) {
       extractionError = e instanceof Error ? e.message : String(e);
     }

@@ -122,7 +122,7 @@ export async function runHistoryCheck(args: {
 
   const { data: patient } = await supabase
     .from("current_patients")
-    .select("id, ward_id, bed, age_years, sex, surgery_date")
+    .select("id, ward_id, display_name, bed, age_years, sex, surgery_date")
     .eq("id", patientId)
     .maybeSingle();
   if (!patient) return { ok: false, status: 404, error: "Patient not found." };
@@ -181,7 +181,7 @@ export async function runHistoryCheck(args: {
   }
 
   const result = validateExtraction(tree, extracted.raw, sources);
-  await jevCrossCheck(tree, result);
+  await jevCrossCheck(tree, result, { name: patient.display_name, bed: patient.bed });
   const cost = estimateCostUsd(extracted.model, extracted.usage);
 
   // Upsert on the unique key: a previous ERROR run with this hash is replaced by the good one.

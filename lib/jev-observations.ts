@@ -87,7 +87,15 @@ export function openQuestion(path: string) {
   };
 }
 
-export async function judgeObservations(observations: ExtractedObservation[]): Promise<void> {
+/** Who the text is about, so their name and bed can be taken out before it goes to Jev. */
+export type PatientIdentifiers = { name?: string | null; bed?: string | null };
+
+/** redactIdentifiers for a patient who may be unknown — then the text goes as it is. */
+export function redactFor(text: string, who?: PatientIdentifiers): string {
+  return who ? redactIdentifiers(text, who.name ?? "", who.bed ?? "") : text;
+}
+
+export async function judgeObservations(observations: ExtractedObservation[], who?: PatientIdentifiers): Promise<void> {
   const questions: Record<string, unknown> = {};
   observations.forEach((o, i) => {
     if (!o.needs_confirmation) {
@@ -101,7 +109,12 @@ export async function judgeObservations(observations: ExtractedObservation[]): P
   });
 
   const state = {
-    observations: observations.map((o) => ({ label: o.label, value: o.value_text, quote: o.source_quote })),
+    // A resident may say the patient's name aloud; only the copy sent to Jev is redacted.
+    observations: observations.map((o) => ({
+      label: redactFor(o.label, who),
+      value: redactFor(o.value_text, who),
+      quote: redactFor(o.source_quote, who),
+    })),
   };
   const jev = await askJev(state, questions);
   if ("fallback" in jev) {
