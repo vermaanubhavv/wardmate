@@ -17,6 +17,7 @@ import CreateUnitForm from "../onboarding/create-unit-form";
 import { ConfirmSubmit } from "../action-sheet";
 import { signOut } from "../actions";
 import { isCurrentUserAdmin } from "@/lib/admin";
+import { getUser } from "@/lib/auth";
 import { getFormularySize } from "@/lib/formulary";
 import { DESIGNATION_CHOICES } from "@/lib/patients";
 import { ChecklistIcon, DocumentIcon } from "../icons";
@@ -47,12 +48,25 @@ export default async function UnitPage() {
   }
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // React-cached: getCurrentWard above already verified this user, so this is not a second
+  // auth round trip.
+  const user = await getUser();
 
-  const [{ data: members }, myWards, { data: me }, { count: trashCount }, { data: isProtocolPublisher }] =
-    await Promise.all([
+  // Every read here needs only the ward and the user, so they go out together instead of
+  // queueing one behind another (this was nine round trips in a row).
+  const [
+    { data: members },
+    myWards,
+    { data: me },
+    { count: trashCount },
+    { data: isProtocolPublisher },
+    { count: dischargedCount },
+    formularySize,
+    { rows: expected, missing: rosterMissing },
+    consultantStored,
+    isEsicFaridabad,
+    isAdmin,
+  ] = await Promise.all([
       // No embedded profiles(display_name) here, deliberately. PostgREST can only embed
       // across a declared foreign key, and there is none between these two: ward_members.user_id
       // and profiles.id both reference auth.users, which is not a link it can follow. Asking for
@@ -73,47 +87,60 @@ export default async function UnitPage() {
         .eq("ward_id", ward.id)
         .eq("status", "trashed"),
       supabase.rpc("is_protocol_publisher"),
+      // The same "saved, or still inside the 48-hour undo window" count app/unit/discharged
+      // itself lists by — never the raw count of everyone ever discharged, which is exactly
+      // the ever-growing number this link was moved here to get away from.
+      getFinalisedDischargeMap(supabase, ward.id).then((finalisedMap) =>
+        supabase
+          .from("patients")
+          .select("id", { count: "exact", head: true })
+          .eq("ward_id", ward.id)
+          .eq("status", "discharged")
+          .or(visibleDischargedFilter([...finalisedMap.keys()]))
+      ),
+      getFormularySize(ward.id),
+      getExpectedMembers(ward.id),
+      getWardConsultantStored(ward.id),
+      getWardIsEsicFaridabad(ward.id),
+      isCurrentUserAdmin(),
     ]);
 
-  // The same "saved, or still inside the 48-hour undo window" count app/unit/discharged
-  // itself lists by — never the raw count of everyone ever discharged, which is exactly
-  // the ever-growing number this link was moved here to get away from.
-  const finalisedMap = await getFinalisedDischargeMap(supabase, ward.id);
-  const { count: dischargedCount } = await supabase
-    .from("patients")
-    .select("id", { count: "exact", head: true })
-    .eq("ward_id", ward.id)
-    .eq("status", "discharged")
-    .or(visibleDischargedFilter([...finalisedMap.keys()]));
-
-  const formularySize = await getFormularySize(ward.id);
-  const { rows: expected, missing: rosterMissing } = await getExpectedMembers(ward.id);
   // What the field shows: the stored value if the column exists and is set, otherwise the
   // seeded default for this unit's number — so the box is never blank for units 1–4.
-  const consultantInCharge = consultantForWard(await getWardConsultantStored(ward.id), ward.name);
-  const isEsicFaridabad = await getWardIsEsicFaridabad(ward.id);
-
+  const consultantInCharge = consultantForWard(consultantStored, ward.name);
   const isOwner = ward.owner_id === user?.id;
-  const isAdmin = await isCurrentUserAdmin();
+  const membership = (members ?? []) as { user_id: string; role: string; added_at: string }[];
+  const memberIds = membership.map((m) => m.user_id);
 
-  // Only the owner ever sees this, and only for their own team — see
+  // Both need only the member list, so they share one round trip.
+  //
+  // Attestations: only the owner ever sees these, and only for their own team — see
   // supabase/patches/0031_clinician_access_owner_read.sql. Not a verification, still just
   // what each person typed and attested themselves; this only makes that visible to the one
   // person in a position to notice something wrong with somebody they actually know.
+  //
+  // Names: profiles_ward_read (0018) already limits this to people sharing a unit with the
+  // caller, so the id list cannot be used to read a stranger's name.
+  const [accessRes, peopleRes] = await Promise.all([
+    isOwner && memberIds.length > 0
+      ? supabase
+          .from("clinician_access")
+          .select("user_id, registration_number, hospital_name, designation")
+          .in("user_id", memberIds)
+      : null,
+    memberIds.length > 0
+      ? supabase.from("profiles").select("id, display_name").in("id", memberIds)
+      : null,
+  ]);
+
   const attestations = new Map<
     string,
     { registration_number: string; hospital_name: string; designation: string }
   >();
-  if (isOwner && members && members.length > 0) {
-    const { data: access } = await supabase
-      .from("clinician_access")
-      .select("user_id, registration_number, hospital_name, designation")
-      .in(
-        "user_id",
-        members.map((m) => m.user_id)
-      );
-    for (const a of access ?? []) attestations.set(a.user_id, a);
-  }
+  for (const a of accessRes?.data ?? []) attestations.set(a.user_id, a);
+
+  const names = new Map<string, string | null>();
+  for (const row of peopleRes?.data ?? []) names.set(row.id, row.display_name);
 
   const profile = (me ?? {}) as {
     display_name?: string | null;
@@ -124,19 +151,6 @@ export default async function UnitPage() {
   // Names nobody has taken yet — what a new joiner chooses from, and what tells the owner
   // who has still not signed in.
   const unclaimed = expected.filter((e) => !e.claimed_by);
-
-  const membership = (members ?? []) as { user_id: string; role: string; added_at: string }[];
-
-  // The names, in one more round trip. profiles_ward_read (0018) already limits this to people
-  // sharing a unit with the caller, so the id list cannot be used to read a stranger's name.
-  const names = new Map<string, string | null>();
-  if (membership.length > 0) {
-    const { data: peopleRows } = await supabase
-      .from("profiles")
-      .select("id, display_name")
-      .in("id", membership.map((m) => m.user_id));
-    for (const row of peopleRows ?? []) names.set(row.id, row.display_name);
-  }
 
   const roster = membership.map((m) => ({ ...m, display_name: names.get(m.user_id) ?? null }));
 

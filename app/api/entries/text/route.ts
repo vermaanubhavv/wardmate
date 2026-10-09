@@ -41,9 +41,12 @@ export async function POST(request: Request) {
 
   if (!patient) return NextResponse.json({ error: "Patient not found." }, { status: 404 });
 
-  const template = await getTemplateForPatient(patient);
+  // Independent reads, sent together.
+  const [template, protocols] = await Promise.all([
+    getTemplateForPatient(patient),
+    getPublishedProtocolContext(),
+  ]);
   const expectedLabels = template?.items.map((i) => i.label) ?? [];
-  const protocols = await getPublishedProtocolContext();
 
   let extraction;
   try {

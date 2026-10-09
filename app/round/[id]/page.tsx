@@ -39,8 +39,6 @@ export default async function RoundReviewPage({
   const segments = ((dictation.raw as { segments?: DraftSegment[] } | null)?.segments ??
     []) as DraftSegment[];
 
-  const { patients } = await getActivePatients(dictation.ward_id);
-
   if (dictation.status !== "draft") {
     return (
       <main className="flex-1 max-w-md mx-auto w-full">
@@ -51,6 +49,9 @@ export default async function RoundReviewPage({
       </main>
     );
   }
+
+  // Only a draft is reviewed against the ward list, so only a draft pays for reading it.
+  const { patients } = await getActivePatients(dictation.ward_id);
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">

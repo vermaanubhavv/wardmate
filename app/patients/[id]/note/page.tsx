@@ -44,6 +44,14 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
 
   if (!patient) notFound();
 
+  // Clinical score line(s), computed by lib/scoring from recorded values only. Kept fresh
+  // first, then read — the same "computed on read" pattern as the patient page. Both calls are
+  // inert unless the scoring engine is enabled for this ward. Needs only the id, so it starts
+  // now and runs alongside the batch below instead of after it; awaited further down, so an
+  // error still reaches error.tsx (the catch only stops Node calling it unhandled meanwhile).
+  const scoreLinesP = syncPatientPathways(id).then(() => getScoreNoteLines(id));
+  scoreLinesP.catch(() => {});
+
   const [{ data: wardRow }, { data: entriesData }, wardFormats, { data: profile }, procedures, wardRanges, isEsicFaridabad, specialty] =
     await Promise.all([
       supabase.from("wards").select("name").eq("id", patient.ward_id).maybeSingle(),
@@ -116,11 +124,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
     : (managementChoicesFor(specialty, patient.management ?? "").find((c) => c.value === patient.management)
         ?.label ?? null);
 
-  // Clinical score line(s), computed by lib/scoring from recorded values only. Kept fresh
-  // first, then read — the same "computed on read" pattern as the patient page. Both calls are
-  // inert unless the scoring engine is enabled for this ward.
-  await syncPatientPathways(id);
-  const scoreLines = await getScoreNoteLines(id);
+  const scoreLines = await scoreLinesP;
 
   const note = buildProgressNote(patient, allObservations, todaysObservations, diagnosis, {
     wardName: wardRow?.name ?? null,

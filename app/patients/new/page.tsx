@@ -20,11 +20,12 @@ export default async function NewPatientPage() {
 
   // The unit's department decides which checklist rows the form offers and whether it asks
   // for a chemotherapy cycle at all.
-  const pack = getSpecialtyPack(await getWardSpecialtyStored(ward.id));
-
-  const [suggestions, templateChoices] = await Promise.all([
+  // The suggestions need only the ward, so they do not wait behind the department read.
+  const packP = getWardSpecialtyStored(ward.id).then(getSpecialtyPack);
+  const [suggestions, pack, templateChoices] = await Promise.all([
     getDiagnosisSuggestions(ward.id),
-    listTemplateChoices(pack.key),
+    packP,
+    packP.then((p) => listTemplateChoices(p.key)),
   ]);
 
   return (

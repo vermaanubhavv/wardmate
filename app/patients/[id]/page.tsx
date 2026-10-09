@@ -175,6 +175,25 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     ]);
   });
 
+  // History check (behind NEXT_PUBLIC_HISTORY_CHECK). Suggestions come from the chief
+  // complaints of the case history as dictated (identifier labels dropped, exactly as
+  // allEntries does below); the card itself is rendered from stored runs, never live. Needs
+  // only the entries and the pack, so it starts as soon as both land; awaited further down.
+  const historyCheckP = Promise.all([entriesP, packP]).then(([{ data }, p]) =>
+    loadHistoryCheckCard(
+      supabase,
+      patient,
+      ((data ?? []) as unknown as Entry[])
+        .filter((e) => e.is_case_history)
+        .flatMap((e) => e.observations)
+        .filter((o) => !isIdentifierLabel(o.label))
+        .filter((o) => /chief complaint|presenting complaint/i.test(o.label))
+        .map((o) => o.value_text ?? o.label),
+      p.historyTreeIds
+    )
+  );
+  historyCheckP.catch(() => {});
+
   // Clinical scoring & auto-trigger engine: bring pathways in step with the latest observations,
   // then read the tasks and cards. A no-op unless NEXT_PUBLIC_SCORING_ENGINE=on and the ward has
   // opted in (lib/scoring/flag.ts). It IS on in production, and timed there in October 2026 it
@@ -353,17 +372,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // helper also recognises older entries captured before the extractor used this label.
   const comorbidities = listedComorbidities(allObservations);
 
-  // History check (behind NEXT_PUBLIC_HISTORY_CHECK). Suggestions come from the chief
-  // complaints as dictated; the card itself is rendered from stored runs, never live.
-  const historyCheck = await loadHistoryCheckCard(
-    supabase,
-    patient,
-    caseHistoryEntries
-      .flatMap((e) => e.observations)
-      .filter((o) => /chief complaint|presenting complaint/i.test(o.label))
-      .map((o) => o.value_text ?? o.label),
-    pack.historyTreeIds
-  );
+  // History check: started off the entries and the pack (historyCheckP, above), so its reads overlapped the
+  // batch rather than adding a round trip here.
+  const historyCheck = await historyCheckP;
 
   // Latest of each drug recorded, for the discharge brief. Taken from the same observations
   // the rest of the screen uses, so it can hold nothing that was not said.

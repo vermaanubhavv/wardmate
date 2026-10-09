@@ -149,6 +149,8 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
     { data: dischargeRow },
     isEsicFaridabad,
     { data: dischargeWork },
+    consultantStored,
+    specialtyStored,
   ] = await Promise.all([
     supabase
       .from("entries")
@@ -169,6 +171,9 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
     // Read on its own, as the patient page does: if it fails, the draft is treated as worked
     // on and left exactly as stored.
     supabase.from("discharge_summaries").select("discharge_worked_on").eq("patient_id", patientId).maybeSingle(),
+    // Need only the ward id, so they ride in the batch rather than two trips after it.
+    getWardConsultantStored(patient.ward_id),
+    getWardSpecialtyStored(patient.ward_id),
   ]);
 
   // Bed number and the patient's own name are properties of the patient, not clinical findings
@@ -199,8 +204,8 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
     patient: patient as DischargePatient,
     wardId: patient.ward_id as string,
     wardName: wardRow?.name ?? null,
-    wardConsultant: consultantForWard(await getWardConsultantStored(patient.ward_id), wardRow?.name),
-    pack: getSpecialtyPack(await getWardSpecialtyStored(patient.ward_id)),
+    wardConsultant: consultantForWard(consultantStored, wardRow?.name),
+    pack: getSpecialtyPack(specialtyStored),
     letterhead: wardRow?.letterhead ?? null,
     logoUrl: wardFormats.get("logo")?.url ?? null,
     isEsicFaridabad,

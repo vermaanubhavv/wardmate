@@ -64,6 +64,13 @@ export async function POST(request: Request) {
   // the extraction call, so it overlaps the speech-to-text step and costs no extra wall time.
   // It resolves to null — and so to general surgery — on any database without patch 0060.
   const specialty = getWardSpecialtyStored(patient.ward_id);
+  // Same for the checklist and the published protocols: neither depends on what was said, so
+  // they are read while the audio is being transcribed rather than after it. The no-op catches
+  // only keep an early return below from leaving a rejection unhandled; the awaits still throw.
+  const templateP = getTemplateForPatient(patient);
+  const protocolsP = getPublishedProtocolContext();
+  templateP.catch(() => {});
+  protocolsP.catch(() => {});
 
   // 1. Speech to text, then the engine's known mishearings of surgical terms — "lab chole" for
   // lap chole, "PAS" for PAC. Corrected BEFORE extraction, so a template matches the operation
@@ -104,9 +111,9 @@ export async function POST(request: Request) {
   // 2. Text to structured observations, with verbatim-quote enforcement inside. The template's
   // expected labels go along so that anything the resident does mention is named consistently
   // and can be matched back — it does not license inventing the ones they skipped.
-  const template = await getTemplateForPatient(patient);
+  const template = await templateP;
   const expectedLabels = template?.items.map((i) => i.label) ?? [];
-  const protocols = await getPublishedProtocolContext();
+  const protocols = await protocolsP;
 
   let extraction;
   try {

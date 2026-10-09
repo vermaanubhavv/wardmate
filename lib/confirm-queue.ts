@@ -70,20 +70,12 @@ export async function getWardPendingConfirmations(wardId: string): Promise<Pendi
  *  same narrower scope getWardPendingConfirmations reads above. */
 export async function countWardPendingConfirmations(wardId: string): Promise<number> {
   const supabase = await createClient();
-  const { data: patients } = await supabase
-    .from("patients")
-    .select("id")
-    .eq("ward_id", wardId)
-    .eq("status", "active");
-  if (!patients || patients.length === 0) return 0;
-
+  // One round trip: the ward's active patients are joined through rather than listed first.
   const { count } = await supabase
     .from("observations")
-    .select("id", { count: "exact", head: true })
-    .in(
-      "patient_id",
-      patients.map((p) => p.id)
-    )
+    .select("id, patients!inner(ward_id, status)", { count: "exact", head: true })
+    .eq("patients.ward_id", wardId)
+    .eq("patients.status", "active")
     .eq("needs_confirmation", true)
     .is("confirmed_at", null)
     .not("conflict_note", "is", null);
