@@ -257,7 +257,7 @@ two entries that disagree, a wrong-patient sentence, typed workspace input, post
 patient data, ever.
 
 ```bash
-node --env-file=.env.local --import ./scripts/alias-register.mjs scripts/eval-history-check.ts \
+node --env-file=.env.local node_modules/.bin/vite-node --config vitest.config.ts scripts/eval-history-check.ts \
   --model claude-haiku-4-5 --max-calls 12 [--only plain-english,attendant]
 ```
 
