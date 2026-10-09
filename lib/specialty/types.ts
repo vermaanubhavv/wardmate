@@ -3,8 +3,9 @@ import type { FormatKind } from "@/lib/formats";
 import type { Specialty as LexiconSpecialty } from "@/lib/transcription/lexicon/types";
 
 /**
- * A specialty pack is everything WardMate has to know differently because a unit is a
- * medical oncology or internal medicine unit rather than a general-surgery one.
+ * A specialty pack is everything WardMate has to know differently because of a unit's
+ * department. The app itself is department-neutral: `general` is the base pack, what a unit
+ * with no department gets, and every department — general surgery included — is a pack on top.
  *
  * WHY A PACK AND NOT A FORK. There is one WardMate. A unit picks its department when it is
  * created (`wards.specialty`, patch 0060) and that choice defines the unit for good — a
@@ -12,10 +13,9 @@ import type { Specialty as LexiconSpecialty } from "@/lib/transcription/lexicon/
  * from the pack at the point of use instead of being hardcoded, so adding a third department
  * later is a new file in this folder, not a second app.
  *
- * THE RULE THIS FOLDER KEEPS: `general_surgery` reproduces today's behaviour EXACTLY. If the
- * database patch has not been run, or a ward carries a specialty nobody recognises,
- * `getSpecialtyPack()` returns the surgery pack and the app behaves exactly as it always has.
- * Degrade, don't crash — the same rule the glossary and the RPC fallbacks already follow.
+ * THE RULE THIS FOLDER KEEPS: each department's pack reproduces what that department's units
+ * already see. A ward carrying a specialty nobody recognises gets the `general` pack — the
+ * neutral base, never another department's. Degrade, don't crash.
  *
  * WHAT A PACK MUST NEVER TOUCH: the verbatim-quote guarantee in lib/extract.ts. A pack supplies
  * the words describing WHO is speaking; the check that every stored value can be quoted from
@@ -23,6 +23,7 @@ import type { Specialty as LexiconSpecialty } from "@/lib/transcription/lexicon/
  */
 
 export const SPECIALTY_KEYS = [
+  "general",
   "general_surgery",
   "medical_oncology",
   "internal_medicine",
@@ -114,6 +115,14 @@ export type SpecialtyPack = {
    * See lib/checklist-triggers.ts.
    */
   checklistAnchor: "post_op" | "cycle" | "admission";
+
+  /**
+   * Does this department operate? True turns on everything that only means something where
+   * patients go to theatre: the operation date and POD, Pre-op / Post-op status, the operation
+   * list and Histopathology on the discharge summary, the OT-notes upload slot. Screens ask
+   * this, never a department's name.
+   */
+  operative: boolean;
 
   /** The discharge templates this unit is offered, most specific first. */
   dischargeTemplates: DischargeTemplate[];

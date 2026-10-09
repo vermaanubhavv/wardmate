@@ -35,6 +35,7 @@ export const generalSurgeryPack: SpecialtyPack = {
   extractGuidance: "",
 
   checklistAnchor: "post_op",
+  operative: true,
 
   dischargeTemplates: DISCHARGE_TEMPLATES,
   genericDischargeTemplate: GENERIC_DISCHARGE_TEMPLATE,

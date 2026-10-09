@@ -79,6 +79,7 @@ Urology ward — what the words mean here:
 `.trim(),
 
   checklistAnchor: "post_op",
+  operative: true,
 
   dischargeTemplates: UROLOGY_DISCHARGE_TEMPLATES,
   genericDischargeTemplate: UROLOGY_GENERIC_DISCHARGE_TEMPLATE,

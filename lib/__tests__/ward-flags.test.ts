@@ -104,8 +104,17 @@ describe("criticalFlags — per department, every hit", () => {
       vitals: [vital("RR", "34"), vital("GCS", "E1V2M3"), vital("GRBS", "52")],
       labs: [lab("K", "6.8"), lab("Na", "116"), lab("Creatinine", "5.2"), lab("TLC", "18200")],
     });
-    for (const key of [undefined, null, "general_surgery", "orthopaedics"]) {
+    for (const key of ["general_surgery", "orthopaedics"]) {
       expect(criticalFlags(p, key).map((f) => f.reason)).toEqual(["leucocytosis"]);
+    }
+  });
+
+  it("a unit with no department gets the stricter of both bars", () => {
+    const p = patient({ labs: [lab("K", "6.8"), lab("TLC", "18200")] });
+    for (const key of [undefined, null, "general", "not_a_unit"]) {
+      const reasons = criticalFlags(p, key).map((f) => f.reason);
+      expect(reasons, String(key)).toContain("leucocytosis");
+      expect(reasons.length, String(key)).toBeGreaterThan(1);
     }
   });
 

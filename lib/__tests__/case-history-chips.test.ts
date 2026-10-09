@@ -56,10 +56,11 @@ describe("specialty-aware case-history chips", () => {
     expect(obgyn).not.toEqual(medicine);
   });
 
-  it("degrades to the surgical set for an unknown or missing specialty — same rule getSpecialtyPack() follows", () => {
-    expect(complaintChipsFor("something_new")).toEqual(complaintChipsFor("general_surgery"));
-    expect(complaintChipsFor(null)).toEqual(complaintChipsFor("general_surgery"));
-    expect(complaintChipsFor(undefined)).toEqual(complaintChipsFor("general_surgery"));
-    expect(pastChipsFor(undefined)).toEqual(pastChipsFor("general_surgery"));
+  it("degrades to the general (no-department) set for an unknown or missing specialty — same rule getSpecialtyPack() follows", () => {
+    expect(complaintChipsFor("something_new")).toEqual(complaintChipsFor("general"));
+    expect(complaintChipsFor(null)).toEqual(complaintChipsFor("general"));
+    expect(complaintChipsFor(undefined)).toEqual(complaintChipsFor("general"));
+    expect(complaintChipsFor("general")).not.toEqual(complaintChipsFor("general_surgery"));
+    expect(pastChipsFor(undefined)).toEqual(pastChipsFor("general"));
   });
 });

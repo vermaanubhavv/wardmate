@@ -25,10 +25,11 @@ const surgical = { post_op_day: 2, admission_day: 4 };
 const preOp = { post_op_day: null, admission_day: 1 };
 
 describe("getSpecialtyPack — degrade, don't crash", () => {
-  it("returns surgery for anything unrecognised, missing or empty", () => {
+  it("returns the general (no-department) pack for anything unrecognised, missing or empty", () => {
     for (const input of [null, undefined, "", "  ", "radiodiagnosis", "GENERAL SURGERY!!"]) {
-      expect(getSpecialtyPack(input as string | null).key).toBe("general_surgery");
+      expect(getSpecialtyPack(input as string | null).key).toBe("general");
     }
+    expect(getSpecialtyPack("general_surgery").key).toBe("general_surgery");
   });
 
   it("is case- and whitespace-insensitive about a real key", () => {
@@ -50,6 +51,7 @@ describe("getSpecialtyPack — degrade, don't crash", () => {
 
   it("offers every pack to the picker", () => {
     expect(listSpecialties().map((p) => p.key)).toEqual([
+      "general",
       "general_surgery",
       "medical_oncology",
       "internal_medicine",
@@ -83,25 +85,29 @@ describe("getSpecialtyPack — degrade, don't crash", () => {
 
 describe("phase 0 is a no-op for a surgical unit", () => {
   it("day labels are exactly what they always were", () => {
-    expect(dayLabel(surgical)).toBe("POD 2");
-    expect(dayLabel(preOp)).toBe("Day 1");
-    // Explicitly passing the surgery pack must be identical to passing nothing.
-    expect(dayLabel(surgical, generalSurgeryPack)).toBe(dayLabel(surgical));
+    expect(dayLabel(surgical, generalSurgeryPack)).toBe("POD 2");
+    expect(dayLabel(preOp, generalSurgeryPack)).toBe("Day 1");
+    // No department counts hospital days, operated or not.
+    expect(dayLabel(surgical)).toBe("Day 4");
   });
 
   it("POD 0 is still POD 0, not falsy-collapsed to the admission day", () => {
-    expect(dayLabel({ post_op_day: 0, admission_day: 3 })).toBe("POD 0");
+    expect(dayLabel({ post_op_day: 0, admission_day: 3 }, generalSurgeryPack)).toBe("POD 0");
   });
 
   it("the extraction prompt still opens as a surgical resident's note", () => {
     const prompt = buildSystemPrompt(generalSurgeryPack);
     expect(prompt.startsWith("You convert a surgical resident's spoken ward-round note")).toBe(true);
-    // No specialty guidance is appended for surgery, so the prompt is unchanged end to end.
-    expect(prompt).toBe(buildSystemPrompt());
+    // Neither surgery nor general appends guidance: the two prompts differ only in who is speaking.
+    const general = getSpecialtyPack("general");
+    expect(buildSystemPrompt()).toBe(prompt.replace(generalSurgeryPack.extractRoleLine, general.extractRoleLine));
+    expect(general.extractRoleLine).not.toMatch(/surg/i);
+    expect(general.operative).toBe(false);
+    expect(generalSurgeryPack.operative).toBe(true);
   });
 
   it("chemotherapy fields on a surgical patient change nothing", () => {
-    expect(dayLabel({ ...surgical, cycle_day: 3, cycle_number: 2 })).toBe("POD 2");
+    expect(dayLabel({ ...surgical, cycle_day: 3, cycle_number: 2 }, generalSurgeryPack)).toBe("POD 2");
   });
 });
 
@@ -290,7 +296,8 @@ describe("every department's own discharge templates", () => {
 
   it("every department has condition templates and a generic that never auto-matches", () => {
     for (const p of packs) {
-      expect(p.dischargeTemplates.length, p.key).toBeGreaterThan(0);
+      // The general pack is department-neutral: only its generic, never another department's.
+      if (p.key !== "general") expect(p.dischargeTemplates.length, p.key).toBeGreaterThan(0);
       const keys = [...p.dischargeTemplates, p.genericDischargeTemplate].map((t) => t.key);
       expect(new Set(keys).size, `${p.key} has a duplicate template key`).toBe(keys.length);
       for (const probe of ["cataract", "tonsillectomy", "fever", "LSCS", "fracture", ""]) {
@@ -606,7 +613,8 @@ describe("offersChecklistFamily — the picker follows the department chosen at 
     // its own (patches 0089–0091), and still none of them is offered surgery's or medicine's.
     for (const pack of listSpecialties().filter((p) => p.checklistFamilies !== null)) {
       if (pack.key === "internal_medicine" || pack.key === "medical_oncology") continue;
-      expect(pack.checklistFamilies?.length, pack.key).toBeGreaterThan(0);
+      // The general pack has no department, so deliberately no checklists of its own.
+      if (pack.key !== "general") expect(pack.checklistFamilies?.length, pack.key).toBeGreaterThan(0);
       for (const family of ["lap_chole", "appendicectomy", "dka", "chemo_cycle"]) {
         expect(offersChecklistFamily(pack, family), `${pack.key}: ${family}`).toBe(false);
       }

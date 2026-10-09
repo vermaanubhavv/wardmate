@@ -79,6 +79,7 @@ Paediatric ward — what the words mean here:
 
   // Admission-anchored, as medicine is: there is no operation and no cycle here.
   checklistAnchor: "admission",
+  operative: false,
 
   // Condition-keyed medicine templates, on adult wording — see the header for what replaces them.
   dischargeTemplates: PAEDIATRICS_DISCHARGE_TEMPLATES,

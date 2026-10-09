@@ -1,7 +1,7 @@
 import type { DischargeContext } from "@/lib/discharge-data";
 import type { Observation, PatientState } from "@/lib/patient-state";
 import { consultantForWard } from "@/lib/unit-consultants";
-import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { generalPack, type SpecialtyPack } from "@/lib/specialty";
 
 /**
  * The in-memory DischargeContext a one-off discharge summary is compiled and rendered from —
@@ -28,9 +28,8 @@ export function oneOffContext(
   observations: Observation[],
   patientState: PatientState,
   medications: Observation[],
-  /** The unit's specialty pack. Defaults to general surgery, so an older caller behaves the
-   *  way this function always did. */
-  pack: SpecialtyPack = generalSurgeryPack,
+  /** The unit's specialty pack. Defaults to the general (no-department) pack. */
+  pack: SpecialtyPack = generalPack,
   /** See DischargeContext.isEsicFaridabad. Defaults true — the same fallback
    *  getWardIsEsicFaridabad uses when a ward's own value cannot be read — so an older caller
    *  keeps printing the letterhead it always has. */

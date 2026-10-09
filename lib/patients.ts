@@ -1,4 +1,4 @@
-import { generalSurgeryPack, getSpecialtyPack, type DayCountPatient, type SpecialtyPack } from "@/lib/specialty";
+import { generalPack, getSpecialtyPack, type DayCountPatient, type SpecialtyPack } from "@/lib/specialty";
 import { hasOperationClock } from "@/lib/specialty/intake";
 
 export type WardPatient = {
@@ -161,7 +161,7 @@ export function managementLabel(
     surgery_date: string | null;
     management: string | null;
   },
-  pack: SpecialtyPack = generalSurgeryPack
+  pack: SpecialtyPack = generalPack
 ): string | null {
   // No operation clock (medicine, oncology…): pre-op/post-op mean nothing on that ward, so only
   // the two decisions it does make are shown, in its own words.
@@ -204,7 +204,7 @@ export function patientName(p: {
  * The pack defaults to general surgery, so a caller that has not been given one behaves
  * exactly as this function always did.
  */
-export function dayLabel(p: DayCountPatient, pack: SpecialtyPack = generalSurgeryPack): string {
+export function dayLabel(p: DayCountPatient, pack: SpecialtyPack = generalPack): string {
   return pack.dayCount(p).text;
 }
 

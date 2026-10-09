@@ -1,4 +1,6 @@
-import type { SpecialtyKey } from "./types";
+import { SPECIALTY_KEYS, type SpecialtyKey } from "./types";
+
+const isSpecialtyKey = (k: string): k is SpecialtyKey => (SPECIALTY_KEYS as readonly string[]).includes(k);
 
 /**
  * The ward list's "Critical" bar, per department — read by lib/ward-flags.ts.
@@ -47,11 +49,19 @@ const MEDICINE: CriticalThresholds = {
 };
 
 // Pulmonary medicine is a medical ward (its pack starts from medicine's) — same bar.
+// No department: the stricter of the two on every line — the electrolyte, glucose and
+// sensorium alerts a medical ward carries, and the surgical ward's lower count bar.
+const GENERAL: CriticalThresholds = { ...MEDICINE, tlcAbove: 16000 };
+
 const BY_PACK: Partial<Record<SpecialtyKey, CriticalThresholds>> = {
+  general: GENERAL,
   internal_medicine: MEDICINE,
   pulmonary_medicine: MEDICINE,
 };
 
 export function criticalThresholds(key: string | null | undefined): CriticalThresholds {
-  return BY_PACK[key as SpecialtyKey] ?? SURGERY;
+  const k = (key ?? "").trim();
+  // A known department without its own bar keeps the surgical one it always had; an unknown or
+  // missing department is the general base.
+  return BY_PACK[k as SpecialtyKey] ?? (isSpecialtyKey(k) ? SURGERY : GENERAL);
 }

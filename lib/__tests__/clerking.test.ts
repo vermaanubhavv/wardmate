@@ -46,7 +46,9 @@ describe("hopiTemplateIdFor — complaint to HOPI template", () => {
 describe("examStepsFor", () => {
   it("surgery keeps its exact cards", () => {
     expect(examStepsFor("general_surgery")).toEqual(["piccle", "vitals", "abdomen", "chest", "local"]);
-    expect(examStepsFor(undefined)).toEqual(["piccle", "vitals", "abdomen", "chest", "local"]);
+    // No department is the standard systemic examination, not surgery's.
+    expect(examStepsFor(undefined)).toEqual(["piccle", "vitals", "chest", "cvs", "abdomen", "cns", "local"]);
+    expect(examStepsFor("general")).toEqual(examStepsFor(undefined));
   });
   it("medicine walks CVS and CNS and no local examination", () => {
     expect(examStepsFor("internal_medicine")).toEqual(["piccle", "vitals", "cvs", "chest", "abdomen", "cns"]);

@@ -8,12 +8,12 @@ import type { SpecialtyKey, SpecialtyPack } from "./types";
  */
 
 /**
- * Does this unit count days from an operation? Read off the pack's own day clock rather than
- * kept as a second list: a patient with a post-op day gets a POD only on a ward that has one.
- * Units without it (medicine, oncology, psychiatry…) are never offered Pre-op/Post-op.
+ * Does this unit count days from an operation? The pack says so (`operative`): a patient with a
+ * post-op day gets a POD only on a ward that operates. Units that do not (medicine, oncology,
+ * psychiatry, general…) are never offered Pre-op/Post-op.
  */
 export function hasOperationClock(pack: SpecialtyPack): boolean {
-  return pack.dayCount({ admission_day: 1, post_op_day: 1 }).clock === "post_op";
+  return pack.operative;
 }
 
 /**
@@ -114,7 +114,26 @@ const PULMONARY_DIAGNOSES = [
   "Haemoptysis",
 ];
 
+// A unit with no department: the admissions any ward meets, medical and surgical alike.
+const GENERAL_DIAGNOSES = [
+  "Acute febrile illness",
+  "Sepsis",
+  "Pneumonia",
+  "Acute gastroenteritis",
+  "Urinary tract infection",
+  "Cellulitis",
+  "Acute abdomen",
+  "Acute kidney injury",
+  "Anaemia for evaluation",
+  "Uncontrolled diabetes mellitus",
+  "Hypertension",
+  "Chest pain for evaluation",
+  "Altered sensorium for evaluation",
+  "Trauma",
+];
+
 const DIAGNOSES: Partial<Record<SpecialtyKey, readonly string[]>> = {
+  general: GENERAL_DIAGNOSES,
   general_surgery: COMMON_DIAGNOSES,
   internal_medicine: MEDICINE_DIAGNOSES,
   pulmonary_medicine: PULMONARY_DIAGNOSES,

@@ -82,6 +82,7 @@ Psychiatry ward — what the words mean here:
 `.trim(),
 
   checklistAnchor: "admission",
+  operative: false,
 
   // Medicine's templates, on purpose — see the header.
   dischargeTemplates: PSYCHIATRY_DISCHARGE_TEMPLATES,

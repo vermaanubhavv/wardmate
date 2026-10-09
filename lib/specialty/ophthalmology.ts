@@ -80,6 +80,7 @@ Eye ward — what the words mean here:
 `.trim(),
 
   checklistAnchor: "post_op",
+  operative: true,
 
   dischargeTemplates: OPHTHALMOLOGY_DISCHARGE_TEMPLATES,
   genericDischargeTemplate: OPHTHALMOLOGY_GENERIC_DISCHARGE_TEMPLATE,

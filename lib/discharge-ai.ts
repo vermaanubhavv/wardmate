@@ -152,6 +152,16 @@ const TEMPLATE_RULE = `If a template for the diagnosis is given, write along it:
 
 // --- Clinical Course --------------------------------------------------------------------
 
+/** The prompts below were written for a general-surgery ward; each unit's prompt names its own
+ *  department instead (the pack's admissionPhrase, "… admission" → "… discharge summary"). A
+ *  general-surgery unit's prompt is byte-for-byte unchanged, so its prompt cache stays warm —
+ *  the same rule lib/case-history-ai.ts forDept() keeps. */
+const SURGICAL_SUMMARY = "a general-surgery discharge summary";
+function forDept(systemText: string, context: DischargeContext): string {
+  const phrase = context.pack.admissionPhrase.replace(/ admission$/, " discharge summary");
+  return phrase === SURGICAL_SUMMARY ? systemText : systemText.split(SURGICAL_SUMMARY).join(phrase);
+}
+
 const COURSE_SYSTEM = `You write the CLINICAL COURSE section of a general-surgery discharge summary for an Indian hospital, from a digest of what was recorded during the admission.
 
 You are SYNTHESISING the admission the digest describes — not copying its lines, not completing it, and not adding to it.
@@ -191,7 +201,7 @@ export async function generateClinicalCourse(
     model: AI_MODEL,
     max_tokens: 2000,
     system: [
-      { type: "text", text: COURSE_SYSTEM, cache_control: { type: "ephemeral" } },
+      { type: "text", text: forDept(COURSE_SYSTEM, context), cache_control: { type: "ephemeral" } },
     ],
     output_config: {
       effort: "medium",
@@ -241,7 +251,7 @@ export async function generateIndication(
   const response = await client().messages.create({
     model: AI_MODEL,
     max_tokens: 400,
-    system: [{ type: "text", text: INDICATION_SYSTEM, cache_control: { type: "ephemeral" } }],
+    system: [{ type: "text", text: forDept(INDICATION_SYSTEM, context), cache_control: { type: "ephemeral" } }],
     output_config: {
       effort: "low",
       format: { type: "json_schema", schema: INDICATION_SCHEMA as unknown as Record<string, unknown> },
@@ -332,7 +342,7 @@ export async function proposeRelevantInvestigations(
   const response = await client().messages.create({
     model: AI_MODEL,
     max_tokens: 2000,
-    system: [{ type: "text", text: INVESTIGATIONS_SYSTEM, cache_control: { type: "ephemeral" } }],
+    system: [{ type: "text", text: forDept(INVESTIGATIONS_SYSTEM, context), cache_control: { type: "ephemeral" } }],
     output_config: {
       effort: "medium",
       format: { type: "json_schema", schema: INVESTIGATIONS_SCHEMA as unknown as Record<string, unknown> },

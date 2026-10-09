@@ -98,6 +98,7 @@ Obstetrics and gynaecology ward — what the words mean here:
   // in practice until one is written, but it is set to the clinically correct value now rather
   // than left wrong for a future author to discover.
   checklistAnchor: "post_op",
+  operative: true,
 
   dischargeTemplates: OBGYN_DISCHARGE_TEMPLATES,
   genericDischargeTemplate: OBGYN_GENERIC_DISCHARGE_TEMPLATE,

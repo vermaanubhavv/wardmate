@@ -81,6 +81,7 @@ Orthopaedic ward — what the words mean here:
 `.trim(),
 
   checklistAnchor: "post_op",
+  operative: true,
 
   // General surgery's templates, on purpose — see the header.
   dischargeTemplates: ORTHOPAEDICS_DISCHARGE_TEMPLATES,

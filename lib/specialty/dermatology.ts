@@ -76,6 +76,7 @@ Skin ward and clinic — what the words mean here:
 `.trim(),
 
   checklistAnchor: "admission",
+  operative: false,
 
   dischargeTemplates: DERMATOLOGY_DISCHARGE_TEMPLATES,
   genericDischargeTemplate: DERMATOLOGY_GENERIC_DISCHARGE_TEMPLATE,

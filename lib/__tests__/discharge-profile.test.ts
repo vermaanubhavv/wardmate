@@ -25,10 +25,12 @@ describe("dischargeProfileFor", () => {
     expect(p.conditionMinimum).toBe(5);
   });
 
-  it("an unknown specialty degrades to the surgical profile", () => {
+  it("an unknown specialty degrades to the general (no-department) profile — not operative", () => {
     expect(dischargeProfileFor(getSpecialtyPack("nonsense"))).toEqual(
-      dischargeProfileFor(getSpecialtyPack("general_surgery"))
+      dischargeProfileFor(getSpecialtyPack("general"))
     );
+    expect(dischargeProfileFor(getSpecialtyPack("general")).operative).toBe(false);
+    expect(dischargeProfileFor(getSpecialtyPack("general")).usualMedicationSet).toEqual([]);
   });
 
   it("internal medicine offers a set with no NSAID, every dose explicit", () => {

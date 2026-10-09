@@ -154,6 +154,28 @@ const MEDICINE_PLAN = [
 
 // ── Per department ────────────────────────────────────────────────────────────────────────
 
+// A unit with no department: the systemic exam lines and the decisions any ward round makes.
+const GENERAL: ProgressNoteConfig = {
+  wardPhrase: "a hospital ward",
+  registerHint: "S1 S2 +, NVBS, B/L air entry equal, P/A soft, NT, conscious and oriented",
+  complaintPills: MEDICINE_COMPLAINTS,
+  examSections: [CHEST, CVS, ABDOMEN, CNS],
+  bowelLine: false,
+  planPills: [
+    "Continue same treatment",
+    "Step down antibiotics",
+    "Switch to oral medicines",
+    "Stop IV fluids",
+    "Repeat CBC",
+    "Repeat RFT / electrolytes",
+    "Monitor input / output",
+    "Cross-consult",
+    "Plan for discharge",
+    "Refer",
+  ],
+  bedsideExample: "Day 3, afebrile, BP 120/80, plan repeat RFT…",
+};
+
 const GENERAL_SURGERY: ProgressNoteConfig = {
   wardPhrase: "a general-surgery ward",
   registerHint:
@@ -1052,6 +1074,7 @@ const EMERGENCY_MEDICINE: ProgressNoteConfig = {
 };
 
 export const PROGRESS_NOTE_CONFIGS: Record<SpecialtyKey, ProgressNoteConfig> = {
+  general: GENERAL,
   general_surgery: GENERAL_SURGERY,
   medical_oncology: MEDICAL_ONCOLOGY,
   internal_medicine: INTERNAL_MEDICINE,
@@ -1069,10 +1092,10 @@ export const PROGRESS_NOTE_CONFIGS: Record<SpecialtyKey, ProgressNoteConfig> = {
   emergency_medicine: EMERGENCY_MEDICINE,
 };
 
-/** The general-surgery sheet — what every unit printed before per-department notes existed. */
-export const DEFAULT_PROGRESS_NOTE_CONFIG = GENERAL_SURGERY;
+/** The general (no-department) sheet — what a unit without a department prints. */
+export const DEFAULT_PROGRESS_NOTE_CONFIG = GENERAL;
 
-/** Same "degrade, don't crash" rule as getSpecialtyPack(): an unknown key is general surgery. */
+/** Same "degrade, don't crash" rule as getSpecialtyPack(): an unknown key is the general sheet. */
 export function progressNoteConfigFor(key: string | null | undefined): ProgressNoteConfig {
   return (key && PROGRESS_NOTE_CONFIGS[key as SpecialtyKey]) || DEFAULT_PROGRESS_NOTE_CONFIG;
 }
