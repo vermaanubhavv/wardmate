@@ -10,7 +10,7 @@ import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISO
  */
 export const haematemesisV1: HistoryTree = {
   id: "haematemesis",
-  version: "1.2.0",
+  version: "1.3.0",
   complaint: "Vomiting of blood",
   triggers: ["haematemesis", "hematemesis", "vomiting blood", "vomited blood", "blood in vomit", "coffee ground vomit", "coffee ground", "khoon ki ulti", "upper gi bleed", "blood in vomitus"],
   setting: "Adult medicine / surgical ward, north India",

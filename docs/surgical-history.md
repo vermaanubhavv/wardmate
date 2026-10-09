@@ -560,3 +560,34 @@ from 28–39 to 18–31; nothing was deleted to get there, only moved to Academi
 All of §12 is **pending the unit's clinical sign-off**: the surgical trees stay
 `pending_clinician_review`, the progress-note config says so in its header, and the discharge
 templates file records it.
+
+### 12.4 Follow-ups after the review
+
+- **`head_injury` v1.1.0** — a seizure after the injury is a red flag (Schwartz groups it with
+  vomiting and amnesia as reasons for prompt imaging). Terms that let an unrelated word fill a
+  slot were removed: "alcohol" from the blood-thinner red flag, "age" and "old" from the
+  over-65 red flag (they matched any "30-year-old"), "slipped" and "tripped" from the
+  medical-cause-of-fall question.
+- **`limb_injury` v1.1.0** — the same "slipped / tripped" fix on its cause-of-fall red flag, and
+  tetanus asked as course and timing.
+- **`jaundice` v1.2.0** — dark urine no longer *raises* haemolysis (haemolytic jaundice is
+  acholuric; it stays a discriminator); the duplicate bleeding question folded into the red flag;
+  alcohol moved from red flag to exposure; two teach lines that stated a diagnosis or an
+  instruction rewritten. A physician should read this one — it is a medicine-ward tree.
+- **Validator** — `quoteNegatesItem` read the "has" inside "has not" as an affirmation that ended
+  the denial, so every "has not …" was dropped. The affirmation check now starts after the
+  negation phrase. "since" still ends a denial, by design ("no vomiting since 2 days" stays
+  unasked), so "has not passed urine since the burn" remains unasked.
+- **`post_op_problem` v1.2.0** — `flatus_stool` is asked as the problem ("no flatus or stool
+  since the operation"), so a positive answer is the one that raises ileus or obstruction, as its
+  differentials already assumed. **`thyroid_swelling` v1.2.0** — "pain" and "difficulty in
+  swallowing" added as terms. **`burns` v1.2.0** — "unconscious" removed from `other_injuries`
+  (falls, jumps, blasts); unconsciousness after smoke belongs to the carbon-monoxide red flag.
+- The three history-check eval cases that failed on `main` now pass; two expectations that
+  contradicted the validator's deliberate rules were changed to "unasked" with the reason.
+- `scripts/alias-hook.mjs` resolves extensionless relative imports, so `scripts/test-discharge.ts`
+  runs again (36/36).
+- **`IMMUNOCOMPROMISE`** (shared, 42 trees) — diabetes removed from both the question and the
+  terms, on the owner's ruling that diabetes says nothing about immune status: "no diabetes" was
+  being accepted as a denial of immunocompromise. Trees that need diabetes as an infection risk
+  ask it in their own slot. Every tree carrying the flag was version-bumped and set to pending.

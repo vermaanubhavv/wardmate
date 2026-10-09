@@ -14,7 +14,7 @@ import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, GRABB_SMITH, HAMILTON_BAI
  */
 export const pressureSoreV1: HistoryTree = {
   id: "pressure_sore",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Bed sore / pressure sore",
   triggers: ["bed sore", "bedsore", "bed sores", "pressure sore", "pressure ulcer", "pressure injury", "decubitus", "sacral sore", "sore on back", "sore on buttock", "heel sore", "sore over hip", "trochanteric sore", "ischial sore", "kamar par ghaav", "lete lete ghaav"],
   setting: "Burns and plastic surgery unit, north India",

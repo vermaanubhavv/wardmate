@@ -97,7 +97,7 @@ export async function POST(request: Request) {
     const corrected = await correctTranscript(page.transcript);
     let extraction;
     try {
-      extraction = await extractObservations(corrected.text, []);
+      extraction = await extractObservations(corrected.text, [], [], undefined, { name: identity.name });
     } catch {
       continue;
     }

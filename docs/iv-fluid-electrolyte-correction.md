@@ -41,7 +41,7 @@ list. The chapters present in full are:
 | 51–54 Obstetrics (see the topic's own coverage note) | 292–325 |
 | 55–57 Parenteral Nutrition | 326–402 |
 
-Everything on **electrolyte correction** (chapters 20–29), **acid–base** (30–33), the
+Everything on **phosphate and magnesium correction** (chapters 26–29), **acid–base** (30–33), the
 **parenteral additive dosing** chapters (10–14), maintenance and colloids (5–7), the medical disorders other than HRS (34–36, 38–41), the perioperative chapters (42–44)
 and paediatrics (48–50) is opening-only. Those topics carry what the openings say — definitions,
 normal ranges, severity grades, compositions — and end with a **"Not in this edition"** section
@@ -52,6 +52,28 @@ a book that did not supply it would be exactly that.
 To complete the shelf, source the full edition (print or Kindle, fluidtherapy.org) and extend
 the topics from it, or add a second reference (a published guideline) and say so in the topic's
 `references` and `source`.
+
+## Chapters added from the full edition
+
+Chapters 20–25 (hyponatraemia, hypernatraemia, hypokalaemia, hyperkalaemia, hypocalcaemia,
+hypercalcaemia) are built from a verbatim transcription of the full edition's printed pages,
+made from the Kindle book. These topics set `source.pageKind: "book"`, so their pages and quotes
+cite **printed book pages**, not PDF pages; the page labels say which.
+
+How the transcription was checked before use:
+
+- Every section in each chapter's own contents list is present; only reference lists are skipped.
+- On the opening pages that also exist in the preview PDF, 94% of six-word runs match word for
+  word, and the misses are heading formatting.
+- One two-column interleave (book p. 288, the calcium normal range) and two OCR slips ("mEą")
+  were found and repaired against the preview PDF.
+- Every quote in these topics was then checked programmatically against the transcription on
+  its cited book page.
+
+An interleave on a page the preview does not carry cannot be caught by a script, so the
+clinician sign-off for these topics should compare each dosing table against the book page.
+When transcribing further chapters, tell the transcriber the book is two-column and to finish
+the left column before the right.
 
 ## Data model
 

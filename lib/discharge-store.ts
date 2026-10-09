@@ -36,6 +36,9 @@ const SECTION_COLUMN: Record<DischargeSectionId, { column: ColumnKey; key: keyof
   authentication: { column: "authentication", key: "authentication" },
 };
 
+/** The sections the AI drafts — dropped from a stale draft so they are drafted again. */
+const AI_COLUMNS = new Set<ColumnKey>(["clinical_course", "indication_for_admission", "relevant_investigations"]);
+
 export function mergeDischargeDraft(context: DischargeContext): DischargeDraft {
   const compiled = compileDischargeDraft(context, { pack: context.pack });
   const row = context.row;
@@ -43,6 +46,7 @@ export function mergeDischargeDraft(context: DischargeContext): DischargeDraft {
 
   const merged: DischargeDraft = { ...compiled, status: row.status, finalisedAt: row.finalised_at };
   for (const { column, key } of Object.values(SECTION_COLUMN)) {
+    if (context.aiDraftStale && AI_COLUMNS.has(column)) continue;
     const stored = row[column];
     if (stored !== null && stored !== undefined) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

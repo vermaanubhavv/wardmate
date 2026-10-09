@@ -454,8 +454,9 @@ export default function Recorder({
           example="e.g. “no fresh complaints… BP 120 by 80, pulse 84… abdomen soft… drain 50 ml serous… start oral sips…”"
           sections={LIVE_SECTIONS}
           route={fileFragment}
-          onUnavailable={() => {
+          onUnavailable={(reason) => {
             setLive(false);
+            setMessage(`Live words unavailable (${reason}) — recording; the transcript appears when you stop.`);
             void startBatch();
           }}
           onClose={() => {

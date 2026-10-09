@@ -20,23 +20,35 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
-  const form = await request.formData();
-  const audio = form.get("audio");
-
-  if (!(audio instanceof Blob) || audio.size === 0) {
-    return NextResponse.json({ error: "Nothing was recorded." }, { status: 400 });
-  }
-
+  // Live dictation on the add-patient screen streams its own transcript (lib/stt/live.ts) and
+  // sends the text; the record-then-send button sends the audio clip.
   let transcript: string;
-  try {
-    const stt = getTranscriber();
-    const result = await stt.transcribe(audio, MEDICAL_VOCABULARY_HINT);
-    transcript = (await correctTranscript(result.text)).text;
-  } catch (e) {
-    return NextResponse.json(
-      { error: plainAiError(e) },
-      { status: 502 }
-    );
+  if (request.headers.get("content-type")?.includes("application/json")) {
+    let body: { transcript?: string };
+    try {
+      body = (await request.json()) as { transcript?: string };
+    } catch {
+      return NextResponse.json({ error: "Malformed request." }, { status: 400 });
+    }
+    transcript = (await correctTranscript(String(body.transcript ?? "").slice(0, 4000))).text;
+  } else {
+    const form = await request.formData();
+    const audio = form.get("audio");
+
+    if (!(audio instanceof Blob) || audio.size === 0) {
+      return NextResponse.json({ error: "Nothing was recorded." }, { status: 400 });
+    }
+
+    try {
+      const stt = getTranscriber();
+      const result = await stt.transcribe(audio, MEDICAL_VOCABULARY_HINT);
+      transcript = (await correctTranscript(result.text)).text;
+    } catch (e) {
+      return NextResponse.json(
+        { error: plainAiError(e) },
+        { status: 502 }
+      );
+    }
   }
 
   if (!transcript.trim()) {

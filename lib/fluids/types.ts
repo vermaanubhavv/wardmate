@@ -58,7 +58,11 @@ export type FluidTopic = {
   reviewStatus: "pending_clinician_review" | "reviewed";
   reviewedBy: string | null;
   references: Reference[];
-  /** Which chapters of the source the topic digests, and the PDF page range. */
-  source: { chapters: string[]; pages: string };
+  /**
+   * Which chapters of the source the topic digests and their page range. `pageKind` says whose
+   * page numbers these are, and the quotes' too: "pdf" for the preview PDF (the default) or
+   * "book" for the printed page numbers of the full edition.
+   */
+  source: { chapters: string[]; pages: string; pageKind?: "pdf" | "book" };
   sections: FluidSection[];
 };

@@ -1,4 +1,5 @@
 import { askJev, chosenProbability, type JevAnswers } from "@/lib/jev";
+import { redactFor, type PatientIdentifiers } from "@/lib/jev-observations";
 import { log } from "@/lib/observability";
 import type { CheckResult } from "@/lib/history-check/sources";
 import type { HistoryTree } from "@/lib/history-check/types";
@@ -24,7 +25,12 @@ const MEANING = {
   not_stated: "the quote does not say either way about this item",
 };
 
-export async function jevCrossCheck(tree: HistoryTree, result: CheckResult): Promise<void> {
+export async function jevCrossCheck(
+  tree: HistoryTree,
+  result: CheckResult,
+  /** The patient: their name and bed are kept out of the quotes Jev is sent. */
+  who?: PatientIdentifiers
+): Promise<void> {
   const labels = new Map(tree.slots.map((s) => [s.id, s.label]));
   const items = result.slots
     .map((s, i) => ({ i, s }))
@@ -32,7 +38,7 @@ export async function jevCrossCheck(tree: HistoryTree, result: CheckResult): Pro
   if (items.length === 0) return;
 
   const questions: Record<string, unknown> = {};
-  const state = items.map(({ s }) => ({ item: labels.get(s.id) ?? s.id, quote: s.evidence!.quote }));
+  const state = items.map(({ s }) => ({ item: labels.get(s.id) ?? s.id, quote: redactFor(s.evidence!.quote, who) }));
   items.forEach((_, k) => {
     questions[`meaning_${k}`] = {
       type: "choice",

@@ -47,7 +47,7 @@ export async function POST(request: Request) {
   const { data: patient, error: patientError } = await supabase
     .from("current_patients")
     .select(
-      "id, ward_id, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text"
+      "id, ward_id, display_name, bed, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text"
     )
     .eq("id", patientId)
     .maybeSingle();
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
 
   let extraction;
   try {
-    extraction = await extractObservations(transcript, expectedLabels, protocols, await specialty);
+    extraction = await extractObservations(transcript, expectedLabels, protocols, await specialty, { name: patient.display_name, bed: patient.bed });
   } catch (e) {
     // The transcript is worth keeping even when extraction fails — it is the evidence, and
     // the resident can still read it. Store the entry with the error recorded against it.

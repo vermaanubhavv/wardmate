@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -143,6 +144,50 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       : null
   );
 
+  // Made a real promise once: a Supabase query is a thenable that runs again each time it is
+  // awaited, and this one is awaited twice below.
+  const entriesP = Promise.resolve(
+    supabase
+      .from("entries")
+      .select(
+        "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, is_case_history, matched_protocol_ids, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at, pac_verdict, task_open, ref_low, ref_high, ref_text)"
+      )
+      .eq("patient_id", id)
+      .order("recorded_at", { ascending: false })
+  );
+
+  // Short-lived links for the stored photographs (private bucket, one-hour expiry, minted only
+  // here for a doctor already confirmed on this patient's ward) and the titles of any matched
+  // protocols. Both need only the entry list, so they start the moment it lands instead of
+  // waiting for the rest of the batch and the scoring reads after it.
+  const photosAndProtocolsP = entriesP.then(({ data }) => {
+    const rows = (data ?? []) as unknown as Entry[];
+    const photoPaths = rows.map((e) => e.photo_path).filter((p): p is string => Boolean(p));
+    const matchedIds = Array.from(new Set(rows.flatMap((e) => e.matched_protocol_ids ?? [])));
+    return Promise.all([
+      photoPaths.length > 0
+        ? supabase.storage.from("evidence").createSignedUrls(photoPaths, 3600)
+        : Promise.resolve({ data: [] as { path?: string | null; signedUrl?: string | null }[] }),
+      matchedIds.length > 0
+        ? supabase.from("company_protocols").select("id, title").in("id", matchedIds)
+        : Promise.resolve({ data: [] as { id: string; title: string }[] }),
+    ]);
+  });
+
+  // Clinical scoring & auto-trigger engine: bring pathways in step with the latest observations,
+  // then read the tasks and cards. A no-op unless NEXT_PUBLIC_SCORING_ENGINE=on and the ward has
+  // opted in (lib/scoring/flag.ts). It IS on in production, and timed there in October 2026 it
+  // was the slowest read on this page (~200 ms typical, 1.3 s seen) — each open pathway is
+  // recomputed one query at a time. So it starts here and nothing above the scoring section
+  // waits for it: ScoringTodo and ScoringCards stream in behind Suspense once it lands, still
+  // reading a freshly recomputed set.
+  const scoringP = syncPatientPathways(id).then(() =>
+    Promise.all([getPatientScoringTasks(id), getScoreCards(id)])
+  );
+  // Read by the streamed sections later; this only stops Node calling a failure "unhandled" in
+  // the meantime. They still await scoringP itself, so an error still reaches error.tsx.
+  scoringP.catch(() => {});
+
   const [
     pack,
     burns,
@@ -153,7 +198,6 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     template,
     { data: dischargeRow },
     wardRanges,
-    ,
     { data: dischargeWork },
   ] = await Promise.all([
       packP,
@@ -167,13 +211,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         .select("id, bed")
         .eq("ward_id", patient.ward_id)
         .eq("status", "active"),
-      supabase
-        .from("entries")
-        .select(
-          "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, is_case_history, matched_protocol_ids, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at, pac_verdict, task_open, ref_low, ref_high, ref_text)"
-        )
-        .eq("patient_id", id)
-        .order("recorded_at", { ascending: false }),
+      entriesP,
       packP.then((p) => getProcedureLabels(p.key)),
       packP.then((p) => listTemplateChoices(p.key)),
       // Needs only fields already in hand from the patient row, so it was queueing behind the
@@ -185,11 +223,6 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       // Needs only patient.ward_id, so it belongs in the batch rather than a round trip of its
       // own after it.
       getWardLabRanges(patient.ward_id),
-      // Keeps scoring pathways in step with the latest observations. Instant no-op unless
-      // NEXT_PUBLIC_SCORING_ENGINE=on (lib/scoring/store.ts), so it costs nothing here today;
-      // when a pilot ward turns it on, the recompute still finishes before the reads below
-      // because this promise is awaited as part of the batch.
-      syncPatientPathways(id),
       // Whether anyone has worked on the draft (patch 0102's computed column), read on its own:
       // opening this tab pre-writes AI sections, so "a row exists" is not "someone started".
       // If this read fails the tab behaves exactly as before — the status above is untouched,
@@ -225,30 +258,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const caseHistoryEntries = allEntries.filter((e) => e.is_case_history);
   const entries = allEntries.filter((e) => !e.is_case_history);
 
-  // Titles for whatever protocols got matched, fetched once for the whole page rather than
-  // once per entry — the same batching reasoning as the photo URLs just above.
-  const matchedIds = Array.from(
-    new Set(allEntries.flatMap((e) => e.matched_protocol_ids ?? []))
-  );
-  // Clinical scoring & auto-trigger engine. Inert unless the ward has opted in AND
-  // NEXT_PUBLIC_SCORING_ENGINE=on (lib/scoring/flag.ts) — with the flag closed both calls
-  // return immediately without touching the database (DOCX test 16). syncPatientPathways
-  // already ran in the batch above, so these reads see a fresh set.
-  const [scoringTasks, scoreCards] = await Promise.all([getPatientScoringTasks(id), getScoreCards(id)]);
-
-  // Short-lived links for the stored photographs (private bucket, one-hour expiry, minted only
-  // here for a doctor already confirmed on this patient's ward) and the titles of any matched
-  // protocols. Both need the entry list that just came back, and neither needs the other, so
-  // they go out together rather than one after the next.
-  const photoPaths = allEntries.map((e) => e.photo_path).filter((p): p is string => Boolean(p));
-  const [signedRes, matchedProtocolsRes] = await Promise.all([
-    photoPaths.length > 0
-      ? supabase.storage.from("evidence").createSignedUrls(photoPaths, 3600)
-      : Promise.resolve({ data: [] as { path?: string | null; signedUrl?: string | null }[] }),
-    matchedIds.length > 0
-      ? supabase.from("company_protocols").select("id, title").in("id", matchedIds)
-      : Promise.resolve({ data: [] as { id: string; title: string }[] }),
-  ]);
+  // Started off the entries, so usually in by now.
+  const [signedRes, matchedProtocolsRes] = await photosAndProtocolsP;
 
   const photoUrls = new Map<string, string>();
   for (const s of signedRes.data ?? []) {
@@ -300,14 +311,16 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const todayKey = istDayKey(new Date().toISOString());
 
   // The banner's left edge, same language as the ward row: red for a flagged latest vital,
-  // amber while something is unconfirmed, green once nothing is open. A colour, not a verdict —
-  // nothing here is stored or claimed beyond what the numbers below already show.
+  // amber while something is unconfirmed, green once no job a resident said is open. A colour,
+  // not a verdict — nothing here is stored or claimed beyond what the numbers below already
+  // show. The scoring engine's suggestions do not hold it back from green: they are listed
+  // under the jobs, but they stream in after the page and are suggestions, not jobs.
   const hasFlaggedVital = latestVitalTiles(allObservations).some((t) => t.flag && !t.takenAt);
   const bannerEdge = hasFlaggedVital
     ? "border-l-critical-dot"
     : pending.length > 0
       ? "border-l-warn-dot"
-      : openTasks.length + scoringTasks.length === 0
+      : openTasks.length === 0
         ? "border-l-good-dot"
         : "border-l-transparent";
   // Jobs a resident said — the scoring engine's suggestions are listed below but not counted.
@@ -402,13 +415,17 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         </section>
       )}
 
-      {(openTasks.length > 0 || doneTasks.length > 0 || scoringTasks.length > 0) && (
+      {/* With no job a resident said, the section is left out and the scoring suggestions, if
+          any, arrive in a section of their own — see ScoringTodo. */}
+      {openTasks.length === 0 && doneTasks.length === 0 && (
+        <Suspense fallback={null}>
+          <ScoringTodo scoring={scoringP} patientId={patient.id} standalone />
+        </Suspense>
+      )}
+
+      {(openTasks.length > 0 || doneTasks.length > 0) && (
         <section className="px-4 pb-6">
-          <p className="ios-group-header mb-2 flex items-center gap-1.5 px-4">
-            <ListChecks className="h-3.5 w-3.5 text-accent" strokeWidth={2.4} />
-            Advices, plans &amp; to do
-            {openTasks.length + scoringTasks.length > 0 ? ` · ${openTasks.length + scoringTasks.length}` : ""}
-          </p>
+          <TodoHeader count={openTasks.length} />
 
           <div className="ios-group">
           {openTasks.length > 0 ? (
@@ -471,13 +488,15 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 );
               })}
             </ul>
-          ) : scoringTasks.length === 0 ? (
+          ) : (
             <p className="px-4 py-3 text-subhead text-muted">
               Nothing outstanding.
             </p>
-          ) : null}
+          )}
 
-          <ScoringTaskRows patientId={patient.id} tasks={scoringTasks} />
+          <Suspense fallback={null}>
+            <ScoringTodo scoring={scoringP} patientId={patient.id} />
+          </Suspense>
 
           {doneTasks.length > 0 && (
             <details className="border-t border-line px-4 py-3">
@@ -608,7 +627,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         </section>
       )}
 
-      <ScoreCards cards={scoreCards} />
+      <Suspense fallback={null}>
+        <ScoringCards scoring={scoringP} />
+      </Suspense>
 
       {/* Every surgical unit (any unit with an operation clock) always shows it, even empty —
           an unanswered PAC is the single thing most likely to stop a list. A unit with no
@@ -766,11 +787,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
   // A tab with nothing in it says so, rather than opening on empty space. History, Investigations
   // and Discharge each carry their own empty state, so only Today is decided here.
-  const todayEmpty =
+  const todayEmptyBesidesScoring =
     openTasks.length === 0 &&
     doneTasks.length === 0 &&
-    scoringTasks.length === 0 &&
-    scoreCards.length === 0 &&
     pending.length === 0 &&
     matched.length === 0 &&
     extra.length === 0 &&
@@ -778,6 +797,11 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     !beforeSurgery &&
     !hasOperationClock(pack) &&
     !allObservations.some((o) => CHARTED_VITALS.has(matchVitalLabel(o.label) ?? "") && o.value_text);
+  // Only a record with nothing else on Today waits for scoring — rare (a new patient, no round
+  // yet, on a unit without an operation clock), and it has to know whether scoring is all there is.
+  const todayEmpty =
+    todayEmptyBesidesScoring &&
+    (await scoringP).every((list) => list.length === 0);
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
@@ -1638,3 +1662,47 @@ function CountTile({
   );
 }
 
+/** The to-do section's header. The count is jobs a resident said, not scoring suggestions. */
+function TodoHeader({ count }: { count: number }) {
+  return (
+    <p className="ios-group-header mb-2 flex items-center gap-1.5 px-4">
+      <ListChecks className="h-3.5 w-3.5 text-accent" strokeWidth={2.4} />
+      Advices, plans &amp; to do
+      {count > 0 ? ` · ${count}` : ""}
+    </p>
+  );
+}
+
+type Scoring = Promise<[Awaited<ReturnType<typeof getPatientScoringTasks>>, Awaited<ReturnType<typeof getScoreCards>>]>;
+
+/**
+ * The scoring engine's suggested tasks, streamed in once the recompute lands (see scoringP).
+ * Inside the to-do section when there is one; `standalone`, it brings the section's own header,
+ * so suggestions on a patient with no spoken jobs are not left without a heading.
+ */
+async function ScoringTodo({
+  scoring,
+  patientId,
+  standalone = false,
+}: {
+  scoring: Scoring;
+  patientId: string;
+  standalone?: boolean;
+}) {
+  const [tasks] = await scoring;
+  if (tasks.length === 0) return null;
+  const rows = <ScoringTaskRows patientId={patientId} tasks={tasks} />;
+  if (!standalone) return rows;
+  return (
+    <section className="px-4 pb-6">
+      <TodoHeader count={0} />
+      <div className="ios-group">{rows}</div>
+    </section>
+  );
+}
+
+/** The scoring engine's score cards, streamed in the same way. */
+async function ScoringCards({ scoring }: { scoring: Scoring }) {
+  const [, cards] = await scoring;
+  return <ScoreCards cards={cards} />;
+}

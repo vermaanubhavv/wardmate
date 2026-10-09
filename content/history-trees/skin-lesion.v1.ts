@@ -12,12 +12,12 @@ import { commonHpi, HUTCHISONS, IADVL, IMMUNOCOMPROMISE, MACLEODS, val, yn } fro
  */
 export const skinLesionV1: HistoryTree = {
   id: "skin_lesion",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Skin rash / itching",
   triggers: ["rash", "skin rash", "itching", "itchy", "pruritus", "skin lesion", "skin patch", "eruption", "boils", "blisters", "scaling", "khujli", "daad", "white patch", "red patches", "dry skin"],
   setting: "Skin ward and outpatient, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [IADVL, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("rash"),

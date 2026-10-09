@@ -56,7 +56,9 @@ export default function LiveDictation({
   onClose: () => void;
   /** Live could not start (no token, no signal) — the caller falls back instead of showing an
    *  error here. */
-  onUnavailable?: () => void;
+  /** Live could not start; the caller records instead. Gets the reason so it can say why —
+   *  a silent fallback looks exactly like live dictation being broken. */
+  onUnavailable?: (reason: string) => void;
 }) {
   const [state, setState] = useState<SessionState>("connecting");
   const [message, setMessage] = useState<string | null>(null);
@@ -117,10 +119,10 @@ export default function LiveDictation({
     (async () => {
       let token: string;
       let keyterms: string[];
-      // On one bar of signal the token request can hang for a minute; four seconds is enough
-      // for a working connection.
+      // On one bar of signal the token request can hang for a minute. Six seconds covers a cold
+      // server plus a slow phone connection and still falls back within a breath.
       const abort = new AbortController();
-      const timer = setTimeout(() => abort.abort(), 4000);
+      const timer = setTimeout(() => abort.abort(), 6000);
       try {
         const res = await fetch("/api/transcribe/live-token", {
           method: "POST",
@@ -136,7 +138,10 @@ export default function LiveDictation({
       } catch (e) {
         clearTimeout(timer);
         if (cancelled) return;
-        if (onUnavailableRef.current) return onUnavailableRef.current();
+        if (onUnavailableRef.current) {
+          const reason = abort.signal.aborted ? "no answer from the server in 6 s" : e instanceof Error ? e.message : "no connection";
+          return onUnavailableRef.current(reason);
+        }
         setState("error");
         setMessage(e instanceof Error && e.name !== "AbortError" ? e.message : "Could not start live dictation.");
         return;

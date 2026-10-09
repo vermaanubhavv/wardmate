@@ -59,8 +59,11 @@ export function paedBackground(): Slot[] {
   ];
 }
 
-/** The commonest background red flags that change the reading of any presentation. */
-export const IMMUNOCOMPROMISE = yn("red_flag", "immunocompromise", "Immunocompromise", "Is the patient immunocompromised — HIV, steroids, chemotherapy, uncontrolled diabetes, transplant?", ["hiv", "immunocompromised", "immunosuppressed", "steroid", "steroids", "chemotherapy", "chemo", "transplant", "diabetic", "diabetes", "uncontrolled sugars", "cancer", "malignancy"], { teach: "Immunosuppression widens every differential (fungal, opportunistic and atypical infections) and blunts the signs; fever may be the only finding." });
+/** The commonest background red flags that change the reading of any presentation.
+ *  Diabetes is deliberately not part of IMMUNOCOMPROMISE: its presence or absence says nothing
+ *  about immune status, and "no diabetes" must never record a patient as not immunocompromised.
+ *  A tree that needs diabetes as an infection risk asks it in its own slot. */
+export const IMMUNOCOMPROMISE = yn("red_flag", "immunocompromise", "Immunocompromise", "Is the patient immunocompromised — HIV, long-term steroids, chemotherapy, a transplant, or another cause of lowered immunity?", ["hiv", "immunocompromised", "immunosuppressed", "immunosuppressant", "steroid", "steroids", "chemotherapy", "chemo", "transplant", "cancer", "malignancy", "not immunocompromised"], { teach: "Immunosuppression widens every differential (fungal, opportunistic and atypical infections) and blunts the signs; fever may be the only finding." });
 
 export const PREGNANCY = yn("red_flag", "pregnancy", "Pregnancy / recent delivery", "Is the patient pregnant, or recently delivered or aborted?", ["pregnant", "pregnancy", "lmp", "amenorrhoea", "amenorrhea", "postpartum", "post partum", "delivered", "delivery", "abortion", "miscarriage"], { teach: "Pregnancy and the weeks after delivery add causes (pre-eclampsia, HELLP, sepsis, venous thrombosis) and change which tests and drugs are safe." });
 

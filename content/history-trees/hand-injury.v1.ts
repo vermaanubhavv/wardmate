@@ -14,7 +14,7 @@ import { ATLS, BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, GRABB_SMITH, HAMILT
  */
 export const handInjuryV1: HistoryTree = {
   id: "hand_injury",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Hand injury",
   triggers: ["hand injury", "injury to hand", "finger injury", "cut finger", "finger cut", "cut on hand", "hand cut", "crush hand", "crushed finger", "finger amputation", "fingertip injury", "tendon injury", "tendon cut", "chaff cutter", "toka machine", "thresher injury", "machine injury hand", "degloving hand", "fight bite", "injection injury", "paronychia", "felon", "whitlow", "infected finger", "ungli kat gayi", "haath kat gaya", "ungli pak gayi"],
   setting: "Burns and plastic surgery unit, north India",

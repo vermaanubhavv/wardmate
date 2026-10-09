@@ -1,12 +1,21 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { FAST_MODEL } from "@/lib/model";
 import { correctTranscript } from "@/lib/glossary";
+import { log } from "@/lib/observability";
+import { askJev, chosenProbability, type JevAnswers } from "@/lib/jev";
+import { MIN_PROBABILITY, splitSentences } from "@/lib/case-history-routing";
 
 /**
  * Live dictation routing for any form — the progress note, the discharge summary. The same
  * SORTING step as lib/case-history-routing.ts (which stays the clerking's router, with its
- * specialty packs and Jev path), but the sections come from the screen that is open: each one
- * a key, a label and a one-line hint of what goes there.
+ * specialty packs), but the sections come from the screen that is open: each one a key, a
+ * label and a one-line hint of what goes there.
+ *
+ * TypeSafe (Jev) first, Haiku as the failsafe — the clerking's arrangement. Jev only LABELS:
+ * each sentence is filed whole, in the doctor's words. A sentence mixing two sections, a label
+ * Jev is unsure of, a "the value only" section (taking just "120/80" out of "BP is 120 by 80"
+ * is writing, not labelling), no key, an error — any of these sends the whole fragment to
+ * Haiku. No TYPESAFE_API_KEY means Haiku only, exactly as before.
  *
  * Nothing is stored here. The caller drops each line into its card's local state, where the
  * resident sees it land, edits it, and saves it the way the card always saves.
@@ -47,10 +56,75 @@ export async function routeToSections(
 ): Promise<DictationLine[]> {
   const text = chunk.trim();
   if (!text || sections.length === 0) return [];
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
 
   const corrected = (await correctTranscript(text)).text.trim() || text;
+
+  if (process.env.TYPESAFE_API_KEY) {
+    const first = await routeWithJev(corrected, sections);
+    if ("lines" in first) return first.lines;
+    // The reason only, never the dictation.
+    log.info("route-dictation: TypeSafe declined, using Haiku", { reason: first.fallback });
+  }
+  return routeWithHaiku(corrected, sections);
+}
+
+const NONE = "__none";
+const valueOnly = (s: DictationSection) => /the value only/i.test(s.hint ?? "");
+
+async function routeWithJev(
+  corrected: string,
+  sections: DictationSection[]
+): Promise<{ lines: DictationLine[] } | { fallback: string }> {
+  const sentences = splitSentences(corrected);
+  const criteria: Record<string, string> = {};
+  for (const s of sections) criteria[s.key] = s.hint ? `${s.label} — ${s.hint}` : s.label;
+  criteria[NONE] = `filler ("okay", "next", "let me see") or nothing that belongs on this form`;
+
+  const questions: Record<string, unknown> = {};
+  sentences.forEach((_, i) => {
+    questions[`section_${i}`] = {
+      type: "choice",
+      instructions: `Which section of the form the doctor is filling does \`sentences[${i}]\` belong in? It is part of a ward note dictated out of order.`,
+      criteria,
+    };
+    questions[`mixed_${i}`] = {
+      type: "noul",
+      instructions: `Does \`sentences[${i}]\` contain material for more than one section of the form (for example a vital sign and an examination finding)?`,
+    };
+  });
+
+  const jev = await askJev({ sentences }, questions);
+  if ("fallback" in jev) return jev;
+  return linesFromJev(sentences, jev.answers, sections);
+}
+
+/** Jev's answers to lines, or the reason to hand the fragment to Haiku instead. All or nothing:
+ *  a fragment is never half-filed by one router and half by the other. */
+export function linesFromJev(
+  sentences: string[],
+  answers: JevAnswers,
+  sections: DictationSection[]
+): { lines: DictationLine[] } | { fallback: string } {
+  const byKey = new Map(sections.map((s) => [s.key, s]));
+  const lines: DictationLine[] = [];
+  for (let i = 0; i < sentences.length; i++) {
+    const section = answers[`section_${i}`];
+    const mixed = answers[`mixed_${i}`]?.noul;
+    if (!section?.choice || mixed == null) return { fallback: "missing answer" };
+    if (mixed >= 0.5) return { fallback: "mixed sentence" };
+    if (chosenProbability(section) < MIN_PROBABILITY) return { fallback: "unsure section" };
+    if (section.choice === NONE) continue;
+    const offered = byKey.get(section.choice);
+    if (!offered) return { fallback: "section not on this form" };
+    if (valueOnly(offered)) return { fallback: "value-only section" };
+    lines.push({ section: offered.key, text: sentences[i] });
+  }
+  return { lines };
+}
+
+async function routeWithHaiku(corrected: string, sections: DictationSection[]): Promise<DictationLine[]> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
   const list = sections.map((s) => `- "${s.key}" — ${s.label}${s.hint ? `: ${s.hint}` : ""}`).join("\n");
 
   const response = await new Anthropic({ apiKey }).messages.create({

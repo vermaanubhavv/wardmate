@@ -12,12 +12,12 @@ import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, val, yn }
  */
 export const feverWithRashV1: HistoryTree = {
   id: "fever_with_rash",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Fever with rash",
   triggers: ["fever with rash", "rash", "skin rash", "spots on body", "red spots", "petechiae", "purpura", "eruption", "rash with fever", "daane", "blisters"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("fever with rash"),

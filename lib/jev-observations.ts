@@ -87,7 +87,15 @@ export function openQuestion(path: string) {
   };
 }
 
-export async function judgeObservations(observations: ExtractedObservation[]): Promise<void> {
+/** Who the text is about, so their name and bed can be taken out before it goes to Jev. */
+export type PatientIdentifiers = { name?: string | null; bed?: string | null };
+
+/** redactIdentifiers for a patient who may be unknown — then the text goes as it is. */
+export function redactFor(text: string, who?: PatientIdentifiers): string {
+  return who ? redactIdentifiers(text, who.name ?? "", who.bed ?? "") : text;
+}
+
+export async function judgeObservations(observations: ExtractedObservation[], who?: PatientIdentifiers): Promise<void> {
   const questions: Record<string, unknown> = {};
   observations.forEach((o, i) => {
     if (!o.needs_confirmation) {
@@ -101,7 +109,12 @@ export async function judgeObservations(observations: ExtractedObservation[]): P
   });
 
   const state = {
-    observations: observations.map((o) => ({ label: o.label, value: o.value_text, quote: o.source_quote })),
+    // A resident may say the patient's name aloud; only the copy sent to Jev is redacted.
+    observations: observations.map((o) => ({
+      label: redactFor(o.label, who),
+      value: redactFor(o.value_text, who),
+      quote: redactFor(o.source_quote, who),
+    })),
   };
   const jev = await askJev(state, questions);
   if ("fallback" in jev) {
@@ -124,6 +137,28 @@ export function applyJudgments(observations: ExtractedObservation[], answers: Je
       o.task_category = category.choice as TaskCategoryJudgment;
     }
   });
+}
+
+/**
+ * Takes a patient's own name and bed out of text before it is sent to Jev. TypeSafe keeps
+ * nothing (zero data retention since 2026-10-08) but has no BAA, so identifiers do not go at
+ * all; a finding needs neither to be judged. The whole name and each part of it of three
+ * letters or more are replaced; a bed is replaced where it follows the word "bed", or anywhere
+ * when it is a ward label like "SW-12" — a bare "4" elsewhere is a value, not a bed.
+ */
+export function redactIdentifiers(text: string, name: string, bed: string): string {
+  const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  let out = text;
+  const parts = [name.trim(), ...name.trim().split(/\s+/)].filter((p) => p.replace(/[^a-z]/gi, "").length >= 3);
+  for (const p of parts.sort((a, b) => b.length - a.length)) {
+    out = out.replace(new RegExp(`(?<![a-z])${esc(p)}(?![a-z])`, "gi"), "[name]");
+  }
+  const b = bed.trim();
+  if (b) {
+    out = out.replace(new RegExp(`\\b(bed\\s*(?:no\\.?|number)?\\s*[:#-]?\\s*)${esc(b)}(?![\\w])`, "gi"), "$1[bed]");
+    if (/[a-z]/i.test(b) && /\d/.test(b)) out = out.replace(new RegExp(`(?<![\\w-])${esc(b)}(?![\\w-])`, "gi"), "[bed]");
+  }
+  return out;
 }
 
 /** A read value in the shape judgeObservations asks about. needs_confirmation starts false so
@@ -159,9 +194,13 @@ export async function judgeLabValues(values: ReadLabValue[]): Promise<void> {
 export async function judgeRegisterRows(rows: RegisterRow[]): Promise<void> {
   await Promise.all(
     rows.map(async (row) => {
+      // A register row is written as "Bed 4 <name> POD 2 …". Only the copy sent to Jev is
+      // redacted; the stored quote stays exactly as written.
+      const clean = (t: string) => redactIdentifiers(t, row.name, row.bed);
+      const quote = clean(row.source_quote);
       const obs = [
-        ...row.findings.map((f) => asObservation("note", f.label, f.value_text, row.source_quote)),
-        ...row.plans.map((p) => asObservation("plan", "plan", p, row.source_quote)),
+        ...row.findings.map((f) => asObservation("note", clean(f.label), clean(f.value_text), quote)),
+        ...row.plans.map((p) => asObservation("plan", "plan", clean(p), quote)),
       ];
       if (obs.length === 0) return;
       await judgeObservations(obs);

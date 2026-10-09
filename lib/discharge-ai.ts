@@ -5,7 +5,8 @@ import type { DischargeDraft } from "@/lib/discharge-entities";
 import type { Observation } from "@/lib/patient-state";
 import { istDayKey } from "@/lib/patient-state";
 import { RADIOLOGY_LABEL } from "@/lib/radiology-flags";
-import { PATHOLOGY_LABEL } from "@/lib/discharge-compile";
+import { PATHOLOGY_LABEL, templateForDischarge } from "@/lib/discharge-compile";
+import type { DischargeTemplate } from "@/lib/discharge-templates";
 
 /**
  * The two discharge sections the protocol has the AI write a first draft of: the Clinical
@@ -103,8 +104,16 @@ function buildAdmissionDigest(context: DischargeContext, draft: DischargeDraft):
     }
   }
 
-  // Everything on the record, oldest first, grouped by the day it was recorded.
-  const chronological = [...context.observations].reverse();
+  // The clinical history taken at admission, on its own, then the progress notes day by day —
+  // so the model knows which is the presentation and which is the course.
+  const historyIds = new Set(context.admissionObservations.map((o) => o.id));
+  if (context.admissionObservations.length) {
+    out.push("Clinical history (admission case sheet):");
+    for (const o of [...context.admissionObservations].reverse()) out.push(`  ${line(o)}`);
+  }
+
+  // Everything else on the record — the progress notes — oldest first, by the day recorded.
+  const chronological = [...context.observations].reverse().filter((o) => !historyIds.has(o.id));
   const byDay = new Map<string, Observation[]>();
   for (const o of chronological) {
     const day = istDayKey(o.recorded_at);
@@ -112,7 +121,7 @@ function buildAdmissionDigest(context: DischargeContext, draft: DischargeDraft):
     bucket.push(o);
     byDay.set(day, bucket);
   }
-  out.push("Timeline (each day's recorded observations):");
+  out.push("Progress notes (each day's recorded observations):");
   for (const [day, obs] of byDay) {
     out.push(`  ${day}:`);
     for (const o of obs) out.push(`    ${line(o)}`);
@@ -125,6 +134,21 @@ function buildAdmissionDigest(context: DischargeContext, draft: DischargeDraft):
 
   return out.join("\n");
 }
+
+/**
+ * The diagnosis template, as a guide to FORM — its order of beats and the ward's standard
+ * wording. Its facts are the usual case, not this patient's; the prompts say so.
+ */
+const templateOf = (context: DischargeContext, draft: DischargeDraft) =>
+  templateForDischarge(context, draft.diagnoses.find((d) => d.category === "primary")?.text, context.pack);
+
+function templateGuide(template: DischargeTemplate | null, part: "clinicalCourse" | "indication"): string {
+  const text = template?.scaffold[part]?.trim();
+  if (!template || !text) return "";
+  return `\n\nTemplate for this diagnosis (${template.label}) — follow its order and wording:\n${text}`;
+}
+
+const TEMPLATE_RULE = `If a template for the diagnosis is given, write along it: same order, same standard wording. But the template describes the USUAL case, not this patient — keep a template sentence only where the digest supports it, change it where the digest differs, and where the digest is silent on a patient-specific part (a date, a drain day, a finding) write a visible blank "[ … ]" instead of guessing. Never carry a template fact into the text that the digest does not contain.`;
 
 // --- Clinical Course --------------------------------------------------------------------
 
@@ -141,6 +165,8 @@ Absolute rules:
 6. Be concise and clinically meaningful. One paragraph, roughly 4–7 sentences. Do NOT reproduce every ward-round note. Cover, in order: initial presentation/diagnosis, important initial management, the major intervention or operation, significant post-operative or inpatient events, relevant recovery milestones, and the clinical condition immediately before discharge. When you state the presenting complaint, lead with its duration ("a 3-day history of pain in the right iliac fossa"), using only a duration the digest gives. If the digest carries a "relevant negatives" line, add its main points to the presentation as a single short clause of pertinent negatives — one sentence at most, not a list.
 7. Maintain chronological coherence. Use the dates in the digest; do not invent one.
 8. Plain professional prose, third person, past tense ("The patient was admitted with…"). No bullet points, no headings.
+9. The presentation comes from the "Clinical history" block; the course from the "Progress notes".
+10. ${TEMPLATE_RULE}
 
 Return JSON: { "clinical_course": string, "uncertain_points": string[] }. uncertain_points is [] when the digest is internally consistent and complete enough.`;
 
@@ -160,7 +186,7 @@ export async function generateClinicalCourse(
   context: DischargeContext,
   draft: DischargeDraft
 ): Promise<ClinicalCourseProposal> {
-  const digest = buildAdmissionDigest(context, draft);
+  const digest = buildAdmissionDigest(context, draft) + templateGuide(templateOf(context, draft), "clinicalCourse");
   const response = await client().messages.create({
     model: AI_MODEL,
     max_tokens: 2000,
@@ -196,6 +222,7 @@ Rules:
 2. When the digest gives a duration for the presenting complaint, lead with it ("a 3-day history of..."). Omit the duration only when the digest does not state one.
 3. One or two sentences. No abbreviations that are not expanded.
 4. If the digest holds nothing about the presentation (only a bare diagnosis), say so by returning an empty string rather than padding it.
+5. ${TEMPLATE_RULE}
 
 Return JSON: { "indication": string }.`;
 
@@ -210,7 +237,7 @@ export async function generateIndication(
   context: DischargeContext,
   draft: DischargeDraft
 ): Promise<{ text: string; model: string }> {
-  const digest = buildAdmissionDigest(context, draft);
+  const digest = buildAdmissionDigest(context, draft) + templateGuide(templateOf(context, draft), "indication");
   const response = await client().messages.create({
     model: AI_MODEL,
     max_tokens: 400,

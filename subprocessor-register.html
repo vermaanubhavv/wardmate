@@ -274,7 +274,7 @@
       sourced directly from the running application, not from a marketing description of it.
     </p>
     <div class="meta-row">
-      <span><b>Prepared:</b> 16 Sep 2026</span>
+      <span><b>Prepared:</b> 16 Sep 2026 · updated 9 Oct 2026</span>
       <span><b>Applies to:</b> wardmate.in (production)</span>
       <span><b>Governing law:</b> India · DPDP Act, 2023</span>
     </div>
@@ -309,6 +309,12 @@
             <td><span class="tag">audio</span> raw voice recordings, incl. live-dictation streams</td>
             <td class="muted-cell">Transcribes spoken bedside notes and live case-history dictation to text. The only speech-to-text provider.</td>
             <td class="muted-cell">Every request is sent with <code>mip_opt_out=true</code>, so audio is excluded from Deepgram's model training. Other retention per Deepgram's API terms — confirm current policy.</td>
+          </tr>
+          <tr>
+            <td class="vendor">TypeSafe<span class="role">Jev API · hosted in the US</span></td>
+            <td><span class="tag">text</span> live-dictation fragments, each dictated value with its quote, plan wording, history-check quotes, lab-report lines and register rows as read off a photo. Never the photo or audio itself. The patient's own name and bed are removed from everything before it is sent — register rows, dictation, clerking and history-check quotes. Another person's name said aloud (a relative, a consultant) is not removed.</td>
+            <td class="muted-cell">Second look at what the Claude API produced: whether a quote actually says its value (a no turns the value amber for the doctor), which case-sheet section a dictated sentence belongs to, and whether a plan is still a job. Returns only a probability or a choice — it never writes clinical text.</td>
+            <td class="muted-cell"><b>No — zero data retention since 8 Oct 2026</b>, confirmed by TypeSafe for every API key in the account: inputs and answers are not stored; only billing and usage telemetry is kept. Not used to train models (DPA, <code>typesafe.ai/legal/data-processing</code>; 72-hour breach notice). <b>Not HIPAA-covered:</b> TypeSafe signs no BAA yet, and their DPA lists sensitive data as "N/A" — so Jev must stay off for any US/HIPAA-covered deployment.</td>
           </tr>
         </tbody>
       </table>

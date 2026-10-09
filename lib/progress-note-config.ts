@@ -252,7 +252,7 @@ const INTERNAL_MEDICINE: ProgressNoteConfig = {
     },
     { key: "GCS", label: "GCS", ph: "E_V_M_", aliases: ["gcs", "glasgow coma scale"] },
   ],
-  bedsideExample: "HD 3, afebrile, BP 120/80, plan repeat RFT…",
+  bedsideExample: "Day 3, afebrile, BP 120/80, plan repeat RFT…",
 };
 
 const MEDICAL_ONCOLOGY: ProgressNoteConfig = {

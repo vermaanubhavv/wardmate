@@ -14,7 +14,7 @@ import { APLEY, ATLS, BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAI
  */
 export const limpV1: HistoryTree = {
   id: "limp",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Limp / difficulty walking from hip or knee",
   triggers: ["limp", "limping", "limps", "hip pain", "pain in hip", "pain in the hip", "refuses to walk", "not bearing weight", "abnormal gait", "waddling gait", "langdana", "langda kar chalna"],
   setting: "Orthopaedics ward and casualty, north India",

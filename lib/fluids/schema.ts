@@ -27,6 +27,7 @@ export function validateFluidTopic(topic: unknown): ValidationResult {
   if (!Array.isArray(t.references) || t.references.length === 0) add("$.references", "at least one reference required");
   else t.references.forEach((r, i) => validateReference(r, `$.references[${i}]`, add));
   if (!t.source || !Array.isArray(t.source.chapters) || t.source.chapters.length === 0 || !t.source.pages) add("$.source", "chapters and pages required");
+  else if (t.source.pageKind !== undefined && t.source.pageKind !== "pdf" && t.source.pageKind !== "book") add("$.source.pageKind", "must be pdf or book");
   if (!Array.isArray(t.sections) || t.sections.length === 0) {
     add("$.sections", "at least one section required");
     return { ok: issues.length === 0, issues };
