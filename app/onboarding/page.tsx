@@ -6,7 +6,7 @@ import { signOut } from "../actions";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 import ProfessionalForm from "./professional-form";
-import { listSpecialties, specialtyPacksEnabled } from "@/lib/specialty";
+import { specialtyChoices } from "./specialty-choices";
 import { LogIn, UserPlus } from "lucide-react";
 
 /** The only first-run decision: join the team already working, or start a new one. */
@@ -74,9 +74,3 @@ export default async function OnboardingPage() {
   );
 }
 
-/** The departments to offer at unit setup. Empty list = no picker, everything general surgery.
- *  Server-side because the flag is a server env var. */
-function specialtyChoices() {
-  if (!specialtyPacksEnabled()) return [];
-  return listSpecialties().map((p) => ({ key: p.key, label: p.label, blurb: p.blurb }));
-}

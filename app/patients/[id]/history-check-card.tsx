@@ -3,9 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore, useTransition } from "react";
+import { useCopy } from "../../use-copy";
+import { useOnline } from "../../connection-bar";
 import { approveBtn, SelChip, statusChip } from "./card-kit";
 import { dismissWrongPatient, resolveHistorySlot } from "./history-check/actions";
 import type { AnsweredView, BandView, ConflictView, RunView } from "@/lib/history-check/view";
+import { dateTime } from "@/lib/format-date";
 
 /**
  * The History check card — what the case history has and has not covered for one complaint.
@@ -32,20 +35,6 @@ export type CheckMode = "ward" | "academic";
 
 const MODE_KEY = "wardmate.historyCheck.mode";
 
-function subscribeOnline(cb: () => void) {
-  window.addEventListener("online", cb);
-  window.addEventListener("offline", cb);
-  return () => {
-    window.removeEventListener("online", cb);
-    window.removeEventListener("offline", cb);
-  };
-}
-const useOnline = () =>
-  useSyncExternalStore(
-    subscribeOnline,
-    () => navigator.onLine,
-    () => true
-  );
 
 export default function HistoryCheckCard({
   patientId,
@@ -215,7 +204,7 @@ export default function HistoryCheckCard({
               </p>
               <p className="mt-1">
                 Checked{" "}
-                {new Date(run.createdAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+                {dateTime(run.createdAt)}
                 . Questions to consider, never a diagnosis. Values in amber are unconfirmed.
               </p>
               {shownMode === "academic" && (
@@ -445,21 +434,12 @@ function AnsweredList({ items }: { items: AnsweredView[] }) {
 }
 
 function GeneratedHistory({ text }: { text: string }) {
-  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(text);
-      setState("copied");
-    } catch {
-      setState("failed");
-    }
-    setTimeout(() => setState("idle"), 2000);
-  }
+  const [state, copy] = useCopy();
   return (
     <div className="border-t border-line px-4 py-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-subhead font-semibold">History as recorded</p>
-        <button type="button" onClick={copy} className="text-footnote font-semibold text-accent active:opacity-60">
+        <button type="button" onClick={() => copy(text)} className="text-footnote font-semibold text-accent active:opacity-60">
           {state === "copied" ? "Copied" : "Copy"}
         </button>
       </div>

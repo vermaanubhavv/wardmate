@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCopy } from "../use-copy";
 
 /**
  * The invite, as a message rather than a code to read aloud across a ward.
@@ -16,7 +16,7 @@ import { useState } from "react";
  * prefill is worse than one that never promised to.
  */
 export default function InviteShare({ unitName, code }: { unitName: string; code: string }) {
-  const [said, setSaid] = useState<string | null>(null);
+  const [state, copy] = useCopy(4000);
 
   const message =
     `Join ${unitName} on WardMate.\n\n` +
@@ -31,13 +31,7 @@ export default function InviteShare({ unitName, code }: { unitName: string; code
         // Cancelled or unavailable — fall through to the clipboard rather than saying nothing.
       }
     }
-    try {
-      await navigator.clipboard.writeText(message);
-      setSaid("Invite copied — paste it into WhatsApp.");
-    } catch {
-      setSaid("Could not copy. Read the code out instead.");
-    }
-    setTimeout(() => setSaid(null), 4000);
+    await copy(message);
   }
 
   return (
@@ -49,7 +43,13 @@ export default function InviteShare({ unitName, code }: { unitName: string; code
       >
         Send invite
       </button>
-      {said && <p className="mt-2 text-footnote text-muted">{said}</p>}
+      {state !== "idle" && (
+        <p className="mt-2 text-footnote text-muted">
+          {state === "copied"
+            ? "Invite copied — paste it into WhatsApp."
+            : "Could not copy. Read the code out instead."}
+        </p>
+      )}
     </>
   );
 }

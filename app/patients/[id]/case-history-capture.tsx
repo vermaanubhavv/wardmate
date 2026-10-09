@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Mark from "@/app/mark";
 import { ImageIcon, MicIcon, StopIcon } from "@/app/icons";
@@ -23,7 +23,6 @@ const MAX_SECONDS = 900;
 export default function CaseHistoryCapture({
   patientId,
   hasExisting = false,
-  defaultOpen = false,
   savedHref,
   variant = "menu",
   specialty,
@@ -42,9 +41,6 @@ export default function CaseHistoryCapture({
   /** Once a case history exists, this becomes "add an addendum" rather than the first prompt —
    *  no reason to re-explain what it is, or offer to skip something already done. */
   hasExisting?: boolean;
-  /** Start expanded. Used by the dedicated clerking screen a new patient lands on, where the
-   *  whole point of the page is this control. */
-  defaultOpen?: boolean;
   /** Where to go once something has been saved. On the patient page this is unset — it just
    *  refreshes in place; on the clerking screen it carries the resident on to the patient. */
   savedHref?: string;
@@ -56,10 +52,6 @@ export default function CaseHistoryCapture({
   const [showPhotoChoices, setShowPhotoChoices] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
-
-  useEffect(() => {
-    if (defaultOpen && detailsRef.current) detailsRef.current.open = true;
-  }, [defaultOpen]);
 
   const { status, recording, message, setMessage, start: startRecording, stop: stopRecording } =
     useDictation({

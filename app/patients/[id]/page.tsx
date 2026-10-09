@@ -76,6 +76,7 @@ import { getUser } from "@/lib/auth";
 import HistoryCheckCard from "./history-check-card";
 import { loadHistoryCheckCard } from "@/lib/history-check/page-data";
 import { getExamChecklist } from "@/lib/history-check/exams";
+import { shortDate, dateTime } from "@/lib/format-date";
 
 type Entry = {
   id: string;
@@ -1035,11 +1036,7 @@ function CaseHistorySection({
                   embedded
                   entryId={entry.id}
                   patientId={patientId}
-                  time={new Date(entry.recorded_at).toLocaleDateString("en-IN", {
-                    timeZone: "Asia/Kolkata",
-                    day: "numeric",
-                    month: "short",
-                  })}
+                  time={shortDate(entry.recorded_at)}
                   transcript={entry.transcript}
                   heard={entry.original_transcript}
                   photoUrl={entry.photo_path ? (photoUrls.get(entry.photo_path) ?? null) : null}
@@ -1337,13 +1334,7 @@ function VitalsPanel({ observations }: { observations: Observation[] }) {
 }
 
 function vitalsWhen(iso: string): string {
-  return new Date(iso).toLocaleString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return dateTime(iso);
 }
 
 /**
@@ -1420,11 +1411,7 @@ function PacSection({ pac, patientId }: { pac: Observation[]; patientId: string 
 }
 
 function pacWhen(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    day: "numeric",
-    month: "short",
-  });
+  return shortDate(iso);
 }
 
 /**
@@ -1602,11 +1589,7 @@ function isVitalLine(label: string): boolean {
  * gets written in the notes.
  */
 function dayHeading(iso: string, todayKey: string): string {
-  const date = new Date(iso).toLocaleDateString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    day: "numeric",
-    month: "short",
-  });
+  const date = shortDate(iso);
 
   const key = istDayKey(iso);
   if (key === todayKey) return `Today · ${date}`;

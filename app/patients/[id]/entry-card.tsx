@@ -7,6 +7,8 @@ import { mergeLabelValue } from "@/lib/patients";
 import { acceptEntry, editEntry, deleteEntry, updateObservation } from "./actions";
 import { isActionableTask } from "@/lib/task-classification";
 import { flagMisheard } from "./flag-misheard";
+import { wordsToDigits } from "@/lib/corrections";
+import { PenIcon } from "../../icons";
 
 type Value = {
   id: string;
@@ -23,34 +25,17 @@ type Value = {
 /** What operation and which day — the note's heading, not a finding from it. */
 const CONTEXT_KINDS = ["day_number", "diagnosis", "planned_procedure"];
 
-const NUMBER_WORDS: Record<string, number> = {
-  zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
-  ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16,
-  seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50,
-  sixty: 60, seventy: 70, eighty: 80, ninety: 90,
-};
-
 /**
  * The figure inside a spoken day, as a number. Null when there isn't one — never a guess.
  *
  * Only reached when extraction did not already store value_num, which it does whenever the
  * resident stated a figure. This is the fallback for entries recorded before that, and for
- * "post-op day four", where the number arrived as a word.
+ * "post-op day four", where the number arrived as a word. Punctuation is spaced out first so
+ * "day four." still reads as a number.
  */
 function readNumber(text: string): number | null {
-  const digits = text.match(/\d+/);
-  if (digits) return Number(digits[0]);
-
-  const words = text.toLowerCase().split(/[^a-z]+/).filter(Boolean);
-  for (let i = 0; i < words.length; i++) {
-    const n = NUMBER_WORDS[words[i]];
-    if (n === undefined) continue;
-    // "twenty one" is one number, not two.
-    const next = NUMBER_WORDS[words[i + 1]];
-    if (n >= 20 && next !== undefined && next < 10) return n + next;
-    return n;
-  }
-  return null;
+  const digits = wordsToDigits(text.replace(/[^\w\s-]/g, " ")).match(/\d+/);
+  return digits ? Number(digits[0]) : null;
 }
 
 /**
@@ -308,7 +293,7 @@ export default function EntryCard({
                 : "border-muted/40 text-muted")
             }
           >
-            <PenIcon />
+            <PenIcon className="h-3.5 w-3.5" />
           </button>
         )}
 
@@ -486,22 +471,3 @@ function PhraseButton({
   );
 }
 
-/** Small enough for the controls row, and the same mark the patient header already uses. */
-function PenIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-    </svg>
-  );
-}
