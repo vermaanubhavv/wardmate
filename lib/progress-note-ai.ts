@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { AI_MODEL } from "@/lib/model";
+import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
 import { DEFAULT_PROGRESS_NOTE_CONFIG, type ProgressNoteConfig } from "@/lib/progress-note-config";
 
 /**
@@ -11,12 +10,6 @@ import { DEFAULT_PROGRESS_NOTE_CONFIG, type ProgressNoteConfig } from "@/lib/pro
  * ambiguous comes back in uncertain_points rather than being asserted. It is a PROPOSAL — the
  * resident reviews and applies it, and the note is only a record once signed.
  */
-
-function client(): Anthropic {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
-  return new Anthropic({ apiKey: key });
-}
 
 export type NoteContext = {
   age_years: number | null;
@@ -95,7 +88,7 @@ export async function compileProgressNote(
         .join(", ")}\n\n`
     : "";
 
-  const response = await client().messages.create({
+  const response = await anthropic().messages.create({
     model: AI_MODEL,
     max_tokens: 1200,
     system: [{ type: "text", text: systemPromptFor(config), cache_control: { type: "ephemeral" } }],
@@ -106,8 +99,7 @@ export async function compileProgressNote(
     messages: [{ role: "user", content: `${ctxLine}Today's round notes:\n\n${digest}` }],
   });
 
-  const block = response.content.find((b) => b.type === "text");
-  const p = block && block.type === "text" ? JSON.parse(block.text) : {};
+  const p = replyJson(response, {});
   const str = (v: unknown) => String(v ?? "").trim();
   return {
     fields: Object.fromEntries(

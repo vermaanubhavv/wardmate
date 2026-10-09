@@ -1,3 +1,5 @@
+import Anthropic from "@anthropic-ai/sdk";
+
 /**
  * The model every AI path in WardMate uses.
  *
@@ -40,3 +42,24 @@ export const AI_MODEL = "claude-sonnet-5";
 /** The cheaper model, for small high-volume passes where Sonnet's extra care is not needed: the
  *  live-dictation router and the final proofread of case histories and progress notes. */
 export const FAST_MODEL = "claude-haiku-4-5-20251001";
+
+/** The one Anthropic client constructor. Throws when the key is missing, so a misconfigured
+ *  server fails loudly rather than sending a keyless request. */
+export function anthropic(): Anthropic {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
+  return new Anthropic({ apiKey });
+}
+
+/** The reply's JSON, or `fallback` when the reply carries no text. Tolerates a ```json fence.
+ *  Malformed JSON throws, as JSON.parse does — callers decide whether that is fatal. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function replyJson(response: Anthropic.Message, fallback: unknown): any {
+  const text = response.content
+    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("")
+    .trim();
+  if (!text) return fallback;
+  return JSON.parse(text.startsWith("```") ? text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "") : text);
+}

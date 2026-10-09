@@ -1,5 +1,5 @@
-import type { AdviceItem } from "@/lib/discharge-entities";
 import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-templates";
+import { adv, proc, COMMON_MEDS } from "@/lib/discharge-template-parts";
 
 /**
  * BURNS & PLASTIC SURGERY discharge templates. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28).
@@ -17,11 +17,9 @@ import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-temp
  * and electrical before the burn-graft template, and the plain dressings template last.
  */
 
-const adv = (items: { module: string; text: string }[]): AdviceItem[] =>
-  items.map((it, i) => ({ id: `adv-${i}`, module: it.module, text: it.text }));
 
 const M = {
-  paracetamol: { generic: "Paracetamol", strength: "650 mg", route: "PO", frequency: "TDS", duration: "5 days", status: "new" } as TemplateMedication,
+  paracetamol: COMMON_MEDS.paracetamol,
   tramadolSos: { generic: "Tramadol", strength: "50 mg", route: "PO", frequency: "SOS for severe pain, maximum TDS", duration: "5 days", status: "prn" } as TemplateMedication,
   diclofenac: { generic: "Diclofenac", strength: "50 mg", route: "PO", frequency: "SOS for pain", duration: "5 days", status: "prn" } as TemplateMedication,
   pantoprazole: { generic: "Pantoprazole", strength: "40 mg", route: "PO", frequency: "OD before breakfast", duration: "7 days", status: "new" } as TemplateMedication,
@@ -59,14 +57,13 @@ export const BURNS_PLASTIC_SURGERY_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate
   scaffold: {
     indication: "Patient was admitted with [ presenting problem ] for [ wound management / reconstruction / procedure ].",
     primaryDiagnosis: "",
-    procedure: {
+    procedure: proc({
       name: "[ Procedure(s) during this admission — debridement, graft, flap, repair ]",
       anaesthesia: "[ General / regional / local ] anaesthesia",
       findings: "[ wound size and site; tissue involved; cover used; donor site ]",
       drains: "[ nil / suction drain ]",
-      complications: "Nil",
       outcome: "[ Outcome — graft take / flap status at discharge ]",
-    },
+    }),
     clinicalCourse:
       "Admitted on [ date ] with [ presentation ]. [ Procedure(s) and dates. ] [ Graft take / flap status; dressings; complications if any. ] The patient is afebrile, comfortable on oral analgesia and fit for discharge on [ date ] with the plan below.",
     medications: [M.paracetamol, M.pantoprazole],
@@ -95,14 +92,13 @@ export const BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with a post-burn contracture of the [ neck / axilla / elbow / hand / knee / … ] limiting [ movement / function ], for contracture release and cover.",
       primaryDiagnosis: "Post-burn contracture [ site ] — [ grade / degree of restriction ]",
-      procedure: {
+      procedure: proc({
         name: "Contracture release [ site ] with [ split-skin graft / full-thickness graft / local flap (Z-plasty / transposition) ]",
         anaesthesia: "[ General / regional ] anaesthesia",
         findings: "[ band / sheet contracture; range before and after release; raw area size; structures exposed; donor site ]",
         drains: "[ nil ]",
-        complications: "Nil",
         outcome: "Contracture released; [ graft take __% / flap healthy ] at the first dressing.",
-      },
+      }),
       clinicalCourse:
         "Underwent release of the [ site ] contracture with [ cover ] on [ date ]. The part was splinted in the position of release. The first dressing on POD [ __ ] showed [ graft take __% / a healthy flap ]. The donor site is [ healing / healed ]. Physiotherapy was started on POD [ __ ]. The patient is afebrile and comfortable at discharge with the splint in place.",
       medications: [M.paracetamol, M.diclofenac, M.pantoprazole, M.cetirizine, M.emollient],
@@ -171,14 +167,13 @@ export const BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with [ flame / scald / chemical / contact ] burns, [ __% TBSA, deep partial / full thickness ], for resuscitation, excision and grafting.",
       primaryDiagnosis: "[ Agent ] burns [ __% TBSA; deep partial / full thickness; sites ]",
-      procedure: {
+      procedure: proc({
         name: "Tangential excision and split-skin grafting [ sites ] — [ dates ]",
         anaesthesia: "General anaesthesia",
         findings: "[ area excised; bed quality; graft meshed / sheet; donor site(s) ]",
         drains: "[ nil ]",
-        complications: "Nil",
         outcome: "[ Graft take __% ]; donor site [ healed / healing ].",
-      },
+      }),
       clinicalCourse:
         "Admitted on [ date ] with [ __% TBSA ] burns; resuscitated with intravenous fluids to urine output. Underwent tangential excision and split-skin grafting on [ date(s) ]. The first graft inspection on POD [ __ ] showed [ __% take ]; [ residual raw areas were re-grafted / healing by dressings ]. Nutrition was supported with a high-protein diet. The patient is afebrile, ambulant, and fit for discharge with [ small residual raw areas __ / all areas healed ].",
       medications: [M.paracetamol, M.tramadolSos, M.pantoprazole, M.cetirizine, { ...M.ssd, indication: "on any residual raw areas" }, M.emollient, M.multivit, M.protein],
@@ -207,14 +202,13 @@ export const BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Child was admitted for primary repair of a [ unilateral / bilateral ] cleft [ lip / palate / lip and palate ].",
       primaryDiagnosis: "[ Unilateral / bilateral ] cleft [ lip / palate / lip and palate ] — [ complete / incomplete ]",
-      procedure: {
+      procedure: proc({
         name: "[ Cheiloplasty (technique __) / palatoplasty (technique __) ]",
         anaesthesia: "General anaesthesia",
         findings: "[ width of the cleft; nasal deformity; palatal repair details ]",
         drains: "Nil",
-        complications: "Nil",
         outcome: "Repair completed; suture line intact at discharge.",
-      },
+      }),
       clinicalCourse:
         "Underwent [ procedure ] on [ date ]. Feeding was resumed [ by spoon / cup / as advised ] on [ POD __ ]. The suture line is intact and clean, the child is feeding well, afebrile and passing urine at discharge. Weight at discharge [ … ].",
       medications: [
@@ -252,14 +246,13 @@ export const BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with a [ cut / crush ] injury to the [ right / left ] [ hand / wrist / finger ] with [ tendon / nerve / vessel ] injury, for exploration and repair.",
       primaryDiagnosis: "[ Right / left ] [ hand / wrist ] injury — [ tendons / nerves / vessels injured; zone ]",
-      procedure: {
+      procedure: proc({
         name: "Wound exploration and repair of [ tendons __ / nerves __ / vessels __ ]",
         anaesthesia: "[ Regional (brachial plexus block) / general ] anaesthesia",
         findings: "[ structures cut and their level / zone; repair technique; associated fracture ]",
         drains: "Nil",
-        complications: "Nil",
         outcome: "Repair completed; hand placed in a [ dorsal blocking / other ] splint.",
-      },
+      }),
       clinicalCourse:
         "Underwent exploration and repair of [ structures ] on [ date ]. The hand was elevated and splinted in [ position ]. Circulation of the fingers remained good. The wound is clean. Hand therapy was started on POD [ __ ] with [ protocol ]. The patient is comfortable and fit for discharge with the splint in place.",
       medications: [M.paracetamol, M.diclofenac, M.pantoprazole, { ...M.amoxClav, indication: "open / contaminated wound" }],
@@ -289,14 +282,13 @@ export const BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with a [ grade __ ] [ sacral / ischial / trochanteric ] pressure sore, [ background: paraplegia / immobility ], for debridement and flap cover.",
       primaryDiagnosis: "[ Grade __ ] [ site ] pressure sore [ ± osteomyelitis ] in a patient with [ underlying condition ]",
-      procedure: {
+      procedure: proc({
         name: "Debridement [ ± ostectomy ] and [ rotation / advancement / myocutaneous ] flap cover of the [ site ] sore",
         anaesthesia: "[ General / spinal ] anaesthesia",
         findings: "[ sore size and depth; bone involvement; bursa; flap used ]",
         drains: "[ suction drain ]",
-        complications: "Nil",
         outcome: "Flap healthy at discharge; [ drain removed on POD __ ].",
-      },
+      }),
       clinicalCourse:
         "Underwent debridement and [ flap ] cover on [ date ] after optimising nutrition [ and treating infection per culture ]. The patient was nursed off the flap with two-hourly turning. The flap has remained healthy; [ the drain was removed on POD __ ]. [ Bowel and bladder care as per the background condition. ] The patient is afebrile and fit for discharge.",
       medications: [
@@ -332,14 +324,13 @@ export const BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with a wound over the [ site ] with [ exposed bone / tendon / implant ] after [ trauma / infection / excision ], for debridement and flap cover.",
       primaryDiagnosis: "[ Site ] wound with [ exposed structure ] — [ cause ]",
-      procedure: {
+      procedure: proc({
         name: "Debridement and [ local / regional ] flap cover [ flap name ] [ + SSG to the donor site ]",
         anaesthesia: "[ General / regional ] anaesthesia",
         findings: "[ defect size; structures exposed; flap used and its pedicle; donor site closure ]",
         drains: "[ nil / suction drain ]",
-        complications: "Nil",
         outcome: "Flap healthy at discharge.",
-      },
+      }),
       clinicalCourse:
         "Underwent debridement and [ flap ] cover of the [ site ] wound on [ date ]. Flap monitoring showed [ good colour and capillary refill throughout ]. [ Donor-site graft take __%. ] The limb was elevated and [ splinted ]. The patient is afebrile and comfortable and fit for discharge.",
       medications: [M.paracetamol, M.diclofenac, M.pantoprazole, { ...M.amoxClav, indication: "if indicated" }, M.multivit],
@@ -368,14 +359,13 @@ export const BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with [ flame / scald / chemical / contact ] burns, [ __% TBSA, superficial / superficial partial thickness ], for fluid management, pain control and dressings.",
       primaryDiagnosis: "[ Agent ] burns [ __% TBSA; superficial / partial thickness; sites ]",
-      procedure: {
+      procedure: proc({
         name: "[ Nil / serial dressings under sedation ]",
         anaesthesia: "",
         findings: "[ burn areas and depth on re-assessment ]",
         drains: "Nil",
-        complications: "Nil",
         outcome: "Burns [ healed / healing ] by dressings.",
-      },
+      }),
       clinicalCourse:
         "Admitted on [ date ] with [ __% TBSA ] burns; [ resuscitated with intravenous fluids to urine output / managed with oral fluids ]. Managed with [ dressing agent ] dressings every [ … ] days. The burns [ healed by day __ / are healing with small residual areas __ ]. The patient is afebrile, eating well and fit for discharge.",
       medications: [M.paracetamol, M.pantoprazole, M.cetirizine, { ...M.ssd, indication: "on the remaining raw areas" }, M.emollient, M.multivit],

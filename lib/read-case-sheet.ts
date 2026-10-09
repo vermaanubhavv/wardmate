@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { AI_MODEL } from "@/lib/model";
+import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
 
 export type CaseSheetResult = {
   /** The whole page, transcribed. Fed into extractObservations exactly like a spoken
@@ -55,14 +54,10 @@ export async function readCaseSheet(
   base64Image: string,
   mediaType: "image/jpeg" | "image/png" | "image/webp"
 ): Promise<CaseSheetResult> {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
-
-  const model = AI_MODEL;
-  const client = new Anthropic({ apiKey: key });
+  const client = anthropic();
 
   const response = await client.messages.create({
-    model,
+    model: AI_MODEL,
     max_tokens: 8000,
     system: SYSTEM_PROMPT,
     // Same tier as the lab photo: reading handwriting off a ward-lit phone photo is harder
@@ -82,9 +77,7 @@ export async function readCaseSheet(
     ],
   });
 
-  const text = response.content.find((b) => b.type === "text");
-  const parsed =
-    text && text.type === "text" ? JSON.parse(text.text) : { transcript: "" };
+  const parsed = replyJson(response, { transcript: "" });
 
-  return { transcript: String(parsed.transcript ?? ""), model, raw: parsed };
+  return { transcript: String(parsed.transcript ?? ""), model: AI_MODEL, raw: parsed };
 }

@@ -32,6 +32,7 @@ import {
   type EtiologyKey,
   type ImagingSummary,
 } from "@/lib/imaging-summary";
+import { istDate } from "@/lib/urgency";
 import { matchVitalLabel, type VitalKey } from "@/lib/vital-ranges";
 
 export type ExamValue = {
@@ -431,9 +432,6 @@ export function summariseObjective(
   };
 }
 
-/** The calendar day an instant falls on in IST — the day the round actually happened. */
-const istDay = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
 /**
  * "3 d ago", or null for anything recorded today.
@@ -444,8 +442,8 @@ const istDay = (iso: string) =>
  */
 function agoLabel(recordedAt: string | null, now: Date): string | null {
   if (!recordedAt) return null;
-  const then = istDay(recordedAt);
-  const today = istDay(now.toISOString());
+  const then = istDate(recordedAt);
+  const today = istDate(now.toISOString());
   if (then === today) return null;
   const days = Math.round(
     (Date.parse(`${today}T00:00:00Z`) - Date.parse(`${then}T00:00:00Z`)) / 86400000

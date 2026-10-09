@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { AI_MODEL } from "@/lib/model";
+import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
 import { judgeRegisterRows, type TaskCategoryJudgment } from "@/lib/jev-observations";
 
 export type RegisterRow = {
@@ -90,14 +89,10 @@ export async function readRegister(
   base64Image: string,
   mediaType: "image/jpeg" | "image/png" | "image/webp"
 ): Promise<RegisterResult> {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
-
-  const model = AI_MODEL;
-  const client = new Anthropic({ apiKey: key });
+  const client = anthropic();
 
   const response = await client.messages.create({
-    model,
+    model: AI_MODEL,
     // A full register page is many rows of handwriting; give it room.
     max_tokens: 16000,
     system: SYSTEM_PROMPT,
@@ -124,11 +119,10 @@ export async function readRegister(
     ],
   });
 
-  const text = response.content.find((b) => b.type === "text");
-  const parsed = text && text.type === "text" ? JSON.parse(text.text) : { rows: [] };
+  const parsed = replyJson(response, { rows: [] });
 
   const rows: RegisterRow[] = parsed.rows ?? [];
   // Second look before anything is shown: see judgeRegisterRows. No key or an error: unchanged.
   await judgeRegisterRows(rows);
-  return { rows, model, raw: parsed };
+  return { rows, model: AI_MODEL, raw: parsed };
 }

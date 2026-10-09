@@ -1,5 +1,5 @@
-import type { AdviceItem } from "@/lib/discharge-entities";
 import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-templates";
+import { adv, proc } from "@/lib/discharge-template-parts";
 
 /**
  * INTERNAL MEDICINE discharge templates.
@@ -23,8 +23,6 @@ import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-temp
  * general, per lib/specialty/discharge.ts.
  */
 
-const adv = (items: { module: string; text: string }[]): AdviceItem[] =>
-  items.map((it, i) => ({ id: `adv-${i}`, module: it.module, text: it.text }));
 
 const STANDARD_RED_FLAGS = [
   "Fever that returns or does not settle, or chills and rigors",
@@ -47,14 +45,13 @@ export const MEDICINE_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     indication:
       "Patient was admitted with [ presenting problem ] for [ investigation / medical management / stabilisation ].",
     primaryDiagnosis: "",
-    procedure: {
+    procedure: proc({
       name: "[ Bedside procedure during this admission, if any — pleural/ascitic tap, lumbar puncture, central line ]",
       anaesthesia: "",
       findings: "[ relevant results — cultures, counts, imaging, organ function ]",
       drains: "[ lines / catheters at discharge, if any ]",
-      complications: "Nil",
       outcome: "[ Outcome of this admission ]",
-    },
+    }),
     clinicalCourse:
       "Admitted on day [ … ] with [ presentation ]. [ Working diagnosis and how it was reached. ] [ Treatment given during the admission. ] The patient improved, was afebrile and haemodynamically stable, tolerating orals, and was fit for discharge on [ date ] with the plan below.",
     medications: [],
@@ -111,14 +108,13 @@ function febrile(opts: {
     scaffold: {
       indication: opts.indication,
       primaryDiagnosis: "",
-      procedure: {
+      procedure: proc({
         name: "[ Bedside procedure during this admission, if any ]",
         anaesthesia: "",
         findings: "[ relevant cultures / serology / imaging results ]",
         drains: "[ lines / catheters at discharge, if any ]",
-        complications: "Nil",
         outcome: "[ Outcome of this admission ]",
-      },
+      }),
       clinicalCourse: opts.course,
       medications: opts.medications ?? [],
       advice: MEDICINE_ADVICE,

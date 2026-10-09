@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { FAST_MODEL } from "@/lib/model";
+import { FAST_MODEL, anthropic, replyJson } from "@/lib/model";
 import { correctTranscript } from "@/lib/glossary";
 import { log } from "@/lib/observability";
 import { askJev, chosenProbability, type JevAnswers } from "@/lib/jev";
@@ -42,12 +41,6 @@ export type { RoutableSection, RoutedSegment } from "@/lib/case-history-sections
 const ROUTING_MODEL = FAST_MODEL;
 // ponytail: fixed bar, untuned — set it from a labelled synthetic eval once fallback rates are in.
 export const MIN_PROBABILITY = 0.7;
-
-function client(): Anthropic {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
-  return new Anthropic({ apiKey });
-}
 
 const SYSTEM = `You sort a fragment of dictated clerking into the correct section(s) of a case sheet. The resident is dictating out of order and pausing between thoughts; you receive one pause-delimited fragment at a time, plus the list of complaints already mentioned.
 
@@ -272,7 +265,7 @@ async function routeWithHaiku(
   const allowed = sectionsForSpecialty(specialty);
   const specialtyBlock = SPECIALTY_SECTION_BLOCKS[(specialty ?? "").trim()] ?? "";
 
-  const response = await client().messages.create({
+  const response = await anthropic().messages.create({
     model: ROUTING_MODEL,
     max_tokens: 700,
     system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
@@ -288,9 +281,7 @@ async function routeWithHaiku(
     ],
   });
 
-  const block = response.content.find((b) => b.type === "text");
-  const parsed =
-    block && block.type === "text" ? (JSON.parse(block.text) as { segments?: unknown[] }) : { segments: [] };
+  const parsed: { segments?: unknown[] } = replyJson(response, { segments: [] });
 
   const segments: RoutedSegment[] = [];
   for (const raw of Array.isArray(parsed.segments) ? parsed.segments : []) {

@@ -1,5 +1,5 @@
-import type { AdviceItem } from "@/lib/discharge-entities";
 import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-templates";
+import { adv } from "@/lib/discharge-template-parts";
 
 /**
  * PSYCHIATRY discharge templates. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28).
@@ -22,8 +22,6 @@ import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-temp
  * delirium, depression, mania, psychosis, OCD / anxiety.
  */
 
-const adv = (items: { module: string; text: string }[]): AdviceItem[] =>
-  items.map((it, i) => ({ id: `adv-${i}`, module: it.module, text: it.text }));
 
 const titrated = (generic: string, extra: Partial<TemplateMedication> = {}): TemplateMedication => ({
   generic,

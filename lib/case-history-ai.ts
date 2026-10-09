@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { AI_MODEL } from "@/lib/model";
+import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
 
 /**
  * The two case-history cards the workspace has the AI draft: the provisional Diagnosis and the
@@ -11,12 +10,6 @@ import { AI_MODEL } from "@/lib/model";
  * The verbatim-quote check that protects every other value in WardMate cannot reach synthesised
  * prose, so the review-and-approve step is what carries the weight here.
  */
-
-function client(): Anthropic {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
-  return new Anthropic({ apiKey: key });
-}
 
 /** The department phrasing every case-history prompt is reframed to. Defaults to the exact
  *  wording the prompts were written with, so a general-surgery unit is byte-for-byte unchanged
@@ -115,7 +108,7 @@ export async function generateDiagnosis(
   digest: string,
   admissionPhrase: string = DEFAULT_ADMISSION_PHRASE
 ): Promise<{ text: string; differentials: string[]; uncertainPoints: string[]; model: string }> {
-  const response = await client().messages.create({
+  const response = await anthropic().messages.create({
     model: AI_MODEL,
     max_tokens: 600,
     system: [{ type: "text", text: forDept(DIAGNOSIS_SYSTEM, admissionPhrase), cache_control: { type: "ephemeral" } }],
@@ -125,11 +118,7 @@ export async function generateDiagnosis(
     },
     messages: [{ role: "user", content: `Clerking digest:\n\n${digest}` }],
   });
-  const block = response.content.find((b) => b.type === "text");
-  const parsed =
-    block && block.type === "text"
-      ? JSON.parse(block.text)
-      : { diagnosis: "", differentials: [], uncertain_points: [] };
+  const parsed = replyJson(response, { diagnosis: "", differentials: [], uncertain_points: [] });
   return {
     text: String(parsed.diagnosis ?? "").trim(),
     differentials: Array.isArray(parsed.differentials)
@@ -177,7 +166,7 @@ export async function generateRelevantNegatives(
     `Working provisional diagnosis: ${diagnosis || "(not yet settled)"}\n` +
     `Differential diagnoses under consideration: ${ddx.length ? ddx.join("; ") : "(none listed)"}\n\n` +
     `Clerking digest:\n\n${digest}`;
-  const response = await client().messages.create({
+  const response = await anthropic().messages.create({
     model: AI_MODEL,
     max_tokens: 400,
     system: [{ type: "text", text: forDept(NEGATIVES_SYSTEM, admissionPhrase), cache_control: { type: "ephemeral" } }],
@@ -187,9 +176,7 @@ export async function generateRelevantNegatives(
     },
     messages: [{ role: "user", content: ask }],
   });
-  const block = response.content.find((b) => b.type === "text");
-  const parsed =
-    block && block.type === "text" ? JSON.parse(block.text) : { text: "", uncertain_points: [] };
+  const parsed = replyJson(response, { text: "", uncertain_points: [] });
   return {
     text: String(parsed.text ?? "").trim(),
     uncertainPoints: Array.isArray(parsed.uncertain_points) ? parsed.uncertain_points.map(String) : [],
@@ -236,7 +223,7 @@ export async function generatePlan(
   uncertainPoints: string[];
   model: string;
 }> {
-  const response = await client().messages.create({
+  const response = await anthropic().messages.create({
     model: AI_MODEL,
     max_tokens: 900,
     system: [{ type: "text", text: forDept(PLAN_SYSTEM, admissionPhrase), cache_control: { type: "ephemeral" } }],
@@ -246,11 +233,7 @@ export async function generatePlan(
     },
     messages: [{ role: "user", content: `Clerking digest:\n\n${digest}` }],
   });
-  const block = response.content.find((b) => b.type === "text");
-  const parsed =
-    block && block.type === "text"
-      ? JSON.parse(block.text)
-      : { workup: [], conservative: [], medications: [], uncertain_points: [] };
+  const parsed = replyJson(response, { workup: [], conservative: [], medications: [], uncertain_points: [] });
   const arr = (v: unknown) => (Array.isArray(v) ? v.map(String).filter(Boolean) : []);
   return {
     workup: arr(parsed.workup),
@@ -323,7 +306,7 @@ export async function compileCaseHistory(
   patient?: PatientContext,
   admissionPhrase: string = DEFAULT_ADMISSION_PHRASE
 ): Promise<{ sections: { label: string; text: string }[]; uncertainPoints: string[]; model: string }> {
-  const response = await client().messages.create({
+  const response = await anthropic().messages.create({
     model: AI_MODEL,
     max_tokens: 2000,
     system: [{ type: "text", text: forDept(COMPILE_SYSTEM, admissionPhrase), cache_control: { type: "ephemeral" } }],
@@ -333,9 +316,7 @@ export async function compileCaseHistory(
     },
     messages: [{ role: "user", content: `${patientLine(patient)}Working notes:\n\n${digest}` }],
   });
-  const block = response.content.find((b) => b.type === "text");
-  const parsed =
-    block && block.type === "text" ? JSON.parse(block.text) : { sections: [], uncertain_points: [] };
+  const parsed = replyJson(response, { sections: [], uncertain_points: [] });
   const sections = (Array.isArray(parsed.sections) ? parsed.sections : [])
     .map((s: { label?: unknown; text?: unknown }) => ({
       label: String(s.label ?? "").toLowerCase().trim(),

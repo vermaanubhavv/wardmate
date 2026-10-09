@@ -62,26 +62,14 @@ export const getTemplateForPatient = cache(async function getTemplateForPatient(
   // care_templates row — see supabase/patches/0037_lap_chole_checklist_protocol_seed.sql. This
   // is checked first so publishing a checklist protocol is the only step needed to switch a
   // procedure over; nothing else about how a patient page reads its template changes.
-  //
-  // `trigger` (0058) is asked for optionally: until that patch is run PostgREST rejects the
-  // whole select for naming an unknown column, so on that error the query is retried without
-  // it and every item just carries no auto-trigger.
-  const protocolCols = (withTrigger: boolean) =>
-    `id, title, template_family, template_variant, phase, company_protocol_items(id, kind, prompt, importance, aliases, position, soap_section, normal_phrase${withTrigger ? ", trigger" : ""})`;
-  let protocolRes = await supabase
+  const protocolRes = await supabase
     .from("company_protocols")
-    .select(protocolCols(true))
+    .select(
+      "id, title, template_family, template_variant, phase, company_protocol_items(id, kind, prompt, importance, aliases, position, soap_section, normal_phrase, trigger)"
+    )
     .eq("template_family", patient.template_family)
     .eq("phase", phase)
     .eq("status", "published");
-  if (protocolRes.error) {
-    protocolRes = await supabase
-      .from("company_protocols")
-      .select(protocolCols(false))
-      .eq("template_family", patient.template_family)
-      .eq("phase", phase)
-      .eq("status", "published");
-  }
   const protocolRows = protocolRes.data as unknown as
     | {
         id: string;
@@ -136,20 +124,13 @@ export const getTemplateForPatient = cache(async function getTemplateForPatient(
     };
   }
 
-  const careCols = (withTrigger: boolean) =>
-    `id, name, family, variant, phase, ward_id, care_template_items(id, label, aliases, kind, importance, position, hint, normal_phrase${withTrigger ? ", trigger" : ""})`;
-  let careRes = await supabase
+  const careRes = await supabase
     .from("care_templates")
-    .select(careCols(true))
+    .select(
+      "id, name, family, variant, phase, ward_id, care_template_items(id, label, aliases, kind, importance, position, hint, normal_phrase, trigger)"
+    )
     .eq("family", patient.template_family)
     .eq("phase", phase);
-  if (careRes.error) {
-    careRes = await supabase
-      .from("care_templates")
-      .select(careCols(false))
-      .eq("family", patient.template_family)
-      .eq("phase", phase);
-  }
   const data = careRes.data as unknown as
     | {
         id: string;

@@ -1,5 +1,5 @@
-import type { AdviceItem } from "@/lib/discharge-entities";
 import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-templates";
+import { adv, proc, COMMON_MEDS } from "@/lib/discharge-template-parts";
 
 /**
  * NEUROSURGERY discharge templates. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28).
@@ -18,13 +18,11 @@ import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-temp
  * (lib/specialty/discharge.ts), so the array is ordered specific-before-general.
  */
 
-const adv = (items: { module: string; text: string }[]): AdviceItem[] =>
-  items.map((it, i) => ({ id: `adv-${i}`, module: it.module, text: it.text }));
 
 // --- reusable pieces -------------------------------------------------------------------
 
 const M = {
-  paracetamol: { generic: "Paracetamol", strength: "650 mg", route: "PO", frequency: "TDS", duration: "5 days", status: "new" } as TemplateMedication,
+  paracetamol: COMMON_MEDS.paracetamol,
   paracetamolSos: { generic: "Paracetamol", strength: "650 mg", route: "PO", frequency: "SOS for headache / pain", status: "prn" } as TemplateMedication,
   pantoprazole: { generic: "Pantoprazole", strength: "40 mg", route: "PO", frequency: "OD before breakfast", duration: "2 weeks", status: "new" } as TemplateMedication,
   levetiracetam: { generic: "Levetiracetam", strength: "[ dose as charted ]", route: "PO", frequency: "BD", duration: "[ … — stop date per neurosurgeon ]", indication: "seizure prophylaxis / control — do not stop on your own", status: "new" } as TemplateMedication,
@@ -68,14 +66,13 @@ export const NEUROSURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Baby was admitted [ on day __ of life ] with a [ lumbosacral ] myelomeningocele [ intact / leaking ] for surgical repair [ with hydrocephalus ].",
       primaryDiagnosis: "[ Lumbosacral / thoracolumbar ] myelomeningocele [ ruptured / intact ] [ + hydrocephalus / Chiari II ] — lower-limb function [ … ]",
-      procedure: {
+      procedure: proc({
         name: "Repair of myelomeningocele [ + VP shunt / ETV ]",
         anaesthesia: "General anaesthesia",
         findings: "[ sac size; placode; neural tissue; dural closure; skin closure / flap ]",
         drains: "Nil",
-        complications: "Nil",
         outcome: "Repair completed.",
-      },
+      }),
       clinicalCourse:
         "Baby was nursed prone and the sac kept moist before repair on [date]. Postoperatively the wound [ healed well ]; head circumference was measured daily [ __ cm → __ cm ] and the anterior fontanelle remained [ soft / tense ]. [ A VP shunt was placed on __ for hydrocephalus. ] Feeding is established [ breastfeeding ]. Lower-limb movement is [ … ]; bladder [ dribbling / retaining — CIC taught ]. Baby is afebrile and feeding well at discharge.",
       medications: [
@@ -124,14 +121,13 @@ export const NEUROSURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [ headache / confusion / limb weakness / falls ] over [ __ weeks ] with CT showing a [ right / left / bilateral ] chronic subdural haematoma with mass effect, requiring evacuation.",
       primaryDiagnosis: "[ Right / left / bilateral ] chronic subdural haematoma [ thickness __ mm; midline shift __ mm ]",
-      procedure: {
+      procedure: proc({
         name: "[ Single / double ] burr-hole evacuation and irrigation of chronic SDH [ + subdural drain ]",
         anaesthesia: "[ Local with sedation / general ] anaesthesia",
         findings: "[ motor-oil fluid under pressure; brain re-expansion ]",
         drains: "[ Subdural drain — removed on POD __ ]",
-        complications: "Nil",
         outcome: "Haematoma evacuated.",
-      },
+      }),
       clinicalCourse:
         "Admitted with [presentation]; [ antiplatelet / anticoagulant was stopped and reversed ]. Underwent burr-hole evacuation on [date]. Nursed flat [ for 24–48 hours ] with the drain, which was removed on POD [ __ ]. Neurology improved [ GCS __ → __; power __ ]. [ Post-op CT: … ] The patient is alert, oriented and walking [ with support ] at discharge.",
       medications: [M.paracetamol, M.pantoprazole, { ...M.levetiracetam, indication: "[ only if started / seizures ] — do not stop on your own" }, M.lactulose, M.antithrombotic],
@@ -163,14 +159,13 @@ export const NEUROSURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [ headache / seizures / focal deficit / visual loss ] with imaging showing a [ site ] [ lesion ], for surgical excision.",
       primaryDiagnosis: "[ Site ] [ lesion — provisional: meningioma / glioma / metastasis ] — histopathology [ awaited ]",
-      procedure: {
+      procedure: proc({
         name: "[ Right / left ] [ site ] craniotomy and [ gross-total / near-total / subtotal ] excision of [ lesion ] [ / transsphenoidal excision ]",
         anaesthesia: "General anaesthesia",
         findings: "[ tumour consistency, vascularity, plane; extent of resection; bone flap replaced ]",
         drains: "[ subgaleal drain / nil ]",
-        complications: "Nil",
         outcome: "Excision completed; specimen sent for histopathology.",
-      },
+      }),
       clinicalCourse:
         "Pre-operatively started on steroids and antiepileptics. Underwent [procedure] on [date]. Post-op CT showed [ no haematoma; extent of resection __ ]. Neurology is [ improved / unchanged / new deficit __ ]; [ no seizures ]. Steroids are being tapered. [ Sodium and urine output monitored — no DI / SIADH. ] The patient is alert, ambulant [ with support ] and eating at discharge.",
       medications: [
@@ -216,14 +211,13 @@ export const NEUROSURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted after [ mechanism of injury ] with head injury [ GCS __ ] and CT showing a [ right / left ] [ extradural / acute subdural ] haematoma with mass effect, requiring emergency evacuation.",
       primaryDiagnosis: "Traumatic brain injury — [ right / left ] [ site ] [ EDH / acute SDH ] [ + contusion / fracture ]; GCS at admission [ __ ]",
-      procedure: {
+      procedure: proc({
         name: "[ Right / left ] [ site ] craniotomy [ / decompressive craniectomy ] and evacuation of [ EDH / SDH ]",
         anaesthesia: "General anaesthesia",
         findings: "[ haematoma volume; bleeding source; brain condition; bone flap replaced / stored in abdomen / bone bank ]",
         drains: "[ subgaleal / extradural drain — removed on POD __ ]",
-        complications: "Nil",
         outcome: "Haematoma evacuated.",
-      },
+      }),
       clinicalCourse:
         "Received on [date] after [mechanism], GCS [ __ ]. Taken up for [procedure] on [date]. Postoperatively [ managed in the ICU / ventilated for __ days ]; post-op CT showed [ complete evacuation ]. GCS improved to [ __ ]; [ no seizures ]. The patient is [ conscious, oriented, ambulant with support ] and tolerating orals at discharge.",
       medications: [M.paracetamol, M.pantoprazole, M.levetiracetam, M.lactulose],
@@ -261,14 +255,13 @@ export const NEUROSURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [ headache, vomiting, gait disturbance / increasing head size ] due to [ obstructive / communicating ] hydrocephalus [ cause ], for a ventriculoperitoneal shunt.",
       primaryDiagnosis: "[ Obstructive / communicating ] hydrocephalus secondary to [ … ]",
-      procedure: {
+      procedure: proc({
         name: "[ Right / left ] [ Kaufmann / Frazier ] point VP shunt [ medium-pressure chamber ] [ / ETV / shunt revision ]",
         anaesthesia: "General anaesthesia",
         findings: "[ CSF opening pressure and appearance; CSF sent for analysis ]",
         drains: "Nil",
-        complications: "Nil",
         outcome: "Shunt placed and functioning.",
-      },
+      }),
       clinicalCourse:
         "Underwent [procedure] on [date]. Postoperatively symptoms improved [ headache settled / fontanelle soft / head circumference __ cm ]; the shunt chamber refilled well [ post-op CT: catheter tip position, ventricle size ]. Abdomen soft, feeding / eating well. The patient is afebrile and at neurological baseline at discharge.",
       medications: [
@@ -311,14 +304,13 @@ export const NEUROSURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted after [ mechanism of injury ] with [ back / neck pain ] [ and weakness of the limbs ] due to a [ level ] [ fracture / fracture-dislocation ], requiring spinal stabilisation.",
       primaryDiagnosis: "[ Level ] [ burst / fracture-dislocation ] — ASIA [ A / B / C / D / E ], neurological level [ __ ]",
-      procedure: {
+      procedure: proc({
         name: "[ Posterior pedicle-screw fixation (levels) / anterior cervical corpectomy and fusion / lateral-mass fixation ] [ + decompression ]",
         anaesthesia: "General anaesthesia",
         findings: "[ injury pattern; cord / dura; construct and levels ]",
         drains: "[ suction drain — removed on POD __ ]",
-        complications: "Nil",
         outcome: "Stabilisation completed; check X-ray satisfactory.",
-      },
+      }),
       clinicalCourse:
         "Received after [mechanism] on [date], ASIA [ __ ]. Underwent [procedure] on [date]. Postoperatively neurology is [ unchanged / improved — ASIA __ ]. Mobilised [ in a brace / wheelchair ] under physiotherapy. Bladder [ voiding / on CIC / indwelling catheter ]; bowel [ regimen established ]; pressure areas [ intact ]. The patient is afebrile at discharge.",
       medications: [
@@ -369,14 +361,13 @@ export const NEUROSURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [ radicular pain / neurogenic claudication / myelopathy ] due to [ PIVD / canal stenosis / cervical spondylotic myelopathy ] at [ level ], not responding to conservative treatment, requiring decompression.",
       primaryDiagnosis: "[ Lumbar PIVD L__–L__ / lumbar canal stenosis / cervical spondylotic myelopathy C__–C__ ] [ with radiculopathy / myelopathy ]",
-      procedure: {
+      procedure: proc({
         name: "[ Microdiscectomy / laminectomy / ACDF / cervical laminoplasty ] at [ level ] [ + fusion ]",
         anaesthesia: "General anaesthesia",
         findings: "[ disc / ligamentum / osteophyte compressing __; dural tear (nil); implant ]",
         drains: "[ suction drain / nil ]",
-        complications: "Nil",
         outcome: "Decompression completed.",
-      },
+      }),
       clinicalCourse:
         "Underwent [procedure] on [date]. Postoperatively [ radicular pain resolved / neurology improved — power __, Nurick / mJOA __ ]; bladder and bowel function normal; [ no dysphagia / hoarseness after anterior cervical surgery ]. Mobilised from POD [ __ ] [ with a collar / lumbar belt ]. The patient is comfortable and walking independently at discharge.",
       medications: [M.paracetamol, M.tramadol, M.pantoprazole, M.pregabalin, M.methylcobalamin, M.lactulose],
@@ -412,14 +403,13 @@ export const NEUROSURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted after [ mechanism of injury ] with head injury [ GCS __ ] [ with loss of consciousness / vomiting / seizure ] and CT findings of [ contusion / small SDH / tSAH / fracture ] not requiring surgery, for observation.",
       primaryDiagnosis: "[ Mild / moderate / severe ] traumatic brain injury — [ CT findings ]; GCS at admission [ __ ]",
-      procedure: {
+      procedure: proc({
         name: "[ Conservative management — no operation ] [ / scalp wound suturing ]",
         anaesthesia: "[ Local, if sutured ]",
         findings: "[ repeat CT on __: stable / resolving ]",
         drains: "Nil",
-        complications: "Nil",
         outcome: "Managed conservatively.",
-      },
+      }),
       clinicalCourse:
         "Received on [date] after [mechanism], GCS [ __ ]. Managed with neuro-observation, head-end elevation, analgesia, antiemetics [ and antiepileptic prophylaxis ]. Repeat CT on [date] showed [ no progression ]. GCS improved to [ 15/15 ]; no new deficit; tolerating orals. The patient is conscious, oriented and ambulant at discharge.",
       medications: [
@@ -459,14 +449,13 @@ export const NEUROSURGERY_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     indication:
       "Patient was admitted with [ presentation ] requiring [ inpatient management / investigation / surgery ].",
     primaryDiagnosis: "",
-    procedure: {
+    procedure: proc({
       name: "[ Procedure name ]",
       anaesthesia: "[ General / local ]",
       findings: "[ significant operative findings ]",
       drains: "[ drains, if any ]",
-      complications: "Nil",
       outcome: "Procedure completed successfully.",
-    },
+    }),
     clinicalCourse:
       "Admitted with [presentation], GCS [ __ ]. [Procedure] was performed on [date]. The postoperative period was [uneventful]; neurology is [ stable / improved ]. The patient is afebrile, alert and mobilising at discharge.",
     medications: [M.paracetamolSos, M.pantoprazole],
