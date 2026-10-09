@@ -1,4 +1,3 @@
-import { ENT_DISCHARGE_TEMPLATES, ENT_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-ent";
 import type { FormatKind } from "@/lib/formats";
 import { surgicalDayCount, type SpecialtyPack } from "./types";
 
@@ -68,10 +67,6 @@ ENT ward — what the words mean here:
 - TOBACCO, GUTKA AND ARECA NUT are exposures this ward asks about on every head-and-neck admission. Record the substance and the duration exactly as spoken.
 - Abbreviations to leave AS SAID: "RT" (ambiguous — radiotherapy or Ryle's tube), "MRM" (modified radical mastoidectomy here, but store the letters said), "FESS", "SMR", "DNS", "PTA", "IDL", "DNE", "CSOM", "BERA".
 `.trim(),
-
-  // General surgery's templates, on purpose — see the header for what to add and when.
-  dischargeTemplates: ENT_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: ENT_GENERIC_DISCHARGE_TEMPLATE,
 
   // Empty on purpose. Nothing ENT-specific has been built and reviewed, and offering an
   // unrelated pathway because it exists would be worse than offering none.

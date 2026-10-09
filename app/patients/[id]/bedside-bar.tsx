@@ -4,7 +4,6 @@ import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import Recorder from "./recorder";
 import PhotoButton from "./photo-button";
-import { progressNoteConfigFor } from "@/lib/progress-note-config";
 
 type MissingItem = { item: { label: string; hint: string | null } };
 
@@ -17,12 +16,13 @@ type MissingItem = { item: { label: string; hint: string | null } };
 export default function BedsideBar({
   patientId,
   missing,
-  specialty,
+  bedsideExample,
 }: {
   patientId: string;
   missing: MissingItem[];
-  /** The ward's specialty pack key — picks the Type box's example. */
-  specialty?: string;
+  /** The ward's Type-box example — progressNoteConfigFor(pack).bedsideExample, read on the
+   *  server so the whole progress-note config table stays out of the patient page bundle. */
+  bedsideExample?: string;
 }) {
   const router = useRouter();
   const [typing, setTyping] = useState(false);
@@ -85,7 +85,7 @@ export default function BedsideBar({
           rows={4}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={progressNoteConfigFor(specialty).bedsideExample ?? "Day 3 post lap chole, afebrile, drain 30 ml serous…"}
+          placeholder={bedsideExample ?? "Day 3 post lap chole, afebrile, drain 30 ml serous…"}
           aria-label="Bedside note"
           className="field"
         />

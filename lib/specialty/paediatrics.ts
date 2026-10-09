@@ -1,4 +1,3 @@
-import { PAEDIATRICS_DISCHARGE_TEMPLATES, PAEDIATRICS_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-paediatrics";
 import type { FormatKind } from "@/lib/formats";
 import { admissionDayCount, type SpecialtyPack } from "./types";
 
@@ -71,10 +70,6 @@ Paediatric ward — what the words mean here:
 - THE NEWBORN WORDS, when a neonate is on the ward, stay as said: "jaundice up to the chest", "bilirubin 14 on day four", "phototherapy started", "double surface", "sepsis screen negative", "TSB and age plotted". Never read a phototherapy or exchange threshold off a chart yourself.
 - Abbreviations to leave AS SAID: "ORS", "SAM", "MAM", "MUAC", "BCG", "TSB", "NICU", "AGE" (acute gastroenteritis in this ward — store the letters said), "FBNC", "ARI".
 `.trim(),
-
-  // Condition-keyed medicine templates, on adult wording — see the header for what replaces them.
-  dischargeTemplates: PAEDIATRICS_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: PAEDIATRICS_GENERIC_DISCHARGE_TEMPLATE,
 
   // EMPTY, AND DELIBERATELY SO. Every built pathway is validated in adults only. See the header:
   // this is the single most important line in this pack.

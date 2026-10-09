@@ -1,7 +1,3 @@
-import {
-  MEDICINE_DISCHARGE_TEMPLATES,
-  MEDICINE_GENERIC_DISCHARGE_TEMPLATE,
-} from "@/lib/discharge-templates-medicine";
 import type { FormatKind } from "@/lib/formats";
 import { admissionDayCount, type SpecialtyPack } from "./types";
 
@@ -76,9 +72,6 @@ Internal medicine ward — what the words mean here:
 - BLOOD PRESSURE in this group is often the reason for admission. Record every spoken BP exactly. "hypertensive emergency", "hypertensive urgency", "target organ damage", "on labetalol infusion", "GTN drip" — keep the wording as said; do not decide urgency versus emergency yourself.
 - Abbreviations to leave EXPANDED-AS-SAID and never rewrite: "RT" (ambiguous — radiotherapy or Ryle's tube), "MP" (malaria parasite), "AFB" (acid-fast bacilli), "ATT"/"HRZE" (anti-tubercular therapy), "PUO"/"FUO" (fever of unknown origin), "DKA"/"HHS", "AKI"/"CKD", "ILD". Store the letters that were said.
 `.trim(),
-
-  dischargeTemplates: MEDICINE_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: MEDICINE_GENERIC_DISCHARGE_TEMPLATE,
 
   // The medicine scores. No surgical pathway (Ranson's, AIR, TG18, Glasgow-Blatchford) can
   // ever be offered here — only these four, and only because they are listed. All four are

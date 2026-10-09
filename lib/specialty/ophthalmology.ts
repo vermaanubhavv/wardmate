@@ -1,4 +1,3 @@
-import { OPHTHALMOLOGY_DISCHARGE_TEMPLATES, OPHTHALMOLOGY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-ophthalmology";
 import type { FormatKind } from "@/lib/formats";
 import { surgicalDayCount, type SpecialtyPack } from "./types";
 
@@ -68,9 +67,6 @@ Eye ward — what the words mean here:
 - INJURY IS RECORDED WITH THE OBJECT AND THE TIME: "hit by a cricket ball two hours ago", "iron piece while hammering", "lime fell into the left eye, washed at home". The object and the interval are the clinical facts.
 - Abbreviations to leave AS SAID: "RE"/"LE"/"BE", "IOL", "PCIOL", "IOP", "NCT", "BCVA", "PL"/"PR", "CF", "HM", "RAPD", "PRP", "OCT", "FFA", "DCR", "ROP", "SICS". Store the letters that were said.
 `.trim(),
-
-  dischargeTemplates: OPHTHALMOLOGY_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: OPHTHALMOLOGY_GENERIC_DISCHARGE_TEMPLATE,
 
   // Empty on purpose: nothing ophthalmic has been built and reviewed here.
   scoringKeys: [],

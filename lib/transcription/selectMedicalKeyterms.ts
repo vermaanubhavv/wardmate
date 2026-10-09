@@ -56,18 +56,9 @@ export function estimateTotalTokens(terms: readonly string[]): number {
   return terms.reduce((n, t) => n + estimateKeytermTokens(t), 0);
 }
 
-/** Case-insensitive dedupe that keeps first-seen casing and trims each entry. */
-export function dedupeCaseInsensitive(terms: readonly string[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const t of terms) {
-    const key = t.trim().toLowerCase();
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    out.push(t.trim());
-  }
-  return out;
-}
+// Lives in buildDeepgramUrl.ts so the browser's live-dictation code can use it without
+// pulling the whole master lexicon (this file's import) into every page's bundle.
+export { dedupeCaseInsensitive } from "./buildDeepgramUrl";
 
 // --- context shaping ------------------------------------------------------------------
 

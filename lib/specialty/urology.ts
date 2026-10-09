@@ -1,4 +1,3 @@
-import { UROLOGY_DISCHARGE_TEMPLATES, UROLOGY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-urology";
 import type { FormatKind } from "@/lib/formats";
 import { surgicalDayCount, type SpecialtyPack } from "./types";
 
@@ -67,9 +66,6 @@ Urology ward — what the words mean here:
 - PROSTATE FINDINGS AND PSA ARE RECORDED AS SAID, NOT INTERPRETED: "PSA 18", "hard nodular prostate on DRE", "grade 2 enlargement", "biopsy Gleason 3 plus 4". Never grade a risk the resident did not state.
 - Abbreviations to leave AS SAID: "TURP", "TURBT", "PCNL", "URSL", "RIRS", "ESWL", "DJ", "PCN", "SPC", "BPH", "PSA", "DRE", "LUTS", "RGU", "MCU".
 `.trim(),
-
-  dischargeTemplates: UROLOGY_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: UROLOGY_GENERIC_DISCHARGE_TEMPLATE,
 
   // Post-obstructive AKI is this ward's own problem, and the pathway is built and active.
   // Nothing prognostic is offered — see the header.

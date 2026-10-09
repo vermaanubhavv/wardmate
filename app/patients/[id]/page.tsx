@@ -71,6 +71,7 @@ import { classifyVital, matchVitalLabel } from "@/lib/vital-ranges";
 import { getWardLabRanges } from "@/lib/ward-lab-ranges";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { hasOperationClock } from "@/lib/specialty/intake";
+import { progressNoteConfigFor } from "@/lib/progress-note-config";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { getUser } from "@/lib/auth";
 import HistoryCheckCard from "./history-check-card";
@@ -963,7 +964,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
       {/* Fixed, so the button is under your thumb no matter how long the record has grown. */}
       <BottomBar>
-        <BedsideBar patientId={patient.id} missing={missing} specialty={pack.key} />
+        <BedsideBar patientId={patient.id} missing={missing} bedsideExample={progressNoteConfigFor(pack.key).bedsideExample} />
       </BottomBar>
     </div>
   );

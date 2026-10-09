@@ -1,4 +1,3 @@
-import { PSYCHIATRY_DISCHARGE_TEMPLATES, PSYCHIATRY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-psychiatry";
 import type { FormatKind } from "@/lib/formats";
 import { admissionDayCount, type SpecialtyPack } from "./types";
 
@@ -75,10 +74,6 @@ Psychiatry ward — what the words mean here:
 - THE LEGAL FRAME IS TEXT, RECORDED AS SPOKEN: "independent admission", "supported admission under the Mental Healthcare Act", "nominated representative is the brother", "attendant staying with patient". The app takes no view on capacity or consent and must not summarise these into a judgement.
 - Abbreviations to leave AS SAID: "MSE", "ECT", "MHCA", "CIWA", "BPSD", "OCD", "PTSD", "DTs". Store the letters that were said.
 `.trim(),
-
-  // Medicine's templates, on purpose — see the header.
-  dischargeTemplates: PSYCHIATRY_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: PSYCHIATRY_GENERIC_DISCHARGE_TEMPLATE,
 
   // Alcohol withdrawal only, and only because CIWA-Ar is already built, reviewed and active.
   // No mood, psychosis or risk scale is offered: none has been built here.

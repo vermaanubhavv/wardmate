@@ -1,7 +1,3 @@
-import {
-  OBGYN_DISCHARGE_TEMPLATES,
-  OBGYN_GENERIC_DISCHARGE_TEMPLATE,
-} from "@/lib/discharge-templates-obgyn";
 import type { FormatKind } from "@/lib/formats";
 import { surgicalDayCount, type SpecialtyPack } from "./types";
 
@@ -81,9 +77,6 @@ Obstetrics and gynaecology ward — what the words mean here:
 - FETAL WELLBEING TERMS — "FHS present", "NST reactive", "CTG category I", "liquor adequate" — are exam findings on the mother's chart, kind "exam", exactly as said. Never infer fetal wellbeing from the mother's vitals alone.
 - Abbreviations to leave EXPANDED-AS-SAID and never resolve yourself: "PIH"/"PE"/"eclampsia" (never decide which the transcript meant), "APH"/"PPH", "IUGR", "PROM"/"PPROM", "MTP". Store the letters that were said.
 `.trim(),
-
-  dischargeTemplates: OBGYN_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: OBGYN_GENERIC_DISCHARGE_TEMPLATE,
 
   // Deliberately empty — see the file header. No surgical or medicine pathway can trigger here
   // either way, because only listed pathwayIds are ever offered to a unit.

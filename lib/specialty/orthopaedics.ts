@@ -1,4 +1,3 @@
-import { ORTHOPAEDICS_DISCHARGE_TEMPLATES, ORTHOPAEDICS_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-orthopaedics";
 import type { FormatKind } from "@/lib/formats";
 import { surgicalDayCount, type SpecialtyPack } from "./types";
 
@@ -69,10 +68,6 @@ Orthopaedic ward — what the words mean here:
 - TRACTION, BLOOD LOSS AND TRANSFUSION are said as numbers: "two units transfused", "drain 150 ml", "haemoglobin 7.8". Record the number with its unit.
 - Abbreviations to leave AS SAID: "DHS", "PFN", "TKR", "THR", "ORIF", "CRIF", "POP", "ACL", "PLIF", "AKA", "BKA", "ex-fix". "RTA" is a mechanism, not a diagnosis.
 `.trim(),
-
-  // General surgery's templates, on purpose — see the header.
-  dischargeTemplates: ORTHOPAEDICS_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: ORTHOPAEDICS_GENERIC_DISCHARGE_TEMPLATE,
 
   // The two Wells pathways only: built, active, and this ward's own risk after a hip fracture
   // or an arthroplasty. No fracture classification is a score this app may produce.

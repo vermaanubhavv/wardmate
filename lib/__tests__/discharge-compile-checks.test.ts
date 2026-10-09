@@ -9,6 +9,7 @@ import { runDischargeChecks } from "@/lib/discharge-checks";
 import { CONDITION_VARIABLES } from "@/lib/discharge-entities";
 import { generalSurgeryPack } from "@/lib/specialty/general-surgery";
 import {
+  dischargeTemplatesFor,
   getDischargeTemplateFor,
   listDischargeTemplatesFor,
   matchDischargeTemplateFor,
@@ -127,7 +128,7 @@ ok("'acute calculous cholecystitis' matches the ACUTE cholecystitis template", m
 ok("'cholelithiasis' / 'gallstone disease' matches the PLANNED lap chole template", matchDischargeTemplateFor(generalSurgeryPack, { diagnosisText: "gallstone disease" })?.key === "lap_chole" && matchDischargeTemplateFor(generalSurgeryPack, { diagnosisText: "cholelithiasis" })?.key === "lap_chole");
 ok("the diagnosis wording beats the care-template family (acute vs planned)", matchDischargeTemplateFor(generalSurgeryPack, { diagnosisText: "acute cholecystitis", templateFamily: "lap_chole" })?.key === "acute_cholecystitis");
 ok("an unrecognised diagnosis matches nothing (caller falls back to generic)", matchDischargeTemplateFor(generalSurgeryPack, { diagnosisText: "parotid swelling" }) === null);
-ok("all templates plus generic are listed for the picker", listDischargeTemplatesFor(generalSurgeryPack).length === generalSurgeryPack.dischargeTemplates.length + 1);
+ok("all templates plus generic are listed for the picker", listDischargeTemplatesFor(generalSurgeryPack).length === dischargeTemplatesFor(generalSurgeryPack).templates.length + 1);
 
 const oneOffCtx = { ...context, patient: { ...context.patient, id: "", primary_diagnosis: null, procedure_text: "laparoscopic cholecystectomy", surgery_date: null, template_family: null }, observations: [], medications: [], patientState: { ...context.patientState, latest: [], openTasks: [] } };
 const seeded = compileDischargeDraft(oneOffCtx, { template: getDischargeTemplateFor(generalSurgeryPack, "lap_chole"), seedAll: true });

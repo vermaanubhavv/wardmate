@@ -1,4 +1,3 @@
-import { NEUROSURGERY_DISCHARGE_TEMPLATES, NEUROSURGERY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-neurosurgery";
 import type { FormatKind } from "@/lib/formats";
 import { surgicalDayCount, type SpecialtyPack } from "./types";
 
@@ -67,9 +66,6 @@ Neurosurgical ward — what the words mean here:
 - ANTI-EPILEPTICS AND OSMOTHERAPY are drugs with doses as spoken: "levetiracetam 500 twice daily", "mannitol 100 ml eighth hourly", "3 percent saline running", "phenytoin loaded". Amber until confirmed, like every drug.
 - Abbreviations to leave AS SAID: "GCS", "EVD", "VP shunt", "SDH", "EDH", "SAH", "ICH", "ICP", "ACDF", "TBI", "DC" (decompressive craniectomy — store the letters said).
 `.trim(),
-
-  dischargeTemplates: NEUROSURGERY_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: NEUROSURGERY_GENERIC_DISCHARGE_TEMPLATE,
 
   // Empty on purpose — see the header. GCS is dictated, never scored here, and every
   // neurosurgical outcome model is prognostic.
