@@ -126,6 +126,28 @@ export function applyJudgments(observations: ExtractedObservation[], answers: Je
   });
 }
 
+/**
+ * Takes a patient's own name and bed out of text before it is sent to Jev. TypeSafe keeps
+ * nothing (zero data retention since 2026-10-08) but has no BAA, so identifiers do not go at
+ * all; a finding needs neither to be judged. The whole name and each part of it of three
+ * letters or more are replaced; a bed is replaced where it follows the word "bed", or anywhere
+ * when it is a ward label like "SW-12" — a bare "4" elsewhere is a value, not a bed.
+ */
+export function redactIdentifiers(text: string, name: string, bed: string): string {
+  const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  let out = text;
+  const parts = [name.trim(), ...name.trim().split(/\s+/)].filter((p) => p.replace(/[^a-z]/gi, "").length >= 3);
+  for (const p of parts.sort((a, b) => b.length - a.length)) {
+    out = out.replace(new RegExp(`(?<![a-z])${esc(p)}(?![a-z])`, "gi"), "[name]");
+  }
+  const b = bed.trim();
+  if (b) {
+    out = out.replace(new RegExp(`\\b(bed\\s*(?:no\\.?|number)?\\s*[:#-]?\\s*)${esc(b)}(?![\\w])`, "gi"), "$1[bed]");
+    if (/[a-z]/i.test(b) && /\d/.test(b)) out = out.replace(new RegExp(`(?<![\\w-])${esc(b)}(?![\\w-])`, "gi"), "[bed]");
+  }
+  return out;
+}
+
 /** A read value in the shape judgeObservations asks about. needs_confirmation starts false so
  *  the "does the quote say it" question is asked; the caller reads the answer back. */
 function asObservation(kind: ExtractedObservation["kind"], label: string, value: string, quote: string): ExtractedObservation {
@@ -159,9 +181,13 @@ export async function judgeLabValues(values: ReadLabValue[]): Promise<void> {
 export async function judgeRegisterRows(rows: RegisterRow[]): Promise<void> {
   await Promise.all(
     rows.map(async (row) => {
+      // A register row is written as "Bed 4 <name> POD 2 …". Only the copy sent to Jev is
+      // redacted; the stored quote stays exactly as written.
+      const clean = (t: string) => redactIdentifiers(t, row.name, row.bed);
+      const quote = clean(row.source_quote);
       const obs = [
-        ...row.findings.map((f) => asObservation("note", f.label, f.value_text, row.source_quote)),
-        ...row.plans.map((p) => asObservation("plan", "plan", p, row.source_quote)),
+        ...row.findings.map((f) => asObservation("note", clean(f.label), clean(f.value_text), quote)),
+        ...row.plans.map((p) => asObservation("plan", "plan", clean(p), quote)),
       ];
       if (obs.length === 0) return;
       await judgeObservations(obs);
