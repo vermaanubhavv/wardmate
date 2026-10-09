@@ -540,7 +540,8 @@ export function compileDischargeDraft(
   // on a post-op summary is the costlier mistake, and the resident can still untick any or turn
   // the section off. The template's own list when it has one, else the generic post-op list.
   // Only reaches a draft whose red-flag section was never saved — a stored choice still wins.
-  if (patient.surgery_date) {
+  // Only on a unit that operates: elsewhere an operation date is not a post-op patient.
+  if (patient.surgery_date && (options?.pack ?? context.pack).operative) {
     const items = drafted.redFlags.items.length > 0 ? drafted.redFlags.items : [...RED_FLAG_SUGGESTIONS];
     return { ...drafted, redFlags: { items, included: true } };
   }

@@ -3,6 +3,7 @@ import { buildDischargeDocument } from "@/lib/discharge-render";
 import { compileDischargeDraft } from "@/lib/discharge-compile";
 import { oneOffContext } from "@/lib/discharge-oneoff";
 import { derivePatientState } from "@/lib/patient-state";
+import { generalPack, generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
 
 const ward = {
   id: "ward-1",
@@ -43,8 +44,8 @@ describe("buildDischargeDocument hospital branding", () => {
 });
 
 describe("red flags on a post-op summary", () => {
-  function draftFor(surgeryDate: string | null) {
-    const context = oneOffContext({ name: "Test Patient" }, ward, null, new Map(), [], derivePatientState([], null), []);
+  function draftFor(surgeryDate: string | null, pack: SpecialtyPack = generalSurgeryPack) {
+    const context = oneOffContext({ name: "Test Patient" }, ward, null, new Map(), [], derivePatientState([], null), [], pack);
     return compileDischargeDraft({ ...context, patient: { ...context.patient, surgery_date: surgeryDate } });
   }
 
@@ -56,5 +57,18 @@ describe("red flags on a post-op summary", () => {
 
   it("stays off for a patient never operated", () => {
     expect(draftFor(null).redFlags.included).toBe(false);
+  });
+
+  it("stays off on a unit that does not operate, even with an operation date", () => {
+    expect(draftFor("2026-09-28", generalPack).redFlags.included).toBe(false);
+  });
+
+  it("heads the procedures section by whether the unit operates", () => {
+    const docFor = (pack: SpecialtyPack) => {
+      const context = oneOffContext({ name: "Test Patient" }, ward, null, new Map(), [], derivePatientState([], null), [], pack);
+      return buildDischargeDocument(compileDischargeDraft(context), context);
+    };
+    expect(docFor(generalSurgeryPack).proceduresHeading).toBe("Operation / Procedures");
+    expect(docFor(generalPack).proceduresHeading).toBe("Procedures");
   });
 });

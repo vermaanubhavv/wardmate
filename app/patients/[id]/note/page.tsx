@@ -111,7 +111,9 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
   // folded in too. The resident's own choice (patient.management) is what shows before an
   // operative date exists; the moment one does, it is superseded automatically — a Pre-op
   // patient who has since gone to theatre is never still shown as Pre-op.
-  const status = patient.surgery_date
+  // Only a unit that operates shows a post-op day — a non-operative ward never does, even for a
+  // patient an older build gave an operation date.
+  const status = patient.surgery_date && getSpecialtyPack(specialty).operative
     ? `Post Op Day (${patient.post_op_day ?? "—"})`
     : (managementChoicesFor(specialty, patient.management ?? "").find((c) => c.value === patient.management)
         ?.label ?? null);

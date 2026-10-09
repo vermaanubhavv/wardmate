@@ -1258,7 +1258,7 @@ export default function CaseHistoryWorkspace({
     if (id === "local")
       return (
         <>
-          <p className="text-caption leading-[1.45] text-muted">The examination of the presenting problem itself — the lump, the hernia, the wound, the perianal region.</p>
+          <p className="text-caption leading-[1.45] text-muted">The examination of the presenting part itself — a lump, a swelling, a wound, a joint or limb.</p>
           <DictateArea value={local} onChange={(v) => { setLocal(v); mark("local"); }} placeholder="Site, size, tenderness, consistency, margins…" rows={6} />
           {/* The department's diagram, as it prints on the back of the history sheet — marked by
               hand there; describe here what gets drawn. */}

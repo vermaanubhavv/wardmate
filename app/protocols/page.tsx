@@ -4,6 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { listTemplateChoices } from "@/lib/templates";
 import { createProtocol, setProtocolStatus } from "./actions";
 
+// The stored phase values were named for a surgical ward and are kept on live rows; what they
+// mean is "before / without an operation" and "after one" — shown that way on every unit.
+const PHASE_LABEL: Record<string, string> = {
+  before_surgery: "On admission / pre-op",
+  after_surgery: "Post-op",
+  any: "Any phase",
+};
+
 type Item = { id: string; kind: string; prompt: string; position: number; severity: string | null };
 type Protocol = {
   id: string;
@@ -74,8 +82,8 @@ export default async function ProtocolsPage() {
                 />
                 <select name="phase" className="flex-1 rounded-[10px] border border-line px-3 py-2.5">
                   <option value="any">Any phase</option>
-                  <option value="before_surgery">Pre-op</option>
-                  <option value="after_surgery">Post-op</option>
+                  <option value="before_surgery">{PHASE_LABEL.before_surgery}</option>
+                  <option value="after_surgery">{PHASE_LABEL.after_surgery}</option>
                 </select>
               </div>
               <input
@@ -93,7 +101,7 @@ export default async function ProtocolsPage() {
                 name="template_family"
                 className="rounded-[10px] border border-line px-3 py-2.5"
               >
-                <option value="">All procedures</option>
+                <option value="">All checklists</option>
                 {choices.map((c) => (
                   <option key={`${c.family}|${c.variant ?? ""}`} value={c.family}>
                     {c.label}
@@ -188,7 +196,7 @@ function ProtocolCard({ protocol: p, isPublisher }: { protocol: Protocol; isPubl
         <div className="min-w-0">
           <h2 className="truncate font-semibold">{p.title}</h2>
           <p className="mt-0.5 text-footnote text-muted">
-            v{p.version} · {p.source_name} · {p.phase.replace("_", " ")}
+            v{p.version} · {p.source_name} · {PHASE_LABEL[p.phase] ?? p.phase.replace("_", " ")}
             {isPublisher && p.status !== "published" && (
               <span className="ml-1.5 rounded-full bg-chip px-1.5 py-0.5 text-caption2 font-medium uppercase tracking-wide text-muted">
                 {p.status}

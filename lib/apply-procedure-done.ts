@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { istDate } from "@/lib/urgency";
 import { resolveProcedure, listTemplateChoices } from "@/lib/templates";
 import type { ExtractedObservation } from "@/lib/extract";
+import { getSpecialtyPack } from "@/lib/specialty";
+import { getWardSpecialtyStored } from "@/lib/ward";
 
 export type PatientForProcedureDone = {
   surgery_date: string | null;
@@ -23,6 +25,10 @@ export type PatientForProcedureDone = {
  * unrelated mention of the same operation (someone describing it as history on a subsequent
  * round) can never re-trigger or overwrite it. If the round names more than one completed
  * procedure, the first one found wins — a patient has one operation that flips this, not several.
+ *
+ * Only on a unit that operates (`pack.operative`). On a medicine, oncology or general ward a
+ * "procedure done" is a pleural tap, a lumbar puncture or a line: it stays recorded as the
+ * observation it is, and never makes the patient post-operative or resets their day count.
  */
 export async function applyProcedureDone(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -34,6 +40,10 @@ export async function applyProcedureDone(
 
   const done = observations.find((o) => o.kind === "procedure_done");
   if (!done) return;
+
+  const { data: row } = await supabase.from("patients").select("ward_id").eq("id", patientId).maybeSingle();
+  const wardId = (row as { ward_id?: string | null } | null)?.ward_id;
+  if (!getSpecialtyPack(wardId ? await getWardSpecialtyStored(wardId) : null).operative) return;
 
   // Typed once at admission, this is the same lookup updatePatientIdentity() uses when a
   // resident manually marks someone post-op — matching a name the library knows brings its

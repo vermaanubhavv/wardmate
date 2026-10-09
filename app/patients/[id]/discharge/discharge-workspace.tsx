@@ -157,6 +157,10 @@ export default function DischargeWorkspace({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [draft, setDraft] = useState<DischargeDraft>(initialDraft);
+  // The unit's own department first; the surgical sub-departments only where the unit operates.
+  const departmentOptions = profile.operative
+    ? [...new Set([profile.specialtyLabel, ...DEPARTMENT_SUGGESTIONS])]
+    : [profile.specialtyLabel];
   // Fixed for the visit: a card must not vanish under the resident mid-edit.
   const STEPS = useMemo(
     () => stepsFor(profile, initialDraft.histopathology.length > 0),
@@ -700,8 +704,8 @@ export default function DischargeWorkspace({
       case "admission":
         return (
           <div className="grid grid-cols-2 gap-3">
-            <SuggestField label="Department" value={draft.admission.department} options={DEPARTMENT_SUGGESTIONS} onChange={(v) => patch("admission", "admission", { ...draft.admission, department: v })} />
-            <SuggestField label="Specialty" value={draft.admission.specialty} options={DEPARTMENT_SUGGESTIONS} placeholder={profile.specialtyLabel} onChange={(v) => patch("admission", "admission", { ...draft.admission, specialty: v })} />
+            <SuggestField label="Department" value={draft.admission.department} options={departmentOptions} onChange={(v) => patch("admission", "admission", { ...draft.admission, department: v })} />
+            <SuggestField label="Specialty" value={draft.admission.specialty} options={departmentOptions} placeholder={profile.specialtyLabel} onChange={(v) => patch("admission", "admission", { ...draft.admission, specialty: v })} />
             <Field label="Ward" value={draft.admission.ward} onChange={(v) => patch("admission", "admission", { ...draft.admission, ward: v })} />
             <Field label="Bed" value={draft.admission.bed} onChange={(v) => patch("admission", "admission", { ...draft.admission, bed: v })} />
             <SelectField label="Consultant" value={draft.admission.consultant} options={CONSULTANT_SUGGESTIONS} onChange={(v) => patch("admission", "admission", { ...draft.admission, consultant: v })} />
@@ -1167,7 +1171,7 @@ export default function DischargeWorkspace({
           <>
             <div className="flex flex-col gap-2">
               <p className="text-caption leading-[1.45] text-muted">Clear tasks the patient must do. Prefer 0–3.</p>
-              <StringList items={draft.patientActions} onChange={(v) => patch("patientActions", "patientActions", v)} placeholder="e.g. Attend Surgery OPD after 7 days for wound review" noneLabel="None." />
+              <StringList items={draft.patientActions} onChange={(v) => patch("patientActions", "patientActions", v)} placeholder="e.g. Attend the OPD after 7 days with all reports" noneLabel="None." />
             </div>
 
             <div className="my-1 border-t border-line" />
@@ -1383,7 +1387,7 @@ export default function DischargeWorkspace({
         <LiveDictation
           patientId={patientId}
           title="Dictating the discharge"
-          example="e.g. “admitted with acute appendicitis… underwent lap appendicectomy on day one, uneventful recovery… review in surgery OPD after a week…”"
+          example="e.g. “admitted with … treated with …, improved by day four… review in OPD after a week…”"
           sections={live}
           route={routeVia(patientId, live)}
           onLines={applyDictation}

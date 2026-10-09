@@ -79,6 +79,8 @@ export type DischargeDocument = {
   indication: string | null;
   diagnoses: { primary: string[]; secondary: string[]; comorbidities: string[]; complications: string[] };
   procedures: Procedure[];
+  /** "Operation / Procedures" on a unit that operates, "Procedures" anywhere else. */
+  proceduresHeading: string;
   clinicalCourse: string | null;
   clinicalCourseApproved: boolean;
   clinicalCourseUncertain: string[];
@@ -172,6 +174,7 @@ export function buildDischargeDocument(
     indication: draft.indicationForAdmission.text.trim() || null,
     diagnoses,
     procedures: draft.procedures,
+    proceduresHeading: context.pack.operative ? "Operation / Procedures" : "Procedures",
     clinicalCourse: draft.clinicalCourse.text.trim() || null,
     clinicalCourseApproved: !!draft.clinicalCourse.approvedAt,
     clinicalCourseUncertain: draft.clinicalCourse.uncertainPoints,
@@ -265,7 +268,7 @@ export function formatDischargePlainText(doc: DischargeDocument): string {
   dxBlock("Complications", doc.diagnoses.complications);
 
   if (doc.procedures.length > 0) {
-    heading("Operation / procedures");
+    heading(doc.proceduresHeading);
     for (const p of doc.procedures) for (const l of procedureLines(p)) out.push(`  ${l}`);
   }
 

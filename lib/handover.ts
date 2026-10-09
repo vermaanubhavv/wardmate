@@ -47,14 +47,20 @@ export type HandoverPatient = {
  * drown the two or three things worth telling a consultant about, so neither kind is
  * included here — see the confirmed scope in the plan this was built from.
  */
-export function deriveDoneToday(rawObservations: Observation[], doneTasks: Observation[], todayKey: string): DoneTodayItem[] {
+export function deriveDoneToday(
+  rawObservations: Observation[],
+  doneTasks: Observation[],
+  todayKey: string,
+  /** A unit that operates says "Operated:"; any other names it a procedure. */
+  operative = true
+): DoneTodayItem[] {
   const items: DoneTodayItem[] = [];
 
   for (const o of rawObservations) {
     if (o.kind === "lab" && istDate(o.recorded_at) === todayKey) {
       items.push({ id: o.id, text: `${o.label}${o.value_text ? `: ${o.value_text}` : ""}` });
     } else if (o.kind === "procedure_done" && istDate(o.recorded_at) === todayKey) {
-      items.push({ id: o.id, text: `Operated: ${o.value_text ?? o.label}` });
+      items.push({ id: o.id, text: `${operative ? "Operated" : "Procedure"}: ${o.value_text ?? o.label}` });
     }
   }
 
@@ -187,7 +193,7 @@ export async function getWardHandover(ward: { id: string; name: string }): Promi
       template,
       procedure: procedureFor(p, procedures),
       state,
-      doneToday: deriveDoneToday(rawObs, state.doneTasks, todayKey),
+      doneToday: deriveDoneToday(rawObs, state.doneTasks, todayKey, pack.operative),
     });
   }
 

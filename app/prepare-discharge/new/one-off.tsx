@@ -266,7 +266,7 @@ export default function OneOff({
         {d.procedures.map((p, i) => {
           const setP = (o: Partial<typeof p>) => set({ procedures: d.procedures.map((x, j) => (j === i ? { ...x, ...o } : x)) });
           return (
-            <Editor key={p.id} title={i === 0 ? "Operation / procedure" : `Procedure ${i + 1}`}>
+            <Editor key={p.id} title={i === 0 ? (pack.operative ? "Operation / procedure" : "Procedure") : `Procedure ${i + 1}`}>
               <Field label="Procedure" value={p.name} onChange={(v) => setP({ name: v })} />
               <Field label="Date" type="date" value={p.date} onChange={(v) => setP({ date: v || null })} />
               <Field label="Anaesthesia" value={p.anaesthesia} onChange={(v) => setP({ anaesthesia: v })} />
@@ -279,7 +279,7 @@ export default function OneOff({
         })}
 
         <Editor title="Clinical course">
-          <Area value={d.clinicalCourse.text} rows={7} placeholder="The patient was admitted with … and underwent … on … . Postoperatively …" onChange={(v) => set({ clinicalCourse: { ...d.clinicalCourse, text: v, source: "resident" } })} />
+          <Area value={d.clinicalCourse.text} rows={7} placeholder={pack.operative ? "The patient was admitted with … and underwent … on … . Postoperatively …" : "The patient was admitted with … and was treated with … . The patient improved …"} onChange={(v) => set({ clinicalCourse: { ...d.clinicalCourse, text: v, source: "resident" } })} />
         </Editor>
 
         <Editor title="Condition at discharge">
@@ -487,18 +487,19 @@ export default function OneOff({
         </div>
         <div className="flex gap-3">
           {field("admittedOn", "Admitted on", "", "date")}
-          {field("surgeryDate", "Date of surgery", "", "date")}
+          {pack.operative && field("surgeryDate", "Date of surgery", "", "date")}
         </div>
-        {field("diagnosis", "Diagnosis", "e.g. Acute calculous cholecystitis")}
-        {field("procedure", "Procedure", "As the OT note names it")}
+        {field("diagnosis", "Diagnosis", pack.operative ? "e.g. Acute calculous cholecystitis" : "e.g. Community-acquired pneumonia")}
+        {field("procedure", "Procedure", pack.operative ? "As the OT note names it" : "Any procedure during the admission")}
       </section>
 
       {haveSubject && (
         <section className="ios-group flex flex-col gap-2 p-4">
           <p className="text-subhead font-medium">Discharge template</p>
           <p className="text-footnote text-muted">
-            The standard sections for this diagnosis — advice, red flags, follow-up, the
-            operation skeleton — arrive pre-filled with blanks for you to complete.
+            The standard sections for this diagnosis — advice, red flags, follow-up
+            {pack.operative ? ", the operation skeleton" : ""} — arrive pre-filled with blanks
+            for you to complete.
           </p>
           <select
             value={templateKey}

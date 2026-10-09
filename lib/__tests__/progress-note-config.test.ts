@@ -115,7 +115,7 @@ describe("medicine's daily note", () => {
   it("general surgery is unchanged: its four exam cards, no extra vitals, the surgical Type example", () => {
     expect(gs.examSections.map((s) => s.id)).toEqual(["abdomen", "wound", "drains", "chest"]);
     expect(gs.extraVitals).toBeUndefined();
-    expect(gs.bedsideExample).toBeUndefined();
+    expect(gs.bedsideExample).toBe("Day 3 post lap chole, afebrile, drain 30 ml serous…");
   });
 
   it("medicine has a CNS card, nothing pre-filled, printing once and not on the OE line", () => {

@@ -63,10 +63,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       })
       .join("\n") || "(nothing)";
 
-  const specialtyKey = getSpecialtyPack(
-    patient?.ward_id ? await getWardSpecialtyStored(patient.ward_id) : null
-  ).key;
-  const status = patient?.surgery_date
+  const pack = getSpecialtyPack(patient?.ward_id ? await getWardSpecialtyStored(patient.ward_id) : null);
+  const specialtyKey = pack.key;
+  const status = patient?.surgery_date && pack.operative
     ? `Post Op Day (${patient.post_op_day ?? "—"})`
     : managementChoicesFor(specialtyKey, patient?.management ?? "").find((c) => c.value === patient?.management)
         ?.label ?? null;

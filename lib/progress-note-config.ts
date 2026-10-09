@@ -53,7 +53,7 @@ export type ProgressNoteConfig = {
    *  ICU. `key` is the label the value is stored under (a `vital` observation) — never one
    *  lib/vital-ranges.ts matchVitalLabel() reads as another vital. Absent: the shared set only. */
   extraVitals?: NoteVitalField[];
-  /** The example in the patient page's "Type" box. Absent: the surgical one. */
+  /** The example in the patient page's "Type" box. Absent: a department-neutral one. */
   bedsideExample?: string;
 };
 
@@ -254,6 +254,7 @@ const GENERAL_SURGERY: ProgressNoteConfig = {
     "Plan for discharge",
     "Refer",
   ],
+  bedsideExample: "Day 3 post lap chole, afebrile, drain 30 ml serous…",
 };
 
 const INTERNAL_MEDICINE: ProgressNoteConfig = {

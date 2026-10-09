@@ -451,7 +451,7 @@ export default function Recorder({
         <LiveDictation
           patientId={patientId}
           title="Speaking at the bedside"
-          example="e.g. “no fresh complaints… BP 120 by 80, pulse 84… abdomen soft… drain 50 ml serous… start oral sips…”"
+          example="e.g. “no fresh complaints… BP 120 by 80, pulse 84… chest clear, abdomen soft… continue same treatment…”"
           sections={LIVE_SECTIONS}
           route={fileFragment}
           onUnavailable={(reason) => {
