@@ -2,8 +2,6 @@ import { getFeatureUsage, getScreenUsage, getSttBreakdown } from "@/lib/admin";
 import { groupScreens } from "@/lib/admin-insights";
 import { Cell, Empty, ErrorNote, Row, Section, Table, ago } from "../ui";
 
-export const dynamic = "force-dynamic";
-
 export default async function AdminUsagePage() {
   const [{ rows: usage, error }, { rows: stt }, { rows: screenRows }] = await Promise.all([
     getFeatureUsage(),

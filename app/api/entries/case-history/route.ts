@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
 import { getPatientDictationKeyterms } from "@/lib/transcription/patient-context";
 import { correctTranscript } from "@/lib/glossary";
@@ -10,6 +11,7 @@ import { claimPhotoRead } from "@/lib/photo-cap";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { getTemplateForPatient } from "@/lib/templates";
 import { applyProcedureDone } from "@/lib/apply-procedure-done";
+import { insertObservations } from "@/lib/observations";
 import { readReceipt, saveReceipt } from "@/lib/dictation-receipt";
 
 const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp"] as const;
@@ -32,9 +34,7 @@ const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
 export async function POST(request: Request) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const form = await request.formData();
@@ -253,31 +253,19 @@ export async function POST(request: Request) {
     // evidence, not the record itself.
   }
 
-  const rows = extraction.observations.map((o) => ({
-    entry_id: entry.id,
-    patient_id: patientId,
-    kind: o.kind,
-    label: o.label,
-    value_text: o.value_text,
-    value_num: o.value_num,
-    unit: o.unit,
-    source_quote: o.source_quote,
-    needs_confirmation: forceConfirm || o.needs_confirmation,
-    urgency: o.urgency,
-    pac_verdict: o.pac_verdict,
-    task_open: o.task_open ?? null,
-    task_category: o.task_category ?? null,
-    conflict_note: dayConflict(o, patient),
-  }));
-
-  if (rows.length > 0) {
-    const { error: obsError } = await supabase.from("observations").insert(rows);
-    if (obsError) {
-      return NextResponse.json(
-        { entry_id: entry.id, transcript, observations: [], error: obsError.message },
-        { status: 500 }
-      );
-    }
+  const obsError = await insertObservations(
+    supabase,
+    entry.id,
+    patientId,
+    patient,
+    extraction.observations,
+    { forceConfirm }
+  );
+  if (obsError) {
+    return NextResponse.json(
+      { entry_id: entry.id, transcript, observations: [], error: obsError },
+      { status: 500 }
+    );
   }
 
   await applyProcedureDone(supabase, patientId, patient, extraction.observations);
@@ -290,19 +278,4 @@ export async function POST(request: Request) {
   };
   await saveReceipt(supabase, clientUuid, user.id, "case-history", body);
   return NextResponse.json(body);
-}
-
-/** Same rule as every other entry point: a day the resident stated is checked against the
- *  dates already on record, and shown as a disagreement rather than overwritten by either. */
-function dayConflict(
-  o: { kind: string; value_num: number | null },
-  patient: { post_op_day: number | null; admission_day: number }
-): string | null {
-  if (o.kind !== "day_number" || o.value_num === null) return null;
-
-  const computed = patient.post_op_day ?? patient.admission_day;
-  const label = patient.post_op_day !== null ? "post-op day" : "day of admission";
-
-  if (Math.round(o.value_num) === computed) return null;
-  return `You said day ${o.value_num}; recorded dates give ${label} ${computed}.`;
 }

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { listTemplateChoices, resolveProcedure } from "@/lib/templates";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { stripPatientHonorific } from "@/lib/patients";
@@ -31,9 +32,7 @@ async function savePatient(
 ): Promise<AddPatientState> {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return { error: "You are signed out. Sign in again." };
 
   const wardId = String(formData.get("ward_id") ?? "");
@@ -198,9 +197,7 @@ export async function dischargePatient(formData: FormData) {
   if (!id) return;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return;
 
   await supabase
@@ -226,9 +223,7 @@ export async function restorePatient(formData: FormData) {
   if (!id) return;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return;
 
   await supabase
@@ -257,9 +252,7 @@ export async function deletePatientForever(formData: FormData) {
   if (!id) return;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return;
 
   // An UPDATE, not a delete, so a direct destructive action never depends on a client-side
@@ -290,9 +283,7 @@ export async function restoreFromTrash(formData: FormData) {
   if (!id) return;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return;
 
   await supabase
@@ -389,9 +380,7 @@ export async function updatePatientIdentity(
 ): Promise<EditPatientState> {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return { error: "You are signed out. Sign in again." };
 
   const id = String(formData.get("patient_id") ?? "");

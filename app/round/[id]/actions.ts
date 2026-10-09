@@ -2,7 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, type Supa } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
+import { istDayKey } from "@/lib/patient-state";
 import type { DraftSegment } from "@/lib/round-draft";
 import { applyProcedureDone } from "@/lib/apply-procedure-done";
 
@@ -18,9 +20,7 @@ export async function applyRound(formData: FormData) {
   if (!dictationId) return;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return;
 
   const { data: dictation } = await supabase
@@ -134,7 +134,7 @@ async function admitPatient(
   segment: DraftSegment,
   wardId: string,
   userId: string,
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: Supa
 ) {
   if (String(formData.get(`admit_${i}`) ?? "") !== "yes") return;
 
@@ -148,7 +148,7 @@ async function admitPatient(
   const diagnosis = String(formData.get(`diagnosis_${i}`) ?? "").trim();
 
   // Admitted today: the app is being told about them now, and no admission date was spoken.
-  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+  const today = istDayKey(new Date().toISOString());
 
   const { data: patient } = await supabase
     .from("patients")

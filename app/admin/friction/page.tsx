@@ -4,8 +4,6 @@ import { funnelByDepartment } from "@/lib/admin-insights";
 import { isSpecialtyKey } from "@/lib/specialty";
 import { Empty, ErrorNote, Section, SeverityDot, ago } from "../ui";
 
-export const dynamic = "force-dynamic";
-
 const ORDER: Record<string, number> = { high: 3, medium: 2, low: 1 };
 
 export default async function AdminFrictionPage({ searchParams }: { searchParams: Promise<{ dept?: string }> }) {

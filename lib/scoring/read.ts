@@ -6,7 +6,7 @@
  */
 
 import "server-only";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, type Supa } from "@/lib/supabase/server";
 import { isScoringEngineEnabled, scoringEngineGloballyEnabled } from "./flag";
 import { getDefinition } from "./definitions/registry";
 import { actionForPatient } from "./tasks";
@@ -15,7 +15,7 @@ import type { CardDefinition, CardResult } from "./types";
 const OPEN = ["suggested", "accepted"];
 const CARD_TYPES = new Set(["calculator", "structured_classification"]);
 
-async function activeInstances(supabase: Awaited<ReturnType<typeof createClient>>, patientId: string) {
+async function activeInstances(supabase: Supa, patientId: string) {
   const { data } = await supabase
     .from("pathway_instances")
     .select("id, pathway_id, pathway_version")
@@ -168,7 +168,7 @@ export type ScoringTask = {
 /** instance_id → the definition's own title, one query for however many distinct pathway
  *  instances the caller's tasks reference. */
 async function pathwayTitlesByInstance(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: Supa,
   instanceIds: string[]
 ): Promise<Map<string, string>> {
   const ids = [...new Set(instanceIds)];

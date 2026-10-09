@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, type Supa } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { isScoringEngineEnabled } from "@/lib/scoring/flag";
 import { audit, syncPatientPathways } from "@/lib/scoring/store";
 import { getDefinition } from "@/lib/scoring/definitions/registry";
@@ -13,9 +14,7 @@ const OK: Result = { error: null };
 /** Resolve the signed-in user + assert they are a member of the patient's ward. */
 async function authorize(patientId: string) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return { ok: false as const, error: "You are signed out. Sign in again." };
   const { data: patient } = await supabase
     .from("patients")
@@ -61,7 +60,7 @@ export async function completeScoringTask(patientId: string, taskId: string): Pr
 // Clinician-assessed score criteria (mental status, guarding, melaena, …)
 // ---------------------------------------------------------------------------
 
-async function loadInstance(supabase: Awaited<ReturnType<typeof createClient>>, instanceId: string, patientId: string) {
+async function loadInstance(supabase: Supa, instanceId: string, patientId: string) {
   const { data } = await supabase
     .from("pathway_instances")
     .select("id, ward_id, pathway_id, pathway_version, classification_inputs")
@@ -138,7 +137,7 @@ export async function confirmScoreNormal(
 }
 
 async function writeAssessments(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: Supa,
   userId: string,
   patientId: string,
   inst: { id: string; ward_id: string; classification_inputs: Record<string, unknown> | null },

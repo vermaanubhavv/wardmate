@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import type { Supa } from "@/lib/supabase/server";
 import { istDate } from "@/lib/urgency";
 import { resolveProcedure, listTemplateChoices } from "@/lib/templates";
 import type { ExtractedObservation } from "@/lib/extract";
@@ -25,7 +25,7 @@ export type PatientForProcedureDone = {
  * procedure, the first one found wins — a patient has one operation that flips this, not several.
  */
 export async function applyProcedureDone(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: Supa,
   patientId: string,
   patient: PatientForProcedureDone,
   observations: ExtractedObservation[]

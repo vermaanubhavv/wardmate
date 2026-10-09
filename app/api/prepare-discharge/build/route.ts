@@ -14,8 +14,9 @@ import {
   matchDischargeTemplateFor,
 } from "@/lib/specialty/discharge";
 import { oneOffContext, type OneOffIdentity } from "@/lib/discharge-oneoff";
-import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import type { ReadLabValue } from "@/lib/read-lab-photo";
+import { labRow } from "@/lib/observations";
 import type { PaperKind } from "@/lib/read-paper";
 
 /**
@@ -38,10 +39,7 @@ type IncomingPage = {
 type Identity = OneOffIdentity;
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   let body: { pages?: IncomingPage[]; identity?: Identity; templateKey?: string | null };
@@ -74,21 +72,12 @@ export async function POST(request: Request) {
         observations.push({
           id: crypto.randomUUID(),
           kind: "lab",
-          label: v.label,
-          value_text: v.value_text,
-          value_num: v.value_num,
-          unit: v.unit,
-          source_quote: v.source_quote,
-          needs_confirmation: true,
+          ...labRow(v),
           confirmed_at: null,
-          conflict_note: v.uncertain ? "Printing was unclear — check against the photo." : null,
           done_at: null,
           urgency: null,
           graded_at: null,
           recorded_at: now,
-          ref_low: v.ref_low,
-          ref_high: v.ref_high,
-          ref_text: v.ref_text,
         } as Observation);
       }
       continue;
