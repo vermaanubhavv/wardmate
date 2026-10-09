@@ -4,6 +4,7 @@ import { getCurrentWard } from "@/lib/ward";
 import { compareBeds, patientName } from "@/lib/patients";
 import { restorePatient } from "../../patients/actions";
 import { DISCHARGE_UNDO_WINDOW_HOURS, getFinalisedDischargeMap, visibleDischargedFilter } from "@/lib/discharged";
+import { shortDate, dateTime, hoursLeft } from "@/lib/format-date";
 
 type DischargedPatient = {
   id: string;
@@ -113,12 +114,6 @@ export default async function DischargedPage() {
   );
 }
 
-function hoursLeft(dischargedAt: string | null): number {
-  if (!dischargedAt) return DISCHARGE_UNDO_WINDOW_HOURS;
-  const elapsedMs = Date.now() - new Date(dischargedAt).getTime();
-  const remaining = DISCHARGE_UNDO_WINDOW_HOURS - elapsedMs / 3_600_000;
-  return Math.max(0, Math.ceil(remaining));
-}
 
 function DischargedCard({
   patient,
@@ -146,24 +141,18 @@ function DischargedCard({
           ? "Nothing was ever recorded on this patient."
           : `${patient.entry_count} ${patient.entry_count === 1 ? "entry" : "entries"} on their record.`}
         {patient.discharged_at &&
-          ` Discharged ${new Date(patient.discharged_at).toLocaleString("en-IN", {
-            timeZone: "Asia/Kolkata",
-            day: "numeric",
-            month: "short",
-            hour: "numeric",
-            minute: "2-digit",
-          })}.`}
+          ` Discharged ${dateTime(patient.discharged_at)}.`}
       </p>
 
       {saved ? (
         <p className="mt-1 text-footnote text-good-fg">
-          Summary saved{finalisedAt ? ` ${new Date(finalisedAt).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short" })}` : ""} — kept here indefinitely.
+          Summary saved{finalisedAt ? ` ${shortDate(finalisedAt)}` : ""} — kept here indefinitely.
         </p>
       ) : (
         <p className="mt-1 text-footnote text-warn-fg">
-          {hoursLeft(patient.discharged_at) === 0
+          {hoursLeft(patient.discharged_at, DISCHARGE_UNDO_WINDOW_HOURS) === 0
             ? "Leaves this list very soon if nothing is saved."
-            : `${hoursLeft(patient.discharged_at)}h left to undo, unless a summary is saved first.`}
+            : `${hoursLeft(patient.discharged_at, DISCHARGE_UNDO_WINDOW_HOURS)}h left to undo, unless a summary is saved first.`}
         </p>
       )}
 

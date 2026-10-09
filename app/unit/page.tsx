@@ -20,7 +20,7 @@ import { isCurrentUserAdmin } from "@/lib/admin";
 import { getFormularySize } from "@/lib/formulary";
 import { DESIGNATION_CHOICES } from "@/lib/patients";
 import { ChecklistIcon, DocumentIcon } from "../icons";
-import { listSpecialties, specialtyPacksEnabled } from "@/lib/specialty";
+import { specialtyChoices } from "../onboarding/specialty-choices";
 import { getFinalisedDischargeMap, visibleDischargedFilter } from "@/lib/discharged";
 
 /**
@@ -587,9 +587,3 @@ export default async function UnitPage() {
   );
 }
 
-/** The departments to offer at unit setup. Empty list = no picker, everything general surgery.
- *  Server-side because the flag is a server env var. */
-function specialtyChoices() {
-  if (!specialtyPacksEnabled()) return [];
-  return listSpecialties().map((p) => ({ key: p.key, label: p.label, blurb: p.blurb }));
-}

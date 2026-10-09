@@ -147,16 +147,13 @@ export default function SpeakPatient({
       });
       streamRef.current = stream;
 
-      const mimeType = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/mpeg"].find(
-        (t) => MediaRecorder.isTypeSupported(t)
-      );
-
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      // The browser's own format (webm on Chrome, mp4 on Safari), read back from mimeType.
+      const recorder = new MediaRecorder(stream);
       chunksRef.current = [];
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
-      recorder.onstop = () => void send(recorder.mimeType);
+      recorder.onstop = () => void send(recorder.mimeType || "audio/webm");
 
       // Timeslice: a chunk a second, so a stray interruption does not empty the buffer.
       recorder.start(1000);

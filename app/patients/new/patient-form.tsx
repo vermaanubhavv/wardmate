@@ -5,6 +5,7 @@ import Link from "next/link";
 import { addPatient, type AddPatientState } from "../actions";
 import { LOCATION_CHOICES, managementChoicesFor } from "@/lib/patients";
 import DiagnosisCombobox from "../diagnosis-combobox";
+import { checklistFieldLabel } from "../edit-identity";
 import SpeakPatient from "./speak-patient";
 import type { SpokenPatient } from "@/lib/read-new-patient";
 import AdmissionPaper from "./admission-paper";
@@ -21,13 +22,6 @@ const REGIMEN_SUGGESTIONS = [
   "R-CHOP", "TCH", "VRd", "carboplatin-paclitaxel", "hyper-CVAD",
 ];
 
-/** Mirrors the one in ../edit-identity.tsx — see that file for why this field's visibility
- *  and label both had to stop assuming every patient is a surgical one. */
-function checklistFieldLabel(specialty: string): string {
-  if (specialty === "medical_oncology") return "Chemo cycle / checklist";
-  if (specialty === "general_surgery") return "Operation";
-  return "Checklist";
-}
 
 export default function PatientForm({
   wardId,
