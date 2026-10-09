@@ -25,6 +25,27 @@
 // card shows only the first 8 until "+N more" is tapped (ChipRow, app/patients/[id]/card-kit.tsx),
 // so the first 8 are what that ward admits most.
 
+// A unit with no department: the presenting complaints any ward meets, commonest first.
+const COMPLAINT_CHIPS_GENERAL = [
+  "Fever",
+  "Pain abdomen",
+  "Breathlessness",
+  "Vomiting",
+  "Chest pain",
+  "Cough",
+  "Loose stools",
+  "Swelling",
+  "Injury",
+  "Headache",
+  "Giddiness",
+  "Altered sensorium",
+  "Weakness of limbs",
+  "Burning micturition",
+  "Bleeding",
+  "Loss of appetite",
+  "Loss of weight",
+];
+
 const COMPLAINT_CHIPS_GENERAL_SURGERY = [
   // Acute abdomen, hernia, lumps and abscesses, biliary, diabetic foot — the surgical ward's bulk.
   "Pain abdomen",
@@ -406,6 +427,7 @@ const PAST_CHIPS_OBSTETRICS_GYNAECOLOGY = [
 ];
 
 const COMPLAINT_CHIPS_BY_SPECIALTY: Record<string, string[]> = {
+  general: COMPLAINT_CHIPS_GENERAL,
   general_surgery: COMPLAINT_CHIPS_GENERAL_SURGERY,
   internal_medicine: COMPLAINT_CHIPS_INTERNAL_MEDICINE,
   medical_oncology: COMPLAINT_CHIPS_MEDICAL_ONCOLOGY,
@@ -567,7 +589,22 @@ const PAST_CHIPS_EMERGENCY_MEDICINE = [
   "Pregnant",
 ];
 
+// The comorbidities any admission is asked about.
+const PAST_CHIPS_GENERAL = [
+  "DM",
+  "HTN",
+  "CAD / IHD",
+  "Asthma / COPD",
+  "TB (Koch's)",
+  "Thyroid",
+  "CKD",
+  "Seizure disorder",
+  "Stroke",
+  "On blood thinners",
+];
+
 const PAST_CHIPS_BY_SPECIALTY: Record<string, string[]> = {
+  general: PAST_CHIPS_GENERAL,
   general_surgery: PAST_CHIPS_GENERAL_SURGERY,
   internal_medicine: PAST_CHIPS_INTERNAL_MEDICINE,
   medical_oncology: PAST_CHIPS_MEDICAL_ONCOLOGY,
@@ -585,12 +622,12 @@ const PAST_CHIPS_BY_SPECIALTY: Record<string, string[]> = {
   emergency_medicine: PAST_CHIPS_EMERGENCY_MEDICINE,
 };
 
-/** Unknown or missing specialty (including "patch not run yet") degrades to the surgical set —
- *  the same "degrade, don't crash" rule lib/specialty/index.ts's getSpecialtyPack() follows. */
+/** Unknown or missing specialty degrades to the general (no-department) set — the same
+ *  "degrade, don't crash" rule lib/specialty/index.ts's getSpecialtyPack() follows. */
 export function complaintChipsFor(specialty: string | null | undefined): string[] {
-  return COMPLAINT_CHIPS_BY_SPECIALTY[(specialty ?? "").trim()] ?? COMPLAINT_CHIPS_GENERAL_SURGERY;
+  return COMPLAINT_CHIPS_BY_SPECIALTY[(specialty ?? "").trim()] ?? COMPLAINT_CHIPS_GENERAL;
 }
 
 export function pastChipsFor(specialty: string | null | undefined): string[] {
-  return PAST_CHIPS_BY_SPECIALTY[(specialty ?? "").trim()] ?? PAST_CHIPS_GENERAL_SURGERY;
+  return PAST_CHIPS_BY_SPECIALTY[(specialty ?? "").trim()] ?? PAST_CHIPS_GENERAL;
 }

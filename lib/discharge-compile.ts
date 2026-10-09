@@ -19,7 +19,7 @@ import {
   RED_FLAG_SUGGESTIONS,
 } from "@/lib/discharge-entities";
 import { type DischargeTemplate } from "@/lib/discharge-templates";
-import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { generalPack, type SpecialtyPack } from "@/lib/specialty";
 import { matchDischargeTemplateFor } from "@/lib/specialty/discharge";
 
 /**
@@ -466,7 +466,7 @@ export function applyDischargeTemplate(
 export function templateForDischarge(
   context: DischargeContext,
   primaryDiagnosis: string | null | undefined,
-  pack: SpecialtyPack = generalSurgeryPack
+  pack: SpecialtyPack = generalPack
 ): DischargeTemplate | null {
   return matchDischargeTemplateFor(pack, {
     procedureText: context.procedure ?? context.patient.procedure_text,

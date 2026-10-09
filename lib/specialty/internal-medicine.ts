@@ -86,6 +86,7 @@ Internal medicine ward — what the words mean here:
   // operation. See lib/checklist-triggers.ts — the admission-anchored conditions
   // (hours_since_admission_gte, lab, history) already exist and need no new code.
   checklistAnchor: "admission",
+  operative: false,
 
   dischargeTemplates: MEDICINE_DISCHARGE_TEMPLATES,
   genericDischargeTemplate: MEDICINE_GENERIC_DISCHARGE_TEMPLATE,

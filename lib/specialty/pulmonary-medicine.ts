@@ -81,6 +81,7 @@ Pulmonary medicine ward — what the words mean here:
   // Nothing here hangs off an operation: the checklist conditions that matter on this ward are
   // hours since admission (oxygen reassessed, sputum sent before the first dose) and labs.
   checklistAnchor: "admission",
+  operative: false,
 
   // This department's own — see the note above.
   dischargeTemplates: PULMONARY_DISCHARGE_TEMPLATES,

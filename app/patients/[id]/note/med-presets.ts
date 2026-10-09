@@ -1,8 +1,10 @@
+import { getSpecialtyPack } from "@/lib/specialty";
+
 /** The Medications card's one-tap drugs, per department. Shared with the server action, which
  *  saves a line that still reads exactly like any of these as needing confirmation — a preset
  *  dose is a default, not something the resident said. */
 
-/** Every ward without a list of its own — what every unit offered before per-department sets. */
+/** Every department without a list of its own — what every unit offered before per-department sets. */
 const SURGICAL_PRESETS = [
   "Inj Ceftriaxone 1 g IV BD",
   "Inj Metronidazole 500 mg IV TDS",
@@ -27,13 +29,25 @@ const MEDICINE_PRESETS = [
   "Nebulisation — Duolin / Budecort",
 ];
 
+/** No department: the drugs any ward charts, no antibiotic or NSAID by default. */
+const GENERAL_PRESETS = [
+  "Inj Pantoprazole 40 mg IV OD",
+  "Tab Paracetamol 650 mg PO SOS",
+  "Inj Ondansetron 4 mg IV SOS",
+  "IV fluids — NS / RL",
+  "Inj Insulin (sliding scale)",
+  "Inj Enoxaparin 40 mg SC OD",
+];
+
 const BY_SPECIALTY: Record<string, string[]> = {
+  general: GENERAL_PRESETS,
   internal_medicine: MEDICINE_PRESETS,
 };
 
-/** The chips this ward's Medications card offers. */
+/** The chips this ward's Medications card offers. An unknown department is the general set. */
 export function medPresetsFor(specialty: string | null | undefined): string[] {
-  return (specialty && BY_SPECIALTY[specialty]) || SURGICAL_PRESETS;
+  const key = getSpecialtyPack(specialty).key;
+  return BY_SPECIALTY[key] ?? SURGICAL_PRESETS;
 }
 
 /** Every preset on any ward — what the server action treats as an unconfirmed default, so a

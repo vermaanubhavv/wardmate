@@ -266,6 +266,8 @@ function HeadSide() {
 const BODY_BOTH = [<Body key="f" />, <Body key="b" back />];
 
 const DIAGRAMS: Record<string, { figures: React.ReactNode[]; note?: string }> = {
+  // No department: the body chart, for whatever the patient came in with.
+  general: { figures: BODY_BOTH },
   // General surgery takes the trauma admissions here, so it gets the body chart beside the abdomen.
   general_surgery: { figures: [<Abdomen key="a" regions />, ...BODY_BOTH] },
   obstetrics_gynaecology: { figures: [<Abdomen key="a" regions={false} />] },

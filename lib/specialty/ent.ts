@@ -80,6 +80,7 @@ ENT ward — what the words mean here:
 `.trim(),
 
   checklistAnchor: "post_op",
+  operative: true,
 
   // General surgery's templates, on purpose — see the header for what to add and when.
   dischargeTemplates: ENT_DISCHARGE_TEMPLATES,

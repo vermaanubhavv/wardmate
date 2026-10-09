@@ -435,8 +435,28 @@ export const CNS_PILLS = [
 
 const SURGICAL_EXAM: ExamCardId[] = ["piccle", "vitals", "abdomen", "chest", "local"];
 const MEDICINE_EXAM: ExamCardId[] = ["piccle", "vitals", "cvs", "chest", "abdomen", "cns"];
+/** No department: the standard systemic examination, with Local for a lump, wound or limb. */
+const GENERAL_EXAM: ExamCardId[] = ["piccle", "vitals", "chest", "cvs", "abdomen", "cns", "local"];
+
+/** The departments that walk the surgical cards and are read the surgical spoken format —
+ *  every one listed by name, so none inherits it by default. */
+const SURGICAL_EXAM_DEPTS: SpecialtyKey[] = [
+  "general_surgery",
+  "medical_oncology",
+  "obstetrics_gynaecology",
+  "ent",
+  "psychiatry",
+  "ophthalmology",
+  "dermatology",
+  "burns_plastic_surgery",
+  "orthopaedics",
+  "urology",
+  "neurosurgery",
+];
 
 const EXAM_STEPS: Partial<Record<SpecialtyKey, ExamCardId[]>> = {
+  general: GENERAL_EXAM,
+  ...Object.fromEntries(SURGICAL_EXAM_DEPTS.map((k) => [k, SURGICAL_EXAM])),
   internal_medicine: MEDICINE_EXAM,
   paediatrics: MEDICINE_EXAM,
   // These two keep Local examination: the chest diagram and the trauma body chart hang off it.
@@ -449,7 +469,7 @@ const EXAM_STEPS: Partial<Record<SpecialtyKey, ExamCardId[]>> = {
  * shown when the record already holds a value for it, so nothing recorded is hidden.
  */
 export function examStepsFor(specialty?: string | null, recorded: (id: ExamCardId) => boolean = () => false): ExamCardId[] {
-  const steps = EXAM_STEPS[(specialty ?? "") as SpecialtyKey] ?? SURGICAL_EXAM;
+  const steps = EXAM_STEPS[(specialty ?? "") as SpecialtyKey] ?? GENERAL_EXAM;
   const extra = (["local"] as ExamCardId[]).filter((id) => !steps.includes(id) && recorded(id));
   return [...steps, ...extra];
 }
@@ -508,7 +528,7 @@ export function clerkingFormatFor(specialty?: string | null, sex?: string | null
   // already hides that card for him; the spoken list matches it.
   const forSex = (list: FormatStep[]) =>
     sex === "M" ? list.filter((s) => s.title !== "Menstrual & obstetric history") : list;
-  const steps = EXAM_STEPS[(specialty ?? "") as SpecialtyKey];
-  if (!steps) return forSex(SURGICAL_FORMAT);
+  if (SURGICAL_EXAM_DEPTS.includes((specialty ?? "") as SpecialtyKey)) return forSex(SURGICAL_FORMAT);
+  const steps = EXAM_STEPS[(specialty ?? "") as SpecialtyKey] ?? GENERAL_EXAM;
   return [...forSex(HISTORY_FORMAT), ...steps.map((id) => EXAM_FORMAT[id]), ...CLOSING_FORMAT];
 }

@@ -103,6 +103,7 @@ Burns and plastic surgery ward — what the words mean here:
   // burn's own clock is a count, not a checklist anchor, and the engine anchors it knows are
   // post_op, cycle and admission. Grafting is what the checklists here will key to.
   checklistAnchor: "post_op",
+  operative: true,
 
   dischargeTemplates: BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES,
   genericDischargeTemplate: BURNS_PLASTIC_SURGERY_GENERIC_DISCHARGE_TEMPLATE,

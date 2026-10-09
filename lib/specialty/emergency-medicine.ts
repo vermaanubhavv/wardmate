@@ -80,6 +80,7 @@ Emergency department — what the words mean here:
 `.trim(),
 
   checklistAnchor: "admission",
+  operative: false,
 
   dischargeTemplates: EMERGENCY_DISCHARGE_TEMPLATES,
   genericDischargeTemplate: EMERGENCY_GENERIC_DISCHARGE_TEMPLATE,

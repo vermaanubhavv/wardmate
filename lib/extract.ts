@@ -3,7 +3,7 @@ import { judgeObservations, type PatientIdentifiers, type TaskCategoryJudgment }
 import { AI_MODEL } from "@/lib/model";
 import { traced, recordAiUsage } from "@/lib/observability";
 import { isIdentifierLabel } from "@/lib/patients";
-import { generalSurgeryPack, getSpecialtyPack, type SpecialtyPack } from "@/lib/specialty";
+import { generalPack, getSpecialtyPack, type SpecialtyPack } from "@/lib/specialty";
 
 const OBSERVATION_KINDS = [
   "diagnosis",
@@ -120,7 +120,7 @@ Set urgency to null for every observation that is not a plan.`;
  *
  * For general surgery this returns byte-for-byte what the single hardcoded prompt used to be.
  */
-export function buildSystemPrompt(pack: SpecialtyPack = generalSurgeryPack): string {
+export function buildSystemPrompt(pack: SpecialtyPack = generalPack): string {
   const guidance = pack.extractGuidance.trim();
   return (
     pack.extractRoleLine +
@@ -204,9 +204,8 @@ export async function extractObservations(
   transcript: string,
   expectedLabels: string[] = [],
   protocols: { id: string; title: string; summary: string }[] = [],
-  /** The unit's specialty (wards.specialty). Anything unknown — including undefined, because
-   *  patch 0060 has not been run — gets the surgery pack and the prompt this app has always
-   *  sent. */
+  /** The unit's specialty (wards.specialty). Anything unknown — including undefined — gets the
+   *  general (no-department) pack. */
   specialty?: string | null,
   /** The patient this is about, so their name and bed are kept out of what Jev is sent. */
   who?: PatientIdentifiers

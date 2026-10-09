@@ -17,16 +17,16 @@ export async function createWard(
   if (!name) return { error: "Enter a unit name." };
 
   // With the picker switched off the field is not on the form at all, and every new unit is a
-  // surgical one — exactly what happened before specialty packs existed. An unrecognised value
-  // is also read as general surgery, both here and again inside the database function.
+  // general (no-department) one. An unrecognised value is also read as general, both here and
+  // again inside the database function (patch 0106).
   const chosen = String(formData.get("specialty") ?? "").trim();
-  // With the picker on, a missing choice is refused rather than read as surgery: the department
-  // cannot be changed later, so a unit must never become surgical by default.
+  // With the picker on, a missing choice is refused rather than guessed: the department cannot
+  // be changed later, so a unit must never get one it did not choose.
   if (specialtyPacksEnabled() && !isSpecialtyKey(chosen)) {
     return { error: "Choose the unit's department — it cannot be changed later." };
   }
   const specialty =
-    specialtyPacksEnabled() && isSpecialtyKey(chosen) ? chosen : "general_surgery";
+    specialtyPacksEnabled() && isSpecialtyKey(chosen) ? chosen : "general";
 
   const supabase = await createClient();
   const {

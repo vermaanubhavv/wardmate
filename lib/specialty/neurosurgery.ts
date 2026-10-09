@@ -79,6 +79,7 @@ Neurosurgical ward — what the words mean here:
 `.trim(),
 
   checklistAnchor: "post_op",
+  operative: true,
 
   dischargeTemplates: NEUROSURGERY_DISCHARGE_TEMPLATES,
   genericDischargeTemplate: NEUROSURGERY_GENERIC_DISCHARGE_TEMPLATE,

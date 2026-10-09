@@ -18,7 +18,9 @@ describe("per-unit intake data", () => {
       "Workup",
       "Post-op",
     ]);
-    expect(managementLabel({ surgery_date: "2026-01-01", management: null })).toBe("POST OP");
+    expect(managementLabel({ surgery_date: "2026-01-01", management: null }, generalSurgeryPack)).toBe("POST OP");
+    // No department has no operation clock, so no POST OP.
+    expect(managementLabel({ surgery_date: "2026-01-01", management: null })).toBeNull();
     expect(managementLabel({ surgery_date: null, management: "conservative" }, generalSurgeryPack)).toBe("CONSERVATIVE");
   });
 
@@ -34,9 +36,11 @@ describe("per-unit intake data", () => {
     expect(managementLabel({ surgery_date: null, management: "conservative" }, im)).toBe("ON TREATMENT");
   });
 
-  it("unknown keys fall back to surgery; non-surgical packs without a list get none", () => {
-    expect(commonDiagnosesFor("not_a_unit")).toBe(COMMON_DIAGNOSES);
-    expect(commonDiagnosesFor(undefined)).toBe(COMMON_DIAGNOSES);
+  it("unknown keys fall back to the general list; non-surgical packs without a list get none", () => {
+    expect(commonDiagnosesFor("not_a_unit")).toBe(commonDiagnosesFor("general"));
+    expect(commonDiagnosesFor(undefined)).toBe(commonDiagnosesFor("general"));
+    expect(commonDiagnosesFor("general")).not.toContain("Cholelithiasis");
+    expect(commonDiagnosesFor("orthopaedics")).toBe(COMMON_DIAGNOSES);
     expect(commonDiagnosesFor("psychiatry")).toEqual([]);
     expect(commonDiagnosesFor("orthopaedics")).toBe(COMMON_DIAGNOSES);
     expect(hasOperationClock(getSpecialtyPack("medical_oncology"))).toBe(false);

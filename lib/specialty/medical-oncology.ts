@@ -74,6 +74,7 @@ Medical oncology ward — what the words mean here:
   // Fever, counts and the cycle drive the checklist here, and none of them hang off an
   // operation. See CYCLE_ANCHORED in lib/checklist-triggers.ts.
   checklistAnchor: "cycle",
+  operative: false,
 
   dischargeTemplates: ONCOLOGY_DISCHARGE_TEMPLATES,
   genericDischargeTemplate: ONCOLOGY_GENERIC_DISCHARGE_TEMPLATE,

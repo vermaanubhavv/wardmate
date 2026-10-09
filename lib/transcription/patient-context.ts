@@ -19,7 +19,7 @@ import { getSpecialtyPack } from "@/lib/specialty";
 /** The core boosted when the caller does not say which unit this is. General surgery, so an
  *  un-migrated database and every existing unit keep exactly the keyterms they had. A caller
  *  that knows the unit passes its pack's `lexiconSpecialty` instead. */
-export const DEFAULT_SPECIALTY: Specialty = "general-surgery";
+export const DEFAULT_SPECIALTY: Specialty = "general";
 
 type PatientRow = {
   primary_diagnosis?: string | null;

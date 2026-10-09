@@ -41,10 +41,11 @@ const patient: ProgressNotePatient = {
 };
 
 describe("progress-note configs", () => {
-  it("every department has one, and an unknown key falls back to general surgery", () => {
+  it("every department has one, and an unknown key falls back to the general sheet", () => {
     for (const key of SPECIALTY_KEYS) expect(PROGRESS_NOTE_CONFIGS[key], key).toBeTruthy();
-    expect(progressNoteConfigFor("no_such_ward")).toBe(PROGRESS_NOTE_CONFIGS.general_surgery);
-    expect(progressNoteConfigFor(null)).toBe(PROGRESS_NOTE_CONFIGS.general_surgery);
+    expect(progressNoteConfigFor("no_such_ward")).toBe(PROGRESS_NOTE_CONFIGS.general);
+    expect(progressNoteConfigFor(null)).toBe(PROGRESS_NOTE_CONFIGS.general);
+    expect(PROGRESS_NOTE_CONFIGS.general.bowelLine).toBe(false);
   });
 
   it("section ids are unique, snake_case and never a shared card; labels and aliases lowercase", () => {
@@ -142,7 +143,10 @@ describe("medication presets", () => {
     expect(im).toContain("Inj Pantoprazole 40 mg IV OD");
     for (const p of im) expect(p, p).not.toMatch(/diclofenac|ibuprofen|aceclofenac|ketorolac|naproxen|tramadol/i);
     expect(medPresetsFor("general_surgery")).toContain("Inj Tramadol 50 mg IV SOS");
-    expect(medPresetsFor("no_such_ward")).toEqual(medPresetsFor("general_surgery"));
+    expect(medPresetsFor("no_such_ward")).toEqual(medPresetsFor("general"));
+    for (const p of medPresetsFor("general")) expect(p, p).not.toMatch(/ceftriaxone|metronidazole|tramadol|diclofenac/i);
+    // A department without its own set keeps the one it always had.
+    expect(medPresetsFor("orthopaedics")).toEqual(medPresetsFor("general_surgery"));
     for (const key of SPECIALTY_KEYS) for (const p of medPresetsFor(key)) expect(MED_PRESETS, p).toContain(p);
   });
 });

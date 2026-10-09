@@ -1,6 +1,6 @@
 import type { DischargeTemplate } from "@/lib/discharge-templates";
 import { CONDITION_VARIABLES, type ConditionVariableKey } from "@/lib/discharge-entities";
-import type { SpecialtyKey, SpecialtyPack } from "./types";
+import type { SpecialtyPack } from "./types";
 
 /**
  * Template selection, per specialty.
@@ -74,7 +74,7 @@ export function matchDischargeTemplateFor(
 //
 // The workspace was written for a general-surgery ward: an operation list, a post-op drug set
 // with an NSAID in it, and wound / drain / bowel at discharge. A medicine unit is offered its
-// own. Packs not listed in NON_OPERATIVE (surgery and the other operating departments) get
+// own. Operative packs (`pack.operative` — surgery and the other operating departments) get
 // exactly what the workspace offered before this existed.
 
 /** One row of a one-tap discharge set. Added on request only, as unconfirmed resident rows. */
@@ -188,17 +188,6 @@ export const MEDICINE_CONDITION_KEYS: ConditionVariableKey[] = [
   "ambulation",
 ];
 
-/** Departments that do not operate. Every other pack keeps the surgical workspace unchanged. */
-const NON_OPERATIVE: readonly SpecialtyKey[] = [
-  "internal_medicine",
-  "medical_oncology",
-  "pulmonary_medicine",
-  "psychiatry",
-  "dermatology",
-  "paediatrics",
-  "emergency_medicine",
-];
-
 export type DischargeProfile = {
   /** The unit's specialty — the diagnosis box offers its commonest diagnoses. */
   specialty: SpecialtyPack["key"];
@@ -217,7 +206,7 @@ export type DischargeProfile = {
 
 /** What the discharge workspace offers this unit. Plain data, so a server page can hand it to a client card. */
 export function dischargeProfileFor(pack: SpecialtyPack): DischargeProfile {
-  if (!NON_OPERATIVE.includes(pack.key)) {
+  if (pack.operative) {
     return {
       specialty: pack.key,
       operative: true,
@@ -234,7 +223,8 @@ export function dischargeProfileFor(pack: SpecialtyPack): DischargeProfile {
     specialtyLabel: pack.label,
     procedureSuggestions: MEDICINE_PROCEDURE_SUGGESTIONS,
     // Paediatric doses go by weight; a fixed adult tablet set would be wrong for most children.
-    usualMedicationSet: pack.key === "paediatrics" ? [] : MEDICINE_DISCHARGE_SET,
+    // No department, no department's tablets; paediatric doses go by weight.
+    usualMedicationSet: pack.key === "paediatrics" || pack.key === "general" ? [] : MEDICINE_DISCHARGE_SET,
     conditionKeys: MEDICINE_CONDITION_KEYS,
     // Four of seven, not five: sugars and BP only apply to a diabetic or hypertensive patient,
     // and requiring five would push a resident to tick a state the patient never had. Free text
