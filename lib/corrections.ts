@@ -3,7 +3,7 @@
  *
  * A general-purpose speech model has never met a surgical ward. It writes "lab chole" for lap
  * chole and "PAS" for PAC, every time, because those are the ordinary English words nearest to
- * the sounds. The engine is given a vocabulary hint first (see lib/stt/types.ts) and this
+ * the sounds. The engine is given medical keyterms first (see lib/stt) and this
  * catches what still gets through.
  *
  * THE LINE THIS DOES NOT CROSS. It only ever corrects the MACHINE's hearing of a term, never a

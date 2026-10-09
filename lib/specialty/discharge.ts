@@ -5,8 +5,7 @@ import type { SpecialtyKey, SpecialtyPack } from "./types";
 /**
  * Template selection, per specialty.
  *
- * These are the pack-aware versions of listDischargeTemplates / getDischargeTemplate /
- * matchDischargeTemplate in lib/discharge-templates.ts. They live here rather than there so
+ * Template listing and matching live here rather than in lib/discharge-templates.ts so
  * lib/discharge-templates.ts never has to import lib/specialty — the packs import the
  * templates, and the dependency runs one way only.
  */

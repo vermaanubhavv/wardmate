@@ -11,9 +11,8 @@
  *   - history / entry based — something is already in the record (a diagnosis, a drug, a lab
  *     over a threshold, another checklist line answered)
  *   - time based — the post-op day, the chemotherapy cycle day, or hours since surgery /
- *     admission, has reached a point. Which of these clocks a unit's checklist hangs off is
- *     the pack's `checklistAnchor` (lib/specialty/) — a surgical checklist counts from the
- *     operation, an oncology one from the cycle.
+ *     admission, has reached a point. A surgical checklist counts from the operation,
+ *     an oncology one from the cycle.
  *
  * Pure. The caller builds a `TriggerContext` from the patient's observations and dates.
  */
