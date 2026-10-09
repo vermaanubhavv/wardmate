@@ -1,6 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { judgeObservations, type PatientIdentifiers, type TaskCategoryJudgment } from "@/lib/jev-observations";
-import { AI_MODEL } from "@/lib/model";
+import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
 import { traced, recordAiUsage } from "@/lib/observability";
 import { isIdentifierLabel } from "@/lib/patients";
 import { generalSurgeryPack, getSpecialtyPack, type SpecialtyPack } from "@/lib/specialty";
@@ -212,11 +211,7 @@ export async function extractObservations(
   who?: PatientIdentifiers
 ): Promise<ExtractionResult> {
   const pack = getSpecialtyPack(specialty);
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
-
-  const model = AI_MODEL;
-  const client = new Anthropic({ apiKey: key });
+  const client = anthropic();
 
   const expected =
     expectedLabels.length > 0
@@ -249,7 +244,7 @@ export async function extractObservations(
     "gen_ai.chat",
     () =>
       client.messages.create({
-        model,
+        model: AI_MODEL,
         max_tokens: 4000,
         // Still caches on Sonnet 5: ~2,400 tokens against its 1024-token minimum.
         // Two blocks, not one concatenated string. The first is identical on every call and
@@ -275,7 +270,7 @@ export async function extractObservations(
         ],
       }),
     {
-      "gen_ai.request.model": model,
+      "gen_ai.request.model": AI_MODEL,
       "transcript.chars": transcript.length,
       "expected_labels.count": expectedLabels.length,
       "protocols.count": protocols.length,
@@ -283,8 +278,7 @@ export async function extractObservations(
   );
   recordAiUsage(response.usage);
 
-  const text = response.content.find((b) => b.type === "text");
-  const parsed = text && text.type === "text" ? JSON.parse(text.text) : { observations: [] };
+  const parsed = replyJson(response, { observations: [] });
   const candidates: ExtractedObservation[] = parsed.observations ?? [];
 
   // Only a title that was actually offered can survive — the same "the model's word alone is
@@ -345,7 +339,7 @@ export async function extractObservations(
   // Can only add amber and to-do judgments; see lib/jev-observations.ts.
   await judgeObservations(observations, who);
 
-  return { observations, rejected, matchedProtocolIds, model, raw: parsed };
+  return { observations, rejected, matchedProtocolIds, model: AI_MODEL, raw: parsed };
 }
 
 /**

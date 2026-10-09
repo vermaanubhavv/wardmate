@@ -1,5 +1,5 @@
 import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-templates";
-import type { AdviceItem } from "@/lib/discharge-entities";
+import { adv, proc, COMMON_MEDS } from "@/lib/discharge-template-parts";
 
 /**
  * PULMONARY MEDICINE discharge templates. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28).
@@ -18,8 +18,6 @@ import type { AdviceItem } from "@/lib/discharge-entities";
  * TB before pneumonia.
  */
 
-const adv = (items: { module: string; text: string }[]): AdviceItem[] =>
-  items.map((it, i) => ({ id: `adv-${i}`, module: it.module, text: it.text }));
 
 // --- reusable pieces -------------------------------------------------------------------
 
@@ -28,11 +26,11 @@ const M = {
   budesonideFormoterol: { generic: "Budesonide + Formoterol", strength: "200/6 mcg", dose: "2 puffs", route: "Inhaled (MDI with spacer / rotacap via rotahaler)", frequency: "BD", duration: "Long term", indication: "rinse the mouth after each use", status: "new" } as TemplateMedication,
   tiotropium: { generic: "Tiotropium", strength: "18 mcg", dose: "1 rotacap", route: "Inhaled (rotacap via rotahaler)", frequency: "OD", duration: "Long term", status: "new" } as TemplateMedication,
   prednisolone5: { generic: "Prednisolone", strength: "40 mg", route: "PO", frequency: "OD after breakfast", duration: "5 days in total (including the days in hospital)", status: "temporary" } as TemplateMedication,
-  pantoprazole: { generic: "Pantoprazole", strength: "40 mg", route: "PO", frequency: "OD before breakfast", duration: "5 days", status: "new" } as TemplateMedication,
+  pantoprazole: COMMON_MEDS.pantoprazole,
   amoxClav: { generic: "Amoxicillin-clavulanate", strength: "625 mg", route: "PO", frequency: "TDS", duration: "5 days", status: "new" } as TemplateMedication,
   azithromycin: { generic: "Azithromycin", strength: "500 mg", route: "PO", frequency: "OD", duration: "3 days", status: "new" } as TemplateMedication,
   paracetamolSos: { generic: "Paracetamol", strength: "650 mg", route: "PO", frequency: "SOS for fever or pain", status: "prn" } as TemplateMedication,
-  paracetamol: { generic: "Paracetamol", strength: "650 mg", route: "PO", frequency: "TDS", duration: "5 days", status: "new" } as TemplateMedication,
+  paracetamol: COMMON_MEDS.paracetamol,
   att: { generic: "FDC as per NTEP weight band (HRZE, then HRE)", dose: "[ as per weight band ]", route: "PO", frequency: "OD, empty stomach", duration: "Intensive phase 2 months, then continuation phase [ … ] months as per NTEP", status: "new" } as TemplateMedication,
   pyridoxine: { generic: "Pyridoxine", dose: "[ … ]", route: "PO", frequency: "OD", duration: "Throughout treatment", status: "new" } as TemplateMedication,
 };
@@ -56,7 +54,7 @@ const CHEST_OPD = "Attend the Pulmonary Medicine OPD on [ … ] with this summar
 const NTEP_ADHERENCE = { module: "Medication instructions", text: "Take the TB medicines every day without missing a dose, for the full duration. Do not stop when you feel better — stopping early causes drug-resistant TB. Collect the next supply from the DOTS centre / health facility named below before it runs out." };
 const COUGH_HYGIENE = { module: "Activity restrictions", text: "Cover the mouth when coughing, spit into a closed container (not in the open), keep windows open, and sleep in a separate well-ventilated room if possible for the first weeks of treatment." };
 
-function proc(name: string, findings: string, drains = "[ nil ]"): DischargeTemplate["scaffold"]["procedure"] {
+function bedside(name: string, findings: string, drains = "[ nil ]"): DischargeTemplate["scaffold"]["procedure"] {
   return { name, anaesthesia: "", findings, drains, complications: "Nil", outcome: "[ Outcome of this admission ]" };
 }
 
@@ -69,7 +67,7 @@ export const PULMONARY_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
   scaffold: {
     indication: "Patient was admitted with [ presenting respiratory problem ] for [ investigation / medical management / stabilisation ].",
     primaryDiagnosis: "",
-    procedure: proc(
+    procedure: bedside(
       "[ Bedside procedure during this admission, if any — pleural tap, ICD, bronchoscopy, NIV ]",
       "[ relevant results — ABG, sputum AFB / CBNAAT / culture, chest X-ray, CT, pleural fluid, PFT ]",
       "[ lines / drains at discharge, if any ]"
@@ -104,7 +102,7 @@ export const PULMONARY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with [ presentation ] and diagnosed with / known to have [ rifampicin-resistant / MDR / pre-XDR ] tuberculosis, for regimen initiation and monitoring.",
       primaryDiagnosis: "[ RR / MDR / pre-XDR / XDR ] pulmonary tuberculosis — [ CBNAAT / LPA / culture DST result ]",
-      procedure: proc("[ Nil / bronchoscopy / pleural tap ]", "[ CBNAAT, first- and second-line LPA, liquid culture DST; baseline ECG with QTc; audiometry; visual acuity and colour vision; TSH; renal and liver function; HIV; blood sugar ]"),
+      procedure: bedside("[ Nil / bronchoscopy / pleural tap ]", "[ CBNAAT, first- and second-line LPA, liquid culture DST; baseline ECG with QTc; audiometry; visual acuity and colour vision; TSH; renal and liver function; HIV; blood sugar ]"),
       clinicalCourse:
         "Admitted on [ date ] with [ presentation ]. Drug resistance was confirmed by [ … ]. After pre-treatment evaluation, the [ shorter oral / longer oral / BPaLM ] regimen was started on [ date ] as decided by the DR-TB centre. The drugs were tolerated [ without / with … ] adverse effects; QTc on treatment was [ … ] ms. Registered on Nikshay (ID [ … ]) and linked to [ district DR-TB centre / TU ]. Discharged on [ date ] to continue treatment under supervision.",
       medications: [
@@ -157,14 +155,13 @@ export const PULMONARY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with [ sudden breathlessness / chest pain ] and a [ right / left ] [ primary / secondary ] spontaneous pneumothorax requiring intercostal drainage.",
       primaryDiagnosis: "[ Right / left ] [ primary / secondary ] spontaneous pneumothorax [ — underlying: COPD / TB / … ]",
-      procedure: {
+      procedure: proc({
         name: "[ Right / left ] intercostal chest drain insertion",
         anaesthesia: "Local anaesthesia",
         findings: "[ size on X-ray; ICD size and site; air leak — duration; underlying lung disease ]",
         drains: "ICD removed on [ date ] after the lung re-expanded and the air leak stopped",
-        complications: "Nil",
         outcome: "Lung fully re-expanded on the chest X-ray before discharge.",
-      },
+      }),
       clinicalCourse:
         "Admitted on [ date ] with a [ right / left ] pneumothorax. An intercostal drain was inserted on [ date ]. The air leak settled by [ … ]; the drain was clamped / removed on [ date ] and the check X-ray showed the lung re-expanded. [ Underlying disease and its management. ] Discharged comfortable on room air on [ date ].",
       medications: [M.paracetamol, M.paracetamolSos],
@@ -200,14 +197,13 @@ export const PULMONARY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with [ breathlessness / chest pain / fever ] and a [ right / left ] pleural effusion for evaluation and drainage.",
       primaryDiagnosis: "[ Right / left ] [ tubercular / parapneumonic / malignant / transudative ] pleural effusion [ / empyema ]",
-      procedure: {
+      procedure: proc({
         name: "[ Diagnostic and therapeutic thoracocentesis / intercostal drain insertion ] [ right / left ]",
         anaesthesia: "Local anaesthesia",
         findings: "[ volume drained; appearance; pleural fluid protein, LDH, sugar, ADA, cell count and differential, Gram stain, AFB / CBNAAT, culture, cytology; Light's criteria ]",
         drains: "[ ICD removed on [ date ] / nil ]",
-        complications: "Nil",
         outcome: "[ Residual effusion on the check X-ray: nil / minimal / … ]",
-      },
+      }),
       clinicalCourse:
         "Admitted on [ date ] with a [ right / left ] pleural effusion. [ Thoracocentesis / ICD insertion ] was done on [ date ], draining [ … ] ml of [ straw-coloured / turbid / haemorrhagic ] fluid. Fluid analysis showed [ … ], consistent with a [ … ] effusion. [ ATT started on [ date ] and registered on Nikshay (ID [ … ]) / antibiotics given for [ … ] days / oncology referral. ] [ The drain was removed on [ date ]. ] Discharged comfortable on room air on [ date ].",
       medications: [
@@ -253,7 +249,7 @@ export const PULMONARY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient, a known case of COPD, was admitted with an acute exacerbation — increased breathlessness [ and sputum volume / purulence ].",
       primaryDiagnosis: "Acute exacerbation of COPD [ — infective / non-infective ] [ with type 2 respiratory failure ]",
-      procedure: proc("[ Nil / NIV (BiPAP) for [ … ] days ]", "[ ABG on admission and at discharge; chest X-ray; sputum culture; ECG; echo if cor pulmonale ]"),
+      procedure: bedside("[ Nil / NIV (BiPAP) for [ … ] days ]", "[ ABG on admission and at discharge; chest X-ray; sputum culture; ECG; echo if cor pulmonale ]"),
       clinicalCourse:
         "Admitted on [ date ] with an exacerbation of COPD. Treated with controlled oxygen, nebulised bronchodilators, systemic steroids [ and antibiotics ] [ and NIV for [ … ] days ]. Breathlessness improved; saturation [ … ]% on [ room air / … L/min ] at discharge. Inhaler technique was checked. Discharged on [ date ].",
       medications: [
@@ -293,7 +289,7 @@ export const PULMONARY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with an acute exacerbation of bronchial asthma — [ moderate / acute severe / life-threatening ].",
       primaryDiagnosis: "Acute exacerbation of bronchial asthma [ — trigger: viral infection / allergen / non-adherence / … ]",
-      procedure: proc("[ Nil ]", "[ PEFR on admission and at discharge; ABG; chest X-ray ]"),
+      procedure: bedside("[ Nil ]", "[ PEFR on admission and at discharge; ABG; chest X-ray ]"),
       clinicalCourse:
         "Admitted on [ date ] with acute asthma (PEFR [ … ]% of best / predicted). Treated with oxygen, nebulised salbutamol and ipratropium and systemic steroids [ and IV magnesium ]. Improved steadily; PEFR at discharge [ … ]%, stable on room air. Inhaler technique was checked and a written action plan given. Discharged on [ date ].",
       medications: [M.budesonideFormoterol, M.salbutamolSos, M.prednisolone5, { generic: "Montelukast", strength: "10 mg", route: "PO", frequency: "HS", indication: "if already on it before admission", status: "continue" }],
@@ -322,7 +318,7 @@ export const PULMONARY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient, a known case of bronchiectasis [ post-TB / … ], was admitted with an infective exacerbation — increased cough, sputum and breathlessness [ with haemoptysis ].",
       primaryDiagnosis: "Infective exacerbation of bronchiectasis [ — cause: post-infective / post-TB / ABPA / … ] [ — organism: … ]",
-      procedure: proc("[ Nil ]", "[ sputum culture and sensitivity; HRCT chest; chest X-ray ]"),
+      procedure: bedside("[ Nil ]", "[ sputum culture and sensitivity; HRCT chest; chest X-ray ]"),
       clinicalCourse:
         "Admitted on [ date ] with an exacerbation of bronchiectasis. Sputum was sent for culture before antibiotics; treated with [ … ] [ changed to … as per culture ], airway-clearance physiotherapy and bronchodilators. Sputum volume reduced and fever settled. Discharged on [ date ] to complete the course.",
       medications: [
@@ -354,7 +350,7 @@ export const PULMONARY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with progressive breathlessness [ / an acute exacerbation ] of interstitial lung disease for evaluation and management.",
       primaryDiagnosis: "Interstitial lung disease — [ IPF / NSIP / hypersensitivity pneumonitis / CTD-ILD / … ] [ with acute exacerbation ]",
-      procedure: proc("[ Nil / bronchoscopy with BAL ]", "[ HRCT pattern; PFT (FVC, DLCO); 6-minute walk distance and desaturation; ANA / ENA / RF / anti-CCP; echo for pulmonary hypertension ]"),
+      procedure: bedside("[ Nil / bronchoscopy with BAL ]", "[ HRCT pattern; PFT (FVC, DLCO); 6-minute walk distance and desaturation; ANA / ENA / RF / anti-CCP; echo for pulmonary hypertension ]"),
       clinicalCourse:
         "Admitted on [ date ] with [ presentation ]. HRCT showed a [ … ] pattern. [ Triggers — infection, pulmonary embolism, heart failure — excluded / treated. ] [ Antifibrotic / steroid / immunosuppressant ] started or continued as below. Saturation [ … ]% on [ room air / … L/min oxygen ] at rest [ and … on exertion ]. Discharged on [ date ].",
       medications: [
@@ -387,7 +383,7 @@ export const PULMONARY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with [ snoring, witnessed apnoeas, daytime sleepiness / hypercapnic respiratory failure ] for evaluation of sleep-disordered breathing and initiation of positive-airway-pressure therapy.",
       primaryDiagnosis: "Obstructive sleep apnoea — [ mild / moderate / severe ], AHI [ … ] / h [ with obesity hypoventilation ]",
-      procedure: proc("[ Polysomnography with CPAP titration ]", "[ AHI; lowest saturation; titrated pressure; ABG (bicarbonate, PaCO2); BMI; neck circumference; TSH ]"),
+      procedure: bedside("[ Polysomnography with CPAP titration ]", "[ AHI; lowest saturation; titrated pressure; ABG (bicarbonate, PaCO2); BMI; neck circumference; TSH ]"),
       clinicalCourse:
         "Admitted on [ date ]. Polysomnography showed AHI [ … ] / h with a lowest saturation of [ … ]%. CPAP was titrated to [ … ] cmH2O [ / BiPAP … ] and tolerated with a [ nasal / oronasal ] mask. Mask fitting and machine use were taught to the patient and family. Discharged on [ date ].",
       medications: [
@@ -417,7 +413,7 @@ export const PULMONARY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with [ cough / fever / weight loss / haemoptysis ] and [ diagnosed with / known to have ] pulmonary tuberculosis, for [ evaluation and initiation of ATT / management of complication ].",
       primaryDiagnosis: "Pulmonary tuberculosis — [ new / previously treated ], [ microbiologically confirmed (CBNAAT / smear) / clinically diagnosed ], rifampicin [ sensitive / not detected ]",
-      procedure: proc("[ Nil / bronchoscopy with BAL / pleural tap ]", "[ sputum smear, CBNAAT (rifampicin resistance), chest X-ray; HIV; blood sugar; liver function ]"),
+      procedure: bedside("[ Nil / bronchoscopy with BAL / pleural tap ]", "[ sputum smear, CBNAAT (rifampicin resistance), chest X-ray; HIV; blood sugar; liver function ]"),
       clinicalCourse:
         "Admitted on [ date ] with [ presentation ]. Pulmonary TB was diagnosed on [ … ]; rifampicin resistance was [ not detected ]. ATT (FDC, [ … ] kg weight band) was started on [ date ] / continued, and tolerated [ without adverse effects / with … ]. Registered on Nikshay (ID [ … ]) and linked to [ DMC / TU / DOTS centre ]. [ HIV / diabetes status. ] Discharged on [ date ], afebrile and tolerating orals.",
       medications: [M.att, { ...M.pyridoxine, indication: "as per NTEP" }, M.paracetamolSos],
@@ -455,7 +451,7 @@ export const PULMONARY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with fever, cough and breathlessness and features of community-acquired pneumonia [ CURB-65 score [ … ] ].",
       primaryDiagnosis: "Community-acquired pneumonia — [ right / left ] [ lobe ] [ — organism: … ]",
-      procedure: proc("[ Nil ]", "[ chest X-ray; blood and sputum cultures; sputum AFB / CBNAAT; CBC; CRP; renal function ]"),
+      procedure: bedside("[ Nil ]", "[ chest X-ray; blood and sputum cultures; sputum AFB / CBNAAT; CBC; CRP; renal function ]"),
       clinicalCourse:
         "Admitted on [ date ] with community-acquired pneumonia (CURB-65 [ … ]). Blood and sputum cultures were sent before antibiotics; treated with IV [ … ] and oxygen as needed. Fever settled by [ … ] and oxygen was weaned. Switched to oral antibiotics on [ date ]. Afebrile for 48 hours, stable on room air at discharge on [ date ].",
       medications: [

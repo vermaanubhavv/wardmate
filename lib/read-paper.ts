@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { AI_MODEL } from "@/lib/model";
+import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
 
 /**
  * One page out of a patient's file: what kind of paper it is, and what it says.
@@ -82,11 +81,8 @@ export async function readPaper(
   base64Image: string,
   mediaType: "image/jpeg" | "image/png" | "image/webp"
 ): Promise<ReadPaperResult> {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const model = AI_MODEL;
-
-  const response = await client.messages.create({
-    model,
+  const response = await anthropic().messages.create({
+    model: AI_MODEL,
     max_tokens: 4000,
     // Marked for caching, but INERT ON SONNET 5: this prompt is ~620 tokens and Sonnet 5's
     // minimum cacheable prefix is 1024 (Opus 5's is 512, where it did cache — measured at
@@ -119,13 +115,13 @@ export async function readPaper(
       `cache_read=${u.cache_read_input_tokens ?? 0} out=${u.output_tokens}`
   );
 
-  const text = response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
-    .map((b) => b.text)
-    .join("")
-    .trim();
-
-  const parsed = parseJson(text);
+  let parsed: Record<string, unknown> | null = null;
+  try {
+    parsed = replyJson(response, null);
+  } catch {
+    // fall through to the error below
+  }
+  if (!parsed) throw new Error("Could not read that photo — the reply was not in the expected form.");
   const kind = (PAPER_KINDS.find((k) => k.kind === parsed.kind)?.kind ?? "other") as PaperKind;
 
   return {
@@ -148,18 +144,6 @@ export async function readPaper(
       /^\d{4}-\d{2}-\d{2}$/.test(parsed.surgeryDate.trim())
         ? parsed.surgeryDate.trim()
         : null,
-    model,
+    model: AI_MODEL,
   };
-}
-
-/** The model is asked for bare JSON; a fenced block is tolerated rather than failing the page. */
-function parseJson(text: string): Record<string, unknown> {
-  const body = text.startsWith("```")
-    ? text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "")
-    : text;
-  try {
-    return JSON.parse(body) as Record<string, unknown>;
-  } catch {
-    throw new Error("Could not read that photo — the reply was not in the expected form.");
-  }
 }

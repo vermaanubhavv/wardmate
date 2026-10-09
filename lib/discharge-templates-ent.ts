@@ -1,5 +1,5 @@
-import type { AdviceItem } from "@/lib/discharge-entities";
 import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-templates";
+import { adv, proc, COMMON_MEDS } from "@/lib/discharge-template-parts";
 
 /**
  * ENT discharge templates. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28).
@@ -16,15 +16,11 @@ import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-temp
  * before septoplasty (a combined septoplasty + FESS takes the FESS set).
  */
 
-const adv = (items: { module: string; text: string }[]): AdviceItem[] =>
-  items.map((it, i) => ({ id: `adv-${i}`, module: it.module, text: it.text }));
 
 // --- reusable pieces -------------------------------------------------------------------
 
 const M = {
-  paracetamol: { generic: "Paracetamol", strength: "650 mg", route: "PO", frequency: "TDS", duration: "5 days", status: "new" } as TemplateMedication,
-  paracetamolSos: { generic: "Paracetamol", strength: "650 mg", route: "PO", frequency: "SOS for pain", status: "prn" } as TemplateMedication,
-  pantoprazole: { generic: "Pantoprazole", strength: "40 mg", route: "PO", frequency: "OD before breakfast", duration: "5 days", status: "new" } as TemplateMedication,
+  ...COMMON_MEDS,
   amoxClav: { generic: "Amoxicillin-clavulanate", strength: "625 mg", route: "PO", frequency: "TDS", duration: "7 days", status: "new" } as TemplateMedication,
   levocetirizine: { generic: "Levocetirizine", strength: "5 mg", route: "PO", frequency: "HS", duration: "10 days", status: "new" } as TemplateMedication,
   oxymetazoline: { generic: "Oxymetazoline 0.05% nasal drops", dose: "2 drops each nostril", route: "intranasal", frequency: "BD", duration: "5 days", indication: "not beyond 5 days (rebound congestion)", status: "new" } as TemplateMedication,
@@ -52,14 +48,13 @@ export const ENT_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [ upper airway obstruction / prolonged ventilation / inability to protect the airway ] due to [ cause ], requiring tracheostomy.",
       primaryDiagnosis: "[ Underlying condition ] — status post tracheostomy",
-      procedure: {
+      procedure: proc({
         name: "[ Elective / emergency ] [ surgical / percutaneous ] tracheostomy",
         anaesthesia: "[ General / local ] anaesthesia",
         findings: "[ tracheal ring level; stoma; tube type (cuffed / uncuffed / metal), size and inner cannula ]",
         drains: "",
-        complications: "Nil",
         outcome: "Procedure completed successfully; airway secured.",
-      },
+      }),
       clinicalCourse:
         "Tracheostomy was performed on [ date ]. The first tube change was done on POD [ __ ] [ and the tube changed to a __ ]. The stoma is healthy. The patient and caregiver were trained in suctioning, inner-cannula cleaning, tie care and emergency tube reinsertion, and demonstrated them on the ward. The patient is maintaining saturation on room air [ with humidification ] at discharge. [ Plan for decannulation / long-term tube. ]",
       medications: [
@@ -109,14 +104,13 @@ export const ENT_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with hoarseness of voice for [ duration ] due to a [ right / left / bilateral ] vocal cord [ polyp / nodule / cyst / leukoplakia / lesion ], for microlaryngeal surgery.",
       primaryDiagnosis: "[ Right / left / bilateral ] vocal cord [ polyp / nodules / cyst / Reinke's oedema / leukoplakia / lesion ]",
-      procedure: {
+      procedure: proc({
         name: "Microlaryngeal surgery — [ excision / excision biopsy / decortication ] of [ lesion ] [ cold steel / laser ]",
         anaesthesia: "General anaesthesia",
         findings: "[ lesion site, size and extent; anterior commissure; mobility; the other cord ]",
         drains: "",
-        complications: "Nil",
         outcome: "Procedure completed successfully; specimen sent for histopathology.",
-      },
+      }),
       clinicalCourse:
         "Microlaryngeal surgery was performed on [ date ] under general anaesthesia. Recovery was uneventful; there was no stridor or bleeding, and oral intake was resumed. The patient was counselled on strict voice rest. The patient is comfortable at discharge.",
       medications: [
@@ -159,14 +153,13 @@ export const ENT_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [ fever, sore throat, odynophagia, trismus / neck swelling ] due to a [ right / left ] [ peritonsillar / parapharyngeal / retropharyngeal / submandibular ] abscess, requiring incision and drainage and intravenous antibiotics.",
       primaryDiagnosis: "[ Right / left ] [ peritonsillar abscess (quinsy) / parapharyngeal / retropharyngeal / submandibular space abscess / Ludwig's angina ] [ source — tonsillar / dental ]",
-      procedure: {
+      procedure: proc({
         name: "[ Needle aspiration / incision and drainage ] of [ site ] abscess [ intraoral / external cervical approach ]",
         anaesthesia: "[ Local / general ] anaesthesia",
         findings: "[ volume and nature of pus; spaces involved; pus sent for culture ]",
         drains: "[ corrugated drain — removed on POD __ / nil ]",
-        complications: "Nil",
         outcome: "Abscess drained; airway maintained.",
-      },
+      }),
       clinicalCourse:
         "Admitted with [ site ] abscess; the airway was monitored. [ Procedure ] was performed on [ date ] with [ volume ] of pus drained, and intravenous antibiotics were given [ adjusted to the culture report ]. Fever, trismus and swelling settled, and oral intake was resumed. [ The drain was removed on POD __. ] [ Blood sugar was checked and controlled. ] The patient is afebrile, swallowing normally and breathing comfortably at discharge.",
       medications: [
@@ -212,14 +205,13 @@ export const ENT_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [ recurrent tonsillitis / tonsillar hypertrophy with obstructive sleep-disordered breathing / adenoid hypertrophy ] for [ tonsillectomy / adenotonsillectomy ].",
       primaryDiagnosis: "[ Chronic / recurrent tonsillitis / adenotonsillar hypertrophy ]",
-      procedure: {
+      procedure: proc({
         name: "[ Bilateral tonsillectomy / adenotonsillectomy ] — [ dissection and snare / coblation / bipolar ] method",
         anaesthesia: "General anaesthesia",
         findings: "[ tonsil size and grade; adenoid size; haemostasis ]",
         drains: "",
-        complications: "Nil",
         outcome: "Procedure completed successfully; [ specimen sent for histopathology ].",
-      },
+      }),
       clinicalCourse:
         "[ Tonsillectomy / adenotonsillectomy ] was performed on [ date ] under general anaesthesia. There was no primary haemorrhage. Oral fluids were started after recovery and a soft diet was tolerated from POD 1. The tonsillar fossae are clean with a normal slough, and there is no bleeding at discharge.",
       medications: [
@@ -264,14 +256,13 @@ export const ENT_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with chronic otitis media of the [ right / left ] ear [ mucosal / squamous (cholesteatoma) type ] with [ ear discharge / hearing loss ], for [ tympanoplasty / mastoidectomy ].",
       primaryDiagnosis: "[ Right / left ] chronic otitis media — [ mucosal (inactive / active) / squamous with cholesteatoma ]",
-      procedure: {
+      procedure: proc({
         name: "[ Right / left ] [ type I tympanoplasty / cortical mastoidectomy with tympanoplasty / modified radical mastoidectomy / canal wall down mastoidectomy ] [ + ossiculoplasty ]",
         anaesthesia: "[ General / local ] anaesthesia",
         findings: "[ perforation size and site; middle-ear mucosa; ossicular chain; cholesteatoma extent; facial nerve and dural plate; graft (temporalis fascia / tragal perichondrium) and technique ]",
         drains: "",
-        complications: "Nil",
         outcome: "Procedure completed successfully; ear canal packed.",
-      },
+      }),
       clinicalCourse:
         "[ Procedure ] was performed on [ date ] under [ general / local ] anaesthesia through a [ postaural / endaural / transcanal ] approach. Postoperatively there was no facial weakness, vertigo or wound collection. The mastoid dressing was removed on POD [ 1 ]. The patient is afebrile and comfortable, with the canal pack in place and the wound healthy at discharge.",
       medications: [
@@ -318,14 +309,13 @@ export const ENT_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [ chronic rhinosinusitis with / without nasal polyps / antrochoanal polyp / fungal sinusitis ] not responding to medical treatment, for functional endoscopic sinus surgery.",
       primaryDiagnosis: "[ Chronic rhinosinusitis with nasal polyposis / without polyps / antrochoanal polyp / allergic fungal rhinosinusitis ]",
-      procedure: {
+      procedure: proc({
         name: "[ Bilateral / right / left ] functional endoscopic sinus surgery — [ uncinectomy, middle meatal antrostomy, anterior / posterior ethmoidectomy, frontal / sphenoid clearance ] [ + polypectomy ] [ + septoplasty ]",
         anaesthesia: "General anaesthesia",
         findings: "[ polyp extent; sinuses involved; mucin / fungal debris; skull base and lamina papyracea intact ]",
         drains: "[ nasal packs — removed on POD __ ]",
-        complications: "Nil",
         outcome: "Procedure completed successfully; specimen sent for histopathology [ and fungal studies ].",
-      },
+      }),
       clinicalCourse:
         "Functional endoscopic sinus surgery was performed on [ date ]. There was no orbital or skull-base complication. Nasal packs were removed on POD [ __ ] with no active bleeding. The patient is breathing through the nose, afebrile and comfortable at discharge.",
       medications: [
@@ -372,14 +362,13 @@ export const ENT_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with nasal obstruction due to a deviated nasal septum [ with spur to the right / left ], for septoplasty.",
       primaryDiagnosis: "Deviated nasal septum [ to the right / left; C / S shaped; with spur ]",
-      procedure: {
+      procedure: proc({
         name: "Septoplasty [ + inferior turbinate reduction ]",
         anaesthesia: "[ General / local ] anaesthesia",
         findings: "[ deviation site and type; spur; turbinate hypertrophy ]",
         drains: "[ nasal packs / septal splints — removed on POD __ ]",
-        complications: "Nil",
         outcome: "Procedure completed successfully.",
-      },
+      }),
       clinicalCourse:
         "Septoplasty was performed on [ date ]. Nasal packs were removed on POD [ __ ]; there was no active bleeding or septal haematoma. The patient is breathing through both nostrils, afebrile and comfortable at discharge [ with septal splints in place ].",
       medications: [
@@ -423,14 +412,13 @@ export const ENT_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [ recurrent / active ] [ anterior / posterior ] epistaxis from the [ right / left ] nasal cavity, requiring nasal packing and inpatient observation.",
       primaryDiagnosis: "[ Anterior / posterior ] epistaxis [ right / left ] — [ cause: Little's area / hypertension / anticoagulant / idiopathic / other ]",
-      procedure: {
+      procedure: proc({
         name: "[ Anterior nasal packing / posterior nasal packing / nasal endoscopic cauterisation ] [ right / left ]",
         anaesthesia: "[ Local / general ] anaesthesia",
         findings: "[ bleeding site; pack type; blood pressure at presentation ]",
         drains: "[ packs removed on day __ ]",
-        complications: "Nil",
         outcome: "Bleeding controlled.",
-      },
+      }),
       clinicalCourse:
         "Admitted with epistaxis; resuscitated [ and blood pressure controlled ]. [ Pack type ] was placed on [ date ] with antibiotic cover. [ Anticoagulant / antiplatelet was withheld and reviewed. ] Packs were removed on day [ __ ] with no rebleed during [ 24 ] hours of observation. Haemoglobin at discharge [ __ g/dl ]. The patient is haemodynamically stable at discharge.",
       medications: [
@@ -481,14 +469,13 @@ export const ENT_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     indication:
       "Patient was admitted with [ presenting problem ] for [ investigation / ENT procedure / medical management ].",
     primaryDiagnosis: "",
-    procedure: {
+    procedure: proc({
       name: "[ Procedure during this admission, if any ]",
       anaesthesia: "",
       findings: "[ relevant operative / endoscopic findings ]",
       drains: "[ packs / drains / tube at discharge, if any ]",
-      complications: "Nil",
       outcome: "[ Outcome ]",
-    },
+    }),
     clinicalCourse:
       "Admitted on [ date ] with [ presenting complaint ]. [ Procedure / treatment during the admission. ] The patient improved, was afebrile and stable, and was fit for discharge on [ date ] with the plan below.",
     medications: [],

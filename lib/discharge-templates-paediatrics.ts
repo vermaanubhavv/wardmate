@@ -1,5 +1,5 @@
-import type { AdviceItem } from "@/lib/discharge-entities";
 import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-templates";
+import { adv } from "@/lib/discharge-template-parts";
 
 /**
  * PAEDIATRICS discharge templates. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28).
@@ -24,8 +24,6 @@ import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-temp
  * before epilepsy.
  */
 
-const adv = (items: { module: string; text: string }[]): AdviceItem[] =>
-  items.map((it, i) => ({ id: `adv-${i}`, module: it.module, text: it.text }));
 
 /** The only dose text a paediatric template ever carries. */
 const PER_KG = "[ as charted — by weight or age ]";

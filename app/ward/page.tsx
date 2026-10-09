@@ -18,8 +18,7 @@ import { createClient } from "@/lib/supabase/server";
 import { countWardPendingConfirmations } from "@/lib/confirm-queue";
 import { criticalFlags, isDischargeable, type WardFlag } from "@/lib/ward-flags";
 import { getWardTasks } from "@/lib/todo";
-import type { getWardScoringTasks } from "@/lib/scoring/read";
-import { buildWardTodoPreview, countWardOutstanding } from "@/lib/ward-todo-preview";
+import { buildWardTodoPreview } from "@/lib/ward-todo-preview";
 import { TriangleAlert, CircleCheckBig, ListChecks, SquarePen, CircleAlert, Settings } from "lucide-react";
 import WardSearch from "./ward-search";
 
@@ -87,7 +86,6 @@ export default async function Home({
   const jobCounts = new Map<string, number>();
   for (const t of tasks) jobCounts.set(t.patient_id, (jobCounts.get(t.patient_id) ?? 0) + 1);
   const patients = screenPatients.map((p) => ({ ...p, open_task_count: jobCounts.get(p.id) ?? 0 }));
-  const noSuggestions: Awaited<ReturnType<typeof getWardScoringTasks>> = new Map();
 
   // Every hit, worst first: the chip shows the first and counts the rest ("K⁺ 6.4 +1").
   const allFlags = new Map(patients.map((p) => [p.id, criticalFlags(p, pack.key)]));
@@ -109,8 +107,8 @@ export default async function Home({
     .slice()
     .sort((a, b) => Number(Boolean(flags.get(b.id))) - Number(Boolean(flags.get(a.id))));
 
-  const todoPreview = buildWardTodoPreview(tasks, noSuggestions, patients, 3);
-  const totalOutstanding = countWardOutstanding(tasks, noSuggestions);
+  const todoPreview = buildWardTodoPreview(tasks, 3);
+  const totalOutstanding = tasks.length;
 
   if (wardError || !ward) {
     return (

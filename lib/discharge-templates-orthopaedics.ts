@@ -1,5 +1,5 @@
-import type { AdviceItem } from "@/lib/discharge-entities";
 import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-templates";
+import { adv, proc } from "@/lib/discharge-template-parts";
 
 /**
  * ORTHOPAEDICS discharge templates. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28).
@@ -18,8 +18,6 @@ import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-temp
  * (lib/specialty/discharge.ts), so the array is ordered specific-before-general.
  */
 
-const adv = (items: { module: string; text: string }[]): AdviceItem[] =>
-  items.map((it, i) => ({ id: `adv-${i}`, module: it.module, text: it.text }));
 
 // --- reusable pieces -------------------------------------------------------------------
 
@@ -66,14 +64,13 @@ export const ORTHOPAEDICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [ pain, swelling and fever of the (joint / limb) ] with clinical and laboratory features of [ septic arthritis / acute / chronic osteomyelitis ], requiring surgical drainage and intravenous antibiotics.",
       primaryDiagnosis: "[ Septic arthritis of the (right / left) (joint) / (acute / chronic) osteomyelitis of the (bone) ] — [ organism and sensitivity ]",
-      procedure: {
+      procedure: proc({
         name: "[ Arthrotomy and joint washout / arthroscopic lavage / sequestrectomy and saucerisation / drainage of subperiosteal abscess ]",
         anaesthesia: "[ General / spinal ] anaesthesia",
         findings: "[ nature and volume of pus; cartilage state; sequestrum size and site; involucrum; samples sent for culture, AFB and histopathology ]",
         drains: "[ suction drain / nil ]",
-        complications: "Nil",
         outcome: "Procedure completed; pus and tissue sent for culture and histopathology.",
-      },
+      }),
       clinicalCourse:
         "Admitted with [presentation]. Blood and aspirate cultures were sent and empirical intravenous antibiotics started. Underwent [procedure] on [date]. Culture grew [ organism ] sensitive to [ … ]; antibiotics were changed accordingly. Fever settled, local signs and CRP / ESR improved [ CRP __ → __ ]. The limb was [ splinted / mobilised ]. The patient is afebrile with a healthy wound at discharge, to complete oral antibiotics.",
       medications: [
@@ -123,14 +120,13 @@ export const ORTHOPAEDICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted after [ mechanism of injury ] with an open fracture of the [ right / left ] [ bone ] [ Gustilo-Anderson grade __ ], requiring debridement and skeletal stabilisation.",
       primaryDiagnosis: "Open fracture [ right / left ] [ bone, site ] — Gustilo-Anderson grade [ I / II / IIIA / IIIB / IIIC ]",
-      procedure: {
+      procedure: proc({
         name: "Wound debridement and [ external fixator (uniplanar / JESS / LRS / ring) ] application [ + wound closure / flap / split-skin graft ]",
         anaesthesia: "[ Spinal / general / regional block ] anaesthesia",
         findings: "[ wound size and contamination; soft-tissue and bone loss; neurovascular status; fixator construct ]",
         drains: "[ nil / NPWT (vacuum dressing) ]",
-        complications: "Nil",
         outcome: "Procedure completed; limb stabilised.",
-      },
+      }),
       clinicalCourse:
         "Received after [mechanism] on [date]; tetanus prophylaxis and intravenous antibiotics were given in the emergency department. Underwent debridement and external fixator application on [date] [ and relook debridement on __ / wound cover by __ on __ ]. Postoperatively the limb was elevated; distal neurovascular status remained intact; pin sites are clean. The patient is afebrile and mobilising [ non-weight-bearing with a walker ] at discharge. [ Definitive fixation is planned on __. ]",
       medications: [
@@ -182,14 +178,13 @@ export const ORTHOPAEDICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted after [ a fall at home ] with pain and inability to bear weight on the [ right / left ] hip, with an X-ray showing a [ neck of femur / intertrochanteric / subtrochanteric ] fracture requiring surgical fixation.",
       primaryDiagnosis: "[ Right / left ] [ intracapsular neck of femur (Garden __) / intertrochanteric / subtrochanteric ] fracture",
-      procedure: {
+      procedure: proc({
         name: "[ Bipolar / unipolar hemiarthroplasty (cemented / uncemented) / DHS fixation / PFN / cannulated screw fixation ]",
         anaesthesia: "[ Spinal / general ] anaesthesia [ + fascia iliaca block ]",
         findings: "[ fracture pattern; reduction achieved; implant size; tip-apex distance ]",
         drains: "[ suction drain / nil ]",
-        complications: "Nil",
         outcome: "Procedure completed successfully; check X-ray satisfactory.",
-      },
+      }),
       clinicalCourse:
         "Admitted after [mechanism] on [date]. Optimised for surgery [ correction of anaemia / electrolytes / medical review ]. Underwent [procedure] on [date]. Postoperatively [ … units of blood were transfused ]; check X-ray showed [ satisfactory reduction and implant position ]. Mobilised [ full weight-bearing / partial weight-bearing ] with a walker from POD [ __ ] under physiotherapy. Delirium, pressure areas and bowels were monitored. The patient is afebrile, comfortable and walking with a walker at discharge.",
       medications: [
@@ -245,14 +240,13 @@ export const ORTHOPAEDICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted for an elective [ total knee / total hip ] replacement of the [ right / left / both ] side(s) for [ osteoarthritis / rheumatoid arthritis / avascular necrosis ] with pain and loss of function despite conservative treatment.",
       primaryDiagnosis: "[ Primary osteoarthritis / rheumatoid arthritis / AVN of femoral head ] — [ right / left / bilateral ] [ knee / hip ]",
-      procedure: {
+      procedure: proc({
         name: "[ Right / left / bilateral ] [ total knee / total hip ] arthroplasty [ cemented / uncemented / hybrid ]",
         anaesthesia: "[ Spinal / combined spinal-epidural ] anaesthesia [ + adductor canal block ]",
         findings: "[ deformity and its correction; bone quality; implant make and sizes ]",
         drains: "[ suction drain / nil ]",
-        complications: "Nil",
         outcome: "Procedure completed successfully; check X-ray satisfactory.",
-      },
+      }),
       clinicalCourse:
         "Underwent [procedure] on [date]. Mobilised full weight-bearing with a walker from POD [ __ ] under physiotherapy; [ knee flexion __° / hip precautions taught ]. [ Drain removed on POD __. ] Check X-ray showed satisfactory implant position. The patient is afebrile, the wound is healthy and the patient is walking with a walker and climbing stairs with support at discharge.",
       medications: [
@@ -304,14 +298,13 @@ export const ORTHOPAEDICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted for arthroscopic reconstruction of an [ ACL ] tear of the [ right / left ] knee [ with meniscal injury ] following [ a sports / twisting injury ], with instability.",
       primaryDiagnosis: "[ Right / left ] knee [ ACL tear ] [ + medial / lateral meniscus tear ]",
-      procedure: {
+      procedure: proc({
         name: "Arthroscopic [ ACL reconstruction with (hamstring / BTB / peroneus) graft ] [ + partial meniscectomy / meniscal repair ]",
         anaesthesia: "[ Spinal / general ] anaesthesia",
         findings: "[ ligament and meniscal findings; cartilage; graft size; fixation (endobutton / interference screw) ]",
         drains: "[ nil / suction drain ]",
-        complications: "Nil",
         outcome: "Procedure completed successfully.",
-      },
+      }),
       clinicalCourse:
         "Underwent [procedure] on [date]. The knee was placed in a [ hinged knee brace locked in extension ]. Pain was controlled; quadriceps and straight-leg-raise exercises started on POD 1 and the patient mobilised [ partial / full weight-bearing ] with crutches. The wound is healthy and the patient is comfortable at discharge.",
       medications: [M.paracetamol, M.aceclofenac, M.pantoprazole, M.tramadol],
@@ -344,14 +337,13 @@ export const ORTHOPAEDICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [ low back pain radiating to the (right / left) leg / neurogenic claudication ] due to [ PIVD at L__–L__ / lumbar canal stenosis ] not responding to conservative treatment, requiring surgical decompression.",
       primaryDiagnosis: "[ PIVD L__–L__ with (right / left) radiculopathy / lumbar canal stenosis L__–L__ ]",
-      procedure: {
+      procedure: proc({
         name: "[ Fenestration and discectomy / microdiscectomy / laminectomy and decompression ] at L__–L__ [ + TLIF / pedicle-screw fixation ]",
         anaesthesia: "General anaesthesia",
         findings: "[ disc fragment — sequestrated / extruded; nerve root compression; dural tear (nil) ]",
         drains: "[ suction drain / nil ]",
-        complications: "Nil",
         outcome: "Procedure completed; root decompressed.",
-      },
+      }),
       clinicalCourse:
         "Underwent [procedure] on [date]. Postoperatively the leg pain [ resolved / improved ]; neurology is [ unchanged / improved — power __ ]; bladder and bowel function normal. [ Drain removed on POD __. ] Mobilised with [ a lumbar belt ] from POD [ __ ]. The patient is comfortable, walking independently with a healthy wound at discharge.",
       medications: [
@@ -395,14 +387,13 @@ export const ORTHOPAEDICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted after [ mechanism of injury ] with a closed fracture of the [ right / left ] [ bone, site ] requiring operative fixation.",
       primaryDiagnosis: "[ Right / left ] closed [ fracture pattern ] fracture of the [ bone, site ] [ classification ]",
-      procedure: {
+      procedure: proc({
         name: "[ Open reduction and internal fixation with (plate type) / closed reduction and intramedullary nailing / K-wire fixation / tension-band wiring ]",
         anaesthesia: "[ Spinal / general / regional block ] anaesthesia",
         findings: "[ fracture pattern; comminution; reduction achieved; implant ]",
         drains: "[ suction drain / nil ]",
-        complications: "Nil",
         outcome: "Procedure completed successfully; check X-ray satisfactory.",
-      },
+      }),
       clinicalCourse:
         "Admitted after [mechanism] on [date]; the limb was splinted and elevated. Underwent [procedure] on [date]. Distal neurovascular status remained intact; check X-ray showed [ satisfactory reduction and implant position ]. Mobilised [ non- / partial weight-bearing ] under physiotherapy. The patient is afebrile, comfortable and the wound is healthy at discharge.",
       medications: [
@@ -440,14 +431,13 @@ export const ORTHOPAEDICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted after [ mechanism of injury ] with a closed [ fracture / dislocation ] of the [ right / left ] [ bone, site ] managed by closed reduction and immobilisation.",
       primaryDiagnosis: "[ Right / left ] closed [ fracture / dislocation ] of the [ bone, site ]",
-      procedure: {
+      procedure: proc({
         name: "Closed reduction and [ above- / below-elbow / above- / below-knee ] [ plaster cast / POP slab ]",
         anaesthesia: "[ Sedation / haematoma block / regional block / general ] anaesthesia",
         findings: "[ reduction achieved on check X-ray ]",
         drains: "Nil",
-        complications: "Nil",
         outcome: "Reduction satisfactory; limb immobilised.",
-      },
+      }),
       clinicalCourse:
         "Admitted after [mechanism] on [date]. Closed reduction under [ anaesthesia ] and [ cast / slab ] application was done on [date]; check X-ray showed [ acceptable reduction ]. The limb was elevated and swelling settled; distal circulation and sensation remain normal. The patient is comfortable at discharge.",
       medications: [M.paracetamol, M.aceclofenac, M.pantoprazole, M.calciumD3],
@@ -485,14 +475,13 @@ export const ORTHOPAEDICS_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     indication:
       "Patient was admitted with [ presentation / injury ] requiring [ inpatient management / surgery ].",
     primaryDiagnosis: "",
-    procedure: {
+    procedure: proc({
       name: "[ Procedure name ]",
       anaesthesia: "[ General / spinal / regional ]",
       findings: "[ significant operative findings; implant ]",
       drains: "[ drains, if any ]",
-      complications: "Nil",
       outcome: "Procedure completed successfully.",
-    },
+    }),
     clinicalCourse:
       "Admitted with [presentation]. [Procedure] was performed on [date]. The postoperative period was [uneventful]; distal neurovascular status remained intact. The patient is afebrile, comfortable and mobilising [ with support ] at discharge.",
     medications: [M.paracetamol, M.aceclofenac, M.pantoprazole],
