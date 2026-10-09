@@ -21,7 +21,9 @@ describe("IV Fluid and Electrolyte Correction topics", () => {
 
   it("pins exactly which topics a clinician has signed off", () => {
     // Adding an id here is a claim that a named clinician read that topic. Nothing else is.
-    expect(listFluidTopics().filter((t) => t.reviewStatus === "reviewed").map((t) => t.id).sort()).toEqual([]);
+    expect(listFluidTopics().filter((t) => t.reviewStatus === "reviewed").map((t) => t.id).sort()).toEqual([
+      "hypercalcaemia", "hyperkalaemia", "hypernatraemia", "hypocalcaemia", "hypokalaemia", "hyponatraemia",
+    ]);
   });
 
   it("rejects a ragged table, an unknown calculator, a reviewed topic with no reviewer, and a missing source", () => {
@@ -60,6 +62,15 @@ describe("calculators", () => {
     expect(runCalculator("daily_maintenance", { weight: 60 })).toMatchObject({ value: 1500 });
     // 1000 mL over 8 h with a 15-drop set = 31 drops/min.
     expect(runCalculator("drip_rate", { volume: 1000, hours: 8, dropFactor: 15 })).toMatchObject({ value: 31 });
+    // Table 20.6: glucose 400, sodium 130 → 134.8; above 400 the factor is 2.4.
+    expect(runCalculator("corrected_sodium_glucose", { na: 130, glucose: 400 })).toMatchObject({ value: 134.8 });
+    expect(runCalculator("corrected_sodium_glucose", { na: 130, glucose: 600 })).toMatchObject({ value: 142 });
+    // (125 − 115) × 30 L = 300 mEq, 600 mL of 3% saline.
+    expect(runCalculator("sodium_requirement", { desired: 125, na: 115, tbw: 30 })).toMatchObject({ value: 300 });
+    // 3% saline (513 mEq/L) into sodium 110, TBW 29 L: (513 − 110) / 30 = 13.4.
+    expect(runCalculator("adrogue_madias", { infNa: 513, na: 110, tbw: 29 })).toMatchObject({ value: 13.4 });
+    expect(runCalculator("free_water_deficit", { tbw: 42, na: 160 })).toMatchObject({ value: 6 });
+    expect(runCalculator("corrected_calcium", { ca: 7.2, albumin: 2 })).toMatchObject({ value: 8.8 });
   });
 
   it("refuses an input outside its range or missing, rather than guessing", () => {

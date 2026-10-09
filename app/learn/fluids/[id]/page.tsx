@@ -38,7 +38,7 @@ export default async function LearnFluidTopicPage({ params }: { params: Promise<
           </p>
           <p className="mt-2 text-[13px]">{topic.summary}</p>
           <p className="mt-2 rounded-[10px] bg-chip px-3 py-2 text-[12px] leading-relaxed text-muted">
-            Digest of chapter {topic.source.chapters.join("; ")} of Pandya&apos;s <span className="italic">Practical Guidelines on Fluid Therapy</span> (PDF pages {topic.source.pages}). Every dose, rate and threshold is the book&apos;s, quoted with its page. It is reading material, not a prescription for the patient in front of you.
+            Digest of chapter {topic.source.chapters.join("; ")} of Pandya&apos;s <span className="italic">Practical Guidelines on Fluid Therapy</span> ({topic.source.pageKind === "book" ? "book pages" : "PDF pages"} {topic.source.pages}). Every dose, rate and threshold is the book&apos;s, quoted with its page. It is reading material, not a prescription for the patient in front of you.
           </p>
         </div>
       </section>
@@ -50,7 +50,7 @@ export default async function LearnFluidTopicPage({ params }: { params: Promise<
           <div className="ios-group divide-y divide-line">
             {s.blocks.map((b, i) => (
               <div key={i} className="px-4 py-3">
-                <Block block={b} />
+                <Block block={b} book={topic.source.pageKind === "book"} />
               </div>
             ))}
           </div>
@@ -66,7 +66,7 @@ const Label = ({ children }: { children: string }) => (
   <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted">{children}</p>
 );
 
-function Block({ block }: { block: FluidBlock }) {
+function Block({ block, book }: { block: FluidBlock; book: boolean }) {
   switch (block.kind) {
     case "points":
       return (
@@ -98,7 +98,7 @@ function Block({ block }: { block: FluidBlock }) {
     case "quote":
       return (
         <blockquote className="border-l-2 border-accent pl-3 text-[13px] italic text-muted">
-          “{block.text}” <span className="not-italic">— p. {block.page}</span>
+          “{block.text}” <span className="not-italic">— {book ? "book p." : "PDF p."} {block.page}</span>
         </blockquote>
       );
     case "table":
