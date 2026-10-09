@@ -2,7 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, type Supa } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
+import { istDayKey } from "@/lib/patient-state";
 import type { RegisterRow } from "@/lib/read-register";
 
 /**
@@ -18,9 +20,7 @@ export async function applyRegister(formData: FormData) {
   if (!readId) return;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return;
 
   const { data: read } = await supabase
@@ -126,14 +126,14 @@ async function admitFromRow(
   i: number,
   wardId: string,
   userId: string,
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: Supa
 ): Promise<string | null> {
   const name = String(formData.get(`new_name_${i}`) ?? "").trim();
   const bed = String(formData.get(`new_bed_${i}`) ?? "").trim();
   if (!name || !bed) return null;
 
   // Admitted today: the register is being read now, and it records no admission date.
-  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+  const today = istDayKey(new Date().toISOString());
 
   const { data: patient } = await supabase
     .from("patients")

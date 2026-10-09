@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { getCurrentWard, getWardIsEsicFaridabad } from "@/lib/ward";
 import { getWardFormats } from "@/lib/formats";
 import { getFormularyMappings } from "@/lib/formulary";
@@ -16,10 +16,7 @@ import { oneOffContext } from "@/lib/discharge-oneoff";
  * doctor's own unit heading.
  */
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   let body: { identity?: Record<string, string>; draft?: DischargeDraft };

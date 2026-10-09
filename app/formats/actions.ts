@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { FORMAT_KINDS } from "@/lib/formats";
 import { readFormLayout } from "@/lib/read-form-layout";
 
@@ -34,9 +35,7 @@ export async function uploadFormat(
 ): Promise<FormatState> {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return { error: "You are signed out. Sign in again." };
 
   const wardId = String(formData.get("ward_id") ?? "");

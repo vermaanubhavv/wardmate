@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { readLabPhoto } from "@/lib/read-lab-photo";
 import { claimPhotoRead } from "@/lib/photo-cap";
 import { canonicalLabName } from "@/lib/lab-ranges";
+import { labRow } from "@/lib/observations";
 
 const ALLOWED = ["image/jpeg", "image/png", "image/webp"] as const;
 const MAX_BYTES = 12 * 1024 * 1024;
@@ -20,9 +22,7 @@ const MAX_BYTES = 12 * 1024 * 1024;
 export async function POST(request: Request) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const form = await request.formData();
@@ -115,20 +115,7 @@ export async function POST(request: Request) {
     // A bedside sign off an obs chart / monitor is stored as a vital, so it lands on the
     // vitals line of the note and the ward screen rather than under lab results.
     kind: v.category === "vital" ? ("vital" as const) : ("lab" as const),
-    label: v.label,
-    value_text: v.value_text,
-    value_num: v.value_num,
-    unit: v.unit,
-    source_quote: v.source_quote,
-    // Every lab value off a photo needs confirming: these are numbers, and unlike speech
-    // there is no automatic check behind them. Unclear ones say so explicitly.
-    needs_confirmation: true,
-    // The range as printed beside this very result. More authoritative than any table this app
-    // could ship — it is this laboratory, this assay, the same page as the number.
-    ref_low: v.ref_low,
-    ref_high: v.ref_high,
-    ref_text: v.ref_text,
-    conflict_note: v.uncertain ? "Printing was unclear — check against the photo." : null,
+    ...labRow(v),
   }));
 
   if (rows.length > 0) {

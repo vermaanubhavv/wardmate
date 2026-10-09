@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { getPatientDictationKeyterms } from "@/lib/transcription/patient-context";
 import { MEDICAL_KEYTERMS } from "@/lib/stt";
 
@@ -17,9 +18,7 @@ import { MEDICAL_KEYTERMS } from "@/lib/stt";
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const key = process.env.DEEPGRAM_API_KEY;

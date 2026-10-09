@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
-import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
 import { correctTranscript } from "@/lib/glossary";
 
@@ -14,10 +14,7 @@ import { correctTranscript } from "@/lib/glossary";
  * way wherever it is spoken.
  */
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const form = await request.formData();

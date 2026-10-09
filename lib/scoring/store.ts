@@ -12,7 +12,7 @@
  */
 
 import "server-only";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, type Supa } from "@/lib/supabase/server";
 import { isScoringEngineEnabled, scoringEngineGloballyEnabled } from "./flag";
 import { definitionsForSpecialty, getDefinition } from "./definitions/registry";
 import { getSpecialtyPack } from "@/lib/specialty";
@@ -29,8 +29,6 @@ import type {
   Instant,
   PathwayDefinition,
 } from "./types";
-
-type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
 
 const nowIso = (): Instant => new Date().toISOString();
 
@@ -90,7 +88,7 @@ export async function syncPatientPathways(patientId: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 async function collectDiagnosisText(
-  supabase: SupabaseServer,
+  supabase: Supa,
   patientId: string,
   primary: string | null
 ): Promise<string> {
@@ -105,7 +103,7 @@ async function collectDiagnosisText(
 }
 
 async function upsertInstance(
-  supabase: SupabaseServer,
+  supabase: Supa,
   a: {
     patientId: string;
     wardId: string;
@@ -170,7 +168,7 @@ type InstanceRow = {
 };
 
 async function loadDefinition(
-  supabase: SupabaseServer,
+  supabase: Supa,
   pathwayId: string,
   version: string
 ): Promise<PathwayDefinition | null> {
@@ -186,7 +184,7 @@ async function loadDefinition(
 }
 
 async function recomputeInstanceRow(
-  supabase: SupabaseServer,
+  supabase: Supa,
   inst: InstanceRow,
   trigger: string
 ): Promise<void> {
@@ -352,7 +350,7 @@ function selectApplicableCards(
 // ---------------------------------------------------------------------------
 
 async function ensureCheckpoints(
-  supabase: SupabaseServer,
+  supabase: Supa,
   instanceId: string,
   patientId: string,
   wardId: string,
@@ -381,7 +379,7 @@ async function ensureCheckpoints(
 }
 
 async function syncCheckpoints(
-  supabase: SupabaseServer,
+  supabase: Supa,
   inst: InstanceRow,
   def: PathwayDefinition
 ): Promise<{ checkpointDueAt: Record<string, Instant>; dueNow: { id: string; checkpoint_key: string }[] }> {
@@ -419,7 +417,7 @@ function nextPendingCheckpoint(map: Record<string, Instant>): Instant | null {
 // Persistence helpers
 // ---------------------------------------------------------------------------
 
-async function persistCard(supabase: SupabaseServer, inst: InstanceRow, result: CardResult): Promise<void> {
+async function persistCard(supabase: Supa, inst: InstanceRow, result: CardResult): Promise<void> {
   const { data: existing } = await supabase
     .from("pathway_cards")
     .select("id, result, state")
@@ -482,7 +480,7 @@ async function persistCard(supabase: SupabaseServer, inst: InstanceRow, result: 
 }
 
 async function persistTaskDecision(
-  supabase: SupabaseServer,
+  supabase: Supa,
   inst: InstanceRow,
   decision: import("./tasks").TaskDecision
 ): Promise<void> {
@@ -559,7 +557,7 @@ async function persistTaskDecision(
 }
 
 async function buildExistingWorld(
-  supabase: SupabaseServer,
+  supabase: Supa,
   inst: InstanceRow,
   def: PathwayDefinition,
   inputs: EvaluateContext["inputs"]
@@ -592,7 +590,7 @@ async function buildExistingWorld(
   return { resolvedInputKeys, activeOrders: new Set(), openTaskKeys, disabledToggles };
 }
 
-async function loadOverrides(supabase: SupabaseServer, instanceId: string) {
+async function loadOverrides(supabase: Supa, instanceId: string) {
   const { data } = await supabase
     .from("pathway_audit")
     .select("detail, occurred_at, actor_id")
@@ -614,7 +612,7 @@ async function loadOverrides(supabase: SupabaseServer, instanceId: string) {
   return map;
 }
 
-async function loadVerification(supabase: SupabaseServer, instanceId: string) {
+async function loadVerification(supabase: Supa, instanceId: string) {
   const { data } = await supabase
     .from("pathway_cards")
     .select("card_id, verified_by, verified_at, verified_hash")
@@ -661,7 +659,7 @@ function findSymptomOnset(obs: ObservationRow[]): Instant | null {
 }
 
 export async function audit(
-  supabase: SupabaseServer,
+  supabase: Supa,
   a: {
     instanceId: string | null;
     patientId: string;

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
 import { getPatientDictationKeyterms } from "@/lib/transcription/patient-context";
 import { extractObservations } from "@/lib/extract";
@@ -9,6 +10,7 @@ import { correctTranscript } from "@/lib/glossary";
 import { getTemplateForPatient } from "@/lib/templates";
 import { getPublishedProtocolContext } from "@/lib/protocols";
 import { applyProcedureDone } from "@/lib/apply-procedure-done";
+import { insertObservations } from "@/lib/observations";
 import { readReceipt, saveReceipt } from "@/lib/dictation-receipt";
 import { tagRequest, log } from "@/lib/observability";
 
@@ -22,9 +24,7 @@ import { tagRequest, log } from "@/lib/observability";
 export async function POST(request: Request) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const form = await request.formData();
@@ -171,31 +171,18 @@ export async function POST(request: Request) {
   }
 
   // 4. Store the values, each tied to the entry and its quote.
-  const rows = extraction.observations.map((o) => ({
-    entry_id: entry.id,
-    patient_id: patientId,
-    kind: o.kind,
-    label: o.label,
-    value_text: o.value_text,
-    value_num: o.value_num,
-    unit: o.unit,
-    source_quote: o.source_quote,
-    needs_confirmation: o.needs_confirmation,
-    urgency: o.urgency,
-    pac_verdict: o.pac_verdict,
-    task_open: o.task_open ?? null,
-    task_category: o.task_category ?? null,
-    conflict_note: dayConflict(o, patient),
-  }));
-
-  if (rows.length > 0) {
-    const { error: obsError } = await supabase.from("observations").insert(rows);
-    if (obsError) {
-      return NextResponse.json(
-        { entry_id: entry.id, transcript, observations: [], error: obsError.message },
-        { status: 500 }
-      );
-    }
+  const obsError = await insertObservations(
+    supabase,
+    entry.id,
+    patientId,
+    patient,
+    extraction.observations
+  );
+  if (obsError) {
+    return NextResponse.json(
+      { entry_id: entry.id, transcript, observations: [], error: obsError },
+      { status: 500 }
+    );
   }
 
   await applyProcedureDone(supabase, patientId, patient, extraction.observations);
@@ -215,21 +202,4 @@ export async function POST(request: Request) {
     "extraction.model": extraction.model,
   });
   return NextResponse.json(body);
-}
-
-/**
- * A spoken day number is stored as said, and flagged when it disagrees with the day computed
- * from the surgery date. Neither one silently wins — the resident decides.
- */
-function dayConflict(
-  o: { kind: string; value_num: number | null },
-  patient: { post_op_day: number | null; admission_day: number }
-): string | null {
-  if (o.kind !== "day_number" || o.value_num === null) return null;
-
-  const computed = patient.post_op_day ?? patient.admission_day;
-  const label = patient.post_op_day !== null ? "post-op day" : "day of admission";
-
-  if (Math.round(o.value_num) === computed) return null;
-  return `You said day ${o.value_num}; recorded dates give ${label} ${computed}.`;
 }

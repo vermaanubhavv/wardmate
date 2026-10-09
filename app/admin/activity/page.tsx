@@ -3,8 +3,6 @@ import { getActivityFeed, getUsers, getWardActivity, type FeedRow } from "@/lib/
 import { screenLabel } from "@/lib/admin-insights";
 import { Empty, ErrorNote, Section, ago } from "../ui";
 
-export const dynamic = "force-dynamic";
-
 /** The filter chips, in the order a day on the ward happens. `view` is last and off by default. */
 const KINDS: { key: string; label: string; tone: string }[] = [
   { key: "patient", label: "Patients", tone: "bg-good-bg text-good-fg" },

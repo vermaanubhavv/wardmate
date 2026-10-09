@@ -1,11 +1,9 @@
-import type { createClient } from "@/lib/supabase/server";
+import type { Supa } from "@/lib/supabase/server";
 import { historyCheckEnabled } from "@/lib/history-check/flag";
 import { getTree, listTrees, suggestTrees } from "@/lib/history-check/trees";
 import { loadSources, type HistoryCheckRun } from "@/lib/history-check/store";
 import { buildRunView, type RunView } from "@/lib/history-check/view";
 import type { TreeChoice } from "@/app/patients/[id]/history-check-card";
-
-type Supa = Awaited<ReturnType<typeof createClient>>;
 
 const RUN_COLUMNS =
   "id, patient_id, tree_id, tree_version, prompt_version, model, input_hash, source_entry_ids, status, result, usage, cost_usd, error, resolutions, created_at";

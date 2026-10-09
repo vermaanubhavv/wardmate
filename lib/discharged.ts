@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import type { Supa } from "@/lib/supabase/server";
 
 /**
  * Who still shows up as "discharged" — shared by the settings-list count
@@ -19,7 +19,7 @@ export function dischargeCutoffIso(): string {
 
 /** patient_id → when their summary was finalised, for every finalised summary on this ward. */
 export async function getFinalisedDischargeMap(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: Supa,
   wardId: string
 ): Promise<Map<string, string | null>> {
   const { data } = await supabase
