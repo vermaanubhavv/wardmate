@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { SpokenPatient } from "@/lib/read-new-patient";
+import { REC_MIME } from "../[id]/card-kit";
 import { openLiveDictation, type LiveDictationSession } from "@/lib/stt/live";
 
 type Status = "idle" | "starting" | "recording" | "working";
@@ -147,8 +148,8 @@ export default function SpeakPatient({
       });
       streamRef.current = stream;
 
-      // The browser's own format (webm on Chrome, mp4 on Safari), read back from mimeType.
-      const recorder = new MediaRecorder(stream);
+      // Safari on iPhone records mp4; Chrome records webm.
+      const recorder = new MediaRecorder(stream, REC_MIME ? { mimeType: REC_MIME } : undefined);
       chunksRef.current = [];
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);

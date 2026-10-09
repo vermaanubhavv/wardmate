@@ -209,10 +209,8 @@ worded as "questions that would help separate X / Y". It is never shown as a dia
 4. Add one or two eval cases for it in `lib/history-check/evals/cases.ts` (synthetic only) and
    run the eval script below.
 
-To change a shipped tree, bump `version` in place. The registry holds one version per tree id
-(a second registration throws); a stored run on an older version is looked up by
-`getTree(id, version)` and finds nothing. If old versions ever need to render side by side,
-`listTrees()` must go back to picking the newest version of each id.
+To change a shipped tree, bump `version`; old versions stay in the index so stored runs render
+with the version they were run against.
 
 **Which trees a unit sees first**
 

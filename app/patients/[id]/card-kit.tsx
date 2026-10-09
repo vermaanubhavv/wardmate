@@ -141,8 +141,14 @@ export const approveBtn =
 // --- dictation + pill helpers, shared by the case-history and progress-note workspaces ------
 
 /** The container/codec MediaRecorder produces varies by browser — Safari/iOS gives mp4,
- *  Chrome/Android webm/opus, Firefox ogg — so each recorder takes the browser's default and
- *  reads `recorder.mimeType` back. The real type is carried through as the file's extension. */
+ *  Chrome/Android webm/opus. The transcriber picks its decoder from the file extension, so the
+ *  real type is carried through as the file's extension. Every recorder asks for the first of
+ *  these the browser supports. */
+export const REC_MIME =
+  ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/mpeg"].find(
+    (t) => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(t)
+  );
+
 export function extFor(mime: string): string {
   if (mime.includes("mp4")) return "m4a";
   if (mime.includes("mpeg")) return "mp3";
@@ -182,7 +188,7 @@ export function DictateArea({
       setError("Microphone blocked — allow it for this site in your browser settings.");
       return;
     }
-    const rec = new MediaRecorder(stream);
+    const rec = new MediaRecorder(stream, REC_MIME ? { mimeType: REC_MIME } : undefined);
     chunksRef.current = [];
     rec.ondataavailable = (e) => e.data.size > 0 && chunksRef.current.push(e.data);
     rec.onstop = async () => {
@@ -358,6 +364,8 @@ export function StepShell({
   noun,
   items,
   onJump,
+  track = "bg-chip",
+  between,
   after,
   notice,
   onBack,
@@ -377,6 +385,10 @@ export function StepShell({
   /** One row per step: its title, the dot's colour class, anything trailing. */
   items: { title: React.ReactNode; dot: string; trailing?: React.ReactNode }[];
   onJump: (index: number) => void;
+  /** The progress bar's track colour class. */
+  track?: string;
+  /** Rendered between the jump toggle and the open menu. */
+  between?: React.ReactNode;
   /** Rendered between the jump menu and the fixed bar. */
   after?: React.ReactNode;
   /** A line above the buttons inside the fixed bar. */
@@ -387,6 +399,13 @@ export function StepShell({
   next: React.ReactNode;
 }) {
   const pct = Math.round(((step + 1) / steps) * 100);
+  // The menu closes whenever the step changes.
+  const [open, setOpen] = useState(false);
+  const [openStep, setOpenStep] = useState(step);
+  if (openStep !== step) {
+    setOpenStep(step);
+    setOpen(false);
+  }
   return (
     <>
       <div className="ios-group overflow-hidden">
@@ -399,18 +418,18 @@ export function StepShell({
             {badge}
           </div>
         </div>
-        <div className="h-[3px] bg-chip">
+        <div className={"h-[3px] " + track}>
           <div className="h-full bg-accent transition-all" style={{ width: `${pct}%` }} />
         </div>
         <div className="flex flex-col gap-3 px-4 py-4">{children}</div>
       </div>
 
-      <details key={step} className="group">
-        <summary className="tap mx-auto w-fit cursor-pointer list-none text-footnote font-medium text-accent [&::-webkit-details-marker]:hidden">
-          <span className="group-open:hidden">Jump to a {noun}</span>
-          <span className="hidden group-open:inline">Hide {noun}s</span>
-        </summary>
-        <div className="mt-3 ios-group flex flex-col p-1.5">
+      <button type="button" onClick={() => setOpen((o) => !o)} className="tap self-center text-footnote font-medium text-accent">
+        {open ? `Hide ${noun}s` : `Jump to a ${noun}`}
+      </button>
+      {between}
+      {open && (
+        <div className="ios-group flex flex-col p-1.5">
           {items.map((s, i) => (
             <button
               key={i}
@@ -425,7 +444,7 @@ export function StepShell({
             </button>
           ))}
         </div>
-      </details>
+      )}
 
       {after}
 

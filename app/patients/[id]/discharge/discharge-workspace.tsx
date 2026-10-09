@@ -1453,7 +1453,7 @@ export default function DischargeWorkspace({
           };
         })}
         onJump={goTo}
-        after={
+        between={
           <>
             {/* Reading the paper file in is a step of THIS summary, not a rival to it — so it lives
                 here, quietly, rather than as a button on the patient page. */}
@@ -1465,7 +1465,10 @@ export default function DischargeWorkspace({
                 Read in the paper file
               </Link>
             )}
-
+          </>
+        }
+        after={
+          <>
             <div className="flex items-center gap-2 text-caption text-muted">
               {saveState === "saving" && <span>Saving…</span>}
               {saveState === "saved" && dirty.size === 0 && <span className="text-accent">All changes saved</span>}

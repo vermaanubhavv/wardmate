@@ -1659,6 +1659,7 @@ export default function CaseHistoryWorkspace({
         noun="card"
         items={STEPS.map((s) => ({ title: (s as { title: string }).title, dot: dirty.has(s.id) ? "bg-warn-fg" : "bg-line" }))}
         onJump={goTo}
+        track="bg-[#e2e2e9]"
         after={message && <p className="text-footnote text-muted">{message}</p>}
         onBack={() => goTo(step - 1)}
         backDisabled={step === 0}

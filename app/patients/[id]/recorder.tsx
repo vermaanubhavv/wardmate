@@ -13,7 +13,7 @@ import {
   saveRecording,
 } from "@/lib/outbox";
 import LiveDictation, { type LiveLine, type LiveSection } from "./live-dictation";
-import { extFor } from "./card-kit";
+import { extFor, REC_MIME } from "./card-kit";
 
 type Status = "idle" | "starting" | "recording" | "working";
 type Mode = "batch" | null;
@@ -256,9 +256,8 @@ export default function Recorder({
       });
       streamRef.current = stream;
 
-      // Safari on iPhone records mp4; Chrome records webm. The browser's default is always one it
-      // can actually produce, and recorder.mimeType says which.
-      const recorder = new MediaRecorder(stream);
+      // Safari on iPhone records mp4; Chrome records webm.
+      const recorder = new MediaRecorder(stream, REC_MIME ? { mimeType: REC_MIME } : undefined);
       chunksRef.current = [];
       const recId = recIdRef.current;
       recorder.ondataavailable = (e) => {

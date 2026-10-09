@@ -2,17 +2,31 @@ import { HISTORY_TREES } from "@/content/history-trees";
 import { validateHistoryTree, validatedOnce } from "@/lib/history-check/schema";
 import type { HistoryTree } from "@/lib/history-check/types";
 
-/** The tree registry, validated on first use. One version per tree id. */
+/** The tree registry, validated on first use. Old versions stay registered so a stored run
+ *  still renders against the tree it was answered on. */
 const all = validatedOnce(HISTORY_TREES, validateHistoryTree, "History tree");
 
-/** Every tree — what the picker offers. */
-export function listTrees(): HistoryTree[] {
-  return [...all()];
+function semverDesc(a: string, b: string): number {
+  const pa = a.split(".").map(Number);
+  const pb = b.split(".").map(Number);
+  for (let i = 0; i < 3; i++) if (pa[i] !== pb[i]) return pb[i] - pa[i];
+  return 0;
 }
 
-/** A specific version, or the registered one when none is given. Null when unknown. */
+/** The newest version of every tree — what the picker offers. */
+export function listTrees(): HistoryTree[] {
+  const latest = new Map<string, HistoryTree>();
+  for (const t of all()) {
+    const cur = latest.get(t.id);
+    if (!cur || semverDesc(cur.version, t.version) > 0) latest.set(t.id, t);
+  }
+  return [...latest.values()];
+}
+
+/** A specific version, or the newest when none is given. Null when unknown. */
 export function getTree(id: string, version?: string | null): HistoryTree | null {
-  return all().find((t) => t.id === id && (!version || t.version === version)) ?? null;
+  if (version) return all().find((t) => t.id === id && t.version === version) ?? null;
+  return listTrees().find((t) => t.id === id) ?? null;
 }
 
 /**

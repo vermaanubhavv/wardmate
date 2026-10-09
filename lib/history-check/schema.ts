@@ -59,14 +59,15 @@ export function validateContentHeader(
 }
 
 /**
- * A content registry validated on first use. A file that fails validation, or an id
- * registered twice, throws — in the test suite and at build — never as a half-working card
+ * A content registry validated on first use. A file that fails validation, or a key (id@version
+ * by default) registered twice, throws — in the test suite and at build — never as a half-working card
  * on a ward.
  */
 export function validatedOnce<T extends { id: string; version: string }>(
   items: readonly T[],
   validate: (x: unknown) => ValidationResult,
-  noun: string
+  noun: string,
+  key: (x: T) => string = (x) => `${x.id}@${x.version}`
 ): () => readonly T[] {
   let checked: readonly T[] | null = null;
   return () => {
@@ -78,8 +79,8 @@ export function validatedOnce<T extends { id: string; version: string }>(
         const detail = res.issues.map((i) => `${i.path}: ${i.message}`).join("; ");
         throw new Error(`${noun} ${x.id}@${x.version} is invalid — ${detail}`);
       }
-      if (ids.has(x.id)) throw new Error(`${noun} ${x.id} is registered twice`);
-      ids.add(x.id);
+      if (ids.has(key(x))) throw new Error(`${noun} ${key(x)} is registered twice`);
+      ids.add(key(x));
     }
     return (checked = items);
   };

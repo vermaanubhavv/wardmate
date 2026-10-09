@@ -1,4 +1,5 @@
-import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
+import type Anthropic from "@anthropic-ai/sdk";
+import { AI_MODEL, anthropic } from "@/lib/model";
 
 /**
  * One page out of a patient's file: what kind of paper it is, and what it says.
@@ -115,13 +116,13 @@ export async function readPaper(
       `cache_read=${u.cache_read_input_tokens ?? 0} out=${u.output_tokens}`
   );
 
-  let parsed: Record<string, unknown> | null = null;
-  try {
-    parsed = replyJson(response, null);
-  } catch {
-    // fall through to the error below
-  }
-  if (!parsed) throw new Error("Could not read that photo — the reply was not in the expected form.");
+  const text = response.content
+    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("")
+    .trim();
+
+  const parsed = parseJson(text);
   const kind = (PAPER_KINDS.find((k) => k.kind === parsed.kind)?.kind ?? "other") as PaperKind;
 
   return {
@@ -146,4 +147,15 @@ export async function readPaper(
         : null,
     model: AI_MODEL,
   };
+}
+
+function parseJson(text: string): Record<string, unknown> {
+  const body = text.startsWith("```")
+    ? text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "")
+    : text;
+  try {
+    return JSON.parse(body) as Record<string, unknown>;
+  } catch {
+    throw new Error("Could not read that photo — the reply was not in the expected form.");
+  }
 }

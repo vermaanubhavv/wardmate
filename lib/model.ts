@@ -51,15 +51,10 @@ export function anthropic(): Anthropic {
   return new Anthropic({ apiKey });
 }
 
-/** The reply's JSON, or `fallback` when the reply carries no text. Tolerates a ```json fence.
- *  Malformed JSON throws, as JSON.parse does — callers decide whether that is fatal. */
+/** The reply's first text block parsed as JSON, or `fallback` when the reply carries no text
+ *  block. Malformed JSON throws, as JSON.parse does — callers decide whether that is fatal. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function replyJson(response: Anthropic.Message, fallback: unknown): any {
-  const text = response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
-    .map((b) => b.text)
-    .join("")
-    .trim();
-  if (!text) return fallback;
-  return JSON.parse(text.startsWith("```") ? text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "") : text);
+  const block = response.content.find((b) => b.type === "text");
+  return block && block.type === "text" ? JSON.parse(block.text) : fallback;
 }
