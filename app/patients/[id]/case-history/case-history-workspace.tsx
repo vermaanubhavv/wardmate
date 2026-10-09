@@ -33,6 +33,7 @@ import {
   DictateArea,
   UncertainList,
   PillsAndText,
+  ChipRow,
 } from "../card-kit";
 import {
   replaceCaseHistorySection,
@@ -903,13 +904,11 @@ export default function CaseHistoryWorkspace({
       return (
         <>
           <p className="text-caption leading-[1.45] text-muted">Tap every complaint the patient came in with. Add anything not listed, then say how long each one has been going on.</p>
-          <div className="flex flex-wrap gap-1.5">
-            {[...new Set([...complaintChips, ...complaints])].map((c) => (
-              <SelChip key={c} selected={complaints.includes(c)} onClick={() => { toggleInList(complaints, c, setComplaints); mark("complaints"); }}>
-                {c}
-              </SelChip>
-            ))}
-          </div>
+          <ChipRow
+            items={[...new Set([...complaintChips, ...complaints])]}
+            selected={(c) => complaints.includes(c)}
+            onToggle={(c) => { toggleInList(complaints, c, setComplaints); mark("complaints"); }}
+          />
           {complaints.length > 0 && (
             <div className="flex flex-col gap-1.5">
               <span className="text-caption font-medium text-muted">How long has each been present?</span>
