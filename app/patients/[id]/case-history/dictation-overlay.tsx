@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import LiveDictation, { type LiveSection } from "../live-dictation";
 import { HELD_SECTIONS, sectionsForSpecialty, type RoutedSegment } from "@/lib/case-history-sections";
+import { clerkingExampleFor } from "@/lib/specialty/clerking";
 
 /**
  * "Dictate the whole clerking" — the shared live panel (../live-dictation.tsx) with the case
@@ -36,6 +37,8 @@ const LABEL: Record<string, string> = {
   local: "Local examination",
   cvs: "Cardiovascular system",
   cns: "Central nervous system",
+  mse: "Mental status examination",
+  skin: "Skin examination",
   diagnosis: "Provisional diagnosis",
   plan: "Plan",
 };
@@ -87,7 +90,7 @@ export default function DictationOverlay({
     <LiveDictation
       patientId={patientId}
       title="Dictating the clerking"
-      example="e.g. “pain right iliac fossa two days… diabetic for ten years… abdomen soft, tender in the RIF…”"
+      example={clerkingExampleFor(specialty)}
       sections={sections}
       route={route}
       onClose={onClose}
