@@ -2,6 +2,9 @@ import ScreenHeader from "../screen-header";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { listTemplateChoices } from "@/lib/templates";
+import { getCurrentWard, getWardSpecialtyStored } from "@/lib/ward";
+import { getSpecialtyPack } from "@/lib/specialty";
+import { hasOperationClock } from "@/lib/specialty/intake";
 import { createProtocol, setProtocolStatus } from "./actions";
 
 type Item = { id: string; kind: string; prompt: string; position: number; severity: string | null };
@@ -24,6 +27,11 @@ const SEVERITY_STYLE: Record<string, string> = {
 
 export default async function ProtocolsPage() {
   const supabase = await createClient();
+  // The publisher targets their own unit's department: its template families, and — only where
+  // the department has an operation to count from — a pre-op / post-op phase.
+  const { ward } = await getCurrentWard();
+  const pack = getSpecialtyPack(ward ? await getWardSpecialtyStored(ward.id) : null);
+  const operative = hasOperationClock(pack);
   const [{ data: publisher }, { data: protocols }, choices] = await Promise.all([
     supabase.rpc("is_protocol_publisher"),
     supabase
@@ -32,7 +40,7 @@ export default async function ProtocolsPage() {
         "id, title, version, source_name, source_url, phase, status, company_protocol_items(id, kind, prompt, position, severity)"
       )
       .order("title"),
-    listTemplateChoices(),
+    listTemplateChoices(pack.key),
   ]);
   const isPublisher = Boolean(publisher);
 
@@ -74,8 +82,8 @@ export default async function ProtocolsPage() {
                 />
                 <select name="phase" className="flex-1 rounded-[10px] border border-line px-3 py-2.5">
                   <option value="any">Any phase</option>
-                  <option value="before_surgery">Pre-op</option>
-                  <option value="after_surgery">Post-op</option>
+                  {operative && <option value="before_surgery">Pre-op</option>}
+                  {operative && <option value="after_surgery">Post-op</option>}
                 </select>
               </div>
               <input
@@ -93,7 +101,7 @@ export default async function ProtocolsPage() {
                 name="template_family"
                 className="rounded-[10px] border border-line px-3 py-2.5"
               >
-                <option value="">All procedures</option>
+                <option value="">{operative ? "All procedures" : "All conditions"}</option>
                 {choices.map((c) => (
                   <option key={`${c.family}|${c.variant ?? ""}`} value={c.family}>
                     {c.label}

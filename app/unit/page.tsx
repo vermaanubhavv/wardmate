@@ -2,7 +2,7 @@ import ScreenHeader from "../screen-header";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentWard, getMyWards, getWardConsultantStored, getWardIsEsicFaridabad } from "@/lib/ward";
+import { getCurrentWard, getMyWards, getWardConsultantStored, getWardIsEsicFaridabad, getWardSpecialtyStored } from "@/lib/ward";
 import { consultantForWard } from "@/lib/unit-consultants";
 import CodeBox from "./code-box";
 import JoinForm from "./join-form";
@@ -20,7 +20,7 @@ import { isCurrentUserAdmin } from "@/lib/admin";
 import { getFormularySize } from "@/lib/formulary";
 import { DESIGNATION_CHOICES } from "@/lib/patients";
 import { ChecklistIcon, DocumentIcon } from "../icons";
-import { listSpecialties, specialtyPacksEnabled } from "@/lib/specialty";
+import { getSpecialtyPack, listSpecialties, specialtyPacksEnabled } from "@/lib/specialty";
 import { getFinalisedDischargeMap, visibleDischargedFilter } from "@/lib/discharged";
 
 /**
@@ -92,6 +92,7 @@ export default async function UnitPage() {
   // seeded default for this unit's number — so the box is never blank for units 1–4.
   const consultantInCharge = consultantForWard(await getWardConsultantStored(ward.id), ward.name);
   const isEsicFaridabad = await getWardIsEsicFaridabad(ward.id);
+  const pack = getSpecialtyPack(await getWardSpecialtyStored(ward.id));
 
   const isOwner = ward.owner_id === user?.id;
   const isAdmin = await isCurrentUserAdmin();
@@ -212,7 +213,7 @@ export default async function UnitPage() {
               <input
                 name="department"
                 defaultValue={profile.department ?? ""}
-                placeholder="General Surgery"
+                placeholder={pack.label}
                 className="field"
               />
             </label>
@@ -419,6 +420,7 @@ export default async function UnitPage() {
           <p className="ios-group-header mb-2 px-4">Copy setup from another unit</p>
           <CopySetup
             wardId={ward.id}
+            otNotes={pack.formatKinds.includes("ot_notes")}
             options={myWards.filter((w) => w.id !== ward.id).map((w) => ({ id: w.id, name: w.name }))}
           />
         </section>
@@ -474,7 +476,7 @@ export default async function UnitPage() {
               name="letterhead"
               rows={7}
               defaultValue={ward.letterhead ?? ""}
-              placeholder={"E.S.I.C. MEDICAL COLLEGE & HOSPITAL\nNH-3, N.I.T. FARIDABAD, HARYANA\nDEPARTMENT OF GENERAL SURGERY\nUNIT-II"}
+              placeholder={`E.S.I.C. MEDICAL COLLEGE & HOSPITAL\nNH-3, N.I.T. FARIDABAD, HARYANA\nDEPARTMENT OF ${pack.label.toUpperCase()}\nUNIT-II`}
               className="field text-subhead leading-relaxed"
             />
             <button className="btn btn-secondary mt-2 w-full">Save heading</button>
