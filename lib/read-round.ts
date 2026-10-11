@@ -1,6 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { AI_MODEL } from "@/lib/model";
 import { traced, recordAiUsage } from "@/lib/observability";
+import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { forWard } from "@/lib/specialty/prompt-words";
 
 export type RoundSegment = {
   /** The bed as spoken — "1", "SW-12", "ICU-3". Empty if none was said. */
@@ -26,7 +28,7 @@ export type RoundResult = {
   raw: unknown;
 };
 
-const SYSTEM_PROMPT = `You split a surgical resident's dictation of a whole ward round into one segment per bed.
+export const SYSTEM_PROMPT = `You split a surgical resident's dictation of a whole ward round into one segment per bed.
 
 You are splitting speech, not interpreting medicine. Do not decide what the instructions mean, do not expand them, and do not judge whether they are complete. Something else does that afterwards, one bed at a time.
 
@@ -104,7 +106,8 @@ const SCHEMA = {
  */
 export async function readRoundDictation(
   transcript: string,
-  wardBeds: string[] = []
+  wardBeds: string[] = [],
+  pack: SpecialtyPack = generalSurgeryPack
 ): Promise<RoundResult> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
@@ -124,7 +127,7 @@ export async function readRoundDictation(
       client.messages.create({
         model,
         max_tokens: 8000,
-        system: SYSTEM_PROMPT + beds,
+        system: forWard(SYSTEM_PROMPT, pack) + beds,
         // Getting a boundary wrong here puts one patient's instruction onto another patient,
         // so this is the last read that should be economised on. It is still set to "medium":
         // "high" is off across the whole app for now, on cost. The escalation path if per-bed

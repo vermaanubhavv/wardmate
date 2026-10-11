@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { AI_MODEL } from "@/lib/model";
+import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { forWard } from "@/lib/specialty/prompt-words";
 
 export type SpokenPatient = {
   name: string | null;
@@ -17,7 +19,7 @@ export type SpokenPatientResult = {
   model: string;
 };
 
-const SYSTEM_PROMPT = `You pull the details of ONE patient being admitted out of a sentence a surgical resident has spoken.
+export const SYSTEM_PROMPT = `You pull the details of ONE patient being admitted out of a sentence a surgical resident has spoken.
 
 You are filling in a form from what was said. You are not interpreting medicine and you are not completing the form.
 
@@ -51,7 +53,10 @@ const SCHEMA = {
   additionalProperties: false,
 } as const;
 
-export async function readSpokenPatient(transcript: string): Promise<SpokenPatientResult> {
+export async function readSpokenPatient(
+  transcript: string,
+  pack: SpecialtyPack = generalSurgeryPack
+): Promise<SpokenPatientResult> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
 
@@ -61,7 +66,7 @@ export async function readSpokenPatient(transcript: string): Promise<SpokenPatie
   const response = await client.messages.create({
     model,
     max_tokens: 1000,
-    system: SYSTEM_PROMPT,
+    system: forWard(SYSTEM_PROMPT, pack),
     // Low effort: one short sentence into six fields, and the resident is looking at the
     // filled form before any of it is saved.
     output_config: {

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { plainAiError } from "@/lib/ai-error";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { getSpecialtyPack } from "@/lib/specialty";
+import { hasOperationClock } from "@/lib/specialty/intake";
 import {
   buildClerkingDigest,
   compileCaseHistory,
@@ -59,9 +60,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   ]);
 
   // Frame every prompt for the unit's department — surgery keeps the exact original wording.
-  const admissionPhrase = getSpecialtyPack(
+  const pack = getSpecialtyPack(
     patient?.ward_id ? await getWardSpecialtyStored(patient.ward_id) : null
-  ).admissionPhrase;
+  );
+  const admissionPhrase = pack.admissionPhrase;
 
   const observations = ((entriesData ?? []) as unknown as {
     observations: {
@@ -99,7 +101,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json(await compileCaseHistory(digest, ctx, admissionPhrase));
     }
     if (body.section === "diagnosis") return NextResponse.json(await generateDiagnosis(withCtx, admissionPhrase));
-    if (body.section === "plan") return NextResponse.json(await generatePlan(withCtx, admissionPhrase));
+    if (body.section === "plan") return NextResponse.json(await generatePlan(withCtx, admissionPhrase, hasOperationClock(pack)));
     if (body.section === "negatives")
       return NextResponse.json(
         await generateRelevantNegatives(

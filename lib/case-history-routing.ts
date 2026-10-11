@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { FAST_MODEL } from "@/lib/model";
 import { correctTranscript } from "@/lib/glossary";
+import { getSpecialtyPack } from "@/lib/specialty";
 import { log } from "@/lib/observability";
 import { askJev, chosenProbability, type JevAnswers } from "@/lib/jev";
 import { redactFor, type PatientIdentifiers } from "@/lib/jev-observations";
@@ -165,7 +166,7 @@ export async function routeClerkingChunk(
   if (!text) return { segments: [], model: ROUTING_MODEL };
 
   // Same ward-vocabulary correction every other dictation path runs.
-  const corrected = (await correctTranscript(text)).text.trim() || text;
+  const corrected = (await correctTranscript(text, getSpecialtyPack(specialty))).text.trim() || text;
 
   if (process.env.TYPESAFE_API_KEY) {
     const first = await routeWithTypeSafe(corrected, knownComplaints, specialty, who);

@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { FAST_MODEL } from "@/lib/model";
 import { correctTranscript } from "@/lib/glossary";
+import type { SpecialtyPack } from "@/lib/specialty";
 import { log } from "@/lib/observability";
 import { askJev, chosenProbability, type JevAnswers } from "@/lib/jev";
 import { MIN_PROBABILITY, splitSentences } from "@/lib/case-history-routing";
@@ -52,12 +53,14 @@ export function keepOffered(raw: unknown, sections: DictationSection[]): Dictati
 
 export async function routeToSections(
   chunk: string,
-  sections: DictationSection[]
+  sections: DictationSection[],
+  /** The unit, so the surgical-only corrections stay on operating wards. */
+  pack?: SpecialtyPack
 ): Promise<DictationLine[]> {
   const text = chunk.trim();
   if (!text || sections.length === 0) return [];
 
-  const corrected = (await correctTranscript(text)).text.trim() || text;
+  const corrected = (await correctTranscript(text, pack)).text.trim() || text;
 
   if (process.env.TYPESAFE_API_KEY) {
     const first = await routeWithJev(corrected, sections);
