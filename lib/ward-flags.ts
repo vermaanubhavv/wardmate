@@ -24,7 +24,8 @@ export type WardFlag = { label: string; value: string; reason: string };
  *   • Severe anaemia     — haemoglobin < 5
  *
  * A medical ward (internal / pulmonary medicine) adds K⁺, Na⁺, glucose, RR and
- * GCS, and raises the TLC bar — see lib/specialty/critical-values.ts.
+ * GCS, and raises the TLC bar; emergency medicine, oncology and paediatrics use NICE's
+ * vital-sign bars (NEWS2 / NG254) — see lib/specialty/critical-values.ts.
  *
  * Nothing else. Every other abnormal result still shows on the patient's own page with its
  * range; it just does not raise the ward alarm. The value carried in the chip is exactly the
@@ -49,6 +50,7 @@ const AFFIRMATIVE = /^(y|yes|on|true|✓|✔|present)$/i;
 /** Labels a blood sugar is recorded under — at the bedside (GRBS, as a vital) or off a report. */
 const GLUCOSE = /^(grbs|rbs|cbg|fbs|ppbs|blood sugar|random blood sugar|capillary blood glucose|blood glucose|glucose|plasma glucose|serum glucose)$/i;
 const GCS = /^(gcs|glasgow coma scale|glasgow coma score)$/i;
+const ANC = /^(anc|absolute neutrophil count|absolute neutrophils?|abs\.? neutrophils?)$/i;
 
 /** "E2V3M4" sums its parts; "9/15" or "9" reads as is. VT (intubated) is not a number to sum. */
 function gcsScore(text: string): number | null {
@@ -77,7 +79,7 @@ function glucoseHit(label: string, text: string, n: number, t: CriticalThreshold
  * medical ward gets the surgical list above, unchanged (lib/specialty/critical-values.ts).
  */
 export function criticalFlags(patient: WardPatient, specialty?: string | null): WardFlag[] {
-  const t = criticalThresholds(specialty);
+  const t = criticalThresholds(specialty, patient.age_years);
   const hits: WardFlag[] = [];
 
   // ICU / organ support — recorded in the Vitals card. Being sick enough to be on the unit is
@@ -112,17 +114,32 @@ export function criticalFlags(patient: WardPatient, specialty?: string | null): 
     for (const c of classifyVital(v.label, v.value_text)) {
       const n = num(c.value);
       if (n === null) continue;
-      if (c.label === "SpO₂" && n < 90) {
+      if (c.label === "SpO₂" && t.spo2Below !== undefined && n < t.spo2Below) {
         hits.push({ label: "SpO₂", value: String(n), reason: "hypoxia" });
       }
-      if (c.label === "Systolic" && n < 90) {
-        hits.push({ label: "BP", value: text || c.value.trim(), reason: "hypotension" });
+      if (c.label === "Systolic") {
+        if (t.sbpBelow !== undefined && n < t.sbpBelow) {
+          hits.push({ label: "BP", value: text || c.value.trim(), reason: "hypotension" });
+        }
+        if (t.sbpAtLeast !== undefined && n >= t.sbpAtLeast) {
+          hits.push({ label: "BP", value: text || c.value.trim(), reason: "severe hypertension" });
+        }
       }
-      if (c.label === "PR" && n > 120) {
-        hits.push({ label: "PR", value: String(n), reason: "tachycardia" });
+      if (c.label === "PR") {
+        if (t.prAbove !== undefined && n > t.prAbove) hits.push({ label: "PR", value: String(n), reason: "tachycardia" });
+        if (t.prBelow !== undefined && n < t.prBelow) hits.push({ label: "PR", value: String(n), reason: "bradycardia" });
       }
-      if (c.label === "RR" && t.rrAtLeast !== undefined && n >= t.rrAtLeast) {
-        hits.push({ label: "RR", value: String(n), reason: "tachypnoea" });
+      if (c.label === "RR") {
+        if (t.rrAtLeast !== undefined && n >= t.rrAtLeast) hits.push({ label: "RR", value: String(n), reason: "tachypnoea" });
+        if (t.rrAtMost !== undefined && n <= t.rrAtMost) hits.push({ label: "RR", value: String(n), reason: "bradypnoea" });
+      }
+      if (c.label === "Temp") {
+        // Wards here chart in °F as often as °C; nothing human reads above 45 °C.
+        const celsius = n > 45 ? ((n - 32) * 5) / 9 : n;
+        const low =
+          (t.tempAtMost !== undefined && celsius <= t.tempAtMost) ||
+          (t.tempBelow !== undefined && celsius < t.tempBelow);
+        if (low) hits.push({ label: "Temp", value: text || c.value.trim(), reason: "hypothermia" });
       }
     }
   }
@@ -143,7 +160,7 @@ export function criticalFlags(patient: WardPatient, specialty?: string | null): 
     if (name === "Hb" && n < 5) {
       hits.push({ label: "Hb", value, reason: "severe anaemia" });
     }
-    if (name === "TLC") {
+    if (name === "TLC" && t.tlcAbove !== undefined) {
       const wbc = n < 1000 ? n * 1000 : n;
       if (wbc > t.tlcAbove) hits.push({ label: "TLC", value, reason: "leucocytosis" });
     }
@@ -162,6 +179,12 @@ export function criticalFlags(patient: WardPatient, specialty?: string | null): 
     if (GLUCOSE.test(l.label.trim())) {
       const hit = glucoseHit(l.label.trim(), value, n, t);
       if (hit) hits.push(hit);
+    }
+    // An absolute count only — "Neutrophils 70%" is a differential, not a count, and says
+    // nothing about neutropenia. ×10⁹/L is written "0.4"; per µL "400".
+    if (t.ancAtMost !== undefined && ANC.test(l.label.trim()) && !/%/.test(value)) {
+      const anc = n >= 30 ? n / 1000 : n;
+      if (anc <= t.ancAtMost) hits.push({ label: "ANC", value, reason: "severe neutropenia" });
     }
   }
 
