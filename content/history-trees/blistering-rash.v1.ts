@@ -17,8 +17,8 @@ export const blisteringRashV1: HistoryTree = {
   complaint: "Blisters on the skin",
   triggers: ["blister", "blistering", "bullae", "bulla", "bullous", "vesicles", "fluid filled lesions", "water filled boils", "chhale", "phaphole", "skin coming off", "sjs", "stevens johnson", "pemphigus", "pemphigoid", "shingles", "herpes zoster", "fixed drug eruption"],
   setting: "Dermatology ward and OPD, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [IADVL, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("blisters"),

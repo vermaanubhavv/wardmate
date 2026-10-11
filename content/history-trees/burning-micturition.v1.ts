@@ -15,8 +15,8 @@ export const burningMicturitionV1: HistoryTree = {
   complaint: "Burning micturition",
   triggers: ["burning micturition", "burning urine", "dysuria", "painful urination", "pain on passing urine", "burning while passing urine", "frequency of urine", "urgency", "urinary frequency"],
   setting: "Adult medicine / surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("burning micturition"),

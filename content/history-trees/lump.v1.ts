@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LUMP / SWELLING (a localised lump) — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
+ * LUMP / SWELLING (a localised lump) — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
  * Adult surgical ward, north India. Generic lump history to be read alongside the site-specific
  * one (breast, neck, groin, abdominal wall). Differentials: lipoma or cyst, abscess, hernia,
  * lymph node (reactive, tuberculous, malignant), soft-tissue tumour, thyroid swelling, vascular.
@@ -13,8 +13,8 @@ export const lumpV1: HistoryTree = {
   complaint: "Lump",
   triggers: ["lump", "swelling in", "mass", "growth", "nodule", "lump in", "lump neck", "lump breast", "lump groin", "swelling neck", "inguinal swelling"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BROWSE, SABISTON],
   slots: [
     ...commonHpi("lump"),

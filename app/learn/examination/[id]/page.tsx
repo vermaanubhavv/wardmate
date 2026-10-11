@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { historyCheckEnabled } from "@/lib/history-check/flag";
 import { getExamChecklist } from "@/lib/history-check/exams";
-import { statusChip } from "@/app/patients/[id]/card-kit";
+import { statusChip } from "@/app/patients/[id]/status-chip";
 import ReferenceList from "../../reference-list";
 
 /**

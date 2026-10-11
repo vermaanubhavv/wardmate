@@ -19,8 +19,8 @@ export const erythrodermaV1: HistoryTree = {
   complaint: "Redness and scaling of the whole body",
   triggers: ["erythroderma", "exfoliative dermatitis", "exfoliation", "red all over", "whole body red", "redness of whole body", "redness all over", "scaling all over", "skin shedding", "scales falling", "flakes falling", "poore sharir pe laali", "chamdi utar rahi"],
   setting: "Dermatology ward and OPD, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [IADVL, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("redness and scaling"),

@@ -15,8 +15,8 @@ export const alteredSensoriumV1: HistoryTree = {
   complaint: "Altered sensorium / seizures",
   triggers: ["altered sensorium", "unconscious", "unconsciousness", "drowsy", "drowsiness", "confusion", "confused", "irrelevant talk", "seizure", "seizures", "fit", "fits", "convulsion", "convulsions", "loss of consciousness", "not responding", "unresponsive", "coma"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("The rational clinical examination. Does this adult patient have acute meningitis?", 1999, "10411200"),
     rce("Is this patient having a stroke?", 2005, "15900010"),

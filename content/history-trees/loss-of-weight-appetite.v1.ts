@@ -14,8 +14,8 @@ export const lossOfWeightAppetiteV1: HistoryTree = {
   complaint: "Loss of weight / appetite",
   triggers: ["loss of weight", "weight loss", "loss of appetite", "reduced appetite", "anorexia", "decreased appetite", "not eating", "poor appetite", "wasting", "emaciation", "cachexia"],
   setting: "Adult medicine / surgical / oncology ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("loss of weight or appetite"),
