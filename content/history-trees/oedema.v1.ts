@@ -14,8 +14,8 @@ export const oedemaV1: HistoryTree = {
   complaint: "Swelling of the body",
   triggers: ["swelling", "oedema", "edema", "anasarca", "pedal oedema", "pedal edema", "swelling of feet", "swelling of legs", "facial puffiness", "puffiness"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("Does this dyspneic patient in the emergency department have congestive heart failure?", 2005, "16234501"),
     rce("Does this patient with liver disease have cirrhosis?", 2012, "22357834"),

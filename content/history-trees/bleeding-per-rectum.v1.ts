@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BLEEDING PER RECTUM — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
+ * BLEEDING PER RECTUM — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
  * Adult surgical ward, north India. Separates anorectal bleeding (bright red, on the paper or
  * pan, after stool) from colonic bleeding (mixed, dark) and from upper-gastrointestinal
  * bleeding (black, tarry). Differentials: haemorrhoids, anal fissure, rectal or colonic cancer,
@@ -14,8 +14,8 @@ export const bleedingPerRectumV1: HistoryTree = {
   complaint: "Bleeding per rectum",
   triggers: ["bleeding per rectum", "bleeding pr", "rectal bleeding", "blood per rectum", "passing blood", "bloody stools", "hematochezia", "haematochezia", "melaena", "melena", "black stools", "bright red blood"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
   slots: [
     ...commonHpi("bleeding per rectum"),

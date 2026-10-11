@@ -17,8 +17,8 @@ export const eyelidSwellingV1: HistoryTree = {
   complaint: "Swelling of the eyelid / around the eye",
   triggers: ["eyelid swelling", "swelling of eyelid", "swollen eyelid", "lid swelling", "swelling around eye", "periorbital swelling", "puffy eyes", "stye", "chalazion", "gudheri", "anjani", "aankh sooj gayi", "aankh me sujan"],
   setting: "Eye ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PARSONS_EYE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("swelling of the eyelid"),

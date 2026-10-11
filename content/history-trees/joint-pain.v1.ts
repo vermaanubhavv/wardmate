@@ -16,8 +16,8 @@ export const jointPainV1: HistoryTree = {
   complaint: "Joint pain",
   triggers: ["joint pain", "joint pains", "arthritis", "arthralgia", "pain in joints", "swollen joint", "joint swelling", "knee pain", "painful joints", "polyarthritis", "jodon me dard"],
   setting: "Adult medicine / orthopaedic ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     ebem("Septic arthritis in emergency department patients with joint pain: searching for the optimal diagnostic tool", 2008, "18294730"),
     rce("Does this patient with shoulder pain have rotator cuff disease? The Rational Clinical Examination systematic review", 2013, "23982370"),

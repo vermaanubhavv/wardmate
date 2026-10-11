@@ -18,8 +18,8 @@ export const nasalObstructionV1: HistoryTree = {
   complaint: "Nasal obstruction",
   triggers: ["nasal obstruction", "blocked nose", "nose block", "nasal blockage", "stuffy nose", "cannot breathe through nose", "naak band", "naak bandh", "nose blocked", "sinusitis", "nasal polyp", "running nose", "sneezing"],
   setting: "ENT ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DHINGRA, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("nasal obstruction"),

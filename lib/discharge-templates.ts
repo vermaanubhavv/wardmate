@@ -27,8 +27,8 @@ import type { AdviceItem, MedicationStatus, Procedure } from "@/lib/discharge-en
  * `[ … ]` and the condition beside it, so a row nobody edited prints as visibly unfinished rather
  * than as a prescription every patient received.
  *
- * CLINICAL CONTENT: the corrections and the nine templates added after the Schwartz 11e review
- * (docs/surgical-history.md §12) are PENDING the unit's sign-off.
+ * CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11) — including the corrections and the
+ * nine templates added after the Schwartz 11e review (docs/surgical-history.md §12).
  *
  * Medication lines are a STARTING SET to be checked against each patient — allergy, renal
  * function, weight, cultures, what they were already taking.

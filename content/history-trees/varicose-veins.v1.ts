@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, SABISTON_VENOUS, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * VARICOSE VEINS / PROMINENT LEG VEINS — v1.0.0. CLINICAL CONTENT: PENDING REVIEW.
+ * VARICOSE VEINS / PROMINENT LEG VEINS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
  * Adult surgical ward and OPD, north India. Built from Sabiston (20th ed.) ch. 64 "Venous
  * Disease": the symptom pattern of venous pooling (dull ache and heaviness, absent on waking,
  * worse by evening and after standing, relieved by raising the leg), the risk factors it lists
@@ -22,8 +22,8 @@ export const varicoseVeinsV1: HistoryTree = {
   complaint: "Varicose veins / prominent leg veins",
   triggers: ["varicose veins", "varicose vein", "varicosity", "varicosities", "prominent veins", "dilated veins", "swollen veins", "veins on leg", "veins in leg", "tortuous veins", "spider veins", "heaviness of legs", "heaviness in legs"],
   setting: "Adult surgical ward and OPD, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, SABISTON_VENOUS, BROWSE, BAILEY_LOVE],
   slots: [
     ...commonHpi("prominent veins"),

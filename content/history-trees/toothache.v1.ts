@@ -18,8 +18,8 @@ export const toothacheV1: HistoryTree = {
   complaint: "Toothache / facial swelling",
   triggers: ["toothache", "tooth pain", "dental pain", "facial swelling", "swelling of face", "cheek swelling", "gum swelling", "gum bleeding", "loose tooth", "wisdom tooth", "jaw pain", "cannot open mouth", "daant dard", "mouth ulcer not healing"],
   setting: "Dental and maxillofacial ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("tooth pain"),

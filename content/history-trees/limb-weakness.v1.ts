@@ -14,8 +14,8 @@ export const limbWeaknessV1: HistoryTree = {
   complaint: "Weakness of limbs",
   triggers: ["weakness", "weakness of limbs", "hemiparesis", "hemiplegia", "paraparesis", "paraplegia", "quadriparesis", "unable to walk", "cannot walk", "not able to walk", "limb weakness", "paralysis", "difficulty walking", "unable to move"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("Is this patient having a stroke?", 2005, "15900010"),
     { title: "Diagnosis and management of Guillain-Barré syndrome in ten steps", source: "Nat Rev Neurol", year: 2019, pmid: "31541214" },

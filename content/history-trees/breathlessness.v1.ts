@@ -13,8 +13,8 @@ export const breathlessnessV1: HistoryTree = {
   complaint: "Breathlessness",
   triggers: ["breathlessness", "breathless", "shortness of breath", "dyspnoea", "dyspnea", "difficulty in breathing", "difficulty breathing", "sob"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("Does this dyspneic patient in the emergency department have congestive heart failure?", 2005, "16234501"),
     rce("Does this patient have pulmonary embolism?", 2003, "14657070"),

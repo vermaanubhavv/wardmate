@@ -20,8 +20,8 @@ export const animalBiteV1: HistoryTree = {
   complaint: "Animal bite (dog, cat, monkey)",
   triggers: ["animal bite", "dog bite", "dog bitten", "bitten by dog", "stray dog bite", "cat bite", "cat scratch", "bitten by cat", "monkey bite", "bitten by monkey", "monkey scratch", "bat bite", "rabies exposure", "anti rabies", "kutte ne kata", "kutta kaat liya", "bandar ne kata", "billi ne kata"],
   setting: "Emergency department, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [NRCP_RABIES, TINTINALLI, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("bite"),

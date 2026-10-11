@@ -17,8 +17,9 @@ import type { SpecialtyKey } from "@/lib/specialty/types";
  * resident says, never a dose; an exam line that nobody spoke prints its heading and nothing
  * else; nothing here decides a finding.
  *
- * CLINICAL CONTENT: general_surgery PENDING REVIEW since the wound / drains lines and the chip
- * changes; every other department was read and signed off with the PR that added it.
+ * CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma) — general_surgery including the wound / drains
+ * lines and the chip changes (2026-10-11); every other department was read and signed off with
+ * the PR that added it.
  */
 
 export type NoteExamSection = {

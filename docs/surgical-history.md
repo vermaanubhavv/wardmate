@@ -557,9 +557,8 @@ from 28–39 to 18–31; nothing was deleted to get there, only moved to Academi
 - **Checks** (warnings, never blocking) — a `[ … ]` template blank left in any section; an NSAID
   beside a blood thinner, or after a peptic ulcer, perforation or GI bleed.
 
-All of §12 is **pending the unit's clinical sign-off**: the surgical trees stay
-`pending_clinician_review`, the progress-note config says so in its header, and the discharge
-templates file records it.
+All of §12 — the trees, the general-surgery progress note and the discharge templates — is
+**reviewed and signed off by Dr Anubhav Verma (2026-10-11)**.
 
 ### 12.4 Follow-ups after the review
 

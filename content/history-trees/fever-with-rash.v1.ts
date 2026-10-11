@@ -16,8 +16,8 @@ export const feverWithRashV1: HistoryTree = {
   complaint: "Fever with rash",
   triggers: ["fever with rash", "rash", "skin rash", "spots on body", "red spots", "petechiae", "purpura", "eruption", "rash with fever", "daane", "blisters"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("fever with rash"),

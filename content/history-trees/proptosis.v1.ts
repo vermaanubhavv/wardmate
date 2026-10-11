@@ -19,8 +19,8 @@ export const proptosisV1: HistoryTree = {
   complaint: "Bulging of the eye",
   triggers: ["proptosis", "exophthalmos", "bulging eye", "bulging of eye", "bulging of the eye", "protruding eye", "eye coming out", "eye pushed forward", "prominent eye", "aankh bahar aa gayi", "aankh bahar nikal rahi", "aankh ubhri hui"],
   setting: "Eye ward and OPD, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PARSONS_EYE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("bulging of the eye"),

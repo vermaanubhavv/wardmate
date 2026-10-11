@@ -14,8 +14,8 @@ export const chestPainV1: HistoryTree = {
   complaint: "Chest pain",
   triggers: ["chest pain", "pain in chest", "chest discomfort", "chest heaviness", "retrosternal pain", "angina"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("Does this patient with chest pain have acute coronary syndrome? The Rational Clinical Examination systematic review", 2015, "26547467"),
     rce("Does this patient have an acute thoracic aortic dissection?", 2002, "11980527"),
