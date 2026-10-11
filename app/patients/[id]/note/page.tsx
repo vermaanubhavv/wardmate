@@ -11,7 +11,8 @@ import { getWardLabRanges } from "@/lib/ward-lab-ranges";
 import { getWardIsEsicFaridabad, getWardSpecialtyStored } from "@/lib/ward";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { progressNoteConfigFor } from "@/lib/progress-note-config";
-import { managementChoicesFor } from "@/lib/patients";
+import { clockColumns, noteStatusLine } from "@/lib/specialty/clocks";
+import type { DayCountPatient } from "@/lib/specialty/types";
 import { getProcedureLabels, procedureFor } from "@/lib/templates";
 import CopyNoteButton from "./copy-button";
 import PrintButton from "./print-button";
@@ -44,6 +45,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
 
   if (!patient) notFound();
 
+  const specialtyP = getWardSpecialtyStored(patient.ward_id);
   const [{ data: wardRow }, { data: entriesData }, wardFormats, { data: profile }, procedures, wardRanges, isEsicFaridabad, specialty] =
     await Promise.all([
       supabase.from("wards").select("name").eq("id", patient.ward_id).maybeSingle(),
@@ -64,14 +66,15 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
       getUser().then((u) =>
         supabase.from("profiles").select("department, display_name").eq("id", u?.id ?? "").maybeSingle()
       ),
-      getProcedureLabels(),
+      // This unit's own checklist names, so an operative unit's operations print by name.
+      specialtyP.then(getProcedureLabels),
       // This ward's own learned lab ranges, for judging a deranged result that has no printed
       // range of its own — see lib/ward-lab-ranges.ts, same source Current progress reads.
       getWardLabRanges(patient.ward_id),
       // Which printable layout this ward gets — see lib/ward.ts.
       getWardIsEsicFaridabad(patient.ward_id),
       // Which department's exam lines the sheet carries — see lib/progress-note-config.ts.
-      getWardSpecialtyStored(patient.ward_id),
+      specialtyP,
     ]);
 
   // The unit's own uploaded progress-note form, with its fields detected — see
@@ -105,16 +108,16 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
     .flatMap((e) => e.observations);
   const allObservations = entries.flatMap((e) => e.observations);
 
-  // Pre-op / Post Op Day (N) / Conservative / Workup — the same rule
-  // lib/patients.ts managementLabel() uses, kept in sync deliberately rather than reused
-  // outright: managementLabel prints "POST OP" alone, and this line needs the day number
-  // folded in too. The resident's own choice (patient.management) is what shows before an
-  // operative date exists; the moment one does, it is superseded automatically — a Pre-op
-  // patient who has since gone to theatre is never still shown as Pre-op.
-  const status = patient.surgery_date
-    ? `Post Op Day (${patient.post_op_day ?? "—"})`
-    : (managementChoicesFor(specialty, patient.management ?? "").find((c) => c.value === patient.management)
-        ?.label ?? null);
+  // The phase on the diagnosis line — lib/specialty/clocks.ts noteStatusLine(). A burns or
+  // chemotherapy unit's clock columns are read in a second, tiny query only for that unit, for
+  // the same reason the patient page reads them separately: naming them in the select above
+  // would reject it on a database that has not had the patch.
+  const pack = getSpecialtyPack(specialty);
+  const extraCols = clockColumns(pack);
+  const clock = extraCols
+    ? ((await supabase.from("current_patients").select(extraCols).eq("id", id).maybeSingle()).data as unknown as Partial<DayCountPatient> | null)
+    : null;
+  const status = noteStatusLine(pack, { ...patient, ...clock });
 
   // Clinical score line(s), computed by lib/scoring from recorded values only. Kept fresh
   // first, then read — the same "computed on read" pattern as the patient page. Both calls are
@@ -130,7 +133,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
     wardRanges,
     scoreLines,
     practitionerName: profile?.display_name ?? null,
-    noteConfig: progressNoteConfigFor(getSpecialtyPack(specialty).key),
+    noteConfig: progressNoteConfigFor(pack.key),
   });
   const noteText = formatProgressNoteText(note);
 
@@ -224,9 +227,9 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
                       of this block (mt-auto) rather than sitting bunched right under Chest, so
                       the page's own free space spreads out instead of piling up unused below
                       everything. */}
-                  <div>{observationTop.map((line, i) => renderNoteLine(line, i))}</div>
+                  <div>{observationTop.map((line, i) => renderNoteLine(line, i, { openSpace: note.openSpace }))}</div>
                   <div className="mt-auto">
-                    {observationTail.map((line, i) => renderNoteLine(line, `tail-${i}`))}
+                    {observationTail.map((line, i) => renderNoteLine(line, `tail-${i}`, { openSpace: note.openSpace }))}
                   </div>
                 </>
               ) : (
@@ -239,7 +242,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
                 Investigation / Treatment / Management
               </p>
               {note.plan.length > 0 ? (
-                note.plan.map((line, i) => renderNoteLine(line, i))
+                note.plan.map((line, i) => renderNoteLine(line, i, { openSpace: note.openSpace }))
               ) : (
                 <p className="text-muted">Nothing ordered yet today.</p>
               )}

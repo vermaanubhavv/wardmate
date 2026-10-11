@@ -4,10 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { stripPatientHonorific } from "@/lib/patients";
 import { istDayKey } from "@/lib/patient-state";
 import NoteWorkspace, { type NoteObs } from "../note-workspace";
-import { medPresetsFor } from "../med-presets";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { getSpecialtyPack } from "@/lib/specialty";
-import { progressNoteConfigFor } from "@/lib/progress-note-config";
+import { medPresetsFor, progressNoteConfigFor } from "@/lib/progress-note-config";
 import { matchDischargeTemplateFor } from "@/lib/specialty/discharge";
 
 /**

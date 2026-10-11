@@ -9,6 +9,8 @@ import {
 import { derivePatientState, type Observation, type PatientState } from "@/lib/patient-state";
 import { getSpecialtyPack, type SpecialtyPack } from "@/lib/specialty";
 import { getWardSpecialtyStored } from "@/lib/ward";
+import { readsChemoColumns, usesBurnClock } from "@/lib/specialty/clocks";
+import { hasOperationClock } from "@/lib/specialty/intake";
 import { effectiveUrgency, istDate, URGENCY_META } from "@/lib/urgency";
 
 /** One line of what actually happened today — a resulted investigation, the operation if
@@ -47,14 +49,20 @@ export type HandoverPatient = {
  * drown the two or three things worth telling a consultant about, so neither kind is
  * included here — see the confirmed scope in the plan this was built from.
  */
-export function deriveDoneToday(rawObservations: Observation[], doneTasks: Observation[], todayKey: string): DoneTodayItem[] {
+export function deriveDoneToday(
+  rawObservations: Observation[],
+  doneTasks: Observation[],
+  todayKey: string,
+  /** A unit that operates says "Operated"; a chemoport or a tap on a medical unit is not one. */
+  operative = true
+): DoneTodayItem[] {
   const items: DoneTodayItem[] = [];
 
   for (const o of rawObservations) {
     if (o.kind === "lab" && istDate(o.recorded_at) === todayKey) {
       items.push({ id: o.id, text: `${o.label}${o.value_text ? `: ${o.value_text}` : ""}` });
     } else if (o.kind === "procedure_done" && istDate(o.recorded_at) === todayKey) {
-      items.push({ id: o.id, text: `Operated: ${o.value_text ?? o.label}` });
+      items.push({ id: o.id, text: `${operative ? "Operated" : "Procedure done"}: ${o.value_text ?? o.label}` });
     }
   }
 
@@ -123,8 +131,8 @@ export async function getWardHandover(ward: { id: string; name: string }): Promi
   const pack = getSpecialtyPack(await getWardSpecialtyStored(ward.id));
   const PATIENT_COLUMNS =
     BASE_PATIENT_COLUMNS +
-    (pack.key === "general_surgery" ? "" : CHEMO_PATIENT_COLUMNS) +
-    (pack.key === "burns_plastic_surgery" ? BURN_PATIENT_COLUMNS : "");
+    (readsChemoColumns(pack) ? CHEMO_PATIENT_COLUMNS : "") +
+    (usesBurnClock(pack) ? BURN_PATIENT_COLUMNS : "");
 
   const { data: patients } = await supabase
     .from("current_patients")
@@ -162,7 +170,7 @@ export async function getWardHandover(ward: { id: string; name: string }): Promi
     byPatient.set(entry.patient_id, list);
   }
 
-  const procedures = await getProcedureLabels();
+  const procedures = await getProcedureLabels(pack.key);
   const todayKey = istDate(generated_at);
 
   const out: HandoverPatient[] = [];
@@ -187,7 +195,7 @@ export async function getWardHandover(ward: { id: string; name: string }): Promi
       template,
       procedure: procedureFor(p, procedures),
       state,
-      doneToday: deriveDoneToday(rawObs, state.doneTasks, todayKey),
+      doneToday: deriveDoneToday(rawObs, state.doneTasks, todayKey, hasOperationClock(pack)),
     });
   }
 
