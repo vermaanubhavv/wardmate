@@ -29,23 +29,9 @@ export function IconCheck({ className = "h-[17px] w-[17px]" }: { className?: str
   );
 }
 
-/** The small grey/teal/amber status pill shown beside a section title. */
-export function statusChip(text: string, tone: "ok" | "warn" | "muted") {
-  return (
-    <span
-      className={
-        "shrink-0 rounded-full px-2 py-0.5 text-caption2 font-medium " +
-        (tone === "ok"
-          ? "bg-accent/10 text-accent"
-          : tone === "warn"
-            ? "bg-warn-bg text-warn-fg"
-            : "bg-chip text-muted")
-      }
-    >
-      {text}
-    </span>
-  );
-}
+// Server-safe: lives in its own module so server pages (Learn) can call it — this file is a
+// client module. Re-exported here so client callers keep importing it from card-kit.
+export { statusChip } from "./status-chip";
 
 /** A pill the resident taps on/off — the Claude-Code multi-select feel. */
 export function SelChip({
