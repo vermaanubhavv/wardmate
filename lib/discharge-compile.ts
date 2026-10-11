@@ -515,9 +515,12 @@ export function compileDischargeDraft(
   // its diagnosis / operation points at, applied with seedAll=false — so only the advice and
   // red-flag cards are offered (switched off), and everything else stays compiled from the
   // record.
+  // `template: null` is an explicit "no template" (the one-off's "start blank"); only an absent
+  // template is matched from the record.
   const template =
-    options?.template ??
-    templateForDischarge(context, base.diagnoses.find((d) => d.category === "primary")?.text, options?.pack);
+    options?.template !== undefined
+      ? options.template
+      : templateForDischarge(context, base.diagnoses.find((d) => d.category === "primary")?.text, options?.pack);
 
   const drafted = template ? applyDischargeTemplate(base, template, options?.seedAll ?? false) : base;
 
