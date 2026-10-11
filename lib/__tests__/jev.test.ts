@@ -81,3 +81,16 @@ describe("applyMeanings (history check)", () => {
     expect(r.slots.map((s) => s.state)).toEqual(["positive", "negative"]);
   });
 });
+
+describe("applyJudgments counts what Jev changed (the 'jev judged' log line)", () => {
+  it("counts new amber, rescues and sorts — not rows that were amber already", () => {
+    const rows = [obs("exam", "abdomen soft"), obs("vital", "pulse 88", true), obs("plan", "continue drain output charting")];
+    const changed = applyJudgments(rows, {
+      supported_0: { noul: 0.1 },
+      supported_1: { noul: 0.1 },
+      open_2: { noul: 0.9 },
+      category_2: sure("other"),
+    });
+    expect(changed).toEqual({ amber: 1, rescued: 1, sorted: 1 });
+  });
+});

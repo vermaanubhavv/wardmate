@@ -233,7 +233,10 @@ async function routeWithTypeSafe(
   if ("fallback" in jev) return jev;
 
   const result = segmentsFromJev(sentences, jev.answers, knownComplaints, allowed);
-  return "segments" in result ? { segments: result.segments, model: jev.model } : result;
+  if (!("segments" in result)) return result;
+  // Counts only, as "jev judged" does: how much live clerking Jev files on its own.
+  log.info("route-dictation: Jev filed", { "jev.sentences": sentences.length, "jev.segments": result.segments.length });
+  return { segments: result.segments, model: jev.model };
 }
 
 /** Deepgram's smart_format punctuates, so sentence boundaries are real. */
