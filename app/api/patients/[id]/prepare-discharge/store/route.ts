@@ -119,7 +119,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
    */
   const operated = pages.find((p) => p.kind === "ot_note" && p.markOperated)?.markOperated ?? null;
   if (operated && !patient.surgery_date) {
-    const resolved = resolveProcedure(operated.procedure, await listTemplateChoices());
+    const resolved = resolveProcedure(operated.procedure, await listTemplateChoices((await packP).key));
     await supabase
       .from("patients")
       .update({
