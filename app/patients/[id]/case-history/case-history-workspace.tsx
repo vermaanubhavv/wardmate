@@ -11,11 +11,16 @@ import {
   CNS_PILLS,
   CVS_PILLS,
   EXAM_CARD,
+  MSE_PILLS,
+  SKIN_PILLS,
+  alwaysShowsObstetricCard,
   examStepsFor,
   hopiAttrsFor,
+  localExamHintFor,
   type ExamCardId,
   type HopiAttr,
 } from "@/lib/specialty/clerking";
+import { specialtyCardsFor } from "@/lib/case-history-sections";
 import DictationOverlay from "./dictation-overlay";
 import { DictateButton } from "../live-dictation";
 import { ExamDiagrams, hasExamDiagram } from "./print/diagrams";
@@ -249,10 +254,24 @@ type StepId =
   | "chest"
   | "cvs"
   | "cns"
+  | "mse"
+  | "skin"
   | "local"
   | "diagnosis"
   | "plan"
   | "review";
+
+/** Titles of the cards a unit adds through lib/case-history-sections.ts. Its CVS / CNS / MSE /
+ *  skin entries are walked as examination cards (lib/specialty/clerking.ts), so not here. */
+const SPECIALTY_CARD_TITLE: Record<string, string> = {
+  onco_disease: "Oncological history",
+  onco_treatment: "Treatment received",
+  onco_cycle: "Current cycle",
+  onco_toxicity: "Toxicity since last cycle",
+  performance: "Performance status",
+  onco_nodes: "Lymph node survey",
+  onco_mucosa_line: "Mucosa, skin & line",
+};
 
 export default function CaseHistoryWorkspace({
   patientId,
@@ -276,7 +295,9 @@ export default function CaseHistoryWorkspace({
    *  status card; every other unit's stack is exactly what it has always been. */
   specialty?: string;
 }) {
-  const oncology = specialty === "medical_oncology";
+  // The unit's extra cards (lib/case-history-sections.ts) — oncology's four history cards and
+  // its performance / node / mucosa cards; none on any other unit today.
+  const extraCards = specialtyCardsFor(specialty);
   const complaintChips = useMemo(() => complaintChipsFor(specialty), [specialty]);
   const pastChips = useMemo(() => pastChipsFor(specialty), [specialty]);
   const searchParams = useSearchParams();
@@ -402,6 +423,8 @@ export default function CaseHistoryWorkspace({
   const [chest, setChest] = useState<string>(() => examValue(EXAM_CARD.chest.aliases));
   const [cvs, setCvs] = useState<string>(() => examValue(EXAM_CARD.cvs.aliases));
   const [cns, setCns] = useState<string>(() => examValue(EXAM_CARD.cns.aliases));
+  const [mse, setMse] = useState<string>(() => examValue(EXAM_CARD.mse.aliases));
+  const [skin, setSkin] = useState<string>(() => examValue(EXAM_CARD.skin.aliases));
   const [local, setLocal] = useState<string>(() => examValue(EXAM_CARD.local.aliases));
   // The department's examination cards. A card it does not walk still shows when the record
   // already holds a value for it — a medicine patient's earlier local examination is not hidden.
@@ -489,16 +512,14 @@ export default function CaseHistoryWorkspace({
     obstetric: [obstetric, setObstetric],
   };
 
-  const oncoCards: { id: StepId; title: string }[] = oncology
-    ? [
-        // The disease, then what has been given for it, then what is running now, then what the
-        // last cycle did — the order an oncologist actually asks in.
-        { id: "onco_disease", title: "Oncological history" },
-        { id: "onco_treatment", title: "Treatment received" },
-        { id: "onco_cycle", title: "Current cycle" },
-        { id: "onco_toxicity", title: "Toxicity since last cycle" },
-      ]
-    : [];
+  // In the order the unit lists them — for oncology the disease, then what has been given for
+  // it, then what is running now, then what the last cycle did.
+  const oncoCards = extraCards.history
+    .filter((id) => SPECIALTY_CARD_TITLE[id])
+    .map((id) => ({ id: id as StepId, title: SPECIALTY_CARD_TITLE[id] }));
+  const specialtyExamCards = extraCards.exam
+    .filter((id) => SPECIALTY_CARD_TITLE[id])
+    .map((id) => ({ id: id as StepId, title: SPECIALTY_CARD_TITLE[id] }));
   const historyIds: StepId[] = [
     "past",
     "medication",
@@ -507,7 +528,7 @@ export default function CaseHistoryWorkspace({
     "surgical",
     "dietary",
     "environmental",
-    ...((sex && /^f/i.test(sex)) || specialty === "obstetrics_gynaecology" ? (["obstetric"] as StepId[]) : []),
+    ...((sex && /^f/i.test(sex)) || alwaysShowsObstetricCard(specialty) ? (["obstetric"] as StepId[]) : []),
   ];
   const leadIds = leads.map((l) => l.key as StepId);
   const leadCards = leadIds
@@ -539,13 +560,7 @@ export default function CaseHistoryWorkspace({
       : pastMedIds.map((id) => ({ id, title: HISTORY_TITLE[id] }))),
     ...(otherHistoryIds.length > 0 ? [{ id: "histories" as StepId, title: "Other history" }] : []),
     ...oncoCards.filter((c) => !leadIds.includes(c.id)),
-    ...(oncology
-      ? [
-          { id: "performance" as StepId, title: "Performance status" },
-          { id: "onco_nodes" as StepId, title: "Lymph node survey" },
-          { id: "onco_mucosa_line" as StepId, title: "Mucosa, skin & line" },
-        ]
-      : []),
+    ...specialtyExamCards,
     ...examSteps.map((id: ExamCardId) => ({
       id,
       title: id === "piccle" ? "General examination" : id === "vitals" ? "Vitals" : EXAM_CARD[id].title,
@@ -648,6 +663,10 @@ export default function CaseHistoryWorkspace({
       res = await replaceCaseHistoryExam(patientId, [{ label: EXAM_CARD.cvs.label, kind: "exam", value: cvs.trim() || null }]);
     else if (id === "cns")
       res = await replaceCaseHistoryExam(patientId, [{ label: EXAM_CARD.cns.label, kind: "exam", value: cns.trim() || null }]);
+    else if (id === "mse")
+      res = await replaceCaseHistoryExam(patientId, [{ label: EXAM_CARD.mse.label, kind: "exam", value: mse.trim() || null }]);
+    else if (id === "skin")
+      res = await replaceCaseHistoryExam(patientId, [{ label: EXAM_CARD.skin.label, kind: "exam", value: skin.trim() || null }]);
     else if (id === "local")
       res = await replaceCaseHistoryExam(patientId, [{ label: "local examination", kind: "exam", value: local.trim() || null }]);
 
@@ -1254,11 +1273,39 @@ export default function CaseHistoryWorkspace({
           placeholder="GCS as E V M, higher functions, power per limb, tone, reflexes, plantars, meningeal signs"
         />
       );
+    if (id === "mse")
+      return (
+        <PillsAndText
+          pills={MSE_PILLS}
+          value={mse}
+          onChange={(v) => { setMse(v); mark("mse"); }}
+          placeholder="What was seen and elicited under each heading, in the patient's words where quoted"
+          rows={6}
+        />
+      );
+    if (id === "skin")
+      return (
+        <>
+          <PillsAndText
+            pills={SKIN_PILLS}
+            value={skin}
+            onChange={(v) => { setSkin(v); mark("skin"); }}
+            placeholder="Primary lesion, colour, surface, distribution and configuration; mucosa, nails, hair"
+            rows={6}
+          />
+          {hasExamDiagram(specialty) && (
+          <div className="rounded-[10px] border border-line bg-white p-2 text-black">
+            <ExamDiagrams specialty={specialty} />
+            <p className="mt-1 text-caption text-muted">Prints blank on the history sheet for marking by hand.</p>
+          </div>
+          )}
+        </>
+      );
 
     if (id === "local")
       return (
         <>
-          <p className="text-caption leading-[1.45] text-muted">The examination of the presenting problem itself — the lump, the hernia, the wound, the perianal region.</p>
+          <p className="text-caption leading-[1.45] text-muted">{localExamHintFor(specialty)}</p>
           <DictateArea value={local} onChange={(v) => { setLocal(v); mark("local"); }} placeholder="Site, size, tenderness, consistency, margins…" rows={6} />
           {/* The department's diagram, as it prints on the back of the history sheet — marked by
               hand there; describe here what gets drawn. */}
@@ -1701,6 +1748,8 @@ export default function CaseHistoryWorkspace({
     chest,
     cvs,
     cns,
+    mse,
+    skin,
     local,
     diagnosis: diagnosis.text,
     plan: [...plan.workup, ...plan.conservative, ...plan.medications].filter((i) => i.trim()).join("; "),
