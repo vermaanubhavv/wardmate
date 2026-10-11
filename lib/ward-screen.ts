@@ -3,6 +3,7 @@ import { compareBeds, type WardPatient } from "@/lib/patients";
 import { getCurrentWard, getActivePatients, getRemovedCount, getWardSpecialtyStored } from "@/lib/ward";
 import { getProcedureLabels, listTemplateChoices, type TemplateChoice } from "@/lib/templates";
 import { getSpecialtyPack, offersChecklistFamily, type SpecialtyPack } from "@/lib/specialty";
+import { readsChemoColumns, usesBurnClock } from "@/lib/specialty/clocks";
 
 export type Ward = {
   id: string;
@@ -124,7 +125,7 @@ export async function getWardScreen(): Promise<WardScreen> {
   const pack = getSpecialtyPack(specialty);
 
   const [{ patients }, procedures, templateChoices, removedCount] = await Promise.all([
-    getActivePatients(ward.id, pack.key !== "general_surgery", pack.key === "burns_plastic_surgery"),
+    getActivePatients(ward.id, readsChemoColumns(pack), usesBurnClock(pack)),
     getProcedureLabels(pack.key),
     listTemplateChoices(pack.key),
     getRemovedCount(ward.id),

@@ -5,8 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { istDayKey } from "@/lib/patient-state";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { getSpecialtyPack } from "@/lib/specialty";
-import { progressNoteConfigFor } from "@/lib/progress-note-config";
-import { MED_PRESETS } from "./med-presets";
+import { MED_PRESETS, progressNoteConfigFor } from "@/lib/progress-note-config";
 
 /**
  * Writes from the daily progress-note workspace.

@@ -133,7 +133,7 @@ export default function OverlayNote({
                 failure here, not text silently clipped out of view. */}
             {isMultiLine ? (
               <div className="whitespace-normal">
-                {lines!.map((line, i) => renderNoteLine(line, i, { compact: true }))}
+                {lines!.map((line, i) => renderNoteLine(line, i, { compact: true, openSpace: note.openSpace }))}
               </div>
             ) : (
               <span className="whitespace-pre-line">{text}</span>

@@ -80,4 +80,10 @@ describe("deriveDoneToday", () => {
     );
     expect(items.map((i) => i.id)).toEqual(["l1", "p1", "t1"]);
   });
+
+  it("says Operated on an operative unit and Procedure done elsewhere", () => {
+    const done = [obs({ id: "p1", kind: "procedure_done", value_text: "Chemoport insertion" })];
+    expect(deriveDoneToday(done, [], TODAY)[0].text).toBe("Operated: Chemoport insertion");
+    expect(deriveDoneToday(done, [], TODAY, false)[0].text).toBe("Procedure done: Chemoport insertion");
+  });
 });

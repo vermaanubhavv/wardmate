@@ -2,15 +2,18 @@ import { describe, expect, it } from "vitest";
 import { buildProgressNote, type ProgressNotePatient } from "@/lib/progress-note";
 import { systemPromptFor } from "@/lib/progress-note-ai";
 import {
+  MED_PRESETS,
   PROGRESS_NOTE_CONFIGS,
   RESERVED_SECTION_IDS,
+  liveRoundSections,
+  medPresetsFor,
+  openSpaceHeadings,
   progressNoteConfigFor,
 } from "@/lib/progress-note-config";
 import { SPECIALTY_KEYS } from "@/lib/specialty/types";
 import { TREATMENT_ADVICE } from "@/lib/history-check/schema";
 import type { Observation } from "@/lib/patient-state";
 import { matchVitalLabel } from "@/lib/vital-ranges";
-import { MED_PRESETS, medPresetsFor } from "@/app/patients/[id]/note/med-presets";
 
 const obs = (kind: string, label: string, value_text: string | null): Observation =>
   ({
@@ -114,7 +117,7 @@ describe("medicine's daily note", () => {
   it("general surgery is unchanged: its four exam cards, no extra vitals, the surgical Type example", () => {
     expect(gs.examSections.map((s) => s.id)).toEqual(["abdomen", "wound", "drains", "chest"]);
     expect(gs.extraVitals).toBeUndefined();
-    expect(gs.bedsideExample).toBeUndefined();
+    expect(gs.bedsideExample).toBe("Day 3 post lap chole, afebrile, drain 30 ml serous…");
   });
 
   it("medicine has a CNS card, nothing pre-filled, printing once and not on the OE line", () => {
@@ -144,5 +147,56 @@ describe("medication presets", () => {
     expect(medPresetsFor("general_surgery")).toContain("Inj Tramadol 50 mg IV SOS");
     expect(medPresetsFor("no_such_ward")).toEqual(medPresetsFor("general_surgery"));
     for (const key of SPECIALTY_KEYS) for (const p of medPresetsFor(key)) expect(MED_PRESETS, p).toContain(p);
+  });
+});
+
+describe("per-ward presets, examples and print spacing", () => {
+  const SURGICAL = medPresetsFor("general_surgery");
+
+  it("surgery keeps its list; operative wards share it", () => {
+    expect(SURGICAL).toContain("Inj Metronidazole 500 mg IV TDS");
+    for (const key of ["orthopaedics", "urology", "burns_plastic_surgery"]) expect(medPresetsFor(key)).toEqual(SURGICAL);
+  });
+
+  it("non-surgical wards never get tramadol, an NSAID or metronidazole; children get none", () => {
+    expect(medPresetsFor("paediatrics")).toEqual([]);
+    for (const key of ["internal_medicine", "medical_oncology", "pulmonary_medicine", "psychiatry", "dermatology", "emergency_medicine"]) {
+      for (const p of medPresetsFor(key)) {
+        expect(p, `${key}: ${p}`).not.toMatch(/diclofenac|ibuprofen|aceclofenac|ketorolac|naproxen|tramadol|metronidazole/i);
+      }
+    }
+    expect(medPresetsFor("medical_oncology")).toContain("Inj Ondansetron 8 mg IV TDS");
+  });
+
+  it("every ward has its own examples; non-surgical ones are not surgical", () => {
+    for (const key of SPECIALTY_KEYS) {
+      expect(PROGRESS_NOTE_CONFIGS[key].bedsideExample, key).toBeTruthy();
+      expect(PROGRESS_NOTE_CONFIGS[key].dictationExample, key).toBeTruthy();
+    }
+    for (const key of ["internal_medicine", "medical_oncology", "paediatrics", "psychiatry", "dermatology", "emergency_medicine"] as const) {
+      const c = PROGRESS_NOTE_CONFIGS[key];
+      expect(`${c.bedsideExample} ${c.dictationExample}`, key).not.toMatch(/lap chole|drain|oral sips/i);
+    }
+    expect(PROGRESS_NOTE_CONFIGS.general_surgery.dictationExample).toBe(
+      "no fresh complaints… BP 120 by 80, pulse 84… abdomen soft… drain 50 ml serous… start oral sips…"
+    );
+  });
+
+  it("open-space headings: surgery exactly as before, others from their own exam lines", () => {
+    expect(openSpaceHeadings(PROGRESS_NOTE_CONFIGS.general_surgery)).toEqual(["C/O", "P/Abdomen", "Chest", "Assessment", "Flatus / Stool"]);
+    expect(openSpaceHeadings(PROGRESS_NOTE_CONFIGS.internal_medicine)).toEqual(["C/O", "CVS", "Chest", "P/Abdomen", "CNS", "Assessment"]);
+    const note = buildProgressNote(patient, [], [], null, { noteConfig: PROGRESS_NOTE_CONFIGS.paediatrics });
+    expect(note.openSpace).toEqual(openSpaceHeadings(PROGRESS_NOTE_CONFIGS.paediatrics));
+  });
+
+  it("live dictation: surgery keeps its eight sections and drains; medicine and paediatrics say lines", () => {
+    const label = (key: string) => liveRoundSections(progressNoteConfigFor(key)).find((s) => s.key === "drain")?.label;
+    expect(label("general_surgery")).toBe("Drains & intake/output");
+    expect(label("urology")).toBe("Drains & intake/output");
+    expect(label("internal_medicine")).toBe("Lines & intake/output");
+    expect(label("paediatrics")).toBe("Lines & intake/output");
+    expect(liveRoundSections(progressNoteConfigFor("general_surgery")).map((s) => s.key)).toEqual([
+      "history", "vital", "exam", "drain", "dx", "medication", "lab", "plan",
+    ]);
   });
 });
