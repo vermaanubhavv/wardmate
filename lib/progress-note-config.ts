@@ -63,7 +63,9 @@ export type ProgressNoteConfig = {
   dictationExample: string;
   /** The Medications card's one-tap drugs. A preset dose is a default, not something the
    *  resident said, so a line still reading exactly like any preset saves amber (MED_PRESETS).
-   *  [] where a fixed dose would be wrong (weight-based paediatrics) or unreviewed. */
+   *  [] where a fixed dose would be wrong (weight-based paediatrics) or unreviewed. Every
+   *  department's list was reviewed and approved by the app owner in October 2026; a change
+   *  to any list needs the same clinical sign-off. */
   medPresets: string[];
 };
 
