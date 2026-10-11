@@ -16,8 +16,8 @@ export const soreThroatV1: HistoryTree = {
   complaint: "Sore throat",
   triggers: ["sore throat", "throat pain", "pain in throat", "painful swallowing", "odynophagia", "pharyngitis", "tonsillitis", "gala kharab", "throat infection", "scratchy throat"],
   setting: "Adult medicine / ENT ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("The rational clinical examination. Does this patient have strep throat?", 2000, "11147989"),
     rce("Does this patient have infectious mononucleosis? The Rational Clinical Examination systematic review", 2016, "27115266"),

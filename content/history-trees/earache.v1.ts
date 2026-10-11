@@ -18,8 +18,8 @@ export const earacheV1: HistoryTree = {
   complaint: "Earache",
   triggers: ["earache", "pain in ear", "pain in the ear", "ear ache", "painful ear", "kaan dard", "kaan me dard", "kaan mein dard", "ear hurts", "ear is paining"],
   setting: "ENT ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DHINGRA, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("ear pain"),

@@ -17,8 +17,8 @@ export const neckPainV1: HistoryTree = {
   complaint: "Neck pain",
   triggers: ["neck pain", "pain in neck", "pain in the neck", "neck ache", "cervical pain", "cervicalgia", "cervical spondylosis", "whiplash", "gardan dard", "gardan me dard", "pain radiating to arm"],
   setting: "Orthopaedics ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [APLEY, BAILEY_LOVE, MACLEODS, HUTCHISONS, ATLS],
   slots: [
     ...commonHpi("neck pain"),

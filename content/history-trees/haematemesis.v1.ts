@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * HAEMATEMESIS / UPPER GI BLEEDING — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
+ * HAEMATEMESIS / UPPER GI BLEEDING — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
  * Adult medicine / surgical ward, north India. Two questions run in parallel: how much has been
  * lost and is the patient compensating, and where is it coming from. Differentials: peptic
  * ulcer, oesophageal or gastric varices, Mallory-Weiss tear, erosive gastritis (painkillers,
@@ -14,8 +14,8 @@ export const haematemesisV1: HistoryTree = {
   complaint: "Vomiting of blood",
   triggers: ["haematemesis", "hematemesis", "vomiting blood", "vomited blood", "blood in vomit", "coffee ground vomit", "coffee ground", "khoon ki ulti", "upper gi bleed", "blood in vomitus"],
   setting: "Adult medicine / surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     DAS_CLINICAL_SURGERY,
     HAMILTON_BAILEY,

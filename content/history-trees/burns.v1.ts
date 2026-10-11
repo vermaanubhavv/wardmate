@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { ATLS, BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, surgicalBackground, TRAUMA_BG, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BURNS — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
+ * BURNS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
  * Burns and plastic surgery unit, north India, where kitchen flame burns, kerosene stoves and
  * electrical injuries dominate. The history is short and specific: what burned, for how long,
  * in what space, what was poured on it afterwards, and the exact time it happened — that time
@@ -17,8 +17,8 @@ export const burnsV1: HistoryTree = {
   complaint: "Burns",
   triggers: ["burn", "burns", "burnt", "scald", "flame burn", "fire", "electric burn", "electrocution", "chemical burn", "acid", "jal gaya", "stove burst", "kerosene", "boiling water"],
   setting: "Burns and plastic surgery unit, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, BAILEY_LOVE, MACLEODS, HUTCHISONS, ATLS],
   slots: [
     ...commonHpi("burn").filter((s) => !["onset", "duration", "onset_mode", "progression", "prior_treatment"].includes(s.id)),

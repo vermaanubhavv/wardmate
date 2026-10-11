@@ -16,8 +16,8 @@ export const skinLesionV1: HistoryTree = {
   complaint: "Skin rash / itching",
   triggers: ["rash", "skin rash", "itching", "itchy", "pruritus", "skin lesion", "skin patch", "eruption", "boils", "blisters", "scaling", "khujli", "daad", "white patch", "red patches", "dry skin"],
   setting: "Skin ward and outpatient, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [IADVL, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("rash"),

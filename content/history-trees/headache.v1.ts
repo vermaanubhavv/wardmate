@@ -14,8 +14,8 @@ export const headacheV1: HistoryTree = {
   complaint: "Headache",
   triggers: ["headache", "head ache", "head pain", "pain in head", "migraine"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("Does this patient with headache have a migraine or need neuroimaging?", 2006, "16968852"),
     rce("The rational clinical examination. Does this adult patient have acute meningitis?", 1999, "10411200"),
