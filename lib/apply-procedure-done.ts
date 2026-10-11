@@ -47,7 +47,7 @@ export async function applyProcedureDone(
   // resident manually marks someone post-op — matching a name the library knows brings its
   // checklist/protocol along; anything else is kept as the unit's own wording, with no
   // template applied rather than one invented for an operation nobody described.
-  const resolved = resolveProcedure(done.value_text, await listTemplateChoices());
+  const resolved = resolveProcedure(done.value_text, await listTemplateChoices(pack.key));
 
   await supabase
     .from("patients")
