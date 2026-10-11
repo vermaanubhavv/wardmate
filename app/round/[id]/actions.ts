@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { DraftSegment } from "@/lib/round-draft";
 import { applyProcedureDone } from "@/lib/apply-procedure-done";
+import { getWardPack } from "@/lib/ward";
 
 /**
  * Writes the segments the resident approved, and only those.
@@ -33,6 +34,8 @@ export async function applyRound(formData: FormData) {
 
   const segments = ((dictation.raw as { segments?: DraftSegment[] } | null)?.segments ??
     []) as DraftSegment[];
+
+  const pack = await getWardPack(dictation.ward_id);
 
   for (let i = 0; i < segments.length; i++) {
     const segment = segments[i];
@@ -88,7 +91,7 @@ export async function applyRound(formData: FormData) {
       .select("surgery_date, template_family, template_variant, procedure_text")
       .eq("id", patientId)
       .maybeSingle();
-    if (patient) await applyProcedureDone(supabase, patientId, patient, segment.observations);
+    if (patient) await applyProcedureDone(supabase, patientId, patient, segment.observations, pack);
 
     revalidatePath(`/patients/${patientId}`);
   }

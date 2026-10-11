@@ -25,6 +25,9 @@
  * what the app changed. A correction here is a suggestion on the record, not a rewriting of it.
  */
 
+import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { hasOperationClock } from "@/lib/specialty/intake";
+
 export type Correction = { from: string; to: string };
 
 /**
@@ -33,23 +36,29 @@ export type Correction = { from: string; to: string };
  * phrases are listed first so they win.
  *
  * To add one: put the misheard spelling on the left, exactly as the engine writes it.
+ *
+ * A rule marked OP belongs to an operating ward — lap chole, PAC, OT, POD. It runs only on a
+ * unit with an operation clock (hasOperationClock): on a chest ward "PAS" is para-aminosalicylic
+ * acid, and in dermatology or oncology it is the PAS stain, and neither may become "PAC".
  */
-const RULES: { pattern: RegExp; to: string }[] = [
+const OP = true;
+const RULES: { pattern: RegExp; to: string; op?: boolean }[] = (
+  [
   // The operation this unit does most, and the phrase the engine gets wrong most.
-  [/\blap(?:\s|-)?(?:chole|choley|coley|coli|collie|cole)\b/gi, "lap chole"],
-  [/\blab(?:\s|-)?(?:chole|choley|coley|coli|collie|cole)\b/gi, "lap chole"],
-  [/\b(?:coli|collie|coley)\s*cystectomy\b/gi, "cholecystectomy"],
-  [/\blaparoscopic\s+(?:coli|collie|coley)\w*ectomy\b/gi, "laparoscopic cholecystectomy"],
+  [/\blap(?:\s|-)?(?:chole|choley|coley|coli|collie|cole)\b/gi, "lap chole", OP],
+  [/\blab(?:\s|-)?(?:chole|choley|coley|coli|collie|cole)\b/gi, "lap chole", OP],
+  [/\b(?:coli|collie|coley)\s*cystectomy\b/gi, "cholecystectomy", OP],
+  [/\blaparoscopic\s+(?:coli|collie|coley)\w*ectomy\b/gi, "laparoscopic cholecystectomy", OP],
 
   // Pre-anaesthetic checkup. "PAS" is what a general model writes for it; on a surgical ward
   // PAC is the overwhelmingly likelier word, and the raw text is kept either way.
-  [/\bp\.?\s?a\.?\s?s\.?(?=\s|$)/gi, "PAC"],
-  [/\bpack\s+review\b/gi, "PAC review"],
+  [/\bp\.?\s?a\.?\s?s\.?(?=\s|$)/gi, "PAC", OP],
+  [/\bpack\s+review\b/gi, "PAC review", OP],
   [/\bpac\b/gi, "PAC"],
 
   // Appendix, and the two spellings that come back for it.
-  [/\bappendic?[ei]ctomy\b/gi, "appendicectomy"],
-  [/\bappendix\s*ectomy\b/gi, "appendicectomy"],
+  [/\bappendic?[ei]ctomy\b/gi, "appendicectomy", OP],
+  [/\bappendix\s*ectomy\b/gi, "appendicectomy", OP],
 
   // Nasogastric tube, named after Ryle. Only the spelled-out form: "RT" is left alone, because
   // it is radiotherapy as readily as it is a Ryle's tube and this cannot tell which was meant.
@@ -71,7 +80,7 @@ const RULES: { pattern: RegExp; to: string }[] = [
   [/\br\.?\s?f\.?\s?t\.?(?=\s|$)/gi, "RFT"],
   [/\bc\.?\s?b\.?\s?c\.?(?=\s|$)/gi, "CBC"],
   [/\be\.?\s?c\.?\s?g\.?(?=\s|$)/gi, "ECG"],
-  [/\bo\.?\s?t\.?\s+list\b/gi, "OT list"],
+  [/\bo\.?\s?t\.?\s+list\b/gi, "OT list", OP],
   [/\bn\.?\s?b\.?\s?m\.?(?=\s|$)/gi, "NBM"],
   [/\bi\.?\s?c\.?\s?d\.?(?=\s|$)/gi, "ICD"],
 
@@ -187,9 +196,9 @@ const RULES: { pattern: RegExp; to: string }[] = [
   [/\bnormal\s+saline\b/gi, "NS"],
   [/\bpacked\s+cell\s+volume\b/gi, "PCV"],
   [/\bnil\s+by\s+mouth\b/gi, "NBM"],
-  [/\bpre[\s-]?an(?:a)?esthetic\s+(?:checkup|check[\s-]?up|clearance|fitness)\b/gi, "PAC"],
-  [/\boperation\s+theatre\b/gi, "OT"],
-  [/\bpost[\s-]?operative\s+day\b/gi, "POD"],
+  [/\bpre[\s-]?an(?:a)?esthetic\s+(?:checkup|check[\s-]?up|clearance|fitness)\b/gi, "PAC", OP],
+  [/\boperation\s+theatre\b/gi, "OT", OP],
+  [/\bpost[\s-]?operative\s+day\b/gi, "POD", OP],
   [/\bintercostal\s+drain(?:age\s+tube)?\b/gi, "ICD"],
   [/\bleft\s+against\s+medical\s+advice\b/gi, "LAMA"],
   [/\bdischarged?\s+against\s+medical\s+advice\b/gi, "DAMA"],
@@ -207,7 +216,8 @@ const RULES: { pattern: RegExp; to: string }[] = [
   //   "blood transfusion" -> BT is also bleeding time.
   //   "care of"           -> C/O is complaints of; the two are not the same statement.
   //   "at bedtime"        -> HS on a chart, but "at night" in a narrative sentence.
-].map(([pattern, to]) => ({ pattern: pattern as RegExp, to: to as string }));
+  ] as [RegExp, string, boolean?][]
+).map(([pattern, to, op]) => ({ pattern, to, op }));
 
 /**
  * Correct a transcript, and say what was changed.
@@ -215,14 +225,19 @@ const RULES: { pattern: RegExp; to: string }[] = [
  * `changes` is what gets shown to the resident. A rule that fires but produces the same text —
  * "PAC" already written correctly — is not reported, because nothing was actually altered.
  */
-export function applyCorrections(transcript: string): {
+export function applyCorrections(
+  transcript: string,
+  pack: SpecialtyPack = generalSurgeryPack
+): {
   text: string;
   changes: Correction[];
 } {
   let text = transcript;
   const changes: Correction[] = [];
+  const operating = hasOperationClock(pack);
 
-  for (const { pattern, to } of RULES) {
+  for (const { pattern, to, op } of RULES) {
+    if (op && !operating) continue;
     text = text.replace(pattern, (heard) => {
       if (heard === to) return heard;
 

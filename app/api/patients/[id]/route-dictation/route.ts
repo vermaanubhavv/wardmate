@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { plainAiError } from "@/lib/ai-error";
 import { routeToSections, type DictationSection } from "@/lib/dictation-routing";
+import { getWardPack } from "@/lib/ward";
 
 /**
  * Live dictation for the progress note and the discharge summary: each pause of transcript is
@@ -35,11 +36,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!text || sections.length === 0) return NextResponse.json({ lines: [] });
 
   // Only for a patient this user can see (RLS returns the row only to a ward member).
-  const { data: patient } = await supabase.from("current_patients").select("id").eq("id", patientId).maybeSingle();
+  const { data: patient } = await supabase.from("current_patients").select("id, ward_id").eq("id", patientId).maybeSingle();
   if (!patient) return NextResponse.json({ error: "Patient not found." }, { status: 404 });
 
   try {
-    return NextResponse.json({ lines: await routeToSections(text, sections) });
+    return NextResponse.json({ lines: await routeToSections(text, sections, await getWardPack(patient.ward_id)) });
   } catch (e) {
     return NextResponse.json({ error: plainAiError(e) }, { status: 502 });
   }

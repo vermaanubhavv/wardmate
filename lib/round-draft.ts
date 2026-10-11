@@ -3,6 +3,7 @@ import { extractObservations, type ExtractedObservation } from "@/lib/extract";
 import { getTemplateForPatient } from "@/lib/templates";
 import { matchBed } from "@/lib/match-bed";
 import { createClient } from "@/lib/supabase/server";
+import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
 
 export type DraftSegment = RoundSegment & {
   /** What would be written for this bed. Empty for an admission, or when nothing clinical
@@ -29,11 +30,13 @@ type WardPatient = { id: string; display_name: string; bed: string };
  */
 export async function buildRoundDraft(
   transcript: string,
-  patients: WardPatient[]
+  patients: WardPatient[],
+  pack: SpecialtyPack = generalSurgeryPack
 ): Promise<RoundDraft> {
   const read = await readRoundDictation(
     transcript,
-    patients.map((p) => p.bed)
+    patients.map((p) => p.bed),
+    pack
   );
 
   const supabase = await createClient();
@@ -68,7 +71,7 @@ export async function buildRoundDraft(
       // The bed's own patient (when matched) is kept out of what Jev is sent, and so is the
       // bed as spoken.
       const who = patients.find((p) => p.id === match.patientId);
-      const extraction = await extractObservations(segment.text, expectedLabels, [], undefined, {
+      const extraction = await extractObservations(segment.text, expectedLabels, [], pack.key, {
         name: who?.display_name,
         bed: who?.bed ?? segment.bed,
       });

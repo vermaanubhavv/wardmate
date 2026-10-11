@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getPatientDictationKeyterms } from "@/lib/transcription/patient-context";
-import { MEDICAL_KEYTERMS } from "@/lib/stt";
+import { getPatientDictationKeyterms, wardKeyterms } from "@/lib/transcription/patient-context";
+import { getCurrentWardPack } from "@/lib/ward";
 
 /**
  * Mint a short-lived Deepgram token so the browser can open a live-transcription WebSocket
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Malformed request." }, { status: 400 });
   }
-  // No patient yet is the add-patient screen: the general medical vocabulary instead of a
+  // No patient yet is the add-patient screen: the selected unit's vocabulary instead of a
   // patient's own. A patient given has to be one this user can see — reuse RLS: a row comes
   // back only for a ward member.
   if (body.patientId) {
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
 
   const keyterms = body.patientId
     ? await getPatientDictationKeyterms(supabase, body.patientId, { noteType: "ward-round" })
-    : [...MEDICAL_KEYTERMS];
+    : wardKeyterms((await getCurrentWardPack()).lexiconSpecialty);
 
   return NextResponse.json({ token, expiresIn, keyterms });
 }

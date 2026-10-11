@@ -37,7 +37,7 @@ export interface SttProvider {
  * rather than inside any one provider.
  */
 export const MEDICAL_VOCABULARY_HINT = [
-  "Surgical ward round dictation in Indian English.",
+  "Ward round dictation in Indian English.",
   "Expect terms such as: lap chole, laparoscopic cholecystectomy, appendicectomy,",
   "laparotomy, hernioplasty, Ryle's tube, drain, serous, serosanguinous, bilious,",
   "afebrile, febrile, tachycardia, abdomen soft, distended, bowel sounds, flatus,",
@@ -77,7 +77,8 @@ export const MEDICAL_VOCABULARY_HINT = [
  * now build a ~20–50 term list tailored to the specific patient — their diagnoses, operation,
  * drains and drugs first — via lib/transcription. See docs/medical-dictation-keyterms.md. This
  * static list is what Deepgram gets when there is no patient context (the add-patient and
- * engine-comparison routes), held to the 80-term application cap by buildDeepgramUrl.
+ * engine-comparison routes) on a general-surgery unit — other units get their own lexicon via
+ * wardKeyterms in lib/transcription/patient-context.ts — held to the 80-term cap by buildDeepgramUrl.
  */
 export const MEDICAL_KEYTERMS: string[] = [
   // Procedures and operative terms

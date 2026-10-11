@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
 import { getPatientDictationKeyterms } from "@/lib/transcription/patient-context";
 import { extractObservations } from "@/lib/extract";
-import { getWardSpecialtyStored } from "@/lib/ward";
+import { getWardPack } from "@/lib/ward";
 import { correctTranscript } from "@/lib/glossary";
 import { getTemplateForPatient } from "@/lib/templates";
 import { getPublishedProtocolContext } from "@/lib/protocols";
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
   // Which department this unit is, for the dictation prompt. Started here and awaited only at
   // the extraction call, so it overlaps the speech-to-text step and costs no extra wall time.
   // It resolves to null — and so to general surgery — on any database without patch 0060.
-  const specialty = getWardSpecialtyStored(patient.ward_id);
+  const packP = getWardPack(patient.ward_id);
 
   // 1. Speech to text, then the engine's known mishearings of surgical terms — "lab chole" for
   // lap chole, "PAS" for PAC. Corrected BEFORE extraction, so a template matches the operation
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       keyterms: keyterms.length ? keyterms : undefined,
     });
     heard = result.text;
-    transcript = (await correctTranscript(heard)).text;
+    transcript = (await correctTranscript(heard, await packP)).text;
     log.info("dictation transcribed", {
       "stt.provider": stt.provider,
       "transcript.chars": transcript.length,
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
 
   let extraction;
   try {
-    extraction = await extractObservations(transcript, expectedLabels, protocols, await specialty, { name: patient.display_name, bed: patient.bed });
+    extraction = await extractObservations(transcript, expectedLabels, protocols, (await packP).key, { name: patient.display_name, bed: patient.bed });
   } catch (e) {
     // The transcript is worth keeping even when extraction fails — it is the evidence, and
     // the resident can still read it. Store the entry with the error recorded against it.
@@ -198,7 +198,7 @@ export async function POST(request: Request) {
     }
   }
 
-  await applyProcedureDone(supabase, patientId, patient, extraction.observations);
+  await applyProcedureDone(supabase, patientId, patient, extraction.observations, await packP);
 
   const body = {
     entry_id: entry.id,

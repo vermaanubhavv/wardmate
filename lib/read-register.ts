@@ -1,5 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { AI_MODEL } from "@/lib/model";
+import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { hasOperationClock } from "@/lib/specialty/intake";
+import { forWard } from "@/lib/specialty/prompt-words";
 import { judgeRegisterRows, type TaskCategoryJudgment } from "@/lib/jev-observations";
 
 export type RegisterRow = {
@@ -26,7 +29,7 @@ export type RegisterResult = {
   raw: unknown;
 };
 
-const SYSTEM_PROMPT = `You read a photograph of a hospital ward round register and transcribe what is written in it, one entry per patient.
+export const SYSTEM_PROMPT = `You read a photograph of a hospital ward round register and transcribe what is written in it, one entry per patient.
 
 You are transcribing handwriting, not interpreting medicine. You are not being asked what the entries mean or whether they are complete.
 
@@ -86,9 +89,27 @@ const SCHEMA = {
   additionalProperties: false,
 } as const;
 
+/** The register prompt for this unit. A ward with no operation clock keeps no POD column and
+ *  no drains, so its examples are a medical ward's; general surgery's text is unchanged. */
+export function registerPrompt(pack: SpecialtyPack): string {
+  return forWard(
+    SYSTEM_PROMPT,
+    pack,
+    hasOperationClock(pack)
+      ? []
+      : [
+          ["DIAGNOSIS, POD, FINDINGS", "DIAGNOSIS, DAY, FINDINGS"],
+          ["plus the diagnosis and post-operative day", "plus the diagnosis and day of admission"],
+          ["drain output, oral intake", "urine output, oral intake"],
+          ['"remove drain tomorrow"', '"repeat chest X-ray tomorrow"'],
+        ]
+  );
+}
+
 export async function readRegister(
   base64Image: string,
-  mediaType: "image/jpeg" | "image/png" | "image/webp"
+  mediaType: "image/jpeg" | "image/png" | "image/webp",
+  pack: SpecialtyPack = generalSurgeryPack
 ): Promise<RegisterResult> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
@@ -100,7 +121,7 @@ export async function readRegister(
     model,
     // A full register page is many rows of handwriting; give it room.
     max_tokens: 16000,
-    system: SYSTEM_PROMPT,
+    system: registerPrompt(pack),
     // Dense handwriting, read once, and a wrong row boundary puts a value on the wrong
     // patient — so if any read earns "high" it is this one. It is still set to "medium":
     // "high" is off across the whole app for now, on cost. If register accuracy proves not
@@ -129,6 +150,6 @@ export async function readRegister(
 
   const rows: RegisterRow[] = parsed.rows ?? [];
   // Second look before anything is shown: see judgeRegisterRows. No key or an error: unchanged.
-  await judgeRegisterRows(rows);
+  await judgeRegisterRows(rows, pack);
   return { rows, model, raw: parsed };
 }

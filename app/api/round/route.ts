@@ -6,7 +6,7 @@ import { deriveWardDictationContext } from "@/lib/transcription/patient-context"
 import { getDeepgramKeyterms } from "@/lib/transcription/selectMedicalKeyterms";
 import { correctTranscript } from "@/lib/glossary";
 import { buildRoundDraft } from "@/lib/round-draft";
-import { getCurrentWard, getActivePatients } from "@/lib/ward";
+import { getCurrentWard, getActivePatients, getWardPack } from "@/lib/ward";
 import { readReceipt, saveReceipt } from "@/lib/dictation-receipt";
 import { tagRequest, log } from "@/lib/observability";
 
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
   // 1. Speech to text, unless it was typed.
   // The ward's active patients — needed now for the Deepgram keyterms (every bed's diagnosis
   // and operation), and again below to split the transcript by bed.
-  const { patients } = await getActivePatients(ward.id);
+  const [{ patients }, pack] = await Promise.all([getActivePatients(ward.id), getWardPack(ward.id)]);
 
   let transcript = typed;
   let stt: ReturnType<typeof getTranscriber> | null = null;
@@ -55,13 +55,15 @@ export async function POST(request: Request) {
   if (!transcript && audio instanceof Blob) {
     try {
       stt = getTranscriber();
-      const keyterms = getDeepgramKeyterms(deriveWardDictationContext(patients, ward.name));
+      const keyterms = getDeepgramKeyterms(
+        deriveWardDictationContext(patients, ward.name, pack.lexiconSpecialty)
+      );
       const result = await stt.transcribe(audio, MEDICAL_VOCABULARY_HINT, {
         keyterms: keyterms.length ? keyterms : undefined,
       });
       // Only what the engine heard. `typed` above is the resident's own writing and is left
       // exactly as they wrote it — this fixes mishearings, not people.
-      transcript = (await correctTranscript(result.text)).text;
+      transcript = (await correctTranscript(result.text, pack)).text;
     } catch (e) {
       return NextResponse.json(
         { error: plainAiError(e) },
@@ -81,7 +83,7 @@ export async function POST(request: Request) {
   // this unit writes beds — never so a bed nobody mentioned can acquire instructions.
   let read;
   try {
-    read = await buildRoundDraft(transcript, patients);
+    read = await buildRoundDraft(transcript, patients, pack);
   } catch (e) {
     return NextResponse.json(
       { error: plainAiError(e) },

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { applyCorrections, type Correction } from "@/lib/corrections";
+import type { SpecialtyPack } from "@/lib/specialty";
 
 type GlossaryTerm = {
   wrong_term: string;
@@ -60,9 +61,12 @@ function termPattern(wrong: string): RegExp {
  * patient record shows it behind the (i) whenever it differs.
  */
 export async function correctTranscript(
-  raw: string
+  raw: string,
+  /** The unit's pack, so a surgical-only rule ("PAS" to PAC) never fires on a medicine ward.
+   *  Omitted, it is general surgery — what every caller got before packs existed. */
+  pack?: SpecialtyPack
 ): Promise<{ text: string; changes: Correction[] }> {
-  const first = applyCorrections(raw);
+  const first = applyCorrections(raw, pack);
   let text = first.text;
   const changes = [...first.changes];
 
