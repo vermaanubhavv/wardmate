@@ -135,7 +135,12 @@ describe("criticalFlags — per department, every hit", () => {
     expect(medicine({ labs: [lab("Sr. creatinine", "6.2")] })).toEqual([]);
     expect(medicine({ vitals: [vital("RR", "30 /min")] })[0]?.reason).toBe("tachypnoea");
     expect(medicine({ vitals: [vital("GCS", "E2V2M4")] })[0]?.value).toBe("E2V2M4");
-    expect(medicine({ vitals: [vital("GCS", "9/15")] })).toEqual([]);
+    // NEWS2: anything short of Alert (GCS below 15) is a 3-point parameter.
+    expect(medicine({ vitals: [vital("GCS", "14/15")] })[0]?.reason).toBe("reduced consciousness");
+    expect(medicine({ vitals: [vital("GCS", "15/15")] })).toEqual([]);
+    expect(medicine({ vitals: [vital("RR", "25")] })[0]?.reason).toBe("tachypnoea");
+    expect(medicine({ vitals: [vital("SpO2", "91")] })[0]?.reason).toBe("hypoxia");
+    expect(criticalFlags(patient({ vitals: [vital("Pulse", "131")] }), "pulmonary_medicine")[0]?.reason).toBe("tachycardia");
     expect(medicine({ vitals: [vital("GCS", "E2VTM4")] })).toEqual([]);
   });
 

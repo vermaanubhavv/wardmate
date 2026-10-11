@@ -15,13 +15,13 @@ import type { SpecialtyKey } from "./types";
  *   • No creatinine rule: an absolute cut-off is red every day on a known CKD / dialysis
  *     patient, and a rising-creatinine rule needs the previous result, which the ward screen
  *     does not carry (only the latest per test). Add it with that data.
- *   • RR ≥ 30, GCS ≤ 8
+ *   • Vital signs: NEWS2, below.
  * TLC: surgery keeps > 16,000 (a post-op leak or collection). On a medical ward sepsis and
  * steroids push the count past that daily, so medicine raises the bar to > 30,000 — a count
  * that still wants someone to look (leukaemoid reaction, haematological malignancy).
  *
- * Emergency medicine, medical oncology and paediatrics take their VITAL-SIGN bars from NICE
- * (the owner's choice, October 2026):
+ * Internal and pulmonary medicine, emergency medicine, medical oncology and paediatrics take
+ * their VITAL-SIGN bars from NICE (the owner's choice, October 2026):
  *   • Adults (16 and over) — NICE NG253 rec 1.6.2: a single NEWS2 parameter scoring 3 points
  *     calls for a high-priority review. The 3-point values are the Royal College of
  *     Physicians' NEWS2 chart (2017): RR ≤ 8 or ≥ 25; SpO₂ ≤ 91% (scale 1); systolic ≤ 90 or
@@ -30,8 +30,8 @@ import type { SpecialtyKey } from "./types";
  *   • Under 16s — NICE NG254 tables 1–3, the "high risk" column, by age (paediatricVitals).
  *   • Neutropenic sepsis — NICE CG151 rec 1.4.4.1: neutrophil count ≤ 0.5 × 10⁹/L, flagged
  *     on an oncology unit from an absolute count only, never from a percentage.
- * NICE sets no ward thresholds for potassium, sodium, glucose or white count, so emergency
- * medicine and oncology keep medicine's laboratory bar for those; paediatrics carries none
+ * NICE sets no ward thresholds for potassium, sodium, glucose or white count, so the medical,
+ * emergency and oncology units keep medicine's laboratory bar for those; paediatrics carries none
  * beyond the universal haemoglobin and platelet bars in ward-flags.ts (adult cut-offs do not
  * transfer to children).
  */
@@ -74,15 +74,6 @@ const MEDICINE_LABS: CriticalThresholds = {
   glucoseAbove: 400,
 };
 
-const MEDICINE: CriticalThresholds = {
-  ...MEDICINE_LABS,
-  spo2Below: 90,
-  sbpBelow: 90,
-  prAbove: 120,
-  rrAtLeast: 30,
-  gcsAtMost: 8,
-};
-
 /** NEWS2 single parameter scoring 3 (RCP chart; NICE NG253 1.6.2). */
 const NEWS2_RED: CriticalThresholds = {
   rrAtMost: 8,
@@ -119,7 +110,10 @@ export function paediatricVitals(ageYears: number | null | undefined): CriticalT
   return { rrAtLeast: 25, prAbove: 130, sbpBelow: 91 };
 }
 
-// Pulmonary medicine is a medical ward (its pack starts from medicine's) — same bar.
+// Medical wards (internal and pulmonary medicine) take NEWS2 for vital signs too — NG253
+// covers every adult — and keep the medicine lab bar.
+const MEDICINE: CriticalThresholds = { ...MEDICINE_LABS, ...NEWS2_RED };
+
 const BY_PACK: Partial<Record<SpecialtyKey, CriticalThresholds>> = {
   internal_medicine: MEDICINE,
   pulmonary_medicine: MEDICINE,
