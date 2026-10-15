@@ -259,11 +259,10 @@ describe("rising creatinine — NICE NG148 rec 1.3.1", () => {
     expect(risingCreatinine([])).toBeNull();
   });
 
-  it("is on for medical, emergency, oncology and paediatric units, not surgery", () => {
+  it("is on for every unit, surgical ones included", () => {
     const p = { creatinine_7d: [cr("1.5", 0), cr("1.0", 24)] };
-    for (const key of ["internal_medicine", "pulmonary_medicine", "emergency_medicine", "medical_oncology", "paediatrics"]) {
+    for (const key of ["internal_medicine", "pulmonary_medicine", "emergency_medicine", "medical_oncology", "paediatrics", "general_surgery", "orthopaedics", "urology"]) {
       expect(criticalFlags(patient(p), key).map((f) => f.reason), key).toContain("rising creatinine (AKI)");
     }
-    expect(criticalFlags(patient(p), "general_surgery")).toEqual([]);
   });
 });
