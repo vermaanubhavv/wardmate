@@ -64,7 +64,8 @@ export type CriticalThresholds = {
   aki?: boolean;
 };
 
-const SURGERY: CriticalThresholds = { tlcAbove: 16000, spo2Below: 90, sbpBelow: 90, prAbove: 120 };
+// Rising creatinine (NICE NG148) on every unit — post-operative AKI included (owner's call).
+const SURGERY: CriticalThresholds = { tlcAbove: 16000, spo2Below: 90, sbpBelow: 90, prAbove: 120, aki: true };
 
 const MEDICINE_LABS: CriticalThresholds = {
   tlcAbove: 30000,
