@@ -58,6 +58,15 @@ describe("red flags on a post-op summary", () => {
   it("stays off for a patient never operated", () => {
     expect(draftFor(null).redFlags.included).toBe(false);
   });
+
+  it("stays off on a unit that does not operate, even with a leftover operation date", () => {
+    const context = oneOffContext(
+      { name: "Test Patient" }, ward, null, new Map(), [], derivePatientState([], null), [],
+      getSpecialtyPack("internal_medicine")
+    );
+    const draft = compileDischargeDraft({ ...context, patient: { ...context.patient, surgery_date: "2026-09-28" } });
+    expect(draft.redFlags.included).toBe(false);
+  });
 });
 
 describe("procedures on a unit that does not operate", () => {

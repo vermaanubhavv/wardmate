@@ -58,6 +58,8 @@ export function noteStatusLine(
 ): string | null {
   const day = pack.dayCount({ ...p, admission_day: p.admission_day ?? 0 });
   if (day.clock === "burn" || day.clock === "cycle") return day.text;
-  if (p.surgery_date) return `Post Op Day (${p.post_op_day ?? "—"})`;
+  // A unit that does not operate never reads "Post Op Day", even for a patient a dictated
+  // bedside procedure gave an operation date before #133 stopped that.
+  if (p.surgery_date && hasOperationClock(pack)) return `Post Op Day (${p.post_op_day ?? "—"})`;
   return managementChoicesFor(pack.key, p.management ?? "").find((c) => c.value === p.management)?.label ?? null;
 }
