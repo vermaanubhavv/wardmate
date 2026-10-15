@@ -188,7 +188,45 @@ export function criticalFlags(patient: WardPatient, specialty?: string | null): 
     }
   }
 
+  if (t.aki) {
+    const hit = risingCreatinine(patient.creatinine_7d ?? []);
+    if (hit) hits.push(hit);
+  }
+
   return hits;
+}
+
+const HOUR = 3600_000;
+
+/** Creatinine in µmol/L — a value of 30 or under can only be mg/dL (88.4 µmol/L = 1 mg/dL). */
+function creatinineUmol(n: number): number {
+  return n <= 30 ? n * 88.4 : n;
+}
+
+/**
+ * Acute kidney injury by NICE NG148 rec 1.3.1, from the last week's creatinines (newest
+ * first): the latest is 26 µmol/L or more above one taken in the 48 hours before it, or 50%
+ * or more above the lowest of the 7 days before it. The chip shows the two results compared,
+ * exactly as recorded.
+ */
+export function risingCreatinine(results: { value_text: string | null; recorded_at: string }[]): WardFlag | null {
+  const read = results
+    .map((r) => ({ text: (r.value_text ?? "").trim(), n: num(r.value_text), at: Date.parse(r.recorded_at) }))
+    .filter((r): r is { text: string; n: number; at: number } => r.n !== null && r.n > 0 && Number.isFinite(r.at))
+    .sort((a, b) => b.at - a.at);
+  const [latest, ...earlier] = read;
+  if (!latest) return null;
+  const now = creatinineUmol(latest.n);
+  const shown = (from: { text: string }) => ({ label: "Creatinine", value: `${from.text} → ${latest.text}`, reason: "rising creatinine (AKI)" });
+
+  const within48 = earlier.filter((r) => latest.at - r.at <= 48 * HOUR && latest.at > r.at);
+  const sharp = within48.find((r) => now - creatinineUmol(r.n) >= 26);
+  if (sharp) return shown(sharp);
+
+  const within7d = earlier.filter((r) => latest.at - r.at <= 7 * 24 * HOUR && latest.at > r.at);
+  if (within7d.length === 0) return null;
+  const lowest = within7d.reduce((a, b) => (creatinineUmol(b.n) < creatinineUmol(a.n) ? b : a));
+  return now >= 1.5 * creatinineUmol(lowest.n) ? shown(lowest) : null;
 }
 
 /** The most pressing critical finding, or null — the first of criticalFlags(). */

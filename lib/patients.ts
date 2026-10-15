@@ -50,6 +50,9 @@ export type WardPatient = {
     ref_text: string | null;
     recorded_at: string;
   }[];
+  /** Every creatinine of the last 8 days, newest first (ward_screen, patch 0106) — for the
+   *  rising-creatinine flag. Absent on a database without the patch. */
+  creatinine_7d?: { value_text: string | null; recorded_at: string }[];
 };
 
 /**
