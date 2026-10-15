@@ -847,12 +847,23 @@ export default function DischargeWorkspace({
                 <div key={p.id} className="flex flex-col gap-2 rounded-[10px] border border-line p-2.5">
                   <SuggestField label="Procedure" value={p.name} options={profile.procedureSuggestions} onChange={(v) => setP({ name: v })} />
                   <Field label="Date" type="date" value={p.date} onChange={(v) => setP({ date: v || null })} />
-                  <Field label="Indication" value={p.indication} onChange={(v) => setP({ indication: v })} />
-                  <Field label="Anaesthesia" value={p.anaesthesia} onChange={(v) => setP({ anaesthesia: v })} />
-                  <Area label="Significant findings" value={p.findings} onChange={(v) => setP({ findings: v })} rows={2} />
-                  <Field label="Drains" value={p.drains} onChange={(v) => setP({ drains: v })} />
-                  <Field label="Complications" value={p.complications} onChange={(v) => setP({ complications: v })} />
-                  <Field label="Outcome" value={p.outcome} onChange={(v) => setP({ outcome: v })} />
+                  {/* A unit that does not operate prints one line — what, when, what it found —
+                      so it asks only for that. */}
+                  {profile.operative ? (
+                    <>
+                      <Field label="Indication" value={p.indication} onChange={(v) => setP({ indication: v })} />
+                      <Field label="Anaesthesia" value={p.anaesthesia} onChange={(v) => setP({ anaesthesia: v })} />
+                      <Area label="Significant findings" value={p.findings} onChange={(v) => setP({ findings: v })} rows={2} />
+                      <Field label="Drains" value={p.drains} onChange={(v) => setP({ drains: v })} />
+                      <Field label="Complications" value={p.complications} onChange={(v) => setP({ complications: v })} />
+                      <Field label="Outcome" value={p.outcome} onChange={(v) => setP({ outcome: v })} />
+                    </>
+                  ) : (
+                    <>
+                      <Area label="Key findings" value={p.findings} onChange={(v) => setP({ findings: v })} rows={2} />
+                      <Field label="Complications" value={p.complications} onChange={(v) => setP({ complications: v })} />
+                    </>
+                  )}
                   <button type="button" onClick={() => patch("procedures", "procedures", draft.procedures.filter((_, j) => j !== i))} className="self-start text-caption text-muted">
                     Remove procedure
                   </button>
@@ -870,19 +881,10 @@ export default function DischargeWorkspace({
             >
               ＋ Add a procedure
             </OptionRow>
-            {/* A positive statement the resident makes, never a default: offered only on an
-                empty card, and stored as a row that prints as written. */}
             {!profile.operative && draft.procedures.length === 0 && (
-              <OptionRow
-                dashed
-                onClick={() =>
-                  patch("procedures", "procedures", [
-                    { id: uid(), name: NO_PROCEDURE_NAME, date: null, indication: null, anaesthesia: null, findings: null, drains: null, complications: null, outcome: null, source: "resident" as const },
-                  ])
-                }
-              >
-                No procedure done
-              </OptionRow>
+              <p className="text-caption text-muted">
+                Add only a procedure actually done this admission. With none, this section is left off the summary.
+              </p>
             )}
           </>
         );
