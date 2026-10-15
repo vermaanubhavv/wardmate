@@ -1,6 +1,7 @@
 import {
   MASTER_LEXICON,
   mergeLexicon,
+  NON_OPERATIVE_SPECIALTIES,
   type MedicalLexiconEntry,
   type DictationContext,
   type SelectedKeyterm,
@@ -323,10 +324,12 @@ export function selectMedicalKeyterms(
   const cfg = { ...DEFAULTS, ...options };
   const ctx = shape(context);
 
+  // A unit that does not operate never gets the surgical ward phrases boosted.
+  const nonOperative = !!ctx.specialty && NON_OPERATIVE_SPECIALTIES.has(ctx.specialty);
   const lexicon = mergeLexicon(MASTER_LEXICON, [
     ...(options.extraTerms ?? []),
     ...(context.customTerms ?? []),
-  ]);
+  ]).filter((e) => !(nonOperative && e.operativeOnly));
 
   const lexIndex: LexIndexEntry[] = lexicon.map((e) => ({
     names: [e.term, ...(e.aliases ?? [])].map(norm),
