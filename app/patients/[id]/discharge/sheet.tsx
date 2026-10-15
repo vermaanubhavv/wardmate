@@ -129,13 +129,13 @@ export default function DischargeSheet({
         </div>
 
         <div data-print="procedures">
-        {/* 5. Operation / Procedures */}
+        {/* 5. Operation / Procedures — "Procedures", one line each, on a unit that does not operate */}
         {doc.procedures.length > 0 && (
           <>
-            <SectionHeading editBase={editBase} section="procedures">Operation / Procedures</SectionHeading>
+            <SectionHeading editBase={editBase} section="procedures">{doc.proceduresHeading}</SectionHeading>
             {doc.procedures.map((p) => (
               <div key={p.id} className="mb-1 text-caption">
-                {procedureLines(p).map((l, i) => (
+                {procedureLines(p, doc.proceduresBrief).map((l, i) => (
                   <p key={i} className={i === 0 ? "font-bold" : "pl-3"}>
                     {l}
                   </p>

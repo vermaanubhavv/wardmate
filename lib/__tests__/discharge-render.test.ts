@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildDischargeDocument } from "@/lib/discharge-render";
+import { buildDischargeDocument, procedureLines } from "@/lib/discharge-render";
+import { getSpecialtyPack } from "@/lib/specialty";
 import { compileDischargeDraft } from "@/lib/discharge-compile";
 import { oneOffContext } from "@/lib/discharge-oneoff";
 import { derivePatientState } from "@/lib/patient-state";
@@ -56,5 +57,44 @@ describe("red flags on a post-op summary", () => {
 
   it("stays off for a patient never operated", () => {
     expect(draftFor(null).redFlags.included).toBe(false);
+  });
+});
+
+describe("procedures on a unit that does not operate", () => {
+  const proc = (over: Partial<import("@/lib/discharge-entities").Procedure>) => ({
+    id: "p", name: "", date: null, indication: null, anaesthesia: null, findings: null,
+    drains: null, complications: null, outcome: null, source: "resident" as const, ...over,
+  });
+  function docFor(packKey: string, procedures: ReturnType<typeof proc>[]) {
+    const context = oneOffContext(
+      { name: "Test Patient" }, ward, null, new Map(), [], derivePatientState([], null), [],
+      getSpecialtyPack(packKey)
+    );
+    return buildDischargeDocument({ ...compileDischargeDraft(context), procedures }, context);
+  }
+
+  it("prints one line — what, when, what it found — under 'Procedures'", () => {
+    const doc = docFor("internal_medicine", [
+      proc({ name: "Pleural tap", date: "2026-10-12", findings: "200 ml serous fluid drained" }),
+    ]);
+    expect(doc.proceduresHeading).toBe("Procedures");
+    expect(procedureLines(doc.procedures[0], doc.proceduresBrief)).toEqual([
+      "Pleural tap done on 12 Oct 2026 — 200 ml serous fluid drained",
+    ]);
+  });
+
+  it("leaves the section off when no procedure was actually done", () => {
+    expect(docFor("internal_medicine", []).procedures).toEqual([]);
+    expect(docFor("internal_medicine", [proc({ name: "No procedure done" }), proc({ name: "  " })]).procedures).toEqual([]);
+  });
+
+  it("keeps surgery's 'Operation / Procedures' and its full lines", () => {
+    const doc = docFor("general_surgery", [proc({ name: "Laparoscopic cholecystectomy", findings: "Gall bladder distended" })]);
+    expect(doc.proceduresHeading).toBe("Operation / Procedures");
+    expect(doc.proceduresBrief).toBe(false);
+    expect(procedureLines(doc.procedures[0], doc.proceduresBrief)).toEqual([
+      "Laparoscopic cholecystectomy",
+      "  Significant findings: Gall bladder distended",
+    ]);
   });
 });

@@ -220,9 +220,9 @@ function buildBody(doc: DischargeDocument, logoBytes: Buffer | null): (Paragraph
 
   // 5. Operation / Procedures
   if (doc.procedures.length > 0) {
-    out.push(heading("Operation / Procedures"));
+    out.push(heading(doc.proceduresHeading));
     for (const p of doc.procedures) {
-      procedureLines(p).forEach((l, i) =>
+      procedureLines(p, doc.proceduresBrief).forEach((l, i) =>
         out.push(new Paragraph({ indent: i === 0 ? undefined : { left: 300 }, children: [i === 0 ? bold(l) : plain(l)] }))
       );
     }
