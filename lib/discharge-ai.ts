@@ -7,6 +7,12 @@ import { istDayKey } from "@/lib/patient-state";
 import { RADIOLOGY_LABEL } from "@/lib/radiology-flags";
 import { PATHOLOGY_LABEL, templateForDischarge } from "@/lib/discharge-compile";
 import type { DischargeTemplate } from "@/lib/discharge-templates";
+import {
+  courseSystem,
+  dischargePromptWordsFor,
+  indicationSystem,
+  investigationsSystem,
+} from "@/lib/specialty/discharge-prompts";
 
 /**
  * The two discharge sections the protocol has the AI write a first draft of: the Clinical
@@ -148,27 +154,9 @@ function templateGuide(template: DischargeTemplate | null, part: "clinicalCourse
   return `\n\nTemplate for this diagnosis (${template.label}) — follow its order and wording:\n${text}`;
 }
 
-const TEMPLATE_RULE = `If a template for the diagnosis is given, write along it: same order, same standard wording. But the template describes the USUAL case, not this patient — keep a template sentence only where the digest supports it, change it where the digest differs, and where the digest is silent on a patient-specific part (a date, a drain day, a finding) write a visible blank "[ … ]" instead of guessing. Never carry a template fact into the text that the digest does not contain.`;
 
 // --- Clinical Course --------------------------------------------------------------------
 
-const COURSE_SYSTEM = `You write the CLINICAL COURSE section of a general-surgery discharge summary for an Indian hospital, from a digest of what was recorded during the admission.
-
-You are SYNTHESISING the admission the digest describes — not copying its lines, not completing it, and not adding to it.
-
-Absolute rules:
-1. Never state a diagnosis, investigation, procedure, medication or clinical event that is not in the digest. If the digest does not contain it, it did not happen.
-2. Do not turn an uncertain or provisional diagnosis in the digest into a confirmed one.
-3. Distinguish documented fact from your own inference. If you must infer to keep the narrative coherent, keep the inference cautious and put anything you are unsure about in uncertain_points instead of asserting it.
-4. If the digest contradicts itself (a drain described as removed and also in situ; two different operation dates; a medication both stopped and continued), do NOT pick one. State both in uncertain_points and leave the course itself non-committal on that point.
-5. Expand no unexplained abbreviations — write "laparoscopic cholecystectomy", not "lap chole"; "nasogastric tube", not "RT". If you cannot expand one safely, keep the digest's exact wording.
-6. Be concise and clinically meaningful. One paragraph, roughly 4–7 sentences. Do NOT reproduce every ward-round note. Cover, in order: initial presentation/diagnosis, important initial management, the major intervention or operation, significant post-operative or inpatient events, relevant recovery milestones, and the clinical condition immediately before discharge. When you state the presenting complaint, lead with its duration ("a 3-day history of pain in the right iliac fossa"), using only a duration the digest gives. If the digest carries a "relevant negatives" line, add its main points to the presentation as a single short clause of pertinent negatives — one sentence at most, not a list.
-7. Maintain chronological coherence. Use the dates in the digest; do not invent one.
-8. Plain professional prose, third person, past tense ("The patient was admitted with…"). No bullet points, no headings.
-9. The presentation comes from the "Clinical history" block; the course from the "Progress notes".
-10. ${TEMPLATE_RULE}
-
-Return JSON: { "clinical_course": string, "uncertain_points": string[] }. uncertain_points is [] when the digest is internally consistent and complete enough.`;
 
 const COURSE_SCHEMA = {
   type: "object",
@@ -191,7 +179,7 @@ export async function generateClinicalCourse(
     model: AI_MODEL,
     max_tokens: 2000,
     system: [
-      { type: "text", text: COURSE_SYSTEM, cache_control: { type: "ephemeral" } },
+      { type: "text", text: courseSystem(dischargePromptWordsFor(context.pack)), cache_control: { type: "ephemeral" } },
     ],
     output_config: {
       effort: "medium",
@@ -211,20 +199,6 @@ export async function generateClinicalCourse(
 
 // --- Indication for Admission ----------------------------------------------------------
 
-const INDICATION_SYSTEM = `You write the INDICATION FOR ADMISSION line of a general-surgery discharge summary, from a digest of the admission.
-
-It states briefly WHY inpatient admission was required. It must NOT simply repeat the final diagnosis.
-
-Preferred form: "Patient admitted with a [duration] history of [presentation / clinical problem] requiring [inpatient management / investigation / intervention / surgery]."
-
-Rules:
-1. Use only what the digest contains — presenting complaints, the admission examination, the admitting diagnosis, the initial plan. Never invent a symptom, a sign or a duration.
-2. When the digest gives a duration for the presenting complaint, lead with it ("a 3-day history of..."). Omit the duration only when the digest does not state one.
-3. One or two sentences. No abbreviations that are not expanded.
-4. If the digest holds nothing about the presentation (only a bare diagnosis), say so by returning an empty string rather than padding it.
-5. ${TEMPLATE_RULE}
-
-Return JSON: { "indication": string }.`;
 
 const INDICATION_SCHEMA = {
   type: "object",
@@ -241,7 +215,7 @@ export async function generateIndication(
   const response = await client().messages.create({
     model: AI_MODEL,
     max_tokens: 400,
-    system: [{ type: "text", text: INDICATION_SYSTEM, cache_control: { type: "ephemeral" } }],
+    system: [{ type: "text", text: indicationSystem(dischargePromptWordsFor(context.pack)), cache_control: { type: "ephemeral" } }],
     output_config: {
       effort: "low",
       format: { type: "json_schema", schema: INDICATION_SCHEMA as unknown as Record<string, unknown> },
@@ -255,25 +229,6 @@ export async function generateIndication(
 
 // --- Relevant Investigations --------------------------------------------------------
 
-const INVESTIGATIONS_SYSTEM = `You select and summarise the CLINICALLY RELEVANT investigation results for a general-surgery discharge summary, from a list of every investigation observation recorded during the admission.
-
-The point of this section is to be SHORT and MEANINGFUL. Do not reproduce whole panels. Propose only results that matter to someone reading this summary after discharge:
-- important diagnostic findings
-- significant abnormalities, and significant trends (e.g. a falling white count, a resolving derangement)
-- results that changed management
-- relevant imaging and microbiology findings
-- an important NORMAL result where its normality is itself clinically meaningful (e.g. bilirubin normal in a biliary case)
-
-Distinguish "abnormal" from "clinically relevant" — a single mildly abnormal value that led to nothing is not relevant and should be left out.
-
-Absolute rules:
-1. Every proposed line MUST be built only from the observations given. Put the id(s) of the observation(s) each line is based on in source_observation_ids. A line you cannot ground in a given observation must not be produced.
-2. Never invent a value, a date or a trend. If two readings of the same test are given, you may describe the trend between them; if only one is given, you may not.
-3. Do not expand unexplained abbreviations unsafely; keep the report's own wording where unsure.
-4. interpretation is optional and cautious — a short reading of the result, not a diagnosis.
-
-Return JSON: { "items": [ { "group": string, "text": string, "interpretation": string|null, "significance": string, "source_observation_ids": string[] } ] }.
-group is the test family ("CBC", "LFT", "Ultrasound Abdomen", "Blood Culture"). significance is one of "diagnostic", "abnormal", "trend", "management", "normal-relevant".`;
 
 const INVESTIGATIONS_SCHEMA = {
   type: "object",
@@ -332,7 +287,7 @@ export async function proposeRelevantInvestigations(
   const response = await client().messages.create({
     model: AI_MODEL,
     max_tokens: 2000,
-    system: [{ type: "text", text: INVESTIGATIONS_SYSTEM, cache_control: { type: "ephemeral" } }],
+    system: [{ type: "text", text: investigationsSystem(dischargePromptWordsFor(context.pack)), cache_control: { type: "ephemeral" } }],
     output_config: {
       effort: "medium",
       format: { type: "json_schema", schema: INVESTIGATIONS_SCHEMA as unknown as Record<string, unknown> },
