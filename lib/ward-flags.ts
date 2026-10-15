@@ -1,4 +1,4 @@
-import { classifyVital } from "@/lib/vital-ranges";
+import { classifyVital, matchVitalLabel } from "@/lib/vital-ranges";
 import { canonicalLabName } from "@/lib/lab-ranges";
 import type { WardPatient } from "@/lib/patients";
 import { criticalThresholds, type CriticalThresholds } from "@/lib/specialty/critical-values";
@@ -84,7 +84,8 @@ export function criticalFlags(patient: WardPatient, specialty?: string | null): 
 
   // ICU / organ support — recorded in the Vitals card. Being sick enough to be on the unit is
   // itself the flag; the value (e.g. "on noradrenaline 0.08") rides along in the chip.
-  for (const v of patient.vitals ?? []) {
+  const vitals = currentVitals(patient);
+  for (const v of vitals) {
     if (v.label.trim().toLowerCase().replace(/\s+/g, " ") !== "icu") continue;
     const support = (v.value_text ?? "").trim();
     if (!support) continue;
@@ -97,7 +98,7 @@ export function criticalFlags(patient: WardPatient, specialty?: string | null): 
   }
 
   // Vitals — hard numbers.
-  for (const v of patient.vitals ?? []) {
+  for (const v of vitals) {
     const text = (v.value_text ?? "").trim();
     const label = v.label.trim();
     if (t.gcsAtMost !== undefined && GCS.test(label)) {
@@ -197,6 +198,25 @@ export function criticalFlags(patient: WardPatient, specialty?: string | null): 
 }
 
 const HOUR = 3600_000;
+
+type Vital = NonNullable<WardPatient["vitals"]>[number];
+
+/**
+ * The vitals the alarms read: each vital's own newest value from the last day of readings
+ * (vitals_recent, patch 0107), so a 6am RR left out of the 8am set still counts — and an RR
+ * re-measured at 8am replaces it. "Pulse" and "PR" are one vital; a label this app does not
+ * chart (GCS, GRBS, ICU) is its own. Without the patch, the latest set as before.
+ */
+export function currentVitals(patient: Pick<WardPatient, "vitals" | "vitals_recent">): Vital[] {
+  const recent = patient.vitals_recent;
+  if (!recent || recent.length === 0) return patient.vitals ?? [];
+  const newest = new Map<string, Vital>();
+  for (const v of [...recent].sort((a, b) => Date.parse(b.recorded_at) - Date.parse(a.recorded_at))) {
+    const key = matchVitalLabel(v.label) ?? v.label.trim().toLowerCase().replace(/\s+/g, " ");
+    if (!newest.has(key)) newest.set(key, v);
+  }
+  return [...newest.values()];
+}
 
 /** Creatinine in µmol/L — a value of 30 or under can only be mg/dL (88.4 µmol/L = 1 mg/dL). */
 function creatinineUmol(n: number): number {

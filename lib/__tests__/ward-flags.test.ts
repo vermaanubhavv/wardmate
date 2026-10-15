@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { criticalFlag, criticalFlags, isDischargeable, risingCreatinine } from "@/lib/ward-flags";
+import { criticalFlag, criticalFlags, currentVitals, isDischargeable, risingCreatinine } from "@/lib/ward-flags";
 import type { WardPatient } from "@/lib/patients";
 
 function patient(over: Partial<WardPatient>): WardPatient {
@@ -264,5 +264,31 @@ describe("rising creatinine — NICE NG148 rec 1.3.1", () => {
     for (const key of ["internal_medicine", "pulmonary_medicine", "emergency_medicine", "medical_oncology", "paediatrics", "general_surgery", "orthopaedics", "urology"]) {
       expect(criticalFlags(patient(p), key).map((f) => f.reason), key).toContain("rising creatinine (AKI)");
     }
+  });
+});
+
+describe("each vital's own newest reading reaches the alarms (patch 0107)", () => {
+  const v = (label: string, value_text: string, hhmm: string) => ({ label, value_text, recorded_at: `2026-10-15T${hhmm}:00Z` });
+
+  it("keeps a 6am RR the 8am set left out", () => {
+    const p = patient({
+      vitals: [v("BP", "120/80", "08:00"), v("Pulse", "88", "08:00")],
+      vitals_recent: [v("BP", "120/80", "08:00"), v("Pulse", "88", "08:00"), v("RR", "32", "06:00")],
+    });
+    expect(criticalFlags(p, "internal_medicine").map((f) => f.reason)).toEqual(["tachypnoea"]);
+  });
+
+  it("lets a re-measured vital replace the earlier one", () => {
+    const p = patient({
+      vitals_recent: [v("RR", "18", "08:00"), v("RR", "32", "06:00"), v("Pulse", "135", "05:00"), v("PR", "90", "07:00")],
+    });
+    expect(criticalFlags(p, "internal_medicine")).toEqual([]);
+    expect(currentVitals(p).map((x) => `${x.label} ${x.value_text}`).sort()).toEqual(["PR 90", "RR 18"]);
+  });
+
+  it("falls back to the latest set when the database has no vitals_recent", () => {
+    const p = patient({ vitals: [v("SpO2", "89", "08:00")] });
+    expect(currentVitals(p)).toEqual(p.vitals);
+    expect(criticalFlags(p, "general_surgery").map((f) => f.reason)).toEqual(["hypoxia"]);
   });
 });
