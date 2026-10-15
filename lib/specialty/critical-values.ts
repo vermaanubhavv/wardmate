@@ -12,9 +12,8 @@ import type { SpecialtyKey } from "./types";
  *   • K⁺ ≥ 6.0 or ≤ 2.5 mmol/L — arrhythmia risk at either end
  *   • Na⁺ ≤ 120 or ≥ 160 mmol/L — the level at which seizures / encephalopathy are expected
  *   • Glucose < 70 mg/dL (hypoglycaemia) or > 400 mg/dL
- *   • No creatinine rule: an absolute cut-off is red every day on a known CKD / dialysis
- *     patient, and a rising-creatinine rule needs the previous result, which the ward screen
- *     does not carry (only the latest per test). Add it with that data.
+ *   • No absolute creatinine cut-off — it is red every day on a known CKD / dialysis patient.
+ *     A RISE is flagged instead, by NICE NG148 (aki, below), from the last week's results.
  *   • Vital signs: NEWS2, below.
  * TLC: surgery keeps > 16,000 (a post-op leak or collection). On a medical ward sepsis and
  * steroids push the count past that daily, so medicine raises the bar to > 30,000 — a count
@@ -60,6 +59,9 @@ export type CriticalThresholds = {
   glucoseAbove?: number;
   /** × 10⁹/L, absolute neutrophil count only. */
   ancAtMost?: number;
+  /** Rising creatinine by NICE NG148 rec 1.3.1: a rise of 26 µmol/L or more within 48 hours,
+   *  or of 50% or more within 7 days. Needs creatinine_7d (patch 0106). */
+  aki?: boolean;
 };
 
 const SURGERY: CriticalThresholds = { tlcAbove: 16000, spo2Below: 90, sbpBelow: 90, prAbove: 120 };
@@ -87,8 +89,8 @@ const NEWS2_RED: CriticalThresholds = {
   gcsAtMost: 14,
 };
 
-const EMERGENCY: CriticalThresholds = { ...MEDICINE_LABS, ...NEWS2_RED };
-const ONCOLOGY: CriticalThresholds = { ...MEDICINE_LABS, ...NEWS2_RED, ancAtMost: 0.5 };
+const EMERGENCY: CriticalThresholds = { ...MEDICINE_LABS, ...NEWS2_RED, aki: true };
+const ONCOLOGY: CriticalThresholds = { ...MEDICINE_LABS, ...NEWS2_RED, ancAtMost: 0.5, aki: true };
 
 /**
  * NICE NG254 "high risk" vital signs for a child of this age (tables 1–3). Unknown age gets
@@ -112,7 +114,7 @@ export function paediatricVitals(ageYears: number | null | undefined): CriticalT
 
 // Medical wards (internal and pulmonary medicine) take NEWS2 for vital signs too — NG253
 // covers every adult — and keep the medicine lab bar.
-const MEDICINE: CriticalThresholds = { ...MEDICINE_LABS, ...NEWS2_RED };
+const MEDICINE: CriticalThresholds = { ...MEDICINE_LABS, ...NEWS2_RED, aki: true };
 
 const BY_PACK: Partial<Record<SpecialtyKey, CriticalThresholds>> = {
   internal_medicine: MEDICINE,
@@ -122,6 +124,7 @@ const BY_PACK: Partial<Record<SpecialtyKey, CriticalThresholds>> = {
 };
 
 export function criticalThresholds(key: string | null | undefined, ageYears?: number | null): CriticalThresholds {
-  if (key === "paediatrics") return paediatricVitals(ageYears);
+  // NG148's creatinine criteria cover children and young people too.
+  if (key === "paediatrics") return { ...paediatricVitals(ageYears), aki: true };
   return BY_PACK[key as SpecialtyKey] ?? SURGERY;
 }

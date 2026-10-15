@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { criticalFlag, criticalFlags, isDischargeable } from "@/lib/ward-flags";
+import { criticalFlag, criticalFlags, isDischargeable, risingCreatinine } from "@/lib/ward-flags";
 import type { WardPatient } from "@/lib/patients";
 
 function patient(over: Partial<WardPatient>): WardPatient {
@@ -228,5 +228,42 @@ describe("NICE vital-sign bars: emergency medicine, oncology, paediatrics", () =
     const s = (...v: [string, string][]) => reasons("general_surgery", { vitals: v.map(([l, x]) => vital(l, x)) });
     expect(s(["RR", "34"], ["Temp", "94"], ["BP", "230/120"], ["Pulse", "38"], ["SpO2", "91"])).toEqual([]);
     expect(s(["SpO2", "89"], ["BP", "88/50"], ["Pulse", "121"])).toEqual(["hypoxia", "hypotension", "tachycardia"]);
+  });
+});
+
+describe("rising creatinine — NICE NG148 rec 1.3.1", () => {
+  const at = (hoursAgo: number) => new Date(Date.parse("2026-10-15T08:00:00Z") - hoursAgo * 3600_000).toISOString();
+  const cr = (value_text: string, hoursAgo: number) => ({ value_text, recorded_at: at(hoursAgo) });
+
+  it("flags a rise of 26 micromol/L or more within 48 hours", () => {
+    expect(risingCreatinine([cr("1.4", 0), cr("1.1", 24)])).toEqual({
+      label: "Creatinine",
+      value: "1.1 → 1.4",
+      reason: "rising creatinine (AKI)",
+    }); // 0.3 mg/dL = 26.5 micromol/L
+    expect(risingCreatinine([cr("1.35", 0), cr("1.1", 24)])).toBeNull(); // 22 micromol/L
+    expect(risingCreatinine([cr("126", 0), cr("100", 40)])?.value).toBe("100 → 126"); // micromol/L
+    expect(risingCreatinine([cr("1.4", 0), cr("1.1", 60)])).toBeNull(); // > 48 h, < 50%
+  });
+
+  it("flags a 50% rise over the lowest result of the past 7 days", () => {
+    expect(risingCreatinine([cr("1.5", 0), cr("1.3", 30), cr("1.0", 120)])?.value).toBe("1.0 → 1.5");
+    expect(risingCreatinine([cr("1.4", 0), cr("1.0", 120)])).toBeNull(); // 40%
+    expect(risingCreatinine([cr("2.0", 0), cr("1.0", 200)])).toBeNull(); // older than 7 days
+  });
+
+  it("never flags a falling or a single result, or a stable high one (known CKD)", () => {
+    expect(risingCreatinine([cr("1.0", 0), cr("2.0", 24)])).toBeNull();
+    expect(risingCreatinine([cr("4.2", 0)])).toBeNull();
+    expect(risingCreatinine([cr("6.1", 0), cr("6.0", 24), cr("5.9", 72)])).toBeNull();
+    expect(risingCreatinine([])).toBeNull();
+  });
+
+  it("is on for medical, emergency, oncology and paediatric units, not surgery", () => {
+    const p = { creatinine_7d: [cr("1.5", 0), cr("1.0", 24)] };
+    for (const key of ["internal_medicine", "pulmonary_medicine", "emergency_medicine", "medical_oncology", "paediatrics"]) {
+      expect(criticalFlags(patient(p), key).map((f) => f.reason), key).toContain("rising creatinine (AKI)");
+    }
+    expect(criticalFlags(patient(p), "general_surgery")).toEqual([]);
   });
 });
