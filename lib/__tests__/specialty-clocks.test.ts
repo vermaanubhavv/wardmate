@@ -56,3 +56,13 @@ describe("noteStatusLine", () => {
     );
   });
 });
+
+describe("noteStatusLine with a leftover operation date", () => {
+  it("never reads Post Op Day on a unit that does not operate; surgery still does", async () => {
+    const { noteStatusLine } = await import("@/lib/specialty/clocks");
+    const { getSpecialtyPack } = await import("@/lib/specialty");
+    const p = { surgery_date: "2026-09-28", post_op_day: 5, management: null, admission_day: 7 };
+    expect(noteStatusLine(getSpecialtyPack("internal_medicine"), p)).toBeNull();
+    expect(noteStatusLine(getSpecialtyPack("general_surgery"), p)).toBe("Post Op Day (5)");
+  });
+});

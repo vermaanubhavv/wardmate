@@ -25,6 +25,9 @@ const SEVERITY_STYLE: Record<string, string> = {
   warning: "border-warn-fg/30 bg-warn-bg text-warn-fg",
 };
 
+/** The stored phase, as the publisher picked it. */
+const PHASE_LABEL: Record<string, string> = { any: "Any phase", before_surgery: "Pre-op", after_surgery: "Post-op" };
+
 export default async function ProtocolsPage() {
   const supabase = await createClient();
   // The publisher targets their own unit's department: its template families, and — only where
@@ -196,7 +199,7 @@ function ProtocolCard({ protocol: p, isPublisher }: { protocol: Protocol; isPubl
         <div className="min-w-0">
           <h2 className="truncate font-semibold">{p.title}</h2>
           <p className="mt-0.5 text-footnote text-muted">
-            v{p.version} · {p.source_name} · {p.phase.replace("_", " ")}
+            v{p.version} · {p.source_name} · {PHASE_LABEL[p.phase] ?? p.phase.replace("_", " ")}
             {isPublisher && p.status !== "published" && (
               <span className="ml-1.5 rounded-full bg-chip px-1.5 py-0.5 text-caption2 font-medium uppercase tracking-wide text-muted">
                 {p.status}
