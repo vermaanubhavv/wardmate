@@ -1,34 +1,22 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
+import { revalidatePatient } from "@/lib/revalidate";
 
 /**
  * Confirming from the whole-ward queue. Every write is scoped to `needs_confirmation = true`
  * and `confirmed_at is null`, so a stale screen can only ever confirm something that is still
  * genuinely outstanding, and row security keeps it to this doctor's own wards.
  */
-function revalidateEverywhere() {
-  revalidatePath("/confirm");
-  revalidatePath("/todo");
-  revalidatePath("/handover");
-  // Not "/": confirming a dictated value never changes a patient's location or count.
-  revalidatePath("/ward"); // unconfirmed_count on the ward list
-}
-
-async function currentUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return { supabase, user };
-}
+const revalidateEverywhere = () => revalidatePatient(null, "/confirm");
 
 export async function confirmMany(ids: string[]): Promise<{ ok: boolean; error?: string }> {
   const clean = ids.filter(Boolean);
   if (clean.length === 0) return { ok: true };
 
-  const { supabase, user } = await currentUser();
+  const supabase = await createClient();
+  const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in." };
 
   const { error } = await supabase
@@ -45,7 +33,8 @@ export async function confirmMany(ids: string[]): Promise<{ ok: boolean; error?:
 
 export async function confirmAllPending(patientIds: string[]): Promise<{ ok: boolean; error?: string }> {
   if (patientIds.length === 0) return { ok: true };
-  const { supabase, user } = await currentUser();
+  const supabase = await createClient();
+  const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in." };
 
   const { data: rows } = await supabase
@@ -67,7 +56,8 @@ export async function editAndConfirm(
   newValue: string
 ): Promise<{ ok: boolean; error?: string }> {
   const value = newValue.trim();
-  const { supabase, user } = await currentUser();
+  const supabase = await createClient();
+  const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in." };
 
   if (!value) {
@@ -92,7 +82,8 @@ export async function editAndConfirm(
 
 /** It should not have been recorded — a false start, a stray phrase. Removes it outright. */
 export async function discardPending(id: string): Promise<{ ok: boolean; error?: string }> {
-  const { supabase, user } = await currentUser();
+  const supabase = await createClient();
+  const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in." };
 
   const { error } = await supabase

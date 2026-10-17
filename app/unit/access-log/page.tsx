@@ -2,6 +2,7 @@ import ScreenHeader from "../../screen-header";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 import { getCurrentWard } from "@/lib/ward";
+import { dateTime } from "@/lib/format-date";
 
 type LogRow = {
   id: string;
@@ -103,11 +104,5 @@ export default async function AccessLogPage() {
 }
 
 function whenViewed(iso: string): string {
-  return new Date(iso).toLocaleString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return dateTime(iso);
 }

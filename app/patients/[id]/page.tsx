@@ -77,6 +77,7 @@ import { getUser } from "@/lib/auth";
 import HistoryCheckCard from "./history-check-card";
 import { loadHistoryCheckCard } from "@/lib/history-check/page-data";
 import { getExamChecklist } from "@/lib/history-check/exams";
+import { shortDate, dateTime } from "@/lib/format-date";
 
 type Entry = {
   id: string;
@@ -174,6 +175,25 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         : Promise.resolve({ data: [] as { id: string; title: string }[] }),
     ]);
   });
+
+  // History check (behind NEXT_PUBLIC_HISTORY_CHECK). Suggestions come from the chief
+  // complaints of the case history as dictated (identifier labels dropped, exactly as
+  // allEntries does below); the card itself is rendered from stored runs, never live. Needs
+  // only the entries and the pack, so it starts as soon as both land; awaited further down.
+  const historyCheckP = Promise.all([entriesP, packP]).then(([{ data }, p]) =>
+    loadHistoryCheckCard(
+      supabase,
+      patient,
+      ((data ?? []) as unknown as Entry[])
+        .filter((e) => e.is_case_history)
+        .flatMap((e) => e.observations)
+        .filter((o) => !isIdentifierLabel(o.label))
+        .filter((o) => /chief complaint|presenting complaint/i.test(o.label))
+        .map((o) => o.value_text ?? o.label),
+      p.historyTreeIds
+    )
+  );
+  historyCheckP.catch(() => {});
 
   // Clinical scoring & auto-trigger engine: bring pathways in step with the latest observations,
   // then read the tasks and cards. A no-op unless NEXT_PUBLIC_SCORING_ENGINE=on and the ward has
@@ -353,17 +373,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // helper also recognises older entries captured before the extractor used this label.
   const comorbidities = listedComorbidities(allObservations);
 
-  // History check (behind NEXT_PUBLIC_HISTORY_CHECK). Suggestions come from the chief
-  // complaints as dictated; the card itself is rendered from stored runs, never live.
-  const historyCheck = await loadHistoryCheckCard(
-    supabase,
-    patient,
-    caseHistoryEntries
-      .flatMap((e) => e.observations)
-      .filter((o) => /chief complaint|presenting complaint/i.test(o.label))
-      .map((o) => o.value_text ?? o.label),
-    pack.historyTreeIds
-  );
+  // History check: started off the entries and the pack (historyCheckP, above), so its reads overlapped the
+  // batch rather than adding a round trip here.
+  const historyCheck = await historyCheckP;
 
   // Latest of each drug recorded, for the discharge brief. Taken from the same observations
   // the rest of the screen uses, so it can hold nothing that was not said.
@@ -1036,11 +1048,7 @@ function CaseHistorySection({
                   embedded
                   entryId={entry.id}
                   patientId={patientId}
-                  time={new Date(entry.recorded_at).toLocaleDateString("en-IN", {
-                    timeZone: "Asia/Kolkata",
-                    day: "numeric",
-                    month: "short",
-                  })}
+                  time={shortDate(entry.recorded_at)}
                   transcript={entry.transcript}
                   heard={entry.original_transcript}
                   photoUrl={entry.photo_path ? (photoUrls.get(entry.photo_path) ?? null) : null}
@@ -1338,13 +1346,7 @@ function VitalsPanel({ observations }: { observations: Observation[] }) {
 }
 
 function vitalsWhen(iso: string): string {
-  return new Date(iso).toLocaleString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return dateTime(iso);
 }
 
 /**
@@ -1421,11 +1423,7 @@ function PacSection({ pac, patientId }: { pac: Observation[]; patientId: string 
 }
 
 function pacWhen(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    day: "numeric",
-    month: "short",
-  });
+  return shortDate(iso);
 }
 
 /**
@@ -1603,11 +1601,7 @@ function isVitalLine(label: string): boolean {
  * gets written in the notes.
  */
 function dayHeading(iso: string, todayKey: string): string {
-  const date = new Date(iso).toLocaleDateString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    day: "numeric",
-    month: "short",
-  });
+  const date = shortDate(iso);
 
   const key = istDayKey(iso);
   if (key === todayKey) return `Today · ${date}`;

@@ -6,7 +6,7 @@ import { medicationFields } from "@/lib/medication-fields";
 import { drugKey } from "@/lib/drug-key";
 import {
   CONDITION_VARIABLES,
-  ALL_CONDITION_VARIABLES,
+  buildConditionProse,
   compiledRowId,
   type ConditionAtDischarge,
   type ConditionVariableKey,
@@ -128,22 +128,7 @@ function latestByKinds(observations: Observation[], kinds: string[]): Observatio
   return out;
 }
 
-/** The concise Condition-at-Discharge prose the protocol allows the app to assemble from the
- *  variables the resident has marked satisfactory. Deterministic, never AI. */
-export function buildConditionProse(vars: Record<ConditionVariableKey, ConditionVariableValue>): string {
-  const phrases: string[] = [];
-  for (const v of ALL_CONDITION_VARIABLES) {
-    const value = vars[v.key];
-    if (value === true) phrases.push(v.satisfactory);
-    else if (typeof value === "string" && value.trim()) phrases.push(value.trim());
-  }
-  if (phrases.length === 0) return "";
-  const joined =
-    phrases.length === 1
-      ? phrases[0]
-      : `${phrases.slice(0, -1).join(", ")} and ${phrases[phrases.length - 1]}`;
-  return `Patient is ${joined}.`;
-}
+export { buildConditionProse };
 
 function compileDiagnoses(context: DischargeContext): Diagnosis[] {
   const { patient, observations } = context;

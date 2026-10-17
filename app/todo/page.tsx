@@ -21,10 +21,12 @@ export default async function TodoPage() {
     );
   }
 
-  const tasks = await getWardTasks(ward.id);
-
-  // Score-input to-do items across the unit (inert unless the scoring engine is on for it).
-  const scoringByPatient = await getWardScoringTasks(ward.id);
+  // Independent reads, sent together. The scoring ones are score-input to-do items across the
+  // unit (inert unless the scoring engine is on for it).
+  const [tasks, scoringByPatient] = await Promise.all([
+    getWardTasks(ward.id),
+    getWardScoringTasks(ward.id),
+  ]);
   let scoringTasks: WardScoringTask[] = [];
   if (scoringByPatient.size > 0) {
     const supabase = await createClient();

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 
 /**
  * "warning: give a reason" or "critical: give a reason" — the line's own severity, read off its
@@ -26,7 +27,7 @@ function lines(formData: FormData, field: string): string[] {
 
 export async function createProtocol(formData: FormData) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return;
 
   const title = String(formData.get("title") ?? "").trim();
@@ -73,7 +74,7 @@ export async function createProtocol(formData: FormData) {
 /** Publish or retire an existing protocol — its items are untouched either way. */
 export async function setProtocolStatus(formData: FormData) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return;
 
   const id = String(formData.get("protocol_id") ?? "");

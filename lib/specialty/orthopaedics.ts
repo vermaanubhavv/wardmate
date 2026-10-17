@@ -1,6 +1,5 @@
-import { ORTHOPAEDICS_DISCHARGE_TEMPLATES, ORTHOPAEDICS_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-orthopaedics";
 import type { FormatKind } from "@/lib/formats";
-import type { SpecialtyPack } from "./types";
+import { surgicalDayCount, type SpecialtyPack } from "./types";
 
 /**
  * The orthopaedics pack — trauma and elective bone and joint surgery.
@@ -48,19 +47,9 @@ export const orthopaedicsPack: SpecialtyPack = {
   label: "Orthopaedics",
   blurb: "Trauma, arthroplasty and spine. Counts post-operative days; side, implant and weight bearing first.",
 
-  terminology: {
-    dayLabel: "POD",
-    admissionNoun: "operation",
-  },
-
   admissionPhrase: "an orthopaedic admission",
 
-  dayCount: (p) => {
-    if (p.post_op_day !== null) {
-      return { clock: "post_op", n: p.post_op_day, text: `POD ${p.post_op_day}` };
-    }
-    return { clock: "admission", n: p.admission_day, text: `Day ${p.admission_day}` };
-  },
+  dayCount: surgicalDayCount,
 
   extractRoleLine:
     "You convert an orthopaedic resident's spoken ward-round note into structured observations.",
@@ -79,12 +68,6 @@ Orthopaedic ward — what the words mean here:
 - TRACTION, BLOOD LOSS AND TRANSFUSION are said as numbers: "two units transfused", "drain 150 ml", "haemoglobin 7.8". Record the number with its unit.
 - Abbreviations to leave AS SAID: "DHS", "PFN", "TKR", "THR", "ORIF", "CRIF", "POP", "ACL", "PLIF", "AKA", "BKA", "ex-fix". "RTA" is a mechanism, not a diagnosis.
 `.trim(),
-
-  checklistAnchor: "post_op",
-
-  // General surgery's templates, on purpose — see the header.
-  dischargeTemplates: ORTHOPAEDICS_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: ORTHOPAEDICS_GENERIC_DISCHARGE_TEMPLATE,
 
   // The two Wells pathways only: built, active, and this ward's own risk after a hip fracture
   // or an arthroplasty. No fracture classification is a score this app may produce.

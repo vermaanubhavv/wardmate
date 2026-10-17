@@ -1,5 +1,5 @@
 import type { MedicalLexiconEntry } from "./types";
-import { PRIORITY } from "./types";
+import { PRIORITY, specialtyEntry } from "./types";
 
 /**
  * The obstetrics & gynaecology keyterm core.
@@ -40,24 +40,7 @@ const OBG = "obstetrics-gynaecology" as const;
  * term or alias as a whole phrase) still works for every short form, it is only the substring
  * boost that is withheld from anything too short to be safe.
  */
-function entry(
-  term: string,
-  categories: MedicalLexiconEntry["categories"],
-  aliases: string[] = [],
-  triggers: string[] = [],
-  priority: number = PRIORITY.SPECIALTY
-): MedicalLexiconEntry {
-  return {
-    term,
-    aliases,
-    categories,
-    specialties: [OBG],
-    triggers: [term, ...aliases, ...triggers]
-      .map((t) => t.toLowerCase())
-      .filter((t) => t.length >= 5),
-    priority,
-  };
-}
+const entry = specialtyEntry(OBG);
 
 // "diagnosis" doubles as the general clinical-documentation bucket here — the same broad use
 // internal-medicine.ts makes of it for a non-pathological state like "altered sensorium".

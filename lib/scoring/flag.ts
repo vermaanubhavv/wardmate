@@ -17,10 +17,14 @@ export function scoringEngineGloballyEnabled(): boolean {
   return process.env.NEXT_PUBLIC_SCORING_ENGINE === "on";
 }
 
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
-/** Global switch AND this ward has opted in. */
-export async function isScoringEngineEnabled(wardId: string): Promise<boolean> {
+/** Global switch AND this ward has opted in. React-cached for the request only: the patient
+ *  page's sync, task and card reads each ask, and one read answers all three. */
+export const isScoringEngineEnabled = cache(async function isScoringEngineEnabled(
+  wardId: string
+): Promise<boolean> {
   if (!scoringEngineGloballyEnabled()) return false;
   const supabase = await createClient();
   const { data } = await supabase
@@ -29,4 +33,4 @@ export async function isScoringEngineEnabled(wardId: string): Promise<boolean> {
     .eq("ward_id", wardId)
     .maybeSingle();
   return Boolean(data);
-}
+});

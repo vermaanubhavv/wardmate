@@ -19,17 +19,17 @@ import {
   type DiagnosisCategory,
   type HistopathologyStatus,
 } from "@/lib/discharge-entities";
-import { buildConditionProse } from "@/lib/discharge-compile";
+import { buildConditionProse } from "@/lib/discharge-entities";
 import { runDischargeChecks, type DischargeCheckContext } from "@/lib/discharge-checks";
 import type { DischargeCheck } from "@/lib/discharge-checks";
 import FormularyLink from "./formulary-link";
 import LiveDictation, { DictateButton, routeVia, type LiveLine, type LiveSection } from "../live-dictation";
-import type { DischargeProfile } from "@/lib/specialty/discharge";
+import type { DischargeProfile } from "@/lib/specialty/discharge-profile";
 import type { FinalFix } from "@/lib/final-check";
 import { Field, Area, StringList, SuggestField, SelectField, SegmentedField } from "./discharge-fields";
 import { DEFAULT_UNIT_CONSULTANTS } from "@/lib/unit-consultants";
 import DiagnosisCombobox from "../../diagnosis-combobox";
-import { IconCheck, statusChip, SelChip, OptionRow, Toggle, genBtn, approveBtn } from "../card-kit";
+import { IconCheck, statusChip, SelChip, OptionRow, Toggle, genBtn, approveBtn, StepShell } from "../card-kit";
 import {
   saveDischargeSection,
   revalidateDischargeAction,
@@ -200,7 +200,6 @@ export default function DischargeWorkspace({
   // N" blocker would greet every resident as a red error. It is shown once they have reached
   // Review & sign — the only place Finalise lives.
   const [reachedReview, setReachedReview] = useState(() => STEPS[step].id === "review");
-  const [menuOpen, setMenuOpen] = useState(false);
   const [askReset, setAskReset] = useState(false);
   const [openMed, setOpenMed] = useState<string | null>(null);
   // The drug last removed, and where it sat, for the inline Undo — no confirm dialog.
@@ -461,7 +460,6 @@ export default function DischargeWorkspace({
     if (index < 0 || index >= STEPS.length) return;
     if (STEPS[index].id === "review") setReachedReview(true);
     setStep(index);
-    setMenuOpen(false);
     setOpenMed(null);
     setRemovedMed(null);
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
@@ -1439,7 +1437,6 @@ export default function DischargeWorkspace({
     }
   }
 
-  const pct = Math.round(((step + 1) / STEPS.length) * 100);
   const isOptionalEmpty =
     current.id !== "review" && !current.required && !filledFor(current.id) && !dirty.has(current.id as DischargeSectionId);
   // An AI card still waiting on approval: the bar's primary approves it on the way past, so
@@ -1541,105 +1538,61 @@ export default function DischargeWorkspace({
         </div>
       )}
 
-      {/* THE CARD */}
-      <div className="ios-group overflow-hidden">
-        <div className="px-4 pt-4 pb-3">
-          <p className="text-caption2 font-semibold uppercase tracking-[0.03em] text-muted">
-            Discharge · {step + 1} of {STEPS.length}
-          </p>
-          <div className="mt-0.5 flex items-start justify-between gap-2">
-            <h2 className="text-title1 font-bold leading-tight tracking-[-0.021em]">{current.title}</h2>
-            {current.id !== "review" && badgeFor(current.id)}
-          </div>
-        </div>
-
-        <div className="h-[3px] bg-chip">
-          <div className="h-full bg-accent transition-all" style={{ width: `${pct}%` }} />
-        </div>
-
-        <div className="flex flex-col gap-3 px-4 py-4">
-          {current.id !== "review" && cardSections(current.id).some((s) => blockingFor(s).length > 0) && (
-            <div className="rounded-[10px] bg-critical-bg px-3 py-2">
-              {cardSections(current.id)
-                .flatMap(blockingFor)
-                .map((c) => (
-                  <p key={c.id} className="text-footnote text-critical-fg">
-                    {c.message}
-                  </p>
-                ))}
-            </div>
-          )}
-          {renderSection(current.id)}
-        </div>
-      </div>
-
-      {/* jump to any section */}
-      <button type="button" onClick={() => setMenuOpen((o) => !o)} className="self-center text-footnote font-medium text-accent">
-        {menuOpen ? "Hide sections" : "Jump to a section"}
-      </button>
-
-      {/* Reading the paper file in is a step of THIS summary, not a rival to it — so it lives
-          here, quietly, rather than as a button on the patient page. */}
-      {!finalised && !oneOff && (
-        <Link
-          href={`/patients/${patientId}/prepare-discharge`}
-          className="self-center text-footnote text-muted underline decoration-line underline-offset-2"
-        >
-          Read in the paper file
-        </Link>
-      )}
-      {menuOpen && (
-        <div className="ios-group flex flex-col p-1.5">
-          {STEPS.map((s, i) => {
-            const isBlocking = s.id !== "review" && cardSections(s.id).some((sec) => blockingBySection.has(sec));
-            const done = s.id === "review" ? checks.blocking.length === 0 : filledFor(s.id);
-            const dot = isBlocking ? "bg-recording" : done ? "bg-accent" : "bg-line";
-            return (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => goTo(i)}
-                className={"flex items-center gap-2 rounded-[8px] px-2.5 py-2 text-left text-subhead " + (i === step ? "bg-chip font-medium" : "")}
+      {/* THE CARD, the jump menu and the fixed navigation */}
+      <StepShell
+        kicker="Discharge"
+        step={step}
+        steps={STEPS.length}
+        title={current.title}
+        badge={current.id !== "review" && badgeFor(current.id)}
+        noun="section"
+        items={STEPS.map((s) => {
+          const isBlocking = s.id !== "review" && cardSections(s.id).some((sec) => blockingBySection.has(sec));
+          const done = s.id === "review" ? checks.blocking.length === 0 : filledFor(s.id);
+          return {
+            title: s.title,
+            dot: isBlocking ? "bg-recording" : done ? "bg-accent" : "bg-line",
+            trailing: !oneOff && dirty.has(s.id as DischargeSectionId) && <span className="text-caption2 text-accent">unsaved</span>,
+          };
+        })}
+        onJump={goTo}
+        between={
+          <>
+            {/* Reading the paper file in is a step of THIS summary, not a rival to it — so it lives
+                here, quietly, rather than as a button on the patient page. */}
+            {!finalised && !oneOff && (
+              <Link
+                href={`/patients/${patientId}/prepare-discharge`}
+                className="self-center text-footnote text-muted underline decoration-line underline-offset-2"
               >
-                <span className={"h-2 w-2 shrink-0 rounded-full " + dot} />
-                <span className="text-muted">{i + 1}.</span>
-                <span className="flex-1">{s.title}</span>
-                {!oneOff && dirty.has(s.id as DischargeSectionId) && <span className="text-caption2 text-accent">unsaved</span>}
-              </button>
-            );
-          })}
-        </div>
-      )}
+                Read in the paper file
+              </Link>
+            )}
+          </>
+        }
+        after={
+          <>
+            <div className="flex items-center gap-2 text-caption text-muted">
+              {saveState === "saving" && <span>Saving…</span>}
+              {saveState === "saved" && dirty.size === 0 && <span className="text-accent">All changes saved</span>}
+              {saveState === "error" && <span className="text-critical-fg">Not saved — check your connection</span>}
+              {message && <span>· {message}</span>}
+            </div>
 
-      <div className="flex items-center gap-2 text-caption text-muted">
-        {saveState === "saving" && <span>Saving…</span>}
-        {saveState === "saved" && dirty.size === 0 && <span className="text-accent">All changes saved</span>}
-        {saveState === "error" && <span className="text-critical-fg">Not saved — check your connection</span>}
-        {message && <span>· {message}</span>}
-      </div>
-
-      {/* fixed navigation */}
-      <ActionSheet
-        open={askReset}
-        title="Rebuild this summary from the record?"
-        message="Every edit made here is discarded and the summary is compiled again from what was recorded."
-        action="Discard edits and rebuild"
-        onCancel={() => setAskReset(false)}
-        onConfirm={reset}
-      />
-
-      <div className="bottom-bar fixed inset-x-0 bottom-0 z-10 mx-auto max-w-md border-t border-line bg-background/90 px-4 pt-3 backdrop-blur-xl">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => goTo(step - 1)}
-            disabled={step === 0}
-            className="rounded-[12px] border border-line px-5 py-3 text-subhead font-semibold disabled:opacity-40"
-          >
-            Back
-          </button>
-
-          {current.id !== "review" ? (
+            <ActionSheet
+              open={askReset}
+              title="Rebuild this summary from the record?"
+              message="Every edit made here is discarded and the summary is compiled again from what was recorded."
+              action="Discard edits and rebuild"
+              onCancel={() => setAskReset(false)}
+              onConfirm={reset}
+            />
+          </>
+        }
+        onBack={() => goTo(step - 1)}
+        backDisabled={step === 0}
+        next={
+          current.id !== "review" ? (
             <button
               type="button"
               onClick={() => {
@@ -1676,9 +1629,22 @@ export default function DischargeWorkspace({
                     ? `Finalise (${checks.blocking.length} to fix)`
                     : "Finalise & print"}
             </button>
-          )}
-        </div>
-      </div>
+          )
+        }
+      >
+        {current.id !== "review" && cardSections(current.id).some((s) => blockingFor(s).length > 0) && (
+          <div className="rounded-[10px] bg-critical-bg px-3 py-2">
+            {cardSections(current.id)
+              .flatMap(blockingFor)
+              .map((c) => (
+                <p key={c.id} className="text-footnote text-critical-fg">
+                  {c.message}
+                </p>
+              ))}
+          </div>
+        )}
+        {renderSection(current.id)}
+      </StepShell>
     </div>
   );
 }

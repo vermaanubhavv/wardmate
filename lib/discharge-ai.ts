@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { AI_MODEL } from "@/lib/model";
+import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
 import type { DischargeContext } from "@/lib/discharge-data";
 import type { DischargeDraft } from "@/lib/discharge-entities";
 import type { Observation } from "@/lib/patient-state";
@@ -37,12 +36,6 @@ import {
  * If AI-written discharge prose starts producing events nobody recognises, this file and
  * lib/model.ts are the first things to look at.
  */
-
-function client(): Anthropic {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
-  return new Anthropic({ apiKey: key });
-}
 
 // --- The admission digest ----------------------------------------------------------------
 
@@ -175,7 +168,7 @@ export async function generateClinicalCourse(
   draft: DischargeDraft
 ): Promise<ClinicalCourseProposal> {
   const digest = buildAdmissionDigest(context, draft) + templateGuide(templateOf(context, draft), "clinicalCourse");
-  const response = await client().messages.create({
+  const response = await anthropic().messages.create({
     model: AI_MODEL,
     max_tokens: 2000,
     system: [
@@ -188,8 +181,7 @@ export async function generateClinicalCourse(
     messages: [{ role: "user", content: `Admission digest:\n\n${digest}` }],
   });
 
-  const text = response.content.find((b) => b.type === "text");
-  const parsed = text && text.type === "text" ? JSON.parse(text.text) : { clinical_course: "", uncertain_points: [] };
+  const parsed = replyJson(response, { clinical_course: "", uncertain_points: [] });
   return {
     text: String(parsed.clinical_course ?? "").trim(),
     uncertainPoints: Array.isArray(parsed.uncertain_points) ? parsed.uncertain_points.map(String) : [],
@@ -212,7 +204,7 @@ export async function generateIndication(
   draft: DischargeDraft
 ): Promise<{ text: string; model: string }> {
   const digest = buildAdmissionDigest(context, draft) + templateGuide(templateOf(context, draft), "indication");
-  const response = await client().messages.create({
+  const response = await anthropic().messages.create({
     model: AI_MODEL,
     max_tokens: 400,
     system: [{ type: "text", text: indicationSystem(dischargePromptWordsFor(context.pack)), cache_control: { type: "ephemeral" } }],
@@ -222,8 +214,7 @@ export async function generateIndication(
     },
     messages: [{ role: "user", content: `Admission digest:\n\n${digest}` }],
   });
-  const text = response.content.find((b) => b.type === "text");
-  const parsed = text && text.type === "text" ? JSON.parse(text.text) : { indication: "" };
+  const parsed = replyJson(response, { indication: "" });
   return { text: String(parsed.indication ?? "").trim(), model: AI_MODEL };
 }
 
@@ -284,7 +275,7 @@ export async function proposeRelevantInvestigations(
     })
     .join("\n");
 
-  const response = await client().messages.create({
+  const response = await anthropic().messages.create({
     model: AI_MODEL,
     max_tokens: 2000,
     system: [{ type: "text", text: investigationsSystem(dischargePromptWordsFor(context.pack)), cache_control: { type: "ephemeral" } }],
@@ -295,8 +286,7 @@ export async function proposeRelevantInvestigations(
     messages: [{ role: "user", content: `Investigation observations:\n\n${listed}` }],
   });
 
-  const text = response.content.find((b) => b.type === "text");
-  const parsed = text && text.type === "text" ? JSON.parse(text.text) : { items: [] };
+  const parsed = replyJson(response, { items: [] });
   const raw: unknown[] = Array.isArray(parsed.items) ? parsed.items : [];
 
   // ENFORCEMENT: a proposed line survives only if every observation id it claims is one we

@@ -16,23 +16,7 @@ import { emergencyMedicinePack } from "./emergency-medicine";
 import { SPECIALTY_KEYS, type SpecialtyKey, type SpecialtyPack } from "./types";
 
 export * from "./types";
-export {
-  generalSurgeryPack,
-  medicalOncologyPack,
-  internalMedicinePack,
-  obstetricsGynaecologyPack,
-  pulmonaryMedicinePack,
-  entPack,
-  psychiatryPack,
-  ophthalmologyPack,
-  dermatologyPack,
-  burnsPlasticSurgeryPack,
-  orthopaedicsPack,
-  urologyPack,
-  neurosurgeryPack,
-  paediatricsPack,
-  emergencyMedicinePack,
-};
+export { generalSurgeryPack };
 
 const PACKS: Record<SpecialtyKey, SpecialtyPack> = {
   general_surgery: generalSurgeryPack,

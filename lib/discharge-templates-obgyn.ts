@@ -1,5 +1,5 @@
-import type { AdviceItem } from "@/lib/discharge-entities";
 import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-templates";
+import { adv, proc, COMMON_MEDS } from "@/lib/discharge-template-parts";
 
 /**
  * OBSTETRICS & GYNAECOLOGY discharge templates.
@@ -26,8 +26,6 @@ import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-temp
  * prescription is patient-specific, never guessed.
  */
 
-const adv = (items: { module: string; text: string }[]): AdviceItem[] =>
-  items.map((it, i) => ({ id: `adv-${i}`, module: it.module, text: it.text }));
 
 const STANDARD_RED_FLAGS = [
   "Fever, or foul-smelling vaginal discharge",
@@ -45,14 +43,13 @@ export const OBGYN_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     indication:
       "Patient was admitted with [ presenting problem / for delivery ] for [ investigation / obstetric or gynaecological management ].",
     primaryDiagnosis: "",
-    procedure: {
+    procedure: proc({
       name: "[ Delivery or procedure during this admission, if any — LSCS, normal delivery, D&C, laparoscopy, hysterectomy ]",
       anaesthesia: "",
       findings: "[ relevant findings — indication for the procedure, intra-operative findings ]",
       drains: "[ catheter / drain at discharge, if any ]",
-      complications: "Nil",
       outcome: "[ Outcome — maternal and, where relevant, fetal/neonatal ]",
-    },
+    }),
     clinicalCourse:
       "Admitted on day [ … ] at [ POG / with presenting complaint ]. [ Course of labour or the gynaecological problem and how it was managed. ] [ Treatment given during the admission. ] The patient improved, was afebrile and haemodynamically stable, and was fit for discharge on [ date ] with the plan below.",
     medications: [],
@@ -80,12 +77,10 @@ export const OBGYN_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
 // --- condition templates (reviewed — see the header) ---------------------
 
 const M = {
+  ...COMMON_MEDS,
   ifa: { generic: "Iron + folic acid (IFA)", strength: "60 mg elemental iron + 500 mcg folic acid", route: "PO", frequency: "OD after food", duration: "180 days", status: "new" } as TemplateMedication,
   calcium: { generic: "Calcium carbonate + vitamin D3", strength: "500 mg elemental calcium", route: "PO", frequency: "BD", duration: "180 days", indication: "not at the same time as the iron tablet", status: "new" } as TemplateMedication,
-  paracetamol: { generic: "Paracetamol", strength: "650 mg", route: "PO", frequency: "TDS", duration: "5 days", status: "new" } as TemplateMedication,
-  paracetamolSos: { generic: "Paracetamol", strength: "650 mg", route: "PO", frequency: "SOS for pain", status: "prn" } as TemplateMedication,
   ibuprofenSos: { generic: "Ibuprofen", strength: "400 mg", route: "PO", frequency: "SOS for pain, after food", duration: "5 days", status: "prn" } as TemplateMedication,
-  pantoprazole: { generic: "Pantoprazole", strength: "40 mg", route: "PO", frequency: "OD before breakfast", duration: "5 days", status: "new" } as TemplateMedication,
   lactulose: { generic: "Lactulose", dose: "15 ml", route: "PO", frequency: "HS", duration: "7 days", indication: "keep stools soft, avoid straining", status: "new" } as TemplateMedication,
   amoxClav: { generic: "Amoxicillin-clavulanate", strength: "625 mg", route: "PO", frequency: "TDS", duration: "5 days", indication: "if indicated — not routine after prophylaxis", status: "new" } as TemplateMedication,
   doxycycline: { generic: "Doxycycline", strength: "100 mg", route: "PO", frequency: "BD", duration: "5 days", indication: "if indicated", status: "new" } as TemplateMedication,
@@ -121,14 +116,13 @@ export const OBGYN_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with [ pain abdomen / bleeding per vaginum / collapse ] at [ … ] weeks of amenorrhoea and a diagnosis of [ ruptured / unruptured ] ectopic pregnancy, requiring surgical management.",
       primaryDiagnosis: "[ Ruptured / unruptured ] [ right / left ] tubal ectopic pregnancy",
-      procedure: {
+      procedure: proc({
         name: "[ Laparoscopic / open ] [ salpingectomy / salpingostomy ] [ side ]",
         anaesthesia: "General anaesthesia",
         findings: "[ site of ectopic; rupture; haemoperitoneum volume; contralateral tube and ovaries ]",
         drains: "[ nil / drain ]",
-        complications: "Nil",
         outcome: "Procedure completed successfully; specimen sent for histopathology.",
-      },
+      }),
       clinicalCourse:
         "Admitted on [ date ] with [ … ]; urine pregnancy test positive, serum β-hCG [ … ], USG [ … ]. Underwent [ procedure ] on [ date ] [ with transfusion of … units ]. Recovery was uneventful; tolerating orals, ambulant, passing urine. Hb at discharge [ … ].",
       medications: [M.paracetamol, M.pantoprazole, M.ibuprofenSos, M.ifa, M.amoxClav],
@@ -162,14 +156,13 @@ export const OBGYN_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient delivered by [ normal vaginal delivery / LSCS ] on [ date ] and had a postpartum haemorrhage requiring [ … ].",
       primaryDiagnosis: "[ Primary / secondary ] postpartum haemorrhage due to [ atony / trauma / retained tissue / coagulopathy ] after [ mode of delivery ]",
-      procedure: {
+      procedure: proc({
         name: "[ Uterotonics / manual removal of placenta / repair of tear / balloon tamponade / B-Lynch / ligation / hysterectomy ]",
         anaesthesia: "[ as applicable ]",
         findings: "[ estimated blood loss; cause found ]",
         drains: "[ catheter / drain, if any ]",
-        complications: "Nil",
         outcome: "[ Haemostasis achieved ]",
-      },
+      }),
       clinicalCourse:
         "Delivered on [ date ] by [ … ]. Estimated blood loss [ … ] ml; managed with [ uterotonics / procedure ] and [ … ] units of blood / products [ ± IV iron ]. Monitored [ in HDU for … ]; no further bleeding. Uterus well contracted, lochia normal, Hb [ … ] at discharge. Breastfeeding established.",
       medications: [M.ifa, M.calcium, M.paracetamolSos, M.amoxClav],
@@ -196,14 +189,13 @@ export const OBGYN_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted at [ … ] weeks with [ incomplete / missed / inevitable miscarriage / request for MTP under the MTP Act ] for uterine evacuation.",
       primaryDiagnosis: "[ Incomplete / missed / inevitable miscarriage / MTP ] at [ … ] weeks",
-      procedure: {
+      procedure: proc({
         name: "[ Suction evacuation / MVA / D&E ] [ ± medical priming ]",
         anaesthesia: "[ Paracervical block / short GA / sedation ]",
         findings: "[ uterine size; products obtained ]",
         drains: "",
-        complications: "Nil",
         outcome: "Procedure completed; products sent for histopathology.",
-      },
+      }),
       clinicalCourse:
         "Admitted on [ date ]; USG [ … ]. Underwent [ procedure ] on [ date ]. Bleeding settled, afebrile, tolerating orals, passing urine. Hb [ … ] at discharge.",
       medications: [M.paracetamolSos, M.ibuprofenSos, M.doxycycline, { ...M.ifa, duration: "3 months" }],
@@ -233,14 +225,13 @@ export const OBGYN_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted for [ total abdominal / vaginal / laparoscopic ] hysterectomy [ ± BSO ] for [ fibroid uterus / AUB / uterovaginal prolapse / … ].",
       primaryDiagnosis: "[ Indication ]",
-      procedure: {
+      procedure: proc({
         name: "[ Total abdominal / non-descent vaginal / vaginal with PFR / laparoscopic ] hysterectomy [ ± bilateral salpingo-oophorectomy ]",
         anaesthesia: "[ Spinal / general ] anaesthesia",
         findings: "[ uterine size; adnexa; adhesions; ovaries conserved or removed ]",
         drains: "[ nil / drain; catheter removed on POD … ]",
-        complications: "Nil",
         outcome: "Procedure completed successfully; specimen sent for histopathology.",
-      },
+      }),
       clinicalCourse:
         "Underwent [ procedure ] on [ date ]. Postoperative recovery was uneventful; catheter removed on POD [ … ] and passing urine freely; bowels opened; ambulant and tolerating a normal diet. Wound / vault healthy at discharge.",
       medications: [M.paracetamol, M.pantoprazole, M.ibuprofenSos, M.lactulose, M.amoxClav],
@@ -270,14 +261,13 @@ export const OBGYN_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient with [ pre-eclampsia [ with severe features ] / gestational hypertension / eclampsia ] was delivered by [ … ] on [ date ] and monitored postpartum for blood pressure control.",
       primaryDiagnosis: "[ Pre-eclampsia / gestational hypertension / eclampsia / HELLP ], delivered by [ … ] on [ date ]",
-      procedure: {
+      procedure: proc({
         name: "[ Normal vaginal delivery / LSCS ] on [ date ]",
         anaesthesia: "[ as applicable ]",
         findings: "[ indication for delivery; baby — sex, weight, Apgar ]",
         drains: "",
-        complications: "Nil",
         outcome: "[ Mother and baby outcome ]",
-      },
+      }),
       clinicalCourse:
         "Admitted at [ … ] weeks with BP [ … ] and [ proteinuria / symptoms ]. [ Magnesium sulphate given for … hours. ] Delivered on [ date ] by [ … ]. Postpartum BP controlled on [ antihypertensive ]; renal and liver function [ … ]; platelets [ … ]. BP at discharge [ … ]. Breastfeeding established.",
       medications: [M.labetalol, M.nifedipine, M.ifa, M.calcium, M.paracetamolSos],
@@ -312,14 +302,13 @@ export const OBGYN_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted at [ … ] weeks [ in labour / for elective delivery ] and underwent [ emergency / elective ] LSCS for [ indication ].",
       primaryDiagnosis: "G[ … ]P[ … ] — [ emergency / elective ] LSCS at [ … ] weeks for [ indication ]",
-      procedure: {
+      procedure: proc({
         name: "[ Emergency / elective ] lower-segment caesarean section",
         anaesthesia: "[ Spinal / general ] anaesthesia",
         findings: "[ baby — sex, weight, Apgar; liquor; placenta; uterus, tubes and ovaries; [ tubal ligation ] ]",
         drains: "[ nil ]",
-        complications: "Nil",
         outcome: "[ Live baby, … kg; mother stable ]",
-      },
+      }),
       clinicalCourse:
         "Underwent [ emergency / elective ] LSCS on [ date ] for [ indication ]. Postoperative recovery uneventful; catheter removed on POD [ … ]; ambulant, tolerating a normal diet, passing urine and flatus. Uterus involuting, lochia normal, wound healthy. Breastfeeding established. Baby [ with mother / in NICU ].",
       medications: [M.paracetamol, M.ibuprofenSos, M.pantoprazole, M.ifa, M.calcium, M.lactulose, M.amoxClav, M.enoxaparin],
@@ -353,14 +342,13 @@ export const OBGYN_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted at [ … ] weeks in [ spontaneous / induced ] labour and delivered vaginally.",
       primaryDiagnosis: "G[ … ]P[ … ] — [ term / preterm ] vaginal delivery at [ … ] weeks [ ± episiotomy / tear ]",
-      procedure: {
+      procedure: proc({
         name: "[ Normal / vacuum / forceps ] vaginal delivery [ with episiotomy / … degree tear, repaired ]",
         anaesthesia: "[ local infiltration / epidural / nil ]",
         findings: "[ baby — sex, weight, Apgar; placenta complete; blood loss ]",
         drains: "",
-        complications: "Nil",
         outcome: "[ Live baby, … kg; mother stable ]",
-      },
+      }),
       clinicalCourse:
         "Delivered on [ date ] at [ time ]; [ episiotomy / tear ] repaired. Postpartum course uneventful — afebrile, uterus involuting, lochia normal, passing urine, perineum healthy. Breastfeeding established. Baby [ with mother ].",
       medications: [M.ifa, M.calcium, M.paracetamolSos, { ...M.lactulose, indication: "if episiotomy or tear — keep stools soft" }],
@@ -392,14 +380,13 @@ export const OBGYN_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted at [ … ] weeks with [ hyperemesis / threatened preterm labour / … ] and is discharged undelivered after the condition settled.",
       primaryDiagnosis: "G[ … ]P[ … ] at [ … ] weeks — [ condition ], undelivered",
-      procedure: {
+      procedure: proc({
         name: "[ Nil / antenatal corticosteroids given on … ]",
         anaesthesia: "",
         findings: "[ USG — fetal growth, liquor, placenta; relevant labs ]",
         drains: "",
-        complications: "Nil",
         outcome: "Condition settled; pregnancy continuing.",
-      },
+      }),
       clinicalCourse:
         "Admitted on [ date ] at [ … ] weeks with [ … ]. Managed with [ … ]. [ Antenatal corticosteroids given on … ]. Symptoms settled; fetal wellbeing reassuring [ USG / NST ]. Tolerating orals and fit for discharge on [ date ].",
       medications: [

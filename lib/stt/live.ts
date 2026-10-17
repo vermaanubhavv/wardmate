@@ -85,16 +85,12 @@ export async function openLiveDictation(
   }
 
   const params = buildDeepgramParams(keyterms, {
-    model: "nova-3-medical",
-    language: "en-IN",
-    extra: {
-      smart_format: true,
-      interim_results: true,
-      // UtteranceEnd after 1 s of silence (Deepgram's minimum) — each thought lands in its
-      // section as soon as the resident pauses.
-      utterance_end_ms: 1000,
-      vad_events: true,
-    },
+    smart_format: true,
+    interim_results: true,
+    // UtteranceEnd after 1 s of silence (Deepgram's minimum) — each thought lands in its
+    // section as soon as the resident pauses.
+    utterance_end_ms: 1000,
+    vad_events: true,
   });
   const url = `${DEEPGRAM_WSS}?${params.toString()}`;
 

@@ -1,7 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, type Supa } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
+import { revalidatePatient } from "@/lib/revalidate";
 import { istDayKey } from "@/lib/patient-state";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { getSpecialtyPack } from "@/lib/specialty";
@@ -16,26 +17,8 @@ import { MED_PRESETS, progressNoteConfigFor } from "@/lib/progress-note-config";
  * printed sheet (/note) reads today's observations unchanged.
  */
 
-function revalidateEverywhere(patientId: string) {
-  revalidatePath(`/patients/${patientId}`);
-  revalidatePath(`/patients/${patientId}/note`);
-  revalidatePath(`/patients/${patientId}/note/build`);
-  revalidatePath("/todo");
-  revalidatePath("/handover");
-  // Not "/": the home screen only counts patients by location, which a note-workspace write
-  // never changes. "/ward" stays — the kind written here can be "plan" (open_task_count) or
-  // "vital" (the ward list's worst-flag badge), and this helper is shared across kinds.
-  revalidatePath("/ward");
-}
-
-type Supa = Awaited<ReturnType<typeof createClient>>;
-
-async function currentUser(supabase: Supa) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
-}
+const revalidateEverywhere = (patientId: string) =>
+  revalidatePatient(patientId, `/patients/${patientId}/note`, `/patients/${patientId}/note/build`);
 
 const todayKey = () => istDayKey(new Date().toISOString());
 
@@ -140,7 +123,7 @@ export async function replaceTodayNoteSection(
   carried = false
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient();
-  const user = await currentUser(supabase);
+  const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in." };
   const err = await rewriteToday(supabase, patientId, user.id, label, kind, lines, carried);
   if (err) return { ok: false, error: err };
@@ -154,7 +137,7 @@ export async function replaceTodayNoteExam(
   entries: { label: string; kind: "exam" | "vital"; value: string | null; carried?: boolean }[]
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient();
-  const user = await currentUser(supabase);
+  const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in." };
   for (const e of entries) {
     const err = await rewriteToday(supabase, patientId, user.id, e.label, e.kind, e.value ? [e.value] : [], e.carried);
@@ -179,7 +162,7 @@ export async function replaceTodayNoteVitals(
   dictated = false
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient();
-  const user = await currentUser(supabase);
+  const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in." };
 
   const ids = await todayEntryIds(supabase, patientId);
@@ -238,7 +221,7 @@ export async function replaceActiveMedications(
   dictated: string[] = []
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient();
-  const user = await currentUser(supabase);
+  const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in." };
 
   const clean = lines.map((l) => l.trim()).filter(Boolean);
@@ -285,7 +268,7 @@ export async function applyCompiledNote(
   }
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient();
-  const user = await currentUser(supabase);
+  const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in." };
 
   // Which exam lines exist is decided here from the patient's own ward, never taken from the

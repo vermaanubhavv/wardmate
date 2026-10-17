@@ -236,6 +236,25 @@ export type ConditionAtDischarge = {
   freeText: string | null;
 };
 
+/** The concise Condition-at-Discharge prose the protocol allows the app to assemble from the
+ *  variables the resident has marked satisfactory. Deterministic, never AI. Lives here, not in
+ *  lib/discharge-compile.ts, so the discharge workspace can rebuild it without shipping the
+ *  compiler and every department's templates to the browser. */
+export function buildConditionProse(vars: Record<ConditionVariableKey, ConditionVariableValue>): string {
+  const phrases: string[] = [];
+  for (const v of ALL_CONDITION_VARIABLES) {
+    const value = vars[v.key];
+    if (value === true) phrases.push(v.satisfactory);
+    else if (typeof value === "string" && value.trim()) phrases.push(value.trim());
+  }
+  if (phrases.length === 0) return "";
+  const joined =
+    phrases.length === 1
+      ? phrases[0]
+      : `${phrases.slice(0, -1).join(", ")} and ${phrases[phrases.length - 1]}`;
+  return `Patient is ${joined}.`;
+}
+
 // --- 13. Advice ----------------------------------------------------------------------
 
 export const ADVICE_MODULES = [

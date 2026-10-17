@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
-import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
+import { getUser } from "@/lib/auth";
+import { STT_MODEL, STT_PROVIDER, transcribe } from "@/lib/stt";
 import { getPatientDictationKeyterms } from "@/lib/transcription/patient-context";
 import { extractObservations } from "@/lib/extract";
 import { getWardPack } from "@/lib/ward";
@@ -9,6 +10,7 @@ import { correctTranscript } from "@/lib/glossary";
 import { getTemplateForPatient } from "@/lib/templates";
 import { getPublishedProtocolContext } from "@/lib/protocols";
 import { applyProcedureDone } from "@/lib/apply-procedure-done";
+import { insertObservations } from "@/lib/observations";
 import { readReceipt, saveReceipt } from "@/lib/dictation-receipt";
 import { tagRequest, log } from "@/lib/observability";
 
@@ -22,9 +24,7 @@ import { tagRequest, log } from "@/lib/observability";
 export async function POST(request: Request) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const form = await request.formData();
@@ -60,10 +60,16 @@ export async function POST(request: Request) {
   // id, no name (same rule as app_events).
   tagRequest({ "wardmate.route": "entries/voice", "ward.id": patient.ward_id });
 
-  // Which department this unit is, for the dictation prompt. Started here and awaited only at
-  // the extraction call, so it overlaps the speech-to-text step and costs no extra wall time.
-  // It resolves to null — and so to general surgery — on any database without patch 0060.
+  // The unit's department pack, the checklist and the published protocols: none depends on
+  // what was said, so they are read while the audio is being transcribed rather than after it.
+  // The no-op catches only keep an early return below from leaving a rejection unhandled; the
+  // awaits still throw.
   const packP = getWardPack(patient.ward_id);
+  const templateP = getTemplateForPatient(patient);
+  const protocolsP = getPublishedProtocolContext();
+  packP.catch(() => {});
+  templateP.catch(() => {});
+  protocolsP.catch(() => {});
 
   // 1. Speech to text, then the engine's known mishearings of surgical terms — "lab chole" for
   // lap chole, "PAS" for PAC. Corrected BEFORE extraction, so a template matches the operation
@@ -76,22 +82,18 @@ export async function POST(request: Request) {
 
   let transcript: string;
   let heard: string;
-  let stt;
   try {
-    stt = getTranscriber();
-    const result = await stt.transcribe(audio, MEDICAL_VOCABULARY_HINT, {
-      keyterms: keyterms.length ? keyterms : undefined,
-    });
+    const result = await transcribe(audio, keyterms);
     heard = result.text;
     transcript = (await correctTranscript(heard, await packP)).text;
     log.info("dictation transcribed", {
-      "stt.provider": stt.provider,
+      "stt.provider": STT_PROVIDER,
       "transcript.chars": transcript.length,
       "keyterms.count": keyterms.length,
       corrected: heard !== transcript,
     });
   } catch (e) {
-    log.error("dictation transcription failed", { "stt.provider": stt?.provider ?? "unknown" });
+    log.error("dictation transcription failed", { "stt.provider": STT_PROVIDER });
     return NextResponse.json(
       { error: plainAiError(e) },
       { status: 502 }
@@ -108,9 +110,9 @@ export async function POST(request: Request) {
   // 2. Text to structured observations, with verbatim-quote enforcement inside. The template's
   // expected labels go along so that anything the resident does mention is named consistently
   // and can be matched back — it does not license inventing the ones they skipped.
-  const template = await getTemplateForPatient(patient);
+  const template = await templateP;
   const expectedLabels = template?.items.map((i) => i.label) ?? [];
-  const protocols = await getPublishedProtocolContext();
+  const protocols = await protocolsP;
 
   let extraction;
   try {
@@ -126,8 +128,8 @@ export async function POST(request: Request) {
         source: "voice",
         transcript,
         original_transcript: heard === transcript ? null : heard,
-        stt_provider: stt.provider,
-        stt_model: stt.model,
+        stt_provider: STT_PROVIDER,
+        stt_model: STT_MODEL,
         extraction_error: e instanceof Error ? e.message : String(e),
       })
       .select("id")
@@ -154,8 +156,8 @@ export async function POST(request: Request) {
       transcript,
       // Only when the app changed something. Equal strings would just be noise behind the (i).
       original_transcript: heard === transcript ? null : heard,
-      stt_provider: stt.provider,
-      stt_model: stt.model,
+      stt_provider: STT_PROVIDER,
+      stt_model: STT_MODEL,
       extraction_model: extraction.model,
       extraction_raw: extraction.raw as never,
       matched_protocol_ids: extraction.matchedProtocolIds,
@@ -171,31 +173,18 @@ export async function POST(request: Request) {
   }
 
   // 4. Store the values, each tied to the entry and its quote.
-  const rows = extraction.observations.map((o) => ({
-    entry_id: entry.id,
-    patient_id: patientId,
-    kind: o.kind,
-    label: o.label,
-    value_text: o.value_text,
-    value_num: o.value_num,
-    unit: o.unit,
-    source_quote: o.source_quote,
-    needs_confirmation: o.needs_confirmation,
-    urgency: o.urgency,
-    pac_verdict: o.pac_verdict,
-    task_open: o.task_open ?? null,
-    task_category: o.task_category ?? null,
-    conflict_note: dayConflict(o, patient),
-  }));
-
-  if (rows.length > 0) {
-    const { error: obsError } = await supabase.from("observations").insert(rows);
-    if (obsError) {
-      return NextResponse.json(
-        { entry_id: entry.id, transcript, observations: [], error: obsError.message },
-        { status: 500 }
-      );
-    }
+  const obsError = await insertObservations(
+    supabase,
+    entry.id,
+    patientId,
+    patient,
+    extraction.observations
+  );
+  if (obsError) {
+    return NextResponse.json(
+      { entry_id: entry.id, transcript, observations: [], error: obsError },
+      { status: 500 }
+    );
   }
 
   await applyProcedureDone(supabase, patientId, patient, extraction.observations, await packP);
@@ -215,21 +204,4 @@ export async function POST(request: Request) {
     "extraction.model": extraction.model,
   });
   return NextResponse.json(body);
-}
-
-/**
- * A spoken day number is stored as said, and flagged when it disagrees with the day computed
- * from the surgery date. Neither one silently wins — the resident decides.
- */
-function dayConflict(
-  o: { kind: string; value_num: number | null },
-  patient: { post_op_day: number | null; admission_day: number }
-): string | null {
-  if (o.kind !== "day_number" || o.value_num === null) return null;
-
-  const computed = patient.post_op_day ?? patient.admission_day;
-  const label = patient.post_op_day !== null ? "post-op day" : "day of admission";
-
-  if (Math.round(o.value_num) === computed) return null;
-  return `You said day ${o.value_num}; recorded dates give ${label} ${computed}.`;
 }

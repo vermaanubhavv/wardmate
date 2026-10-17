@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { SpokenPatient } from "@/lib/read-new-patient";
+import { REC_MIME } from "../[id]/card-kit";
 import { openLiveDictation, type LiveDictationSession } from "@/lib/stt/live";
 
 type Status = "idle" | "starting" | "recording" | "working";
@@ -147,16 +148,13 @@ export default function SpeakPatient({
       });
       streamRef.current = stream;
 
-      const mimeType = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/mpeg"].find(
-        (t) => MediaRecorder.isTypeSupported(t)
-      );
-
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      // Safari on iPhone records mp4; Chrome records webm.
+      const recorder = new MediaRecorder(stream, REC_MIME ? { mimeType: REC_MIME } : undefined);
       chunksRef.current = [];
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
-      recorder.onstop = () => void send(recorder.mimeType);
+      recorder.onstop = () => void send(recorder.mimeType || "audio/webm");
 
       // Timeslice: a chunk a second, so a stray interruption does not empty the buffer.
       recorder.start(1000);

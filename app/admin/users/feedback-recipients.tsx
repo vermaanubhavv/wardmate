@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useCopy } from "../../use-copy";
 
 type User = {
   email: string | null;
@@ -33,7 +34,7 @@ function csvValue(value: string) {
  */
 export default function FeedbackRecipients({ users }: { users: User[] }) {
   const [segment, setSegment] = useState<Segment>("used");
-  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+  const [state, copy] = useCopy(2500);
 
   const recipients = useMemo(() => {
     const seen = new Set<string>();
@@ -47,16 +48,6 @@ export default function FeedbackRecipients({ users }: { users: User[] }) {
   }, [segment, users]);
 
   const emails = recipients.map((user) => user.email!.trim().toLowerCase());
-
-  async function copyEmails() {
-    try {
-      await navigator.clipboard.writeText(emails.join(", "));
-      setState("copied");
-    } catch {
-      setState("failed");
-    }
-    window.setTimeout(() => setState("idle"), 2500);
-  }
 
   function downloadCsv() {
     const rows = [
@@ -92,7 +83,7 @@ export default function FeedbackRecipients({ users }: { users: User[] }) {
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={copyEmails}
+          onClick={() => copy(emails.join(", "))}
           disabled={emails.length === 0}
           className="rounded-lg bg-accent px-3 py-2 text-footnote font-medium text-accent-ink disabled:opacity-50 active:opacity-70"
         >

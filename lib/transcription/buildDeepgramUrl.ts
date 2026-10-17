@@ -1,5 +1,3 @@
-import { estimateTotalTokens, dedupeCaseInsensitive } from "./selectMedicalKeyterms";
-
 /**
  * Build the Deepgram `/v1/listen` query for WardMate's dictation.
  *
@@ -13,21 +11,24 @@ import { estimateTotalTokens, dedupeCaseInsensitive } from "./selectMedicalKeyte
 
 export const DEEPGRAM_LISTEN_URL = "https://api.deepgram.com/v1/listen";
 
-/** Deepgram's stated keyterm token limit is ~500; we never send close to this. */
-export const DEEPGRAM_TOKEN_LIMIT = 500;
-/** WardMate's own ceiling, with headroom. Selection stays under this; this is a backstop. */
-export const WARDMATE_TOKEN_CEILING = 400;
 /** Hard cap on the number of keyterms, matching the selector. */
 export const MAX_KEYTERMS = 80;
 
-export type DeepgramListenParams = {
-  /** Defaults to "nova-3-medical". */
-  model?: string;
-  /** Defaults to "en-IN". */
-  language?: string;
-  /** Any other Deepgram flags the caller already uses (smart_format, punctuate, diarize…). */
-  extra?: Record<string, string | number | boolean>;
-};
+/** Case-insensitive dedupe that keeps first-seen casing and trims each entry. */
+export function dedupeCaseInsensitive(terms: readonly string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const t of terms) {
+    const key = t.trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(t.trim());
+  }
+  return out;
+}
+
+/** Any other Deepgram flags the caller uses (smart_format, interim_results, diarize…). */
+type DeepgramFlags = Record<string, string | number | boolean>;
 
 /**
  * Returns the `URLSearchParams` for a Deepgram listen request. Keyterms are appended, never
@@ -35,13 +36,13 @@ export type DeepgramListenParams = {
  */
 export function buildDeepgramParams(
   keyterms: readonly string[],
-  params: DeepgramListenParams = {}
+  extra: DeepgramFlags = {}
 ): URLSearchParams {
   const search = new URLSearchParams();
-  search.set("model", params.model ?? "nova-3-medical");
-  search.set("language", params.language ?? "en-IN");
+  search.set("model", "nova-3-medical");
+  search.set("language", "en-IN");
 
-  for (const [key, value] of Object.entries(params.extra ?? {})) {
+  for (const [key, value] of Object.entries(extra)) {
     search.set(key, String(value));
   }
   // Patient audio must never join Deepgram's Model Improvement Program. Set after `extra` so
@@ -58,26 +59,6 @@ export function buildDeepgramParams(
 }
 
 /** The full request URL. */
-export function buildDeepgramUrl(
-  keyterms: readonly string[],
-  params: DeepgramListenParams = {}
-): string {
-  return `${DEEPGRAM_LISTEN_URL}?${buildDeepgramParams(keyterms, params).toString()}`;
-}
-
-/** Diagnostics for the dev debug view — how big the keyterm payload is. */
-export function keytermBudget(keyterms: readonly string[]): {
-  count: number;
-  estimatedTokens: number;
-  withinWardmateCeiling: boolean;
-  withinDeepgramLimit: boolean;
-} {
-  const safe = dedupeCaseInsensitive(keyterms).slice(0, MAX_KEYTERMS);
-  const estimatedTokens = estimateTotalTokens(safe);
-  return {
-    count: safe.length,
-    estimatedTokens,
-    withinWardmateCeiling: estimatedTokens <= WARDMATE_TOKEN_CEILING,
-    withinDeepgramLimit: estimatedTokens <= DEEPGRAM_TOKEN_LIMIT,
-  };
+export function buildDeepgramUrl(keyterms: readonly string[], extra: DeepgramFlags = {}): string {
+  return `${DEEPGRAM_LISTEN_URL}?${buildDeepgramParams(keyterms, extra).toString()}`;
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { correctTranscript } from "@/lib/glossary";
 import { extractObservations } from "@/lib/extract";
 import { getWardPack } from "@/lib/ward";
@@ -7,6 +8,7 @@ import { getTemplateForPatient } from "@/lib/templates";
 import { resolveProcedure, listTemplateChoices } from "@/lib/templates";
 import type { PaperKind } from "@/lib/read-paper";
 import type { ReadLabValue } from "@/lib/read-lab-photo";
+import { labRow } from "@/lib/observations";
 
 /**
  * Store the pages the resident has just reviewed.
@@ -54,9 +56,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { id: patientId } = await params;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const { data: patient } = await supabase
@@ -160,16 +160,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         entry_id: entry.id,
         patient_id: patientId,
         kind: "lab" as const,
-        label: v.label,
-        value_text: v.value_text,
-        value_num: v.value_num,
-        unit: v.unit,
-        source_quote: v.source_quote,
-        needs_confirmation: true,
-        ref_low: v.ref_low,
-        ref_high: v.ref_high,
-        ref_text: v.ref_text,
-        conflict_note: v.uncertain ? "Printing was unclear — check against the photo." : null,
+        ...labRow(v),
       }));
 
       const { error: obsError } = await supabase.from("observations").insert(rows);

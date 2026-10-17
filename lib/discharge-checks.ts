@@ -1,7 +1,7 @@
 import type { DischargeContext } from "@/lib/discharge-data";
 import type { DischargeDraft, DischargeSectionId } from "@/lib/discharge-entities";
 import { ALL_CONDITION_VARIABLES } from "@/lib/discharge-entities";
-import { dischargeProfileFor } from "@/lib/specialty/discharge";
+import { dischargeProfileFor } from "@/lib/specialty/discharge-profile";
 import { dateAnchors, structuredDateQuestions } from "@/lib/date-check";
 
 /**

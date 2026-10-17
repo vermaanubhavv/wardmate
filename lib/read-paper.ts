@@ -1,5 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { AI_MODEL } from "@/lib/model";
+import type Anthropic from "@anthropic-ai/sdk";
+import { AI_MODEL, anthropic } from "@/lib/model";
 import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
 import { forWard } from "@/lib/specialty/prompt-words";
 
@@ -85,11 +85,8 @@ export async function readPaper(
   mediaType: "image/jpeg" | "image/png" | "image/webp",
   pack: SpecialtyPack = generalSurgeryPack
 ): Promise<ReadPaperResult> {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const model = AI_MODEL;
-
-  const response = await client.messages.create({
-    model,
+  const response = await anthropic().messages.create({
+    model: AI_MODEL,
     max_tokens: 4000,
     // Marked for caching, but INERT ON SONNET 5: this prompt is ~620 tokens and Sonnet 5's
     // minimum cacheable prefix is 1024 (Opus 5's is 512, where it did cache — measured at
@@ -151,11 +148,10 @@ export async function readPaper(
       /^\d{4}-\d{2}-\d{2}$/.test(parsed.surgeryDate.trim())
         ? parsed.surgeryDate.trim()
         : null,
-    model,
+    model: AI_MODEL,
   };
 }
 
-/** The model is asked for bare JSON; a fenced block is tolerated rather than failing the page. */
 function parseJson(text: string): Record<string, unknown> {
   const body = text.startsWith("```")
     ? text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "")

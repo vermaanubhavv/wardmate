@@ -2,7 +2,7 @@
  * Scores the /todo "By type" bucket (lib/jev-observations.ts, `category_i`) on the synthetic
  * plans in lib/evals/task-category-cases.ts, for the live wording and the candidates below.
  *
- *   node --env-file=.env.local --import ./scripts/alias-register.mjs scripts/eval-task-category.ts [--held-out]
+ *   node --env-file=.env.local node_modules/.bin/vite-node --config vitest.config.ts scripts/eval-task-category.ts [--held-out]
  *
  * Needs TYPESAFE_API_KEY. One Jev request per wording (all cases batched).
  *

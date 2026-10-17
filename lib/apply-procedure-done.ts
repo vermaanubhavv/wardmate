@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import type { Supa } from "@/lib/supabase/server";
 import { istDate } from "@/lib/urgency";
 import { resolveProcedure, listTemplateChoices } from "@/lib/templates";
 import type { ExtractedObservation } from "@/lib/extract";
@@ -31,7 +31,7 @@ export type PatientForProcedureDone = {
  * operation, and must never turn the patient post-op — no PAC section, no "Post Op Day".
  */
 export async function applyProcedureDone(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: Supa,
   patientId: string,
   patient: PatientForProcedureDone,
   observations: ExtractedObservation[],

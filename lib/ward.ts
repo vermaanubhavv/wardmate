@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 import type { WardPatient } from "@/lib/patients";
@@ -55,7 +56,12 @@ export async function getCurrentWard() {
  * error this returns null, and null means general surgery — the app behaves exactly as it did
  * before specialty packs existed.
  */
-export async function getWardSpecialtyStored(wardId: string): Promise<string | null> {
+//
+// React-cached for the request only: the patient page asks for it, then the scoring sync asks
+// again for the same ward — one read serves both. Never shared across requests.
+export const getWardSpecialtyStored = cache(async function getWardSpecialtyStored(
+  wardId: string
+): Promise<string | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("wards")
@@ -64,7 +70,7 @@ export async function getWardSpecialtyStored(wardId: string): Promise<string | n
     .maybeSingle();
   if (error) return null;
   return (data as { specialty?: string | null } | null)?.specialty ?? null;
-}
+});
 
 /** The unit's specialty pack — general surgery when there is no ward or nothing is stored. */
 export async function getWardPack(wardId: string | null | undefined): Promise<SpecialtyPack> {

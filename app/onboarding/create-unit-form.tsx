@@ -6,13 +6,9 @@ import type { SpecialtyKey } from "@/lib/specialty";
 
 const initialState: CreateWardState = { error: null };
 
-/** autoFocus only where this form is the whole point of the screen — on the Unit page it sits
- *  well down a long page, and focusing it there would scroll the page out from under a thumb. */
 export default function CreateUnitForm({
-  autoFocus = false,
   specialties = [],
 }: {
-  autoFocus?: boolean;
   /**
    * The departments this build offers. EMPTY unless the SPECIALTY_PACKS flag is on, in which
    * case the picker is not rendered at all and every unit is created as general surgery — the
@@ -48,7 +44,6 @@ export default function CreateUnitForm({
           name="name"
           required
           maxLength={60}
-          autoFocus={autoFocus}
           autoCapitalize="words"
           placeholder="e.g. Unit Alpha"
           className="h-12 w-full rounded-[10px] border border-line bg-card px-3 text-body outline-none focus:border-accent"

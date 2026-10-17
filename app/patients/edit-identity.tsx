@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { updatePatientIdentity, type EditPatientState } from "./actions";
 import DiagnosisCombobox from "./diagnosis-combobox";
+import { PenIcon } from "../icons";
 import {
   LOCATION_CHOICES,
   managementChoicesFor,
@@ -145,7 +146,7 @@ export default function EditIdentity({
           }}
           className="shrink-0 rounded-lg p-2 text-muted active:bg-chip"
         >
-          <PenIcon />
+          <PenIcon className="h-[18px] w-[18px]" />
         </button>
       )}
 
@@ -442,21 +443,3 @@ export default function EditIdentity({
   );
 }
 
-function PenIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-    </svg>
-  );
-}

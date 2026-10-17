@@ -1,4 +1,4 @@
-import { validateReference, type ValidationResult } from "@/lib/history-check/schema";
+import { validateContentHeader, type ValidationResult } from "@/lib/history-check/schema";
 import { CALCULATORS } from "@/lib/fluids/calc";
 import { FLUID_GROUPS, type FluidBlock, type FluidSection, type FluidTopic } from "@/lib/fluids/types";
 
@@ -16,16 +16,11 @@ export function validateFluidTopic(topic: unknown): ValidationResult {
   const add: Add = (path, message) => issues.push({ path, message });
   if (typeof topic !== "object" || topic === null) return { ok: false, issues: [{ path: "$", message: "topic must be an object" }] };
   const t = topic as Partial<FluidTopic>;
-  if (!t.id || !ID.test(t.id)) add("$.id", "required, lowercase snake_case");
-  if (!t.version || !/^\d+\.\d+\.\d+$/.test(t.version)) add("$.version", "semver required");
+  validateContentHeader(t, add, "topic");
   if (!t.title) add("$.title", "required");
   if (!t.summary) add("$.summary", "required");
   if (!t.setting) add("$.setting", "required");
   if (!t.group || !(FLUID_GROUPS as readonly string[]).includes(t.group)) add("$.group", `must be one of ${FLUID_GROUPS.join(", ")}`);
-  if (t.reviewStatus !== "pending_clinician_review" && t.reviewStatus !== "reviewed") add("$.reviewStatus", "must be pending_clinician_review or reviewed");
-  if (t.reviewStatus === "reviewed" && !t.reviewedBy) add("$.reviewedBy", "a reviewed topic must name its reviewer");
-  if (!Array.isArray(t.references) || t.references.length === 0) add("$.references", "at least one reference required");
-  else t.references.forEach((r, i) => validateReference(r, `$.references[${i}]`, add));
   if (!t.source || !Array.isArray(t.source.chapters) || t.source.chapters.length === 0 || !t.source.pages) add("$.source", "chapters and pages required");
   else if (t.source.pageKind !== undefined && t.source.pageKind !== "pdf" && t.source.pageKind !== "book") add("$.source.pageKind", "must be pdf or book");
   if (!Array.isArray(t.sections) || t.sections.length === 0) {

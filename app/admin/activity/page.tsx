@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { getActivityFeed, getUsers, getWardActivity, type FeedRow } from "@/lib/admin";
 import { screenLabel } from "@/lib/admin-insights";
-import { Empty, ErrorNote, Section, ago } from "../ui";
-
-export const dynamic = "force-dynamic";
+import { Chip, Empty, ErrorNote, Section, ago } from "../ui";
 
 /** The filter chips, in the order a day on the ward happens. `view` is last and off by default. */
 const KINDS: { key: string; label: string; tone: string }[] = [
@@ -172,13 +170,3 @@ export default async function AdminActivityPage({ searchParams }: { searchParams
   );
 }
 
-function Chip({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className={`rounded-full px-3 py-1 text-footnote ${active ? "bg-accent text-white" : "bg-chip text-foreground/70 active:opacity-60"}`}
-    >
-      {children}
-    </Link>
-  );
-}

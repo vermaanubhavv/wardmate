@@ -6,10 +6,10 @@ import { useId, useMemo, useRef, useState } from "react";
 
 /**
  * A field with a short list of common values behind it — pick one, or keep typing anything
- * else. Same combobox behaviour as app/patients/diagnosis-combobox.tsx (a plain input with its
- * own dropdown; a native <datalist> shows nothing on an empty field and orders nothing), just
- * generalised to take its option list rather than the fixed diagnosis lexicon. What is typed is
- * always kept exactly as written — the list only offers.
+ * else. A plain input with its own dropdown: a native <datalist> shows nothing on an empty field
+ * and orders nothing. What is typed is always kept exactly as written — the list only offers.
+ * Also the body of app/patients/diagnosis-combobox.tsx, which is why the label, input class,
+ * hidden form field and empty-field heading are optional.
  */
 export function SuggestField({
   label,
@@ -17,13 +17,22 @@ export function SuggestField({
   onChange,
   options,
   placeholder,
+  className = "h-11 w-full rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent",
+  name,
+  heading,
 }: {
-  label: string;
+  label?: string;
   value: string | null;
   onChange: (v: string) => void;
   /** Shown before typing (all of them, short lists) or as the top matches once typing starts. */
   options: string[];
   placeholder?: string;
+  /** The input's own classes. */
+  className?: string;
+  /** Submits the value with a surrounding form. */
+  name?: string;
+  /** A caption over the list while the field is still empty, e.g. "Common". */
+  heading?: string;
 }) {
   const text = value ?? "";
   const [open, setOpen] = useState(false);
@@ -48,10 +57,9 @@ export function SuggestField({
     if (blurTimer.current) clearTimeout(blurTimer.current);
   };
 
-  return (
-    <label className="flex flex-col gap-1">
-      <span className="text-footnote text-muted">{label}</span>
+  const field = (
       <div className="relative">
+        {name && <input type="hidden" name={name} value={text} />}
         <input
           type="text"
           role="combobox"
@@ -61,7 +69,7 @@ export function SuggestField({
           autoComplete="off"
           value={text}
           placeholder={placeholder}
-          className="h-11 w-full rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
+          className={className}
           onChange={(e) => {
             onChange(e.target.value);
             setOpen(true);
@@ -89,6 +97,11 @@ export function SuggestField({
         />
         {show && (
           <ul id={listId} role="listbox" className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-[10px] border border-line bg-card py-1 shadow-lg">
+            {heading && !text.trim() && (
+              <li className="px-3 pb-1 pt-0.5 text-caption2 font-medium uppercase tracking-[0.05em] text-muted">
+                {heading}
+              </li>
+            )}
             {matches.map((o, i) => (
               <li key={o}>
                 <button
@@ -107,6 +120,12 @@ export function SuggestField({
           </ul>
         )}
       </div>
+  );
+  if (!label) return field;
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-footnote text-muted">{label}</span>
+      {field}
     </label>
   );
 }

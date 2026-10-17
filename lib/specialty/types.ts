@@ -1,4 +1,3 @@
-import type { DischargeTemplate } from "@/lib/discharge-templates";
 import type { FormatKind } from "@/lib/formats";
 import type { Specialty as LexiconSpecialty } from "@/lib/transcription/lexicon/types";
 
@@ -79,13 +78,6 @@ export type SpecialtyPack = {
   /** One line under the picker option, for a resident choosing at unit setup. */
   blurb: string;
 
-  terminology: {
-    /** The short name of the day counter — "POD", "C2D3". Used in help text, not on cards. */
-    dayLabel: string;
-    /** What the unit calls the thing a patient is admitted under. */
-    admissionNoun: string;
-  };
-
   /**
    * How an admission under this unit is referred to when framing an AI prompt — e.g.
    * "a general-surgery admission", "a medical oncology admission". Used by the case-history AI
@@ -108,17 +100,9 @@ export type SpecialtyPack = {
    */
   extractGuidance: string;
 
-  /**
-   * Which clock the unit's auto-triggered checklist items hang off. Surgery counts from the
-   * operation; oncology counts from the cycle, falling back to admission.
-   * See lib/checklist-triggers.ts.
-   */
-  checklistAnchor: "post_op" | "cycle" | "admission";
-
-  /** The discharge templates this unit is offered, most specific first. */
-  dischargeTemplates: DischargeTemplate[];
-  /** The fallback when the typed diagnosis matches none of them. */
-  genericDischargeTemplate: DischargeTemplate;
+  // The discharge templates are NOT on the pack: they are ~600 KB of text and every client
+  // screen that reads a pack (day labels, intake fields) would ship them. They live in
+  // lib/specialty/discharge.ts, keyed by `key` — see dischargeTemplatesFor().
 
   /**
    * The scoring pathways offered to this unit. Empty means "offer nothing" — an empty list is
@@ -184,3 +168,17 @@ export type SpecialtyPack = {
    */
   examIds: string[];
 };
+
+/** Surgical clock: operated patients count from the operation, everyone else from admission —
+ *  and the label always says which. */
+export function surgicalDayCount(p: DayCountPatient): DayCount {
+  if (p.post_op_day !== null) {
+    return { clock: "post_op", n: p.post_op_day, text: `POD ${p.post_op_day}` };
+  }
+  return admissionDayCount(p);
+}
+
+/** Hospital day, counted from admission. */
+export function admissionDayCount(p: DayCountPatient): DayCount {
+  return { clock: "admission", n: p.admission_day, text: `Day ${p.admission_day}` };
+}

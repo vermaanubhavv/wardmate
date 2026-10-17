@@ -1,32 +1,10 @@
 import { HISTORY_TREES } from "@/content/history-trees";
-import { validateHistoryTree } from "@/lib/history-check/schema";
+import { validateHistoryTree, validatedOnce } from "@/lib/history-check/schema";
 import type { HistoryTree } from "@/lib/history-check/types";
 
-/**
- * The tree registry, validated on first use. A content file that fails validation throws
- * here, which surfaces in the test suite and at build — never as a half-working card on a
- * ward.
- */
-let validated: readonly HistoryTree[] | null = null;
-
-function all(): readonly HistoryTree[] {
-  if (validated) return validated;
-  for (const tree of HISTORY_TREES) {
-    const res = validateHistoryTree(tree);
-    if (!res.ok) {
-      const detail = res.issues.map((i) => `${i.path}: ${i.message}`).join("; ");
-      throw new Error(`History tree ${tree.id}@${tree.version} is invalid — ${detail}`);
-    }
-  }
-  const seen = new Set<string>();
-  for (const t of HISTORY_TREES) {
-    const key = `${t.id}@${t.version}`;
-    if (seen.has(key)) throw new Error(`History tree ${key} is registered twice`);
-    seen.add(key);
-  }
-  validated = HISTORY_TREES;
-  return validated;
-}
+/** The tree registry, validated on first use. Old versions stay registered so a stored run
+ *  still renders against the tree it was answered on. */
+const all = validatedOnce(HISTORY_TREES, validateHistoryTree, "History tree");
 
 function semverDesc(a: string, b: string): number {
   const pa = a.split(".").map(Number);
@@ -54,8 +32,8 @@ export function getTree(id: string, version?: string | null): HistoryTree | null
 /**
  * Which trees the recorded chief complaints point at. Plain word matching on what the
  * resident already dictated — no model call, no inference. A trigger that only appears
- * immediately after a negation ("no fever") does not count. Returns the newest version of
- * each matching tree, in registry order.
+ * immediately after a negation ("no fever") does not count. Returns each matching tree, in
+ * registry order.
  */
 export function suggestTrees(chiefComplaintTexts: string[]): HistoryTree[] {
   const text = chiefComplaintTexts.join(" \n ").toLowerCase();

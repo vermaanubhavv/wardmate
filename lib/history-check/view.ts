@@ -3,7 +3,6 @@ import type { Evidence, HistorySource, SlotResult } from "@/lib/history-check/so
 import { buildGapList, type CheckMode, type GapList } from "@/lib/history-check/gaps";
 import { renderHistoryText, type BackgroundSection } from "@/lib/history-check/render";
 import { applyResolutions, type HistoryCheckRun, type Resolutions } from "@/lib/history-check/store";
-import { assessSafety, type SafetyAssessment } from "@/lib/history-check/safety";
 
 /**
  * Everything the card needs, computed on the server from a stored run so the client bundle
@@ -87,9 +86,6 @@ export type RunView = {
   /** The same differentials with the positive findings that raised each one (wireframe XXI).
    *  Labels of findings already recorded — the card shows them as supporting findings. */
   leadingDetail: LeadingView[];
-  /** Red-flag coverage for this complaint. Null when the run has no usable result, so the
-   *  card shows nothing rather than a reassuring zero. Not a validated clinical score. */
-  safety: SafetyAssessment | null;
 };
 
 const KIND_LABEL: Record<HistorySource["kind"], string> = { voice: "Voice", photo: "Photo", manual: "Typed" };
@@ -123,7 +119,7 @@ export function buildRunView(
   };
   const empty: ModeView = { bands: [], text: "", unasked: tree.slots.length };
   if (run.status !== "ok" || !run.result) {
-    return { ...base, wrongPatient: null, wrongPatientDismissed: false, conflicts: [], answered: [], answeredCount: 0, ward: empty, academic: empty, rejected: 0, leading: [], leadingDetail: [], safety: null };
+    return { ...base, wrongPatient: null, wrongPatientDismissed: false, conflicts: [], answered: [], answeredCount: 0, ward: empty, academic: empty, rejected: 0, leading: [], leadingDetail: [] };
   }
 
   const resolutions: Resolutions = run.resolutions ?? {};
@@ -194,9 +190,6 @@ export function buildRunView(
     name: l.name,
     supportedBy: l.supportedBy.map((id) => byId.get(id)?.label ?? id),
   }));
-  // Scored against forGaps, so a slot still in conflict counts as unasked rather than as a
-  // negative: an unresolved contradiction must never read as reassurance.
-  const safety = assessSafety(tree, forGaps);
   const wp = resolutions.wrong_patient;
 
   return {
@@ -211,6 +204,5 @@ export function buildRunView(
     rejected: run.result.rejections.length,
     leading,
     leadingDetail,
-    safety,
   };
 }

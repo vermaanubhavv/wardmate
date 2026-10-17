@@ -2,8 +2,6 @@ import { getUsers } from "@/lib/admin";
 import { Cell, Empty, ErrorNote, Row, Section, Table, ago } from "../ui";
 import FeedbackRecipients from "./feedback-recipients";
 
-export const dynamic = "force-dynamic";
-
 export default async function AdminUsersPage() {
   const { rows, error } = await getUsers();
   if (error) return <ErrorNote message={error} />;

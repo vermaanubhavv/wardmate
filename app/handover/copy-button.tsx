@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import BottomBar from "../bottom-bar";
+import { useCopy } from "../use-copy";
 
 /**
  * The generated update, editable before it goes anywhere — the original ask was for "an
@@ -16,7 +17,7 @@ import BottomBar from "../bottom-bar";
  */
 export default function CopyHandoverButton({ text, draftKey }: { text: string; draftKey: string }) {
   const [value, setValue] = useState(text);
-  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+  const [state, copy] = useCopy();
   const textRef = useRef<HTMLTextAreaElement>(null);
 
   // Restored after mount: sessionStorage doesn't exist on the server render.
@@ -35,16 +36,6 @@ export default function CopyHandoverButton({ text, draftKey }: { text: string; d
       if (next === text) sessionStorage.removeItem(draftKey);
       else sessionStorage.setItem(draftKey, next);
     } catch {}
-  }
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(value);
-      setState("copied");
-    } catch {
-      setState("failed");
-    }
-    setTimeout(() => setState("idle"), 2000);
   }
 
   return (
@@ -85,7 +76,7 @@ export default function CopyHandoverButton({ text, draftKey }: { text: string; d
           </button>
           <button
             type="button"
-            onClick={copy}
+            onClick={() => copy(value)}
             className="flex-1 rounded-xl bg-accent px-4 py-4 text-center text-body font-semibold text-accent-ink active:opacity-70"
           >
             {state === "copied" ? "Copied" : "Copy for WhatsApp"}

@@ -6,7 +6,7 @@
  */
 
 import "server-only";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, type Supa } from "@/lib/supabase/server";
 import { isScoringEngineEnabled, scoringEngineGloballyEnabled } from "./flag";
 import { getDefinition } from "./definitions/registry";
 import { actionForPatient } from "./tasks";
@@ -15,7 +15,7 @@ import type { CardDefinition, CardResult } from "./types";
 const OPEN = ["suggested", "accepted"];
 const CARD_TYPES = new Set(["calculator", "structured_classification"]);
 
-async function activeInstances(supabase: Awaited<ReturnType<typeof createClient>>, patientId: string) {
+async function activeInstances(supabase: Supa, patientId: string) {
   const { data } = await supabase
     .from("pathway_instances")
     .select("id, pathway_id, pathway_version")
@@ -168,7 +168,7 @@ export type ScoringTask = {
 /** instance_id → the definition's own title, one query for however many distinct pathway
  *  instances the caller's tasks reference. */
 async function pathwayTitlesByInstance(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: Supa,
   instanceIds: string[]
 ): Promise<Map<string, string>> {
   const ids = [...new Set(instanceIds)];
@@ -224,14 +224,10 @@ export async function getWardScoringTasks(wardId: string): Promise<Map<string, S
     : { data: [] };
   const factsById = new Map((pts ?? []).map((p) => [p.id, { sex: p.sex ?? null, ageYears: p.age_years ?? null }]));
 
-  const out = new Map<string, ScoringTask[]>();
-  for (const row of data ?? []) {
-    const t = mapTask(row, titles, factsById.get(row.patient_id) ?? { sex: null, ageYears: null });
-    const list = out.get(t.patientId) ?? [];
-    list.push(t);
-    out.set(t.patientId, list);
-  }
-  return out;
+  const tasks = (data ?? []).map((row) =>
+    mapTask(row, titles, factsById.get(row.patient_id) ?? { sex: null, ageYears: null })
+  );
+  return Map.groupBy(tasks, (t) => t.patientId);
 }
 
 function mapTask(

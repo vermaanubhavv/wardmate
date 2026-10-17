@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { plainAiError } from "@/lib/ai-error";
 import { routeToSections, type DictationSection } from "@/lib/dictation-routing";
 import { getWardPack } from "@/lib/ward";
@@ -13,9 +14,7 @@ import { getWardPack } from "@/lib/ward";
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: patientId } = await params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   let body: { text?: unknown; sections?: unknown };

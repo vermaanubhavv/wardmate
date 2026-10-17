@@ -2,7 +2,7 @@
  * Scores the amber check (lib/jev-observations.ts, `supported_i`) on the synthetic rows in
  * lib/evals/supported-cases.ts, for the live wording and the candidates below.
  *
- *   node --env-file=.env.local --import ./scripts/alias-register.mjs scripts/eval-supported.ts [--held-out | --lines]
+ *   node --env-file=.env.local node_modules/.bin/vite-node --config vitest.config.ts scripts/eval-supported.ts [--held-out | --lines]
  *
  * Needs TYPESAFE_API_KEY. One Jev request per row per wording.
  *

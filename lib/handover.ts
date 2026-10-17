@@ -147,18 +147,26 @@ export async function getWardHandover(ward: { id: string; name: string }): Promi
     .sort((a, b) => compareBeds(a.bed, b.bed));
   if (rows.length === 0) return { ward, pack, patients: [], generated_at };
 
-  // Every observation on the ward in one query, newest first, so grouping by patient below
-  // preserves the newest-first order derivePatientState relies on to pick the latest value.
-  const { data: entries } = await supabase
-    .from("entries")
-    .select(
-      "patient_id, observations(id, kind, label, value_text, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at)"
-    )
-    .in(
-      "patient_id",
-      rows.map((p) => p.id)
-    )
-    .order("recorded_at", { ascending: false });
+  // The entries, the operation names and each patient's checklist need only the rows, so they
+  // go out together rather than one after another — and the checklists not one patient at a
+  // time: patients on the same operation share one read (getTemplateForPatient is cached per
+  // request on family/variant/phase).
+  const [{ data: entries }, procedures, templates] = await Promise.all([
+    // Every observation on the ward in one query, newest first, so grouping by patient below
+    // preserves the newest-first order derivePatientState relies on to pick the latest value.
+    supabase
+      .from("entries")
+      .select(
+        "patient_id, observations(id, kind, label, value_text, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at)"
+      )
+      .in(
+        "patient_id",
+        rows.map((p) => p.id)
+      )
+      .order("recorded_at", { ascending: false }),
+    getProcedureLabels(pack.key),
+    Promise.all(rows.map((p) => getTemplateForPatient(p))),
+  ]);
 
   const byPatient = new Map<string, Observation[]>();
   for (const entry of (entries ?? []) as unknown as {
@@ -170,12 +178,11 @@ export async function getWardHandover(ward: { id: string; name: string }): Promi
     byPatient.set(entry.patient_id, list);
   }
 
-  const procedures = await getProcedureLabels(pack.key);
   const todayKey = istDate(generated_at);
 
   const out: HandoverPatient[] = [];
-  for (const p of rows) {
-    const template = await getTemplateForPatient(p);
+  for (const [i, p] of rows.entries()) {
+    const template = templates[i];
     const rawObs = byPatient.get(p.id) ?? [];
     const state = derivePatientState(
       rawObs,

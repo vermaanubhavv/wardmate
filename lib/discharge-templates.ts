@@ -1,4 +1,5 @@
 import type { AdviceItem, MedicationStatus, Procedure } from "@/lib/discharge-entities";
+import { adv, proc, COMMON_MEDS } from "@/lib/discharge-template-parts";
 
 /**
  * General-surgery discharge TEMPLATES — one per major diagnosis, reviewed and signed off by the
@@ -79,15 +80,11 @@ export type DischargeTemplate = {
   progressNote: string;
 };
 
-const adv = (items: { module: string; text: string }[]): AdviceItem[] =>
-  items.map((it, i) => ({ id: `adv-${i}`, module: it.module, text: it.text }));
 
 // --- reusable pieces -------------------------------------------------------------------
 
 const M = {
-  paracetamol: { generic: "Paracetamol", strength: "650 mg", route: "PO", frequency: "TDS", duration: "5 days", status: "new" } as TemplateMedication,
-  paracetamolSos: { generic: "Paracetamol", strength: "650 mg", route: "PO", frequency: "SOS for pain", status: "prn" } as TemplateMedication,
-  pantoprazole: { generic: "Pantoprazole", strength: "40 mg", route: "PO", frequency: "OD before breakfast", duration: "5 days", status: "new" } as TemplateMedication,
+  ...COMMON_MEDS,
   diclofenac: { generic: "Diclofenac", strength: "50 mg", route: "PO", frequency: "SOS for pain", duration: "5 days", status: "prn" } as TemplateMedication,
   ondansetron: { generic: "Ondansetron", strength: "4 mg", route: "PO", frequency: "SOS for vomiting", status: "prn" } as TemplateMedication,
   lactulose: { generic: "Lactulose", dose: "15 ml", route: "PO", frequency: "HS", duration: "7 days", indication: "keep stools soft, avoid straining", status: "new" } as TemplateMedication,
@@ -146,14 +143,13 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted for excision of a [right / left] breast lump — [fibroadenoma on triple assessment: clinical, ultrasound (BI-RADS __) and FNAC / core biopsy].",
       primaryDiagnosis: "[ Right / left ] breast [ fibroadenoma / benign phyllodes tumour / fibroadenosis / duct ectasia ] — [ size; quadrant ]",
-      procedure: {
+      procedure: proc({
         name: "Excision of [ right / left ] breast lump [ / microdochectomy / total duct excision ]",
         anaesthesia: "[ General / local ] anaesthesia",
         findings: "[ size, quadrant, encapsulated / well-circumscribed, cut surface ]",
         drains: "Nil",
-        complications: "Nil",
         outcome: "Procedure completed successfully; specimen sent for histopathology.",
-      },
+      }),
       clinicalCourse:
         "Underwent excision of the [right / left] breast lump through a [circumareolar / inframammary / radial] incision under [general / local] anaesthesia on [date]. Recovery was uneventful, with no haematoma. The patient is comfortable with a clean, dry wound at discharge.",
       medications: [M.paracetamol, M.pantoprazole, M.diclofenac],
@@ -189,14 +185,13 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted for [modified radical mastectomy / breast conservation surgery with axillary clearance] for carcinoma of the [right / left] breast.",
       primaryDiagnosis: "Carcinoma [right / left] breast — [cT_N_M_, stage; histology; ER / PR / HER2; grade]",
-      procedure: {
+      procedure: proc({
         name: "[ Modified radical mastectomy / breast conservation surgery ] with [ sentinel node biopsy / axillary lymph node dissection ]",
         anaesthesia: "General anaesthesia",
         findings: "[ tumour site and size; skin or chest-wall involvement; axillary nodes; number of nodes retrieved; margins ]",
         drains: "[ axillary / pectoral suction drain(s) / nil (BCS with SLNB) ]",
-        complications: "Nil",
         outcome: "Procedure completed successfully; specimen sent for histopathology.",
-      },
+      }),
       clinicalCourse:
         "Underwent [procedure] on [date]. The postoperative recovery was uneventful. Flaps remained healthy and drain outputs declined steadily. Shoulder and arm exercises were commenced on the ward. The patient is comfortable, afebrile and ambulant at discharge [with the axillary drain in situ, output __ ml / 24 h].",
       medications: [M.paracetamol, M.pantoprazole, M.diclofenac],
@@ -241,14 +236,13 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted for [procedure] for carcinoma of the [caecum / ascending / transverse / descending / sigmoid colon / rectum] [with obstruction].",
       primaryDiagnosis: "Carcinoma [site] colon / rectum — [cT_N_M_, stage; histology; MMR / MSI status]",
-      procedure: {
+      procedure: proc({
         name: "[ Hemicolectomy / anterior resection / abdominoperineal resection / Hartmann's ] [ + diversion stoma ]",
         anaesthesia: "General anaesthesia",
         findings: "[ tumour site and size; serosal or adjacent-organ involvement; liver or peritoneal deposits; resection performed; anastomosis (hand-sewn / stapled) or stoma type and site; lymphadenectomy ]",
         drains: "[ pelvic drain ]",
-        complications: "Nil",
         outcome: "Procedure completed successfully; [R0 / R1]; specimen sent for histopathology.",
-      },
+      }),
       clinicalCourse:
         "Underwent [procedure] on [date], on an enhanced-recovery pathway with early mobilisation and graded oral intake. Bowel function returned on POD [__]; [the stoma began functioning on POD __]. Drains were removed as output declined. The patient is afebrile, tolerating a normal diet and [independently managing the stoma] at discharge.",
       medications: [
@@ -307,14 +301,13 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [epigastric pain, vomiting, weight loss and gastric outlet obstruction] due to carcinoma of the stomach, for [procedure].",
       primaryDiagnosis: "Carcinoma stomach — [antrum / body / gastro-oesophageal junction; cT_N_M_, stage; Lauren / Siewert type; HER2]",
-      procedure: {
+      procedure: proc({
         name: "[ Distal / subtotal / total gastrectomy with D2 lymphadenectomy / palliative gastrojejunostomy + feeding jejunostomy ]",
         anaesthesia: "General anaesthesia",
         findings: "[ tumour site and size; serosal involvement; nodal disease; liver or peritoneal deposits; resection and reconstruction (Billroth II / Roux-en-Y); feeding jejunostomy; drains ]",
         drains: "[ as placed ]",
-        complications: "Nil",
         outcome: "Procedure completed successfully; specimen sent for histopathology.",
-      },
+      }),
       clinicalCourse:
         "Optimised before surgery with correction of dehydration and electrolytes, nutritional support [via a feeding jejunostomy / parenteral nutrition] and stomach washouts. [Procedure] was performed on [date]. Postoperatively [a contrast study on POD __ showed no leak], and oral intake was cautiously escalated. Drains were removed as output declined. The patient is afebrile, tolerating small frequent feeds [and feeding-jejunostomy feeds] at discharge.",
       medications: [
@@ -376,14 +369,13 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         "Patient was admitted for [hemithyroidectomy / total thyroidectomy] for [multinodular goitre / solitary thyroid nodule (FNAC Bethesda __) / Graves' disease / carcinoma thyroid] [with pressure symptoms].",
       primaryDiagnosis:
         "[ Multinodular goitre / solitary thyroid nodule / Graves' disease / papillary / follicular carcinoma thyroid ] — [ euthyroid / toxic; Bethesda category; retrosternal extension ]",
-      procedure: {
+      procedure: proc({
         name: "[ Right / left hemithyroidectomy / near-total / total thyroidectomy ] [ + central compartment neck dissection ]",
         anaesthesia: "General anaesthesia",
         findings: "[ gland size and consistency; nodules; retrosternal extension; both recurrent laryngeal nerves identified and preserved; parathyroids identified and preserved / autotransplanted; nodes ]",
         drains: "[ nil / suction drain ]",
-        complications: "Nil",
         outcome: "Procedure completed successfully; specimen sent for histopathology.",
-      },
+      }),
       clinicalCourse:
         "Underwent [procedure] on [date]. Postoperatively the voice was [normal / hoarse], there was no neck swelling or stridor, and swallowing was comfortable. [Serum calcium on POD 1: __ mg/dL; PTH: __.] [There were no symptoms of hypocalcaemia / perioral tingling settled on oral calcium (and calcitriol).] [The drain was removed on POD __.] The patient is comfortable and tolerating a normal diet at discharge.",
       medications: [
@@ -439,14 +431,13 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         "Patient was admitted with severe upper abdominal pain radiating to the back, with raised serum amylase / lipase and imaging features of acute pancreatitis, requiring inpatient management.",
       primaryDiagnosis:
         "Acute pancreatitis — [aetiology (gallstone / alcohol / hypertriglyceridaemia / idiopathic); severity (mild / moderately severe / severe, revised Atlanta)]",
-      procedure: {
+      procedure: proc({
         name: "[ Only if an intervention was done: ERCP with sphincterotomy and stone extraction / percutaneous catheter drainage / necrosectomy ]",
         anaesthesia: "[ as applicable ]",
         findings: "[ with date, findings and drains ]",
         drains: "[ as placed ]",
-        complications: "Nil",
         outcome: "[ as applicable ]",
-      },
+      }),
       clinicalCourse:
         "Managed with early goal-directed intravenous fluid resuscitation with a balanced crystalloid (Ringer's lactate), analgesia, antiemetics and early enteral nutrition. [ERCP with sphincterotomy and stone extraction was performed for biliary obstruction.] The clinical course was [uncomplicated / complicated by …]; pain settled, inflammatory markers and organ function normalised, and oral intake was re-established and tolerated. The patient is comfortable and tolerating a low-fat diet at discharge.",
       medications: [
@@ -505,14 +496,13 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [fever, right upper abdominal pain and tender hepatomegaly], with imaging showing [a solitary / multiple] liver abscess[es], requiring [antibiotics and image-guided aspiration / pigtail drainage].",
       primaryDiagnosis: "[ Amoebic / pyogenic ] liver abscess — [ segment / lobe; size __ × __ cm; solitary / multiple; ruptured / not ruptured ]",
-      procedure: {
+      procedure: proc({
         name: "[ USG-guided needle aspiration / percutaneous pigtail catheter drainage / laparotomy and drainage for rupture ]",
         anaesthesia: "[ Local anaesthesia / general anaesthesia ]",
         findings: "[ volume and nature of pus (anchovy-sauce / foul-smelling); pus culture and amoebic serology sent ]",
         drains: "[ pigtail catheter (__ Fr) / nil ]",
-        complications: "Nil",
         outcome: "[ Aspirated / drained successfully ]",
-      },
+      }),
       clinicalCourse:
         "Admitted with [fever and right upper quadrant pain]; [ultrasound / CT] showed [a __ × __ cm abscess in segment __]. Treated with [intravenous metronidazole / broad-spectrum antibiotics] [and USG-guided aspiration / pigtail drainage on [date], draining __ ml of pus]. [Amoebic serology: __; pus culture: __.] Fever settled by day [__] and pain and tenderness improved. [Pigtail output fell to __ ml / 24 h and it was removed on [date].] The patient is afebrile and tolerating a normal diet at discharge.",
       medications: [
@@ -572,14 +562,13 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [jaundice / right upper abdominal pain / fever with chills] due to [common bile duct stones / acute cholangitis / obstructive jaundice], requiring [ERCP / CBD exploration].",
       primaryDiagnosis: "[ Choledocholithiasis / acute cholangitis (Tokyo grade __) / obstructive jaundice — cause: __ ] [ with cholelithiasis ]",
-      procedure: {
+      procedure: proc({
         name: "[ ERCP with sphincterotomy, stone extraction ± biliary stenting ] / [ Laparoscopic / open cholecystectomy with CBD exploration ± T-tube ]",
         anaesthesia: "[ Sedation (ERCP) / general anaesthesia ]",
         findings: "[ CBD diameter; number and size of stones; clearance complete / incomplete; stent type and size; character of bile; cholangiogram ]",
         drains: "[ T-tube / subhepatic drain / nil ]",
-        complications: "Nil",
         outcome: "[ Duct cleared / stent placed for incomplete clearance ]",
-      },
+      }),
       clinicalCourse:
         "Admitted with [jaundice / cholangitis] and resuscitated with intravenous fluids [and intravenous antibiotics]. [ERCP with sphincterotomy and stone extraction (± a __ Fr plastic stent) was performed on [date].] [Cholecystectomy with CBD exploration (over a T-tube) was performed on [date].] Fever settled, and the serum bilirubin fell from [__] to [__] mg/dL. The patient is afebrile and tolerating a normal diet [with the T-tube clamped / draining __ ml] at discharge.",
       medications: [
@@ -749,14 +738,13 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with a [reducible / irreducible / obstructed] [right / left / bilateral] [inguinal / umbilical / incisional] hernia requiring surgical repair.",
       primaryDiagnosis: "[ Right / left ] [ inguinal / femoral / umbilical / incisional ] hernia",
-      procedure: {
+      procedure: proc({
         name: "[ Site ] hernioplasty (mesh repair)",
         anaesthesia: "[ General / spinal ] anaesthesia",
         findings: "[ defect size; contents and their viability; sac dealt with; mesh type, size and fixation ]",
         drains: "[ nil / suction drain (large ventral) ]",
-        complications: "Nil",
         outcome: "Procedure completed successfully.",
-      },
+      }),
       clinicalCourse:
         "[Site] hernioplasty with mesh repair was performed on [date] under [general / spinal] anaesthesia. Recovery was uneventful; the patient passed urine without difficulty, mobilised and resumed oral intake. Pain was controlled on oral analgesia. The wound is healthy at discharge [and the drain, if placed, was removed on POD __].",
       medications: [M.paracetamol, M.pantoprazole, M.diclofenac, { ...M.lactulose, indication: "avoid straining" }],
@@ -800,14 +788,13 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with acute right iliac fossa pain, anorexia [and fever / vomiting] and clinical features of acute appendicitis, requiring inpatient management and appendicectomy.",
       primaryDiagnosis: "Acute appendicitis [uncomplicated / perforated / appendicular abscess / lump]",
-      procedure: {
+      procedure: proc({
         name: "[ Laparoscopic / open ] appendicectomy",
         anaesthesia: "General anaesthesia",
         findings: "[ inflamed / gangrenous / perforated appendix; local pus; faecolith; base and mesoappendix ]",
         drains: "[ pelvic drain / nil ]",
-        complications: "Nil",
         outcome: "Procedure completed successfully; appendix sent for histopathology.",
-      },
+      }),
       clinicalCourse:
         "Admitted with acute appendicitis and taken up for [laparoscopic / open] appendicectomy on [date] after resuscitation with intravenous fluids and antibiotics. Recovery was uneventful; oral intake was resumed and tolerated, and the patient mobilised progressively. [The drain was removed on POD __.] The patient is afebrile, ambulant and tolerating a normal diet at discharge.",
       medications: [
@@ -846,14 +833,13 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with acute right upper abdominal pain, fever and ultrasound evidence of acute calculous cholecystitis, requiring inpatient management with intravenous fluids, analgesia and antibiotics [and laparoscopic cholecystectomy].",
       primaryDiagnosis: "Acute [ calculous / acalculous ] cholecystitis — Tokyo Grade [ I / II / III ]",
-      procedure: {
+      procedure: proc({
         name: "[ Laparoscopic cholecystectomy (early, within 72 h / same admission) / percutaneous cholecystostomy / none — managed without surgery ]",
         anaesthesia: "General anaesthesia",
         findings: "[ acutely inflamed, distended, thick-walled gallbladder; pericholecystic fluid; dense adhesions; empyema / mucocele ]",
         drains: "[ subhepatic drain ]",
-        complications: "Nil",
         outcome: "[ Procedure completed successfully; gallbladder sent for histopathology / managed without surgery ]",
-      },
+      }),
       clinicalCourse:
         "Admitted with acute calculous cholecystitis and managed initially with intravenous fluids, analgesia and intravenous antibiotics, with a good clinical response. [The patient underwent laparoscopic cholecystectomy on [date] during the same admission / settled on conservative management and is planned for an interval laparoscopic cholecystectomy in 6 weeks.] [The subhepatic drain remained non-bilious and was removed on POD __.] The patient is afebrile, ambulant and tolerating a normal diet at discharge.",
       medications: [
@@ -962,14 +948,13 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted for an elective laparoscopic cholecystectomy for symptomatic gallstone disease [with a history of recurrent biliary colic].",
       primaryDiagnosis: "Gallstone disease (cholelithiasis)",
-      procedure: {
+      procedure: proc({
         name: "Elective laparoscopic cholecystectomy",
         anaesthesia: "General anaesthesia",
         findings: "[ gallbladder wall, adhesions, Calot's triangle anatomy, number of stones ]",
         drains: "[ subhepatic drain / nil ]",
-        complications: "Nil",
         outcome: "Procedure completed successfully; gallbladder sent for histopathology.",
-      },
+      }),
       clinicalCourse:
         "The patient was admitted for an elective laparoscopic cholecystectomy for symptomatic cholelithiasis. Pre-anaesthetic assessment was completed and the patient was cleared for surgery. Laparoscopic cholecystectomy was performed on [date]; the postoperative period was uneventful, oral intake was resumed and the patient remained haemodynamically stable. [The subhepatic drain remained non-bilious and was removed on POD __.] The patient is afebrile, ambulant and tolerating a normal diet at discharge.",
       medications: [
@@ -1013,14 +998,13 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [bleeding per rectum / perianal pain / perianal discharge] due to [grade III–IV haemorrhoids / chronic anal fissure / fistula-in-ano], requiring surgical management.",
       primaryDiagnosis: "[ Grade III / IV haemorrhoids / chronic anal fissure / inter- or trans-sphincteric fistula-in-ano ]",
-      procedure: {
+      procedure: proc({
         name: "[ Haemorrhoidectomy / lateral internal sphincterotomy / fistulotomy / fistulectomy / seton / LIFT ]",
         anaesthesia: "[ Spinal / general ] anaesthesia",
         findings: "[ position and grade of piles / fissure with sentinel tag and hypertrophied papilla / fistula tract, internal and external openings, relation to sphincter, seton placed ]",
         drains: "Nil",
-        complications: "Nil",
         outcome: "Procedure completed successfully [; tissue sent for histopathology].",
-      },
+      }),
       clinicalCourse:
         "Underwent [procedure] under [spinal / general] anaesthesia on [date]. Postoperatively pain was controlled with regular analgesia and stool softeners, and the patient passed urine and had a bowel motion without difficulty. Sitz baths were commenced. The patient is comfortable, passing stool and voiding normally at discharge.",
       medications: [
@@ -1077,14 +1061,13 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted for [SFJ ligation with GSV stripping / endovenous laser / radiofrequency ablation / foam sclerotherapy] for symptomatic varicose veins of the [right / left / both] lower limb[s] [with venous eczema / lipodermatosclerosis / healed / active venous ulcer].",
       primaryDiagnosis: "Primary varicose veins [ right / left ] lower limb — [ GSV / SSV reflux; CEAP C__ ]",
-      procedure: {
+      procedure: proc({
         name: "[ SFJ ligation + GSV stripping (to knee) + stab avulsions / EVLA / RFA of GSV ± foam sclerotherapy / SPJ ligation ]",
         anaesthesia: "[ Spinal / tumescent local / general ] anaesthesia",
         findings: "[ SFJ / SPJ competence; tributaries ligated; length of vein stripped or ablated; perforators dealt with ]",
         drains: "Nil",
-        complications: "Nil",
         outcome: "Procedure completed successfully.",
-      },
+      }),
       clinicalCourse:
         "Underwent [procedure] on [date] under [spinal / tumescent local] anaesthesia. The limb was wrapped in a compression bandage and mobilisation began [the same day / on POD 1]. There was no groin haematoma and no calf pain or swelling. The patient is ambulant and comfortable at discharge with the compression bandage / stocking in place.",
       medications: [
@@ -1136,14 +1119,13 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         "Patient, a known case of [type 2] diabetes mellitus [on __], was admitted with [an infected ulcer / abscess / wet gangrene] of the [right / left] foot [with uncontrolled blood sugar], requiring [surgical debridement / amputation].",
       primaryDiagnosis:
         "Diabetic foot [ right / left ] — [ Wagner grade __; infected ulcer / abscess / wet / dry gangrene; with / without osteomyelitis; neuropathic / neuro-ischaemic ]; type 2 diabetes mellitus [ controlled / uncontrolled ]",
-      procedure: {
+      procedure: proc({
         name: "[ Wound debridement / incision and drainage / disarticulation of __ toe / ray amputation / transmetatarsal / below-knee / above-knee amputation ] [ ; relook debridement on [date] ]",
         anaesthesia: "[ Spinal / regional block / general ] anaesthesia",
         findings: "[ extent of necrosis and pus tracking; tendon and bone involvement; bleeding at the cut margin; tissue / bone sent for culture ]",
         drains: "[ nil / corrugated drain ]",
-        complications: "Nil",
         outcome: "[ Wound left open for dressings / stump closed ]",
-      },
+      }),
       clinicalCourse:
         "Admitted with [an infected ulcer / abscess / gangrene] of the [right / left] foot and a blood sugar of [__ mg/dL]. Started on [intravenous antibiotics] and [insulin] with physician input. [Arterial Doppler: __; X-ray foot: __.] Underwent [procedure] on [date] [and relook debridement on [date]]. Tissue culture grew [__] and antibiotics were adjusted to it. The wound now shows [healthy granulation without slough]; blood sugar is controlled on [__]. The patient is afebrile and [mobilising non-weight-bearing on the operated foot with a walker] at discharge.",
       medications: [
@@ -1207,14 +1189,13 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [a painful, fluctuant swelling / spreading cellulitis] over the [site] [with fever] [and uncontrolled blood sugar], requiring [incision and drainage / debridement].",
       primaryDiagnosis: "[ Site ] [ abscess / carbuncle / cellulitis / necrotising soft-tissue infection ] [ ; type 2 diabetes mellitus ]",
-      procedure: {
+      procedure: proc({
         name: "[ Incision and drainage / USG-guided aspiration / wound debridement ] of [ site ] [ abscess ]",
         anaesthesia: "[ General / spinal / local ] anaesthesia",
         findings: "[ volume and nature of pus; loculi broken down; extent of necrosis; cavity size; pus sent for culture ]",
         drains: "[ nil / corrugated drain / cavity packed ]",
-        complications: "Nil",
         outcome: "Procedure completed successfully; pus sent for culture.",
-      },
+      }),
       clinicalCourse:
         "Admitted with [site] [abscess / cellulitis] [and a blood sugar of __ mg/dL]. Underwent [incision and drainage] under [anaesthesia] on [date]; [__ ml of pus] was drained and the cavity [packed]. Daily dressings were done and the cavity is now [clean and granulating]. [Pus culture grew __.] [Blood sugar was controlled on __.] The patient is afebrile [and the surrounding cellulitis has settled] at discharge.",
       medications: [
@@ -1266,14 +1247,13 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted for excision of a [lipoma / sebaceous (epidermoid) cyst / __] over the [site] [ / excision biopsy of a (cervical) lymph node ].",
       primaryDiagnosis: "[ Lipoma / epidermoid (sebaceous) cyst / dermoid cyst / neurofibroma / ganglion / lymphadenopathy for evaluation ] — [ site; size ]",
-      procedure: {
+      procedure: proc({
         name: "Excision of [ lipoma / sebaceous cyst / swelling ] over [ site ] [ / excision biopsy of __ lymph node ]",
         anaesthesia: "[ Local / general / spinal ] anaesthesia",
         findings: "[ size; capsule; contents; plane — subcutaneous / subfascial / intramuscular; excised completely ]",
         drains: "[ nil / suction drain ]",
-        complications: "Nil",
         outcome: "Procedure completed successfully; specimen sent for histopathology.",
-      },
+      }),
       clinicalCourse:
         "Underwent excision of the [swelling] under [local / general] anaesthesia on [date] [as a day case]. Recovery was uneventful, with no haematoma. The patient is comfortable with a clean, dry wound at discharge.",
       medications: [{ ...M.paracetamol, duration: "3 days" }, M.diclofenac],
@@ -1312,14 +1292,13 @@ export const GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     indication:
       "Patient was admitted with [presentation / clinical problem] requiring [inpatient management / investigation / intervention / surgery].",
     primaryDiagnosis: "",
-    procedure: {
+    procedure: proc({
       name: "[ Procedure name ]",
       anaesthesia: "[ General / spinal / local ]",
       findings: "[ significant operative findings ]",
       drains: "[ drains, if any ]",
-      complications: "Nil",
       outcome: "Procedure completed successfully.",
-    },
+    }),
     clinicalCourse:
       "Admitted with [presentation]. [Initial management.] [Procedure] was performed on [date]. The postoperative period was [uneventful]. The patient is afebrile, ambulant and tolerating a normal diet at discharge.",
     medications: [M.paracetamol, M.pantoprazole],
@@ -1343,37 +1322,3 @@ export const GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
   progressNote:
     "Each day — symptoms; vitals with temperature; examination; oral intake; flatus / stool; urine output; drains / tubes — output and character; wound; mobilisation; calf tenderness; the day's plan. On readiness — afebrile, eating, mobilising, wound healthy, tubes out. For discharge with advice.",
 };
-
-/** The list for the picker card. */
-export function listDischargeTemplates(): { key: string; label: string }[] {
-  return [...DISCHARGE_TEMPLATES, GENERIC_DISCHARGE_TEMPLATE].map((t) => ({ key: t.key, label: t.label }));
-}
-
-export function getDischargeTemplate(key: string | null | undefined): DischargeTemplate | null {
-  if (!key) return null;
-  if (key === GENERIC_DISCHARGE_TEMPLATE.key) return GENERIC_DISCHARGE_TEMPLATE;
-  return DISCHARGE_TEMPLATES.find((t) => t.key === key) ?? null;
-}
-
-/** The template the typed procedure / diagnosis / care-template family points at, or null.
- *
- * The DIAGNOSIS wording is tried first — it is the most specific signal, and it is what tells
- * "acute cholecystitis" apart from planned "gallstone disease" when both would share the
- * lap_chole care-template family. The family is only a fallback for a vague diagnosis.
- * First match wins, so the array is ordered specific-before-general. */
-export function matchDischargeTemplate(input: {
-  procedureText?: string | null;
-  diagnosisText?: string | null;
-  templateFamily?: string | null;
-}): DischargeTemplate | null {
-  const haystack = `${input.procedureText ?? ""} ${input.diagnosisText ?? ""}`.trim();
-  if (haystack) {
-    const byText = DISCHARGE_TEMPLATES.find((t) => t.match.test(haystack));
-    if (byText) return byText;
-  }
-  if (input.templateFamily) {
-    const byFamily = DISCHARGE_TEMPLATES.find((t) => t.families?.includes(input.templateFamily!));
-    if (byFamily) return byFamily;
-  }
-  return null;
-}
