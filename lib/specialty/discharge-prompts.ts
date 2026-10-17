@@ -97,7 +97,7 @@ export function dischargePromptWordsFor(pack: SpecialtyPack | null | undefined):
 
 // --- The generic prompts ------------------------------------------------------------------
 
-export const TEMPLATE_RULE = `If a template for the diagnosis is given, write along it: same order, same standard wording. But the template describes the USUAL case, not this patient — keep a template sentence only where the digest supports it, change it where the digest differs, and where the digest is silent on a patient-specific part (a date, a drain day, a finding) write a visible blank "[ … ]" instead of guessing. Never carry a template fact into the text that the digest does not contain.`;
+export const TEMPLATE_RULE = `If a template for the diagnosis is given, write along it: same order, same standard wording. But the template describes the USUAL case, not this patient — keep a template sentence only where the digest supports it, change it where the digest differs, and where the digest is silent on a patient-specific part (a date, a drain day, a finding) write a visible blank "[ … ]" instead of guessing. Never carry a template fact into the text that the digest does not contain. A blank never makes an event safe to keep: a template sentence saying something was DONE (an operation performed, a mesh or drain placed, a stent inserted) stays only if the digest records that it was done — if the digest records no such event, leave the whole sentence out.`;
 
 /** A department's extra rules, numbered on from the shared ones. */
 const more = (from: number, rules: string[] | undefined) =>
@@ -116,7 +116,7 @@ Absolute rules:
 5. Expand no unexplained abbreviations — ${w.abbreviationExamples}. If you cannot expand one safely, keep the digest's exact wording.
 6. Be concise and clinically meaningful. One paragraph, roughly 4–7 sentences. Do NOT reproduce every ward-round note. Cover, in order: ${w.courseOrder}. When you state the presenting complaint, lead with its duration ("${w.durationExample}"), using only a duration the digest gives. If the digest carries a "relevant negatives" line, add its main points to the presentation as a single short clause of pertinent negatives — one sentence at most, not a list.
 7. Maintain chronological coherence. Use the dates in the digest; do not invent one.
-8. Plain professional prose, third person, past tense ("The patient was admitted with…"). No bullet points, no headings.
+8. Plain professional prose, third person, past tense ("The patient was admitted with…"). No bullet points, no headings. Write only about the patient, never about the digest or the record — no "not documented", "the digest does not record", "no information is available". Where the narrative needs a detail the digest lacks, put the visible blank "[ … ]" in its place or leave the point out. Do not characterise the course ("uncomplicated", "uneventful") unless the digest says so.
 9. The presentation comes from the "Clinical history" block; the course from the "Progress notes".
 10. ${TEMPLATE_RULE}${more(11, w.courseRules)}
 

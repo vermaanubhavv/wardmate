@@ -16,8 +16,8 @@ describe("discharge prompts: one generic prompt, department words plugged in", (
   it("general surgery sends exactly the prompts it always has", () => {
     const w = dischargePromptWordsFor(getSpecialtyPack("general_surgery"));
     // Hashes of the prompts as they were in lib/discharge-ai.ts before the split.
-    expect(sha(courseSystem(w))).toBe("28ecfa98c6bbe001fef335d49cea036410d50e0de66e075ebcf7f57d05308e9d");
-    expect(sha(indicationSystem(w))).toBe("c620eddeaf1dc417dc5bdd29fdf639e91353bb0d61952027db3fdafb140e18f8");
+    expect(sha(courseSystem(w))).toBe("b6d2667b7e9d71b09abb7a29a0eed0183fcced7eb84b7c20afebd0b88cbe6316");
+    expect(sha(indicationSystem(w))).toBe("a835eb0a325af7d733f081537548468688018771cb203fd5cac1d0dc7cea7556");
     expect(sha(investigationsSystem(w))).toBe("ca54a530c780724c7a99e5cb07db9534f78c5410ff3008fb7c22f0663cc89eda");
   });
 
