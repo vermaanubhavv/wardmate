@@ -33,6 +33,10 @@ const config: CapacitorConfig = {
     allowNavigation: ["wardmate.in", "*.supabase.co"],
   },
 
+  // How the site knows it is inside this app (app/install-hint.tsx): the web view reports
+  // itself as Safari otherwise, and the install banner and the Google button both need hiding.
+  appendUserAgent: "WardMateApp",
+
   ios: {
     // The web app already draws its own safe-area padding from env(safe-area-inset-*), so the
     // web view must not add its own inset on top of it — that is what puts a grey band under

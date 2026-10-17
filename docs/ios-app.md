@@ -34,7 +34,10 @@ web directory Capacitor insists on and should never be seen.
 inside an embedded web view (`disallowed_useragent`), so `allowNavigation` deliberately does not
 list Google and that button leaves the app for Safari — where signing in does the app no good,
 because the two keep separate cookies. Making Google work in here means adding a native OAuth
-plugin; it has not been done.
+plugin; it has not been done. So the app hides that button, along with the "Put WardMate on
+your home screen" banner: the web view's user agent ends in `WardMateApp`
+(`appendUserAgent` in `capacitor.config.ts`), and `isNativeApp()` in `app/install-hint.tsx`
+checks for it.
 
 ## Building it
 
