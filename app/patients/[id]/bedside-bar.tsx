@@ -2,9 +2,8 @@
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import Recorder from "./recorder";
+import Recorder, { type DictationCopy } from "./recorder";
 import PhotoButton from "./photo-button";
-import { progressNoteConfigFor } from "@/lib/progress-note-config";
 
 type MissingItem = { item: { label: string; hint: string | null } };
 
@@ -17,12 +16,12 @@ type MissingItem = { item: { label: string; hint: string | null } };
 export default function BedsideBar({
   patientId,
   missing,
-  specialty,
+  copy,
 }: {
   patientId: string;
   missing: MissingItem[];
-  /** The ward's specialty pack key — picks the Type box's example. */
-  specialty?: string;
+  /** The unit's dictation wording, read on the server — see DictationCopy. */
+  copy: DictationCopy;
 }) {
   const router = useRouter();
   const [typing, setTyping] = useState(false);
@@ -85,7 +84,7 @@ export default function BedsideBar({
           rows={4}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={progressNoteConfigFor(specialty).bedsideExample}
+          placeholder={copy.bedsideExample}
           aria-label="Bedside note"
           className="field"
         />
@@ -133,7 +132,7 @@ export default function BedsideBar({
       )}
       <Recorder
         patientId={patientId}
-        specialty={specialty}
+        copy={copy}
         onBusyChange={onBusyChange}
         idleActions={
           <>

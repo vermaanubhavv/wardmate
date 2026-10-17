@@ -14,7 +14,6 @@ import {
 } from "@/lib/outbox";
 import LiveDictation, { type LiveLine, type LiveSection } from "./live-dictation";
 import { extFor, REC_MIME } from "./card-kit";
-import { liveRoundSections, progressNoteConfigFor } from "@/lib/progress-note-config";
 
 type Status = "idle" | "starting" | "recording" | "working";
 type Mode = "batch" | null;
@@ -47,15 +46,26 @@ const MAX_SECONDS = 180;
  * silently. After a recording, the transcript is shown with every captured phrase highlighted
  * and the findings drop in one by one.
  */
+/** The unit's dictation wording, read from its progress-note config on the server so the whole
+ *  config table stays out of the patient page bundle. */
+export type DictationCopy = {
+  /** The Type box's placeholder. */
+  bedsideExample: string;
+  /** The example shown while live dictation listens. */
+  dictationExample: string;
+  /** Which sections live dictation sorts into. */
+  liveSections: LiveSection[];
+};
+
 export default function Recorder({
   patientId,
   onBusyChange,
   idleActions,
-  specialty,
+  copy,
 }: {
   patientId: string;
-  /** The unit's department — which sections live dictation sorts into, and its example. */
-  specialty?: string | null;
+  /** The unit's department wording — which sections live dictation sorts into, and its example. */
+  copy: DictationCopy;
   onBusyChange?: (busy: boolean) => void;
   /** Sits in the same row as the mic while nothing is recording — the bar's other controls. */
   idleActions?: React.ReactNode;
@@ -212,8 +222,6 @@ export default function Recorder({
     setLive(true);
   }
 
-  const noteConfig = progressNoteConfigFor(specialty);
-  const LIVE_SECTIONS: LiveSection[] = liveRoundSections(noteConfig);
 
   /** One pause of live dictation, filed exactly as a typed note is. Words that could not be
    *  sent are held for "Save these words" — at a bedside nothing said may be lost. */
@@ -439,8 +447,8 @@ export default function Recorder({
         <LiveDictation
           patientId={patientId}
           title="Speaking at the bedside"
-          example={`e.g. “${noteConfig.dictationExample}”`}
-          sections={LIVE_SECTIONS}
+          example={`e.g. “${copy.dictationExample}”`}
+          sections={copy.liveSections}
           route={fileFragment}
           onUnavailable={(reason) => {
             setLive(false);
