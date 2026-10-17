@@ -96,7 +96,7 @@ export function rejectReason(c: Omit<LibraryCase, "id">): string | null {
   const badQuote = c.findings.find((f) => !c.transcript.includes(f.quote));
   if (badQuote) return `quote not verbatim: "${badQuote.quote}"`;
   for (const n of c.never_said) {
-    const hit = [n.label, ...n.synonyms].find((w) => w.trim() && new RegExp(`\\b${w.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`).test(t));
+    const hit = [n.label, ...n.synonyms].find((w) => w.trim() && new RegExp(`\\b${w.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(t));
     if (hit) return `"never said" ${n.label} appears as "${hit}"`;
   }
   // A number in a quote means a value: it must be flagged for confirmation.

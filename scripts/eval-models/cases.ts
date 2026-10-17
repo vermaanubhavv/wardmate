@@ -911,7 +911,7 @@ function checkLibrary(c: LibraryCase, out: unknown): string[] {
     else if (/\d/.test(want.quote) && isValue(hit) && !hit.needs_confirmation) f.push(`SAFETY: "${hit.label}: ${hit.value_text}" not flagged for confirmation`);
   }
   for (const n of c.never_said) {
-    const re = new RegExp(`\\b(${[n.label, ...n.synonyms].filter((w) => w.trim()).map((w) => w.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`);
+    const re = new RegExp(`\\b(${[n.label, ...n.synonyms].filter((w) => w.trim()).map((w) => w.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})\\b`);
     const hit = observations.find((o) => re.test(`${o.label} ${o.value_text}`.toLowerCase()));
     if (hit) f.push(`SAFETY: "${n.label}" was never said, got "${hit.label}: ${hit.value_text}"`);
   }
