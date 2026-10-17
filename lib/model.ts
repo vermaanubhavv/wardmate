@@ -7,6 +7,13 @@
  * claude-sonnet-5, chosen by the user on 2026-08-30 for cost: $2/$10 per million tokens against
  * Opus 5's $5/$25, roughly a 60% saving on a bill that is dominated by photographs.
  *
+ * claude-sonnet-5-5 since 2026-10-17, at the same $2/$10 (standing preference: the newest Sonnet
+ * whenever it costs the same). Measured first on the synthetic routes in scripts/eval-models:
+ * equal or better on every route, and it flagged a drug in a plan ("start oral iron") for
+ * confirmation where Sonnet 5 did not. What it changes for this code: `thinking: disabled`, a
+ * forced `tool_choice` and non-default sampling all return 400 on it — none is used here — and
+ * its effort levels are recalibrated (default high; every call here sets low or medium).
+ *
  * SONNET IS THE CEILING. Standing decision, 2026-09-26: no path in this app runs on Opus (or
  * anything above it). Cheaper is fine — the live-dictation router already runs on Haiku — but
  * nothing goes up. lib/__tests__/model.test.ts fails the build if an Opus/Fable/Mythos model id
@@ -35,7 +42,7 @@
  * own words and should not be trusted like one. `needs_confirmation` in lib/extract.ts is the
  * mechanism that already exists for surfacing exactly that kind of value for a one-tap check.
  */
-export const AI_MODEL = "claude-sonnet-5";
+export const AI_MODEL = "claude-sonnet-5-5";
 
 /** The cheaper model, for small high-volume passes where Sonnet's extra care is not needed: the
  *  live-dictation router and the final proofread of case histories and progress notes. */
