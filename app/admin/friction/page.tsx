@@ -1,10 +1,7 @@
-import Link from "next/link";
 import { getFriction, getFunnelBySpecialty, getUsageFriction, getUsageFrictionFor, type UsageFriction } from "@/lib/admin";
 import { funnelByDepartment } from "@/lib/admin-insights";
 import { isSpecialtyKey } from "@/lib/specialty";
-import { Empty, ErrorNote, Section, SeverityDot, ago } from "../ui";
-
-export const dynamic = "force-dynamic";
+import { Chip, Empty, ErrorNote, Section, SeverityDot, ago } from "../ui";
 
 const ORDER: Record<string, number> = { high: 3, medium: 2, low: 1 };
 
@@ -126,13 +123,3 @@ function UsageRow({ f }: { f: UsageFriction }) {
   );
 }
 
-function Chip({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className={`rounded-full px-3 py-1 text-footnote ${active ? "bg-accent text-white" : "bg-chip text-foreground/70 active:opacity-60"}`}
-    >
-      {children}
-    </Link>
-  );
-}

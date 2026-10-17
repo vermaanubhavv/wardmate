@@ -35,14 +35,16 @@ function subscribeOnline(cb: () => void) {
     window.removeEventListener("offline", cb);
   };
 }
-
-export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
-  const router = useRouter();
-  const online = useSyncExternalStore(
+export const useOnline = () =>
+  useSyncExternalStore(
     subscribeOnline,
     () => navigator.onLine,
     () => true
   );
+
+export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
+  const router = useRouter();
+  const online = useOnline();
   const [pending, setPending] = useState(0);
   const [sending, setSending] = useState(false);
   const [reviews, setReviews] = useState<string[]>([]);

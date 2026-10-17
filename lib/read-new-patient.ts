@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { AI_MODEL } from "@/lib/model";
+import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
 import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
 import { forWard } from "@/lib/specialty/prompt-words";
 
@@ -57,14 +56,10 @@ export async function readSpokenPatient(
   transcript: string,
   pack: SpecialtyPack = generalSurgeryPack
 ): Promise<SpokenPatientResult> {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
-
-  const model = AI_MODEL;
-  const client = new Anthropic({ apiKey: key });
+  const client = anthropic();
 
   const response = await client.messages.create({
-    model,
+    model: AI_MODEL,
     max_tokens: 1000,
     system: forWard(SYSTEM_PROMPT, pack),
     // Low effort: one short sentence into six fields, and the resident is looking at the
@@ -76,8 +71,7 @@ export async function readSpokenPatient(
     messages: [{ role: "user", content: `Spoken:\n\n${transcript}` }],
   });
 
-  const text = response.content.find((b) => b.type === "text");
-  const parsed = text && text.type === "text" ? JSON.parse(text.text) : {};
+  const parsed = replyJson(response, {});
 
   // Age is the one field where a wrong value is silently plausible, so anything outside a
   // human lifespan is dropped rather than typed into the form.
@@ -99,6 +93,6 @@ export async function readSpokenPatient(
       procedure: parsed.procedure ?? null,
     },
     transcript,
-    model,
+    model: AI_MODEL,
   };
 }

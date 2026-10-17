@@ -14,8 +14,6 @@ import {
 import { funnelByDepartment, recommend, tallyFeedback } from "@/lib/admin-insights";
 import { Empty, ErrorNote, Section, Stat, StatGrid, SeverityDot, Bars, Table, Row, Cell } from "./ui";
 
-export const dynamic = "force-dynamic";
-
 /**
  * The console's front page, read top to bottom as a feedback loop: what to fix next, whether
  * usage is growing, where new people get stuck, and what they say — then the raw totals.

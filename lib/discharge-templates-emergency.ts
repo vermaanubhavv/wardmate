@@ -1,5 +1,5 @@
 import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-templates";
-import type { AdviceItem } from "@/lib/discharge-entities";
+import { adv, COMMON_MEDS } from "@/lib/discharge-template-parts";
 
 /**
  * EMERGENCY MEDICINE discharge templates. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28).
@@ -19,15 +19,13 @@ import type { AdviceItem } from "@/lib/discharge-entities";
  * head injury needs the head-injury advice); heat illness before gastroenteritis ("dehydration").
  */
 
-const adv = (items: { module: string; text: string }[]): AdviceItem[] =>
-  items.map((it, i) => ({ id: `adv-${i}`, module: it.module, text: it.text }));
 
 // --- reusable pieces -------------------------------------------------------------------
 
 const M = {
   paracetamol: { generic: "Paracetamol", strength: "650 mg", route: "PO", frequency: "TDS", duration: "3 days", status: "new" } as TemplateMedication,
   paracetamolSos: { generic: "Paracetamol", strength: "650 mg", route: "PO", frequency: "SOS for pain or fever", status: "prn" } as TemplateMedication,
-  pantoprazole: { generic: "Pantoprazole", strength: "40 mg", route: "PO", frequency: "OD before breakfast", duration: "5 days", status: "new" } as TemplateMedication,
+  pantoprazole: COMMON_MEDS.pantoprazole,
   ondansetronSos: { generic: "Ondansetron", strength: "4 mg", route: "PO", frequency: "SOS for vomiting", status: "prn" } as TemplateMedication,
   amoxClav: { generic: "Amoxicillin-clavulanate", strength: "625 mg", route: "PO", frequency: "TDS", duration: "5 days", status: "new" } as TemplateMedication,
   ors: { generic: "Oral rehydration salts (ORS)", dose: "1 sachet in 1 litre of clean water", route: "PO", frequency: "Sip through the day; a glass after each loose stool", duration: "Until stools and urine are normal", status: "new" } as TemplateMedication,

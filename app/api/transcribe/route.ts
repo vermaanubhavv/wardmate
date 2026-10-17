@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
-import { createClient } from "@/lib/supabase/server";
-import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
+import { getUser } from "@/lib/auth";
+import { transcribe } from "@/lib/stt";
 import { correctTranscript } from "@/lib/glossary";
 import { getCurrentWardPack } from "@/lib/ward";
 import { wardKeyterms } from "@/lib/transcription/patient-context";
@@ -16,10 +16,7 @@ import { wardKeyterms } from "@/lib/transcription/patient-context";
  * way wherever it is spoken.
  */
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const form = await request.formData();
@@ -33,10 +30,7 @@ export async function POST(request: Request) {
 
   let heard: string;
   try {
-    const stt = getTranscriber();
-    const result = await stt.transcribe(audio, MEDICAL_VOCABULARY_HINT, {
-      keyterms: wardKeyterms(pack.lexiconSpecialty),
-    });
+    const result = await transcribe(audio, wardKeyterms(pack.lexiconSpecialty));
     heard = result.text;
   } catch (e) {
     return NextResponse.json({ error: plainAiError(e) }, { status: 502 });

@@ -1,4 +1,5 @@
 import type { DischargeDraft } from "@/lib/discharge-entities";
+import { istDate } from "@/lib/urgency";
 
 /**
  * Date checks for a discharge summary: an operation dated in the future, an event of this
@@ -31,7 +32,7 @@ export function istDay(value: string | null | undefined): string | null {
   if (!value) return null;
   if (ISO.test(value)) return value;
   const t = Date.parse(value);
-  return Number.isNaN(t) ? null : new Date(t).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+  return Number.isNaN(t) ? null : istDate(value);
 }
 
 /** dd/mm/yyyy, as the summary prints dates. */

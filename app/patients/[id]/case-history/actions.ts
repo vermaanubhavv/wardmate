@@ -1,7 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, type Supa } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
+import { revalidatePatient } from "@/lib/revalidate";
 import { HISTORY_SECTION_LABEL, EXAM_SECTION_LABEL } from "@/lib/case-history-sections";
 
 /**
@@ -20,17 +21,8 @@ import { HISTORY_SECTION_LABEL, EXAM_SECTION_LABEL } from "@/lib/case-history-se
  * source_quote (the schema requires that column non-blank).
  */
 
-function revalidateEverywhere(patientId: string) {
-  revalidatePath(`/patients/${patientId}`);
-  revalidatePath(`/patients/${patientId}/case-history`);
-  revalidatePath(`/patients/${patientId}/note`);
-  revalidatePath("/todo");
-  revalidatePath("/handover");
-  // Not "/": a case-history edit never changes a patient's location or count.
-  revalidatePath("/ward");
-}
-
-type Supa = Awaited<ReturnType<typeof createClient>>;
+const revalidateEverywhere = (patientId: string) =>
+  revalidatePatient(patientId, `/patients/${patientId}/case-history`, `/patients/${patientId}/note`);
 
 /** The workspace's own manual case-history entry, created the first time it needs one. */
 async function manualEntryId(supabase: Supa, patientId: string, userId: string): Promise<string | null> {
@@ -69,13 +61,6 @@ async function caseHistoryEntryIds(supabase: Supa, patientId: string): Promise<s
   return (data ?? []).map((e) => e.id as string);
 }
 
-async function currentUser(supabase: Supa) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
-}
-
 /**
  * Rewrite one section of the case history from what its card holds.
  *
@@ -90,7 +75,7 @@ export async function replaceCaseHistorySection(
   lines: string[]
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient();
-  const user = await currentUser(supabase);
+  const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in." };
 
   const clean = lines.map((l) => l.trim()).filter(Boolean);
@@ -143,7 +128,7 @@ export async function replaceCaseHistoryExam(
   entries: { label: string; kind: "exam" | "vital"; value: string | null }[]
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient();
-  const user = await currentUser(supabase);
+  const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in." };
 
   const labels = entries.map((e) => e.label);
@@ -198,7 +183,7 @@ export async function applyCompiledCaseHistory(
   sections: { label: string; text: string }[]
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient();
-  const user = await currentUser(supabase);
+  const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in." };
 
   const allowed = new Set([
@@ -282,7 +267,7 @@ export async function appendCaseHistoryDictation(
   segments: DictationSegment[]
 ): Promise<{ ok: boolean; error?: string; written: number }> {
   const supabase = await createClient();
-  const user = await currentUser(supabase);
+  const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in.", written: 0 };
 
   const clean = segments
@@ -375,7 +360,7 @@ export async function approveCaseHistoryDiagnosis(
   if (!value) return { ok: false, error: "Nothing to approve yet." };
 
   const supabase = await createClient();
-  const user = await currentUser(supabase);
+  const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in." };
 
   const { error } = await supabase
@@ -443,7 +428,7 @@ export async function approveCaseHistoryPlan(
   if (clean.length === 0) return { ok: true };
 
   const supabase = await createClient();
-  const user = await currentUser(supabase);
+  const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in." };
 
   const { data: existing } = await supabase

@@ -13,7 +13,7 @@ import { SYSTEM_PROMPT as registerSource, registerPrompt } from "@/lib/read-regi
 import { categoryQuestion, openQuestion } from "@/lib/jev-observations";
 import { planSystem } from "@/lib/case-history-ai";
 import { wardKeyterms } from "@/lib/transcription/patient-context";
-import { MEDICAL_KEYTERMS } from "@/lib/stt/types";
+import { MEDICAL_KEYTERMS } from "@/lib/stt";
 
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 

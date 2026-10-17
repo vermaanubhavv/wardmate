@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { FAST_MODEL } from "@/lib/model";
+import { FAST_MODEL, anthropic, replyJson } from "@/lib/model";
 import { dateQuestions, groundedDates, structuredDateQuestions, type DateAnchors } from "@/lib/date-check";
 
 /** Haiku's half of the date check: it reads the dates out of the free text. The comparisons,
@@ -42,10 +41,9 @@ const SCHEMA = {
 /** Haiku reads the dates, code compares them. Never throws. */
 export async function checkDates(text: string, anchors: DateAnchors): Promise<string[]> {
   const structured = structuredDateQuestions(anchors);
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key || !text.trim()) return structured;
+  if (!process.env.ANTHROPIC_API_KEY || !text.trim()) return structured;
   try {
-    const response = await new Anthropic({ apiKey: key }).messages.create(
+    const response = await anthropic().messages.create(
       {
         model: FAST_MODEL,
         max_tokens: 1500,
@@ -55,8 +53,7 @@ export async function checkDates(text: string, anchors: DateAnchors): Promise<st
       },
       { timeout: TIMEOUT_MS, maxRetries: 0 }
     );
-    const block = response.content.find((b) => b.type === "text");
-    const raw: Record<string, unknown>[] = (block && block.type === "text" ? JSON.parse(block.text).dates : null) ?? [];
+    const raw: Record<string, unknown>[] = replyJson(response, {}).dates ?? [];
     const found = groundedDates(
       raw.map((d) => ({
         quote: String(d.quote ?? ""),

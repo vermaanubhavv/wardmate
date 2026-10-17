@@ -13,6 +13,7 @@ import {
   saveRecording,
 } from "@/lib/outbox";
 import LiveDictation, { type LiveLine, type LiveSection } from "./live-dictation";
+import { extFor, REC_MIME } from "./card-kit";
 import { liveRoundSections, progressNoteConfigFor } from "@/lib/progress-note-config";
 
 type Status = "idle" | "starting" | "recording" | "working";
@@ -251,16 +252,8 @@ export default function Recorder({
       });
       streamRef.current = stream;
 
-      // Safari on iPhone records mp4; Chrome records webm. Asking for the wrong one produces
-      // a silent empty file rather than an error.
-      const mimeType = [
-        "audio/webm;codecs=opus",
-        "audio/webm",
-        "audio/mp4",
-        "audio/mpeg",
-      ].find((t) => MediaRecorder.isTypeSupported(t));
-
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      // Safari on iPhone records mp4; Chrome records webm.
+      const recorder = new MediaRecorder(stream, REC_MIME ? { mimeType: REC_MIME } : undefined);
       chunksRef.current = [];
       const recId = recIdRef.current;
       recorder.ondataavailable = (e) => {
@@ -274,10 +267,10 @@ export default function Recorder({
           url: "/api/entries/voice",
           patientId,
           label: "Bedside note",
-          mimeType: recorder.mimeType || mimeType || "audio/webm",
+          mimeType: recorder.mimeType || "audio/webm",
         });
       };
-      recorder.onstop = () => void send(recorder.mimeType);
+      recorder.onstop = () => void send(recorder.mimeType || "audio/webm");
 
       recorder.start(1000);
       recorderRef.current = recorder;
@@ -367,10 +360,9 @@ export default function Recorder({
       return;
     }
 
-    const ext = mimeType.includes("mp4") ? "m4a" : mimeType.includes("mpeg") ? "mp3" : "webm";
     const form = new FormData();
     form.append("patient_id", patientId);
-    form.append("audio", blob, `bedside.${ext}`);
+    form.append("audio", blob, `bedside.${extFor(mimeType)}`);
     form.append("client_uuid", id);
 
     // On the phone before anything that can fail or be frozen. What was said at a bedside is

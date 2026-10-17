@@ -195,8 +195,8 @@ Error and performance monitoring, added 2026-09-09. The integration is committed
 until `NEXT_PUBLIC_SENTRY_DSN` is set** — with no DSN, `Sentry.init` is a no-op and the app is
 byte-for-byte what it was before.
 
-Files: `instrumentation-client.ts` (browser), `sentry.server.config.ts` /
-`sentry.edge.config.ts` (server + middleware), `instrumentation.ts` (wires those in),
+Files: `instrumentation-client.ts` (browser), `instrumentation.ts` (server + middleware, one
+`Sentry.init` for both runtimes),
 `app/global-error.tsx` (root-level crash screen — the only error boundary above the app
 chrome), `next.config.ts` (`withSentryConfig`), `middleware.ts` (allowlists `/monitoring`).
 
@@ -229,7 +229,7 @@ so a slow request shows *where* the time went:
   (`lib/read-round.ts`) — each carries token usage under `gen_ai.usage.*`.
 - Logs: the `entries/voice` and `round` routes emit `dictation transcribed` / `dictation
   stored` / `round draft built` with counts and provider — never a transcript or a name.
-- `enableLogs: true` in all three configs, **no console forwarding** — only explicit
+- `enableLogs: true` in both configs, **no console forwarding** — only explicit
   `Sentry.logger.*` calls ship. `beforeSendLog` (`scrubLog` in `lib/sentry-scrub.ts`) drops
   ids and any attribute whose key looks like free text.
 - `lib/sentry-sampling.ts` — `tracesSampler` replaces the flat rate: 0% for telemetry/health
@@ -252,27 +252,13 @@ at a milestone. Keep attributes scalar and PHI-free.
 
 Added 2026-09-10.
 
-### One-time setup
-
-```
-npm run deploy:init
-```
-
-Guided. Logs into Vercel and links the folder if needed, **downloads the current production
-env vars** into `env/production.env` (no retyping), asks for the one thing it can't discover
-(the Supabase connection string), and baselines the SQL-patch tracker. Safe to re-run.
-
 ### Everyday
 
-```
-npm run ship
-```
-
-= apply new SQL patches → push `env/production.env` to Vercel → `vercel --prod`. Stops on the
-first failure. Replaces the manual "paste patches, edit dashboard, run `vercel --prod`" dance.
-
-Sub-commands if you want just one part: `npm run db:push`, `npm run env:sync` (both take
-`-- --dry-run` and `-- --status`).
+Merging to `main` deploys the app and applies new SQL patches (see below). Environment
+variables are separate: after editing `env/production.env` (copy it from
+`env/production.env.example`), run `npm run env:sync` (`-- --dry-run` to preview).
+`npm run db:push` applies patches by hand (`-- --status` lists applied / pending); it needs
+`SUPABASE_DB_URL` in `env/deploy.env` (copy `env/deploy.env.example`).
 
 ### How each part works
 

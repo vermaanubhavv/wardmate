@@ -8,10 +8,10 @@ import Mark from "./mark";
  * the recorder spins while the app is working, so the logo on the header and the logo standing
  * in for a spinner are never two different drawings.
  */
-export default function Wordmark({ spinning = false }: { spinning?: boolean }) {
+export default function Wordmark() {
   return (
     <div className="flex items-center gap-1.5">
-      <Mark className="h-6 w-6 shrink-0" spinning={spinning} />
+      <Mark className="h-6 w-6 shrink-0" />
       <span className="text-subhead font-semibold tracking-[-0.02em]">
         ward<span className="text-accent">mate</span>
       </span>

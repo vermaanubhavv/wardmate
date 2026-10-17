@@ -1,6 +1,4 @@
-import type { createClient } from "@/lib/supabase/server";
-
-type Supa = Awaited<ReturnType<typeof createClient>>;
+import type { Supa } from "@/lib/supabase/server";
 
 /**
  * The de-duplication ledger for dictation uploads — see supabase/patches/0062_dictation_receipts.sql.

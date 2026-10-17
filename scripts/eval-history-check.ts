@@ -2,7 +2,7 @@
  * Runs the History check extractor against the synthetic cases in
  * lib/history-check/evals/cases.ts and scores what survives the validator.
  *
- *   node --env-file=.env.local --import ./scripts/alias-register.mjs scripts/eval-history-check.ts
+ *   node --env-file=.env.local node_modules/.bin/vite-node --config vitest.config.ts scripts/eval-history-check.ts
  *
  * Options (all optional):
  *   --model <id>        default claude-haiku-4-5 (cheapest adequate). Pass claude-sonnet-5 to

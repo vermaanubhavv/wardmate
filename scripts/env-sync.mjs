@@ -13,18 +13,9 @@
  * VERCEL_PROJECT_ID and VERCEL_TEAM_ID instead.
  */
 import { readFileSync, existsSync } from "node:fs";
+import { parseEnv } from "node:util";
 import path from "node:path";
-import {
-  ROOT,
-  parseEnv,
-  loadEnvFiles,
-  vercelProject,
-  vercelToken,
-  vercelApi,
-  friendlyExit,
-} from "./lib-deploy.mjs";
-
-friendlyExit();
+import { ROOT, loadEnvFiles, vercelProject, vercelToken, vercelApi } from "./lib-deploy.mjs";
 
 const ENV_FILE = path.join(ROOT, "env/production.env");
 const DRY = process.argv.includes("--dry-run");
@@ -33,12 +24,11 @@ loadEnvFiles("env/deploy.env", ".env.local");
 
 if (!existsSync(ENV_FILE)) {
   console.error(
-    `Missing env/production.env.\nRun \`npm run deploy:init\` once to set it up, ` +
-      `or copy env/production.env.example to it.`
+    `Missing env/production.env.\nCopy env/production.env.example to it.`
   );
   process.exit(1);
 }
-const wanted = parseEnv(readFileSync(ENV_FILE, "utf8"));
+const wanted = new Map(Object.entries(parseEnv(readFileSync(ENV_FILE, "utf8"))));
 // Never sync Vercel-managed keys, empty values, or the "[SENSITIVE]" placeholder that
 // `vercel env pull` writes for secrets it can't read back — pushing that would clobber a
 // real secret.

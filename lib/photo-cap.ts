@@ -1,6 +1,4 @@
-import type { createClient } from "@/lib/supabase/server";
-
-type Supabase = Awaited<ReturnType<typeof createClient>>;
+import type { Supa } from "@/lib/supabase/server";
 
 /** Photographs the AI may read per ward per day. Env-tunable; see patch 0079. */
 export const PHOTO_READS_PER_WARD_DAY = Number(process.env.PHOTO_READS_PER_WARD_DAY) || 60;
@@ -14,7 +12,7 @@ export const PHOTO_READS_PER_WARD_DAY = Number(process.env.PHOTO_READS_PER_WARD_
  * missing would cost more than it protects. The failure is logged so it is not silent.
  */
 export async function claimPhotoRead(
-  supabase: Supabase,
+  supabase: Supa,
   wardId: string | null | undefined,
   cap = PHOTO_READS_PER_WARD_DAY
 ): Promise<string | null> {

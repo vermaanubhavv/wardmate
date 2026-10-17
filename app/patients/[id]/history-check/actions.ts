@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { historyCheckEnabled } from "@/lib/history-check/flag";
 import { SLOT_STATES, type SlotState } from "@/lib/history-check/types";
 import type { Resolutions } from "@/lib/history-check/store";
@@ -21,9 +22,7 @@ async function updateResolutions(
 ): Promise<{ error?: string }> {
   if (!historyCheckEnabled()) return { error: "History check is not enabled." };
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return { error: "Not signed in." };
 
   const { data: row } = await supabase

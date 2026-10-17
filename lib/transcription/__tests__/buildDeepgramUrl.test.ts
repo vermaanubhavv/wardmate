@@ -2,12 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   buildDeepgramParams,
   buildDeepgramUrl,
-  keytermBudget,
   MAX_KEYTERMS,
 } from "../buildDeepgramUrl";
 
 describe("buildDeepgramUrl", () => {
-  it("defaults to nova-3-medical / en-IN and repeats keyterm", () => {
+  it("asks for nova-3-medical / en-IN and repeats keyterm", () => {
     const p = buildDeepgramParams(["Ryle's tube", "Ranson's criteria"]);
     expect(p.get("model")).toBe("nova-3-medical");
     expect(p.get("language")).toBe("en-IN");
@@ -15,7 +14,7 @@ describe("buildDeepgramUrl", () => {
   });
 
   it("carries through extra Deepgram flags without inventing any", () => {
-    const p = buildDeepgramParams(["x"], { extra: { smart_format: true, diarize: false } });
+    const p = buildDeepgramParams(["x"], { smart_format: true, diarize: false });
     expect(p.get("smart_format")).toBe("true");
     expect(p.get("diarize")).toBe("false");
     expect(p.get("punctuate")).toBeNull();
@@ -23,7 +22,7 @@ describe("buildDeepgramUrl", () => {
 
   it("always opts patient audio out of Deepgram's model training", () => {
     expect(buildDeepgramParams([]).get("mip_opt_out")).toBe("true");
-    expect(buildDeepgramParams([], { extra: { mip_opt_out: false } }).get("mip_opt_out")).toBe("true");
+    expect(buildDeepgramParams([], { mip_opt_out: false }).get("mip_opt_out")).toBe("true");
   });
 
   it("never emits a comma-joined list or a legacy :weight", () => {
@@ -38,13 +37,5 @@ describe("buildDeepgramUrl", () => {
     many.push("TERM 0"); // dupe of "term 0"
     const p = buildDeepgramParams(many);
     expect(p.getAll("keyterm").length).toBe(MAX_KEYTERMS);
-  });
-
-  it("reports a PHI-safe keyterm budget", () => {
-    const b = keytermBudget(["acute pancreatitis", "Ranson's criteria", "CECT abdomen"]);
-    expect(b.count).toBe(3);
-    expect(b.estimatedTokens).toBeGreaterThan(0);
-    expect(b.withinWardmateCeiling).toBe(true);
-    expect(b.withinDeepgramLimit).toBe(true);
   });
 });

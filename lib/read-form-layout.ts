@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { AI_MODEL } from "@/lib/model";
+import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
 
 /**
  * Reads WHERE things are on a blank form photo, not what is written on it. Runs once, when a
@@ -103,14 +102,10 @@ export async function readFormLayout(
   base64Image: string,
   mediaType: "image/jpeg" | "image/png" | "image/webp"
 ): Promise<FormLayout> {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
-
-  const model = AI_MODEL;
-  const client = new Anthropic({ apiKey: key });
+  const client = anthropic();
 
   const response = await client.messages.create({
-    model,
+    model: AI_MODEL,
     max_tokens: 4000,
     system: SYSTEM_PROMPT,
     output_config: {
@@ -128,8 +123,7 @@ export async function readFormLayout(
     ],
   });
 
-  const text = response.content.find((b) => b.type === "text");
-  const parsed = text && text.type === "text" ? JSON.parse(text.text) : { zones: [] };
+  const parsed = replyJson(response, { zones: [] });
 
   // Clamp rather than trust: a box that runs off the image edge would print text outside the
   // page. The model is asked to stay in [0,1]; this is the enforcement, the same shape the
@@ -144,7 +138,7 @@ export async function readFormLayout(
       height: clamp01(z.height, 1 - clamp01(z.y)),
     }));
 
-  return { zones, model, raw: parsed };
+  return { zones, model: AI_MODEL, raw: parsed };
 }
 
 function clamp01(n: number, max = 1): number {

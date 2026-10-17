@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
-import { createClient } from "@/lib/supabase/server";
-import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
+import { getUser } from "@/lib/auth";
+import { transcribe } from "@/lib/stt";
 import { correctTranscript } from "@/lib/glossary";
 import { readSpokenPatient } from "@/lib/read-new-patient";
 import { getCurrentWardPack } from "@/lib/ward";
@@ -15,11 +15,7 @@ import { wardKeyterms } from "@/lib/transcription/patient-context";
  * correction rather than a wrong patient.
  */
 export async function POST(request: Request) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   // The patient is joining the selected unit, so its vocabulary, corrections and prompt apply.
@@ -45,10 +41,7 @@ export async function POST(request: Request) {
     }
 
     try {
-      const stt = getTranscriber();
-      const result = await stt.transcribe(audio, MEDICAL_VOCABULARY_HINT, {
-        keyterms: wardKeyterms(pack.lexiconSpecialty),
-      });
+      const result = await transcribe(audio, wardKeyterms(pack.lexiconSpecialty));
       transcript = (await correctTranscript(result.text, pack)).text;
     } catch (e) {
       return NextResponse.json(

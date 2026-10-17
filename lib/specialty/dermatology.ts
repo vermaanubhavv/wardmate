@@ -1,6 +1,5 @@
-import { DERMATOLOGY_DISCHARGE_TEMPLATES, DERMATOLOGY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-dermatology";
 import type { FormatKind } from "@/lib/formats";
-import type { SpecialtyPack } from "./types";
+import { admissionDayCount, type SpecialtyPack } from "./types";
 
 /**
  * The dermatology pack.
@@ -46,16 +45,11 @@ export const dermatologyPack: SpecialtyPack = {
   label: "Dermatology",
   blurb: "Skin, venereology and leprosy. Counts hospital days; morphology recorded, never promoted to a diagnosis.",
 
-  terminology: {
-    dayLabel: "HD",
-    admissionNoun: "problem",
-  },
-
   admissionPhrase: "a dermatology admission",
 
   // The hospital day. A skin biopsy, a patch test or a phototherapy session is a procedure and
   // does not start a post-operative clock.
-  dayCount: (p) => ({ clock: "admission", n: p.admission_day, text: `Day ${p.admission_day}` }),
+  dayCount: admissionDayCount,
 
   extractRoleLine:
     "You convert a dermatology resident's spoken ward-round note into structured observations.",
@@ -74,11 +68,6 @@ Skin ward and clinic — what the words mean here:
 - ITCH AND ITS TIMING ARE SYMPTOMS, recorded as said: "itching worse at night", "whole family itching", "no itch". The last of those is a negative only because it was said.
 - Abbreviations to leave AS SAID: "KOH", "DIF", "MDT", "SJS", "TEN", "DRESS", "BSA", "PUVA", "NBUVB", "STI". Store the letters that were said.
 `.trim(),
-
-  checklistAnchor: "admission",
-
-  dischargeTemplates: DERMATOLOGY_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: DERMATOLOGY_GENERIC_DISCHARGE_TEMPLATE,
 
   // Empty on purpose: SCORTEN, PASI and the BSA indices are real instruments this app has not
   // built or reviewed, and it does not compute them.

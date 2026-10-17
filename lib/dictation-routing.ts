@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { FAST_MODEL } from "@/lib/model";
+import { FAST_MODEL, anthropic, replyJson } from "@/lib/model";
 import { correctTranscript } from "@/lib/glossary";
 import type { SpecialtyPack } from "@/lib/specialty";
 import { log } from "@/lib/observability";
@@ -126,11 +125,9 @@ export function linesFromJev(
 }
 
 async function routeWithHaiku(corrected: string, sections: DictationSection[]): Promise<DictationLine[]> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
   const list = sections.map((s) => `- "${s.key}" — ${s.label}${s.hint ? `: ${s.hint}` : ""}`).join("\n");
 
-  const response = await new Anthropic({ apiKey }).messages.create({
+  const response = await anthropic().messages.create({
     model: FAST_MODEL,
     max_tokens: 700,
     system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
@@ -163,6 +160,5 @@ async function routeWithHaiku(corrected: string, sections: DictationSection[]): 
     messages: [{ role: "user", content: `Sections of this form:\n${list}\n\nFragment:\n${corrected}` }],
   });
 
-  const block = response.content.find((b) => b.type === "text");
-  return keepOffered(block && block.type === "text" ? JSON.parse(block.text) : null, sections);
+  return keepOffered(replyJson(response, null), sections);
 }

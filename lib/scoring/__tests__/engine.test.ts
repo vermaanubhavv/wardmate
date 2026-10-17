@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { evaluateCard, canVerifyCard } from "../engine";
+import { evaluateCard } from "../engine";
 import { ADMISSION, card, ctx, H, input, clock, acutePancreatitisV1 } from "./helpers";
 import { checkpointDueInstant, dueCheckpoints } from "../checkpoints";
 import { getDefinition, triggerableDefinitions } from "../definitions/registry";
@@ -70,7 +70,7 @@ describe("BISAP thresholds", () => {
 
 // ── 4. Missing data stays unknown, never zero ───────────────────────────────
 describe("missing data is unknown, not zero", () => {
-  it("no BUN recorded → component unknown, card incomplete, not verifiable", () => {
+  it("no BUN recorded → component unknown, card incomplete", () => {
     const r = evaluateCard(card("bisap"), ctx([input("age_years", 70, "years", 0)]));
     const bun = comp(r, "bisap.bun");
     expect(bun.status).toBe("unknown");
@@ -78,7 +78,6 @@ describe("missing data is unknown, not zero", () => {
     expect(bun.normalizedValue).toBeNull();
     expect(bun.missingReason).toBe("no_data");
     expect(r.state).toBe("incomplete");
-    expect(canVerifyCard(r).ok).toBe(false);
   });
 });
 
@@ -473,31 +472,6 @@ describe("feature flag", () => {
   });
 });
 
-// ── 17. Verification requires completeness (permission + safety gate) ──────
-describe("verification gate", () => {
-  it("cannot verify while a required component is unknown", () => {
-    const r = evaluateCard(card("bisap"), ctx([input("age_years", 70, "years", 0)]));
-    expect(canVerifyCard(r).ok).toBe(false);
-  });
-  it("can verify once every required component is answered", () => {
-    const r = evaluateCard(
-      card("bisap"),
-      ctx([
-        input("bun", 10, "mg/dL", 4),
-        input("age_years", 50, "years", 0),
-        input("mental_status", 1, "flag", 4, { text: "alert" }),
-        input("temp", 37, "C", 3),
-        input("hr", 80, "/min", 3),
-        input("rr", 16, "/min", 3),
-        input("wbc", 8000, "cells/mm3", 3),
-        input("pleural_effusion", null, null, 5, { text: "absent", sourceQuote: "CXR: no effusion" }),
-      ])
-    );
-    expect(r.missingRequiredCount).toBe(0);
-    expect(canVerifyCard(r).ok).toBe(true);
-  });
-});
-
 // ── 20. Historical instances keep their exact version ─────────────────────
 describe("versioning", () => {
   it("getDefinition resolves by exact (id, version) and returns null for an unknown version", () => {
@@ -508,10 +482,7 @@ describe("versioning", () => {
 
 // ── Trigger detection (configured code + text fallback + exclusions) ───────
 describe("trigger detection", () => {
-  const withActive = () => {
-    process.env.SCORING_ENGINE_ALLOW_DRAFTS = "on";
-    return triggerableDefinitions();
-  };
+  const withActive = () => triggerableDefinitions();
   it("matches a free-text working diagnosis", () => {
     const m = detectTriggers({ text: "? acute pancreatitis, gallstone" }, withActive());
     expect(m[0]?.pathwayId).toBe("acute_pancreatitis");

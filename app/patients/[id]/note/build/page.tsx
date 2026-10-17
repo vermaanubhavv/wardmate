@@ -8,6 +8,7 @@ import { getWardSpecialtyStored } from "@/lib/ward";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { medPresetsFor, progressNoteConfigFor } from "@/lib/progress-note-config";
 import { matchDischargeTemplateFor } from "@/lib/specialty/discharge";
+import { shortDate } from "@/lib/format-date";
 
 /**
  * Build today's progress note as a card stack — one pass through the sheet's own lines, mostly
@@ -111,11 +112,7 @@ export default async function BuildNotePage({ params }: { params: Promise<{ id: 
   );
   const suggestedAssessment = roundHappened && !concerning ? "Satisfactory" : "";
 
-  const dateLabel = new Date().toLocaleDateString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    day: "numeric",
-    month: "short",
-  });
+  const dateLabel = shortDate(new Date());
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">

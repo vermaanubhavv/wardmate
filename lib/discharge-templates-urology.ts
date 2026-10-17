@@ -1,5 +1,5 @@
-import type { AdviceItem } from "@/lib/discharge-entities";
 import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-templates";
+import { adv, proc, COMMON_MEDS } from "@/lib/discharge-template-parts";
 
 /**
  * UROLOGY discharge templates. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28).
@@ -20,16 +20,12 @@ import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-temp
  * pull a urology template.
  */
 
-const adv = (items: { module: string; text: string }[]): AdviceItem[] =>
-  items.map((it, i) => ({ id: `adv-${i}`, module: it.module, text: it.text }));
 
 // --- reusable pieces -------------------------------------------------------------------
 
 const M = {
-  paracetamol: { generic: "Paracetamol", strength: "650 mg", route: "PO", frequency: "TDS", duration: "5 days", status: "new" } as TemplateMedication,
-  paracetamolSos: { generic: "Paracetamol", strength: "650 mg", route: "PO", frequency: "SOS for pain", status: "prn" } as TemplateMedication,
+  ...COMMON_MEDS,
   diclofenac: { generic: "Diclofenac", strength: "50 mg", route: "PO", frequency: "SOS for pain", duration: "5 days", indication: "avoid if renal impairment", status: "prn" } as TemplateMedication,
-  pantoprazole: { generic: "Pantoprazole", strength: "40 mg", route: "PO", frequency: "OD before breakfast", duration: "5 days", status: "new" } as TemplateMedication,
   nitrofurantoin: { generic: "Nitrofurantoin", strength: "100 mg", route: "PO", frequency: "BD", duration: "5 days", indication: "[ or per urine culture ]; avoid if eGFR < 45", status: "new" } as TemplateMedication,
   cefixime: { generic: "Cefixime", strength: "200 mg", route: "PO", frequency: "BD", duration: "5 days", indication: "[ or per urine culture ]", status: "new" } as TemplateMedication,
   tamsulosin: { generic: "Tamsulosin", strength: "0.4 mg", route: "PO", frequency: "HS", status: "new" } as TemplateMedication,
@@ -60,14 +56,13 @@ export const UROLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted for [ radical / partial / simple ] nephrectomy for [ a (right / left) renal mass / a non-functioning (right / left) kidney due to __ ].",
       primaryDiagnosis: "[ Renal cell carcinoma (right / left) — cT_N_M_ / non-functioning (right / left) kidney secondary to __ ]",
-      procedure: {
+      procedure: proc({
         name: "[ Open / laparoscopic ] [ radical / partial / simple ] nephrectomy [ + adrenalectomy / lymphadenectomy ]",
         anaesthesia: "General anaesthesia",
         findings: "[ tumour size and site; renal vein / IVC; nodes; adhesions; specimen ]",
         drains: "[ retroperitoneal drain ]",
-        complications: "Nil",
         outcome: "Procedure completed successfully; specimen sent for histopathology.",
-      },
+      }),
       clinicalCourse:
         "Underwent [procedure] on [date]. Postoperatively urine output and serum creatinine were monitored [ creatinine __ → __ ]. Oral intake resumed on POD [ __ ]; drain and catheter removed on POD [ __ ]. The patient is afebrile, ambulant, tolerating a normal diet and voiding well at discharge.",
       medications: [
@@ -116,14 +111,13 @@ export const UROLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted for [ open / laparoscopic ] pyeloplasty for [ right / left ] pelvi-ureteric junction obstruction with [ pain / reduced split function / infection ].",
       primaryDiagnosis: "[ Right / left ] PUJ obstruction [ + secondary calculi ] — split function [ __ % ]",
-      procedure: {
+      procedure: proc({
         name: "[ Open / laparoscopic ] [ Anderson-Hynes dismembered ] pyeloplasty with DJ stenting",
         anaesthesia: "General anaesthesia",
         findings: "[ cause — intrinsic stenosis / crossing vessel; pelvis size; stones removed; stent size ]",
         drains: "[ perinephric drain ]",
-        complications: "Nil",
         outcome: "Procedure completed; DJ stent in situ.",
-      },
+      }),
       clinicalCourse:
         "Underwent [procedure] on [date]. Drain output settled and the drain was removed on POD [ __ ]; the catheter was removed on POD [ __ ] and the patient voided well. The patient is afebrile, ambulant and eating normally at discharge with the DJ stent in situ.",
       medications: [M.paracetamol, M.diclofenac, M.pantoprazole, M.cefixime, { ...M.solifenacin, frequency: "SOS", status: "prn" }],
@@ -152,14 +146,13 @@ export const UROLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted for percutaneous nephrolithotomy for a [ __ mm / staghorn ] [ right / left ] renal calculus with [ pain / infection / obstruction ].",
       primaryDiagnosis: "[ Right / left ] renal calculus [ size, site — pelvic / calyceal / staghorn ]",
-      procedure: {
+      procedure: proc({
         name: "[ Right / left ] [ standard / mini ] PCNL [ + DJ stenting / tubeless ]",
         anaesthesia: "General anaesthesia",
         findings: "[ access calyx; stone burden; clearance; residual fragments; stone sent for analysis ]",
         drains: "[ nephrostomy tube / tubeless ]",
-        complications: "Nil",
         outcome: "Procedure completed; [ complete / near-complete ] clearance.",
-      },
+      }),
       clinicalCourse:
         "Underwent [procedure] on [date]. Postoperative haematuria settled; [ the nephrostomy was clamped and removed on POD __ ]; the catheter was removed and the patient voided well. Post-op X-ray KUB / USG showed [ no residual / __ mm residual ] stone. The patient is afebrile, comfortable and ambulant at discharge [ with a DJ stent in situ ].",
       medications: [M.paracetamol, M.diclofenac, M.pantoprazole, M.cefixime, { ...M.tamsulosin, duration: "until stent removal", indication: "stent discomfort" }, M.potassiumCitrate],
@@ -195,14 +188,13 @@ export const UROLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [ right / left ] renal colic due to a [ __ mm ] [ upper / mid / lower ] ureteric calculus [ with hydronephrosis / infection ] requiring ureteroscopic management.",
       primaryDiagnosis: "[ Right / left ] [ upper / mid / lower ] ureteric calculus [ __ mm ] [ with hydroureteronephrosis ]",
-      procedure: {
+      procedure: proc({
         name: "[ Right / left ] [ semirigid URS / RIRS ] with [ laser / pneumatic ] lithotripsy + DJ stenting [ / DJ stenting alone ]",
         anaesthesia: "[ Spinal / general ] anaesthesia",
         findings: "[ stone site and size; fragmentation; clearance; ureteric oedema; stent size ]",
         drains: "Per-urethral catheter (removed before discharge)",
-        complications: "Nil",
         outcome: "Procedure completed; DJ stent in situ.",
-      },
+      }),
       clinicalCourse:
         "Underwent [procedure] on [date]. The catheter was removed on POD [ __ ] and the patient voided well. Pain settled on oral analgesia. [ Post-op X-ray KUB: stent in position, no residual stone. ] The patient is afebrile and comfortable at discharge with the DJ stent in situ.",
       medications: [
@@ -239,14 +231,13 @@ export const UROLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [ painless haematuria ] and a bladder tumour on imaging / cystoscopy, for transurethral resection.",
       primaryDiagnosis: "Bladder tumour [ size, number, site ] — [ histology, grade, stage, muscle present — awaited ]",
-      procedure: {
+      procedure: proc({
         name: "Cystoscopy and TURBT [ + single-dose intravesical mitomycin C ]",
         anaesthesia: "[ Spinal / general ] anaesthesia",
         findings: "[ number, size, site, papillary / solid; resection complete; detrusor muscle sampled; bimanual examination ]",
         drains: "Three-way catheter with bladder irrigation (removed on POD [ __ ])",
-        complications: "Nil",
         outcome: "Resection completed; chips sent for histopathology.",
-      },
+      }),
       clinicalCourse:
         "Underwent TURBT on [date] [ with a single post-operative instillation of intravesical chemotherapy ]. Bladder irrigation was stopped when the urine cleared on POD [ __ ], and the catheter was removed on POD [ __ ] with a successful void. The patient is afebrile, voiding clear urine and ambulant at discharge.",
       medications: [M.paracetamol, M.nitrofurantoin, M.lactulose, M.oxybutynin],
@@ -279,14 +270,13 @@ export const UROLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted for transurethral resection of the prostate for benign prostatic enlargement with [ bothersome lower urinary tract symptoms / refractory retention / recurrent UTI / bladder stones ].",
       primaryDiagnosis: "Benign prostatic enlargement [ prostate volume __ ml; PSA __ ] [ with retention ]",
-      procedure: {
+      procedure: proc({
         name: "[ Monopolar / bipolar ] TURP [ / HoLEP ]",
         anaesthesia: "Spinal anaesthesia",
         findings: "[ lobes, prostate size, bladder trabeculation, stones; resection weight ]",
         drains: "Three-way catheter with bladder irrigation",
-        complications: "Nil",
         outcome: "Procedure completed; chips sent for histopathology.",
-      },
+      }),
       clinicalCourse:
         "Underwent [procedure] on [date]. Bladder irrigation was stopped on POD [ __ ] when the urine cleared; the catheter was removed on POD [ __ ] and the patient voided with a good stream [ post-void residual __ ml ]. The patient is afebrile and voiding clear urine at discharge.",
       medications: [
@@ -324,14 +314,13 @@ export const UROLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [ poor stream / retention / suprapubic catheter ] due to a [ __ cm ] [ bulbar / penile / posterior ] urethral stricture [ aetiology ] for [ optical internal urethrotomy / urethroplasty ].",
       primaryDiagnosis: "[ Bulbar / penile / pan-anterior / posterior ] urethral stricture [ length __ cm ] [ aetiology: idiopathic / traumatic / instrumentation / lichen sclerosus ]",
-      procedure: {
+      procedure: proc({
         name: "[ Optical internal urethrotomy / excision and primary anastomosis / buccal mucosal graft urethroplasty ]",
         anaesthesia: "[ Spinal / general ] anaesthesia",
         findings: "[ stricture site and length; calibre; graft size ]",
         drains: "[ Per-urethral catheter (__ Fr) / suprapubic catheter ]",
-        complications: "Nil",
         outcome: "Procedure completed; catheter in situ.",
-      },
+      }),
       clinicalCourse:
         "Underwent [procedure] on [date]. [ OIU: the catheter was removed on POD __ and the patient voided with a good stream; self-calibration was taught. / Urethroplasty: the patient is discharged on the catheter, to return for a pericatheter urethrogram and catheter removal at 3 weeks. ] The patient is afebrile and comfortable at discharge.",
       medications: [M.paracetamol, M.diclofenac, M.cefixime, M.oxybutynin, M.lactulose],
@@ -365,14 +354,13 @@ export const UROLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted as a day case for [ hydrocelectomy for a (right / left) primary vaginal hydrocele / circumcision for phimosis ].",
       primaryDiagnosis: "[ Right / left / bilateral ] primary vaginal hydrocele / [ phimosis / recurrent balanoposthitis ]",
-      procedure: {
+      procedure: proc({
         name: "[ Jaboulay's eversion / Lord's plication / excision of sac ] / [ Circumcision ]",
         anaesthesia: "[ Spinal / local / general ] anaesthesia",
         findings: "[ fluid volume and character; testis normal ] / [ prepuce; glans ]",
         drains: "[ nil / corrugated drain ]",
-        complications: "Nil",
         outcome: "Procedure completed successfully.",
-      },
+      }),
       clinicalCourse:
         "Underwent [procedure] on [date] as a day case. The patient passed urine, pain was controlled with oral analgesia and there was no haematoma. The patient is discharged the same day [ / on POD 1 ].",
       medications: [
@@ -413,14 +401,13 @@ export const UROLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with acute retention of urine [ precipitated by __ ] due to [ benign prostatic enlargement ], relieved by urethral catheterisation.",
       primaryDiagnosis: "Acute urinary retention due to [ benign prostatic enlargement (volume __ ml) ] [ precipitant: constipation / UTI / drugs / alcohol ]",
-      procedure: {
+      procedure: proc({
         name: "Per-urethral catheterisation [ __ Fr Foley ] [ / suprapubic cystostomy ]",
         anaesthesia: "[ Local anaesthetic gel ]",
         findings: "[ drained volume __ ml; urine appearance ]",
         drains: "Per-urethral catheter in situ at discharge",
-        complications: "Nil",
         outcome: "Retention relieved.",
-      },
+      }),
       clinicalCourse:
         "Presented on [date] with acute retention; catheterisation drained [ __ ml ]. [ Post-obstructive diuresis / renal function __ → __ ]. The precipitant [ __ ] was treated and an alpha-blocker started. [ Trial without catheter on __ failed / not yet attempted. ] The patient is afebrile and is discharged on the catheter with a plan for trial void.",
       medications: [
@@ -468,14 +455,13 @@ export const UROLOGY_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     indication:
       "Patient was admitted with [ presentation ] requiring [ inpatient management / investigation / surgery ].",
     primaryDiagnosis: "",
-    procedure: {
+    procedure: proc({
       name: "[ Procedure name ]",
       anaesthesia: "[ General / spinal / local ]",
       findings: "[ significant findings ]",
       drains: "[ catheter / stent / drain at discharge, if any ]",
-      complications: "Nil",
       outcome: "Procedure completed successfully.",
-    },
+    }),
     clinicalCourse:
       "Admitted with [presentation]. [Procedure] was performed on [date]. The postoperative period was [uneventful]; [ the catheter was removed and the patient voided well ]. The patient is afebrile and ambulant at discharge.",
     medications: [M.paracetamol, M.pantoprazole],

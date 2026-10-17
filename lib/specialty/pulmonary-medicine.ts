@@ -1,6 +1,5 @@
-import { PULMONARY_DISCHARGE_TEMPLATES, PULMONARY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-pulmonary";
 import type { FormatKind } from "@/lib/formats";
-import type { SpecialtyPack } from "./types";
+import { admissionDayCount, type SpecialtyPack } from "./types";
 
 /**
  * The pulmonary medicine pack — chest medicine, respiratory medicine, the same department
@@ -47,16 +46,11 @@ export const pulmonaryMedicinePack: SpecialtyPack = {
   label: "Pulmonary Medicine",
   blurb: "Chest and respiratory medicine. Counts hospital days, leads with tuberculosis, oxygen and the airway.",
 
-  terminology: {
-    dayLabel: "HD",
-    admissionNoun: "problem",
-  },
-
   admissionPhrase: "a pulmonary medicine admission",
 
   // The hospital day, always. Same clock as internal medicine, same label, so a mixed corridor
   // never has two meanings of "day 3" on adjacent beds.
-  dayCount: (p) => ({ clock: "admission", n: p.admission_day, text: `Day ${p.admission_day}` }),
+  dayCount: admissionDayCount,
 
   extractRoleLine:
     "You convert a chest physician's spoken ward-round note into structured observations.",
@@ -77,14 +71,6 @@ Pulmonary medicine ward — what the words mean here:
 - SPIROMETRY AND SLEEP STUDIES: "FEV1 1.2 litres", "FEV1 by FVC 58 percent", "post bronchodilator reversibility 8 percent", "AHI 42", "Epworth 16" are investigations. Record the number spoken; never infer a GOLD stage or a severity grade.
 - Abbreviations to leave AS SAID: "RT" (ambiguous — radiotherapy or Ryle's tube), "ICD" (intercostal drain here, but store the letters said), "ATT"/"HRZE", "AFB", "CBNAAT", "NIV"/"BiPAP"/"HFNC", "ILD", "ABPA", "OSA", "ARDS".
 `.trim(),
-
-  // Nothing here hangs off an operation: the checklist conditions that matter on this ward are
-  // hours since admission (oxygen reassessed, sputum sent before the first dose) and labs.
-  checklistAnchor: "admission",
-
-  // This department's own — see the note above.
-  dischargeTemplates: PULMONARY_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: PULMONARY_GENERIC_DISCHARGE_TEMPLATE,
 
   // Only scores this app has actually built and activated. CURB-65 is the pneumonia pathway,
   // qSOFA carries SIRS alongside it, and the two Wells pathways are here because a breathless

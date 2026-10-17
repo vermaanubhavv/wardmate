@@ -1,6 +1,5 @@
-import { EMERGENCY_DISCHARGE_TEMPLATES, EMERGENCY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-emergency";
 import type { FormatKind } from "@/lib/formats";
-import type { SpecialtyPack } from "./types";
+import { admissionDayCount, type SpecialtyPack } from "./types";
 
 /**
  * The emergency medicine pack — casualty, the resuscitation bay, the observation ward.
@@ -50,16 +49,11 @@ export const emergencyMedicinePack: SpecialtyPack = {
   label: "Emergency Medicine",
   blurb: "Casualty and the resuscitation bay. Counts from arrival; the time of everything, and the disposition.",
 
-  terminology: {
-    dayLabel: "Day",
-    admissionNoun: "arrival",
-  },
-
   admissionPhrase: "an emergency department attendance",
 
   // The admission day: the only clock every patient here has. Hours since arrival drive the
   // triggers, and the guidance below is what keeps the times inside the observations.
-  dayCount: (p) => ({ clock: "admission", n: p.admission_day, text: `Day ${p.admission_day}` }),
+  dayCount: admissionDayCount,
 
   extractRoleLine:
     "You convert an emergency physician's spoken note into structured observations.",
@@ -78,11 +72,6 @@ Emergency department — what the words mean here:
 - THE DISPOSITION IS ALWAYS RECORDED AS STATED: "admitted under surgery", "shifted to ICU", "referred to higher centre", "discharged against medical advice", "left without being seen", "declared brought dead at 11:05". It is the outcome of the episode and it is never inferred from what came before.
 - Abbreviations to leave AS SAID: "ROSC", "CPR", "GCS", "FAST", "AMA", "LAMA", "BD" (brought dead — store the letters said), "RTA", "OP poisoning", "ETT", "NIV".
 `.trim(),
-
-  checklistAnchor: "admission",
-
-  dischargeTemplates: EMERGENCY_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: EMERGENCY_GENERIC_DISCHARGE_TEMPLATE,
 
   // The five an emergency physician reaches for, all active. No triage category and no
   // early-warning score — see the header.

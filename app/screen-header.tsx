@@ -19,15 +19,12 @@ export default function ScreenHeader({
   backLabel = "Ward",
   title,
   subtitle,
-  trailing,
   children,
 }: {
   back?: string;
   backLabel?: string;
   title: React.ReactNode;
   subtitle?: React.ReactNode;
-  /** Something for the right of the navigation bar — a count, a primary action. */
-  trailing?: React.ReactNode;
   /** Anything belonging under the title — a control, a note. */
   children?: React.ReactNode;
 }) {
@@ -41,7 +38,6 @@ export default function ScreenHeader({
           <ChevronIcon className="h-[18px] w-[18px] rotate-180" />
           {backLabel}
         </Link>
-        {trailing && <div className="flex items-center pr-2">{trailing}</div>}
       </div>
 
       <header className="px-4 pb-3 pt-4">

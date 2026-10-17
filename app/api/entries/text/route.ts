@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { extractObservations } from "@/lib/extract";
 import { getTemplateForPatient } from "@/lib/templates";
 import { getPublishedProtocolContext } from "@/lib/protocols";
 import { applyProcedureDone } from "@/lib/apply-procedure-done";
+import { insertObservations } from "@/lib/observations";
 import { getWardPack } from "@/lib/ward";
 
 /**
@@ -17,9 +19,7 @@ import { getWardPack } from "@/lib/ward";
 export async function POST(request: Request) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const body = await request.json().catch(() => null);
@@ -42,10 +42,13 @@ export async function POST(request: Request) {
 
   if (!patient) return NextResponse.json({ error: "Patient not found." }, { status: 404 });
 
-  const pack = await getWardPack(patient.ward_id);
-  const template = await getTemplateForPatient(patient);
+  // Independent reads, sent together.
+  const [pack, template, protocols] = await Promise.all([
+    getWardPack(patient.ward_id),
+    getTemplateForPatient(patient),
+    getPublishedProtocolContext(),
+  ]);
   const expectedLabels = template?.items.map((i) => i.label) ?? [];
-  const protocols = await getPublishedProtocolContext();
 
   let extraction;
   try {
@@ -92,31 +95,19 @@ export async function POST(request: Request) {
     );
   }
 
-  const rows = extraction.observations.map((o) => ({
-    entry_id: entry.id,
-    patient_id: patientId,
-    kind: o.kind,
-    label: o.label,
-    value_text: o.value_text,
-    value_num: o.value_num,
-    unit: o.unit,
-    source_quote: o.source_quote,
-    needs_confirmation: o.needs_confirmation,
-    urgency: o.urgency,
-    pac_verdict: o.pac_verdict,
-    task_open: o.task_open ?? null,
-    task_category: o.task_category ?? null,
-    conflict_note: dayConflict(o, patient),
-  }));
-
-  if (rows.length > 0) {
-    const { error: obsError } = await supabase.from("observations").insert(rows);
-    if (obsError) {
-      return NextResponse.json(
-        { entry_id: entry.id, observations: [], error: obsError.message },
-        { status: 500 }
-      );
-    }
+  const obsError = await insertObservations(
+    supabase,
+    entry.id,
+    patientId,
+    patient,
+    extraction.observations,
+    { verb: "wrote" }
+  );
+  if (obsError) {
+    return NextResponse.json(
+      { entry_id: entry.id, observations: [], error: obsError },
+      { status: 500 }
+    );
   }
 
   await applyProcedureDone(supabase, patientId, patient, extraction.observations, pack);
@@ -126,17 +117,4 @@ export async function POST(request: Request) {
     observations: extraction.observations,
     discarded: extraction.rejected.length,
   });
-}
-
-function dayConflict(
-  o: { kind: string; value_num: number | null },
-  patient: { post_op_day: number | null; admission_day: number }
-): string | null {
-  if (o.kind !== "day_number" || o.value_num === null) return null;
-
-  const computed = patient.post_op_day ?? patient.admission_day;
-  const label = patient.post_op_day !== null ? "post-op day" : "day of admission";
-
-  if (Math.round(o.value_num) === computed) return null;
-  return `You wrote day ${o.value_num}; recorded dates give ${label} ${computed}.`;
 }

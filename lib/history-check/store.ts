@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { createClient } from "@/lib/supabase/server";
+import type { Supa } from "@/lib/supabase/server";
 import { log } from "@/lib/observability";
 import { historyCheckEnabled } from "@/lib/history-check/flag";
 import { getTree } from "@/lib/history-check/trees";
@@ -9,8 +9,6 @@ import { validateExtraction } from "@/lib/history-check/validate";
 import { jevCrossCheck } from "@/lib/history-check/jev-check";
 import { AI_MODEL } from "@/lib/model";
 import type { SlotState } from "@/lib/history-check/types";
-
-type Supa = Awaited<ReturnType<typeof createClient>>;
 
 /** One stored run — the row shape of history_checks (0078). */
 export type HistoryCheckRun = {
@@ -78,20 +76,6 @@ export async function loadSources(supabase: Supa, patientId: string): Promise<Hi
       observations: { label: string; value_text: string | null }[];
     }[])
   );
-}
-
-/** The newest run of a tree for a patient, if any. Null when the flag is off. */
-export async function latestRun(supabase: Supa, patientId: string, treeId: string): Promise<HistoryCheckRun | null> {
-  if (!historyCheckEnabled()) return null;
-  const { data } = await supabase
-    .from("history_checks")
-    .select(RUN_COLUMNS)
-    .eq("patient_id", patientId)
-    .eq("tree_id", treeId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return (data as HistoryCheckRun | null) ?? null;
 }
 
 export type RunOutcome =

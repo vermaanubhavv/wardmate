@@ -1,3 +1,5 @@
+import Anthropic from "@anthropic-ai/sdk";
+
 /**
  * The model every AI path in WardMate uses.
  *
@@ -54,3 +56,19 @@ export const AI_MODEL = "claude-sonnet-5-5";
  *  1.4 s median on routing). Unlike Haiku 4.5 it accepts `effort`, and thinks by default, so
  *  every fast call sets effort "low" to keep that latency. */
 export const FAST_MODEL = "claude-haiku-5-5";
+
+/** The one Anthropic client constructor. Throws when the key is missing, so a misconfigured
+ *  server fails loudly rather than sending a keyless request. */
+export function anthropic(): Anthropic {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
+  return new Anthropic({ apiKey });
+}
+
+/** The reply's first text block parsed as JSON, or `fallback` when the reply carries no text
+ *  block. Malformed JSON throws, as JSON.parse does — callers decide whether that is fatal. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function replyJson(response: Anthropic.Message, fallback: unknown): any {
+  const block = response.content.find((b) => b.type === "text");
+  return block && block.type === "text" ? JSON.parse(block.text) : fallback;
+}

@@ -1,5 +1,5 @@
-import type { AdviceItem } from "@/lib/discharge-entities";
 import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-templates";
+import { adv, proc } from "@/lib/discharge-template-parts";
 
 /**
  * DERMATOLOGY discharge templates. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28).
@@ -19,8 +19,6 @@ import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-temp
  * before psoriasis.
  */
 
-const adv = (items: { module: string; text: string }[]): AdviceItem[] =>
-  items.map((it, i) => ({ id: `adv-${i}`, module: it.module, text: it.text }));
 
 const M = {
   paracetamolSos: { generic: "Paracetamol", strength: "650 mg", route: "PO", frequency: "SOS for pain or fever", status: "prn" } as TemplateMedication,
@@ -63,14 +61,13 @@ export const DERMATOLOGY_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
   scaffold: {
     indication: "Patient was admitted with [ presenting skin problem ] for [ evaluation / inpatient management ].",
     primaryDiagnosis: "",
-    procedure: {
+    procedure: proc({
       name: "[ Skin biopsy / other bedside procedure, if any ]",
       anaesthesia: "",
       findings: "[ biopsy / immunofluorescence / culture results ]",
       drains: "",
-      complications: "Nil",
       outcome: "[ Outcome of this admission ]",
-    },
+    }),
     clinicalCourse:
       "Admitted on [ date ] with [ presentation ]. [ Working diagnosis and how it was reached. ] [ Treatment given. ] The skin lesions [ improved / healed ]; the patient is afebrile, eating and fit for discharge on [ date ] with the plan below.",
     medications: [M.emollient, M.cetirizine],
@@ -144,14 +141,13 @@ export const DERMATOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with a [ widespread rash / fever / facial swelling / organ involvement ] after [ suspected culprit drug ], for evaluation and management of a severe drug reaction.",
       primaryDiagnosis: "[ DRESS (RegiSCAR __) / AGEP / severe maculopapular drug eruption ] — suspected culprit [ … ]; organs involved [ … ]",
-      procedure: {
+      procedure: proc({
         name: "Nil",
         anaesthesia: "",
         findings: "[ eosinophil count; atypical lymphocytes; liver / renal involvement; biopsy ]",
         drains: "",
-        complications: "Nil",
         outcome: "Rash settling; organ function [ normalised / improving ].",
-      },
+      }),
       clinicalCourse:
         "Admitted on [ date ] with [ presentation ] [ __ ] weeks after starting [ culprit drug ], which was stopped. [ Eosinophilia / transaminitis / renal involvement ] noted. Treated with [ systemic steroids / topical steroids and supportive care ]. Fever settled on day [ __ ]; liver [ and renal ] function [ improving ]. Fit for discharge on a steroid taper with blood tests planned.",
       medications: [culprit, M.prednisolone, M.pantoprazole, M.calciumD3, M.mometasone, M.emollient, M.cetirizine],
@@ -179,14 +175,13 @@ export const DERMATOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with [ new / relapsed ] pemphigus vulgaris with [ extensive skin erosions / oral erosions limiting intake ], for disease control.",
       primaryDiagnosis: "Pemphigus vulgaris [ mucocutaneous / mucosal ] — [ PDAI __ ]",
-      procedure: {
+      procedure: proc({
         name: "[ Nil / skin biopsy with DIF / rituximab infusion — dates ]",
         anaesthesia: "",
         findings: "[ histology; DIF; anti-Dsg 1 / 3 titres ]",
         drains: "",
-        complications: "Nil",
         outcome: "Disease [ controlled — no new blisters for __ days ].",
-      },
+      }),
       clinicalCourse:
         "Admitted on [ date ] with [ presentation ]. Diagnosis [ confirmed by biopsy and DIF / known ]. Treated with [ systemic steroids / rituximab on __ / azathioprine / DP pulse ] with dressings of the erosions and mouth care. No new blisters since day [ __ ]; erosions [ healing ]. Eating well and fit for discharge.",
       medications: [
@@ -224,14 +219,13 @@ export const DERMATOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with widespread tense blisters and itch, for evaluation and control of bullous pemphigoid.",
       primaryDiagnosis: "Bullous pemphigoid [ __% BSA ] [ suspected trigger: … ]",
-      procedure: {
+      procedure: proc({
         name: "[ Nil / skin biopsy with DIF ]",
         anaesthesia: "",
         findings: "[ histology; DIF ]",
         drains: "",
-        complications: "Nil",
         outcome: "No new blisters for [ __ ] days.",
-      },
+      }),
       clinicalCourse:
         "Admitted on [ date ] with tense blisters over [ sites ]. Diagnosis [ confirmed by biopsy and DIF ]. [ Possible trigger drug (e.g. gliptin) stopped. ] Treated with super-potent topical steroid [ ± doxycycline / systemic steroid ]. Blisters stopped by day [ __ ]; erosions healing. Fit for discharge.",
       medications: [
@@ -307,14 +301,13 @@ export const DERMATOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with a flare of [ plaque / pustular ] psoriasis [ __% BSA / PASI __ ], for control.",
       primaryDiagnosis: "[ Chronic plaque / generalised pustular ] psoriasis — flare [ PASI __ ] [ ± psoriatic arthritis ]",
-      procedure: {
+      procedure: proc({
         name: "[ Nil / phototherapy sessions ]",
         anaesthesia: "",
         findings: "[ trigger identified ]",
         drains: "",
-        complications: "Nil",
         outcome: "[ PASI __ at discharge ]",
-      },
+      }),
       clinicalCourse:
         "Admitted on [ date ] with [ presentation ] [ trigger: … ]. Treated with emollients, topical steroid and keratolytic [ and methotrexate / cyclosporine / acitretin / phototherapy ]. Improved to [ PASI __ ]. Fit for discharge.",
       medications: [
@@ -349,14 +342,13 @@ export const DERMATOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with [ type 1 (reversal) reaction / erythema nodosum leprosum ] in [ paucibacillary / multibacillary ] leprosy [ with neuritis ], for control of the reaction.",
       primaryDiagnosis: "[ BT / BB / BL / LL ] Hansen's disease — [ type 1 reaction / ENL ] [ with neuritis of __ nerve(s) ]; disability grade [ … ]",
-      procedure: {
+      procedure: proc({
         name: "[ Nil / slit-skin smear / nerve biopsy ]",
         anaesthesia: "",
         findings: "[ BI / MI; nerve function assessment ]",
         drains: "",
-        complications: "Nil",
         outcome: "Reaction [ settling ]; nerve function [ stable / improving ].",
-      },
+      }),
       clinicalCourse:
         "Admitted on [ date ] with [ presentation ]. MDT [ continued / started on __ ]. Reaction treated with [ prednisolone / clofazimine / thalidomide / NSAIDs ] and rest of the affected limbs [ splints ]. Nerve function assessed on [ dates ]. Fever and new lesions settled by day [ __ ]. Fit for discharge.",
       medications: [
@@ -393,14 +385,13 @@ export const DERMATOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with [ cellulitis of the __ / extensive pyoderma ] with [ fever ], for intravenous antibiotics.",
       primaryDiagnosis: "[ Cellulitis __ / erysipelas / extensive impetigo / furunculosis ] [ portal of entry: … ]",
-      procedure: {
+      procedure: proc({
         name: "[ Nil / incision and drainage ]",
         anaesthesia: "",
         findings: "[ pus culture and sensitivity ]",
         drains: "",
-        complications: "Nil",
         outcome: "Erythema and swelling [ settling ].",
-      },
+      }),
       clinicalCourse:
         "Admitted on [ date ] with [ presentation ]. Treated with intravenous [ … ], limb elevation [ and drainage ]. Fever settled on day [ __ ]; erythema receding from the marked margin. Switched to oral antibiotics on [ … ]. Portal of entry [ … ] treated. Fit for discharge.",
       medications: [
@@ -435,14 +426,13 @@ export const DERMATOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     scaffold: {
       indication: "Patient was admitted with herpes zoster of the [ dermatome ] [ disseminated / ophthalmic / severe pain / immunocompromised ], for antiviral therapy.",
       primaryDiagnosis: "Herpes zoster [ dermatome ] [ ± ophthalmicus / dissemination / secondary infection ]",
-      procedure: {
+      procedure: proc({
         name: "Nil",
         anaesthesia: "",
         findings: "[ Tzanck / PCR; HIV status; ophthalmology findings ]",
         drains: "",
-        complications: "Nil",
         outcome: "Lesions crusting.",
-      },
+      }),
       clinicalCourse:
         "Admitted on [ date ] with [ presentation ], day [ __ ] of rash. Treated with [ intravenous acyclovir / oral antiviral ] from [ … ], analgesia [ and ophthalmology care ]. No new vesicles since day [ __ ]; lesions crusting. Fit for discharge to complete the antiviral course.",
       medications: [

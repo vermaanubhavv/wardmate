@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { AI_MODEL } from "@/lib/model";
+import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
 import { traced, recordAiUsage } from "@/lib/observability";
 import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
 import { forWard } from "@/lib/specialty/prompt-words";
@@ -109,11 +108,7 @@ export async function readRoundDictation(
   wardBeds: string[] = [],
   pack: SpecialtyPack = generalSurgeryPack
 ): Promise<RoundResult> {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
-
-  const model = AI_MODEL;
-  const client = new Anthropic({ apiKey: key });
+  const client = anthropic();
 
   const beds =
     wardBeds.length > 0
@@ -125,7 +120,7 @@ export async function readRoundDictation(
     "gen_ai.chat",
     () =>
       client.messages.create({
-        model,
+        model: AI_MODEL,
         max_tokens: 8000,
         system: forWard(SYSTEM_PROMPT, pack) + beds,
         // Getting a boundary wrong here puts one patient's instruction onto another patient,
@@ -140,15 +135,14 @@ export async function readRoundDictation(
         messages: [{ role: "user", content: `Transcript:\n\n${transcript}` }],
       }),
     {
-      "gen_ai.request.model": model,
+      "gen_ai.request.model": AI_MODEL,
       "transcript.chars": transcript.length,
       "ward_beds.count": wardBeds.length,
     }
   );
   recordAiUsage(response.usage);
 
-  const text = response.content.find((b) => b.type === "text");
-  const parsed = text && text.type === "text" ? JSON.parse(text.text) : { segments: [] };
+  const parsed = replyJson(response, { segments: [] });
   const candidates: RoundSegment[] = parsed.segments ?? [];
 
   // THE ENFORCEMENT STEP, same as the bedside extraction: a segment whose words are not
@@ -160,7 +154,7 @@ export async function readRoundDictation(
     return span.length > 0 && haystack.includes(span);
   });
 
-  return { segments, model, raw: parsed };
+  return { segments, model: AI_MODEL, raw: parsed };
 }
 
 function normalise(s: string): string {

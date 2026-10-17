@@ -1,9 +1,5 @@
-import {
-  ONCOLOGY_DISCHARGE_TEMPLATES,
-  ONCOLOGY_GENERIC_DISCHARGE_TEMPLATE,
-} from "@/lib/discharge-templates-oncology";
 import type { FormatKind } from "@/lib/formats";
-import type { SpecialtyPack } from "./types";
+import { admissionDayCount, type SpecialtyPack } from "./types";
 
 /**
  * The medical oncology pack.
@@ -35,11 +31,6 @@ export const medicalOncologyPack: SpecialtyPack = {
   label: "Medical Oncology",
   blurb: "Counts chemotherapy cycle days. Neutropenia-first checklists and oncology discharge summaries.",
 
-  terminology: {
-    dayLabel: "C·D",
-    admissionNoun: "cycle",
-  },
-
   admissionPhrase: "a medical oncology admission",
 
   // "C2 D3" is how it is said and written on a treatment card, so it is what prints. A patient
@@ -50,7 +41,7 @@ export const medicalOncologyPack: SpecialtyPack = {
       const cycle = p.cycle_number != null && p.cycle_number > 0 ? `C${p.cycle_number} ` : "";
       return { clock: "cycle", n: p.cycle_day, text: `${cycle}D${p.cycle_day}` };
     }
-    return { clock: "admission", n: p.admission_day, text: `Day ${p.admission_day}` };
+    return admissionDayCount(p);
   },
 
   extractRoleLine:
@@ -70,13 +61,6 @@ Medical oncology ward — what the words mean here:
 - FEVER in this patient group is time-critical. Record temperature, "febrile", "spiked", "rigors" exactly as said. Do not soften and do not interpret — "no fever documented" is a valid and useful outcome.
 - Abbreviations to leave EXPANDED-AS-SAID and never rewrite: "RT" (ambiguous — radiotherapy or Ryle's tube), "CR" / "PR" / "SD" / "PD" (response categories), "BM" (bone marrow), "IT" (intrathecal), "FN" (febrile neutropenia), "TLS" (tumour lysis syndrome). Store the letters that were said.
 `.trim(),
-
-  // Fever, counts and the cycle drive the checklist here, and none of them hang off an
-  // operation. See CYCLE_ANCHORED in lib/checklist-triggers.ts.
-  checklistAnchor: "cycle",
-
-  dischargeTemplates: ONCOLOGY_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: ONCOLOGY_GENERIC_DISCHARGE_TEMPLATE,
 
   // Deliberately empty. The surgical pathways (Ranson's, AIR, TG18, Glasgow-Blatchford) are
   // wrong for this ward and showing them would be worse than showing nothing. The oncology

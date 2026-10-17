@@ -67,33 +67,36 @@ function secondsUntilExpiry(cookie: string): number | null {
 /** Refresh this far ahead of expiry, so a round is never interrupted by a token running out. */
 const REFRESH_WINDOW_SECONDS = 10 * 60;
 
+/**
+ * Reachable with no session:
+ * - /auth/callback: where Google returns the doctor with a one-time code, before any session
+ *   exists. Bouncing it to /login would turn a successful sign-in into a loop.
+ * - the public waitlist (linked from the Instagram bio), the fuller marketing page at /home,
+ *   and the waitlist/contact/feedback endpoints they use.
+ * - /monitoring: Sentry's tunnel (next.config.ts → tunnelRoute). The browser SDK POSTs error
+ *   reports here; a crash on the sign-in screen, before any session exists, still needs to
+ *   get out.
+ */
+const PUBLIC_PREFIXES = [
+  "/auth/callback",
+  "/waitlist",
+  "/home",
+  "/feedback",
+  "/api/waitlist",
+  "/api/contact",
+  "/api/feedback", // also covers /api/feedback/unsubscribe
+  "/api/cron/feedback-email",
+  "/monitoring",
+];
+
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
-  // Where Google returns the doctor with a one-time code, before any session exists. Bouncing
-  // it to /login would turn a successful sign-in into a loop back to the sign-in screen.
-  if (path.startsWith("/auth/callback")) return NextResponse.next({ request });
+  if (PUBLIC_PREFIXES.some((p) => path.startsWith(p))) return NextResponse.next({ request });
 
-  // The public waitlist (linked from the Instagram bio), the fuller marketing page at /home,
-  // and the waitlist/contact form endpoints they use. Visitors here have no session and must
-  // not be bounced to /login.
-  if (
-    path.startsWith("/waitlist") ||
-    path.startsWith("/home") ||
-    path.startsWith("/feedback") ||
-    path.startsWith("/api/waitlist") ||
-    path.startsWith("/api/contact") ||
-    path.startsWith("/api/feedback") ||
-    path.startsWith("/api/cron/feedback-email") ||
-    path.startsWith("/api/feedback/unsubscribe")
-  ) {
-    return NextResponse.next({ request });
-  }
-
-  // Sentry's tunnel (next.config.ts → tunnelRoute). The browser SDK POSTs error reports here
-  // and they are forwarded on to Sentry; a crash on the sign-in screen, before any session
-  // exists, still needs to get out, so this must not be gated.
-  if (path.startsWith("/monitoring")) return NextResponse.next({ request });
+  // Same path change the old nextUrl.clone() made: the query string comes along.
+  const redirectTo = (pathname: string) =>
+    NextResponse.redirect(new URL(pathname + request.nextUrl.search, request.url));
 
   const isLoginPage = path.startsWith("/login");
   const cookie = readAuthCookie(request);
@@ -102,9 +105,7 @@ export async function middleware(request: NextRequest) {
   // call, which is most of what a signed-out visitor ever does.
   if (!cookie) {
     if (isLoginPage) return NextResponse.next({ request });
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+    return redirectTo("/login");
   }
 
   const remaining = secondsUntilExpiry(cookie);
@@ -112,11 +113,7 @@ export async function middleware(request: NextRequest) {
   // A session with time left on it. Let it through and leave the verifying to the page and to
   // row security, both of which do it anyway.
   if (remaining !== null && remaining > REFRESH_WINDOW_SECONDS) {
-    if (isLoginPage) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/";
-      return NextResponse.redirect(url);
-    }
+    if (isLoginPage) return redirectTo("/");
     return NextResponse.next({ request });
   }
 
@@ -147,17 +144,8 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user && !isLoginPage) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
-  }
-
-  if (user && isLoginPage) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url);
-  }
+  if (!user && !isLoginPage) return redirectTo("/login");
+  if (user && isLoginPage) return redirectTo("/");
 
   return response;
 }

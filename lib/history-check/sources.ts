@@ -1,4 +1,4 @@
-import type { HistoryTree, SlotState } from "@/lib/history-check/types";
+import type { SlotState } from "@/lib/history-check/types";
 
 /**
  * What the check reads, and what every quote is checked against.
@@ -104,8 +104,3 @@ export type CheckResult = {
    *  substring check. The card shows this first and asks the resident to resolve it. */
   wrongPatient: Evidence | null;
 };
-
-/** Convenience: the tree's slots keyed by id. */
-export function slotIndex(tree: HistoryTree) {
-  return new Map(tree.slots.map((s) => [s.id, s]));
-}

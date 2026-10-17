@@ -8,13 +8,10 @@
  *
  *   npm run db:push                 apply pending patches
  *   npm run db:push -- --status     list applied / pending, run nothing
- *   npm run db:push -- --dry-run    show what would run, run nothing
- *   npm run db:push -- --baseline   record every current patch as applied WITHOUT running it
- *                                   — `npm run deploy:init` does this for you once
  *   npm run db:push -- --forget 0062   drop the log rows for 0062 and everything after it,
  *                                   so the next `db:push` re-runs them (safe: patches are
  *                                   idempotent, so re-running an already-applied one is a
- *                                   no-op). Use if --baseline marked something as done that
+ *                                   no-op). Use if the log marks something as done that
  *                                   was not actually applied.
  *
  * Needs `SUPABASE_DB_URL` (Supabase -> Project Settings -> Database -> Connection string ->
@@ -29,9 +26,8 @@ import { readFileSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import pg from "pg";
-import { ROOT, loadEnvFiles, friendlyExit } from "./lib-deploy.mjs";
+import { ROOT, loadEnvFiles } from "./lib-deploy.mjs";
 
-friendlyExit();
 loadEnvFiles("env/deploy.env", ".env.local");
 
 const PATCH_DIR = path.join(ROOT, "supabase/patches");
@@ -39,9 +35,15 @@ const DB_URL = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
 if (!DB_URL) {
   console.error(
     "SUPABASE_DB_URL is not set.\n" +
-      "Run `npm run deploy:init` once, or put it in env/deploy.env " +
-      "(copy env/deploy.env.example)."
+      "Put it in env/deploy.env (copy env/deploy.env.example)."
   );
+  process.exit(1);
+}
+
+// An unknown flag (e.g. the old --dry-run) must not fall through to "apply".
+const unknown = process.argv.slice(2).filter((a) => a.startsWith("--") && a !== "--status" && a !== "--forget");
+if (unknown.length) {
+  console.error(`Unknown option ${unknown.join(" ")}. Use --status or --forget <patch>.`);
   process.exit(1);
 }
 
@@ -49,13 +51,9 @@ const forgetIdx = process.argv.indexOf("--forget");
 const forgetFrom = forgetIdx !== -1 ? process.argv[forgetIdx + 1] : null;
 const mode = forgetFrom
   ? "forget"
-  : process.argv.includes("--baseline")
-    ? "baseline"
-    : process.argv.includes("--status")
-      ? "status"
-      : process.argv.includes("--dry-run")
-        ? "dry-run"
-        : "apply";
+  : process.argv.includes("--status")
+    ? "status"
+    : "apply";
 
 const sha = (f) =>
   createHash("sha256").update(readFileSync(path.join(PATCH_DIR, f))).digest("hex");
@@ -98,45 +96,30 @@ try {
       for (const f of drop) console.log("  " + f);
       console.log("\nRun `npm run db:push` to (re-)apply them.");
     }
-  } else if (mode === "baseline") {
-    for (const f of pending) {
-      await client.query(
-        "insert into public._patch_log (filename, sha256) values ($1, $2) on conflict do nothing",
-        [f, sha(f)]
-      );
-    }
-    console.log(
-      `Baselined ${pending.length} patch file(s) as already applied. No SQL was run.\n` +
-        "From now on `npm run db:push` only runs patches added after this point."
-    );
   } else if (pending.length === 0) {
     console.log("Nothing to apply — the database is up to date.");
   } else {
     console.log(`${pending.length} patch(es) to apply:`);
     for (const f of pending) console.log("  " + f);
-    if (mode === "dry-run") {
-      console.log("\n--dry-run: nothing was run.");
-    } else {
-      console.log("");
-      for (const f of pending) {
-        process.stdout.write(`applying ${f} ... `);
-        try {
-          await client.query(readFileSync(path.join(PATCH_DIR, f), "utf8"));
-          await client.query(
-            "insert into public._patch_log (filename, sha256) values ($1, $2)",
-            [f, sha(f)]
-          );
-          console.log("ok");
-        } catch (e) {
-          console.log("FAILED");
-          console.error(
-            `\n${f} failed — it was not recorded and nothing after it ran.\n\n${e.message}\n`
-          );
-          process.exit(1);
-        }
+    console.log("");
+    for (const f of pending) {
+      process.stdout.write(`applying ${f} ... `);
+      try {
+        await client.query(readFileSync(path.join(PATCH_DIR, f), "utf8"));
+        await client.query(
+          "insert into public._patch_log (filename, sha256) values ($1, $2)",
+          [f, sha(f)]
+        );
+        console.log("ok");
+      } catch (e) {
+        console.log("FAILED");
+        console.error(
+          `\n${f} failed — it was not recorded and nothing after it ran.\n\n${e.message}\n`
+        );
+        process.exit(1);
       }
-      console.log(`\nDone — ${pending.length} patch(es) applied.`);
     }
+    console.log(`\nDone — ${pending.length} patch(es) applied.`);
   }
 
   // RLS is the security boundary (INFRA.md), so a public table without it, or a view that

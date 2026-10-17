@@ -14,7 +14,7 @@ import {
   ImageRun,
   VerticalAlign,
 } from "docx";
-import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { getDischargeContext } from "@/lib/discharge-data";
 import { mergeDischargeDraft, proofreadDischarge } from "@/lib/discharge-store";
 import {
@@ -34,10 +34,7 @@ import {
  */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   // Same proofread as Print (lib/final-check.ts), so the Word file is never the untidied copy.

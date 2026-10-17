@@ -25,13 +25,13 @@ export default async function RegisterReviewPage({
   if (!read) notFound();
 
   const rows = ((read.raw as { rows?: RegisterRow[] } | null)?.rows ?? []) as RegisterRow[];
-  const { ward } = await getCurrentWard();
-  const { patients } = await getActivePatients(read.ward_id);
+  // Independent of one another, so sent together rather than three round trips in a row.
+  const [{ ward }, { patients }, { data: signed }] = await Promise.all([
+    getCurrentWard(),
+    getActivePatients(read.ward_id),
+    supabase.storage.from("evidence").createSignedUrl(read.photo_path, 3600),
+  ]);
   const matches = matchRegisterRows(rows, patients);
-
-  const { data: signed } = await supabase.storage
-    .from("evidence")
-    .createSignedUrl(read.photo_path, 3600);
 
   const autoTicked = matches.filter((m) => m.status === "matched").length;
 

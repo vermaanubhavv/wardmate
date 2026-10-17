@@ -17,7 +17,7 @@
  *  - an output order that names a slot that does not exist, or a non-value duration slot
  */
 
-import { SLOT_GROUPS, SLOT_STATES, type HistoryTree, type Reference, type Slot } from "@/lib/history-check/types";
+import { SLOT_GROUPS, type HistoryTree, type Reference, type Slot } from "@/lib/history-check/types";
 
 export type ValidationIssue = { path: string; message: string };
 export type ValidationResult = { ok: boolean; issues: ValidationIssue[] };
@@ -37,6 +37,55 @@ export const TREATMENT_ADVICE =
  *  patient has — that is the anchoring the whole gap list is built to avoid. */
 export const DIAGNOSIS_CLAIM = /\b(this is|the patient has|diagnos(is|e|ed) (is|as)|confirms?|rules? out|it is)\b/i;
 
+const ID = /^[a-z][a-z0-9_]*$/;
+
+/**
+ * The header every content file carries — tree, examination checklist, fluid topic: id,
+ * version, review status (a reviewed file names its reviewer) and at least one reference.
+ */
+export function validateContentHeader(
+  x: { id?: string; version?: string; reviewStatus?: string; reviewedBy?: string | null; references?: Reference[] },
+  add: (path: string, message: string) => void,
+  noun: string
+) {
+  if (typeof x.id !== "string" || !ID.test(x.id)) add("$.id", "required, lowercase snake_case");
+  if (typeof x.version !== "string" || !/^\d+\.\d+\.\d+$/.test(x.version)) add("$.version", "semver required");
+  if (x.reviewStatus !== "pending_clinician_review" && x.reviewStatus !== "reviewed") {
+    add("$.reviewStatus", "must be pending_clinician_review or reviewed");
+  }
+  if (x.reviewStatus === "reviewed" && !x.reviewedBy) add("$.reviewedBy", `a reviewed ${noun} must name its reviewer`);
+  if (!Array.isArray(x.references) || x.references.length === 0) add("$.references", "at least one reference required");
+  else x.references.forEach((r, i) => validateReference(r, `$.references[${i}]`, add));
+}
+
+/**
+ * A content registry validated on first use. A file that fails validation, or a key (id@version
+ * by default) registered twice, throws — in the test suite and at build — never as a half-working card
+ * on a ward.
+ */
+export function validatedOnce<T extends { id: string; version: string }>(
+  items: readonly T[],
+  validate: (x: unknown) => ValidationResult,
+  noun: string,
+  key: (x: T) => string = (x) => `${x.id}@${x.version}`
+): () => readonly T[] {
+  let checked: readonly T[] | null = null;
+  return () => {
+    if (checked) return checked;
+    const ids = new Set<string>();
+    for (const x of items) {
+      const res = validate(x);
+      if (!res.ok) {
+        const detail = res.issues.map((i) => `${i.path}: ${i.message}`).join("; ");
+        throw new Error(`${noun} ${x.id}@${x.version} is invalid — ${detail}`);
+      }
+      if (ids.has(key(x))) throw new Error(`${noun} ${key(x)} is registered twice`);
+      ids.add(key(x));
+    }
+    return (checked = items);
+  };
+}
+
 export function validateHistoryTree(tree: unknown): ValidationResult {
   const issues: ValidationIssue[] = [];
   const add = (path: string, message: string) => issues.push({ path, message });
@@ -46,25 +95,9 @@ export function validateHistoryTree(tree: unknown): ValidationResult {
   }
   const t = tree as Partial<HistoryTree>;
 
-  if (!t.id || typeof t.id !== "string" || !/^[a-z][a-z0-9_]*$/.test(t.id)) {
-    add("$.id", "required; lowercase snake_case");
-  }
-  if (!t.version || typeof t.version !== "string" || !/^\d+\.\d+\.\d+$/.test(t.version)) {
-    add("$.version", "must be semantic version x.y.z");
-  }
+  validateContentHeader(t, add, "tree");
   for (const f of ["complaint", "setting"] as const) {
     if (!t[f] || typeof t[f] !== "string") add(`$.${f}`, "required non-empty string");
-  }
-  if (t.reviewStatus !== "pending_clinician_review" && t.reviewStatus !== "reviewed") {
-    add("$.reviewStatus", "must be pending_clinician_review or reviewed");
-  }
-  if (t.reviewStatus === "reviewed" && !t.reviewedBy) {
-    add("$.reviewedBy", "a reviewed tree must name its reviewer");
-  }
-  if (!Array.isArray(t.references) || t.references.length === 0) {
-    add("$.references", "at least one reference required (where the questions came from)");
-  } else {
-    t.references.forEach((r, i) => validateReference(r, `$.references[${i}]`, add));
   }
   if (!Array.isArray(t.triggers) || t.triggers.length === 0) {
     add("$.triggers", "at least one trigger word required");
@@ -202,6 +235,3 @@ function validateSlot(
   }
   if (s.numeric && s.kind !== "value") add(`${p}.numeric`, "only a value slot can be numeric");
 }
-
-/** Exported for the tests that prove the three states are the only ones the engine knows. */
-export const KNOWN_STATES = SLOT_STATES;

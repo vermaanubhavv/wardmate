@@ -1,6 +1,5 @@
-import { PSYCHIATRY_DISCHARGE_TEMPLATES, PSYCHIATRY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-psychiatry";
 import type { FormatKind } from "@/lib/formats";
-import type { SpecialtyPack } from "./types";
+import { admissionDayCount, type SpecialtyPack } from "./types";
 
 /**
  * The psychiatry pack.
@@ -52,16 +51,11 @@ export const psychiatryPack: SpecialtyPack = {
   label: "Psychiatry",
   blurb: "Counts hospital days. Mental state recorded as dictated, risk recorded never inferred.",
 
-  terminology: {
-    dayLabel: "HD",
-    admissionNoun: "problem",
-  },
-
   admissionPhrase: "a psychiatry admission",
 
   // The hospital day, always. ECT and any bedside procedure are procedures, not operations,
   // and do not restart the count.
-  dayCount: (p) => ({ clock: "admission", n: p.admission_day, text: `Day ${p.admission_day}` }),
+  dayCount: admissionDayCount,
 
   extractRoleLine:
     "You convert a psychiatry resident's spoken ward-round note into structured observations.",
@@ -80,12 +74,6 @@ Psychiatry ward — what the words mean here:
 - THE LEGAL FRAME IS TEXT, RECORDED AS SPOKEN: "independent admission", "supported admission under the Mental Healthcare Act", "nominated representative is the brother", "attendant staying with patient". The app takes no view on capacity or consent and must not summarise these into a judgement.
 - Abbreviations to leave AS SAID: "MSE", "ECT", "MHCA", "CIWA", "BPSD", "OCD", "PTSD", "DTs". Store the letters that were said.
 `.trim(),
-
-  checklistAnchor: "admission",
-
-  // Medicine's templates, on purpose — see the header.
-  dischargeTemplates: PSYCHIATRY_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: PSYCHIATRY_GENERIC_DISCHARGE_TEMPLATE,
 
   // Alcohol withdrawal only, and only because CIWA-Ar is already built, reviewed and active.
   // No mood, psychosis or risk scale is offered: none has been built here.
