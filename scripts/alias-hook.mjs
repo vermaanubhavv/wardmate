@@ -27,6 +27,8 @@ export function resolve(specifier, context, nextResolve) {
   }
   // App modules also import their siblings relatively and without an extension
   // ("./general-surgery"); resolve those the same way when the importer is inside the project.
+  // next has no "exports" map, so Node's ESM resolver wants "next/server.js", not "next/server".
+  if (/^next\/[a-z-]+$/.test(specifier)) return nextResolve(specifier + ".js", context);
   if ((specifier.startsWith("./") || specifier.startsWith("../")) && context.parentURL?.startsWith(ROOT)) {
     return nextResolve(withTsExtension(new URL(specifier, context.parentURL).href), context);
   }
