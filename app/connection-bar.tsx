@@ -47,6 +47,10 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   const [sending, setSending] = useState(false);
   const [reviews, setReviews] = useState<string[]>([]);
   const [recovered, setRecovered] = useState(0);
+  // When the screen on show came out of the offline cache while the phone still had some
+  // signal — the service worker gives the network three seconds, then shows the saved copy.
+  // `navigator.onLine` is true on one bar, so without this the bar would say nothing at all.
+  const [savedAt, setSavedAt] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setPending(await countPending());
@@ -91,6 +95,26 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   }, [online, recover, refresh, send]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
+  // A document served from the cache carries the render time of when it was cached, so on
+  // opening it reads as minutes or hours old; a live one is seconds old. The minute of slack is
+  // for a phone clock that is a little off. Screens tapped to inside the app are told by the
+  // service worker instead, which knows when it answered from the cache.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (Date.now() - new Date(renderedAt).getTime() > 60_000) setSavedAt(renderedAt);
+  }, [renderedAt]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const told = (e: MessageEvent) => {
+      if (e.data?.type !== "screen") return;
+      setSavedAt(e.data.fromCache ? (e.data.date ?? renderedAt) : null);
+    };
+    navigator.serviceWorker.addEventListener("message", told);
+    return () => navigator.serviceWorker.removeEventListener("message", told);
+  }, [renderedAt]);
+
   useEffect(() => {
     // Coming back to the foreground is the moment a resident has walked somewhere with signal.
     const woke = () => {
@@ -111,9 +135,10 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   }, [recover, refresh, send]);
 
   // Nothing to say: online, nothing queued, nothing to review, nothing recovered.
-  if (online && pending === 0 && reviews.length === 0 && !sending && recovered === 0) return null;
+  if (online && !savedAt && pending === 0 && reviews.length === 0 && !sending && recovered === 0)
+    return null;
 
-  const fetched = new Date(renderedAt).toLocaleTimeString("en-IN", {
+  const fetched = new Date(savedAt ?? renderedAt).toLocaleTimeString("en-IN", {
     timeZone: "Asia/Kolkata",
     hour: "numeric",
     minute: "2-digit",
@@ -122,8 +147,10 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   return (
     <div
       className={
-        "px-4 py-2 text-footnote print:hidden " +
-        (online ? "bg-chip text-foreground" : "bg-warn-fg text-accent-ink")
+        // The first thing on the page, so on a notched iPhone it starts under the clock unless it
+        // clears the safe area itself, the way every .top-bar header does.
+        "px-4 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))] text-footnote print:hidden " +
+        (online && !savedAt ? "bg-chip text-foreground" : "bg-warn-fg text-accent-ink")
       }
       role="status"
     >
@@ -131,6 +158,16 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
         <p>
           <span className="font-semibold">No signal.</span> This screen is as it was at{" "}
           {fetched} — it may be out of date. Anything you record is saved on this phone.
+        </p>
+      )}
+
+      {online && savedAt && (
+        <p>
+          <span className="font-semibold">Weak signal.</span> This screen is as it was at{" "}
+          {fetched} — it may be out of date.{" "}
+          <button onClick={() => router.refresh()} className="tap font-semibold underline">
+            Try again
+          </button>
         </p>
       )}
 

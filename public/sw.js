@@ -16,6 +16,9 @@
 const SHELL = "wardmate-shell-v2";
 const PAGES = "wardmate-pages-v2";
 
+// How long a screen's network fetch may take before the saved copy is shown instead.
+const PATIENCE_MS = 3000;
+
 const ASSETS = ["/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
@@ -86,32 +89,55 @@ self.addEventListener("fetch", (event) => {
   const isPayload = request.headers.has("RSC") || url.searchParams.has("_rsc");
 
   if (isDocument || isPayload) {
+    const network = fetch(request).then((res) => {
+      // A redirect to /login means the session is gone; caching that would strand the app
+      // on a sign-in page it serves to itself from disk.
+      if (res.ok && res.type !== "opaqueredirect") {
+        const copy = res.clone();
+        caches.open(PAGES).then((c) => c.put(request, copy));
+      }
+      return res;
+    });
+    // A slow answer still lands in the cache after the saved copy has been shown, so the
+    // next open of this screen is fresher. The worker must stay alive long enough to write it.
+    event.waitUntil(network.catch(() => {}));
+
+    // Both relaxations are load-bearing for payloads, and neither is optional.
+    //
+    // ignoreSearch: the `_rsc` parameter is a build fingerprint, so after a deploy an
+    // exact match misses and a patient cached this morning looks unvisited.
+    //
+    // ignoreVary: Next.js sends `Vary: RSC` on these, so the cache will only return one
+    // to a request carrying the identical RSC header. Without this the entries are
+    // written and then never found again — offline support that silently does nothing,
+    // which is worse than none, because it is only discovered on a ward with no signal.
+    const saved = () => caches.match(request, { ignoreSearch: isPayload, ignoreVary: isPayload });
+
+    // Tells the screen whether what it is about to draw is live. Only payloads can be told:
+    // a document has no page yet to tell, and the connection bar works that case out from the
+    // render time baked into the page itself.
+    const report = (res, fromCache) => {
+      if (isPayload && event.clientId) {
+        self.clients.get(event.clientId).then((client) =>
+          client?.postMessage({ type: "screen", fromCache, date: res.headers.get("date") })
+        );
+      }
+      return res;
+    };
+
     event.respondWith(
-      fetch(request)
-        .then((res) => {
-          // A redirect to /login means the session is gone; caching that would strand the app
-          // on a sign-in page it serves to itself from disk.
-          if (res.ok && res.type !== "opaqueredirect") {
-            const copy = res.clone();
-            caches.open(PAGES).then((c) => c.put(request, copy));
-          }
-          return res;
+      // One bar of signal does not fail a fetch, it stalls it — for as long as a minute, at
+      // the bedside. So the network gets PATIENCE_MS to answer and then the saved copy is
+      // shown, marked as such. No saved copy: keep waiting, there is nothing better to offer.
+      Promise.race([network, new Promise((r) => setTimeout(r, PATIENCE_MS))])
+        .then(async (res) => {
+          if (res) return report(res, false);
+          const hit = await saved();
+          return hit ? report(hit, true) : network.then((r) => report(r, false));
         })
         .catch(async () => {
-          // Both relaxations are load-bearing for payloads, and neither is optional.
-          //
-          // ignoreSearch: the `_rsc` parameter is a build fingerprint, so after a deploy an
-          // exact match misses and a patient cached this morning looks unvisited.
-          //
-          // ignoreVary: Next.js sends `Vary: RSC` on these, so the cache will only return one
-          // to a request carrying the identical RSC header. Without this the entries are
-          // written and then never found again — offline support that silently does nothing,
-          // which is worse than none, because it is only discovered on a ward with no signal.
-          const hit = await caches.match(request, {
-            ignoreSearch: isPayload,
-            ignoreVary: isPayload,
-          });
-          if (hit) return hit;
+          const hit = await saved();
+          if (hit) return report(hit, true);
 
           // A payload has no useful fallback — the app would try to render an error page as
           // React data. Better to fail the fetch and let the app keep the screen it is on.

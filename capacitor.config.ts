@@ -30,7 +30,11 @@ const config: CapacitorConfig = {
     // because sign-in and every query go through it; Google is NOT, deliberately — Google
     // refuses OAuth inside an embedded web view, so that button has to leave the app. The
     // six-digit email code is the sign-in that works in here.
-    allowNavigation: ["wardmate.in", "*.supabase.co"],
+    allowNavigation: ["wardmate.in", "www.wardmate.in", "*.supabase.co"],
+
+    // First open with no signal, before the offline cache exists: the "cannot reach" page in
+    // capacitor-shell/ rather than a blank white screen.
+    errorPath: "index.html",
   },
 
   // How the site knows it is inside this app (app/install-hint.tsx): the web view reports
@@ -43,9 +47,11 @@ const config: CapacitorConfig = {
     // the status bar and a second gap above the home indicator.
     contentInset: "never",
 
-    // The recorder is the app. A web view that stops the microphone when the phone is put in
-    // a pocket mid-round is the one failure this whole wrapper exists to prevent.
-    limitsNavigationsToAppBoundDomains: false,
+    // The offline cache (public/sw.js) only runs in an iOS web view for the domains listed under
+    // WKAppBoundDomains in Info.plist, and only with this on. Off, the app had no offline
+    // screens at all and waited on the network for every one. Links to anywhere not listed
+    // still open in Safari: Capacitor sends them there before WebKit's own block applies.
+    limitsNavigationsToAppBoundDomains: true,
   },
 };
 
