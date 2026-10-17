@@ -2,7 +2,7 @@
  * Scores the amber check (lib/jev-observations.ts, `supported_i`) on the synthetic rows in
  * lib/evals/supported-cases.ts, for the live wording and the candidates below.
  *
- *   node --env-file=.env.local --import ./scripts/alias-register.mjs scripts/eval-supported.ts [--held-out]
+ *   node --env-file=.env.local --import ./scripts/alias-register.mjs scripts/eval-supported.ts [--held-out | --lines]
  *
  * Needs TYPESAFE_API_KEY. One Jev request per row per wording.
  *
@@ -11,7 +11,7 @@
  * tap, but enough of them teach residents to tap through amber unread. So read the table for
  * the bar that catches every unsupported row, then the fewest false ambers.
  */
-import { SUPPORTED_CASES as TRAIN, SUPPORTED_HELD_OUT } from "../lib/evals/supported-cases.ts";
+import { SUPPORTED_CASES as TRAIN, SUPPORTED_HELD_OUT, SUPPORTED_LINES } from "../lib/evals/supported-cases.ts";
 import { supportedQuestion } from "../lib/jev-observations.ts";
 import { askJev } from "../lib/jev.ts";
 
@@ -23,7 +23,12 @@ const CANDIDATES: Record<string, (row: string) => unknown> = {
 };
 
 const BARS = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8];
-const cases = process.argv.includes("--held-out") ? SUPPORTED_HELD_OUT : TRAIN;
+// --lines: report lines and register rows read off a photo (lib/read-lab-photo.ts, read-register.ts).
+const cases = process.argv.includes("--held-out")
+  ? SUPPORTED_HELD_OUT
+  : process.argv.includes("--lines")
+    ? SUPPORTED_LINES
+    : TRAIN;
 const unsupported = cases.filter((c) => !c.supported).length;
 const supportedN = cases.length - unsupported;
 

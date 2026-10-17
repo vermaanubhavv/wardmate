@@ -4,6 +4,7 @@ import { extractObservations } from "@/lib/extract";
 import { getTemplateForPatient } from "@/lib/templates";
 import { getPublishedProtocolContext } from "@/lib/protocols";
 import { applyProcedureDone } from "@/lib/apply-procedure-done";
+import { getWardPack } from "@/lib/ward";
 
 /**
  * Typed note in, stored observations out — the voice route with the speech step removed.
@@ -34,20 +35,21 @@ export async function POST(request: Request) {
   const { data: patient } = await supabase
     .from("current_patients")
     .select(
-      "id, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text"
+      "id, ward_id, display_name, bed, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text"
     )
     .eq("id", patientId)
     .maybeSingle();
 
   if (!patient) return NextResponse.json({ error: "Patient not found." }, { status: 404 });
 
+  const pack = await getWardPack(patient.ward_id);
   const template = await getTemplateForPatient(patient);
   const expectedLabels = template?.items.map((i) => i.label) ?? [];
   const protocols = await getPublishedProtocolContext();
 
   let extraction;
   try {
-    extraction = await extractObservations(text, expectedLabels, protocols);
+    extraction = await extractObservations(text, expectedLabels, protocols, pack.key, { name: patient.display_name, bed: patient.bed });
   } catch (e) {
     // Keep the note even when structuring fails — the words are the evidence.
     const { data: entry } = await supabase
@@ -117,7 +119,7 @@ export async function POST(request: Request) {
     }
   }
 
-  await applyProcedureDone(supabase, patientId, patient, extraction.observations);
+  await applyProcedureDone(supabase, patientId, patient, extraction.observations, pack);
 
   return NextResponse.json({
     entry_id: entry.id,

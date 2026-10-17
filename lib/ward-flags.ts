@@ -1,4 +1,4 @@
-import { classifyVital } from "@/lib/vital-ranges";
+import { classifyVital, matchVitalLabel } from "@/lib/vital-ranges";
 import { canonicalLabName } from "@/lib/lab-ranges";
 import type { WardPatient } from "@/lib/patients";
 import { criticalThresholds, type CriticalThresholds } from "@/lib/specialty/critical-values";
@@ -24,7 +24,8 @@ export type WardFlag = { label: string; value: string; reason: string };
  *   • Severe anaemia     — haemoglobin < 5
  *
  * A medical ward (internal / pulmonary medicine) adds K⁺, Na⁺, glucose, RR and
- * GCS, and raises the TLC bar — see lib/specialty/critical-values.ts.
+ * GCS, and raises the TLC bar; emergency medicine, oncology and paediatrics use NICE's
+ * vital-sign bars (NEWS2 / NG254) — see lib/specialty/critical-values.ts.
  *
  * Nothing else. Every other abnormal result still shows on the patient's own page with its
  * range; it just does not raise the ward alarm. The value carried in the chip is exactly the
@@ -49,6 +50,7 @@ const AFFIRMATIVE = /^(y|yes|on|true|✓|✔|present)$/i;
 /** Labels a blood sugar is recorded under — at the bedside (GRBS, as a vital) or off a report. */
 const GLUCOSE = /^(grbs|rbs|cbg|fbs|ppbs|blood sugar|random blood sugar|capillary blood glucose|blood glucose|glucose|plasma glucose|serum glucose)$/i;
 const GCS = /^(gcs|glasgow coma scale|glasgow coma score)$/i;
+const ANC = /^(anc|absolute neutrophil count|absolute neutrophils?|abs\.? neutrophils?)$/i;
 
 /** "E2V3M4" sums its parts; "9/15" or "9" reads as is. VT (intubated) is not a number to sum. */
 function gcsScore(text: string): number | null {
@@ -77,12 +79,13 @@ function glucoseHit(label: string, text: string, n: number, t: CriticalThreshold
  * medical ward gets the surgical list above, unchanged (lib/specialty/critical-values.ts).
  */
 export function criticalFlags(patient: WardPatient, specialty?: string | null): WardFlag[] {
-  const t = criticalThresholds(specialty);
+  const t = criticalThresholds(specialty, patient.age_years);
   const hits: WardFlag[] = [];
 
   // ICU / organ support — recorded in the Vitals card. Being sick enough to be on the unit is
   // itself the flag; the value (e.g. "on noradrenaline 0.08") rides along in the chip.
-  for (const v of patient.vitals ?? []) {
+  const vitals = currentVitals(patient);
+  for (const v of vitals) {
     if (v.label.trim().toLowerCase().replace(/\s+/g, " ") !== "icu") continue;
     const support = (v.value_text ?? "").trim();
     if (!support) continue;
@@ -95,7 +98,7 @@ export function criticalFlags(patient: WardPatient, specialty?: string | null): 
   }
 
   // Vitals — hard numbers.
-  for (const v of patient.vitals ?? []) {
+  for (const v of vitals) {
     const text = (v.value_text ?? "").trim();
     const label = v.label.trim();
     if (t.gcsAtMost !== undefined && GCS.test(label)) {
@@ -112,17 +115,32 @@ export function criticalFlags(patient: WardPatient, specialty?: string | null): 
     for (const c of classifyVital(v.label, v.value_text)) {
       const n = num(c.value);
       if (n === null) continue;
-      if (c.label === "SpO₂" && n < 90) {
+      if (c.label === "SpO₂" && t.spo2Below !== undefined && n < t.spo2Below) {
         hits.push({ label: "SpO₂", value: String(n), reason: "hypoxia" });
       }
-      if (c.label === "Systolic" && n < 90) {
-        hits.push({ label: "BP", value: text || c.value.trim(), reason: "hypotension" });
+      if (c.label === "Systolic") {
+        if (t.sbpBelow !== undefined && n < t.sbpBelow) {
+          hits.push({ label: "BP", value: text || c.value.trim(), reason: "hypotension" });
+        }
+        if (t.sbpAtLeast !== undefined && n >= t.sbpAtLeast) {
+          hits.push({ label: "BP", value: text || c.value.trim(), reason: "severe hypertension" });
+        }
       }
-      if (c.label === "PR" && n > 120) {
-        hits.push({ label: "PR", value: String(n), reason: "tachycardia" });
+      if (c.label === "PR") {
+        if (t.prAbove !== undefined && n > t.prAbove) hits.push({ label: "PR", value: String(n), reason: "tachycardia" });
+        if (t.prBelow !== undefined && n < t.prBelow) hits.push({ label: "PR", value: String(n), reason: "bradycardia" });
       }
-      if (c.label === "RR" && t.rrAtLeast !== undefined && n >= t.rrAtLeast) {
-        hits.push({ label: "RR", value: String(n), reason: "tachypnoea" });
+      if (c.label === "RR") {
+        if (t.rrAtLeast !== undefined && n >= t.rrAtLeast) hits.push({ label: "RR", value: String(n), reason: "tachypnoea" });
+        if (t.rrAtMost !== undefined && n <= t.rrAtMost) hits.push({ label: "RR", value: String(n), reason: "bradypnoea" });
+      }
+      if (c.label === "Temp") {
+        // Wards here chart in °F as often as °C; nothing human reads above 45 °C.
+        const celsius = n > 45 ? ((n - 32) * 5) / 9 : n;
+        const low =
+          (t.tempAtMost !== undefined && celsius <= t.tempAtMost) ||
+          (t.tempBelow !== undefined && celsius < t.tempBelow);
+        if (low) hits.push({ label: "Temp", value: text || c.value.trim(), reason: "hypothermia" });
       }
     }
   }
@@ -143,7 +161,7 @@ export function criticalFlags(patient: WardPatient, specialty?: string | null): 
     if (name === "Hb" && n < 5) {
       hits.push({ label: "Hb", value, reason: "severe anaemia" });
     }
-    if (name === "TLC") {
+    if (name === "TLC" && t.tlcAbove !== undefined) {
       const wbc = n < 1000 ? n * 1000 : n;
       if (wbc > t.tlcAbove) hits.push({ label: "TLC", value, reason: "leucocytosis" });
     }
@@ -163,9 +181,72 @@ export function criticalFlags(patient: WardPatient, specialty?: string | null): 
       const hit = glucoseHit(l.label.trim(), value, n, t);
       if (hit) hits.push(hit);
     }
+    // An absolute count only — "Neutrophils 70%" is a differential, not a count, and says
+    // nothing about neutropenia. ×10⁹/L is written "0.4"; per µL "400".
+    if (t.ancAtMost !== undefined && ANC.test(l.label.trim()) && !/%/.test(value)) {
+      const anc = n >= 30 ? n / 1000 : n;
+      if (anc <= t.ancAtMost) hits.push({ label: "ANC", value, reason: "severe neutropenia" });
+    }
+  }
+
+  if (t.aki) {
+    const hit = risingCreatinine(patient.creatinine_7d ?? []);
+    if (hit) hits.push(hit);
   }
 
   return hits;
+}
+
+const HOUR = 3600_000;
+
+type Vital = NonNullable<WardPatient["vitals"]>[number];
+
+/**
+ * The vitals the alarms read: each vital's own newest value from the last day of readings
+ * (vitals_recent, patch 0107), so a 6am RR left out of the 8am set still counts — and an RR
+ * re-measured at 8am replaces it. "Pulse" and "PR" are one vital; a label this app does not
+ * chart (GCS, GRBS, ICU) is its own. Without the patch, the latest set as before.
+ */
+export function currentVitals(patient: Pick<WardPatient, "vitals" | "vitals_recent">): Vital[] {
+  const recent = patient.vitals_recent;
+  if (!recent || recent.length === 0) return patient.vitals ?? [];
+  const newest = new Map<string, Vital>();
+  for (const v of [...recent].sort((a, b) => Date.parse(b.recorded_at) - Date.parse(a.recorded_at))) {
+    const key = matchVitalLabel(v.label) ?? v.label.trim().toLowerCase().replace(/\s+/g, " ");
+    if (!newest.has(key)) newest.set(key, v);
+  }
+  return [...newest.values()];
+}
+
+/** Creatinine in µmol/L — a value of 30 or under can only be mg/dL (88.4 µmol/L = 1 mg/dL). */
+function creatinineUmol(n: number): number {
+  return n <= 30 ? n * 88.4 : n;
+}
+
+/**
+ * Acute kidney injury by NICE NG148 rec 1.3.1, from the last week's creatinines (newest
+ * first): the latest is 26 µmol/L or more above one taken in the 48 hours before it, or 50%
+ * or more above the lowest of the 7 days before it. The chip shows the two results compared,
+ * exactly as recorded.
+ */
+export function risingCreatinine(results: { value_text: string | null; recorded_at: string }[]): WardFlag | null {
+  const read = results
+    .map((r) => ({ text: (r.value_text ?? "").trim(), n: num(r.value_text), at: Date.parse(r.recorded_at) }))
+    .filter((r): r is { text: string; n: number; at: number } => r.n !== null && r.n > 0 && Number.isFinite(r.at))
+    .sort((a, b) => b.at - a.at);
+  const [latest, ...earlier] = read;
+  if (!latest) return null;
+  const now = creatinineUmol(latest.n);
+  const shown = (from: { text: string }) => ({ label: "Creatinine", value: `${from.text} → ${latest.text}`, reason: "rising creatinine (AKI)" });
+
+  const within48 = earlier.filter((r) => latest.at - r.at <= 48 * HOUR && latest.at > r.at);
+  const sharp = within48.find((r) => now - creatinineUmol(r.n) >= 26);
+  if (sharp) return shown(sharp);
+
+  const within7d = earlier.filter((r) => latest.at - r.at <= 7 * 24 * HOUR && latest.at > r.at);
+  if (within7d.length === 0) return null;
+  const lowest = within7d.reduce((a, b) => (creatinineUmol(b.n) < creatinineUmol(a.n) ? b : a));
+  return now >= 1.5 * creatinineUmol(lowest.n) ? shown(lowest) : null;
 }
 
 /** The most pressing critical finding, or null — the first of criticalFlags(). */

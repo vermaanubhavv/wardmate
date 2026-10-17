@@ -14,9 +14,10 @@ import type { AdviceItem, MedicationStatus, Procedure } from "@/lib/discharge-en
  * comorbidities" line the app already uses: an EDITABLE STARTING POINT a doctor signs off.
  *
  *   - The ONE-OFF flow (app/prepare-discharge/new) seeds every section from the chosen template.
- *   - A WARD patient's discharge stays compiled from the record; the template only OFFERS its
- *     advice and red-flag cards (switched off until the resident turns them on) — see
- *     applyDischargeTemplate() in lib/discharge-compile.ts.
+ *   - A WARD patient's discharge stays compiled from the record. The template seeds its advice,
+ *     red-flag and follow-up cards (switched on), and the AI writes the indication and clinical
+ *     course from the record along the template's form — see applyDischargeTemplate() in
+ *     lib/discharge-compile.ts and templateGuide() in lib/discharge-ai.ts.
  *
  * `clerkingFocus` and `progressNote` carry the history / daily-note focus for each diagnosis.
  * `progressNote` shows as a read-only "What to check today" hint in the note builder — never
@@ -26,8 +27,8 @@ import type { AdviceItem, MedicationStatus, Procedure } from "@/lib/discharge-en
  * `[ … ]` and the condition beside it, so a row nobody edited prints as visibly unfinished rather
  * than as a prescription every patient received.
  *
- * CLINICAL CONTENT: the corrections and the nine templates added after the Schwartz 11e review
- * (docs/surgical-history.md §12) are PENDING the unit's sign-off.
+ * CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11) — including the corrections and the
+ * nine templates added after the Schwartz 11e review (docs/surgical-history.md §12).
  *
  * Medication lines are a STARTING SET to be checked against each patient — allergy, renal
  * function, weight, cultures, what they were already taking.

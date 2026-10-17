@@ -7,6 +7,12 @@ import { electrolyteDisordersOverviewV1 } from "@/content/fluids/electrolyte-dis
 import { fluidResponsivenessV1 } from "@/content/fluids/fluid-responsiveness.v1";
 import { fluidsInTheElderlyV1 } from "@/content/fluids/fluids-in-the-elderly.v1";
 import { hepatorenalSyndromeV1 } from "@/content/fluids/hepatorenal-syndrome.v1";
+import { hypercalcaemiaV1 } from "@/content/fluids/hypercalcaemia.v1";
+import { hyperkalaemiaV1 } from "@/content/fluids/hyperkalaemia.v1";
+import { hypernatraemiaV1 } from "@/content/fluids/hypernatraemia.v1";
+import { hypocalcaemiaV1 } from "@/content/fluids/hypocalcaemia.v1";
+import { hypokalaemiaV1 } from "@/content/fluids/hypokalaemia.v1";
+import { hyponatraemiaV1 } from "@/content/fluids/hyponatraemia.v1";
 import { ivFluidsOverviewV1 } from "@/content/fluids/iv-fluids-overview.v1";
 import { liverPancreasLungDkaV1 } from "@/content/fluids/liver-pancreas-lung-dka.v1";
 import { obstetricFluidsV1 } from "@/content/fluids/obstetric-fluids.v1";
@@ -31,6 +37,12 @@ export const FLUID_TOPICS: readonly FluidTopic[] = [
   fluidResponsivenessV1,
   fluidsInTheElderlyV1,
   hepatorenalSyndromeV1,
+  hypercalcaemiaV1,
+  hyperkalaemiaV1,
+  hypernatraemiaV1,
+  hypocalcaemiaV1,
+  hypokalaemiaV1,
+  hyponatraemiaV1,
   ivFluidsOverviewV1,
   liverPancreasLungDkaV1,
   obstetricFluidsV1,

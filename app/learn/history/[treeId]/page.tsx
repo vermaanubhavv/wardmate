@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { historyCheckEnabled } from "@/lib/history-check/flag";
 import { getTree } from "@/lib/history-check/trees";
 import { SLOT_GROUPS, type SlotGroup } from "@/lib/history-check/types";
-import { statusChip } from "@/app/patients/[id]/card-kit";
+import { statusChip } from "@/app/patients/[id]/status-chip";
 import ReferenceList from "../../reference-list";
 
 const GROUP_TITLE: Record<SlotGroup, string> = {

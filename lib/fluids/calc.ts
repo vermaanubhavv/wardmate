@@ -89,6 +89,55 @@ export const CALCULATORS = {
     ],
     run: (v) => ({ value: Math.round((v.volume * v.dropFactor) / (v.hours * 60)), unit: "drops/min", note: `${Math.round(v.volume / v.hours)} mL/h` }),
   },
+  corrected_sodium_glucose: {
+    name: "Sodium corrected for hyperglycaemia",
+    inputs: [
+      { key: "na", label: "Measured sodium", unit: "mEq/L", min: 90, max: 180 },
+      { key: "glucose", label: "Glucose", unit: "mg/dL", min: 100, max: 2000 },
+    ],
+    // Table 20.6: 1.6 mEq/L per 100 mg/dL above 100; the factor is 2.4 once glucose exceeds 400.
+    run: (v) => {
+      const f = v.glucose > 400 ? 2.4 : 1.6;
+      return { value: r1(v.na + (f * (v.glucose - 100)) / 100), unit: "mEq/L", note: `factor ${f} per 100 mg/dL above 100` };
+    },
+  },
+  sodium_requirement: {
+    name: "Sodium requirement (conventional formula)",
+    inputs: [
+      { key: "desired", label: "Desired sodium", unit: "mEq/L", min: 100, max: 150 },
+      { key: "na", label: "Actual sodium", unit: "mEq/L", min: 90, max: 150 },
+      { key: "tbw", label: "Total body water", unit: "L", min: 5, max: 120, step: 0.5 },
+    ],
+    run: (v) => {
+      const mEq = (v.desired - v.na) * v.tbw;
+      return { value: r1(mEq), unit: "mEq sodium", note: `≈ ${Math.round(mEq * 2)} mL of 3% saline at 2 mL per mEq. A rough guide only — the book relies on frequent sodium checks, not the formula.` };
+    },
+  },
+  adrogue_madias: {
+    name: "Adrogué–Madias: change in serum sodium per litre infused",
+    inputs: [
+      { key: "infNa", label: "Infusate sodium", unit: "mEq/L", min: 0, max: 1026 },
+      { key: "na", label: "Serum sodium", unit: "mEq/L", min: 90, max: 200 },
+      { key: "tbw", label: "Total body water", unit: "L", min: 5, max: 120, step: 0.5 },
+    ],
+    run: (v) => ({ value: r1((v.infNa - v.na) / (v.tbw + 1)), unit: "mEq/L per litre", note: "The book warns this formula risks inadvertent overcorrection; measure sodium frequently." }),
+  },
+  free_water_deficit: {
+    name: "Free water deficit",
+    inputs: [
+      { key: "tbw", label: "Current total body water", unit: "L", min: 5, max: 120, step: 0.5 },
+      { key: "na", label: "Serum sodium", unit: "mEq/L", min: 141, max: 200 },
+    ],
+    run: (v) => ({ value: r1(v.tbw * (v.na / 140 - 1)), unit: "L", note: "Add ongoing and insensible losses; the book corrects the total deficit over 48–72 hours." }),
+  },
+  corrected_calcium: {
+    name: "Calcium corrected for albumin",
+    inputs: [
+      { key: "ca", label: "Measured total calcium", unit: "mg/dL", min: 2, max: 20, step: 0.1 },
+      { key: "albumin", label: "Serum albumin", unit: "g/dL", min: 0.5, max: 6, step: 0.1 },
+    ],
+    run: (v) => ({ value: r1(v.ca + 0.8 * (4 - v.albumin)), unit: "mg/dL", note: "The book says this overestimates ionised calcium in hypoalbuminaemia; measure ionised calcium when in doubt." }),
+  },
 } satisfies Record<string, Calculator>;
 
 export type CalcKey = keyof typeof CALCULATORS;

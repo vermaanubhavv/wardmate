@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
+import { after } from "next/server";
 
 /**
  * Thin wrappers over Sentry's span and log APIs, used to see where time goes inside a request
@@ -84,5 +85,14 @@ function emit(level: "info" | "warn" | "error", message: string, attrs?: Attrs):
     Sentry.logger[level](message, clean(attrs));
   } catch {
     // logging must never break a request
+  }
+  // Sentry batches logs and sends them a few seconds later, but Vercel freezes the function as
+  // soon as the response is out — so without this, most log lines were never sent (86 round
+  // dictations, zero "round draft built" lines in 14 days). after() keeps the function alive
+  // just long enough to send them. Outside a request (a script, a test) there is no after().
+  try {
+    after(() => Sentry.flush(2000).then(() => undefined));
+  } catch {
+    // not inside a request
   }
 }

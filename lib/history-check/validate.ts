@@ -92,10 +92,14 @@ export function quoteNegatesItem(quote: string, terms: string[]): boolean {
   const neg = NEGATION.exec(q);
   if (!neg) return false;
   const negAt = neg.index + neg[1].length;
+  // The span checked for an affirmation starts AFTER the negation phrase itself: "has not"
+  // contains the affirming word "has", so "has not passed urine" was being cancelled by its own
+  // negation and every "has not …" denial was dropped.
+  const negEnd = neg.index + neg[0].length;
   return terms.some((t) => {
     const at = containsTerm(q, t);
     if (at < 0 || at < negAt) return false;
-    const between = q.slice(negAt, at);
+    const between = q.slice(Math.min(negEnd, at), at);
     if (AFFIRMATION.test(between)) return false;
     const clauseEnd = q.slice(at).search(/[.;,]/);
     const clause = clauseEnd < 0 ? q.slice(at) : q.slice(at, at + clauseEnd);

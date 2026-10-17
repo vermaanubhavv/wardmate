@@ -10,7 +10,7 @@
  */
 import { compileDischargeDraft } from "../lib/discharge-compile.ts";
 import { runDischargeChecks } from "../lib/discharge-checks.ts";
-import { matchDischargeTemplate, getDischargeTemplate, listDischargeTemplates } from "../lib/discharge-templates.ts";
+import { matchDischargeTemplate, getDischargeTemplate, listDischargeTemplates, DISCHARGE_TEMPLATES } from "../lib/discharge-templates.ts";
 import { CONDITION_VARIABLES } from "../lib/discharge-entities.ts";
 
 let failures = 0;
@@ -127,7 +127,7 @@ ok("'acute calculous cholecystitis' matches the ACUTE cholecystitis template", m
 ok("'cholelithiasis' / 'gallstone disease' matches the PLANNED lap chole template", matchDischargeTemplate({ diagnosisText: "gallstone disease" })?.key === "lap_chole" && matchDischargeTemplate({ diagnosisText: "cholelithiasis" })?.key === "lap_chole");
 ok("the diagnosis wording beats the care-template family (acute vs planned)", matchDischargeTemplate({ diagnosisText: "acute cholecystitis", templateFamily: "lap_chole" })?.key === "acute_cholecystitis");
 ok("an unrecognised diagnosis matches nothing (caller falls back to generic)", matchDischargeTemplate({ diagnosisText: "parotid swelling" }) === null);
-ok("all templates plus generic are listed for the picker", listDischargeTemplates().length === 12);
+ok("all templates plus generic are listed for the picker", listDischargeTemplates().length === DISCHARGE_TEMPLATES.length + 1);
 
 const oneOffCtx = { ...context, patient: { ...context.patient, id: "", primary_diagnosis: null, procedure_text: "laparoscopic cholecystectomy", surgery_date: null, template_family: null }, observations: [], medications: [], patientState: { ...context.patientState, latest: [], openTasks: [] } };
 const seeded = compileDischargeDraft(oneOffCtx, { template: getDischargeTemplate("lap_chole"), seedAll: true });
@@ -137,16 +137,16 @@ ok("template seeds a clinical-course skeleton (prints unless changed)", /laparos
 ok("template seeds the standard discharge medications", seeded.medications.some((m) => /paracetamol/i.test(m.generic)) && seeded.medications.some((m) => /pantoprazole/i.test(m.generic)));
 ok("template seeds red flags and turns the section on for a one-off", seeded.redFlags.included && seeded.redFlags.items.length > 0);
 ok("template seeds standard patient actions", seeded.patientActions.some((a) => /OPD/i.test(a)));
-ok("template seeds condition as all-satisfactory", CONDITION_VARIABLES.every((v) => seeded.conditionAtDischarge.vars[v.key] === true));
+ok("template seeds condition as satisfactory, leaving wound and drain for the resident", CONDITION_VARIABLES.every((v) => seeded.conditionAtDischarge.vars[v.key] === (v.key === "wound" || v.key === "drain" ? null : true)));
 ok("histopathology is auto-derived from the operation, pending, with a review plan", seeded.histopathology[0]?.specimen === "Gallbladder" && seeded.histopathology[0]?.status === "pending" && /review/i.test(seeded.histopathology[0]?.reviewPlan ?? ""));
 
 const herniaSeed = compileDischargeDraft({ ...oneOffCtx, patient: { ...oneOffCtx.patient, procedure_text: "left inguinal hernioplasty (mesh repair)" }, procedure: "left inguinal hernioplasty (mesh repair)" }, { template: getDischargeTemplate("hernia"), seedAll: true });
 ok("a hernia repair seeds NO histopathology row (nothing routinely sent)", herniaSeed.histopathology.length === 0);
 
 // A WARD patient (seedAll = false): the record still drives everything; the template only
-// OFFERS its advice + red-flag cards, switched off.
+// seeds its advice + red-flag cards, switched on.
 const wardSeeded = compileDischargeDraft(context);
-ok("ward patient: template offers advice, switched off", wardSeeded.advice.items.length > 0 && wardSeeded.advice.included === false);
+ok("ward patient: template seeds advice, switched on", wardSeeded.advice.items.length > 0 && wardSeeded.advice.included === true);
 ok("ward patient: template does NOT seed the clinical course", wardSeeded.clinicalCourse.text === "");
 ok("ward patient: template does NOT overwrite compiled medications", wardSeeded.medications.length === 1 && /amoxicillin/i.test(wardSeeded.medications[0].generic));
 

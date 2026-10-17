@@ -3,7 +3,7 @@ import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, 
 
 /**
  * SWELLING OF THE ABDOMINAL WALL (UMBILICAL / EPIGASTRIC / INCISIONAL HERNIA) — v1.0.0.
- * CLINICAL CONTENT: PENDING REVIEW. Adult surgical ward and OPD, north India.
+ * CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
  * Built from S. Das, A Manual on Clinical Surgery, 13th ed., ch. 38 pp. 609–610: the varieties
  * are separated by site (at the navel, beside it, in the upper midline, in a scar), the
  * para-umbilical hernia of the obese middle-aged woman gives intermittent pain because its
@@ -22,8 +22,8 @@ export const ventralHerniaV1: HistoryTree = {
   complaint: "Swelling of the abdominal wall (umbilical / epigastric / incisional hernia)",
   triggers: ["umbilical hernia", "paraumbilical hernia", "para umbilical hernia", "para-umbilical hernia", "incisional hernia", "epigastric hernia", "ventral hernia", "swelling at the navel", "swelling near the navel", "swelling at umbilicus", "umbilical swelling", "bulge in scar", "swelling in scar", "swelling at the scar"],
   setting: "Adult surgical ward and OPD, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, BROWSE, BAILEY_LOVE],
   slots: [
     ...commonHpi("swelling"),

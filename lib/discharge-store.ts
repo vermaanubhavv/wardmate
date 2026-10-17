@@ -21,7 +21,7 @@ type ColumnKey = keyof Omit<DischargeRow, "id" | "status" | "finalised_at">;
 
 const SECTION_COLUMN: Record<DischargeSectionId, { column: ColumnKey; key: keyof DischargeDraft }> = {
   indication: { column: "indication_for_admission", key: "indicationForAdmission" },
-  encounter: { column: "encounter", key: "encounter" },
+  admission: { column: "encounter", key: "admission" },
   diagnoses: { column: "diagnoses", key: "diagnoses" },
   procedures: { column: "procedures", key: "procedures" },
   clinicalCourse: { column: "clinical_course", key: "clinicalCourse" },
@@ -36,6 +36,9 @@ const SECTION_COLUMN: Record<DischargeSectionId, { column: ColumnKey; key: keyof
   authentication: { column: "authentication", key: "authentication" },
 };
 
+/** The sections the AI drafts — dropped from a stale draft so they are drafted again. */
+const AI_COLUMNS = new Set<ColumnKey>(["clinical_course", "indication_for_admission", "relevant_investigations"]);
+
 export function mergeDischargeDraft(context: DischargeContext): DischargeDraft {
   const compiled = compileDischargeDraft(context, { pack: context.pack });
   const row = context.row;
@@ -43,6 +46,7 @@ export function mergeDischargeDraft(context: DischargeContext): DischargeDraft {
 
   const merged: DischargeDraft = { ...compiled, status: row.status, finalisedAt: row.finalised_at };
   for (const { column, key } of Object.values(SECTION_COLUMN)) {
+    if (context.aiDraftStale && AI_COLUMNS.has(column)) continue;
     const stored = row[column];
     if (stored !== null && stored !== undefined) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -174,9 +178,9 @@ export async function finaliseDischargeSummary(
     ...draft.authentication,
     completedAt: draft.authentication.completedAt ?? now,
   };
-  const encounter = {
-    ...draft.encounter,
-    dischargedAt: draft.encounter.dischargedAt ?? now,
+  const admission = {
+    ...draft.admission,
+    dischargedAt: draft.admission.dischargedAt ?? now,
   };
 
   const { data: existing } = await supabase
@@ -190,7 +194,7 @@ export async function finaliseDischargeSummary(
     finalised_at: now,
     finalised_by: user.id,
     authentication,
-    encounter,
+    encounter: admission, // the column keeps its original name
     updated_at: now,
   };
 

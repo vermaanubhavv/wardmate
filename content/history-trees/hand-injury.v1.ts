@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { ATLS, BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, GRABB_SMITH, HAMILTON_BAILEY, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, surgicalBackground, TRAUMA_BG, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * HAND INJURY — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
+ * HAND INJURY — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
  * Burns and plastic surgery unit, north India, where fodder-cutting machines (chaff cutter,
  * toka machine), threshers, glass and knife cuts, door and crush injuries, and fist-to-mouth
  * wounds make up most hand trauma. Which hand, which hand writes, and what the patient does for
@@ -14,12 +14,12 @@ import { ATLS, BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, GRABB_SMITH, HAMILT
  */
 export const handInjuryV1: HistoryTree = {
   id: "hand_injury",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Hand injury",
   triggers: ["hand injury", "injury to hand", "finger injury", "cut finger", "finger cut", "cut on hand", "hand cut", "crush hand", "crushed finger", "finger amputation", "fingertip injury", "tendon injury", "tendon cut", "chaff cutter", "toka machine", "thresher injury", "machine injury hand", "degloving hand", "fight bite", "injection injury", "paronychia", "felon", "whitlow", "infected finger", "ungli kat gayi", "haath kat gaya", "ungli pak gayi"],
   setting: "Burns and plastic surgery unit, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, GRABB_SMITH, BAILEY_LOVE, MACLEODS, HUTCHISONS, ATLS],
   slots: [
     ...commonHpi("hand injury").filter((s) => !["onset", "onset_mode"].includes(s.id)),

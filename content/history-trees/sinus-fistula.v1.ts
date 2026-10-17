@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, IMMUNOCOMPROMISE, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * DISCHARGING SINUS / FISTULA — v1.0.0. CLINICAL CONTENT: PENDING REVIEW.
+ * DISCHARGING SINUS / FISTULA — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
  * Adult surgical ward, north India. Built from S. Das, A Manual on Clinical Surgery, 13th ed.,
  * ch. 5 (history: since birth, abscess that burst or was opened, bone chips, earlier gland
  * swelling, previous operation, TB / Crohn's / colitis, family history, number and position of
@@ -16,12 +16,12 @@ import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, 
  */
 export const sinusFistulaV1: HistoryTree = {
   id: "sinus_fistula",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Discharging sinus / fistula",
   triggers: ["discharging sinus", "sinus tract", "fistula", "discharging opening", "pus from opening", "opening discharging", "non healing opening", "stitch sinus", "preauricular sinus", "branchial fistula", "faecal fistula", "urinary fistula", "nasoor", "nasur"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, BAILEY_LOVE, BROWSE],
   slots: [
     ...commonHpi("discharge"),

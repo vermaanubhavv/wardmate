@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { correctTranscript } from "@/lib/glossary";
 import { extractObservations } from "@/lib/extract";
-import { getWardSpecialtyStored } from "@/lib/ward";
+import { getWardPack } from "@/lib/ward";
 import { getTemplateForPatient } from "@/lib/templates";
 import { resolveProcedure, listTemplateChoices } from "@/lib/templates";
 import type { PaperKind } from "@/lib/read-paper";
@@ -61,14 +61,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const { data: patient } = await supabase
     .from("current_patients")
-    .select("id, ward_id, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text")
+    .select("id, ward_id, display_name, bed, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text")
     .eq("id", patientId)
     .maybeSingle();
   if (!patient) return NextResponse.json({ error: "Patient not found." }, { status: 404 });
 
   // The unit's department, for the dictation prompt. Null — and so general surgery — on any
   // database without patch 0060.
-  const specialty = getWardSpecialtyStored(patient.ward_id);
+  const packP = getWardPack(patient.ward_id);
 
   let body: { pages?: IncomingPage[] };
   try {
@@ -119,7 +119,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
    */
   const operated = pages.find((p) => p.kind === "ot_note" && p.markOperated)?.markOperated ?? null;
   if (operated && !patient.surgery_date) {
-    const resolved = resolveProcedure(operated.procedure, await listTemplateChoices());
+    const resolved = resolveProcedure(operated.procedure, await listTemplateChoices((await packP).key));
     await supabase
       .from("patients")
       .update({
@@ -183,13 +183,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     // Everything else is a page of words: corrected, then structured, exactly like speech.
-    const corrected = await correctTranscript(page.transcript);
+    const corrected = await correctTranscript(page.transcript, await packP);
     const transcript = corrected.text;
 
     let extraction;
     let extractionError: string | null = null;
     try {
-      extraction = await extractObservations(transcript, expectedLabels, [], await specialty);
+      extraction = await extractObservations(transcript, expectedLabels, [], (await packP).key, { name: patient.display_name, bed: patient.bed });
     } catch (e) {
       extractionError = e instanceof Error ? e.message : String(e);
     }

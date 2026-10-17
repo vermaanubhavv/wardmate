@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { AI_MODEL } from "@/lib/model";
+import { judgeLabValues } from "@/lib/jev-observations";
 
 export type ReadLabValue = {
   label: string;
@@ -148,6 +149,10 @@ export async function readLabPhoto(
     ...v,
     category: v.category === "vital" || v.category === "other" ? v.category : "lab",
   }));
+
+  // Second look: a value its own printed line does not support becomes uncertain. See
+  // judgeLabValues. No key or an error: unchanged.
+  await judgeLabValues(values);
 
   return {
     values,

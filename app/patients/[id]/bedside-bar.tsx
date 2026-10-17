@@ -85,7 +85,7 @@ export default function BedsideBar({
           rows={4}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={progressNoteConfigFor(specialty).bedsideExample ?? "Day 3 post lap chole, afebrile, drain 30 ml serous…"}
+          placeholder={progressNoteConfigFor(specialty).bedsideExample}
           aria-label="Bedside note"
           className="field"
         />
@@ -133,6 +133,7 @@ export default function BedsideBar({
       )}
       <Recorder
         patientId={patientId}
+        specialty={specialty}
         onBusyChange={onBusyChange}
         idleActions={
           <>

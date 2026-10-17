@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { ATLS, BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, surgicalBackground, TRAUMA_BG, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BURNS — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
+ * BURNS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
  * Burns and plastic surgery unit, north India, where kitchen flame burns, kerosene stoves and
  * electrical injuries dominate. The history is short and specific: what burned, for how long,
  * in what space, what was poured on it afterwards, and the exact time it happened — that time
@@ -13,12 +13,12 @@ import { ATLS, BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HU
  */
 export const burnsV1: HistoryTree = {
   id: "burns",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Burns",
   triggers: ["burn", "burns", "burnt", "scald", "flame burn", "fire", "electric burn", "electrocution", "chemical burn", "acid", "jal gaya", "stove burst", "kerosene", "boiling water"],
   setting: "Burns and plastic surgery unit, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, BAILEY_LOVE, MACLEODS, HUTCHISONS, ATLS],
   slots: [
     ...commonHpi("burn").filter((s) => !["onset", "duration", "onset_mode", "progression", "prior_treatment"].includes(s.id)),
@@ -30,7 +30,7 @@ export const burnsV1: HistoryTree = {
     val("hpi", "duration_contact", "How long the burning continued", "How long did the burning continue, and how were the flames put out or the clothes removed?", ["seconds", "minutes", "rolled", "water", "blanket", "clothes removed", "clothes stuck", "synthetic", "put out by", "kept burning"], { tier: "detailed" }),
     yn("hpi", "first_aid", "What was done immediately after", "What was applied or done immediately afterwards — cool running water, or something else put on the burn?", ["water", "running water", "cooled", "ice", "toothpaste", "oil", "ghee", "ink", "turmeric", "haldi", "cloth", "nothing", "bandaged"], { teach: "What was applied before arrival changes what is found on the surface, and household applications are given only if the question is asked without reproach." }),
     yn("associated", "pain_sensation", "Pain in the burnt areas", "Are the burnt areas painful, or is any part numb and painless?", ["painful", "severe pain", "burning pain", "numb", "painless", "no sensation", "less pain", "white areas"], { tier: "detailed", teach: "An area that is painless within a painful burn asks whether the burn has gone deeper than the skin's nerve endings." }),
-    yn("associated", "other_injuries", "Fall, jump, blast or injury besides the burn", "Was there any fall, jump from a height, blast, or road accident along with the burn?", ["fall", "jumped", "height", "blast", "explosion", "road accident", "hit", "fracture", "head injury", "unconscious"]),
+    yn("associated", "other_injuries", "Fall, jump, blast or injury besides the burn", "Was there any fall, jump from a height, blast, or road accident along with the burn?", ["fall", "jumped", "height", "blast", "explosion", "road accident", "hit", "fracture", "head injury", "no other injury"]),
     yn("associated", "urine_output", "Passing urine since the burn", "Has urine been passed since the burn, how much, and what colour?", ["passed urine", "not passed", "how much", "less", "dark", "cola coloured", "red", "tea coloured", "clear"], { teach: "Dark or cola coloured urine after a burn, particularly an electrical one, asks about muscle breakdown reaching the kidneys." }),
     yn("associated", "comorbidity", "Diabetes, epilepsy, heart or lung disease", "Any diabetes, epilepsy, heart, lung or kidney disease?", ["diabetes", "epilepsy", "fits", "heart disease", "lung disease", "asthma", "copd", "kidney disease"]),
     yn("exposure", "tetanus_status", "Tetanus immunisation", "Has the patient had a full course of tetanus immunisation, and when was the last dose?", ["tetanus", "tt", "injection", "years ago", "not known", "recent", "childhood", "not taken", "full course", "three doses", "booster"], { teach: "Schwartz decides tetanus cover by the course and its timing together: fewer than three doses, more than five years since the last, or not known." }),

@@ -10,7 +10,7 @@ import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, rce, val, yn } from "@/content/h
  */
 export const chestPainV1: HistoryTree = {
   id: "chest_pain",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Chest pain",
   triggers: ["chest pain", "pain in chest", "chest discomfort", "chest heaviness", "retrosternal pain", "angina"],
   setting: "Adult medicine ward, north India",

@@ -11,11 +11,16 @@ import {
   CNS_PILLS,
   CVS_PILLS,
   EXAM_CARD,
+  MSE_PILLS,
+  SKIN_PILLS,
+  alwaysShowsObstetricCard,
   examStepsFor,
   hopiAttrsFor,
+  localExamHintFor,
   type ExamCardId,
   type HopiAttr,
 } from "@/lib/specialty/clerking";
+import { specialtyCardsFor } from "@/lib/case-history-sections";
 import DictationOverlay from "./dictation-overlay";
 import { DictateButton } from "../live-dictation";
 import { ExamDiagrams, hasExamDiagram } from "./print/diagrams";
@@ -33,6 +38,7 @@ import {
   DictateArea,
   UncertainList,
   PillsAndText,
+  ChipRow,
 } from "../card-kit";
 import {
   replaceCaseHistorySection,
@@ -209,8 +215,21 @@ type SignState = "unset" | "normal" | "abnormal";
 const DENIAL = /^(no|nil|not|none|nad|nr|negative|unremarkable|insignificant|absent)\b/i;
 const readsDenial = (s: string) => DENIAL.test(s.trim()) || /no relevant|not relevant|nil relevant/i.test(s);
 
+const HISTORY_TITLE: Record<string, string> = {
+  past: "Past history",
+  medication: "Medication history",
+  personal: "Personal history",
+  family: "Family history",
+  surgical: "Surgical history",
+  dietary: "Dietary history",
+  environmental: "Environmental history",
+  obstetric: "Menstrual & obstetric",
+};
+
 type StepId =
   | "demographics"
+  | "past_meds"
+  | "histories"
   | "complaints"
   | "hopi"
   | "past"
@@ -235,10 +254,24 @@ type StepId =
   | "chest"
   | "cvs"
   | "cns"
+  | "mse"
+  | "skin"
   | "local"
   | "diagnosis"
   | "plan"
   | "review";
+
+/** Titles of the cards a unit adds through lib/case-history-sections.ts. Its CVS / CNS / MSE /
+ *  skin entries are walked as examination cards (lib/specialty/clerking.ts), so not here. */
+const SPECIALTY_CARD_TITLE: Record<string, string> = {
+  onco_disease: "Oncological history",
+  onco_treatment: "Treatment received",
+  onco_cycle: "Current cycle",
+  onco_toxicity: "Toxicity since last cycle",
+  performance: "Performance status",
+  onco_nodes: "Lymph node survey",
+  onco_mucosa_line: "Mucosa, skin & line",
+};
 
 export default function CaseHistoryWorkspace({
   patientId,
@@ -262,7 +295,9 @@ export default function CaseHistoryWorkspace({
    *  status card; every other unit's stack is exactly what it has always been. */
   specialty?: string;
 }) {
-  const oncology = specialty === "medical_oncology";
+  // The unit's extra cards (lib/case-history-sections.ts) — oncology's four history cards and
+  // its performance / node / mucosa cards; none on any other unit today.
+  const extraCards = specialtyCardsFor(specialty);
   const complaintChips = useMemo(() => complaintChipsFor(specialty), [specialty]);
   const pastChips = useMemo(() => pastChipsFor(specialty), [specialty]);
   const searchParams = useSearchParams();
@@ -388,6 +423,8 @@ export default function CaseHistoryWorkspace({
   const [chest, setChest] = useState<string>(() => examValue(EXAM_CARD.chest.aliases));
   const [cvs, setCvs] = useState<string>(() => examValue(EXAM_CARD.cvs.aliases));
   const [cns, setCns] = useState<string>(() => examValue(EXAM_CARD.cns.aliases));
+  const [mse, setMse] = useState<string>(() => examValue(EXAM_CARD.mse.aliases));
+  const [skin, setSkin] = useState<string>(() => examValue(EXAM_CARD.skin.aliases));
   const [local, setLocal] = useState<string>(() => examValue(EXAM_CARD.local.aliases));
   // The department's examination cards. A card it does not walk still shows when the record
   // already holds a value for it — a medicine patient's earlier local examination is not hidden.
@@ -465,10 +502,6 @@ export default function CaseHistoryWorkspace({
   // the "add patient" card sets, or one generated later in this workspace.
   const hasDiagnosisForNegatives = (primaryDiagnosis ?? "").trim().length > 0 || diagnosis.text.trim().length > 0;
   const leads = leadsFor(specialty);
-  const leadFirst = (cards: { id: StepId; title: string }[]) => {
-    const lead = leads.map((l) => cards.find((c) => c.id === l.key)).filter((c) => !!c);
-    return [...lead, ...cards.filter((c) => !lead.includes(c))];
-  };
   // The cards whose text a department prompt can write into. Answering a prompt counts as
   // recording something, so a yes/no card flips to "Significant".
   const promptText: Partial<Record<StepId, [string, (v: string) => void]>> = {
@@ -479,43 +512,55 @@ export default function CaseHistoryWorkspace({
     obstetric: [obstetric, setObstetric],
   };
 
+  // In the order the unit lists them — for oncology the disease, then what has been given for
+  // it, then what is running now, then what the last cycle did.
+  const oncoCards = extraCards.history
+    .filter((id) => SPECIALTY_CARD_TITLE[id])
+    .map((id) => ({ id: id as StepId, title: SPECIALTY_CARD_TITLE[id] }));
+  const specialtyExamCards = extraCards.exam
+    .filter((id) => SPECIALTY_CARD_TITLE[id])
+    .map((id) => ({ id: id as StepId, title: SPECIALTY_CARD_TITLE[id] }));
+  const historyIds: StepId[] = [
+    "past",
+    "medication",
+    "personal",
+    "family",
+    "surgical",
+    "dietary",
+    "environmental",
+    ...((sex && /^f/i.test(sex)) || alwaysShowsObstetricCard(specialty) ? (["obstetric"] as StepId[]) : []),
+  ];
+  const leadIds = leads.map((l) => l.key as StepId);
+  const leadCards = leadIds
+    .map((id) =>
+      historyIds.includes(id)
+        ? { id, title: HISTORY_TITLE[id] }
+        : oncoCards.find((c) => c.id === id)
+    )
+    .filter((c): c is { id: StepId; title: string } => !!c);
+  const pastMedIds = (["past", "medication"] as StepId[]).filter((id) => !leadIds.includes(id));
+  const otherHistoryIds = historyIds.filter((id) => id !== "past" && id !== "medication" && !leadIds.includes(id));
+  /** The sections a card saves when the resident leaves it. */
+  const sectionsOf = (id: StepId): StepId[] =>
+    id === "past_meds" ? pastMedIds : id === "histories" ? otherHistoryIds : [id];
+
   const STEPS: { id: StepId; title: string }[] = [
     { id: "demographics", title: "Demographics" },
     { id: "complaints", title: "Complaints" },
     ...complaintList.map((c, i) => ({ id: `hopi` as StepId, title: `HOPI — ${c}`, _c: c, _i: i })),
     ...(hasDiagnosisForNegatives ? [{ id: "negatives" as StepId, title: "Relevant negatives" }] : []),
     // The department's lead cards come straight after the presenting illness — an obstetric
-    // history is most of an OBG clerking — then the rest in their usual order. Same order the
-    // printed sheet uses (lib/case-history-departments.ts).
-    ...leadFirst([
-      { id: "past", title: "Past history" },
-      { id: "personal", title: "Personal history" },
-      { id: "family", title: "Family history" },
-      { id: "medication", title: "Medication history" },
-      { id: "surgical", title: "Surgical history" },
-      { id: "dietary", title: "Dietary history" },
-      { id: "environmental", title: "Environmental history" },
-      ...((sex && /^f/i.test(sex)) || specialty === "obstetrics_gynaecology"
-        ? [{ id: "obstetric" as StepId, title: "Menstrual & obstetric" }]
-        : []),
-      // The disease, then what has been given for it, then what is running now, then what the
-      // last cycle did — the order an oncologist actually asks in.
-      ...(oncology
-        ? [
-            { id: "onco_disease" as StepId, title: "Oncological history" },
-            { id: "onco_treatment" as StepId, title: "Treatment received" },
-            { id: "onco_cycle" as StepId, title: "Current cycle" },
-            { id: "onco_toxicity" as StepId, title: "Toxicity since last cycle" },
-          ]
-        : []),
-    ]),
-    ...(oncology
-      ? [
-          { id: "performance" as StepId, title: "Performance status" },
-          { id: "onco_nodes" as StepId, title: "Lymph node survey" },
-          { id: "onco_mucosa_line" as StepId, title: "Mucosa, skin & line" },
-        ]
-      : []),
+    // history is most of an OBG clerking — each its own card, with its department prompts. Then
+    // past and medication history together on one card, then every other history as closed
+    // rows on one "Other history" card, opened with + only when there is something to record.
+    // Printed order is unchanged (lib/case-history-departments.ts).
+    ...leadCards,
+    ...(pastMedIds.length > 1
+      ? [{ id: "past_meds" as StepId, title: "Past & medication history" }]
+      : pastMedIds.map((id) => ({ id, title: HISTORY_TITLE[id] }))),
+    ...(otherHistoryIds.length > 0 ? [{ id: "histories" as StepId, title: "Other history" }] : []),
+    ...oncoCards.filter((c) => !leadIds.includes(c.id)),
+    ...specialtyExamCards,
     ...examSteps.map((id: ExamCardId) => ({
       id,
       title: id === "piccle" ? "General examination" : id === "vitals" ? "Vitals" : EXAM_CARD[id].title,
@@ -618,6 +663,10 @@ export default function CaseHistoryWorkspace({
       res = await replaceCaseHistoryExam(patientId, [{ label: EXAM_CARD.cvs.label, kind: "exam", value: cvs.trim() || null }]);
     else if (id === "cns")
       res = await replaceCaseHistoryExam(patientId, [{ label: EXAM_CARD.cns.label, kind: "exam", value: cns.trim() || null }]);
+    else if (id === "mse")
+      res = await replaceCaseHistoryExam(patientId, [{ label: EXAM_CARD.mse.label, kind: "exam", value: mse.trim() || null }]);
+    else if (id === "skin")
+      res = await replaceCaseHistoryExam(patientId, [{ label: EXAM_CARD.skin.label, kind: "exam", value: skin.trim() || null }]);
     else if (id === "local")
       res = await replaceCaseHistoryExam(patientId, [{ label: "local examination", kind: "exam", value: local.trim() || null }]);
 
@@ -637,11 +686,12 @@ export default function CaseHistoryWorkspace({
   function goTo(index: number) {
     if (index < 0 || index >= STEPS.length) return;
     const leaving = current;
-    if (dirty.has(leaving.id) && leaving.id !== "review" && leaving.id !== "diagnosis" && leaving.id !== "plan") {
+    const toSave = sectionsOf(leaving.id).filter((id) => dirty.has(id) && id !== "review" && id !== "diagnosis" && id !== "plan");
+    if (toSave.length > 0) {
       // No router.refresh(): the save action revalidates, and Next ships the re-rendered page in
       // the same response — a refresh here rendered it a second time.
       startTransition(async () => {
-        await persist(leaving.id);
+        for (const id of toSave) await persist(id);
       });
     }
     setStep(index);
@@ -887,8 +937,61 @@ export default function CaseHistoryWorkspace({
     );
   }
 
-  function body(): React.ReactNode {
-    const id = current.id;
+  const [openHistories, setOpenHistories] = useState<Set<StepId>>(new Set());
+  /** One line for a closed history row: what it holds, or that it was not asked. */
+  function historySummary(id: StepId): string {
+    const yesNo = { past, personal, family, surgical }[id as "past" | "personal" | "family" | "surgical"];
+    if (yesNo) return yesNo.mode === "none" ? "No relevant history" : yesNo.mode === "significant" ? yesNo.text || "Significant" : "Not recorded";
+    if (id === "medication") return medication.none ? "Not on any regular medication" : medication.text.split("\n")[0] || "Not recorded";
+    const text = { dietary, environmental, obstetric }[id as "dietary" | "environmental" | "obstetric"];
+    return text?.trim() || "Not recorded";
+  }
+
+  function body(id: StepId = current.id): React.ReactNode {
+    if (id === "past_meds")
+      return pastMedIds.map((sid) => (
+        <div key={sid} className="flex flex-col gap-2">
+          <h3 className="text-subhead font-semibold">{HISTORY_TITLE[sid]}</h3>
+          {body(sid)}
+        </div>
+      ));
+    if (id === "histories")
+      return (
+        <>
+          <p className="text-caption leading-[1.45] text-muted">
+            Tap + beside a history only if there is something to record. One left closed is
+            &ldquo;not asked&rdquo; and prints NR — never a negative.
+          </p>
+          {otherHistoryIds.map((sid) => {
+            const open = openHistories.has(sid);
+            return (
+              <div key={sid} className="rounded-[10px] border border-line">
+                <button
+                  type="button"
+                  aria-expanded={open}
+                  aria-label={`${open ? "Close" : "Add"} ${HISTORY_TITLE[sid]}`}
+                  onClick={() =>
+                    setOpenHistories((o) => {
+                      const n = new Set(o);
+                      if (open) n.delete(sid);
+                      else n.add(sid);
+                      return n;
+                    })
+                  }
+                  className="flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2 text-left"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-subhead font-medium">{HISTORY_TITLE[sid]}</span>
+                    <span className="block truncate text-footnote text-muted">{historySummary(sid)}</span>
+                  </span>
+                  <span aria-hidden className="shrink-0 text-title3 font-semibold text-accent">{open ? "−" : "+"}</span>
+                </button>
+                {open && <div className="flex flex-col gap-3 border-t border-line px-3 py-3">{body(sid)}</div>}
+              </div>
+            );
+          })}
+        </>
+      );
     if (id === "demographics")
       return (
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-subhead">
@@ -903,13 +1006,11 @@ export default function CaseHistoryWorkspace({
       return (
         <>
           <p className="text-caption leading-[1.45] text-muted">Tap every complaint the patient came in with. Add anything not listed, then say how long each one has been going on.</p>
-          <div className="flex flex-wrap gap-1.5">
-            {[...new Set([...complaintChips, ...complaints])].map((c) => (
-              <SelChip key={c} selected={complaints.includes(c)} onClick={() => { toggleInList(complaints, c, setComplaints); mark("complaints"); }}>
-                {c}
-              </SelChip>
-            ))}
-          </div>
+          <ChipRow
+            items={[...new Set([...complaintChips, ...complaints])]}
+            selected={(c) => complaints.includes(c)}
+            onToggle={(c) => { toggleInList(complaints, c, setComplaints); mark("complaints"); }}
+          />
           {complaints.length > 0 && (
             <div className="flex flex-col gap-1.5">
               <span className="text-caption font-medium text-muted">How long has each been present?</span>
@@ -1172,11 +1273,39 @@ export default function CaseHistoryWorkspace({
           placeholder="GCS as E V M, higher functions, power per limb, tone, reflexes, plantars, meningeal signs"
         />
       );
+    if (id === "mse")
+      return (
+        <PillsAndText
+          pills={MSE_PILLS}
+          value={mse}
+          onChange={(v) => { setMse(v); mark("mse"); }}
+          placeholder="What was seen and elicited under each heading, in the patient's words where quoted"
+          rows={6}
+        />
+      );
+    if (id === "skin")
+      return (
+        <>
+          <PillsAndText
+            pills={SKIN_PILLS}
+            value={skin}
+            onChange={(v) => { setSkin(v); mark("skin"); }}
+            placeholder="Primary lesion, colour, surface, distribution and configuration; mucosa, nails, hair"
+            rows={6}
+          />
+          {hasExamDiagram(specialty) && (
+          <div className="rounded-[10px] border border-line bg-white p-2 text-black">
+            <ExamDiagrams specialty={specialty} />
+            <p className="mt-1 text-caption text-muted">Prints blank on the history sheet for marking by hand.</p>
+          </div>
+          )}
+        </>
+      );
 
     if (id === "local")
       return (
         <>
-          <p className="text-caption leading-[1.45] text-muted">The examination of the presenting problem itself — the lump, the hernia, the wound, the perianal region.</p>
+          <p className="text-caption leading-[1.45] text-muted">{localExamHintFor(specialty)}</p>
           <DictateArea value={local} onChange={(v) => { setLocal(v); mark("local"); }} placeholder="Site, size, tenderness, consistency, margins…" rows={6} />
           {/* The department's diagram, as it prints on the back of the history sheet — marked by
               hand there; describe here what gets drawn. */}
@@ -1581,8 +1710,12 @@ export default function CaseHistoryWorkspace({
     surgical: surgical.mode === "unset",
     dietary: !dietary.trim(),
     environmental: !environmental.trim(),
+    medication: !medication.none && !medication.text.trim(),
+    obstetric: !obstetric.trim(),
   };
-  const canSkipNotAsked = notAskedEmpty[current.id] === true && !dirty.has(current.id);
+  const cardSections = sectionsOf(current.id);
+  const cardDirty = cardSections.some((id) => dirty.has(id));
+  const canSkipNotAsked = cardSections.every((id) => notAskedEmpty[id] === true) && !cardDirty;
   const approveOnNext =
     (current.id === "diagnosis" && unapproved.has("diagnosis") && !!diagnosis.text.trim()) ||
     (current.id === "plan" && unapproved.has("plan") && [...plan.workup, ...plan.conservative, ...plan.medications].some((i) => i.trim()));
@@ -1615,6 +1748,8 @@ export default function CaseHistoryWorkspace({
     chest,
     cvs,
     cns,
+    mse,
+    skin,
     local,
     diagnosis: diagnosis.text,
     plan: [...plan.workup, ...plan.conservative, ...plan.medications].filter((i) => i.trim()).join("; "),
@@ -1660,7 +1795,7 @@ export default function CaseHistoryWorkspace({
           </p>
           <div className="mt-0.5 flex items-start justify-between gap-2">
             <h2 className="text-title1 font-bold leading-tight tracking-[-0.021em]">{current.title}</h2>
-            {dirty.has(current.id) && statusChip("unsaved", "warn")}
+            {cardDirty && statusChip("unsaved", "warn")}
           </div>
         </div>
         <div className="h-[3px] bg-[#e2e2e9]">
@@ -1719,7 +1854,7 @@ export default function CaseHistoryWorkspace({
               disabled={approveOnNext && pending}
               className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-callout font-semibold text-accent-ink disabled:opacity-60"
             >
-              {approveOnNext ? "Approve & next" : dirty.has(current.id) ? "Save & next" : "Next"}
+              {approveOnNext ? "Approve & next" : cardDirty ? "Save & next" : "Next"}
             </button>
           )}
         </div>

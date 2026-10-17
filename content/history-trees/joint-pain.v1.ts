@@ -12,7 +12,7 @@ import { commonHpi, ebem, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce
  */
 export const jointPainV1: HistoryTree = {
   id: "joint_pain",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Joint pain",
   triggers: ["joint pain", "joint pains", "arthritis", "arthralgia", "pain in joints", "swollen joint", "joint swelling", "knee pain", "painful joints", "polyarthritis", "jodon me dard"],
   setting: "Adult medicine / orthopaedic ward, north India",

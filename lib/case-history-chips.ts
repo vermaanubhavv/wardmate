@@ -21,30 +21,33 @@
 // Every department's presenting complaints, in the words a resident writes as the chief
 // complaint — worded, where one exists, the way that department's history-check tree is
 // triggered (content/history-trees/), so tapping a chip also offers the right history check.
-// Order: the ward's commonest admissions first, emergencies near the top, then the rest.
+// Order: the ward's commonest admissions first, emergencies near the top, then the rest. The
+// card shows only the first 8 until "+N more" is tapped (ChipRow, app/patients/[id]/card-kit.tsx),
+// so the first 8 are what that ward admits most.
 
 const COMPLAINT_CHIPS_GENERAL_SURGERY = [
+  // Acute abdomen, hernia, lumps and abscesses, biliary, diabetic foot — the surgical ward's bulk.
   "Pain abdomen",
   "Vomiting",
   "Fever",
-  "Abdominal distension",
-  "Constipation",
-  "Not passing flatus",
-  "Jaundice",
-  "Lump",
   "Groin swelling",
-  "Scrotal swelling",
-  "Breast lump",
-  "Swelling in front of the neck",
-  "Bleeding per rectum",
+  "Lump",
+  "Abdominal distension",
+  "Jaundice",
+  "Non-healing ulcer",
+  "Not passing flatus",
+  "Constipation",
   "Pain in anus",
+  "Bleeding per rectum",
+  "Breast lump",
+  "Scrotal swelling",
+  "Swelling in front of the neck",
+  "Wound discharge",
+  "Injury",
   "Vomiting blood",
   "Difficulty swallowing",
   "Loose stools",
   "Burning micturition",
-  "Non-healing ulcer",
-  "Wound discharge",
-  "Injury",
   "Loss of appetite",
   "Loss of weight",
 ];

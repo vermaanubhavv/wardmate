@@ -221,3 +221,15 @@ describe("quoteNegatesItem — the negation lexicon", () => {
     expect(quoteNegatesItem(quote, terms)).toBe(expected);
   });
 });
+
+describe("quoteNegatesItem — a negation phrase that contains an affirming word", () => {
+  it.each([
+    ["Has not passed urine", ["passed urine"], true],
+    ["has not vomited today", ["vomited"], true],
+    ["is not tender", ["tender"], true],
+    ["has not passed urine, has vomited", ["vomited"], false], // "has" after the denial still ends it
+    ["Has not passed urine since the burn", ["passed urine"], false], // "since" ends a denial, by design
+  ])("%s → %s", (quote, terms, expected) => {
+    expect(quoteNegatesItem(quote, terms as string[])).toBe(expected);
+  });
+});

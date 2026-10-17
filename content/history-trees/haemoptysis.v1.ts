@@ -14,7 +14,7 @@ import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, rce, val, yn } from 
  */
 export const haemoptysisV1: HistoryTree = {
   id: "haemoptysis",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Coughing blood",
   triggers: ["haemoptysis", "hemoptysis", "coughing blood", "blood in sputum", "blood in cough", "blood stained sputum", "spitting blood", "khansi mein khoon", "blood while coughing", "streaks of blood"],
   setting: "Pulmonary medicine ward, north India",

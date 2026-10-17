@@ -5,15 +5,10 @@ import { getFormularyMappings } from "@/lib/formulary";
 import { correctTranscript } from "@/lib/glossary";
 import { extractObservations } from "@/lib/extract";
 import { derivePatientState, type Observation } from "@/lib/patient-state";
-import { compileDischargeDraft } from "@/lib/discharge-compile";
 import { buildDischargeDocument } from "@/lib/discharge-render";
 import { getSpecialtyPack } from "@/lib/specialty";
-import {
-  getDischargeTemplateFor,
-  listDischargeTemplatesFor,
-  matchDischargeTemplateFor,
-} from "@/lib/specialty/discharge";
-import { oneOffContext, type OneOffIdentity } from "@/lib/discharge-oneoff";
+import { listDischargeTemplatesFor } from "@/lib/specialty/discharge";
+import { buildOneOffDraft, oneOffContext, type OneOffIdentity } from "@/lib/discharge-oneoff";
 import { createClient } from "@/lib/supabase/server";
 import type { ReadLabValue } from "@/lib/read-lab-photo";
 import type { PaperKind } from "@/lib/read-paper";
@@ -54,9 +49,7 @@ export async function POST(request: Request) {
   const pages = (body.pages ?? []).filter(
     (p) => (p.transcript && p.transcript.trim()) || (p.labValues && p.labValues.length > 0)
   );
-  if (pages.length === 0) {
-    return NextResponse.json({ error: "There is nothing to build from." }, { status: 400 });
-  }
+  // No pages is allowed: the summary is then the chosen template's skeleton alone.
 
   const identity = body.identity ?? {};
   if (!identity.name?.trim()) {
@@ -67,6 +60,10 @@ export async function POST(request: Request) {
 
   const observations: Observation[] = [];
   const now = new Date().toISOString();
+
+  // Which department this unit is: its templates, its speech corrections and its extraction
+  // prompt. An oncology unit is never offered "Lap chole" or a PAS→PAC rewrite.
+  const pack = getSpecialtyPack(ward ? await getWardSpecialtyStored(ward.id) : null);
 
   for (const page of pages) {
     if (page.kind === "lab_report" && page.labValues && page.labValues.length > 0) {
@@ -94,10 +91,10 @@ export async function POST(request: Request) {
       continue;
     }
 
-    const corrected = await correctTranscript(page.transcript);
+    const corrected = await correctTranscript(page.transcript, pack);
     let extraction;
     try {
-      extraction = await extractObservations(corrected.text, []);
+      extraction = await extractObservations(corrected.text, [], [], pack.key, { name: identity.name });
     } catch {
       continue;
     }
@@ -140,8 +137,6 @@ export async function POST(request: Request) {
     ward ? getWardIsEsicFaridabad(ward.id) : Promise.resolve(true),
   ]);
 
-  // Which department’s templates this unit gets. An oncology unit is never offered "Lap chole".
-  const pack = getSpecialtyPack(ward ? await getWardSpecialtyStored(ward.id) : null);
 
   const context = oneOffContext(
     identity,
@@ -155,23 +150,13 @@ export async function POST(request: Request) {
     isEsicFaridabad
   );
 
-  // The diagnosis template: an explicit "no template" wins; then the resident's explicit
-  // choice; otherwise the one the typed procedure / diagnosis points at.
-  const template =
-    body.templateKey === "__none__"
-      ? null
-      : (getDischargeTemplateFor(pack, body.templateKey) ??
-        matchDischargeTemplateFor(pack, {
-          procedureText: identity.procedure,
-          diagnosisText: identity.diagnosis,
-        }));
-
-  const draft = compileDischargeDraft(context, { template, seedAll: true, pack });
+  const { draft, checkContext, template } = buildOneOffDraft(context, body.templateKey, identity);
   const doc = buildDischargeDocument(draft, context);
 
   return NextResponse.json({
     doc,
     draft,
+    checkContext,
     observations: observations.length,
     template: template ? { key: template.key, label: template.label } : null,
     templates: listDischargeTemplatesFor(pack),

@@ -29,23 +29,9 @@ export function IconCheck({ className = "h-[17px] w-[17px]" }: { className?: str
   );
 }
 
-/** The small grey/teal/amber status pill shown beside a section title. */
-export function statusChip(text: string, tone: "ok" | "warn" | "muted") {
-  return (
-    <span
-      className={
-        "shrink-0 rounded-full px-2 py-0.5 text-caption2 font-medium " +
-        (tone === "ok"
-          ? "bg-accent/10 text-accent"
-          : tone === "warn"
-            ? "bg-warn-bg text-warn-fg"
-            : "bg-chip text-muted")
-      }
-    >
-      {text}
-    </span>
-  );
-}
+// Server-safe: lives in its own module so server pages (Learn) can call it — this file is a
+// client module. Re-exported here so client callers keep importing it from card-kit.
+export { statusChip } from "./status-chip";
 
 /** A pill the resident taps on/off — the Claude-Code multi-select feel. */
 export function SelChip({
@@ -257,6 +243,45 @@ export function DictateArea({
   );
 }
 
+/**
+ * A row of chips showing only the commonest up front — every chip list is ordered commonest
+ * first — with the rest behind one "+N more" chip. A selected chip always shows, wherever it
+ * sits in the list, so nothing the resident picked is ever hidden.
+ */
+export function ChipRow({
+  items,
+  selected,
+  onToggle,
+  max = 8,
+}: {
+  items: string[];
+  selected: (c: string) => boolean;
+  onToggle: (c: string) => void;
+  max?: number;
+}) {
+  const [all, setAll] = useState(false);
+  const shown = all ? items : items.filter((c, i) => i < max || selected(c));
+  const hidden = items.length - shown.length;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {shown.map((c) => (
+        <SelChip key={c} selected={selected(c)} onClick={() => onToggle(c)}>
+          {c}
+        </SelChip>
+      ))}
+      {hidden > 0 && (
+        <button
+          type="button"
+          onClick={() => setAll(true)}
+          className="inline-flex min-h-11 items-center rounded-full border border-dashed border-line px-3 py-1.5 text-footnote text-accent"
+        >
+          +{hidden} more
+        </button>
+      )}
+    </div>
+  );
+}
+
 /** The "AI could not resolve these" box, shared by every compile/propose card. */
 export function UncertainList({ points }: { points: string[] }) {
   if (points.length === 0) return null;
@@ -305,13 +330,7 @@ export function PillsAndText({
   };
   return (
     <>
-      <div className="flex flex-wrap gap-1.5">
-        {pills.map((p) => (
-          <SelChip key={p} selected={has(p)} onClick={() => toggle(p)}>
-            {p}
-          </SelChip>
-        ))}
-      </div>
+      <ChipRow items={pills} selected={has} onToggle={toggle} />
       <DictateArea value={value} onChange={onChange} placeholder={placeholder} rows={rows} />
     </>
   );

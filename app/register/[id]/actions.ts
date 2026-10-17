@@ -79,12 +79,14 @@ export async function applyRegister(formData: FormData) {
           ? "Handwriting was unclear — check against the register photo."
           : null,
       })),
-      ...row.plans.map((p) => ({
+      ...row.plans.map((p, j) => ({
         entry_id: entry.id,
         patient_id: patientId,
         kind: "plan" as const,
         label: "plan",
         value_text: p,
+        task_open: row.plan_judgments?.[j]?.task_open ?? null,
+        task_category: row.plan_judgments?.[j]?.task_category ?? null,
         value_num: null,
         unit: null,
         source_quote: row.source_quote,

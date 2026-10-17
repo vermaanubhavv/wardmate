@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { MicIcon, StopIcon } from "@/app/icons";
 import { statusChip } from "./card-kit";
 import { openLiveDictation, type LiveDictationSession } from "@/lib/stt/live";
@@ -26,7 +27,8 @@ export type LiveSection = {
   /** Drugs or doses: every line here is amber. */
   drug?: boolean;
 };
-export type LiveLine = { section: string; text: string };
+/** `check` overrides the panel's own number/drug rule when the server already decided it. */
+export type LiveLine = { section: string; text: string; check?: boolean };
 
 type SessionState = "connecting" | "listening" | "sorting" | "stopping" | "error";
 
@@ -40,6 +42,7 @@ export default function LiveDictation({
   route,
   onLines,
   onClose,
+  onUnavailable,
 }: {
   patientId: string;
   title: string;
@@ -51,6 +54,11 @@ export default function LiveDictation({
   /** Drop the sorted lines into the screen's own cards. */
   onLines?: (lines: LiveLine[]) => void;
   onClose: () => void;
+  /** Live could not start (no token, no signal) — the caller falls back instead of showing an
+   *  error here. */
+  /** Live could not start; the caller records instead. Gets the reason so it can say why —
+   *  a silent fallback looks exactly like live dictation being broken. */
+  onUnavailable?: (reason: string) => void;
 }) {
   const [state, setState] = useState<SessionState>("connecting");
   const [message, setMessage] = useState<string | null>(null);
@@ -67,9 +75,11 @@ export default function LiveDictation({
   const tableRefs = useRef<Record<string, HTMLElement | null>>({});
   const routeRef = useRef(route);
   const onLinesRef = useRef(onLines);
+  const onUnavailableRef = useRef(onUnavailable);
   useEffect(() => {
     routeRef.current = route;
     onLinesRef.current = onLines;
+    onUnavailableRef.current = onUnavailable;
   });
 
   const routeBuffered = useCallback(async () => {
@@ -109,21 +119,31 @@ export default function LiveDictation({
     (async () => {
       let token: string;
       let keyterms: string[];
+      // On one bar of signal the token request can hang for a minute. Six seconds covers a cold
+      // server plus a slow phone connection and still falls back within a breath.
+      const abort = new AbortController();
+      const timer = setTimeout(() => abort.abort(), 6000);
       try {
         const res = await fetch("/api/transcribe/live-token", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ patientId }),
+          signal: abort.signal,
         });
+        clearTimeout(timer);
         const data = (await res.json()) as { token?: string; keyterms?: string[]; error?: string };
         if (!res.ok || !data.token) throw new Error(data.error ?? "Could not start live dictation.");
         token = data.token;
         keyterms = data.keyterms ?? [];
       } catch (e) {
-        if (!cancelled) {
-          setState("error");
-          setMessage(e instanceof Error ? e.message : "Could not start live dictation.");
+        clearTimeout(timer);
+        if (cancelled) return;
+        if (onUnavailableRef.current) {
+          const reason = abort.signal.aborted ? "no answer from the server in 6 s" : e instanceof Error ? e.message : "no connection";
+          return onUnavailableRef.current(reason);
         }
+        setState("error");
+        setMessage(e instanceof Error && e.name !== "AbortError" ? e.message : "Could not start live dictation.");
         return;
       }
       if (cancelled) return;
@@ -175,7 +195,9 @@ export default function LiveDictation({
   const listening = state === "listening" || state === "sorting";
   const filledCount = sections.filter((s) => s.existing?.trim() || lines.some((l) => l.section === s.key)).length;
 
-  return (
+  // Portalled to <body>: the bedside mic lives in a blurred fixed bar, and a backdrop-filter
+  // ancestor would trap this "full-screen" panel inside the bar.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
       <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
         <div className="min-w-0">
@@ -256,7 +278,7 @@ export default function LiveDictation({
                         }
                       >
                         <span className="flex-1">{l.text}</span>
-                        {needsCheck(l.text, s.drug) && statusChip("check", "warn")}
+                        {(l.check ?? needsCheck(l.text, s.drug)) && statusChip("check", "warn")}
                       </li>
                     ))}
                   </ul>
@@ -279,7 +301,8 @@ export default function LiveDictation({
           Stop and review the cards
         </button>
       </footer>
-    </div>
+    </div>,
+    document.body
   );
 }
 

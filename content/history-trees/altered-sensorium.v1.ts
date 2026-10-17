@@ -11,7 +11,7 @@ import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "
  */
 export const alteredSensoriumV1: HistoryTree = {
   id: "altered_sensorium",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Altered sensorium / seizures",
   triggers: ["altered sensorium", "unconscious", "unconsciousness", "drowsy", "drowsiness", "confusion", "confused", "irrelevant talk", "seizure", "seizures", "fit", "fits", "convulsion", "convulsions", "loss of consciousness", "not responding", "unresponsive", "coma"],
   setting: "Adult medicine ward, north India",

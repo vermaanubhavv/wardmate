@@ -9,7 +9,7 @@ import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "
  */
 export const breathlessnessV1: HistoryTree = {
   id: "breathlessness",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Breathlessness",
   triggers: ["breathlessness", "breathless", "shortness of breath", "dyspnoea", "dyspnea", "difficulty in breathing", "difficulty breathing", "sob"],
   setting: "Adult medicine ward, north India",

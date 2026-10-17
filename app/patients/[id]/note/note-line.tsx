@@ -1,3 +1,5 @@
+import { DEFAULT_PROGRESS_NOTE_CONFIG, openSpaceHeadings } from "@/lib/progress-note-config";
+
 /**
  * How one line of the generated note renders — shared between the plain-page layout and the
  * form-overlay layout, so a heading bolds the same way regardless of which one is showing.
@@ -9,9 +11,10 @@
  *  same treatment as "C/O"/"OE"/"Assessment"/"Issues" do. */
 const BOLD_HEADINGS = /^(C\/O|OE|Assessment|Issues|Plan|Advice)([:-])(.*)$/;
 
-/** C/O, P/Abdomen, Chest, Assessment and Flatus/Stool are written as a sentence, not a word — a
- *  row of underscores after the heading read as clutter. Left empty, they get open space instead. */
-const EMPTY_EXAM = /^(C\/O|P\/Abdomen|Chest|Assessment|Flatus \/ Stool) -$/;
+/** C/O, the exam lines, Assessment and Flatus/Stool are written as a sentence, not a word — a
+ *  row of underscores after the heading read as clutter. Left empty, they get open space instead.
+ *  Which headings those are is the ward's — lib/progress-note-config.ts openSpaceHeadings(). */
+const DEFAULT_OPEN_SPACE = openSpaceHeadings(DEFAULT_PROGRESS_NOTE_CONFIG);
 
 export function renderNoteLine(
   line: string,
@@ -19,7 +22,7 @@ export function renderNoteLine(
   /** The overlay's boxes are a fixed size read off a photograph, not a free-flowing page — see
    *  app/patients/[id]/note/overlay-note.tsx. Compact trims the margins that give the plain
    *  layout room to breathe, since that room does not exist inside a detected box. */
-  opts: { compact?: boolean } = {}
+  opts: { compact?: boolean; openSpace?: string[] } = {}
 ) {
   // A blank string is reserved room to write more by hand — genuinely blank space, no drawn
   // line. Both surfaces already have their own lines to write on: the physical form is
@@ -30,7 +33,7 @@ export function renderNoteLine(
     return <div key={key} className={opts.compact ? "h-4" : "h-8"} />;
   }
 
-  const emptyExam = EMPTY_EXAM.test(line.trim());
+  const emptyExam = (opts.openSpace ?? DEFAULT_OPEN_SPACE).some((h) => line.trim() === `${h} -`);
   const heading = line.match(BOLD_HEADINGS);
   const content = heading ? (
     <>

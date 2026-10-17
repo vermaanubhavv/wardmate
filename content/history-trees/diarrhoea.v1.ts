@@ -10,7 +10,7 @@ import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "
  */
 export const diarrhoeaV1: HistoryTree = {
   id: "diarrhoea",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Diarrhoea / vomiting",
   triggers: ["diarrhoea", "diarrhea", "loose stools", "loose motions", "loose motion", "watery stools", "vomiting", "vomitings", "gastroenteritis", "dysentery", "blood in stool", "frequent stools"],
   setting: "Adult medicine ward, north India",

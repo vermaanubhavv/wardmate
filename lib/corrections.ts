@@ -15,12 +15,18 @@
  * Numbers, doses, units and drug names are deliberately absent. "Fifteen" heard for "fifty" is
  * not a spelling error and cannot be fixed by a lookup table; guessing at one would be inventing
  * a clinical value, which is the one thing this app never does. Those stay as heard and are
- * flagged for the resident to confirm, exactly as before.
+ * flagged for the resident to confirm, exactly as before. The one exception is NOTATION, not
+ * hearing: after a vital, an intake/output, a power or a lab value, a number the engine left in words ("BP one twenty by
+ * 80") is written in digits ("BP 120/80") — the same value, never a different one. See
+ * numeraliseReadings below.
  *
  * NOTHING IS LOST. The raw transcript is kept in entries.original_transcript and shown behind
  * the (i) whenever it differs, so a resident can always read what was actually heard and see
  * what the app changed. A correction here is a suggestion on the record, not a rewriting of it.
  */
+
+import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { hasOperationClock } from "@/lib/specialty/intake";
 
 export type Correction = { from: string; to: string };
 
@@ -30,23 +36,29 @@ export type Correction = { from: string; to: string };
  * phrases are listed first so they win.
  *
  * To add one: put the misheard spelling on the left, exactly as the engine writes it.
+ *
+ * A rule marked OP belongs to an operating ward — lap chole, PAC, OT, POD. It runs only on a
+ * unit with an operation clock (hasOperationClock): on a chest ward "PAS" is para-aminosalicylic
+ * acid, and in dermatology or oncology it is the PAS stain, and neither may become "PAC".
  */
-const RULES: { pattern: RegExp; to: string }[] = [
+const OP = true;
+const RULES: { pattern: RegExp; to: string; op?: boolean }[] = (
+  [
   // The operation this unit does most, and the phrase the engine gets wrong most.
-  [/\blap(?:\s|-)?(?:chole|choley|coley|coli|collie|cole)\b/gi, "lap chole"],
-  [/\blab(?:\s|-)?(?:chole|choley|coley|coli|collie|cole)\b/gi, "lap chole"],
-  [/\b(?:coli|collie|coley)\s*cystectomy\b/gi, "cholecystectomy"],
-  [/\blaparoscopic\s+(?:coli|collie|coley)\w*ectomy\b/gi, "laparoscopic cholecystectomy"],
+  [/\blap(?:\s|-)?(?:chole|choley|coley|coli|collie|cole)\b/gi, "lap chole", OP],
+  [/\blab(?:\s|-)?(?:chole|choley|coley|coli|collie|cole)\b/gi, "lap chole", OP],
+  [/\b(?:coli|collie|coley)\s*cystectomy\b/gi, "cholecystectomy", OP],
+  [/\blaparoscopic\s+(?:coli|collie|coley)\w*ectomy\b/gi, "laparoscopic cholecystectomy", OP],
 
   // Pre-anaesthetic checkup. "PAS" is what a general model writes for it; on a surgical ward
   // PAC is the overwhelmingly likelier word, and the raw text is kept either way.
-  [/\bp\.?\s?a\.?\s?s\.?(?=\s|$)/gi, "PAC"],
-  [/\bpack\s+review\b/gi, "PAC review"],
+  [/\bp\.?\s?a\.?\s?s\.?(?=\s|$)/gi, "PAC", OP],
+  [/\bpack\s+review\b/gi, "PAC review", OP],
   [/\bpac\b/gi, "PAC"],
 
   // Appendix, and the two spellings that come back for it.
-  [/\bappendic?[ei]ctomy\b/gi, "appendicectomy"],
-  [/\bappendix\s*ectomy\b/gi, "appendicectomy"],
+  [/\bappendic?[ei]ctomy\b/gi, "appendicectomy", OP],
+  [/\bappendix\s*ectomy\b/gi, "appendicectomy", OP],
 
   // Nasogastric tube, named after Ryle. Only the spelled-out form: "RT" is left alone, because
   // it is radiotherapy as readily as it is a Ryle's tube and this cannot tell which was meant.
@@ -68,7 +80,7 @@ const RULES: { pattern: RegExp; to: string }[] = [
   [/\br\.?\s?f\.?\s?t\.?(?=\s|$)/gi, "RFT"],
   [/\bc\.?\s?b\.?\s?c\.?(?=\s|$)/gi, "CBC"],
   [/\be\.?\s?c\.?\s?g\.?(?=\s|$)/gi, "ECG"],
-  [/\bo\.?\s?t\.?\s+list\b/gi, "OT list"],
+  [/\bo\.?\s?t\.?\s+list\b/gi, "OT list", OP],
   [/\bn\.?\s?b\.?\s?m\.?(?=\s|$)/gi, "NBM"],
   [/\bi\.?\s?c\.?\s?d\.?(?=\s|$)/gi, "ICD"],
 
@@ -184,9 +196,9 @@ const RULES: { pattern: RegExp; to: string }[] = [
   [/\bnormal\s+saline\b/gi, "NS"],
   [/\bpacked\s+cell\s+volume\b/gi, "PCV"],
   [/\bnil\s+by\s+mouth\b/gi, "NBM"],
-  [/\bpre[\s-]?an(?:a)?esthetic\s+(?:checkup|check[\s-]?up|clearance|fitness)\b/gi, "PAC"],
-  [/\boperation\s+theatre\b/gi, "OT"],
-  [/\bpost[\s-]?operative\s+day\b/gi, "POD"],
+  [/\bpre[\s-]?an(?:a)?esthetic\s+(?:checkup|check[\s-]?up|clearance|fitness)\b/gi, "PAC", OP],
+  [/\boperation\s+theatre\b/gi, "OT", OP],
+  [/\bpost[\s-]?operative\s+day\b/gi, "POD", OP],
   [/\bintercostal\s+drain(?:age\s+tube)?\b/gi, "ICD"],
   [/\bleft\s+against\s+medical\s+advice\b/gi, "LAMA"],
   [/\bdischarged?\s+against\s+medical\s+advice\b/gi, "DAMA"],
@@ -204,7 +216,8 @@ const RULES: { pattern: RegExp; to: string }[] = [
   //   "blood transfusion" -> BT is also bleeding time.
   //   "care of"           -> C/O is complaints of; the two are not the same statement.
   //   "at bedtime"        -> HS on a chart, but "at night" in a narrative sentence.
-].map(([pattern, to]) => ({ pattern: pattern as RegExp, to: to as string }));
+  ] as [RegExp, string, boolean?][]
+).map(([pattern, to, op]) => ({ pattern, to, op }));
 
 /**
  * Correct a transcript, and say what was changed.
@@ -212,14 +225,19 @@ const RULES: { pattern: RegExp; to: string }[] = [
  * `changes` is what gets shown to the resident. A rule that fires but produces the same text —
  * "PAC" already written correctly — is not reported, because nothing was actually altered.
  */
-export function applyCorrections(transcript: string): {
+export function applyCorrections(
+  transcript: string,
+  pack: SpecialtyPack = generalSurgeryPack
+): {
   text: string;
   changes: Correction[];
 } {
   let text = transcript;
   const changes: Correction[] = [];
+  const operating = hasOperationClock(pack);
 
-  for (const { pattern, to } of RULES) {
+  for (const { pattern, to, op } of RULES) {
+    if (op && !operating) continue;
     text = text.replace(pattern, (heard) => {
       if (heard === to) return heard;
 
@@ -229,5 +247,114 @@ export function applyCorrections(transcript: string): {
     });
   }
 
+  text = numeraliseReadings(text, changes);
   return { text, changes };
+}
+
+// ---------------------------------------------------------------------------------------------
+// SPOKEN NUMBERS -> DIGITS, after anything the ward charts as a number.
+//
+// The engine writes "eighty" as 80 but leaves the ward's colloquial "one twenty" (120) and
+// "one oh five" (105) in words, so a BP landed on the chart as "one twenty / 80". Vitals, intake and
+// output, power grades and lab values are numbers, so after one of these cues every spoken number in the
+// same sentence is written in digits, and "N by/over/upon M" becomes "N/M" (BP 120/80, power
+// 4/5, GCS 15/15). It is a change of notation only: each word maps to exactly one value, and a
+// word that does not parse as a number is left untouched. Numbers stay amber regardless.
+
+const SMALL: Record<string, number> = {
+  zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
+  ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16,
+  seventeen: 17, eighteen: 18, nineteen: 19,
+};
+const TENS: Record<string, number> = {
+  twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90,
+};
+
+const STARTER = `(?:${[...Object.keys(SMALL), ...Object.keys(TENS)].join("|")})`;
+const WORD_RUN =
+  `(?:a[\\s-]+(?:hundred|thousand)|${STARTER})` +
+  `(?:[\\s-]+(?:${STARTER}|hundred|thousand|(?:and|oh|point)(?=[\\s-]+${STARTER})))*`;
+const NUM = `(?:\\d+(?:\\.\\d+)?|${WORD_RUN})`;
+const READING = new RegExp(`\\b(${NUM})(?:\\s+(?:by|over|upon)\\s+(${NUM}))?\\b`, "gi");
+
+// The sentence a cue governs: up to . ; ! ? or a line break, but not the point inside 37.5.
+// Every reading the ward charts as a number. A cue that is not a quantity on its own
+// ("catheter") only ever turns spoken numbers into digits, so a wide list costs nothing.
+const CUES = [
+  // Vitals.
+  "BP", "MAP", "CVP", "pulse", "PR", "HR", "heart\\s+rate", "RR", "SpO2", "sats?", "saturation",
+  "temp(?:erature)?", "GRBS", "RBS", "CBG", "sugars?", "GCS",
+  // Intake and output: urine, drains, Ryle's tube, stoma, ICD — whatever comes in or out.
+  "outputs?", "inputs?", "intake", "I/O", "UO", "urine", "drains?", "aspirates?", "RT", "Ryle's\\s+tube",
+  "NG", "catheter", "stoma", "ICD",
+  // Examination and the body.
+  "powers?", "weight", "height", "girth", "BMI",
+  // Labs, as they are read out on a round.
+  "Hb", "TLC", "platelets?", "creatinine", "urea", "sodium", "potassium", "INR", "bilirubin",
+];
+const CUED = new RegExp(
+  `\\b(${CUES.join("|")})\\b((?:[^.;!?\\n]|\\.(?=\\d))*)`,
+  "gi"
+);
+
+function below100(t: string[], i: number): [number, number] | null {
+  if (t[i] in TENS) {
+    const unit = SMALL[t[i + 1]];
+    return unit >= 1 && unit <= 9 ? [TENS[t[i]] + unit, i + 2] : [TENS[t[i]], i + 1];
+  }
+  return t[i] in SMALL ? [SMALL[t[i]], i + 1] : null;
+}
+
+/** "one twenty five" -> "125", "ninety eight point six" -> "98.6", "a hundred and ten" -> "110". */
+export function wordsToDigits(words: string): string {
+  const t = words.toLowerCase().split(/[\s-]+/);
+  const out: string[] = [];
+  let i = 0;
+  while (i < t.length) {
+    const scale = (w: string) => w === "hundred" || w === "thousand";
+    const first = t[i] === "a" && scale(t[i + 1]) ? ([1, i + 1] as [number, number]) : below100(t, i);
+    if (!first) {
+      out.push(t[i++]);
+      continue;
+    }
+    let [n, j] = first;
+    if (scale(t[j])) {
+      // "fifteen hundred" 1500, "two thousand five hundred and fifty" 2550.
+      let thousands = 0;
+      while (scale(t[j])) {
+        if (t[j] === "thousand") [thousands, n] = [thousands + n * 1000, 0];
+        else n *= 100;
+        j += t[j + 1] === "and" ? 2 : 1;
+        const rest = below100(t, j);
+        if (rest) [n, j] = [n + rest[0], rest[1]];
+      }
+      n += thousands;
+    } else if (n >= 1 && n <= 9 && j === i + 1) {
+      // The ward's way of saying three digits: "one twenty" is 120, "one oh five" is 105.
+      const rest = t[j] === "oh" ? below100(t, j + 1) : below100(t, j);
+      if (rest && (t[j] === "oh" ? rest[0] <= 9 : rest[0] >= 10)) [n, j] = [n * 100 + rest[0], rest[1]];
+    }
+    let s = String(n);
+    if (t[j] === "point") {
+      let k = j + 1;
+      let decimals = "";
+      for (; t[k] === "oh" || SMALL[t[k]] <= 9; k++) decimals += t[k] === "oh" ? "0" : SMALL[t[k]];
+      if (decimals) [s, j] = [`${s}.${decimals}`, k];
+    }
+    out.push(s);
+    i = j;
+  }
+  return out.join(" ");
+}
+
+function numeraliseReadings(text: string, changes: Correction[]): string {
+  return text.replace(CUED, (_m, cue: string, rest: string) => {
+    const done = rest.replace(READING, (heard: string, a: string, b?: string) => {
+      const to = b ? `${wordsToDigits(a)}/${wordsToDigits(b)}` : wordsToDigits(a);
+      if (to === heard) return heard;
+      if (!changes.some((c) => c.from === heard && c.to === to)) changes.push({ from: heard, to });
+      return to;
+    });
+    return cue + done;
+  });
 }

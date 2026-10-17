@@ -95,8 +95,8 @@ export function dateAnchors(d: DischargeDraft): DateAnchors {
   return {
     today: istDay(new Date().toISOString())!,
     // Optional chaining: a stored or partial draft may predate a field.
-    admittedOn: istDay(d.encounter?.admittedAt),
-    dischargedOn: istDay(d.encounter?.dischargedAt),
+    admittedOn: istDay(d.admission?.admittedAt),
+    dischargedOn: istDay(d.admission?.dischargedAt),
     procedures: (d.procedures ?? []).map((p) => ({ name: p.name, date: istDay(p.date) })),
   };
 }

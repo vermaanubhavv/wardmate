@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { AI_MODEL } from "@/lib/model";
+import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { forWard } from "@/lib/specialty/prompt-words";
 
 export type CaseSheetResult = {
   /** The whole page, transcribed. Fed into extractObservations exactly like a spoken
@@ -9,7 +11,7 @@ export type CaseSheetResult = {
   raw: unknown;
 };
 
-const SYSTEM_PROMPT = `You transcribe a photograph of a surgical admission case sheet — history, examination findings, provisional diagnosis, plan of management, whatever the page holds.
+export const SYSTEM_PROMPT = `You transcribe a photograph of a surgical admission case sheet — history, examination findings, provisional diagnosis, plan of management, whatever the page holds.
 
 You are transcribing, not summarising and not interpreting. Copy out what is written, in the order it is written.
 
@@ -53,7 +55,8 @@ const SCHEMA = {
  */
 export async function readCaseSheet(
   base64Image: string,
-  mediaType: "image/jpeg" | "image/png" | "image/webp"
+  mediaType: "image/jpeg" | "image/png" | "image/webp",
+  pack: SpecialtyPack = generalSurgeryPack
 ): Promise<CaseSheetResult> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
@@ -64,7 +67,7 @@ export async function readCaseSheet(
   const response = await client.messages.create({
     model,
     max_tokens: 8000,
-    system: SYSTEM_PROMPT,
+    system: forWard(SYSTEM_PROMPT, pack),
     // Same tier as the lab photo: reading handwriting off a ward-lit phone photo is harder
     // than parsing clean speech, and a case sheet is usually a fuller page than a lab slip.
     output_config: {
