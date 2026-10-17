@@ -95,13 +95,12 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   }, [online, recover, refresh, send]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  // A document served from the cache carries the render time of when it was cached, so on
-  // opening it reads as minutes or hours old; a live one is seconds old. The minute of slack is
-  // for a phone clock that is a little off. Screens tapped to inside the app are told by the
-  // service worker instead, which knows when it answered from the cache.
+  // The service worker stamps a page it served from the cache (public/sw.js). Screens tapped
+  // to inside the app are told by message instead, below.
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    if (Date.now() - new Date(renderedAt).getTime() > 60_000) setSavedAt(renderedAt);
+    const stamp = document.querySelector('meta[name="wm-saved-at"]');
+    if (stamp) setSavedAt(stamp.getAttribute("content") || renderedAt);
   }, [renderedAt]);
   /* eslint-enable react-hooks/set-state-in-effect */
 

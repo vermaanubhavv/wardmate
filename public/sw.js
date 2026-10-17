@@ -12,9 +12,10 @@
 // Bump these when the app's shape changes enough that a cached shell or page could render
 // wrong against the new code — the activate handler below deletes every cache not named here,
 // so a version bump wipes the old ones on the next load. (v2: the discharge workspace became
-// a card stack; old cached discharge pages rendered the previous accordion.)
+// a card stack; old cached discharge pages rendered the previous accordion. v3: payloads are
+// keyed by path alone, and background prefetches are no longer stored.)
 const SHELL = "wardmate-shell-v2";
-const PAGES = "wardmate-pages-v2";
+const PAGES = "wardmate-pages-v3";
 
 // How long a screen's network fetch may take before the saved copy is shown instead.
 const PATIENCE_MS = 3000;
@@ -88,13 +89,30 @@ self.addEventListener("fetch", (event) => {
     request.mode === "navigate" || (request.headers.get("accept") || "").includes("text/html");
   const isPayload = request.headers.has("RSC") || url.searchParams.has("_rsc");
 
+  // The ward list prefetches every patient it shows, and a prefetch is a partial payload. Stored,
+  // it was what the offline lookup found first for that patient; Next.js rejected it, fell back
+  // to loading the page as a document, which had never been saved, and the resident got "not
+  // opened on this phone yet" for a patient they had opened. Prefetches go to the network alone.
+  if (isPayload && request.headers.has("Next-Router-Prefetch")) return;
+
+  // A payload is saved under its path with `_rsc` taken off, so there is one copy per screen and
+  // each visit replaces the last. `_rsc` changes with every build and with where the tap came
+  // from, so keyed by it the cache filled with near-duplicates and a lookup returned any of them.
+  const key = isPayload
+    ? (() => {
+        const u = new URL(request.url);
+        u.searchParams.delete("_rsc");
+        return u.toString();
+      })()
+    : request;
+
   if (isDocument || isPayload) {
     const network = fetch(request).then((res) => {
       // A redirect to /login means the session is gone; caching that would strand the app
       // on a sign-in page it serves to itself from disk.
       if (res.ok && res.type !== "opaqueredirect") {
         const copy = res.clone();
-        caches.open(PAGES).then((c) => c.put(request, copy));
+        caches.open(PAGES).then((c) => c.put(key, copy));
       }
       return res;
     });
@@ -102,25 +120,32 @@ self.addEventListener("fetch", (event) => {
     // next open of this screen is fresher. The worker must stay alive long enough to write it.
     event.waitUntil(network.catch(() => {}));
 
-    // Both relaxations are load-bearing for payloads, and neither is optional.
-    //
-    // ignoreSearch: the `_rsc` parameter is a build fingerprint, so after a deploy an
-    // exact match misses and a patient cached this morning looks unvisited.
-    //
-    // ignoreVary: Next.js sends `Vary: RSC` on these, so the cache will only return one
-    // to a request carrying the identical RSC header. Without this the entries are
-    // written and then never found again — offline support that silently does nothing,
-    // which is worse than none, because it is only discovered on a ward with no signal.
-    const saved = () => caches.match(request, { ignoreSearch: isPayload, ignoreVary: isPayload });
+    // ignoreVary is load-bearing for payloads: Next.js sends `Vary: RSC` on them, so the cache
+    // would only return one to a request carrying the identical RSC header. Without it the
+    // entries are written and then never found again — offline support that silently does
+    // nothing, which is worse than none, because it is only discovered on a ward with no signal.
+    const saved = () => caches.match(key, { ignoreVary: isPayload });
 
-    // Tells the screen whether what it is about to draw is live. Only payloads can be told:
-    // a document has no page yet to tell, and the connection bar works that case out from the
-    // render time baked into the page itself.
-    const report = (res, fromCache) => {
+    // Tells the screen whether what it is about to draw is live. A payload's page already
+    // exists, so it gets a message. A document's page does not exist yet, so a saved one is
+    // stamped instead: a meta tag the connection bar reads on load, carrying when it was
+    // fetched. (The page's own render time cannot be trusted for this: pages with no
+    // per-request data, /login among them, are rendered once at build time.)
+    const report = async (res, fromCache) => {
+      const date = res.headers.get("date");
       if (isPayload && event.clientId) {
         self.clients.get(event.clientId).then((client) =>
-          client?.postMessage({ type: "screen", fromCache, date: res.headers.get("date") })
+          client?.postMessage({ type: "screen", fromCache, date })
         );
+      }
+      if (isDocument && fromCache) {
+        const html = (await res.text()).replace(
+          "<head>",
+          `<head><meta name="wm-saved-at" content="${date || ""}">`
+        );
+        const headers = new Headers(res.headers);
+        headers.delete("content-length");
+        return new Response(html, { status: res.status, statusText: res.statusText, headers });
       }
       return res;
     };
