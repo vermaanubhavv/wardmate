@@ -23,10 +23,15 @@
  *   --set A,B         which case sets to run (default A; see Case.set in cases.ts).
  *   --budget <usd>    cap across ALL runs (default 100).
  *   --dry             capture and price only; submit nothing.
+ *   --live            send now instead of batching: full price, answers in minutes, and the
+ *                     script loops itself through every round.
+ *   --from-rep <n>    skip repeats below n (they are in another run; see --with).
+ *   --show id,id      print what the route returned for these cases (to review a failure).
+ *   --with A,B        also replay answers stored by those runs, e.g. to score A's r0-r1 here.
  */
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import Anthropic from "@anthropic-ai/sdk";
-import { captured, loadAnswers, productionModel, runOnce, idFor, type Config, type Stored } from "./intercept.ts";
+import { captured, loadAnswers, productionModel, realCreate, runOnce, idFor, type Config, type Stored } from "./intercept.ts";
 
 const arg = (n: string) => {
   const i = process.argv.indexOf(`--${n}`);
@@ -38,6 +43,11 @@ const BUDGET = Number(arg("budget") ?? 100);
 const DRY = process.argv.includes("--dry");
 const ONLY = arg("only")?.split(",");
 const SETS = (arg("set") ?? "A").split(",");
+const LIVE = process.argv.includes("--live");
+const FROM_REP = Number(arg("from-rep") ?? 0);
+const WITH = arg("with")?.split(",") ?? [];
+const SHOW = arg("show")?.split(",") ?? [];
+const RATE = LIVE ? 1 : 0.5; // batches are half price
 
 const isSonnetRoute = (m: string) => m.startsWith("claude-sonnet");
 const CONFIGS: Config[] = [
@@ -62,12 +72,12 @@ const price = (model: string) => PRICE[Object.keys(PRICE).find((k) => model.star
 function costOf(model: string, u: Anthropic.Usage) {
   const [i, o] = price(model);
   const input = u.input_tokens * i + (u.cache_creation_input_tokens ?? 0) * i * 1.25 + (u.cache_read_input_tokens ?? 0) * i * 0.1;
-  return ((input + u.output_tokens * o) / 1e6) * 0.5;
+  return ((input + u.output_tokens * o) / 1e6) * RATE;
 }
 /** Upper bound for one request: ~3 chars a token (generous), every output token used, no cache. */
 function worstCase(p: Anthropic.MessageCreateParamsNonStreaming) {
   const [i, o] = price(String(p.model));
-  return ((JSON.stringify(p).length / 3) * i + p.max_tokens * o) / 1e6 * 0.5;
+  return ((JSON.stringify(p).length / 3) * i + p.max_tokens * o) / 1e6 * RATE;
 }
 
 // --- state ----------------------------------------------------------------------------------
@@ -75,18 +85,27 @@ const DIR = `.eval-models/${RUN}`;
 mkdirSync(DIR, { recursive: true });
 const LEDGER = ".eval-models/ledger.json";
 type Ledger = { spent: number; reserved: Record<string, number>; batches: { id: string; run: string; requests: number; cost?: number }[] };
-const ledger: Ledger = existsSync(LEDGER) ? JSON.parse(readFileSync(LEDGER, "utf8")) : { spent: 0, reserved: {}, batches: [] };
-const saveLedger = () => writeFileSync(LEDGER, JSON.stringify(ledger, null, 2));
+const readLedger = (): Ledger => (existsSync(LEDGER) ? JSON.parse(readFileSync(LEDGER, "utf8")) : { spent: 0, reserved: {}, batches: [] });
+// Several runs poll at once: read the ledger fresh at every change so none overwrites another's.
+function updateLedger(change: (l: Ledger) => void): Ledger {
+  const l = readLedger();
+  change(l);
+  writeFileSync(LEDGER, JSON.stringify(l, null, 2));
+  return l;
+}
 const ANSWERS = `${DIR}/answers.jsonl`;
 const PENDING = `${DIR}/pending.json`;
 
 const stored = new Map<string, Stored>();
-if (existsSync(ANSWERS)) {
-  for (const line of readFileSync(ANSWERS, "utf8").split("\n").filter(Boolean)) {
+for (const file of [...WITH.map((r) => `.eval-models/${r}/answers.jsonl`), ANSWERS]) {
+  if (!existsSync(file)) continue;
+  for (const line of readFileSync(file, "utf8").split("\n").filter(Boolean)) {
     const r = JSON.parse(line) as { custom_id: string; result: Stored };
     stored.set(r.custom_id, r.result);
   }
 }
+const appendAnswers = (lines: string[]) =>
+  writeFileSync(ANSWERS, (existsSync(ANSWERS) ? readFileSync(ANSWERS, "utf8") : "") + lines.join("\n") + "\n");
 
 const key = process.env.EVAL_ANTHROPIC_API_KEY;
 // The routes check for a key before calling; this one never leaves the process.
@@ -112,15 +131,16 @@ if (existsSync(PENDING)) {
     stored.set(r.custom_id, result);
     lines.push(JSON.stringify({ custom_id: r.custom_id, result }));
   }
-  writeFileSync(ANSWERS, (existsSync(ANSWERS) ? readFileSync(ANSWERS, "utf8") : "") + lines.join("\n") + "\n");
-  ledger.spent += cost;
-  delete ledger.reserved[id];
-  const entry = ledger.batches.find((x) => x.id === id);
-  if (entry) entry.cost = cost;
-  saveLedger();
+  appendAnswers(lines);
+  const l = updateLedger((l) => {
+    l.spent += cost;
+    delete l.reserved[id];
+    const entry = l.batches.find((x) => x.id === id);
+    if (entry) entry.cost = cost;
+  });
   writeFileSync(`${DIR}/collected-${id}.json`, readFileSync(PENDING));
   (await import("node:fs")).unlinkSync(PENDING);
-  console.log(`collected ${lines.length} results, cost $${cost.toFixed(2)} · total spent $${ledger.spent.toFixed(2)} of $${BUDGET}`);
+  console.log(`collected ${lines.length} results, cost $${cost.toFixed(2)} · total spent $${l.spent.toFixed(2)} of $${BUDGET}`);
 }
 loadAnswers(stored);
 
@@ -133,11 +153,12 @@ let waiting = 0;
 
 for (const c of cases) {
   for (const cfg of configs) {
-    for (let rep = 0; rep < REPEATS; rep++) {
+    for (let rep = FROM_REP; rep < REPEATS; rep++) {
       const prefix = `${c.route}|${c.id}|${cfg.id}|r${rep}`;
       const out = await runOnce(prefix, cfg, c.run);
       if (out.kind === "n/a") break;
       if (out.kind === "captured") { waiting++; continue; }
+      if (SHOW.includes(c.id) && out.kind === "done") console.log(`\n${c.id} [${cfg.id} r${rep}]`, JSON.stringify(out.value, null, 1).slice(0, 1500));
       const ids = [0, 1, 2, 3].map((n) => idFor(`${prefix}|c${n}`)).filter((id) => stored.has(id));
       rows.push(out.kind === "error"
         ? { route: c.route, caseId: c.id, config: cfg.id, rep, failures: [`error: ${out.error}`], error: out.error, ids }
@@ -149,6 +170,7 @@ for (const c of cases) {
 // --- 3. submit ------------------------------------------------------------------------------
 if (captured.length) {
   const worst = captured.reduce((s, r) => s + worstCase(r.params), 0);
+  const ledger = readLedger();
   const reserved = Object.values(ledger.reserved).reduce((a, b) => a + b, 0);
   const byModel = new Map<string, number>();
   for (const r of captured) byModel.set(String(r.params.model), (byModel.get(String(r.params.model)) ?? 0) + 1);
@@ -163,10 +185,43 @@ if (captured.length) {
     process.exit(0);
   }
   writeFileSync(`${DIR}/keys.json`, JSON.stringify(Object.fromEntries(captured.map((r) => [r.custom_id, r.key])), null, 1));
+  if (LIVE) {
+    const tag = `live-${Date.now()}`;
+    updateLedger((l) => (l.reserved[tag] = worst));
+    let cost = 0;
+    let next = 0;
+    const lines: string[] = [];
+    // ponytail: fixed 8 in flight; the SDK retries 429s. Raise if the workspace's limits allow.
+    await Promise.all(Array.from({ length: 8 }, async () => {
+      while (next < captured.length) {
+        const { custom_id, params } = captured[next++];
+        let result: Stored;
+        try {
+          const message = (await realCreate.call(api.messages, params)) as Anthropic.Message;
+          cost += costOf(message.model, message.usage);
+          result = { type: "succeeded", message };
+        } catch (e) {
+          result = { type: "errored", error: e instanceof Error ? e.message : String(e) };
+        }
+        lines.push(JSON.stringify({ custom_id, result }));
+      }
+    }));
+    appendAnswers(lines);
+    const l = updateLedger((l) => {
+      l.spent += cost;
+      delete l.reserved[tag];
+      l.batches.push({ id: tag, run: RUN, requests: captured.length, cost });
+    });
+    console.log(`sent ${captured.length} live, cost $${cost.toFixed(2)} · total spent $${l.spent.toFixed(2)} of $${BUDGET}. Next round:`);
+    // The next round (a second call, the grader) or the report: run again in a fresh process.
+    const { status } = (await import("node:child_process")).spawnSync(process.execPath, [...process.execArgv, ...process.argv.slice(1)], { stdio: "inherit" });
+    process.exit(status ?? 1);
+  }
   const batch = await api.messages.batches.create({ requests: captured.map(({ custom_id, params }) => ({ custom_id, params })) });
-  ledger.reserved[batch.id] = worst;
-  ledger.batches.push({ id: batch.id, run: RUN, requests: captured.length });
-  saveLedger();
+  updateLedger((l) => {
+    l.reserved[batch.id] = worst;
+    l.batches.push({ id: batch.id, run: RUN, requests: captured.length });
+  });
   writeFileSync(PENDING, JSON.stringify({ id: batch.id, at: new Date().toISOString() }));
   console.log(`sent batch ${batch.id}. Run the same command again to collect it (usually under an hour, at most 24 h).`);
   process.exit(0);
@@ -179,7 +234,7 @@ const report: string[] = [
   `# Model comparison — run ${RUN}`,
   "",
   `${REPEATS} repeat(s) per case. A cell is **cases fully passed / cases**; ⚠ counts SAFETY failures (any one rules the config out for that route).`,
-  "Cost is the real batch cost per case (half the live price). Spent so far across runs: $" + ledger.spent.toFixed(2) + ".",
+  "Cost is per case at batch price (half the live price), grader excluded. Spent so far across runs: $" + readLedger().spent.toFixed(2) + ".",
   "",
 ];
 const routes = [...new Set(rows.map((r) => r.route))];
@@ -194,7 +249,7 @@ for (const route of routes) {
     const passed = [...byCase.values()].filter((x) => x.every((r) => !r.failures.length)).length;
     const safety = rs.reduce((n, r) => n + r.failures.filter((f) => f.startsWith("SAFETY")).length, 0);
     const msgs = rs.flatMap((r) => r.ids.map(msgOf)).filter((m): m is Anthropic.Message => !!m);
-    const cost = msgs.reduce((s, m) => s + costOf(m.model, m.usage), 0) / rs.length;
+    const cost = (msgs.reduce((s, m) => s + costOf(m.model, m.usage), 0) / rs.length) * (0.5 / RATE);
     const cut = msgs.filter((m) => m.stop_reason === "max_tokens").length;
     const refused = msgs.filter((m) => m.stop_reason === "refusal").length;
     const prod = rs[0].ids[0] ? productionModel.get(rs[0].ids[0]) : undefined;

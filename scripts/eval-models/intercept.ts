@@ -36,14 +36,18 @@ export type Stored =
 
 type Ctx = {
   prefix: string;
+  /** The user message of the route's first call: exactly what the model was shown. */
+  firstPrompt?: string;
   config: Config;
   calls: number;
   signal: (why: "captured" | "n/a") => void;
 };
 
 let ctx: Ctx | null = null;
-/** Requests made by the grader (cases.ts judge()), never swapped to the config's model. */
-export const judges = new WeakSet<object>();
+/** Requests made by the grader (cases.ts judge()) → its version. Never swapped to the config's
+ *  model, and keyed by version rather than call number, so a reworded grader is asked again
+ *  while the route's own answers are reused. */
+export const judges = new WeakMap<object, string>();
 const answers = new Map<string, Stored>();
 export const captured: Captured[] = [];
 /** custom_id → the production model of that call, for the report. */
@@ -69,16 +73,24 @@ function override(params: Anthropic.MessageCreateParamsNonStreaming, c: Config) 
   return p;
 }
 
+/** The SDK's own create, for the runner's live mode — the patch below catches every other call. */
+export const realCreate = Messages.prototype.create;
+
 Messages.prototype.create = function (params: Anthropic.MessageCreateParams) {
   if (!ctx) throw new Error("eval-models: messages.create called outside a run");
   if (params.stream) throw new Error("eval-models: streaming routes are not supported by batches");
   const c = ctx;
-  const key = `${c.prefix}|c${c.calls++}`;
+  const judged = judges.get(params);
+  const key = judged ? `${c.prefix}|judge-${judged}` : `${c.prefix}|c${c.calls++}`;
+  if (!judged && c.calls === 1) {
+    const m = params.messages.at(-1)?.content;
+    c.firstPrompt = typeof m === "string" ? m : (m ?? []).map((b) => (b.type === "text" ? b.text : "")).join("\n");
+  }
   const custom_id = idFor(key);
   const prod = String(params.model);
   productionModel.set(custom_id, prod);
 
-  if (c.calls === 1 && c.config.appliesTo && !c.config.appliesTo(prod)) {
+  if (!judged && c.calls === 1 && c.config.appliesTo && !c.config.appliesTo(prod)) {
     c.signal("n/a");
     return new Promise(() => {}) as never;
   }
@@ -88,12 +100,15 @@ Messages.prototype.create = function (params: Anthropic.MessageCreateParams) {
 
   // The grader always runs as written; a later call outside the config's routes (a Haiku
   // proofread after a Sonnet note) keeps its production model.
-  const keep = judges.has(params) || (c.config.appliesTo && !c.config.appliesTo(prod));
+  const keep = Boolean(judged) || (c.config.appliesTo && !c.config.appliesTo(prod));
   const p = params as Anthropic.MessageCreateParamsNonStreaming;
   captured.push({ custom_id, key, params: keep ? p : override(p, c.config) });
   c.signal("captured");
   return new Promise(() => {}) as never;
 } as typeof Messages.prototype.create;
+
+/** What the route's model was shown, for the grader to judge against. */
+export const routePrompt = () => ctx?.firstPrompt ?? "";
 
 export type Outcome<T> = { kind: "done"; value: T } | { kind: "error"; error: string } | { kind: "captured" } | { kind: "n/a" };
 
