@@ -251,7 +251,9 @@ export async function extractObservations(
         // prefix match, so the stable half has to physically come first.
         system: [
           { type: "text", text: buildSystemPrompt(pack), cache_control: { type: "ephemeral" } },
-          { type: "text", text: expected + protocolBlock },
+          // The API rejects an empty text block (400), so with no template and no protocols —
+          // the one-off discharge build, a patient on no template — there is no second block.
+          ...(expected + protocolBlock ? [{ type: "text" as const, text: expected + protocolBlock }] : []),
         ],
         // Low effort: this is constrained extraction from a short transcript, and the
         // resident is standing at a bedside. Raise it if extraction quality needs it.
