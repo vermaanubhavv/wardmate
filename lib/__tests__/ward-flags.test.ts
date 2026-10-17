@@ -50,47 +50,47 @@ describe("criticalFlag — only genuinely critical findings", () => {
           vitals: [vital("PR", "108"), vital("BP", "150/95"), vital("SpO2", "93%")],
           labs: [lab("SGPT", "100"), lab("Absolute Eosinophil Count", "0.35"), lab("Hb", "10.2")],
         })
-      )
+      , "general_surgery")
     ).toBeNull();
   });
 
   it("PR 120 is not critical; PR 121 is", () => {
-    expect(criticalFlag(patient({ vitals: [vital("PR", "120 /min")] }))).toBeNull();
-    expect(criticalFlag(patient({ vitals: [vital("PR", "121 /min")] }))?.reason).toBe("tachycardia");
+    expect(criticalFlag(patient({ vitals: [vital("PR", "120 /min")] }), "general_surgery")).toBeNull();
+    expect(criticalFlag(patient({ vitals: [vital("PR", "121 /min")] }), "general_surgery")?.reason).toBe("tachycardia");
   });
 
   it("flags hypotension (SBP < 90) and hypoxia (SpO2 < 90)", () => {
-    expect(criticalFlag(patient({ vitals: [vital("BP", "84/50")] }))?.reason).toBe("hypotension");
-    expect(criticalFlag(patient({ vitals: [vital("SpO2", "88%")] }))?.reason).toBe("hypoxia");
+    expect(criticalFlag(patient({ vitals: [vital("BP", "84/50")] }), "general_surgery")?.reason).toBe("hypotension");
+    expect(criticalFlag(patient({ vitals: [vital("SpO2", "88%")] }), "general_surgery")?.reason).toBe("hypoxia");
   });
 
   it("flags WBC > 16000 across scales, not below", () => {
-    expect(criticalFlag(patient({ labs: [lab("TLC", "15800")] }))).toBeNull();
-    expect(criticalFlag(patient({ labs: [lab("TLC", "18200")] }))?.reason).toBe("leucocytosis");
-    expect(criticalFlag(patient({ labs: [lab("Total Leucocyte Count", "17.4")] }))?.reason).toBe("leucocytosis");
+    expect(criticalFlag(patient({ labs: [lab("TLC", "15800")] }), "general_surgery")).toBeNull();
+    expect(criticalFlag(patient({ labs: [lab("TLC", "18200")] }), "general_surgery")?.reason).toBe("leucocytosis");
+    expect(criticalFlag(patient({ labs: [lab("Total Leucocyte Count", "17.4")] }), "general_surgery")?.reason).toBe("leucocytosis");
   });
 
   it("flags platelets < 50000 across scales", () => {
-    expect(criticalFlag(patient({ labs: [lab("Platelets", "60000")] }))).toBeNull();
-    expect(criticalFlag(patient({ labs: [lab("Platelets", "42000")] }))?.reason).toBe("severe thrombocytopenia");
-    expect(criticalFlag(patient({ labs: [lab("Platelet Count", "38")] }))?.reason).toBe("severe thrombocytopenia");
-    expect(criticalFlag(patient({ labs: [lab("PLT", "0.3")] }))?.reason).toBe("severe thrombocytopenia");
+    expect(criticalFlag(patient({ labs: [lab("Platelets", "60000")] }), "general_surgery")).toBeNull();
+    expect(criticalFlag(patient({ labs: [lab("Platelets", "42000")] }), "general_surgery")?.reason).toBe("severe thrombocytopenia");
+    expect(criticalFlag(patient({ labs: [lab("Platelet Count", "38")] }), "general_surgery")?.reason).toBe("severe thrombocytopenia");
+    expect(criticalFlag(patient({ labs: [lab("PLT", "0.3")] }), "general_surgery")?.reason).toBe("severe thrombocytopenia");
   });
 
   it("flags Hb < 5", () => {
-    expect(criticalFlag(patient({ labs: [lab("Hb", "6.1")] }))).toBeNull();
-    expect(criticalFlag(patient({ labs: [lab("Hb", "4.2")] }))?.reason).toBe("severe anaemia");
+    expect(criticalFlag(patient({ labs: [lab("Hb", "6.1")] }), "general_surgery")).toBeNull();
+    expect(criticalFlag(patient({ labs: [lab("Hb", "4.2")] }), "general_surgery")?.reason).toBe("severe anaemia");
   });
 
   it("flags an ICU / support entry, carrying its text", () => {
-    const f = criticalFlag(patient({ vitals: [vital("ICU", "on noradrenaline 0.08")] }));
+    const f = criticalFlag(patient({ vitals: [vital("ICU", "on noradrenaline 0.08")] }), "general_surgery");
     expect(f).toEqual({ label: "ICU", value: "on noradrenaline 0.08", reason: "on ICU / organ support" });
-    expect(criticalFlag(patient({ vitals: [vital("ICU", "yes")] }))?.value).toBe("");
-    expect(criticalFlag(patient({ vitals: [vital("ICU", "")] }))).toBeNull();
+    expect(criticalFlag(patient({ vitals: [vital("ICU", "yes")] }), "general_surgery")?.value).toBe("");
+    expect(criticalFlag(patient({ vitals: [vital("ICU", "")] }), "general_surgery")).toBeNull();
   });
 
   it("falls back to the management text for vasopressors", () => {
-    expect(criticalFlag(patient({ management: "POD 2, on noradrenaline, ventilated" }))?.reason).toBe(
+    expect(criticalFlag(patient({ management: "POD 2, on noradrenaline, ventilated" }), "general_surgery")?.reason).toBe(
       "vasopressor support"
     );
   });
@@ -104,8 +104,15 @@ describe("criticalFlags — per department, every hit", () => {
       vitals: [vital("RR", "34"), vital("GCS", "E1V2M3"), vital("GRBS", "52")],
       labs: [lab("K", "6.8"), lab("Na", "116"), lab("Creatinine", "5.2"), lab("TLC", "18200")],
     });
-    for (const key of [undefined, null, "general_surgery", "orthopaedics"]) {
+    for (const key of ["general_surgery", "orthopaedics"]) {
       expect(criticalFlags(p, key).map((f) => f.reason)).toEqual(["leucocytosis"]);
+    }
+  });
+
+  it("a unit with no department gets NEWS2 and the medicine lab bar", () => {
+    const p = patient({ labs: [lab("K", "6.8")] });
+    for (const key of [undefined, null, "general", "not_a_unit"]) {
+      expect(criticalFlags(p, key).map((f) => f.reason), String(key)).toEqual(criticalFlags(p, "internal_medicine").map((f) => f.reason));
     }
   });
 

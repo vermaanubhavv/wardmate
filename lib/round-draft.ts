@@ -3,7 +3,7 @@ import { extractObservations, type ExtractedObservation } from "@/lib/extract";
 import { getTemplateForPatient } from "@/lib/templates";
 import { matchBed } from "@/lib/match-bed";
 import { createClient } from "@/lib/supabase/server";
-import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { generalPack, type SpecialtyPack } from "@/lib/specialty";
 
 export type DraftSegment = RoundSegment & {
   /** What would be written for this bed. Empty for an admission, or when nothing clinical
@@ -31,7 +31,7 @@ type WardPatient = { id: string; display_name: string; bed: string };
 export async function buildRoundDraft(
   transcript: string,
   patients: WardPatient[],
-  pack: SpecialtyPack = generalSurgeryPack
+  pack: SpecialtyPack = generalPack
 ): Promise<RoundDraft> {
   const read = await readRoundDictation(
     transcript,

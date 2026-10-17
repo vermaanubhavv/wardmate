@@ -26,7 +26,7 @@ export async function createWard(
     return { error: "Choose the unit's department — it cannot be changed later." };
   }
   const specialty =
-    specialtyPacksEnabled() && isSpecialtyKey(chosen) ? chosen : "general_surgery";
+    specialtyPacksEnabled() && isSpecialtyKey(chosen) ? chosen : "general";
 
   const supabase = await createClient();
   const {

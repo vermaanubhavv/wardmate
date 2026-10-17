@@ -40,6 +40,8 @@ const SURGICAL: Lead = {
 };
 
 const DEPARTMENT_LEAD: Record<SpecialtyKey, Lead[]> = {
+  // No department, no lead history: past and medication, then the rest, in their usual order.
+  general: [],
   general_surgery: [SURGICAL],
   // The burn itself is asked first — when, with what, in a closed space or not, and what was
   // done before arrival — because every later decision (fluids, airway, surgery) hangs on it.

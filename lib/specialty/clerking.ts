@@ -1,4 +1,4 @@
-import type { SpecialtyKey } from "./types";
+import { SPECIALTY_KEYS, type SpecialtyKey } from "./types";
 
 /**
  * What the case-history clerking asks, per department: the HOPI prompt pills for each
@@ -460,8 +460,25 @@ export const SKIN_PILLS = ["Morphology", "Distribution", "Configuration", "Mucos
 
 const SURGICAL_EXAM: ExamCardId[] = ["piccle", "vitals", "abdomen", "chest", "local"];
 const MEDICINE_EXAM: ExamCardId[] = ["piccle", "vitals", "cvs", "chest", "abdomen", "cns"];
+/** No department: the standard systemic examination, with Local for a lump, wound or limb. */
+const GENERAL_EXAM: ExamCardId[] = ["piccle", "vitals", "chest", "cvs", "abdomen", "cns", "local"];
+
+/** The departments that walk the surgical cards and are read the surgical spoken format —
+ *  each named, so no department inherits surgery's by default. */
+const SURGICAL_EXAM_DEPTS: SpecialtyKey[] = [
+  "general_surgery",
+  "obstetrics_gynaecology",
+  "ent",
+  "ophthalmology",
+  "burns_plastic_surgery",
+  "orthopaedics",
+  "urology",
+  "neurosurgery",
+];
 
 const EXAM_STEPS: Partial<Record<SpecialtyKey, ExamCardId[]>> = {
+  general: GENERAL_EXAM,
+  ...Object.fromEntries(SURGICAL_EXAM_DEPTS.map((k) => [k, SURGICAL_EXAM])),
   internal_medicine: MEDICINE_EXAM,
   paediatrics: MEDICINE_EXAM,
   // These two keep Local examination: the chest diagram and the trauma body chart hang off it.
@@ -480,7 +497,7 @@ const EXAM_STEPS: Partial<Record<SpecialtyKey, ExamCardId[]>> = {
  * shown when the record already holds a value for it, so nothing recorded is hidden.
  */
 export function examStepsFor(specialty?: string | null, recorded: (id: ExamCardId) => boolean = () => false): ExamCardId[] {
-  const steps = EXAM_STEPS[(specialty ?? "") as SpecialtyKey] ?? SURGICAL_EXAM;
+  const steps = EXAM_STEPS[(specialty ?? "") as SpecialtyKey] ?? GENERAL_EXAM;
   const extra = (["local", "mse", "skin"] as ExamCardId[]).filter((id) => !steps.includes(id) && recorded(id));
   return [...steps, ...extra];
 }
@@ -541,8 +558,8 @@ export function clerkingFormatFor(specialty?: string | null, sex?: string | null
   // already hides that card for him; the spoken list matches it.
   const forSex = (list: FormatStep[]) =>
     sex === "M" ? list.filter((s) => s.title !== "Menstrual & obstetric history") : list;
-  const steps = EXAM_STEPS[(specialty ?? "") as SpecialtyKey];
-  if (!steps) return forSex(SURGICAL_FORMAT);
+  if (SURGICAL_EXAM_DEPTS.includes((specialty ?? "") as SpecialtyKey)) return forSex(SURGICAL_FORMAT);
+  const steps = EXAM_STEPS[(specialty ?? "") as SpecialtyKey] ?? GENERAL_EXAM;
   return [...forSex(HISTORY_FORMAT), ...steps.map((id) => EXAM_FORMAT[id]), ...CLOSING_FORMAT];
 }
 
@@ -555,6 +572,14 @@ export const alwaysShowsObstetricCard = (specialty?: string | null) =>
   ALWAYS_OBSTETRIC.has((specialty ?? "") as SpecialtyKey);
 
 /** What the Local examination card is for, under its heading. */
+const SURGICAL_LOCAL_HINT = "The examination of the presenting problem itself — the lump, the hernia, the wound, the perianal region.";
+const SURGICAL_CLERKING_EXAMPLE = "e.g. “pain right iliac fossa two days… diabetic for ten years… abdomen soft, tender in the RIF…”";
+
+/** A department not listed below keeps surgery's wording, as it always has; only a unit with no
+ *  (or no recognised) department gets the neutral base. */
+const isKnownDept = (specialty?: string | null) =>
+  (SPECIALTY_KEYS as readonly string[]).includes((specialty ?? "").trim()) && specialty !== "general";
+
 const LOCAL_EXAM_HINT: Partial<Record<SpecialtyKey, string>> = {
   internal_medicine: "The examination of the affected part itself — a joint, a swelling, an ulcer, a wound.",
   pulmonary_medicine: "The examination of the chest wall and the affected part itself.",
@@ -571,7 +596,9 @@ const LOCAL_EXAM_HINT: Partial<Record<SpecialtyKey, string>> = {
 
 export const localExamHintFor = (specialty?: string | null) =>
   LOCAL_EXAM_HINT[(specialty ?? "") as SpecialtyKey] ??
-  "The examination of the presenting problem itself — the lump, the hernia, the wound, the perianal region.";
+  (isKnownDept(specialty)
+    ? SURGICAL_LOCAL_HINT
+    : "The examination of the presenting part itself — a lump, a swelling, a wound, a joint or limb.");
 
 /** The example under "Dictating the clerking" — synthetic, in the unit's own idiom. */
 const CLERKING_EXAMPLE: Partial<Record<SpecialtyKey, string>> = {
@@ -586,4 +613,6 @@ const CLERKING_EXAMPLE: Partial<Record<SpecialtyKey, string>> = {
 
 export const clerkingExampleFor = (specialty?: string | null) =>
   CLERKING_EXAMPLE[(specialty ?? "") as SpecialtyKey] ??
-  "e.g. “pain right iliac fossa two days… diabetic for ten years… abdomen soft, tender in the RIF…”";
+  (isKnownDept(specialty)
+    ? SURGICAL_CLERKING_EXAMPLE
+    : "e.g. “fever and cough for four days… diabetic for ten years… chest clear, abdomen soft…”");
