@@ -45,5 +45,12 @@
 export const AI_MODEL = "claude-sonnet-5-5";
 
 /** The cheaper model, for small high-volume passes where Sonnet's extra care is not needed: the
- *  live-dictation router and the final proofread of case histories and progress notes. */
-export const FAST_MODEL = "claude-haiku-4-5-20251001";
+ *  live-dictation router and the final proofread of case histories and progress notes.
+ *
+ *  claude-haiku-5-5 since 2026-10-17, replacing Haiku 4.5: about a tenth of the price ($0.10 /
+ *  $0.50 per million tokens against $1 / $5) and, at effort "low", as good or better on every
+ *  fast job in scripts/eval-models — live routing 79/80 (one item missed, nothing invented),
+ *  date check level, final proofread 6/6 against 5/6 — and a little quicker (1.2 s against
+ *  1.4 s median on routing). Unlike Haiku 4.5 it accepts `effort`, and thinks by default, so
+ *  every fast call sets effort "low" to keep that latency. */
+export const FAST_MODEL = "claude-haiku-5-5";

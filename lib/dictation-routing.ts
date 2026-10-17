@@ -134,7 +134,9 @@ async function routeWithHaiku(corrected: string, sections: DictationSection[]): 
     model: FAST_MODEL,
     max_tokens: 700,
     system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
+    // Low: a doctor is waiting on this one (lib/model.ts FAST_MODEL).
     output_config: {
+      effort: "low",
       format: {
         type: "json_schema",
         schema: {
