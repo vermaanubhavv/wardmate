@@ -15,7 +15,8 @@ import { labReading } from "../../investigations-section";
 import PrintButton from "../../note/print-button";
 import FitPage from "./fit-page";
 import { ExamDiagrams, hasExamDiagram } from "./diagrams";
-import { EXAM_CARD, examStepsFor } from "@/lib/specialty/clerking";
+import { EXAM_CARD, alwaysShowsObstetricCard, examStepsFor } from "@/lib/specialty/clerking";
+import { specialtyCardsFor } from "@/lib/case-history-sections";
 
 /**
  * The printable patient history sheet — one A4 sheet, front and back, for every patient.
@@ -54,8 +55,8 @@ function baseExam(specialty: string, recorded: (label: string) => boolean) {
     });
 }
 const ONCO_EXAM = [
-  { label: "lymph node survey", heading: "Lymph node survey" },
-  { label: "mucosa, skin and vascular access", heading: "Mucosa, skin & line" },
+  { key: "onco_nodes", label: "lymph node survey", heading: "Lymph node survey" },
+  { key: "onco_mucosa_line", label: "mucosa, skin and vascular access", heading: "Mucosa, skin & line" },
 ];
 
 /** How many reports of each kind the back has room for — capped separately, so a run of daily
@@ -273,7 +274,8 @@ export default async function CaseHistoryPrintPage({
   ]);
   const logoUrl = formats.get("logo")?.url ?? null;
   const pack = getSpecialtyPack(specialty);
-  const oncology = pack.key === "medical_oncology";
+  const extra = specialtyCardsFor(pack.key);
+  const offers = (key: string) => (extra.history as string[]).includes(key) || (extra.exam as string[]).includes(key);
   const female = !!patient.sex && /^f/i.test(patient.sex);
 
   const entries = (entriesData ?? []) as unknown as { is_case_history: boolean; observations: Observation[] }[];
@@ -292,8 +294,8 @@ export default async function CaseHistoryPrintPage({
     keys.map((k) => byKey.get(k)!).filter((s) => offered || s.lines.length > 0);
   const cards = [
     ...wanted(BASE_HISTORY, true),
-    ...wanted(["obstetric"], female || pack.key === "obstetrics_gynaecology"),
-    ...wanted(ONCO_HISTORY, oncology),
+    ...wanted(["obstetric"], female || alwaysShowsObstetricCard(pack.key)),
+    ...ONCO_HISTORY.flatMap((k) => wanted([k], offers(k))),
   ];
   const lead = new Map(
     leadsFor(pack.key)
@@ -315,7 +317,7 @@ export default async function CaseHistoryPrintPage({
   const BASE_EXAM = baseExam(pack.key, (label) => other.some((o) => norm(o.label) === label && (o.value_text ?? "").trim()));
   const examCards = [
     ...BASE_EXAM,
-    ...(oncology || other.some((o) => ONCO_EXAM.some((c) => c.label === norm(o.label))) ? ONCO_EXAM : []),
+    ...(ONCO_EXAM.some((c) => offers(c.key)) || other.some((o) => ONCO_EXAM.some((c) => c.label === norm(o.label))) ? ONCO_EXAM : []),
   ];
   // Only a card that prints is kept out of the findings list, so a CVS line on a surgical sheet
   // still prints there as it always has.
@@ -487,7 +489,7 @@ export default async function CaseHistoryPrintPage({
                     <NR />
                   )}
                 </Row>
-                {(oncology || performance.lines.length > 0) && (
+                {(offers("performance") || performance.lines.length > 0) && (
                   <Row label="Performance status">
                     {performance.lines.length > 0 ? performance.lines.map((l) => l.text).join("; ") : <NR />}
                   </Row>

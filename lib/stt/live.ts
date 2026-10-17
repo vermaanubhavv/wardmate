@@ -102,6 +102,7 @@ export async function openLiveDictation(
   const teardown = () => {
     if (closed) return;
     closed = true;
+    clearTimeout(openTimer);
     try {
       if (recorder && recorder.state !== "inactive") recorder.stop();
     } catch {
@@ -123,7 +124,17 @@ export async function openLiveDictation(
     h.onClose?.();
   };
 
+  // On weak signal the socket can sit in CONNECTING with no error and no close, leaving the
+  // button on "Starting…" for good. Give it a few seconds, then hand over to the fallback.
+  const openTimer = setTimeout(() => {
+    if (closed || ws.readyState === WebSocket.OPEN) return;
+    h.onError?.("Live transcription could not connect. Falling back to the card buttons.");
+    teardown();
+  }, 5000);
+
   ws.onopen = () => {
+    clearTimeout(openTimer);
+    if (closed) return;
     h.onOpen?.();
     recorder = new MediaRecorder(stream, { mimeType: mime });
     recorder.ondataavailable = (e) => {

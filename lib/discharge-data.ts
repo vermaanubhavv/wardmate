@@ -159,7 +159,8 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
       )
       .eq("patient_id", patientId)
       .order("recorded_at", { ascending: false }),
-    getProcedureLabels(),
+    // The unit's own operations — an orthopaedic unit's "ORIF" is not in surgery's list.
+    getWardSpecialtyStored(patient.ward_id).then(getProcedureLabels),
     supabase.from("wards").select("name, letterhead").eq("id", patient.ward_id).maybeSingle(),
     getUser().then((u) => supabase.from("profiles").select("display_name, designation, department").eq("id", u?.id ?? "").maybeSingle()),
     getTemplateForPatient(patient),

@@ -213,9 +213,18 @@ const PLAN_SCHEMA = {
   additionalProperties: false,
 } as const;
 
+/** The plan prompt for a unit. Exported for the test. */
+export function planSystem(admissionPhrase: string = DEFAULT_ADMISSION_PHRASE, operating = true): string {
+  const text = forDept(PLAN_SYSTEM, admissionPhrase);
+  return operating ? text : text.replace("positioning, consent/PAC, drains, referrals", "positioning, referrals");
+}
+
 export async function generatePlan(
   digest: string,
-  admissionPhrase: string = DEFAULT_ADMISSION_PHRASE
+  admissionPhrase: string = DEFAULT_ADMISSION_PHRASE,
+  /** Does the unit operate (hasOperationClock)? A medicine ward is not offered consent/PAC
+   *  and drains as first-day measures. True keeps the prompt exactly as written. */
+  operating = true
 ): Promise<{
   workup: string[];
   conservative: string[];
@@ -226,7 +235,7 @@ export async function generatePlan(
   const response = await anthropic().messages.create({
     model: AI_MODEL,
     max_tokens: 900,
-    system: [{ type: "text", text: forDept(PLAN_SYSTEM, admissionPhrase), cache_control: { type: "ephemeral" } }],
+    system: [{ type: "text", text: planSystem(admissionPhrase, operating), cache_control: { type: "ephemeral" } }],
     output_config: {
       effort: "low",
       format: { type: "json_schema", schema: PLAN_SCHEMA as unknown as Record<string, unknown> },

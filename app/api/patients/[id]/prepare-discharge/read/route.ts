@@ -5,6 +5,7 @@ import { getUser } from "@/lib/auth";
 import { readPaper } from "@/lib/read-paper";
 import { readLabPhoto } from "@/lib/read-lab-photo";
 import { claimPhotoRead } from "@/lib/photo-cap";
+import { getWardPack } from "@/lib/ward";
 
 const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp"] as const;
 const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
@@ -93,7 +94,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     labValuesEarly = found ? lab.values : null;
   } else {
     try {
-      read = await readPaper(base64, mediaType);
+      read = await readPaper(base64, mediaType, await getWardPack(patient.ward_id));
     } catch (e) {
       return NextResponse.json(
         { error: plainAiError(e) },

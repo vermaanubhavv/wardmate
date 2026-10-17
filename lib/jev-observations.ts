@@ -3,6 +3,8 @@ import type { ReadLabValue } from "@/lib/read-lab-photo";
 import type { RegisterRow } from "@/lib/read-register";
 import { askJev, chosenProbability, type JevAnswers } from "@/lib/jev";
 import { log } from "@/lib/observability";
+import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { forWard } from "@/lib/specialty/prompt-words";
 import { isActionableTask } from "@/lib/task-classification";
 import type { TaskCategory } from "@/lib/task-category";
 
@@ -66,20 +68,20 @@ export function supportedQuestion(row: string) {
 
 /** The "By type" question, about the plan text at `path`. Exported so
  *  scripts/eval-task-category.ts scores exactly what production asks. */
-export function categoryQuestion(path: string) {
+export function categoryQuestion(path: string, pack: SpecialtyPack = generalSurgeryPack) {
   return {
     type: "choice",
-    instructions: `\`${path}\` is a job from a surgical ward-round plan. Which ward work-stream does the job itself belong to? Judge by the action to be done, not by a word mentioned in passing.`,
+    instructions: forWard(`\`${path}\` is a job from a surgical ward-round plan. Which ward work-stream does the job itself belong to? Judge by the action to be done, not by a word mentioned in passing.`, pack),
     criteria: CATEGORY_CRITERIA,
   };
 }
 
 /** The rescue question, about the plan text at `path` in the state. Exported so
  *  scripts/eval-task-open.ts scores exactly what production asks. */
-export function openQuestion(path: string) {
+export function openQuestion(path: string, pack: SpecialtyPack = generalSurgeryPack) {
   return {
     type: "noul",
-    instructions: `A surgical resident dictated \`${path}\` as part of a ward-round plan. Does it leave anything for the ward team to do, check or follow up?`,
+    instructions: forWard(`A surgical resident dictated \`${path}\` as part of a ward-round plan. Does it leave anything for the ward team to do, check or follow up?`, pack),
     criteria: {
       true: "Something is still to be done or watched: a test to send or repeat, a report awaited or to review, a tube, drain, catheter or sutures to remove, a diet to change, charting or monitoring to keep up, someone to inform on a condition, a shift to OT",
       false: "It only records what was given, done, started or simply goes on unchanged — a drug, fluid, transfusion or dressing — with nothing further for anyone to do or check",
@@ -95,7 +97,14 @@ export function redactFor(text: string, who?: PatientIdentifiers): string {
   return who ? redactIdentifiers(text, who.name ?? "", who.bed ?? "") : text;
 }
 
-export async function judgeObservations(observations: ExtractedObservation[], who?: PatientIdentifiers): Promise<void> {
+export async function judgeObservations(
+  observations: ExtractedObservation[],
+  who?: PatientIdentifiers,
+  /** The unit, so the questions name its own kind of round. General surgery when omitted. */
+  pack?: SpecialtyPack,
+  /** Where the rows came from, for the outcome log only. */
+  source: "dictation" | "lab photo" | "register" = "dictation"
+): Promise<void> {
   const questions: Record<string, unknown> = {};
   observations.forEach((o, i) => {
     if (!o.needs_confirmation) {
@@ -103,9 +112,9 @@ export async function judgeObservations(observations: ExtractedObservation[], wh
     }
     if (o.kind !== "plan") return;
     if (!isActionableTask(o.value_text || o.label)) {
-      questions[`open_${i}`] = openQuestion(`observations[${i}].value`);
+      questions[`open_${i}`] = openQuestion(`observations[${i}].value`, pack);
     }
-    questions[`category_${i}`] = categoryQuestion(`observations[${i}].value`);
+    questions[`category_${i}`] = categoryQuestion(`observations[${i}].value`, pack);
   });
 
   const state = {
@@ -121,22 +130,46 @@ export async function judgeObservations(observations: ExtractedObservation[], wh
     if (jev.fallback !== "no key") log.info("extract: Jev unavailable", { reason: jev.fallback });
     return;
   }
-  applyJudgments(observations, jev.answers);
+  const changed = applyJudgments(observations, jev.answers);
+  // Counts only — never the words — so whether Jev earns its keep shows in Sentry. Keys avoid
+  // the free-text names lib/sentry-scrub.ts strips.
+  log.info("jev judged", {
+    "jev.source": source,
+    "jev.rows": observations.length,
+    "jev.checked": Object.keys(questions).filter((k) => k.startsWith("supported_")).length,
+    "jev.amber": changed.amber,
+    "jev.plans": observations.filter((o) => o.kind === "plan").length,
+    "jev.rescued": changed.rescued,
+    "jev.sorted": changed.sorted,
+  });
 }
 
-/** Pure: write Jev's answers onto the observations. Exported for the test. */
-export function applyJudgments(observations: ExtractedObservation[], answers: JevAnswers): void {
+/** Pure: write Jev's answers onto the observations, and say how many it changed. Exported
+ *  for the test. */
+export function applyJudgments(
+  observations: ExtractedObservation[],
+  answers: JevAnswers
+): { amber: number; rescued: number; sorted: number } {
+  const changed = { amber: 0, rescued: 0, sorted: 0 };
   observations.forEach((o, i) => {
     const supported = answers[`supported_${i}`]?.noul;
-    if (supported != null && supported < UNSUPPORTED_BELOW) o.needs_confirmation = true;
+    if (supported != null && supported < UNSUPPORTED_BELOW && !o.needs_confirmation) {
+      o.needs_confirmation = true;
+      changed.amber++;
+    }
     if (o.kind !== "plan") return;
     const open = answers[`open_${i}`]?.noul;
-    if (open != null && open >= RESCUE_AT) o.task_open = true;
+    if (open != null && open >= RESCUE_AT) {
+      o.task_open = true;
+      changed.rescued++;
+    }
     const category = answers[`category_${i}`];
     if (category?.choice && category.choice in CATEGORY_CRITERIA && chosenProbability(category) >= CATEGORY_AT) {
       o.task_category = category.choice as TaskCategoryJudgment;
+      changed.sorted++;
     }
   });
+  return changed;
 }
 
 /**
@@ -179,7 +212,7 @@ function asObservation(kind: ExtractedObservation["kind"], label: string, value:
  */
 export async function judgeLabValues(values: ReadLabValue[]): Promise<void> {
   const obs = values.map((v) => asObservation(v.category === "vital" ? "vital" : "lab", v.label, v.value_text, v.source_quote));
-  await judgeObservations(obs);
+  await judgeObservations(obs, undefined, undefined, "lab photo");
   obs.forEach((o, i) => {
     if (o.needs_confirmation) values[i].uncertain = true;
   });
@@ -191,7 +224,7 @@ export async function judgeLabValues(values: ReadLabValue[]): Promise<void> {
  * register photo"), and each plan gets the to-do rescue and "By type" bucket that dictated
  * plans get — register plans were the ones without them.
  */
-export async function judgeRegisterRows(rows: RegisterRow[]): Promise<void> {
+export async function judgeRegisterRows(rows: RegisterRow[], pack?: SpecialtyPack): Promise<void> {
   await Promise.all(
     rows.map(async (row) => {
       // A register row is written as "Bed 4 <name> POD 2 …". Only the copy sent to Jev is
@@ -203,7 +236,7 @@ export async function judgeRegisterRows(rows: RegisterRow[]): Promise<void> {
         ...row.plans.map((p) => asObservation("plan", "plan", clean(p), quote)),
       ];
       if (obs.length === 0) return;
-      await judgeObservations(obs);
+      await judgeObservations(obs, undefined, pack, "register");
       if (obs.some((o) => o.needs_confirmation)) row.uncertain = true;
       row.plan_judgments = obs
         .slice(row.findings.length)

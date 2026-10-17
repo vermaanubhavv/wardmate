@@ -59,6 +59,10 @@ export async function POST(request: Request) {
   const observations: Observation[] = [];
   const now = new Date().toISOString();
 
+  // Which department this unit is: its templates, its speech corrections and its extraction
+  // prompt. An oncology unit is never offered "Lap chole" or a PAS→PAC rewrite.
+  const pack = getSpecialtyPack(ward ? await getWardSpecialtyStored(ward.id) : null);
+
   for (const page of pages) {
     if (page.kind === "lab_report" && page.labValues && page.labValues.length > 0) {
       for (const v of page.labValues) {
@@ -76,10 +80,10 @@ export async function POST(request: Request) {
       continue;
     }
 
-    const corrected = await correctTranscript(page.transcript);
+    const corrected = await correctTranscript(page.transcript, pack);
     let extraction;
     try {
-      extraction = await extractObservations(corrected.text, [], [], undefined, { name: identity.name });
+      extraction = await extractObservations(corrected.text, [], [], pack.key, { name: identity.name });
     } catch {
       continue;
     }
@@ -122,8 +126,6 @@ export async function POST(request: Request) {
     ward ? getWardIsEsicFaridabad(ward.id) : Promise.resolve(true),
   ]);
 
-  // Which department’s templates this unit gets. An oncology unit is never offered "Lap chole".
-  const pack = getSpecialtyPack(ward ? await getWardSpecialtyStored(ward.id) : null);
 
   const context = oneOffContext(
     identity,

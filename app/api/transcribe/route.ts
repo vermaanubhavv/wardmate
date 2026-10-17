@@ -3,6 +3,8 @@ import { plainAiError } from "@/lib/ai-error";
 import { getUser } from "@/lib/auth";
 import { transcribe } from "@/lib/stt";
 import { correctTranscript } from "@/lib/glossary";
+import { getCurrentWardPack } from "@/lib/ward";
+import { wardKeyterms } from "@/lib/transcription/patient-context";
 
 /**
  * Speech to text and nothing else — for the "speak" button on a card in the case-history
@@ -23,15 +25,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No audio was recorded." }, { status: 400 });
   }
 
+  // No patient is sent: the vocabulary and the corrections are the selected unit's.
+  const pack = await getCurrentWardPack();
+
   let heard: string;
   try {
-    const result = await transcribe(audio);
+    const result = await transcribe(audio, wardKeyterms(pack.lexiconSpecialty));
     heard = result.text;
   } catch (e) {
     return NextResponse.json({ error: plainAiError(e) }, { status: 502 });
   }
 
-  const corrected = await correctTranscript(heard);
+  const corrected = await correctTranscript(heard, pack);
   const text = corrected.text.trim();
   if (!text) {
     return NextResponse.json(

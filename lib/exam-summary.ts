@@ -156,6 +156,8 @@ const SYSTEM_NAMES: { label: string; aliases: string[] }[] = [
   { label: "P/R", aliases: ["per rectal", "p/r", "pr examination", "rectal examination", "per rectum"] },
   { label: "P/V", aliases: ["per vaginum", "p/v", "vaginal examination", "per vagina"] },
   { label: "CNS", aliases: ["cns", "central nervous system", "neurological examination", "neuro"] },
+  { label: "MSE", aliases: ["mse", "mental status examination", "mental state examination"] },
+  { label: "Skin", aliases: ["skin examination", "cutaneous examination", "dermatological examination"] },
 ];
 
 /**

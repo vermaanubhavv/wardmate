@@ -75,7 +75,8 @@ async function deepgram(audio: Blob, keyterms?: string[]): Promise<Transcription
  * now build a ~20–50 term list tailored to the specific patient — their diagnoses, operation,
  * drains and drugs first — via lib/transcription. See docs/medical-dictation-keyterms.md. This
  * static list is what Deepgram gets when there is no patient context (the add-patient and
- * engine-comparison routes), held to the 80-term application cap by buildDeepgramUrl.
+ * engine-comparison routes) on a general-surgery unit — other units get their own lexicon via
+ * wardKeyterms in lib/transcription/patient-context.ts — held to the 80-term cap by buildDeepgramUrl.
  */
 export const MEDICAL_KEYTERMS: string[] = [
   // Procedures and operative terms

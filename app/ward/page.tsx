@@ -4,6 +4,7 @@ import { getWardScreen } from "@/lib/ward-screen";
 import { getDoctorName, getUser } from "@/lib/auth";
 import { dayLabel, patientName, stripPatientHonorific, type WardPatient } from "@/lib/patients";
 import type { SpecialtyPack } from "@/lib/specialty";
+import { shortLabel } from "@/lib/specialty/labels";
 import { procedureFor } from "@/lib/templates";
 import RegisterButton from "../register-button";
 import { ChevronIcon, PlusIcon } from "../icons";
@@ -51,7 +52,7 @@ export default async function Home({
   const designation = profile?.designation?.trim() || null;
   // The unit's department, not the resident's profile one — a surgeon covering a medicine
   // unit is on a medicine ward.
-  const departmentLabel = pack.key === "general_surgery" ? "Gen. Surgery" : pack.label;
+  const departmentLabel = shortLabel(pack);
 
   if (!wardError && !ward) redirect("/onboarding");
 

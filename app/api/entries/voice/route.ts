@@ -5,7 +5,7 @@ import { getUser } from "@/lib/auth";
 import { STT_MODEL, STT_PROVIDER, transcribe } from "@/lib/stt";
 import { getPatientDictationKeyterms } from "@/lib/transcription/patient-context";
 import { extractObservations } from "@/lib/extract";
-import { getWardSpecialtyStored } from "@/lib/ward";
+import { getWardPack } from "@/lib/ward";
 import { correctTranscript } from "@/lib/glossary";
 import { getTemplateForPatient } from "@/lib/templates";
 import { getPublishedProtocolContext } from "@/lib/protocols";
@@ -60,15 +60,14 @@ export async function POST(request: Request) {
   // id, no name (same rule as app_events).
   tagRequest({ "wardmate.route": "entries/voice", "ward.id": patient.ward_id });
 
-  // Which department this unit is, for the dictation prompt. Started here and awaited only at
-  // the extraction call, so it overlaps the speech-to-text step and costs no extra wall time.
-  // It resolves to null — and so to general surgery — on any database without patch 0060.
-  const specialty = getWardSpecialtyStored(patient.ward_id);
-  // Same for the checklist and the published protocols: neither depends on what was said, so
-  // they are read while the audio is being transcribed rather than after it. The no-op catches
-  // only keep an early return below from leaving a rejection unhandled; the awaits still throw.
+  // The unit's department pack, the checklist and the published protocols: none depends on
+  // what was said, so they are read while the audio is being transcribed rather than after it.
+  // The no-op catches only keep an early return below from leaving a rejection unhandled; the
+  // awaits still throw.
+  const packP = getWardPack(patient.ward_id);
   const templateP = getTemplateForPatient(patient);
   const protocolsP = getPublishedProtocolContext();
+  packP.catch(() => {});
   templateP.catch(() => {});
   protocolsP.catch(() => {});
 
@@ -86,7 +85,7 @@ export async function POST(request: Request) {
   try {
     const result = await transcribe(audio, keyterms);
     heard = result.text;
-    transcript = (await correctTranscript(heard)).text;
+    transcript = (await correctTranscript(heard, await packP)).text;
     log.info("dictation transcribed", {
       "stt.provider": STT_PROVIDER,
       "transcript.chars": transcript.length,
@@ -117,7 +116,7 @@ export async function POST(request: Request) {
 
   let extraction;
   try {
-    extraction = await extractObservations(transcript, expectedLabels, protocols, await specialty, { name: patient.display_name, bed: patient.bed });
+    extraction = await extractObservations(transcript, expectedLabels, protocols, (await packP).key, { name: patient.display_name, bed: patient.bed });
   } catch (e) {
     // The transcript is worth keeping even when extraction fails — it is the evidence, and
     // the resident can still read it. Store the entry with the error recorded against it.
@@ -188,7 +187,7 @@ export async function POST(request: Request) {
     );
   }
 
-  await applyProcedureDone(supabase, patientId, patient, extraction.observations);
+  await applyProcedureDone(supabase, patientId, patient, extraction.observations, await packP);
 
   const body = {
     entry_id: entry.id,

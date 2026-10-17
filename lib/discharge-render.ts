@@ -6,7 +6,8 @@ import type {
   HistopathologySpecimen,
   Procedure,
 } from "@/lib/discharge-entities";
-import { ALL_CONDITION_VARIABLES } from "@/lib/discharge-entities";
+import { ALL_CONDITION_VARIABLES, NO_PROCEDURE_NAME } from "@/lib/discharge-entities";
+import { dischargeProfileFor } from "@/lib/specialty/discharge";
 import { stripPatientHonorific } from "@/lib/patients";
 
 /**
@@ -79,6 +80,11 @@ export type DischargeDocument = {
   indication: string | null;
   diagnoses: { primary: string[]; secondary: string[]; comorbidities: string[]; complications: string[] };
   procedures: Procedure[];
+  /** "Operation / Procedures" on a unit that operates; "Procedures" elsewhere. */
+  proceduresHeading: string;
+  /** A unit that does not operate prints each procedure as one line — what, when, what it
+   *  found ("Pleural tap done on 12 Oct 2026 — 200 ml serous fluid drained"). */
+  proceduresBrief: boolean;
   clinicalCourse: string | null;
   clinicalCourseApproved: boolean;
   clinicalCourseUncertain: string[];
@@ -109,6 +115,7 @@ export function buildDischargeDocument(
   context: DischargeContext
 ): DischargeDocument {
   const { patient } = context;
+  const operative = dischargeProfileFor(context.pack).operative;
 
   const diagnoses = {
     primary: draft.diagnoses.filter((d) => d.category === "primary").map((d) => d.text),
@@ -171,7 +178,13 @@ export function buildDischargeDocument(
     admission,
     indication: draft.indicationForAdmission.text.trim() || null,
     diagnoses,
-    procedures: draft.procedures,
+    // A unit that does not operate prints the section only for a procedure actually done —
+    // never an empty row, never "No procedure done".
+    procedures: operative
+      ? draft.procedures
+      : draft.procedures.filter((p) => p.name.trim() && p.name !== NO_PROCEDURE_NAME),
+    proceduresHeading: operative ? "Operation / Procedures" : "Procedures",
+    proceduresBrief: !operative,
     clinicalCourse: draft.clinicalCourse.text.trim() || null,
     clinicalCourseApproved: !!draft.clinicalCourse.approvedAt,
     clinicalCourseUncertain: draft.clinicalCourse.uncertainPoints,
@@ -211,7 +224,14 @@ function medLine(m: DischargeMedication): string {
   return `${parts.join(" ")}${tail ? ` — ${tail}` : ""}`;
 }
 
-function procedureLines(p: Procedure): string[] {
+function procedureLines(p: Procedure, brief = false): string[] {
+  if (brief) {
+    const name = p.name.trim();
+    const when = p.date ? `${/\bdone\b/i.test(name) ? "" : " done"} on ${istDay(p.date)}` : "";
+    const findings = p.findings?.trim() ? ` — ${p.findings.trim()}` : "";
+    const complications = p.complications?.trim() ? `; complications: ${p.complications.trim()}` : "";
+    return [`${name}${when}${findings}${complications}`];
+  }
   const out = [`${p.name}${p.date ? ` — ${istDay(p.date)}` : ""}`];
   const field = (label: string, value: string | null) => {
     if (value?.trim()) out.push(`  ${label}: ${value.trim()}`);
@@ -265,8 +285,8 @@ export function formatDischargePlainText(doc: DischargeDocument): string {
   dxBlock("Complications", doc.diagnoses.complications);
 
   if (doc.procedures.length > 0) {
-    heading("Operation / procedures");
-    for (const p of doc.procedures) for (const l of procedureLines(p)) out.push(`  ${l}`);
+    heading(doc.proceduresHeading);
+    for (const p of doc.procedures) for (const l of procedureLines(p, doc.proceduresBrief)) out.push(`  ${l}`);
   }
 
   heading("Clinical course");

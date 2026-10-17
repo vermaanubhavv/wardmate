@@ -52,7 +52,10 @@ export async function jevCrossCheck(
     if (jev.fallback !== "no key") log.info("history check: Jev unavailable", { reason: jev.fallback });
     return;
   }
+  const before = result.rejections.length;
   applyMeanings(result, items.map(({ i }) => i), jev.answers);
+  // Counts only: how many answered slots Jev read the other way and took back to unasked.
+  log.info("history check: Jev judged", { "jev.checked": items.length, "jev.downgraded": result.rejections.length - before });
 }
 
 /** Pure: downgrade slots Jev confidently reads the other way. Exported for the test. */

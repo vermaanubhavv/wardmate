@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 import { readPaper } from "@/lib/read-paper";
 import { readLabPhoto } from "@/lib/read-lab-photo";
-import { getCurrentWard } from "@/lib/ward";
+import { getCurrentWard, getWardPack } from "@/lib/ward";
 import { claimPhotoRead } from "@/lib/photo-cap";
 
 const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp"] as const;
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
 
   let read;
   try {
-    read = await readPaper(base64, mediaType);
+    read = await readPaper(base64, mediaType, await getWardPack(ward?.id));
   } catch (e) {
     return NextResponse.json(
       { error: plainAiError(e) },

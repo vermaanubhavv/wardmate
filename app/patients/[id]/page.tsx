@@ -71,7 +71,7 @@ import { classifyVital, matchVitalLabel } from "@/lib/vital-ranges";
 import { getWardLabRanges } from "@/lib/ward-lab-ranges";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { hasOperationClock } from "@/lib/specialty/intake";
-import { progressNoteConfigFor } from "@/lib/progress-note-config";
+import { usesBurnClock } from "@/lib/specialty/clocks";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { getUser } from "@/lib/auth";
 import HistoryCheckCard from "./history-check-card";
@@ -135,7 +135,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // in lib/ward.ts, arrived at the other way round — there the pack is known before the query,
   // here it is only known after it.
   const burnsP = packP.then(async (p) =>
-    p.key === "burns_plastic_surgery"
+    usesBurnClock(p)
       ? (
           await supabase
             .from("current_patients")
@@ -964,7 +964,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
       {/* Fixed, so the button is under your thumb no matter how long the record has grown. */}
       <BottomBar>
-        <BedsideBar patientId={patient.id} missing={missing} bedsideExample={progressNoteConfigFor(pack.key).bedsideExample} />
+        <BedsideBar patientId={patient.id} missing={missing} specialty={pack.key} />
       </BottomBar>
     </div>
   );

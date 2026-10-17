@@ -22,9 +22,8 @@ import {
   replaceActiveMedications,
   applyCompiledNote,
 } from "./actions";
-import { medPresetsFor } from "./med-presets";
 import LiveDictation, { DictateButton, routeVia, type LiveLine, type LiveSection } from "../live-dictation";
-import type { NoteVitalField, ProgressNoteConfig } from "@/lib/progress-note-config";
+import { medPresetsFor, type NoteVitalField, type ProgressNoteConfig } from "@/lib/progress-note-config";
 
 const vitalKey = (k: string) => `vital:${k.replace(/\W+/g, "_")}`;
 const appendTo = (prev: string, add: string) => (prev.trim() ? `${prev.trim()}; ${add}` : add);
@@ -90,7 +89,7 @@ export default function NoteWorkspace({
   suggestedAssessment?: string;
   /** This department's exam cards and chips — lib/progress-note-config.ts. */
   noteConfig: ProgressNoteConfig;
-  /** This ward's one-tap drugs — ./med-presets.ts medPresetsFor(). */
+  /** This ward's one-tap drugs — lib/progress-note-config.ts medPresetsFor(). */
   medPresets?: string[];
   /** What to check today for this diagnosis — the matching discharge template's `progressNote`.
    *  Read-only: never saved, never prefilled into a card, never sent to the AI compile. */
@@ -565,7 +564,7 @@ export default function NoteWorkspace({
         <LiveDictation
           patientId={patientId}
           title="Dictating today's note"
-          example="e.g. “no fresh complaints overnight… BP 120 by 80, pulse 84… abdomen soft… start oral sips…”"
+          example={`e.g. “${noteConfig.dictationExample}”`}
           sections={live}
           route={routeVia(patientId, live)}
           onLines={applyDictation}

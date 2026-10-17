@@ -8,7 +8,7 @@ import { correctTranscript } from "@/lib/glossary";
 import { readCaseSheet } from "@/lib/read-case-sheet";
 import { extractObservations } from "@/lib/extract";
 import { claimPhotoRead } from "@/lib/photo-cap";
-import { getWardSpecialtyStored } from "@/lib/ward";
+import { getWardPack } from "@/lib/ward";
 import { getTemplateForPatient } from "@/lib/templates";
 import { applyProcedureDone } from "@/lib/apply-procedure-done";
 import { insertObservations } from "@/lib/observations";
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
   // The unit's department, for the dictation prompt. Started here and awaited at the
   // extraction call so it overlaps the speech-to-text step. Null — and so general surgery —
   // on any database without patch 0060.
-  const specialty = getWardSpecialtyStored(patient.ward_id);
+  const packP = getWardPack(patient.ward_id);
 
   const template = await getTemplateForPatient(patient);
   // The sections a clerking note is written in, so that when the resident dictates one it is
@@ -116,7 +116,7 @@ export async function POST(request: Request) {
 
     let read;
     try {
-      read = await readCaseSheet(bytes.toString("base64"), mediaType);
+      read = await readCaseSheet(bytes.toString("base64"), mediaType, await packP);
     } catch (e) {
       return NextResponse.json(
         { error: plainAiError(e) },
@@ -162,7 +162,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const corrected = await correctTranscript(heard);
+    const corrected = await correctTranscript(heard, await packP);
     transcript = corrected.text;
 
     if (!transcript.trim()) {
@@ -183,7 +183,7 @@ export async function POST(request: Request) {
 
   let extraction;
   try {
-    extraction = await extractObservations(transcript, expectedLabels, [], await specialty, { name: patient.display_name, bed: patient.bed });
+    extraction = await extractObservations(transcript, expectedLabels, [], (await packP).key, { name: patient.display_name, bed: patient.bed });
   } catch (e) {
     // The transcript is the evidence even when structuring fails, exactly as for a round note.
     const { data: entry } = await supabase
@@ -264,7 +264,7 @@ export async function POST(request: Request) {
     );
   }
 
-  await applyProcedureDone(supabase, patientId, patient, extraction.observations);
+  await applyProcedureDone(supabase, patientId, patient, extraction.observations, await packP);
 
   const body = {
     entry_id: entry.id,

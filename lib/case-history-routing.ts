@@ -1,5 +1,6 @@
 import { FAST_MODEL, anthropic, replyJson } from "@/lib/model";
 import { correctTranscript } from "@/lib/glossary";
+import { getSpecialtyPack } from "@/lib/specialty";
 import { log } from "@/lib/observability";
 import { askJev, chosenProbability, type JevAnswers } from "@/lib/jev";
 import { redactFor, type PatientIdentifiers } from "@/lib/jev-observations";
@@ -104,17 +105,33 @@ const SCHEMA = {
  * sections are. Sent as part of the varying half of the prompt, after the cached block, so
  * adding a specialty never invalidates the shared prefix cache.
  */
-const MEDICAL_EXAM_BLOCK = `Extra sections for this unit:
-- "cvs" — cardiovascular examination findings: heart sounds, murmurs, JVP, pedal oedema found on examination ("S1 S2 heard, no murmur", "JVP raised")
-- "cns" — nervous system examination findings: sensorium, GCS, higher functions, power, tone, reflexes, plantars, neck stiffness ("power 3 by 5 in the right upper limb, plantar extensor")
+const CVS_LINE = `- "cvs" — cardiovascular examination findings: heart sounds, murmurs, JVP, pedal oedema found on examination ("S1 S2 heard, no murmur", "JVP raised")`;
+const CNS_LINE = `- "cns" — nervous system examination findings: sensorium, GCS, higher functions, power, tone, reflexes, plantars, neck stiffness ("power 3 by 5 in the right upper limb, plantar extensor")`;
+const SYSTEMS_RULE = `chest and lung findings stay in "chest"; a symptom the patient reports (breathlessness, weakness) is history, not examination.`;
 
-Filing between these: chest and lung findings stay in "chest"; a symptom the patient reports (breathlessness, weakness) is history, not examination.`;
+const MEDICAL_EXAM_BLOCK = `Extra sections for this unit:
+${CVS_LINE}
+${CNS_LINE}
+
+Filing between these: ${SYSTEMS_RULE}`;
 
 const SPECIALTY_SECTION_BLOCKS: Record<string, string> = {
   internal_medicine: MEDICAL_EXAM_BLOCK,
   paediatrics: MEDICAL_EXAM_BLOCK,
   pulmonary_medicine: MEDICAL_EXAM_BLOCK,
   emergency_medicine: MEDICAL_EXAM_BLOCK,
+  psychiatry: `Extra sections for this unit (psychiatry):
+${CVS_LINE}
+${CNS_LINE}
+- "mse" — mental status examination findings, what is observed or elicited in the interview: appearance and behaviour, speech, mood and affect, thought form and content, perception, cognition, insight and judgement ("speech slow, low in volume", "affect restricted", "insight partial")
+
+Filing between these: ${SYSTEMS_RULE} A symptom told as the reason for admission, with how long it has been there, is "complaints" or "hopi"; what the resident observes or elicits on examining the mental state goes to "mse". Orientation, attention and memory tested as part of the mental state go to "mse", not "cns".`,
+  dermatology: `Extra sections for this unit (dermatology):
+- "skin" — cutaneous examination findings: the lesions' morphology, distribution and configuration, and the mucosa, nails and hair ("erythematous scaly plaques over both shins", "nails pitted", "oral mucosa shows erosions")
+${CVS_LINE}
+${CNS_LINE}
+
+Filing between these: ${SYSTEMS_RULE} The patient's own account of the rash or itch (when it began, how it spread) is history; what is seen on the skin, mucosa, nails or hair on examination goes to "skin", not "local".`,
   medical_oncology: `Extra sections for this unit (medical oncology):
 - "onco_disease" — what the cancer IS: primary site, histology, immunohistochemistry, stage, when it was diagnosed, biopsy or scan findings that establish it ("carcinoma left breast, IDC grade 2, ER positive, cT2N1M0, diagnosed March")
 - "onco_treatment" — what has ALREADY been given for it: previous surgery, radiotherapy, earlier lines of chemotherapy with how many cycles and what the response was ("six cycles of FOLFOX last year, partial response")
@@ -123,8 +140,10 @@ const SPECIALTY_SECTION_BLOCKS: Record<string, string> = {
 - "performance" — performance status and what the patient can and cannot do ("ECOG 2, in bed about half the day")
 - "onco_nodes" — lymph node examination findings, station by station: cervical, supraclavicular, axillary, inguinal — size, number, mobility, tenderness, matting ("left supraclavicular node, 2 cm, firm, non-tender, fixed")
 - "onco_mucosa_line" — oral mucosa / mucositis grade, skin and nail changes (hand-foot syndrome, rash), and the chemoport / PICC / central line site ("grade 2 mucositis, ulcers on the buccal mucosa" / "port site clean, no erythema")
+${CVS_LINE}
+${CNS_LINE}
 
-Filing between these: a fact about the tumour goes to "onco_disease" even when a drug is named as part of establishing it. A drug being given NOW goes to "onco_cycle"; the same drug given in the past goes to "onco_treatment". A side effect goes to "onco_toxicity" and NOT to "complaints", unless the resident is presenting it as the reason for this admission. A physical finding on a lymph node goes to "onco_nodes" even when the same node is also the presenting complaint. Mouth ulcers or a rash found ON EXAMINATION go to "onco_mucosa_line"; the patient's own report of mouth pain as a symptom still goes to "onco_toxicity".`,
+Filing between these: ${SYSTEMS_RULE} A fact about the tumour goes to "onco_disease" even when a drug is named as part of establishing it. A drug being given NOW goes to "onco_cycle"; the same drug given in the past goes to "onco_treatment". A side effect goes to "onco_toxicity" and NOT to "complaints", unless the resident is presenting it as the reason for this admission. A physical finding on a lymph node goes to "onco_nodes" even when the same node is also the presenting complaint. Mouth ulcers or a rash found ON EXAMINATION go to "onco_mucosa_line"; the patient's own report of mouth pain as a symptom still goes to "onco_toxicity".`,
 };
 
 export async function routeClerkingChunk(
@@ -140,7 +159,7 @@ export async function routeClerkingChunk(
   if (!text) return { segments: [], model: ROUTING_MODEL };
 
   // Same ward-vocabulary correction every other dictation path runs.
-  const corrected = (await correctTranscript(text)).text.trim() || text;
+  const corrected = (await correctTranscript(text, getSpecialtyPack(specialty))).text.trim() || text;
 
   if (process.env.TYPESAFE_API_KEY) {
     const first = await routeWithTypeSafe(corrected, knownComplaints, specialty, who);
@@ -207,7 +226,10 @@ async function routeWithTypeSafe(
   if ("fallback" in jev) return jev;
 
   const result = segmentsFromJev(sentences, jev.answers, knownComplaints, allowed);
-  return "segments" in result ? { segments: result.segments, model: jev.model } : result;
+  if (!("segments" in result)) return result;
+  // Counts only, as "jev judged" does: how much live clerking Jev files on its own.
+  log.info("route-dictation: Jev filed", { "jev.sentences": sentences.length, "jev.segments": result.segments.length });
+  return { segments: result.segments, model: jev.model };
 }
 
 /** Deepgram's smart_format punctuates, so sentence boundaries are real. */

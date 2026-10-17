@@ -1,5 +1,6 @@
 import {
   MASTER_LEXICON,
+  NON_OPERATIVE_SPECIALTIES,
   type MedicalLexiconEntry,
   type DictationContext,
   type SelectedKeyterm,
@@ -307,13 +308,17 @@ export function selectMedicalKeyterms(context: DictationContext): SelectedKeyter
   const cfg = DEFAULTS;
   const ctx = shape(context);
 
-  const lexIndex: LexIndexEntry[] = MASTER_LEXICON.map((e) => ({
+  // A unit that does not operate never gets the surgical ward phrases boosted.
+  const nonOperative = !!ctx.specialty && NON_OPERATIVE_SPECIALTIES.has(ctx.specialty);
+  const lexicon = MASTER_LEXICON.filter((e) => !(nonOperative && e.operativeOnly));
+
+  const lexIndex: LexIndexEntry[] = lexicon.map((e) => ({
     names: [e.term, ...(e.aliases ?? [])].map(norm),
     term: e.term,
     dedupeGroup: e.dedupeGroup,
   }));
 
-  const scoredAll = MASTER_LEXICON.map((e) => scoreEntry(e, ctx)).filter((s) => s.score > 0);
+  const scoredAll = lexicon.map((e) => scoreEntry(e, ctx)).filter((s) => s.score > 0);
 
   const primary = scoredAll.filter((s) => s.score >= cfg.inclusionFloor);
   const candidates = [...syntheticPatientTerms(context, lexIndex), ...primary];

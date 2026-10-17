@@ -21,6 +21,7 @@ import {
 import { type DischargeTemplate } from "@/lib/discharge-templates";
 import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
 import { matchDischargeTemplateFor } from "@/lib/specialty/discharge";
+import { hasOperationClock } from "@/lib/specialty/intake";
 
 /**
  * Compile a PROPOSED discharge draft from what is already on the record.
@@ -528,7 +529,9 @@ export function compileDischargeDraft(
   // on a post-op summary is the costlier mistake, and the resident can still untick any or turn
   // the section off. The template's own list when it has one, else the generic post-op list.
   // Only reaches a draft whose red-flag section was never saved — a stored choice still wins.
-  if (patient.surgery_date) {
+  // Only where the unit operates: an older medicine patient may carry an operation date from a
+  // bedside procedure (before #133), and that is not a post-op discharge.
+  if (patient.surgery_date && hasOperationClock(options?.pack ?? context.pack ?? generalSurgeryPack)) {
     const items = drafted.redFlags.items.length > 0 ? drafted.redFlags.items : [...RED_FLAG_SUGGESTIONS];
     return { ...drafted, redFlags: { items, included: true } };
   }

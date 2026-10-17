@@ -4,6 +4,8 @@ import { getUser } from "@/lib/auth";
 import { transcribe } from "@/lib/stt";
 import { correctTranscript } from "@/lib/glossary";
 import { readSpokenPatient } from "@/lib/read-new-patient";
+import { getCurrentWardPack } from "@/lib/ward";
+import { wardKeyterms } from "@/lib/transcription/patient-context";
 
 /**
  * Speech in, form fields out. Writes nothing.
@@ -16,6 +18,9 @@ export async function POST(request: Request) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
+  // The patient is joining the selected unit, so its vocabulary, corrections and prompt apply.
+  const pack = await getCurrentWardPack();
+
   // Live dictation on the add-patient screen streams its own transcript (lib/stt/live.ts) and
   // sends the text; the record-then-send button sends the audio clip.
   let transcript: string;
@@ -26,7 +31,7 @@ export async function POST(request: Request) {
     } catch {
       return NextResponse.json({ error: "Malformed request." }, { status: 400 });
     }
-    transcript = (await correctTranscript(String(body.transcript ?? "").slice(0, 4000))).text;
+    transcript = (await correctTranscript(String(body.transcript ?? "").slice(0, 4000), pack)).text;
   } else {
     const form = await request.formData();
     const audio = form.get("audio");
@@ -36,8 +41,8 @@ export async function POST(request: Request) {
     }
 
     try {
-      const result = await transcribe(audio);
-      transcript = (await correctTranscript(result.text)).text;
+      const result = await transcribe(audio, wardKeyterms(pack.lexiconSpecialty));
+      transcript = (await correctTranscript(result.text, pack)).text;
     } catch (e) {
       return NextResponse.json(
         { error: plainAiError(e) },
@@ -54,7 +59,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { patient } = await readSpokenPatient(transcript);
+    const { patient } = await readSpokenPatient(transcript, pack);
     return NextResponse.json({ patient, transcript });
   } catch (e) {
     return NextResponse.json(

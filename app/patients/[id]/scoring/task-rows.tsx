@@ -8,6 +8,7 @@
 
 import { useState, useTransition } from "react";
 import type { ScoringTask } from "@/lib/scoring/read";
+import { asSuggestion } from "@/lib/scoring/wording";
 import { completeScoringTask, declineScoringTask } from "./actions";
 
 export default function ScoringTaskRows({
@@ -43,7 +44,7 @@ function Row({ patientId, t }: { patientId: string; t: ScoringTask }) {
       />
       <div className="min-w-0 flex-1">
         <p className="text-subhead">
-          {t.action}
+          {asSuggestion(t.action)}
           {t.status === "linked" && (
             <span className="ml-1.5 text-footnote text-muted">· result already on file</span>
           )}

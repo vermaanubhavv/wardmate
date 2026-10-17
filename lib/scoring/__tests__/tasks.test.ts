@@ -25,3 +25,16 @@ describe("actionForPatient", () => {
     );
   });
 });
+
+import { asSuggestion } from "@/lib/scoring/wording";
+
+describe("suggestion wording", () => {
+  it("reads short and pointed: Consider …", () => {
+    expect(asSuggestion("Send CBC with differential and CRP")).toBe("Consider CBC with differential and CRP");
+    expect(asSuggestion("Send urine analysis; pregnancy test if applicable")).toBe("Consider urine analysis; pregnancy test if applicable");
+    expect(asSuggestion("Urgent senior surgical review NOW — do not wait on the score, bloods or imaging")).toBe(
+      "Consider urgent senior surgical review NOW — do not wait on the score, bloods or imaging"
+    );
+    expect(asSuggestion("Chart a fluid balance.")).toBe("Consider a fluid balance");
+  });
+});

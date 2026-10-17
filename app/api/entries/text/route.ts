@@ -6,6 +6,7 @@ import { getTemplateForPatient } from "@/lib/templates";
 import { getPublishedProtocolContext } from "@/lib/protocols";
 import { applyProcedureDone } from "@/lib/apply-procedure-done";
 import { insertObservations } from "@/lib/observations";
+import { getWardPack } from "@/lib/ward";
 
 /**
  * Typed note in, stored observations out — the voice route with the speech step removed.
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
   const { data: patient } = await supabase
     .from("current_patients")
     .select(
-      "id, display_name, bed, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text"
+      "id, ward_id, display_name, bed, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text"
     )
     .eq("id", patientId)
     .maybeSingle();
@@ -42,7 +43,8 @@ export async function POST(request: Request) {
   if (!patient) return NextResponse.json({ error: "Patient not found." }, { status: 404 });
 
   // Independent reads, sent together.
-  const [template, protocols] = await Promise.all([
+  const [pack, template, protocols] = await Promise.all([
+    getWardPack(patient.ward_id),
     getTemplateForPatient(patient),
     getPublishedProtocolContext(),
   ]);
@@ -50,7 +52,7 @@ export async function POST(request: Request) {
 
   let extraction;
   try {
-    extraction = await extractObservations(text, expectedLabels, protocols, undefined, { name: patient.display_name, bed: patient.bed });
+    extraction = await extractObservations(text, expectedLabels, protocols, pack.key, { name: patient.display_name, bed: patient.bed });
   } catch (e) {
     // Keep the note even when structuring fails — the words are the evidence.
     const { data: entry } = await supabase
@@ -108,7 +110,7 @@ export async function POST(request: Request) {
     );
   }
 
-  await applyProcedureDone(supabase, patientId, patient, extraction.observations);
+  await applyProcedureDone(supabase, patientId, patient, extraction.observations, pack);
 
   return NextResponse.json({
     entry_id: entry.id,

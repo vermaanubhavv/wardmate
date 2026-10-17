@@ -1,4 +1,6 @@
 import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
+import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { forWard } from "@/lib/specialty/prompt-words";
 
 export type SpokenPatient = {
   name: string | null;
@@ -16,7 +18,7 @@ export type SpokenPatientResult = {
   model: string;
 };
 
-const SYSTEM_PROMPT = `You pull the details of ONE patient being admitted out of a sentence a surgical resident has spoken.
+export const SYSTEM_PROMPT = `You pull the details of ONE patient being admitted out of a sentence a surgical resident has spoken.
 
 You are filling in a form from what was said. You are not interpreting medicine and you are not completing the form.
 
@@ -50,13 +52,16 @@ const SCHEMA = {
   additionalProperties: false,
 } as const;
 
-export async function readSpokenPatient(transcript: string): Promise<SpokenPatientResult> {
+export async function readSpokenPatient(
+  transcript: string,
+  pack: SpecialtyPack = generalSurgeryPack
+): Promise<SpokenPatientResult> {
   const client = anthropic();
 
   const response = await client.messages.create({
     model: AI_MODEL,
     max_tokens: 1000,
-    system: SYSTEM_PROMPT,
+    system: forWard(SYSTEM_PROMPT, pack),
     // Low effort: one short sentence into six fields, and the resident is looking at the
     // filled form before any of it is saved.
     output_config: {

@@ -32,6 +32,8 @@ export const ROUTABLE_SECTIONS = [
   // such card and is never offered these.
   "cvs",
   "cns",
+  "mse", // psychiatry
+  "skin", // dermatology
   "examination", // general / PICCLE / vitals narrative — held for the resident to place
   "diagnosis",
   "plan",
@@ -88,12 +90,23 @@ const SPECIALTY_EXAM_SECTIONS: Record<string, RoutableSection[]> = {
   paediatrics: ["cvs", "cns"],
   pulmonary_medicine: ["cvs", "cns"],
   emergency_medicine: ["cvs", "cns"],
+  psychiatry: ["cvs", "cns", "mse"],
+  dermatology: ["skin", "cvs", "cns"],
   // NCCN/ASCO-style oncology survey: what a routine surgical exam has no place to record —
   // node-station-by-node-station findings, mucositis and skin toxicity, and the line the
   // chemotherapy actually goes through. Performance status sits with these because, like them,
   // it is judged by looking at the patient rather than taken as history.
-  medical_oncology: ["performance", "onco_nodes", "onco_mucosa_line"],
+  medical_oncology: ["performance", "onco_nodes", "onco_mucosa_line", "cvs", "cns"],
 };
+
+/** The extra cards this unit walks — history and examination — as listed above. */
+export function specialtyCardsFor(specialty: string | null | undefined): {
+  history: RoutableSection[];
+  exam: RoutableSection[];
+} {
+  const key = (specialty ?? "").trim();
+  return { history: SPECIALTY_HISTORY_SECTIONS[key] ?? [], exam: SPECIALTY_EXAM_SECTIONS[key] ?? [] };
+}
 
 /** Every section this unit's clerking can file into — the base set plus its specialty's. */
 export function sectionsForSpecialty(specialty: string | null | undefined): RoutableSection[] {
@@ -118,6 +131,8 @@ export const EXAM_SECTION_LABEL: Record<string, string> = {
   local: "local examination",
   cvs: "cardiovascular system",
   cns: "central nervous system",
+  mse: "mental status examination",
+  skin: "skin examination",
 };
 
 /** Sorted but not written — the resident places these (structured toggles, or the

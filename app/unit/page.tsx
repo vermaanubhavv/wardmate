@@ -2,7 +2,7 @@ import ScreenHeader from "../screen-header";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentWard, getMyWards, getWardConsultantStored, getWardIsEsicFaridabad } from "@/lib/ward";
+import { getCurrentWard, getMyWards, getWardConsultantStored, getWardIsEsicFaridabad, getWardSpecialtyStored } from "@/lib/ward";
 import { consultantForWard } from "@/lib/unit-consultants";
 import CodeBox from "./code-box";
 import JoinForm from "./join-form";
@@ -22,6 +22,7 @@ import { getFormularySize } from "@/lib/formulary";
 import { DESIGNATION_CHOICES } from "@/lib/patients";
 import { ChecklistIcon, DocumentIcon } from "../icons";
 import { specialtyChoices } from "../onboarding/specialty-choices";
+import { getSpecialtyPack } from "@/lib/specialty";
 import { getFinalisedDischargeMap, visibleDischargedFilter } from "@/lib/discharged";
 
 /**
@@ -65,6 +66,7 @@ export default async function UnitPage() {
     { rows: expected, missing: rosterMissing },
     consultantStored,
     isEsicFaridabad,
+    specialtyStored,
     isAdmin,
   ] = await Promise.all([
       // No embedded profiles(display_name) here, deliberately. PostgREST can only embed
@@ -102,12 +104,15 @@ export default async function UnitPage() {
       getExpectedMembers(ward.id),
       getWardConsultantStored(ward.id),
       getWardIsEsicFaridabad(ward.id),
+      getWardSpecialtyStored(ward.id),
       isCurrentUserAdmin(),
     ]);
 
   // What the field shows: the stored value if the column exists and is set, otherwise the
   // seeded default for this unit's number — so the box is never blank for units 1–4.
   const consultantInCharge = consultantForWard(consultantStored, ward.name);
+  const pack = getSpecialtyPack(specialtyStored);
+
   const isOwner = ward.owner_id === user?.id;
   const membership = (members ?? []) as { user_id: string; role: string; added_at: string }[];
   const memberIds = membership.map((m) => m.user_id);
@@ -226,7 +231,7 @@ export default async function UnitPage() {
               <input
                 name="department"
                 defaultValue={profile.department ?? ""}
-                placeholder="General Surgery"
+                placeholder={pack.label}
                 className="field"
               />
             </label>
@@ -433,6 +438,7 @@ export default async function UnitPage() {
           <p className="ios-group-header mb-2 px-4">Copy setup from another unit</p>
           <CopySetup
             wardId={ward.id}
+            otNotes={pack.formatKinds.includes("ot_notes")}
             options={myWards.filter((w) => w.id !== ward.id).map((w) => ({ id: w.id, name: w.name }))}
           />
         </section>
@@ -488,7 +494,7 @@ export default async function UnitPage() {
               name="letterhead"
               rows={7}
               defaultValue={ward.letterhead ?? ""}
-              placeholder={"E.S.I.C. MEDICAL COLLEGE & HOSPITAL\nNH-3, N.I.T. FARIDABAD, HARYANA\nDEPARTMENT OF GENERAL SURGERY\nUNIT-II"}
+              placeholder={`E.S.I.C. MEDICAL COLLEGE & HOSPITAL\nNH-3, N.I.T. FARIDABAD, HARYANA\nDEPARTMENT OF ${pack.label.toUpperCase()}\nUNIT-II`}
               className="field text-subhead leading-relaxed"
             />
             <button className="btn btn-secondary mt-2 w-full">Save heading</button>

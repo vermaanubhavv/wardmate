@@ -5,7 +5,7 @@ import { classifyLab, canonicalLabName, type SuppliedRange } from "@/lib/lab-ran
 import { flagRadiology } from "@/lib/radiology-flags";
 import type { WardRanges } from "@/lib/exam-summary";
 import type { Observation } from "@/lib/patient-state";
-import { DEFAULT_PROGRESS_NOTE_CONFIG, type ProgressNoteConfig } from "@/lib/progress-note-config";
+import { DEFAULT_PROGRESS_NOTE_CONFIG, openSpaceHeadings, type ProgressNoteConfig } from "@/lib/progress-note-config";
 
 /** What the app cannot know and must not invent: a label and a blank to write on — the same
  *  convention lib/discharge.ts uses, so a printed page never looks like it is missing a field
@@ -61,6 +61,9 @@ export type ProgressNote = {
   subjective: string[];
   objective: string[];
   assessment: string[];
+  /** Headings whose empty line prints with open space below — this ward's, from
+   *  lib/progress-note-config.ts openSpaceHeadings(). */
+  openSpace: string[];
 };
 
 const istDay = (iso: string) =>
@@ -407,6 +410,7 @@ export function buildProgressNote(
     subjective,
     objective,
     assessment,
+    openSpace: openSpaceHeadings(noteConfig),
   };
 }
 

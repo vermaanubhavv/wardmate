@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
-import { getCurrentWard } from "@/lib/ward";
+import { getCurrentWard, getWardPack } from "@/lib/ward";
 import { readRegister } from "@/lib/read-register";
 import { claimPhotoRead } from "@/lib/photo-cap";
 
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
   await supabase.from("register_reads").update({ photo_path: path }).eq("id", read.id);
 
   try {
-    const result = await readRegister(bytes.toString("base64"), mediaType);
+    const result = await readRegister(bytes.toString("base64"), mediaType, await getWardPack(ward.id));
     await supabase
       .from("register_reads")
       .update({ raw: { model: result.model, rows: result.rows } as never })

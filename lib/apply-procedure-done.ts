@@ -2,6 +2,8 @@ import type { Supa } from "@/lib/supabase/server";
 import { istDate } from "@/lib/urgency";
 import { resolveProcedure, listTemplateChoices } from "@/lib/templates";
 import type { ExtractedObservation } from "@/lib/extract";
+import type { SpecialtyPack } from "@/lib/specialty";
+import { hasOperationClock } from "@/lib/specialty/intake";
 
 export type PatientForProcedureDone = {
   surgery_date: string | null;
@@ -23,13 +25,19 @@ export type PatientForProcedureDone = {
  * unrelated mention of the same operation (someone describing it as history on a subsequent
  * round) can never re-trigger or overwrite it. If the round names more than one completed
  * procedure, the first one found wins — a patient has one operation that flips this, not several.
+ *
+ * Only on a unit whose day clock counts from an operation (hasOperationClock). On a medicine,
+ * chest or oncology ward a "pleural tap done" or "port inserted" is a procedure, not an
+ * operation, and must never turn the patient post-op — no PAC section, no "Post Op Day".
  */
 export async function applyProcedureDone(
   supabase: Supa,
   patientId: string,
   patient: PatientForProcedureDone,
-  observations: ExtractedObservation[]
+  observations: ExtractedObservation[],
+  pack: SpecialtyPack
 ): Promise<void> {
+  if (!hasOperationClock(pack)) return;
   if (patient.surgery_date) return;
 
   const done = observations.find((o) => o.kind === "procedure_done");
@@ -39,7 +47,7 @@ export async function applyProcedureDone(
   // resident manually marks someone post-op — matching a name the library knows brings its
   // checklist/protocol along; anything else is kept as the unit's own wording, with no
   // template applied rather than one invented for an operation nobody described.
-  const resolved = resolveProcedure(done.value_text, await listTemplateChoices());
+  const resolved = resolveProcedure(done.value_text, await listTemplateChoices(pack.key));
 
   await supabase
     .from("patients")

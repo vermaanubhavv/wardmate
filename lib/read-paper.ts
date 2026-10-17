@@ -1,5 +1,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { AI_MODEL, anthropic } from "@/lib/model";
+import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { forWard } from "@/lib/specialty/prompt-words";
 
 /**
  * One page out of a patient's file: what kind of paper it is, and what it says.
@@ -44,7 +46,7 @@ export type ReadPaperResult = {
   model: string;
 };
 
-const SYSTEM_PROMPT = `You are handed ONE photograph of one page from a surgical patient's hospital file. You do two things: say which kind of paper it is, and transcribe it.
+export const SYSTEM_PROMPT = `You are handed ONE photograph of one page from a surgical patient's hospital file. You do two things: say which kind of paper it is, and transcribe it.
 
 You are transcribing, not summarising, not interpreting, and not completing a medical record.
 
@@ -80,7 +82,8 @@ Reply with a single JSON object and nothing else:
 
 export async function readPaper(
   base64Image: string,
-  mediaType: "image/jpeg" | "image/png" | "image/webp"
+  mediaType: "image/jpeg" | "image/png" | "image/webp",
+  pack: SpecialtyPack = generalSurgeryPack
 ): Promise<ReadPaperResult> {
   const response = await anthropic().messages.create({
     model: AI_MODEL,
@@ -90,7 +93,7 @@ export async function readPaper(
     // cache_read=843 on the third page of a batch). Below the minimum nothing is cached and
     // nothing is charged for trying, so the marker is left in place: it costs nothing, and it
     // starts working again the day this prompt grows or lib/model.ts goes back to Opus.
-    system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
+    system: [{ type: "text", text: forWard(SYSTEM_PROMPT, pack), cache_control: { type: "ephemeral" } }],
     // Low effort, matching lib/extract.ts and for the same reason: this is transcription and
     // one classification, not reasoning. Thinking is ON BY DEFAULT on Opus 5 and bills as
     // output at the output rate — left at the default "high", every photographed page was

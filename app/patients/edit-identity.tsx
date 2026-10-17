@@ -9,6 +9,9 @@ import {
   managementChoicesFor,
   stripPatientHonorific,
 } from "@/lib/patients";
+import { getSpecialtyPack } from "@/lib/specialty";
+import { hasOperationClock } from "@/lib/specialty/intake";
+import { checklistFieldLabel, usesBurnClock, usesCycleClock } from "@/lib/specialty/clocks";
 
 type Patient = {
   id: string;
@@ -54,14 +57,11 @@ type TemplateChoice = { family: string; variant: string | null; label: string };
  * oncology patient has no operation and (for medicine especially) no equivalent management
  * state, so the field was unreachable: neither department could attach any of their published
  * checklists (febrile illness, DKA, febrile neutropenia, …) to a patient at all. Fixed by
- * showing the field whenever the specialty isn't general surgery, on top of the existing
- * pre-op/post-op gate — labelled for what it actually picks in each department.
+ * showing the field on any unit that does not operate, on top of the existing
+ * pre-op/post-op gate — labelled for what it actually picks in each department
+ * (lib/specialty/clocks.ts checklistFieldLabel). A unit without an operation clock gets it
+ * always; an operative one behind pre-op/post-op, exactly as surgery always has.
  */
-export function checklistFieldLabel(specialty: string): string {
-  if (specialty === "medical_oncology") return "Chemo cycle / checklist";
-  if (specialty === "general_surgery") return "Operation";
-  return "Checklist";
-}
 
 /** What to put in the box: the unit's own wording if there is any, otherwise the name of the
  *  template this patient was linked to before free text existed. */
@@ -99,6 +99,7 @@ export default function EditIdentity({
   openSignal?: number;
   hideTrigger?: boolean;
 }) {
+  const pack = getSpecialtyPack(specialty);
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const [state, formAction, pending] = useActionState<EditPatientState, FormData>(
     updatePatientIdentity,
@@ -284,9 +285,9 @@ export default function EditIdentity({
           {/* A conservative or workup SURGICAL patient has no operation to name and no date to
               give — that part of the gate is unchanged. A non-surgical patient never has an
               operation either, but does still need to reach the checklist picker, so the field
-              is also shown whenever the specialty isn't general surgery (see
-              checklistFieldLabel above for why). */}
-          {management === "preop" || management === "postop" || specialty !== "general_surgery" ? (
+              is also shown on any unit without an operation clock (see
+              the comment above checklistFieldLabel's import for why). */}
+          {management === "preop" || management === "postop" || !hasOperationClock(pack) ? (
             <>
               <label className="flex flex-col gap-2">
                 <span className="text-subhead text-muted">{checklistFieldLabel(specialty)}</span>
@@ -343,7 +344,7 @@ export default function EditIdentity({
             />
           )}
 
-          {specialty === "medical_oncology" && (
+          {usesCycleClock(pack) && (
             <>
               <label className="flex flex-col gap-2">
                 <span className="text-subhead text-muted">Regimen</span>
@@ -397,7 +398,7 @@ export default function EditIdentity({
             </>
           )}
 
-          {specialty === "burns_plastic_surgery" && (
+          {usesBurnClock(pack) && (
             <label className="flex flex-col gap-2">
               <span className="text-subhead text-muted">Date of burn</span>
               <input

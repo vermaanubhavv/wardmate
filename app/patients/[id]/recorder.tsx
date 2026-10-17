@@ -14,6 +14,7 @@ import {
 } from "@/lib/outbox";
 import LiveDictation, { type LiveLine, type LiveSection } from "./live-dictation";
 import { extFor, REC_MIME } from "./card-kit";
+import { liveRoundSections, progressNoteConfigFor } from "@/lib/progress-note-config";
 
 type Status = "idle" | "starting" | "recording" | "working";
 type Mode = "batch" | null;
@@ -50,8 +51,11 @@ export default function Recorder({
   patientId,
   onBusyChange,
   idleActions,
+  specialty,
 }: {
   patientId: string;
+  /** The unit's department — which sections live dictation sorts into, and its example. */
+  specialty?: string | null;
   onBusyChange?: (busy: boolean) => void;
   /** Sits in the same row as the mic while nothing is recording — the bar's other controls. */
   idleActions?: React.ReactNode;
@@ -208,16 +212,8 @@ export default function Recorder({
     setLive(true);
   }
 
-  const LIVE_SECTIONS: LiveSection[] = [
-    { key: "history", label: "Complaints & history" },
-    { key: "vital", label: "Vitals" },
-    { key: "exam", label: "Examination" },
-    { key: "drain", label: "Drains & intake/output" },
-    { key: "dx", label: "Diagnosis & procedure" },
-    { key: "medication", label: "Medications", drug: true },
-    { key: "lab", label: "Investigations" },
-    { key: "plan", label: "Plan & to-do" },
-  ];
+  const noteConfig = progressNoteConfigFor(specialty);
+  const LIVE_SECTIONS: LiveSection[] = liveRoundSections(noteConfig);
 
   /** One pause of live dictation, filed exactly as a typed note is. Words that could not be
    *  sent are held for "Save these words" — at a bedside nothing said may be lost. */
@@ -443,7 +439,7 @@ export default function Recorder({
         <LiveDictation
           patientId={patientId}
           title="Speaking at the bedside"
-          example="e.g. “no fresh complaints… BP 120 by 80, pulse 84… abdomen soft… drain 50 ml serous… start oral sips…”"
+          example={`e.g. “${noteConfig.dictationExample}”`}
           sections={LIVE_SECTIONS}
           route={fileFragment}
           onUnavailable={(reason) => {

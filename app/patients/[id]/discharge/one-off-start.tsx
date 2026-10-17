@@ -8,6 +8,7 @@ import type { OneOffIdentity } from "@/lib/discharge-oneoff";
 import { NO_TEMPLATE } from "@/lib/discharge-oneoff";
 import { getSpecialtyPack, type SpecialtyKey } from "@/lib/specialty";
 import { listDischargeTemplatesFor, matchDischargeTemplateFor } from "@/lib/specialty/discharge";
+import { commonDiagnosesFor, hasOperationClock } from "@/lib/specialty/intake";
 
 type LabValue = {
   label: string;
@@ -73,6 +74,9 @@ export default function OneOffStart({
   const [error, setError] = useState<string | null>(null);
   const { pages, identity, templateKey } = state;
   const pack = getSpecialtyPack(specialty);
+  // A unit that does not operate has no surgery date and no OT note to name a procedure from.
+  const operative = hasOperationClock(pack);
+  const exampleDiagnosis = operative ? "Acute calculous cholecystitis" : commonDiagnosesFor(pack.key)[0];
   const templates = listDischargeTemplatesFor(pack);
   const setPages = (f: (p: Page[]) => Page[]) => setState((s) => ({ ...s, pages: f(s.pages) }));
 
@@ -204,10 +208,10 @@ export default function OneOffStart({
         </div>
         <div className="flex gap-3">
           {field("admittedOn", "Admitted on", "", "date")}
-          {field("surgeryDate", "Date of surgery", "", "date")}
+          {operative && field("surgeryDate", "Date of surgery", "", "date")}
         </div>
-        {field("diagnosis", "Diagnosis", "e.g. Acute calculous cholecystitis")}
-        {field("procedure", "Procedure", "As the OT note names it")}
+        {field("diagnosis", "Diagnosis", exampleDiagnosis ? `e.g. ${exampleDiagnosis}` : "")}
+        {field("procedure", "Procedure", operative ? "As the OT note names it" : "If one was done — e.g. pleural tap")}
       </div>
 
       <input

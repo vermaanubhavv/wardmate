@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 import { correctTranscript } from "@/lib/glossary";
 import { extractObservations } from "@/lib/extract";
-import { getWardSpecialtyStored } from "@/lib/ward";
+import { getWardPack } from "@/lib/ward";
 import { getTemplateForPatient } from "@/lib/templates";
 import { resolveProcedure, listTemplateChoices } from "@/lib/templates";
 import type { PaperKind } from "@/lib/read-paper";
@@ -68,7 +68,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   // The unit's department, for the dictation prompt. Null — and so general surgery — on any
   // database without patch 0060.
-  const specialty = getWardSpecialtyStored(patient.ward_id);
+  const packP = getWardPack(patient.ward_id);
 
   let body: { pages?: IncomingPage[] };
   try {
@@ -119,7 +119,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
    */
   const operated = pages.find((p) => p.kind === "ot_note" && p.markOperated)?.markOperated ?? null;
   if (operated && !patient.surgery_date) {
-    const resolved = resolveProcedure(operated.procedure, await listTemplateChoices());
+    const resolved = resolveProcedure(operated.procedure, await listTemplateChoices((await packP).key));
     await supabase
       .from("patients")
       .update({
@@ -174,13 +174,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     // Everything else is a page of words: corrected, then structured, exactly like speech.
-    const corrected = await correctTranscript(page.transcript);
+    const corrected = await correctTranscript(page.transcript, await packP);
     const transcript = corrected.text;
 
     let extraction;
     let extractionError: string | null = null;
     try {
-      extraction = await extractObservations(transcript, expectedLabels, [], await specialty, { name: patient.display_name, bed: patient.bed });
+      extraction = await extractObservations(transcript, expectedLabels, [], (await packP).key, { name: patient.display_name, bed: patient.bed });
     } catch (e) {
       extractionError = e instanceof Error ? e.message : String(e);
     }

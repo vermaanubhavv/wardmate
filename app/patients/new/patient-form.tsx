@@ -4,8 +4,10 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { addPatient, type AddPatientState } from "../actions";
 import { LOCATION_CHOICES, managementChoicesFor } from "@/lib/patients";
+import { getSpecialtyPack } from "@/lib/specialty";
+import { hasOperationClock } from "@/lib/specialty/intake";
+import { checklistFieldLabel, usesBurnClock, usesCycleClock } from "@/lib/specialty/clocks";
 import DiagnosisCombobox from "../diagnosis-combobox";
-import { checklistFieldLabel } from "../edit-identity";
 import SpeakPatient from "./speak-patient";
 import type { SpokenPatient } from "@/lib/read-new-patient";
 import AdmissionPaper from "./admission-paper";
@@ -22,7 +24,6 @@ const REGIMEN_SUGGESTIONS = [
   "R-CHOP", "TCH", "VRd", "carboplatin-paclitaxel", "hyper-CVAD",
 ];
 
-
 export default function PatientForm({
   wardId,
   diagnosisSuggestions,
@@ -35,8 +36,11 @@ export default function PatientForm({
   /** The unit's department. Only an oncology unit is asked for a chemotherapy cycle. */
   specialty?: string;
 }) {
-  const oncology = specialty === "medical_oncology";
-  const burns = specialty === "burns_plastic_surgery";
+  // What this unit counts days by decides which fields it is asked for — lib/specialty/clocks.ts.
+  const pack = getSpecialtyPack(specialty);
+  const oncology = usesCycleClock(pack);
+  const burns = usesBurnClock(pack);
+  const operative = hasOperationClock(pack);
   const [state, formAction, pending] = useActionState<AddPatientState, FormData>(addPatient, {
     error: null,
   });
@@ -317,8 +321,8 @@ export default function PatientForm({
               it stayed behind the Pre-op/Post-op gate. Medicine and oncology have no operation and
               (for medicine) no equivalent management state, so without also showing it for any
               non-surgical specialty, neither department could attach a checklist to a patient at
-              all — see checklistFieldLabel above. */}
-          {(management === "preop" || management === "postop" || specialty !== "general_surgery") && (
+              all — see lib/specialty/clocks.ts checklistFieldLabel. */}
+          {(management === "preop" || management === "postop" || !operative) && (
             <Field
               label={checklistFieldLabel(specialty)}
               hint="Type anything. Picking one of the suggestions also brings its checklist of what to mention."
@@ -370,7 +374,7 @@ export default function PatientForm({
           the resident named an operation out loud it still goes with the patient. */}
       {management !== "preop" &&
         management !== "postop" &&
-        specialty === "general_surgery" &&
+        operative &&
         fields.procedure && <input type="hidden" name="procedure" value={fields.procedure} />}
 
       {/* Chemotherapy. Asked only on an oncology unit, and asked at admission because the

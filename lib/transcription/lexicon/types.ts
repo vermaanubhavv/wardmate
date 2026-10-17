@@ -63,6 +63,18 @@ export type Specialty =
   | "paediatrics"
   | "emergency-medicine";
 
+/** Departments that do not operate — the same split as hasOperationClock() in
+ *  lib/specialty/intake.ts. An operativeOnly term is never sent for them. */
+export const NON_OPERATIVE_SPECIALTIES: ReadonlySet<Specialty> = new Set<Specialty>([
+  "internal-medicine",
+  "medical-oncology",
+  "pulmonary-medicine",
+  "psychiatry",
+  "dermatology",
+  "paediatrics",
+  "emergency-medicine",
+]);
+
 export type NoteType =
   | "ward-round"
   | "case-history"
@@ -72,6 +84,9 @@ export type NoteType =
   | "procedure-note";
 
 export type MedicalLexiconEntry = {
+  /** A surgical ward phrase ("post operative day") — never boosted on a unit that does not
+   *  operate, where it can only pull a misheard word towards surgery. */
+  operativeOnly?: boolean;
   /** The preferred spelling — this exact string is what gets sent to Deepgram. */
   term: string;
   /**

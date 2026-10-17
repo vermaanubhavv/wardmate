@@ -37,6 +37,9 @@ export type NoteExamSection = {
   aliases: string[];
   pills: string[];
   placeholder: string;
+  /** false: an empty line prints without the open space below its heading (see
+   *  openSpaceHeadings). Absent: it gets the space. */
+  printOpenSpace?: false;
 };
 
 export type ProgressNoteConfig = {
@@ -54,8 +57,16 @@ export type ProgressNoteConfig = {
    *  ICU. `key` is the label the value is stored under (a `vital` observation) — never one
    *  lib/vital-ranges.ts matchVitalLabel() reads as another vital. Absent: the shared set only. */
   extraVitals?: NoteVitalField[];
-  /** The example in the patient page's "Type" box. Absent: the surgical one. */
-  bedsideExample?: string;
+  /** The example in the patient page's "Type" box — this ward's own, never a surgical one. */
+  bedsideExample: string;
+  /** The example shown while dictating (patient page mic, note workspace) — spoken, not typed. */
+  dictationExample: string;
+  /** The Medications card's one-tap drugs. A preset dose is a default, not something the
+   *  resident said, so a line still reading exactly like any preset saves amber (MED_PRESETS).
+   *  [] where a fixed dose would be wrong (weight-based paediatrics) or unreviewed. Every
+   *  department's list was reviewed and approved by the app owner in October 2026; a change
+   *  to any list needs the same clinical sign-off. */
+  medPresets: string[];
 };
 
 export type NoteVitalField = { key: string; label: string; ph: string; aliases: string[] };
@@ -121,6 +132,31 @@ const WOUND: NoteExamSection = {
   placeholder: "Anything else on the wound",
 };
 
+/** Every operative ward — what every unit offered before per-department sets. */
+const SURGICAL_PRESETS = [
+  "Inj Ceftriaxone 1 g IV BD",
+  "Inj Metronidazole 500 mg IV TDS",
+  "Inj Pantoprazole 40 mg IV OD",
+  "Inj Ondansetron 4 mg IV TDS",
+  "Inj Paracetamol 1 g IV SOS",
+  "Tab Paracetamol 650 mg PO TDS",
+  "Inj Tramadol 50 mg IV SOS",
+  "Inj Enoxaparin 40 mg SC OD",
+  "IV fluids — RL / DNS alternately",
+  "Inj Insulin (sliding scale)",
+  "Nebulisation — Duolin / Budecort",
+];
+
+/** No NSAID here: a medicine ward's patients are the ones with the kidneys and the gut bleeds. */
+const MEDICINE_PRESETS = [
+  "Inj Pantoprazole 40 mg IV OD",
+  "Tab Paracetamol 650 mg PO SOS",
+  "Inj Ceftriaxone 1 g IV BD",
+  "Inj Insulin (sliding scale)",
+  "Inj Enoxaparin 40 mg SC OD",
+  "Nebulisation — Duolin / Budecort",
+];
+
 const MEDICINE_COMPLAINTS = [
   "No fresh complaints",
   "Fever",
@@ -157,6 +193,9 @@ const MEDICINE_PLAN = [
 
 const GENERAL_SURGERY: ProgressNoteConfig = {
   wardPhrase: "a general-surgery ward",
+  medPresets: SURGICAL_PRESETS,
+  bedsideExample: "Day 3 post lap chole, afebrile, drain 30 ml serous…",
+  dictationExample: "no fresh complaints… BP 120 by 80, pulse 84… abdomen soft… drain 50 ml serous… start oral sips…",
   registerHint:
     "P/A soft, NT, ND, BS+; wound healthy; drain output and character as said; Ryle's aspirate as said; UO as said; NVBS, B/L air entry equal",
   complaintPills: [
@@ -179,7 +218,8 @@ const GENERAL_SURGERY: ProgressNoteConfig = {
   // `intake_output` observations; without this line they never reached the printed note.
   examSections: [
     ABDOMEN,
-    { ...WOUND, pills: [...WOUND.pills, "Induration", "Staples intact", "Port sites healthy"] },
+    // printOpenSpace: false on wound and drains keeps the sheet's spacing as it always printed.
+    { ...WOUND, pills: [...WOUND.pills, "Induration", "Staples intact", "Port sites healthy"], printOpenSpace: false },
     {
       id: "drains",
       title: "Drains, tubes & output",
@@ -200,6 +240,7 @@ const GENERAL_SURGERY: ProgressNoteConfig = {
         "Stoma pink, functioning", "Stoma dusky",
       ],
       placeholder: "Each drain / tube: output in ml and character; urine output; intake / output, as measured",
+      printOpenSpace: false,
     },
     CHEST,
   ],
@@ -237,6 +278,9 @@ const GENERAL_SURGERY: ProgressNoteConfig = {
 
 const INTERNAL_MEDICINE: ProgressNoteConfig = {
   wardPhrase: "an internal-medicine ward",
+  medPresets: MEDICINE_PRESETS,
+  bedsideExample: "Day 3, afebrile, BP 120/80, plan repeat RFT…",
+  dictationExample: "no fresh complaints… BP 120 by 80, pulse 84… chest clear… plan repeat RFT…",
   registerHint: "S1 S2 +, no murmur, NVBS, B/L air entry equal, crepts, P/A soft, NT",
   complaintPills: MEDICINE_COMPLAINTS,
   examSections: [CVS, CHEST, ABDOMEN, CNS],
@@ -253,11 +297,19 @@ const INTERNAL_MEDICINE: ProgressNoteConfig = {
     },
     { key: "GCS", label: "GCS", ph: "E_V_M_", aliases: ["gcs", "glasgow coma scale"] },
   ],
-  bedsideExample: "Day 3, afebrile, BP 120/80, plan repeat RFT…",
 };
 
 const MEDICAL_ONCOLOGY: ProgressNoteConfig = {
   wardPhrase: "a medical-oncology ward",
+  medPresets: [
+    // Neutropenic and thrombocytopenic patients: no NSAID, no tramadol, no routine
+    // anticoagulant, and no empirical antibiotic — febrile neutropenia is the unit's own call.
+    "Inj Pantoprazole 40 mg IV OD",
+    "Inj Ondansetron 8 mg IV TDS",
+    "Tab Paracetamol 650 mg PO SOS",
+  ],
+  bedsideExample: "C2 D8, afebrile, no mucositis, port site healthy, plan repeat CBC…",
+  dictationExample: "no fever overnight… BP 110 by 70, pulse 90… no mucositis… port site healthy… repeat CBC…",
   registerHint: "NVBS, P/A soft, NT, oral mucositis grade as said, PICC / port site healthy",
   complaintPills: [
     "No fresh complaints",
@@ -314,6 +366,9 @@ const MEDICAL_ONCOLOGY: ProgressNoteConfig = {
 
 const OBSTETRICS_GYNAECOLOGY: ProgressNoteConfig = {
   wardPhrase: "an obstetrics and gynaecology ward",
+  medPresets: SURGICAL_PRESETS,
+  bedsideExample: "POD 2 LSCS, afebrile, uterus well contracted, lochia normal…",
+  dictationExample: "no fresh complaints… BP 110 by 70, pulse 82… uterus well contracted… lochia normal… breastfeeding well…",
   registerHint: "P/A soft, uterus well contracted, FHS +, lochia normal, suture line healthy, POD / PND as said",
   complaintPills: [
     "No fresh complaints",
@@ -380,6 +435,14 @@ const OBSTETRICS_GYNAECOLOGY: ProgressNoteConfig = {
 
 const PULMONARY_MEDICINE: ProgressNoteConfig = {
   wardPhrase: "a pulmonary-medicine (chest) ward",
+  medPresets: [
+    "Nebulisation — Duolin / Budecort",
+    "Inj Pantoprazole 40 mg IV OD",
+    "Tab Paracetamol 650 mg PO SOS",
+    "Inj Enoxaparin 40 mg SC OD",
+  ],
+  bedsideExample: "Day 4, afebrile, SpO2 95% on 2 L oxygen, ICD 100 ml serous…",
+  dictationExample: "breathlessness better… SpO2 95 on 2 litres… crepts right base… ICD 100 ml serous… repeat chest X-ray…",
   registerHint: "NVBS, B/L air entry equal, crepts, wheeze, ICD column moving, SpO₂ on the device said",
   complaintPills: [
     "No fresh complaints",
@@ -438,6 +501,9 @@ const PULMONARY_MEDICINE: ProgressNoteConfig = {
 
 const ENT: ProgressNoteConfig = {
   wardPhrase: "an ENT (otorhinolaryngology) ward",
+  medPresets: SURGICAL_PRESETS,
+  bedsideExample: "POD 1 tonsillectomy, afebrile, fossae clean, on soft diet…",
+  dictationExample: "no bleeding overnight… pulse 80… tonsillar fossae clean… start soft diet…",
   registerHint: "pack in situ, no active bleed, graft uptake as said, tonsillar fossae healthy, stoma patent",
   complaintPills: [
     "No fresh complaints",
@@ -508,6 +574,9 @@ const ENT: ProgressNoteConfig = {
 
 const PSYCHIATRY: ProgressNoteConfig = {
   wardPhrase: "a psychiatry ward",
+  medPresets: [] /* psychotropics are individually titrated — no fixed defaults */,
+  bedsideExample: "Day 5, slept well, calm on interview, taking medicines…",
+  dictationExample: "slept through the night… calm on interview… says mood is better… taking medicines… continue same…",
   registerHint: "MSE in short phrases — appearance, behaviour, mood, affect, thought, perception, insight — as said",
   complaintPills: [
     "No fresh complaints",
@@ -588,6 +657,9 @@ const PSYCHIATRY: ProgressNoteConfig = {
 
 const OPHTHALMOLOGY: ProgressNoteConfig = {
   wardPhrase: "an ophthalmology (eye) ward",
+  medPresets: SURGICAL_PRESETS,
+  bedsideExample: "POD 1 right eye SICS, VA 6/18, cornea clear, AC quiet…",
+  dictationExample: "no pain… right eye vision 6 by 18… cornea clear… AC quiet… continue drops…",
   registerHint: "VA as said, lids NAD, conj congested, cornea clear / oedema, AC formed and quiet, IOL in bag, IOP as said",
   complaintPills: [
     "No fresh complaints",
@@ -656,6 +728,9 @@ const OPHTHALMOLOGY: ProgressNoteConfig = {
 
 const DERMATOLOGY: ProgressNoteConfig = {
   wardPhrase: "a dermatology ward",
+  medPresets: [] /* steroids and immunosuppressants are dosed per patient — no fixed defaults */,
+  bedsideExample: "Day 4, afebrile, no new lesions, erosions healing…",
+  dictationExample: "no new lesions… erosions healing… oral mucosa better… continue same…",
   registerHint: "lesions as described — new lesions, crusting, epithelialisation, % BSA as said; mucosae as said",
   complaintPills: [
     "No fresh complaints",
@@ -709,6 +784,9 @@ const DERMATOLOGY: ProgressNoteConfig = {
 
 const BURNS_PLASTIC_SURGERY: ProgressNoteConfig = {
   wardPhrase: "a burns and plastic-surgery ward",
+  medPresets: SURGICAL_PRESETS,
+  bedsideExample: "PBD 4, afebrile, urine output 40 ml/h, slough over back…",
+  dictationExample: "afebrile… urine output 40 ml per hour… slough over the back… graft take good… dressing tomorrow…",
   registerHint: "wound as described — slough, granulation, graft take %, donor site; urine output as said",
   complaintPills: [
     "No fresh complaints",
@@ -771,6 +849,9 @@ const BURNS_PLASTIC_SURGERY: ProgressNoteConfig = {
 
 const ORTHOPAEDICS: ProgressNoteConfig = {
   wardPhrase: "an orthopaedics ward",
+  medPresets: SURGICAL_PRESETS,
+  bedsideExample: "POD 2 ORIF tibia, afebrile, distal pulses felt, toes moving…",
+  dictationExample: "pain less… pulse 84… distal pulses felt… toes moving well… start static quads…",
   registerHint: "limb elevated, DNVD intact, cast / slab intact, wound healthy, SLR / active toe movements as said",
   complaintPills: [
     "No fresh complaints",
@@ -836,6 +917,9 @@ const ORTHOPAEDICS: ProgressNoteConfig = {
 
 const UROLOGY: ProgressNoteConfig = {
   wardPhrase: "a urology ward",
+  medPresets: SURGICAL_PRESETS,
+  bedsideExample: "POD 1 TURP, catheter draining clear, irrigation stopped…",
+  dictationExample: "no fresh complaints… pulse 80… catheter draining clear… stop irrigation…",
   registerHint: "P/A soft, catheter in situ draining clear / haematuria, CBI running, drain output as said, stent as said",
   complaintPills: [
     "No fresh complaints",
@@ -897,6 +981,9 @@ const UROLOGY: ProgressNoteConfig = {
 
 const NEUROSURGERY: ProgressNoteConfig = {
   wardPhrase: "a neurosurgery ward",
+  medPresets: SURGICAL_PRESETS,
+  bedsideExample: "POD 2, GCS 15, pupils equal and reacting, moving all limbs…",
+  dictationExample: "GCS 15… pupils equal and reacting… moving all four limbs… continue same…",
   registerHint: "GCS E_V_M_ as said, pupils B/L NSRL, power as graded when said, wound healthy, drain output as said",
   complaintPills: [
     "No fresh complaints",
@@ -957,6 +1044,9 @@ const NEUROSURGERY: ProgressNoteConfig = {
 
 const PAEDIATRICS: ProgressNoteConfig = {
   wardPhrase: "a paediatrics ward",
+  medPresets: [] /* weight-based: a fixed adult dose is wrong for a child */,
+  bedsideExample: "Day 3, afebrile, feeding well, well hydrated, plan repeat CBC…",
+  dictationExample: "afebrile overnight… feeding well… heart rate 120… well hydrated… chest clear…",
   registerHint: "active / lethargic, feeding well, no chest indrawing, NVBS, P/A soft, CFT < 3 s as said, weight as said",
   complaintPills: [
     "No fresh complaints",
@@ -1008,6 +1098,16 @@ const PAEDIATRICS: ProgressNoteConfig = {
 
 const EMERGENCY_MEDICINE: ProgressNoteConfig = {
   wardPhrase: "an emergency department / emergency ward",
+  medPresets: [
+    // Adult defaults with no NSAID or tramadol: an undifferentiated patient's kidneys,
+    // bleeding risk and sensorium are not yet known.
+    "Inj Pantoprazole 40 mg IV OD",
+    "Inj Ondansetron 4 mg IV TDS",
+    "Inj Paracetamol 1 g IV SOS",
+    "Nebulisation — Duolin / Budecort",
+  ],
+  bedsideExample: "Reassessed, BP 110/70, SpO2 98% on room air, airway patent, plan repeat ABG…",
+  dictationExample: "airway patent… BP 110 by 70, pulse 96… SpO2 98 on room air… repeat ABG…",
   registerHint: "airway patent, NVBS, S1 S2 +, P/A soft, GCS as said, FAST as said",
   complaintPills: [
     "No fresh complaints",
@@ -1076,4 +1176,43 @@ export const DEFAULT_PROGRESS_NOTE_CONFIG = GENERAL_SURGERY;
 /** Same "degrade, don't crash" rule as getSpecialtyPack(): an unknown key is general surgery. */
 export function progressNoteConfigFor(key: string | null | undefined): ProgressNoteConfig {
   return (key && PROGRESS_NOTE_CONFIGS[key as SpecialtyKey]) || DEFAULT_PROGRESS_NOTE_CONFIG;
+}
+
+/** The chips this ward's Medications card offers. */
+export function medPresetsFor(specialty: string | null | undefined): string[] {
+  return progressNoteConfigFor(specialty).medPresets;
+}
+
+/** Every preset on any ward — what the server action treats as an unconfirmed default, so a
+ *  chip saves amber whichever ward offered it. */
+export const MED_PRESETS = Array.from(new Set(Object.values(PROGRESS_NOTE_CONFIGS).flatMap((c) => c.medPresets)));
+
+/** Headings whose empty line prints with open space below rather than nothing — a finding is
+ *  written as a sentence. C/O and Assessment on every ward, plus this ward's exam lines. */
+export function openSpaceHeadings(config: ProgressNoteConfig): string[] {
+  return [
+    "C/O",
+    ...config.examSections.filter((s) => s.printOpenSpace !== false).map((s) => s.printLabel),
+    "Assessment",
+    ...(config.bowelLine ? ["Flatus / Stool"] : []),
+  ];
+}
+
+/**
+ * The sections the patient page's live dictation sorts into. Drain and intake/output findings
+ * always have a home (oncology records lines as drains, medicine charts I/O); only a ward with
+ * a drain or catheter line calls it drains.
+ */
+export function liveRoundSections(config: ProgressNoteConfig): { key: string; label: string; drug?: boolean }[] {
+  const drains = config.examSections.some((s) => /drain|catheter/.test(s.id));
+  return [
+    { key: "history", label: "Complaints & history" },
+    { key: "vital", label: "Vitals" },
+    { key: "exam", label: "Examination" },
+    { key: "drain", label: drains ? "Drains & intake/output" : "Lines & intake/output" },
+    { key: "dx", label: "Diagnosis & procedure" },
+    { key: "medication", label: "Medications", drug: true },
+    { key: "lab", label: "Investigations" },
+    { key: "plan", label: "Plan & to-do" },
+  ];
 }

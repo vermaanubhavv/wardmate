@@ -50,7 +50,7 @@ const uid = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.r
 // which unit a discharge is written on already says who the consultant is (compiled in from the
 // ward's own setting, lib/unit-consultants.ts), so this is a dropdown to correct it, not a box
 // to retype it every time and risk a typo on the paper.
-const DEPARTMENT_SUGGESTIONS = ["General Surgery", "Surgical Gastroenterology", "Surgical Oncology"];
+const SURGICAL_DEPARTMENTS = ["General Surgery", "Surgical Gastroenterology", "Surgical Oncology"];
 const UNIT_SUGGESTIONS = ["Unit Alpha", "Unit 1", "Unit 2", "Unit 3", "Unit 4"];
 const CONSULTANT_SUGGESTIONS = Array.from(new Set(Object.values(DEFAULT_UNIT_CONSULTANTS)));
 const ADMISSION_TYPES = ["Emergency", "Elective"];
@@ -182,6 +182,8 @@ export default function DischargeWorkspace({
     () => stepsFor(profile, hasHistopathology, oneOff),
     [profile, hasHistopathology, oneOff]
   );
+  // The unit's own department first; surgery's sub-departments only where the unit operates.
+  const departmentSuggestions = [...new Set([profile.specialtyLabel, ...(profile.operative ? SURGICAL_DEPARTMENTS : [])])];
   const [dirty, setDirty] = useState<Set<DischargeSectionId>>(new Set());
   const [pending, startTransition] = useTransition();
   const [isFinalising, setIsFinalising] = useState(false);
@@ -769,8 +771,8 @@ export default function DischargeWorkspace({
       case "admission":
         return (
           <div className="grid grid-cols-2 gap-3">
-            <SuggestField label="Department" value={draft.admission.department} options={DEPARTMENT_SUGGESTIONS} onChange={(v) => patch("admission", "admission", { ...draft.admission, department: v })} />
-            <SuggestField label="Specialty" value={draft.admission.specialty} options={DEPARTMENT_SUGGESTIONS} placeholder={profile.specialtyLabel} onChange={(v) => patch("admission", "admission", { ...draft.admission, specialty: v })} />
+            <SuggestField label="Department" value={draft.admission.department} options={departmentSuggestions} onChange={(v) => patch("admission", "admission", { ...draft.admission, department: v })} />
+            <SuggestField label="Specialty" value={draft.admission.specialty} options={departmentSuggestions} placeholder={profile.specialtyLabel} onChange={(v) => patch("admission", "admission", { ...draft.admission, specialty: v })} />
             <Field label="Ward" value={draft.admission.ward} onChange={(v) => patch("admission", "admission", { ...draft.admission, ward: v })} />
             <Field label="Bed" value={draft.admission.bed} onChange={(v) => patch("admission", "admission", { ...draft.admission, bed: v })} />
             <SelectField label="Consultant" value={draft.admission.consultant} options={CONSULTANT_SUGGESTIONS} onChange={(v) => patch("admission", "admission", { ...draft.admission, consultant: v })} />
@@ -845,12 +847,23 @@ export default function DischargeWorkspace({
                 <div key={p.id} className="flex flex-col gap-2 rounded-[10px] border border-line p-2.5">
                   <SuggestField label="Procedure" value={p.name} options={profile.procedureSuggestions} onChange={(v) => setP({ name: v })} />
                   <Field label="Date" type="date" value={p.date} onChange={(v) => setP({ date: v || null })} />
-                  <Field label="Indication" value={p.indication} onChange={(v) => setP({ indication: v })} />
-                  <Field label="Anaesthesia" value={p.anaesthesia} onChange={(v) => setP({ anaesthesia: v })} />
-                  <Area label="Significant findings" value={p.findings} onChange={(v) => setP({ findings: v })} rows={2} />
-                  <Field label="Drains" value={p.drains} onChange={(v) => setP({ drains: v })} />
-                  <Field label="Complications" value={p.complications} onChange={(v) => setP({ complications: v })} />
-                  <Field label="Outcome" value={p.outcome} onChange={(v) => setP({ outcome: v })} />
+                  {/* A unit that does not operate prints one line — what, when, what it found —
+                      so it asks only for that. */}
+                  {profile.operative ? (
+                    <>
+                      <Field label="Indication" value={p.indication} onChange={(v) => setP({ indication: v })} />
+                      <Field label="Anaesthesia" value={p.anaesthesia} onChange={(v) => setP({ anaesthesia: v })} />
+                      <Area label="Significant findings" value={p.findings} onChange={(v) => setP({ findings: v })} rows={2} />
+                      <Field label="Drains" value={p.drains} onChange={(v) => setP({ drains: v })} />
+                      <Field label="Complications" value={p.complications} onChange={(v) => setP({ complications: v })} />
+                      <Field label="Outcome" value={p.outcome} onChange={(v) => setP({ outcome: v })} />
+                    </>
+                  ) : (
+                    <>
+                      <Area label="Key findings" value={p.findings} onChange={(v) => setP({ findings: v })} rows={2} />
+                      <Field label="Complications" value={p.complications} onChange={(v) => setP({ complications: v })} />
+                    </>
+                  )}
                   <button type="button" onClick={() => patch("procedures", "procedures", draft.procedures.filter((_, j) => j !== i))} className="self-start text-caption text-muted">
                     Remove procedure
                   </button>
@@ -868,19 +881,10 @@ export default function DischargeWorkspace({
             >
               ＋ Add a procedure
             </OptionRow>
-            {/* A positive statement the resident makes, never a default: offered only on an
-                empty card, and stored as a row that prints as written. */}
             {!profile.operative && draft.procedures.length === 0 && (
-              <OptionRow
-                dashed
-                onClick={() =>
-                  patch("procedures", "procedures", [
-                    { id: uid(), name: NO_PROCEDURE_NAME, date: null, indication: null, anaesthesia: null, findings: null, drains: null, complications: null, outcome: null, source: "resident" as const },
-                  ])
-                }
-              >
-                No procedure done
-              </OptionRow>
+              <p className="text-caption text-muted">
+                Add only a procedure actually done this admission. With none, this section is left off the summary.
+              </p>
             )}
           </>
         );
@@ -1236,7 +1240,7 @@ export default function DischargeWorkspace({
           <>
             <div className="flex flex-col gap-2">
               <p className="text-caption leading-[1.45] text-muted">Clear tasks the patient must do. Prefer 0–3.</p>
-              <StringList items={draft.patientActions} onChange={(v) => patch("patientActions", "patientActions", v)} placeholder="e.g. Attend Surgery OPD after 7 days for wound review" noneLabel="None." />
+              <StringList items={draft.patientActions} onChange={(v) => patch("patientActions", "patientActions", v)} placeholder={profile.operative ? "e.g. Attend Surgery OPD after 7 days for wound review" : `e.g. Attend ${profile.specialtyLabel} OPD after 7 days with reports`} noneLabel="None." />
             </div>
 
             <div className="my-1 border-t border-line" />
