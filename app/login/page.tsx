@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Mark from "@/app/mark";
-import InstallHint from "@/app/install-hint";
+import InstallHint, { isNativeApp, subscribeNever } from "@/app/install-hint";
 import { Mail, KeyRound, TriangleAlert } from "lucide-react";
 
 /**
@@ -52,6 +52,10 @@ export default function LoginPage() {
 
   // /auth/callback sends the doctor back here with a reason when Google did not work out.
   const failed = useSearchParams().get("failed");
+
+  // Google refuses OAuth inside an embedded web view (disallowed_useragent), so in the iOS app
+  // the button could only fail. The email code is the sign-in that works there.
+  const nativeApp = useSyncExternalStore(subscribeNever, isNativeApp, () => false);
 
   /**
    * Hand off to Google, and come back at /auth/callback with a code to exchange.
@@ -137,7 +141,7 @@ export default function LoginPage() {
         </div>
       </header>
 
-      {step === "email" && (
+      {step === "email" && !nativeApp && (
         <div className="flex flex-col gap-4">
           <button
             type="button"

@@ -47,3 +47,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# model comparison state and its own API key (scripts/eval-models)
+/.eval-models/

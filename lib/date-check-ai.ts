@@ -48,8 +48,7 @@ export async function checkDates(text: string, anchors: DateAnchors): Promise<st
         model: FAST_MODEL,
         max_tokens: 1500,
         system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
-        // No `effort`: Haiku rejects it with a 400 (see lib/final-check.ts).
-        output_config: { format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> } },
+        output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> } },
         messages: [{ role: "user", content: text }],
       },
       { timeout: TIMEOUT_MS, maxRetries: 0 }

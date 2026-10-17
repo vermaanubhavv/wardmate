@@ -291,8 +291,10 @@ async function routeWithHaiku(
     model: ROUTING_MODEL,
     max_tokens: 700,
     system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
-    // No `effort`: Haiku 4.5 rejects it with a 400, which failed every fallback fragment.
+    // Low effort: Haiku 5.5 thinks by default and this sits behind live dictation. (Haiku 4.5
+    // rejected `effort` with a 400; Haiku 5.5 accepts it — lib/model.ts FAST_MODEL.)
     output_config: {
+      effort: "low",
       format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> },
     },
     messages: [

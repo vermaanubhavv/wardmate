@@ -148,8 +148,7 @@ export async function finalCheck(fields: Record<string, string>, what: string, m
           max_tokens: 2000,
           system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
           output_config: {
-            // Haiku rejects `effort` outright (400), which the failsafe would swallow as "skipped".
-            ...(model === AI_MODEL ? { effort: "low" as const } : {}),
+            effort: "low",
             format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> },
           },
           messages: [{ role: "user", content: `The finished ${what}, field by field:\n\n${JSON.stringify(fields, null, 2)}` }],
