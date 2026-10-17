@@ -42,6 +42,8 @@ type Ctx = {
 };
 
 let ctx: Ctx | null = null;
+/** Requests made by the grader (cases.ts judge()), never swapped to the config's model. */
+export const judges = new WeakSet<object>();
 const answers = new Map<string, Stored>();
 export const captured: Captured[] = [];
 /** custom_id → the production model of that call, for the report. */
@@ -84,7 +86,11 @@ Messages.prototype.create = function (params: Anthropic.MessageCreateParams) {
   if (got?.type === "succeeded") return Promise.resolve(got.message) as never;
   if (got) return Promise.reject(new Error(`batch ${got.type}: ${JSON.stringify(got.error ?? "")}`)) as never;
 
-  captured.push({ custom_id, key, params: override(params as Anthropic.MessageCreateParamsNonStreaming, c.config) });
+  // The grader always runs as written; a later call outside the config's routes (a Haiku
+  // proofread after a Sonnet note) keeps its production model.
+  const keep = judges.has(params) || (c.config.appliesTo && !c.config.appliesTo(prod));
+  const p = params as Anthropic.MessageCreateParamsNonStreaming;
+  captured.push({ custom_id, key, params: keep ? p : override(p, c.config) });
   c.signal("captured");
   return new Promise(() => {}) as never;
 } as typeof Messages.prototype.create;

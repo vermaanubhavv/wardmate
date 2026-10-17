@@ -20,6 +20,7 @@
  *   --repeats <n>     runs per case and config (default 2). Safety needs zero failures in all.
  *   --configs a,b     subset of the configs below.
  *   --only route,...  subset of routes.
+ *   --set A,B         which case sets to run (default A; see Case.set in cases.ts).
  *   --budget <usd>    cap across ALL runs (default 100).
  *   --dry             capture and price only; submit nothing.
  */
@@ -36,6 +37,7 @@ const REPEATS = Number(arg("repeats") ?? 2);
 const BUDGET = Number(arg("budget") ?? 100);
 const DRY = process.argv.includes("--dry");
 const ONLY = arg("only")?.split(",");
+const SETS = (arg("set") ?? "A").split(",");
 
 const isSonnetRoute = (m: string) => m.startsWith("claude-sonnet");
 const CONFIGS: Config[] = [
@@ -124,7 +126,7 @@ loadAnswers(stored);
 
 // --- 2. replay / capture --------------------------------------------------------------------
 const { allCases } = await import("./cases.ts");
-const cases = allCases().filter((c) => !ONLY || ONLY.includes(c.route));
+const cases = allCases().filter((c) => (!ONLY || ONLY.includes(c.route)) && SETS.includes(c.set ?? "A"));
 type Row = { route: string; caseId: string; config: string; rep: number; failures: string[]; error?: string; ids: string[] };
 const rows: Row[] = [];
 let waiting = 0;
