@@ -55,8 +55,6 @@ const CONFIGS: Config[] = [
   { id: "sonnet-5-5", model: "claude-sonnet-5-5", appliesTo: isSonnetRoute },
   { id: "haiku-5-5", model: "claude-haiku-5-5" },
   { id: "haiku-5-5-low", model: "claude-haiku-5-5", effort: "low" },
-  // The ceiling: worth knowing where Sonnet 5.5 falls short, not a candidate for every route.
-  { id: "opus-5-5", model: "claude-opus-5-5", appliesTo: isSonnetRoute },
 ];
 const configs = arg("configs") ? CONFIGS.filter((c) => arg("configs")!.split(",").includes(c.id)) : CONFIGS;
 
@@ -97,11 +95,14 @@ const ANSWERS = `${DIR}/answers.jsonl`;
 const PENDING = `${DIR}/pending.json`;
 
 const stored = new Map<string, Stored>();
+/** Wall-clock ms per live call — batches have none. Latency matters where a doctor waits. */
+const latency = new Map<string, number>();
 for (const file of [...WITH.map((r) => `.eval-models/${r}/answers.jsonl`), ANSWERS]) {
   if (!existsSync(file)) continue;
   for (const line of readFileSync(file, "utf8").split("\n").filter(Boolean)) {
-    const r = JSON.parse(line) as { custom_id: string; result: Stored };
+    const r = JSON.parse(line) as { custom_id: string; result: Stored; ms?: number };
     stored.set(r.custom_id, r.result);
+    if (r.ms) latency.set(r.custom_id, r.ms);
   }
 }
 const appendAnswers = (lines: string[]) =>
@@ -196,6 +197,7 @@ if (captured.length) {
       while (next < captured.length) {
         const { custom_id, params } = captured[next++];
         let result: Stored;
+        const t0 = Date.now();
         try {
           const message = (await realCreate.call(api.messages, params)) as Anthropic.Message;
           cost += costOf(message.model, message.usage);
@@ -203,7 +205,7 @@ if (captured.length) {
         } catch (e) {
           result = { type: "errored", error: e instanceof Error ? e.message : String(e) };
         }
-        lines.push(JSON.stringify({ custom_id, result }));
+        lines.push(JSON.stringify({ custom_id, result, ms: Date.now() - t0 }));
       }
     }));
     appendAnswers(lines);
@@ -253,7 +255,9 @@ for (const route of routes) {
     const cut = msgs.filter((m) => m.stop_reason === "max_tokens").length;
     const refused = msgs.filter((m) => m.stop_reason === "refusal").length;
     const prod = rs[0].ids[0] ? productionModel.get(rs[0].ids[0]) : undefined;
-    return `${passed}/${byCase.size}${safety ? ` ⚠${safety}` : ""} · $${(cost * 1000).toFixed(2)}/1k${cut ? ` · ${cut} cut off` : ""}${refused ? ` · ${refused} refused` : ""}${cfg === "prod" && prod ? ` (${prod})` : ""}`;
+    const ms = rs.map((r) => r.ids.reduce((t, id) => t + (latency.get(id) ?? 0), 0)).filter(Boolean).sort((a, b) => a - b);
+    const p50 = ms.length ? ` · ${(ms[Math.floor(ms.length / 2)] / 1000).toFixed(1)} s` : "";
+    return `${passed}/${byCase.size}${safety ? ` ⚠${safety}` : ""} · $${(cost * 1000).toFixed(2)}/1k${cut ? ` · ${cut} cut off` : ""}${refused ? ` · ${refused} refused` : ""}${p50}${cfg === "prod" && prod ? ` (${prod})` : ""}`;
   });
   report.push(`| ${route} | ${cells.join(" | ")} |`);
 }

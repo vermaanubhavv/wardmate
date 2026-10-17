@@ -7,7 +7,7 @@
  * The PNGs are committed so every run sends byte-identical images.
  */
 import { execFileSync } from "node:child_process";
-import { mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const OUT = fileURLToPath(new URL("./images/", import.meta.url));
@@ -27,7 +27,31 @@ const rows = (r) => `<table><tr><th>Test</th><th>Result</th><th>Unit</th><th>Ref
   .map(([t, v, u, ref, cls]) => `<tr class="${cls ?? ""}"><td>${t}</td><td>${v}</td><td>${u}</td><td>${ref}</td></tr>`)
   .join("")}</table>`;
 
+// Handwriting: macOS's own hand fonts on ruled paper, slightly tilted. The traps are the kinds
+// lib/model.ts records from a real sheet — a blank duration, "Sx | BT", "1½ yr" — with invented
+// content.
+const hand = (body, font = "Noteworthy") => page(
+  `<div class="sheet">${body}</div>`,
+  `body{background:#f4f1e6}.sheet{font:20px/34px "${font}",cursive;color:#1b2a6b;transform:rotate(-0.8deg);
+   background:repeating-linear-gradient(#f4f1e6 0 33px,#9fb4d8 33px 34px);padding:6px 18px;width:700px}
+   .p{font:bold 15px "Courier New",monospace;color:#111}`
+);
+
 const PAGES = {
+  "hw-case-sheet.png": hand(`<div>C/O pain abdomen since ________</div>
+    <div>vomiting × 3 episodes, no fever</div>
+    <div>LCB = 14 yr back · postmenopausal 1½ yr</div>
+    <div>no h/o prev Sx | BT</div>
+    <div>K/c/o HTN on Tab Amlo 5 mg OD</div>
+    <div>O/E: P/A soft, mild tenderness epigastrium</div>`),
+  "hw-register.png": hand(`<div>1. Ramkali 58/F bed 4 — Ca breast, post MRM POD 3, drain 40 ml</div>
+    <div>2. Sohan 33/M bed 6 — appendicular lump</div>
+    <div>3. bed 9 Farida 45/F — cholelithiasis, USG done, plan lap chole Mon</div>`, "Bradley Hand"),
+  "hw-admission.png": hand(`<div class="p">ADMISSION SLIP (SYNTHETIC) — UHID/IP No: <span style="font:20px Noteworthy">2026/IP/0457</span></div>
+    <div><span class="p">Name:</span> Kamlesh &nbsp; <span class="p">Age/Sex:</span> 47/F &nbsp; <span class="p">Bed:</span> SW-7</div>
+    <div><span class="p">MRD No:</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="p">DOA:</span> 03/10/2026</div>
+    <div><span class="p">Diagnosis:</span> Rt inguinal hernia</div>
+    <div><span class="p">Planned:</span> hernioplasty</div>`),
   "cbc.png": page(head("COMPLETE BLOOD COUNT") + rows([
     ["Haemoglobin", "9.8", "g/dL", "13.0 - 17.0"],
     ["Total Leucocyte Count", "14,200", "/cumm", "4000 - 11000"],
@@ -60,6 +84,8 @@ const PAGES = {
 };
 
 for (const [name, html] of Object.entries(PAGES)) {
+  // Committed images stay byte-identical; delete one to re-render it.
+  if (existsSync(`${OUT}${name}`)) continue;
   const src = `${OUT}${name}.html`;
   writeFileSync(src, html);
   execFileSync(CHROME, ["--headless=new", "--disable-gpu", "--hide-scrollbars", `--screenshot=${OUT}${name}`, "--window-size=760,520", `file://${src}`], { stdio: "ignore" });

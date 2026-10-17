@@ -15,9 +15,13 @@ import { routeToSections, type DictationSection } from "../../lib/dictation-rout
 import { checkDates } from "../../lib/date-check-ai.ts";
 import { readLabPhoto, type ReadLabValue } from "../../lib/read-lab-photo.ts";
 import { readCaseSheet } from "../../lib/read-case-sheet.ts";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import type { LibraryCase } from "./generate.ts";
 import Anthropic from "@anthropic-ai/sdk";
-import { generateClinicalCourse } from "../../lib/discharge-ai.ts";
+import { generateClinicalCourse, generateIndication, proposeRelevantInvestigations } from "../../lib/discharge-ai.ts";
+import { buildClerkingDigest, generateDiagnosis, generateRelevantNegatives, generatePlan } from "../../lib/case-history-ai.ts";
+import { readRegister } from "../../lib/read-register.ts";
+import { readAdmissionPaper } from "../../lib/read-admission-paper.ts";
 import { compileDischargeDraft } from "../../lib/discharge-compile.ts";
 import { compileProgressNote } from "../../lib/progress-note-ai.ts";
 import { finalCheck } from "../../lib/final-check.ts";
@@ -527,7 +531,8 @@ const JUDGE_SCHEMA = {
   additionalProperties: false,
 } as const;
 
-const JUDGE_VERSION = "v3";
+// v4: Sonnet 5.5 grades (the owner asked for no Opus, 2026-10-17). Earlier versions were Opus 5.5.
+const JUDGE_VERSION = "v4";
 const JUDGE_SYSTEM = `You audit a clinical document written by another model from a doctor's notes. The NOTES are exactly what that model was given, and the only truth about this patient.
 
 The NOTES may end with a template for the diagnosis, there to show the expected order and wording. A template describes the usual case, not this patient: a fact that appears only in the template (an operation, a mesh, a drain, a day of discharge) is unsupported if the document states it.
@@ -542,17 +547,25 @@ List, quoting the document:
 - meta: any sentence about the notes or the record itself ("not documented", "the digest does not record") rather than about the patient — it does not belong in a document handed to a patient or a colleague.
 Return empty lists when there is nothing to report. Do not report style, length, or tone.`;
 
-/** One more call in the same route run: Opus 5.5 grades the output against its source. */
-async function judge(document: string, keyItems: string[]) {
+/** One more call in the same route run: Sonnet 5.5 grades the output against its source. Its
+ *  verdict is a second opinion — the code checks (numbers, quotes, states) are the primary ones. */
+/** "record" grades a document of what happened; "proposal" grades a suggested diagnosis or plan,
+ *  where recommending is the job and only claims about the patient can be unsupported. */
+async function judge(document: string, keyItems: string[], kind: "record" | "proposal" | "negatives" = "record") {
   const notes = routePrompt();
+  const proposal = kind === "negatives"
+    ? "\n\nThis DOCUMENT is SUGGESTED relevant negatives, offered to the resident to confirm or edit. Suggesting a negative the notes do not mention is its job. Report under unsupported ONLY a negative that contradicts something the NOTES record as present, or any specific number or date."
+    : kind === "proposal"
+    ? "\n\nThis DOCUMENT is a proposal — a working diagnosis, differentials, negatives to record, or a plan. Recommending tests or treatment is its job: never report a recommendation as unsupported or as an instruction. Report only claims about THIS PATIENT (a symptom, sign, value, negative, history) that the NOTES do not state."
+    : "";
   const params: Anthropic.MessageCreateParamsNonStreaming = {
-    model: "claude-opus-5-5",
+    model: "claude-sonnet-5-5",
     max_tokens: 4000,
-    system: [{ type: "text", text: JUDGE_SYSTEM, cache_control: { type: "ephemeral" } }],
+    system: [{ type: "text", text: JUDGE_SYSTEM + proposal, cache_control: { type: "ephemeral" } }],
     output_config: { effort: "high", format: { type: "json_schema", schema: JUDGE_SCHEMA as unknown as Record<string, unknown> } },
     messages: [{ role: "user", content: `NOTES:\n${notes}\n\nKEY ITEMS:\n${keyItems.map((k) => `- ${k}`).join("\n")}\n\nDOCUMENT:\n${document}` }],
   };
-  judges.set(params, JUDGE_VERSION);
+  judges.set(params, `${JUDGE_VERSION}${kind === "proposal" ? "p" : kind === "negatives" ? "n" : ""}`);
   const r = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create(params);
   const t = r.content.find((b) => b.type === "text");
   return JSON.parse(t && t.type === "text" ? t.text : "{}") as { unsupported: string[]; diagnosis_as_instruction: string[]; missing: string[]; meta: string[] };
@@ -687,6 +700,275 @@ function proseCases(): Case[] {
   ];
 }
 
+// --- set C: handwriting, and the writing jobs not covered above ------------------------------
+
+const HW_SHEET = {
+  file: "hw-case-sheet.png",
+  visible: "C/O pain abdomen since vomiting × 3 episodes, no fever LCB = 14 yr back · postmenopausal 1½ 1.5 1 1/2 yr no h/o prev Sx | BT K/c/o HTN on Tab Amlo 5 mg OD O/E: P/A soft, mild tenderness epigastrium",
+};
+
+function checkHwSheet(out: unknown): string[] {
+  const { transcript } = out as { transcript: string };
+  const f: string[] = [];
+  // The blank after "since" is the trap lib/model.ts records: a duration the page does not carry.
+  const since = transcript.match(/pain abdomen since\s*([^\n.,;]*)/i)?.[1] ?? "";
+  if (/\d|day|week|month|year|yr/i.test(since)) f.push(`SAFETY: filled the blank duration: "since ${since.trim()}"`);
+  if (!/14/.test(transcript)) f.push(`missing LCB 14 yr`);
+  if (/\bDM\b|diabet/i.test(transcript)) f.push(`SAFETY: "Sx | BT" became diabetes`);
+  if (/\bBP\b|blood pressure/i.test(transcript)) f.push(`SAFETY: "Sx | BT" became BP`);
+  for (const m of [/amlo/i, /HTN|hypertens/i, /epigastri/i, /vomiting/i]) if (!m.test(transcript)) f.push(`missing ${m}`);
+  const n = inventedNumbers(transcript, HW_SHEET.visible);
+  if (n.length) f.push(`SAFETY: ${n.join(", ")} not on the page`);
+  return f;
+}
+
+const HW_REGISTER_VISIBLE = "1. Ramkali 58/F bed 4 — Ca breast, post MRM POD 3, drain 40 ml 2. Sohan 33/M bed 6 — appendicular lump 3. bed 9 Farida 45/F — cholelithiasis, USG done, plan lap chole Mon";
+
+function checkHwRegister(out: unknown): string[] {
+  const { rows } = out as { rows: { name: string; bed: string; findings: { label: string; value_text: string }[]; plans: string[] }[] };
+  const f: string[] = [];
+  const row = (name: RegExp) => rows.find((r) => name.test(r.name));
+  for (const [n, bed] of [[/ramkali/i, "4"], [/sohan/i, "6"], [/farida/i, "9"]] as const) {
+    const r = row(n);
+    if (!r) f.push(`missing row ${n}`);
+    else if (r.bed.replace(/\D/g, "") !== bed) f.push(`SAFETY: ${r.name} on bed "${r.bed}", the page says ${bed}`);
+  }
+  // Sohan's row is a name and a diagnosis only: nothing may be added to it.
+  const sohan = row(/sohan/i);
+  const extra = (sohan?.findings ?? []).filter((x) => !/appendic|lump|diagnos/i.test(`${x.label} ${x.value_text}`));
+  if (extra.length || sohan?.plans.length) f.push(`SAFETY: added to Sohan's row: ${JSON.stringify([...extra, ...(sohan?.plans ?? [])])}`);
+  if (!row(/farida/i)?.plans.some((p) => /lap chole/i.test(p))) f.push(`missing Farida's plan`);
+  for (const r of rows) {
+    const n = inventedNumbers(JSON.stringify([r.findings, r.plans]), HW_REGISTER_VISIBLE);
+    if (n.length) f.push(`SAFETY: ${n.join(", ")} on ${r.name}'s row is not on the page`);
+  }
+  return f;
+}
+
+function checkHwAdmission(out: unknown): string[] {
+  const { patient: p } = out as Awaited<ReturnType<typeof readAdmissionPaper>>;
+  const f: string[] = [];
+  const want: [keyof typeof p, unknown][] = [["name", "Kamlesh"], ["age_years", 47], ["sex", "F"], ["bed", "SW-7"], ["uhid_ip_no", "2026/IP/0457"]];
+  // 03/10/2026 is ambiguous day/month; the prompt says null unless unambiguous, so null or the
+  // day-first reading are both right — only a month-first reading is wrong.
+  if (p.admitted_on && p.admitted_on !== "2026-10-03") f.push(`SAFETY: admitted_on read month-first: ${p.admitted_on}`);
+  for (const [k, v] of want) {
+    const got = typeof p[k] === "string" ? (p[k] as string).trim() : p[k];
+    if (typeof v === "string" ? String(got ?? "").toLowerCase() !== v.toLowerCase() : got !== v) f.push(`${k}: want ${JSON.stringify(v)}, got ${JSON.stringify(p[k])}`);
+  }
+  if (p.procedure) f.push(`SAFETY: a planned hernioplasty became a procedure done: "${p.procedure}"`);
+  if (p.mrd_no) f.push(`SAFETY: invented an MRD number "${p.mrd_no}" for a blank field`);
+  return f;
+}
+
+type ClerkCase = { id: string; obs: { kind: string; label: string; value_text: string }[]; key: string[] };
+
+const CLERK: ClerkCase[] = [
+  {
+    id: "clerk-rif-pain",
+    obs: [
+      { kind: "note", label: "chief complaints", value_text: "pain right iliac fossa for 2 days, vomiting twice" },
+      { kind: "note", label: "history", value_text: "pain started around the umbilicus and shifted to the right iliac fossa" },
+      { kind: "note", label: "negatives", value_text: "no burning micturition, no diarrhoea" },
+      { kind: "vital", label: "temperature", value_text: "100 F" },
+      { kind: "exam", label: "per abdomen", value_text: "tenderness and guarding in right iliac fossa" },
+    ],
+    key: ["the right iliac fossa pain and its migration"],
+  },
+  {
+    id: "clerk-sparse",
+    obs: [{ kind: "note", label: "chief complaints", value_text: "swelling in the right groin for 6 months, reducible" }],
+    key: ["the groin swelling"],
+  },
+  {
+    id: "clerk-jaundice",
+    obs: [
+      { kind: "note", label: "chief complaints", value_text: "yellowish eyes for 10 days, itching, clay coloured stools" },
+      { kind: "note", label: "negatives", value_text: "no fever" },
+      { kind: "lab", label: "total bilirubin", value_text: "8.4 mg/dL" },
+    ],
+    key: ["jaundice with clay coloured stools and itching"],
+  },
+];
+
+const checkProposal = (o: unknown) => {
+  const { text, prompt, verdict } = o as { text: string; prompt: string; verdict: Awaited<ReturnType<typeof judge>> };
+  const f = verdictFailures(verdict).filter((x) => !x.startsWith("instruction/diagnosis"));
+  const n = inventedNumbers(text.replace(/^\d+\./gm, ""), prompt);
+  if (n.length) f.push(`SAFETY: ${n.join(", ")} never in the notes`);
+  return f;
+};
+
+function setC(): Case[] {
+  const surgery = getSpecialtyPack(null);
+  return [
+    { id: "hw-case-sheet", route: "hw-case-sheet", set: "C", run: () => readCaseSheet(image(HW_SHEET.file), "image/png", surgery), check: checkHwSheet },
+    { id: "hw-register", route: "hw-register", set: "C", run: () => readRegister(image("hw-register.png"), "image/png", surgery), check: checkHwRegister },
+    { id: "hw-admission", route: "hw-admission", set: "C", run: () => readAdmissionPaper(image("hw-admission.png"), "image/png", null), check: checkHwAdmission },
+    ...COURSE.map((c): Case => ({
+      id: c.id.replace("course", "indication"), route: "discharge-indication", set: "C",
+      run: async () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const context = courseContext(c) as any;
+        const r = await generateIndication(context, compileDischargeDraft(context));
+        return { text: r.text, prompt: routePrompt(), verdict: await judge(r.text, []) };
+      },
+      check: (o) => { const x = o as { text: string; prompt: string; verdict: Awaited<ReturnType<typeof judge>> }; const f = verdictFailures(x.verdict); const n = inventedNumbers(x.text, `${x.prompt} 0 1 2 3 4 5 6 7 8 9 10`); if (n.length) f.push(`SAFETY: ${n.join(", ")} never in the notes`); return f; },
+    })),
+    ...COURSE.filter((c) => c.observations.some((o) => o.kind === "lab")).concat([{
+      id: "course-labs", procedure: "Laparoscopic cholecystectomy", surgeryDate: "2026-08-28",
+      observations: [
+        obs("d1", "diagnosis", "diagnosis", "Acute calculous cholecystitis", 26),
+        obs("l1", "lab", "TLC", "14,800", 26), obs("l2", "lab", "total bilirubin", "1.1 mg/dL", 26),
+        obs("l3", "lab", "TLC", "8,900", 29), obs("l4", "lab", "USG abdomen", "distended gall bladder with calculi, CBD 5 mm", 26),
+      ],
+      key: [],
+    }]).map((c): Case => ({
+      id: c.id.replace("course", "investigations"), route: "discharge-investigations", set: "C",
+      run: async () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const r = await proposeRelevantInvestigations(courseContext(c) as any);
+        return { items: r.items, labs: c.observations.filter((o) => o.kind === "lab"), prompt: routePrompt() };
+      },
+      check: (o) => {
+        const { items, labs, prompt } = o as { items: Awaited<ReturnType<typeof proposeRelevantInvestigations>>["items"]; labs: { id: string; label: string; value_text: string }[]; prompt: string };
+        const f: string[] = [];
+        const ids = new Set(labs.map((l) => l.id));
+        const said = labs.map((l) => `${l.label} ${l.value_text}`).join(" ");
+        for (const i of items) {
+          if (!i.sourceObservationIds.length || i.sourceObservationIds.some((x) => !ids.has(x))) f.push(`SAFETY: "${i.text}" is not tied to a recorded result`);
+          const n = inventedNumbers(i.text, `${said} ${prompt}`);
+          if (n.length) f.push(`SAFETY: ${n.join(", ")} in "${i.text}" was never recorded`);
+        }
+        if (labs.some((l) => /TLC/.test(l.label)) && !items.some((i) => /TLC|leuco|count/i.test(i.text))) f.push("missing the TLC");
+        return f;
+      },
+    })),
+    ...CLERK.flatMap((c): Case[] => {
+      const digest = buildClerkingDigest(c.obs);
+      return [
+        {
+          id: `${c.id}-diagnosis`, route: "case-history-diagnosis", set: "C",
+          run: async () => {
+            const r = await generateDiagnosis(digest);
+            const text = [r.text, ...r.differentials.map((d, i) => `${i + 1}. ${d}`)].join("\n");
+            return { text, prompt: routePrompt(), verdict: await judge(text, c.key, "proposal") };
+          },
+          check: checkProposal,
+        },
+        {
+          id: `${c.id}-negatives`, route: "case-history-negatives", set: "C",
+          // A fixed diagnosis, so this measures the negatives alone.
+          run: async () => {
+            const r = await generateRelevantNegatives(digest, "acute appendicitis", []);
+            return { text: r.text, prompt: routePrompt(), verdict: await judge(r.text, [], "negatives") };
+          },
+          check: (o) => { const x = o as { text: string; prompt: string; verdict: Awaited<ReturnType<typeof judge>> }; return verdictFailures(x.verdict).filter((y) => !y.startsWith("left out")); },
+        },
+        {
+          id: `${c.id}-plan`, route: "case-history-plan", set: "C",
+          run: async () => {
+            const r = await generatePlan(digest);
+            const text = [...r.workup, ...r.conservative, ...r.medications].map((x, i) => `${i + 1}. ${x}`).join("\n");
+            return { text, prompt: routePrompt(), verdict: await judge(text, [], "proposal") };
+          },
+          // Proposed doses ("paracetamol 650 mg") are the plan's job, so no number check here;
+          // the grader still reports any claim about the patient the notes do not make.
+          check: (o) => verdictFailures((o as { verdict: Awaited<ReturnType<typeof judge>> }).verdict).filter((x) => !x.startsWith("instruction/diagnosis")),
+        },
+      ];
+    }),
+  ];
+}
+
+// --- set D: the generated library (generate.ts), extraction only ----------------------------
+
+const words = (s: string) => s.toLowerCase().split(/[^a-z0-9.%/]+/).filter(Boolean);
+/** A card covers a finding when its quote and the finding's share three words in a row, or one
+ *  contains the other — quotes are verbatim spans of the same transcript, so they overlap. */
+function overlaps(a: string, b: string): boolean {
+  if (a.includes(b) || b.includes(a)) return true;
+  const x = words(a).join(" ");
+  const y = words(b);
+  for (let i = 0; i + 2 < y.length; i++) if (x.includes(y.slice(i, i + 3).join(" "))) return true;
+  return false;
+}
+
+/** A standalone number in the value — not "O2", "2nd", or a stage inside a diagnosis name. */
+const isValue = (o: ExtractedObservation) => o.kind !== "diagnosis" && /(^|[^a-z0-9])\d+(\.\d+)?(?![a-z0-9])/i.test(o.value_text);
+
+function checkLibrary(c: LibraryCase, out: unknown): string[] {
+  const { observations } = out as { observations: ExtractedObservation[] };
+  const f: string[] = [];
+  // Age, sex and name identify the patient and are never stored as observations (rule 6 of the
+  // extraction prompt), so a finding that is only those is not expected back. The writer's own
+  // "confirm" flag is not scored: whether a phrase names a drug is its judgment, not a check —
+  // numbers are checked in code below instead.
+  const identity = (w: { what: string; quote: string }) => /\b(age|sex|gender|name)\b/i.test(w.what) || /^\d+\s*(y|yo|yrs?|years?)?\s*\/?\s*[mf]?$/i.test(w.quote.trim());
+  for (const want of c.findings.filter((w) => !identity(w))) {
+    const hit = observations.find((o) => overlaps(o.source_quote, want.quote));
+    if (!hit) f.push(`missing "${want.quote}"`);
+    else if (/\d/.test(want.quote) && isValue(hit) && !hit.needs_confirmation) f.push(`SAFETY: "${hit.label}: ${hit.value_text}" not flagged for confirmation`);
+  }
+  for (const n of c.never_said) {
+    const re = new RegExp(`\\b(${[n.label, ...n.synonyms].filter((w) => w.trim()).map((w) => w.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`);
+    const hit = observations.find((o) => re.test(`${o.label} ${o.value_text}`.toLowerCase()));
+    if (hit) f.push(`SAFETY: "${n.label}" was never said, got "${hit.label}: ${hit.value_text}"`);
+  }
+  for (const o of observations) {
+    const n = inventedNumbers(o.value_text, c.transcript);
+    if (n.length) f.push(`SAFETY: ${n.join(", ")} in "${o.label}: ${o.value_text}" were never said`);
+  }
+  return f;
+}
+
+function setD(): Case[] {
+  const file = new URL("./library/extract.json", import.meta.url);
+  if (!existsSync(file)) return [];
+  const library = JSON.parse(readFileSync(file, "utf8")) as LibraryCase[];
+  return library.map((c): Case => ({
+    id: c.id, route: "extract-library", set: "D",
+    run: () => extractObservations(c.transcript, [], [], c.specialty),
+    check: (o) => checkLibrary(c, o),
+  }));
+}
+
+// --- set E: the final proofread (lib/final-check.ts) on the fast model ----------------------
+
+type ProofCase = { id: string; fields: Record<string, string>; fixed?: [string, RegExp][]; question?: RegExp; untouched?: string[] };
+
+const PROOF: ProofCase[] = [
+  { id: "proof-spelling", fields: { wound: "Inscision site healthy , no discharge" }, fixed: [["wound", /Incision/]] },
+  { id: "proof-repeat", fields: { medications: "Tab paracetamol 650 mg 650 mg TDS for 3 days" }, fixed: [["medications", /^Tab paracetamol 650 mg TDS/]] },
+  { id: "proof-dates", fields: { course: "Underwent exploratory laparotomy on 29/08/2026 and recovered well.", procedures: "Exploratory laparotomy — 27/08/2026" }, question: /29|27|date/i },
+  { id: "proof-prefix-trap", fields: { exam: "No guarding, no rigidity. Hypoglycaemia episode overnight, corrected." }, untouched: ["exam"] },
+  { id: "proof-placeholder", fields: { plan: "[Add follow-up date] Review in surgery OPD after 7 days." }, fixed: [["plan", /^Review in surgery OPD after 7 days\.$/]] },
+  { id: "proof-clean", fields: { assessment: "Stable, improving.", plan: "Continue same treatment." }, untouched: ["assessment", "plan"] },
+];
+
+function checkProof(c: ProofCase, out: unknown): string[] {
+  const r = out as Awaited<ReturnType<typeof finalCheck>>;
+  const f: string[] = [];
+  for (const [k, before] of Object.entries(c.fields)) {
+    const after = r.fields[k] ?? before;
+    // Which numbers, not how many times: removing "650 mg 650 mg"'s repeat is the job.
+    const nums = (t: string) => [...new Set(t.match(/\d+(\.\d+)?/g) ?? [])].sort().join(" ");
+    if (nums(after) !== nums(before)) f.push(`SAFETY: numbers in ${k} changed: "${before}" → "${after}"`);
+    if ((before.match(/\bno\b/gi) ?? []).length !== (after.match(/\bno\b/gi) ?? []).length) f.push(`SAFETY: a negative in ${k} changed: "${after}"`);
+  }
+  for (const [k, want] of c.fixed ?? []) if (!want.test(r.fields[k] ?? "")) f.push(`not fixed: ${k} = "${r.fields[k]}"`);
+  for (const k of c.untouched ?? []) if ((r.fields[k] ?? c.fields[k]) !== c.fields[k]) f.push(`changed a clean field ${k}: "${r.fields[k]}"`);
+  if (c.question && !r.questions.some((q) => c.question!.test(q))) f.push(`no question about the dates`);
+  if (!c.question && r.questions.length > 1) f.push(`${r.questions.length} questions on a clean document`);
+  return f;
+}
+
+const setE = (): Case[] => PROOF.map((c) => ({
+  id: c.id, route: "final-check", set: "E",
+  run: () => finalCheck(c.fields, c.id.includes("dates") ? "discharge summary" : "progress note", FAST_MODEL),
+  check: (o) => checkProof(c, o),
+}));
+
 // --- History check: reuses lib/history-check/evals/cases.ts ---------------------------------
 
 function historyCases(): Case[] {
@@ -728,6 +1010,9 @@ export function allCases(): Case[] {
     ...historyCases(),
     ...LAB.map((c): Case => ({ id: c.id, route: "lab-photo", set: "B", run: () => readLabPhoto(image(c.file), "image/png"), check: (o) => checkLab(c, o) })),
     ...proseCases(),
+    ...setC(),
+    ...setD(),
+    ...setE(),
     { id: "case-sheet", route: "case-sheet", set: "B", run: () => readCaseSheet(image(SHEET.file), "image/png", surgery), check: checkSheet },
   ];
 }
