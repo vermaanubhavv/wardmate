@@ -12,10 +12,10 @@ import type { Specialty as LexiconSpecialty } from "@/lib/transcription/lexicon/
  * from the pack at the point of use instead of being hardcoded, so adding a third department
  * later is a new file in this folder, not a second app.
  *
- * THE RULE THIS FOLDER KEEPS: `general_surgery` reproduces today's behaviour EXACTLY. If the
- * database patch has not been run, or a ward carries a specialty nobody recognises,
- * `getSpecialtyPack()` returns the surgery pack and the app behaves exactly as it always has.
- * Degrade, don't crash — the same rule the glossary and the RPC fallbacks already follow.
+ * THE BASE IS `general` (lib/specialty/general.ts): a ward carrying a specialty nobody
+ * recognises gets the department-neutral pack, never another department's. Every department —
+ * general surgery included — is a pack on top of it, and each reproduces what its units already
+ * see. Degrade, don't crash.
  *
  * WHAT A PACK MUST NEVER TOUCH: the verbatim-quote guarantee in lib/extract.ts. A pack supplies
  * the words describing WHO is speaking; the check that every stored value can be quoted from
@@ -23,6 +23,7 @@ import type { Specialty as LexiconSpecialty } from "@/lib/transcription/lexicon/
  */
 
 export const SPECIALTY_KEYS = [
+  "general",
   "general_surgery",
   "medical_oncology",
   "internal_medicine",

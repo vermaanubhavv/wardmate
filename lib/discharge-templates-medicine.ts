@@ -26,7 +26,7 @@ import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-temp
 const adv = (items: { module: string; text: string }[]): AdviceItem[] =>
   items.map((it, i) => ({ id: `adv-${i}`, module: it.module, text: it.text }));
 
-const STANDARD_RED_FLAGS = [
+export const STANDARD_RED_FLAGS = [
   "Fever that returns or does not settle, or chills and rigors",
   "Breathlessness, chest pain, or a fast or irregular heartbeat",
   "Confusion, drowsiness, fainting, or a fit",

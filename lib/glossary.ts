@@ -63,7 +63,7 @@ function termPattern(wrong: string): RegExp {
 export async function correctTranscript(
   raw: string,
   /** The unit's pack, so a surgical-only rule ("PAS" to PAC) never fires on a medicine ward.
-   *  Omitted, it is general surgery — what every caller got before packs existed. */
+   *  Omitted, it is the general (no-department) pack: no surgical-only rule runs. */
   pack?: SpecialtyPack
 ): Promise<{ text: string; changes: Correction[] }> {
   const first = applyCorrections(raw, pack);

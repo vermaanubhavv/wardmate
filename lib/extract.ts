@@ -3,7 +3,7 @@ import { judgeObservations, type PatientIdentifiers, type TaskCategoryJudgment }
 import { AI_MODEL } from "@/lib/model";
 import { traced, recordAiUsage } from "@/lib/observability";
 import { isIdentifierLabel } from "@/lib/patients";
-import { generalSurgeryPack, getSpecialtyPack, type SpecialtyPack } from "@/lib/specialty";
+import { generalPack, getSpecialtyPack, type SpecialtyPack } from "@/lib/specialty";
 import { extractExamplesFor, type ExtractExamples } from "@/lib/specialty/prompt-words";
 
 const OBSERVATION_KINDS = [
@@ -112,7 +112,7 @@ Set urgency to null for every observation that is not a plan.`;
  *
  * For general surgery this returns byte-for-byte what the single hardcoded prompt used to be.
  */
-export function buildSystemPrompt(pack: SpecialtyPack = generalSurgeryPack): string {
+export function buildSystemPrompt(pack: SpecialtyPack = generalPack): string {
   const guidance = pack.extractGuidance.trim();
   return (
     pack.extractRoleLine +

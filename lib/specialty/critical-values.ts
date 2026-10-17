@@ -1,4 +1,7 @@
-import type { SpecialtyKey } from "./types";
+import { SPECIALTY_KEYS, type SpecialtyKey } from "./types";
+
+const isSpecialtyKey = (k: string | null | undefined): k is SpecialtyKey =>
+  typeof k === "string" && (SPECIALTY_KEYS as readonly string[]).includes(k.trim());
 
 /**
  * The ward list's "Critical" bar, per department — read by lib/ward-flags.ts.
@@ -118,6 +121,8 @@ export function paediatricVitals(ageYears: number | null | undefined): CriticalT
 const MEDICINE: CriticalThresholds = { ...MEDICINE_LABS, ...NEWS2_RED, aki: true };
 
 const BY_PACK: Partial<Record<SpecialtyKey, CriticalThresholds>> = {
+  // No department: NEWS2 (NG253 covers every adult) and the medicine lab bar.
+  general: MEDICINE,
   internal_medicine: MEDICINE,
   pulmonary_medicine: MEDICINE,
   emergency_medicine: EMERGENCY,
@@ -127,5 +132,7 @@ const BY_PACK: Partial<Record<SpecialtyKey, CriticalThresholds>> = {
 export function criticalThresholds(key: string | null | undefined, ageYears?: number | null): CriticalThresholds {
   // NG148's creatinine criteria cover children and young people too.
   if (key === "paediatrics") return { ...paediatricVitals(ageYears), aki: true };
-  return BY_PACK[key as SpecialtyKey] ?? SURGERY;
+  // A known department without its own bar keeps the surgical one it always had; an unknown or
+  // missing department is the general base.
+  return BY_PACK[key as SpecialtyKey] ?? (isSpecialtyKey(key) ? SURGERY : MEDICINE);
 }

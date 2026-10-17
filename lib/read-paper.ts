@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { AI_MODEL } from "@/lib/model";
-import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { generalPack, type SpecialtyPack } from "@/lib/specialty";
 import { forWard } from "@/lib/specialty/prompt-words";
 
 /**
@@ -83,7 +83,7 @@ Reply with a single JSON object and nothing else:
 export async function readPaper(
   base64Image: string,
   mediaType: "image/jpeg" | "image/png" | "image/webp",
-  pack: SpecialtyPack = generalSurgeryPack
+  pack: SpecialtyPack = generalPack
 ): Promise<ReadPaperResult> {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const model = AI_MODEL;
