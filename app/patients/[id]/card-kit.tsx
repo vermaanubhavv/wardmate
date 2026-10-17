@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MicIcon } from "@/app/icons";
+import { usePublishedHeight } from "@/lib/use-published-height";
 
 /**
  * The card-stack look, shared between the discharge workspace and the case-history workspace.
@@ -385,6 +386,8 @@ export function StepShell({
   next: React.ReactNode;
 }) {
   const pct = Math.round(((step + 1) / steps) * 100);
+  // The workspace pages reserve room for this bar with --bar-height; it sets that itself.
+  const barRef = usePublishedHeight("--bar-height", 16);
   // The menu closes whenever the step changes.
   const [open, setOpen] = useState(false);
   const [openStep, setOpenStep] = useState(step);
@@ -434,7 +437,10 @@ export function StepShell({
 
       {after}
 
-      <div className="bottom-bar fixed inset-x-0 bottom-0 z-10 mx-auto max-w-md border-t border-line bg-background/90 px-4 pt-3 backdrop-blur-xl">
+      <div
+        ref={barRef}
+        className="bottom-bar fixed inset-x-0 bottom-0 z-10 mx-auto max-w-md border-t border-line bg-background/90 px-4 pt-3 backdrop-blur-xl"
+      >
         {notice}
         <div className="flex items-center gap-2">
           <button

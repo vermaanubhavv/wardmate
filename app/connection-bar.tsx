@@ -1,9 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { countPending, flush, recoverInterruptedChunks } from "@/lib/outbox";
+import {
+  discardRecording,
+  flush,
+  listWaiting,
+  recoverInterruptedChunks,
+  type Pending,
+} from "@/lib/outbox";
+import { usePublishedHeight } from "@/lib/use-published-height";
 
 /**
  * Whether the app is online, what is waiting to be sent, and — when offline — a warning that
@@ -45,7 +52,11 @@ export const useOnline = () =>
 export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   const router = useRouter();
   const online = useOnline();
-  const [pending, setPending] = useState(0);
+  // What is waiting to send, one row each, so each can be retried or thrown away on its own.
+  const [waiting, setWaiting] = useState<(Pending & { sending: boolean })[]>([]);
+  const pending = waiting.length;
+  // The recording whose Delete was tapped once: it asks before it destroys anything.
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [reviews, setReviews] = useState<string[]>([]);
   const [recovered, setRecovered] = useState(0);
@@ -55,7 +66,7 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    setPending(await countPending());
+    setWaiting(await listWaiting());
   }, []);
 
   // A recording whose recorder was killed mid-sentence (no pagehide fired) leaves its
@@ -69,19 +80,29 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
     }
   }, [refresh]);
 
-  const send = useCallback(async () => {
-    if (!navigator.onLine || sending) return;
-    if ((await countPending()) === 0) return;
+  // Read through a ref, not state: `send` must keep one identity. When it changed with every
+  // sending/not-sending flip, the effect below that sends on mount re-ran at the end of every
+  // flush, and a recording the server refused went straight back out — in a tight loop.
+  const sendingRef = useRef(false);
 
+  // `asked` is a resident pressing Try again: that tries even when the phone reports no
+  // connection (the phone is sometimes wrong, and the press is the resident's call), and it
+  // retries a recording the server refused before. The automatic sends do neither.
+  const send = useCallback(async (asked = false) => {
+    if ((!navigator.onLine && !asked) || sendingRef.current) return;
+    if ((await listWaiting()).length === 0) return;
+
+    sendingRef.current = true;
     setSending(true);
-    const result = await flush();
+    const result = await flush({ retryRefused: asked });
+    sendingRef.current = false;
     setSending(false);
     await refresh();
 
     if (result.reviews.length > 0) setReviews((r) => [...r, ...result.reviews]);
     // Anything that landed changed a patient, so the screen behind this is now out of date.
     if (result.sent > 0) router.refresh();
-  }, [sending, refresh, router]);
+  }, [refresh, router]);
 
   // Runs on mount, and again whenever the connection comes back — `online` is a dependency,
   // so returning from a dead corridor triggers the send without an event listener of its own.
@@ -135,6 +156,19 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
     };
   }, [recover, refresh, send]);
 
+  const discard = useCallback(
+    async (id: string) => {
+      setConfirmingDelete(null);
+      await discardRecording(id);
+      await refresh();
+    },
+    [refresh]
+  );
+
+  // Its own height, published so the sticky headers below sit under it rather than under the
+  // clock — and drop the status-bar padding this bar already provides (globals.css, .top-bar).
+  const barRef = usePublishedHeight("--top-inset", 0, TOP_SAFE_COVERED);
+
   // Nothing to say: online, nothing queued, nothing to review, nothing recovered.
   if (online && !savedAt && pending === 0 && reviews.length === 0 && !sending && recovered === 0)
     return null;
@@ -147,10 +181,11 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
 
   return (
     <div
+      ref={barRef}
       className={
         // The first thing on the page, so on a notched iPhone it starts under the clock unless it
-        // clears the safe area itself, the way every .top-bar header does.
-        "px-4 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))] text-footnote print:hidden " +
+        // clears the safe area itself. Sticky, so a scrolled page's header never slides under it.
+        "sticky top-0 z-30 px-4 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))] text-footnote print:hidden " +
         (online && !savedAt ? "bg-chip text-foreground" : "bg-warn-fg text-accent-ink")
       }
       role="status"
@@ -179,22 +214,48 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
         </p>
       )}
 
-      {online && sending && <p>Sending {pending === 1 ? "1 recording" : `${pending} recordings`}…</p>}
+      {sending && <p>Sending {pending === 1 ? "1 recording" : `${pending} recordings`}…</p>}
 
-      {online && !sending && pending > 0 && (
-        <p>
-          {pending === 1 ? "1 recording" : `${pending} recordings`} still to send.{" "}
-          <button onClick={() => void send()} className="tap font-semibold underline">
-            Try now
-          </button>
-        </p>
-      )}
-
-      {!online && pending > 0 && (
-        <p className="mt-1">
-          {pending === 1 ? "1 recording" : `${pending} recordings`} waiting — they will go when
-          you are back online.
-        </p>
+      {!sending && pending > 0 && (
+        <ul className="mt-1 flex flex-col gap-1.5">
+          {waiting.map((item) =>
+            confirmingDelete === item.id ? (
+              <li key={item.id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="flex-1">
+                  Delete this {item.label.toLowerCase() || "recording"}? It has not been sent and
+                  cannot be recovered.
+                </span>
+                <button onClick={() => void discard(item.id)} className="tap font-semibold underline">
+                  Delete
+                </button>
+                <button onClick={() => setConfirmingDelete(null)} className="tap font-semibold underline">
+                  Keep
+                </button>
+              </li>
+            ) : item.sending ? (
+              <li key={item.id}>
+                {item.label || "Recording"}, {timeOf(item.queuedAt)} — sending…
+              </li>
+            ) : (
+              <li key={item.id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="flex-1">
+                  {item.label || "Recording"}, {timeOf(item.queuedAt)} —{" "}
+                  {item.attempts > 0
+                    ? "not sent: the server turned it down."
+                    : online
+                      ? "not sent yet."
+                      : "saved on this phone, sends when you are back online."}
+                </span>
+                <button onClick={() => void send(true)} className="tap font-semibold underline">
+                  Try again
+                </button>
+                <button onClick={() => setConfirmingDelete(item.id)} className="tap font-semibold underline">
+                  Delete
+                </button>
+              </li>
+            )
+          )}
+        </ul>
       )}
 
       {reviews.length > 0 && (
@@ -213,4 +274,15 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
       )}
     </div>
   );
+}
+
+/** Set while the bar shows: it already clears the status bar, so headers below must not. */
+const TOP_SAFE_COVERED = { "--top-safe": "0px" };
+
+function timeOf(iso: string) {
+  return new Date(iso).toLocaleTimeString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
