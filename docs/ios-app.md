@@ -28,13 +28,30 @@ change needs no rebuild, no resubmission, and no App Store review. Only the thin
 `capacitor-shell/index.html` is a single page saying the app could not reach the site. It is the
 web directory Capacitor insists on and should never be seen.
 
+## Offline and weak signal
+
+The app uses the same offline cache as the home-screen PWA (`public/sw.js`). An iOS web view
+only runs a service worker for the domains listed under `WKAppBoundDomains` in
+`ios/App/App/Info.plist`, and only with `limitsNavigationsToAppBoundDomains: true`. Before both
+were set, the app had no offline screens at all. A new domain the app must load goes in both
+lists, Info.plist's and `allowNavigation`; `localhost` stays, because the "cannot reach" page
+(`errorPath`) is served from it.
+
+A screen gets three seconds of network (`PATIENCE_MS` in `sw.js`) before the saved copy is
+shown, because one bar of signal stalls a fetch rather than failing it. A saved copy always
+carries the orange bar naming the time it was fetched, whether the phone is offline or just
+slow (`app/connection-bar.tsx`).
+
 ## Sign-in inside the app
 
 **Use the six-digit email code. "Continue with Google" will not work.** Google refuses OAuth
 inside an embedded web view (`disallowed_useragent`), so `allowNavigation` deliberately does not
 list Google and that button leaves the app for Safari — where signing in does the app no good,
 because the two keep separate cookies. Making Google work in here means adding a native OAuth
-plugin; it has not been done.
+plugin; it has not been done. So the app hides that button, along with the "Put WardMate on
+your home screen" banner: the web view's user agent ends in `WardMateApp`
+(`appendUserAgent` in `capacitor.config.ts`), and `isNativeApp()` in `app/install-hint.tsx`
+checks for it.
 
 ## Building it
 

@@ -21,12 +21,18 @@ import Mark from "./mark";
  * Shown only in a browser tab: once the app is running from the home screen, standalone is
  * true and this disappears on its own.
  */
-function subscribeNever() {
+export function subscribeNever() {
   return () => {};
+}
+
+/** Inside the App Store app (capacitor.config.ts appends this to the web view's user agent). */
+export function isNativeApp(): boolean {
+  return window.navigator.userAgent.includes("WardMateApp");
 }
 
 function isStandalone(): boolean {
   return (
+    isNativeApp() ||
     window.matchMedia("(display-mode: standalone)").matches ||
     // iOS's own flag, which predates the standard one and is still what older iPhones set.
     (window.navigator as Navigator & { standalone?: boolean }).standalone === true

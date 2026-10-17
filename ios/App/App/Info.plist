@@ -49,6 +49,13 @@
 			</array>
 		</dict>
 	</dict>
+	<key>WKAppBoundDomains</key>
+	<array>
+		<string>localhost</string>
+		<string>wardmate.in</string>
+		<string>www.wardmate.in</string>
+		<string>zrisashumxmiiwffhezc.supabase.co</string>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
