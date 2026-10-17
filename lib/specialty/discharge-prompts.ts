@@ -133,7 +133,7 @@ Preferred form: "Patient admitted with a [duration] history of [presentation / c
 Rules:
 1. Use only what the digest contains — presenting complaints, the admission examination, the admitting diagnosis, the initial plan. Never invent a symptom, a sign or a duration.
 2. When the digest gives a duration for the presenting complaint, lead with it ("a 3-day history of..."). Omit the duration only when the digest does not state one.
-3. One or two sentences. No abbreviations that are not expanded.
+3. One or two sentences. No abbreviations that are not expanded. Write only about the patient, never about the digest or the record — no "not recorded", "not stated in the digest". Where a detail is missing, the visible blank "[ … ]" stands alone, or the point is left out.
 4. If the digest holds nothing about the presentation (only a bare diagnosis), say so by returning an empty string rather than padding it.
 5. ${TEMPLATE_RULE}${more(6, w.indicationRules)}
 
