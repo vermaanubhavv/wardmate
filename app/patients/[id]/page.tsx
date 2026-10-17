@@ -23,6 +23,8 @@ import {
 import { compareBeds, isIdentifierLabel, stripPatientHonorific, managementChoicesFor } from "@/lib/patients";
 import { describeWhen, effectiveUrgency } from "@/lib/urgency";
 import BedsideBar from "./bedside-bar";
+import type { DictationCopy } from "./recorder";
+import { liveRoundSections, progressNoteConfigFor } from "@/lib/progress-note-config";
 import PatientTabs from "./patient-tabs";
 import EditIdentity from "../edit-identity";
 import UrgencyDot from "./urgency-dot";
@@ -964,7 +966,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
       {/* Fixed, so the button is under your thumb no matter how long the record has grown. */}
       <BottomBar>
-        <BedsideBar patientId={patient.id} missing={missing} specialty={pack.key} />
+        <BedsideBar patientId={patient.id} missing={missing} copy={dictationCopy(pack.key)} />
       </BottomBar>
     </div>
   );
@@ -1700,4 +1702,15 @@ async function ScoringTodo({
 async function ScoringCards({ scoring }: { scoring: Scoring }) {
   const [, cards] = await scoring;
   return <ScoreCards cards={cards} />;
+}
+
+/** The unit's dictation wording for the bedside bar, picked here so the client never loads the
+ *  progress-note config table. */
+function dictationCopy(specialty: string): DictationCopy {
+  const config = progressNoteConfigFor(specialty);
+  return {
+    bedsideExample: config.bedsideExample,
+    dictationExample: config.dictationExample,
+    liveSections: liveRoundSections(config),
+  };
 }
