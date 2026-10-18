@@ -19,9 +19,10 @@ import { createClient } from "@/lib/supabase/server";
 import { countWardPendingConfirmations } from "@/lib/confirm-queue";
 import { criticalFlags, isDischargeable, type WardFlag } from "@/lib/ward-flags";
 import { getWardTasks } from "@/lib/todo";
-import { buildWardTodoPreview } from "@/lib/ward-todo-preview";
-import { TriangleAlert, CircleCheckBig, ListChecks, SquarePen, CircleAlert, Settings } from "lucide-react";
+import { TriangleAlert, CircleCheckBig, Settings } from "lucide-react";
+import { getMyWards } from "@/lib/ward";
 import WardSearch from "./ward-search";
+import UnitSwitcher from "./unit-switcher";
 
 export default async function Home({
   searchParams,
@@ -36,6 +37,7 @@ export default async function Home({
     { ward, pack, patients: screenPatients, procedures, templateChoices, error: wardError },
     doctor,
     { data: profile },
+    myWards,
   ] = await Promise.all([
     getWardScreen(),
     getDoctorName(),
@@ -44,6 +46,7 @@ export default async function Home({
     getUser().then((u) =>
       supabase.from("profiles").select("designation").eq("id", u?.id ?? "").maybeSingle()
     ),
+    getMyWards(),
   ]);
   const params = await searchParams;
   const deleteFailed = params.delete_failed;
@@ -85,8 +88,27 @@ export default async function Home({
   // them — not every raw plan row (a job said twice counted twice) and not the scoring engine's
   // suggestions, which are not on this screen yet.
   const jobCounts = new Map<string, number>();
-  for (const t of tasks) jobCounts.set(t.patient_id, (jobCounts.get(t.patient_id) ?? 0) + 1);
+  // Jobs past the day they were due, per patient — the one thing on a row that is red without
+  // being a critical reading. Read off the same calendar-aware note /todo groups by.
+  const overdueCounts = new Map<string, number>();
+  for (const t of tasks) {
+    jobCounts.set(t.patient_id, (jobCounts.get(t.patient_id) ?? 0) + 1);
+    if (t.note?.endsWith("overdue")) overdueCounts.set(t.patient_id, (overdueCounts.get(t.patient_id) ?? 0) + 1);
+  }
   const patients = screenPatients.map((p) => ({ ...p, open_task_count: jobCounts.get(p.id) ?? 0 }));
+  const totalOverdue = [...overdueCounts.values()].reduce((a, b) => a + b, 0);
+
+  // Two patients given the same bed is almost always a typing slip, and on a round it sends
+  // someone to the wrong patient. Said on both rows, naming the other — never silently fixed.
+  const byBed = new Map<string, string[]>();
+  for (const p of patients) {
+    const key = p.bed.trim().toLowerCase();
+    if (key) byBed.set(key, [...(byBed.get(key) ?? []), p.id]);
+  }
+  const sharesBedWith = (p: WardPatient) =>
+    (byBed.get(p.bed.trim().toLowerCase()) ?? [])
+      .filter((id) => id !== p.id)
+      .map((id) => stripPatientHonorific(patients.find((q) => q.id === id)?.display_name ?? ""));
 
   // Every hit, worst first: the chip shows the first and counts the rest ("K⁺ 6.4 +1").
   const allFlags = new Map(patients.map((p) => [p.id, criticalFlags(p, pack.key)]));
@@ -94,7 +116,6 @@ export default async function Home({
     [...allFlags].map(([id, f]) => [id, f[0] ?? null])
   );
   const criticalCount = [...flags.values()].filter(Boolean).length;
-  const dischargeableCount = patients.filter((p) => isDischargeable(p, flags.get(p.id) ?? null)).length;
   const visiblePatients = (
     filter === "critical"
       ? patients.filter((p) => flags.get(p.id))
@@ -108,7 +129,6 @@ export default async function Home({
     .slice()
     .sort((a, b) => Number(Boolean(flags.get(b.id))) - Number(Boolean(flags.get(a.id))));
 
-  const todoPreview = buildWardTodoPreview(tasks, 3);
   const totalOutstanding = tasks.length;
 
   if (wardError || !ward) {
@@ -132,20 +152,25 @@ export default async function Home({
           list passes under it. Sign out lives on /unit — it was one un-confirmed tap away on
           the screen used most. */}
       <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line/60 bg-background/80 px-4 pb-1 top-bar backdrop-blur-xl">
-        <Wordmark />
-        <Link
-          href="/unit"
-          aria-label="Unit settings"
-          className="-mr-2.5 grid h-11 w-11 place-items-center text-accent active:opacity-60"
-        >
-          <Settings className="h-[22px] w-[22px]" strokeWidth={2} />
-        </Link>
+        <WardSearch
+          listId="ward-list"
+          brand={<Wordmark />}
+          trailing={
+            <Link
+              href="/unit"
+              aria-label="Unit settings"
+              className="grid h-11 w-11 place-items-center text-accent active:opacity-60"
+            >
+              <Settings className="h-[22px] w-[22px]" strokeWidth={2} />
+            </Link>
+          }
+        />
       </div>
 
       {/* Everything above the list is kept to a few short rows: the list is what this screen
-          is for, and the old cards and tall tiles left room for three patients on a phone. */}
+          is for. The unit's name is the title and also where you change unit. */}
       <header className="px-4 pb-3 pt-3">
-        <h1 className="ios-large-title truncate text-title2">{ward.name}</h1>
+        <UnitSwitcher current={{ id: ward.id, name: ward.name }} units={myWards} />
         {/* The greeting rides on the title's caption rather than taking a line of its own. */}
         <p className="mt-0.5 truncate text-footnote text-muted">
           {[
@@ -158,69 +183,44 @@ export default async function Home({
             .join(" · ")}
         </p>
 
-        {/* All / Critical / Nothing pending — each chip is the count and the filter in one,
-            the same "?filter=" the tiles used. "Nothing pending" is a heuristic (nothing
-            critical, nothing outstanding), not a clinical sign-off — see isDischargeable(). */}
-        <div className="mt-3 flex gap-2">
-          <FilterChip href="/ward" label="All" value={patients.length} active={!filter} />
-          <FilterChip
-            href="/ward?filter=critical"
-            label="Critical"
-            value={criticalCount}
-            dot="bg-critical-dot"
-            active={filter === "critical"}
-          />
-          <FilterChip
-            href="/ward?filter=dischargeable"
-            label="Nothing pending"
-            value={dischargeableCount}
-            dot="bg-good-dot"
-            active={filter === "dischargeable"}
-          />
-        </div>
-
-        {/* To do, Handover and Confirm share one row. To do keeps its count and names the most
-            urgent job (red first, then yellow — see lib/ward-todo-preview.ts), so a red item is
-            still seen without opening /todo. */}
-        <div className="mt-2 flex gap-2">
-          <Link
-            href="/todo"
-            className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-[12px] bg-card px-3 py-2 active:opacity-70"
-          >
-            <ListChecks className="h-4 w-4 shrink-0 text-accent" strokeWidth={2.2} />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-subhead font-semibold">
-                To do{totalOutstanding > 0 ? ` · ${totalOutstanding}` : ""}
+        {/* One summary row instead of chips, tiles and a search box: what is outstanding, what
+            needs checking, and the handover. Each cell is a way in, and only a number that needs
+            action is coloured. */}
+        <nav aria-label="Unit summary" className="mt-3 grid grid-cols-3 overflow-hidden rounded-[12px] bg-card">
+          <SummaryCell href="/todo" label="To do" value={totalOutstanding}>
+            {totalOverdue > 0 ? (
+              <span className="flex items-center gap-1 text-critical-fg">
+                <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-critical-dot" />
+                {totalOverdue} overdue
               </span>
-              {todoPreview[0] && (
-                <span className="mt-0.5 flex items-center gap-1.5 text-caption text-muted">
-                  <span
-                    className={
-                      "h-2 w-2 shrink-0 rounded-full " +
-                      (todoPreview[0].urgency === "red"
-                        ? "bg-critical-dot"
-                        : todoPreview[0].urgency === "yellow"
-                          ? "bg-warn-dot"
-                          : "bg-good-dot")
-                    }
-                    aria-hidden
-                  />
-                  <span className="truncate">
-                    {todoPreview[0].bed} · {todoPreview[0].text}
-                  </span>
-                </span>
-              )}
-            </span>
-          </Link>
-          <NavTile href="/handover" icon={<SquarePen className="h-[18px] w-[18px]" strokeWidth={2.2} />}>
-            Handover
-          </NavTile>
-          {pendingConfirmCount > 0 && (
-            <NavTile href="/confirm" icon={<CircleAlert className="h-[18px] w-[18px]" strokeWidth={2.2} />}>
-              Confirm · {pendingConfirmCount}
-            </NavTile>
-          )}
-        </div>
+            ) : (
+              "None overdue"
+            )}
+          </SummaryCell>
+          <SummaryCell href="/confirm" label="Confirm" value={pendingConfirmCount} warn={pendingConfirmCount > 0}>
+            {pendingConfirmCount > 0 ? "Values to check" : "All checked"}
+          </SummaryCell>
+          <SummaryCell href="/handover" label="Handover" value="Open">
+            For the next shift
+          </SummaryCell>
+        </nav>
+
+        {/* The Critical filter appears only when something is critical: a chip reading
+            "Critical 0" on every visit was noise in the one colour that must never be. */}
+        {(criticalCount > 0 || filter) && (
+          <div className="mt-2 flex gap-2">
+            <FilterChip href="/ward" label="All" value={patients.length} active={!filter} />
+            {criticalCount > 0 && (
+              <FilterChip
+                href="/ward?filter=critical"
+                label="Critical"
+                value={criticalCount}
+                dot="bg-critical-dot"
+                active={filter === "critical"}
+              />
+            )}
+          </div>
+        )}
 
         {waitingRoundIds.length > 0 && (
           <Link
@@ -292,8 +292,6 @@ export default async function Home({
             {filter === "critical" ? "Nobody is flagged critical." : "Every patient has something pending."}
           </p>
         ) : (
-          <>
-          <WardSearch listId="ward-list" />
           <ul id="ward-list" className="ios-group">
             {visiblePatients.map((p) => (
               <PatientRow
@@ -301,14 +299,14 @@ export default async function Home({
                 patient={p}
                 flag={flags.get(p.id) ?? null}
                 moreFlags={Math.max(0, (allFlags.get(p.id)?.length ?? 0) - 1)}
-                dischargeable={isDischargeable(p, flags.get(p.id) ?? null)}
+                overdue={overdueCounts.get(p.id) ?? 0}
+                sharesBedWith={sharesBedWith(p)}
                 procedures={procedures}
                 templateChoices={templateChoices}
                 pack={pack}
               />
             ))}
           </ul>
-          </>
         )}
       </div>
 
@@ -367,23 +365,35 @@ function FilterChip({
   );
 }
 
-/** A shortcut beside the To do row — icon above a short label, narrow enough that three fit. */
-function NavTile({
+/** One cell of the summary row: a label, a number, and a line that says what the number means. */
+function SummaryCell({
   href,
-  icon,
+  label,
+  value,
+  warn = false,
   children,
 }: {
   href: string;
-  icon?: React.ReactNode;
+  label: string;
+  value: number | string;
+  warn?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <Link
       href={href}
-      className="flex min-h-11 shrink-0 flex-col items-center justify-center gap-0.5 rounded-[12px] bg-card px-3 py-1.5 text-center text-accent active:opacity-70"
+      className="flex min-w-0 flex-col gap-0.5 border-l border-line/60 px-3 py-2.5 first:border-l-0 active:bg-chip"
     >
-      {icon}
-      <span className="whitespace-nowrap text-caption font-medium leading-tight">{children}</span>
+      <span className="text-footnote text-muted">{label}</span>
+      <span
+        className={
+          "text-title3 font-semibold tabular-nums " +
+          (typeof value === "string" ? "text-accent" : warn ? "text-warn-fg" : "text-foreground")
+        }
+      >
+        {value}
+      </span>
+      <span className="truncate text-caption text-muted">{children}</span>
     </Link>
   );
 }
@@ -392,7 +402,8 @@ function PatientRow({
   patient,
   flag,
   moreFlags,
-  dischargeable,
+  overdue,
+  sharesBedWith,
   procedures,
   templateChoices,
   pack,
@@ -402,8 +413,10 @@ function PatientRow({
   flag: WardFlag | null;
   /** How many further critical findings sit behind `flag` — shown as "+N". */
   moreFlags: number;
-  /** Nothing critical, nothing outstanding — see isDischargeable() above. */
-  dischargeable: boolean;
+  /** Jobs past the day they were due. */
+  overdue: number;
+  /** Other patients given this same bed number, by name. */
+  sharesBedWith: string[];
   procedures: Map<string, string>;
   templateChoices: { family: string; variant: string | null; label: string }[];
   /** The unit's specialty pack — it decides whether the day reads "POD 3" or "C2 D3". */
@@ -414,85 +427,81 @@ function PatientRow({
   // procedure to show — never one guessed from the diagnosis.
   const procedure = procedureFor(patient, procedures);
 
+  // Quiet by default, loud by exception. A patient with nothing outstanding shows nothing at
+  // the right — the green "Nothing pending" pill and rail it used to carry made the calm rows
+  // the loudest thing on screen, and green belongs to job urgency. Only the most pressing
+  // status shows: a critical reading (its actual value, never a diagnosis about it), then
+  // values to confirm, then jobs.
+  const status = flag
+    ? {
+        text: [flag.label, flag.value, moreFlags > 0 && `+${moreFlags}`].filter(Boolean).join(" "),
+        tone: "critical" as const,
+      }
+    : patient.unconfirmed_count > 0
+      ? { text: `${patient.unconfirmed_count} to confirm`, tone: "warn" as const }
+      : patient.open_task_count > 0
+        ? { text: `${patient.open_task_count} ${patient.open_task_count === 1 ? "job" : "jobs"}`, tone: "plain" as const }
+        : null;
+  const sharedBed = sharesBedWith.length > 0;
+
   return (
     // ios-row draws the hairline between rows. The ⋯ is a sibling of the link rather than
-    // inside it, so opening the menu does not also walk into the patient. The left edge
-    // carries the same critical/dischargeable colour as the stat row above, so a row reads
-    // at a glance on a long list without adding a second badge.
+    // inside it, so opening the menu does not also walk into the patient. Only a critical
+    // reading colours the row's edge.
     <li
       data-search={`${patient.bed} ${patientName(patient)}`.toLowerCase()}
-      className={
-        "ios-row relative border-l-[3px] " +
-        (flag ? "border-l-critical-dot" : dischargeable ? "border-l-good-dot" : "border-l-transparent")
-      }
+      className={"ios-row relative border-l-[3px] " + (flag ? "border-l-critical-dot" : "border-l-transparent")}
     >
       <Link
         href={`/patients/${patient.id}`}
-        className="flex min-h-11 items-start gap-3 py-2.5 pl-3 pr-16 active:bg-chip"
+        className="flex min-h-11 items-center gap-3 py-2.5 pl-3 pr-11 active:bg-chip"
       >
-        {/* Bed leads the row: on rounds you are looking for a bed, not a name. */}
-        <span className="mt-0.5 min-w-[32px] shrink-0 rounded-md bg-chip px-1.5 py-0.5 text-center font-mono text-footnote tabular-nums">
+        {/* Bed leads the row and is the largest thing in it: on rounds you are looking for a
+            bed, not a name. Amber when another patient has been given the same bed. */}
+        <span
+          className={
+            "grid h-10 min-w-10 shrink-0 place-items-center rounded-[9px] px-1.5 font-mono text-body font-semibold tabular-nums " +
+            (sharedBed ? "bg-warn-bg text-warn-fg" : "bg-chip")
+          }
+        >
           {patient.bed}
         </span>
 
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-body font-semibold">
-            {patientName(patient)}
-          </span>
+          <span className="block truncate text-body font-semibold">{patientName(patient)}</span>
           {/* The day count reads with the diagnosis, not apart from it: "POD 3 · lap chole"
               is one clinical thought, and the number means little without what it counts
               from. */}
           <span className="mt-0.5 block truncate text-subhead text-muted">
-            <span className="text-foreground tabular-nums">{dayLabel(patient, pack)}</span>
-            {procedure && <span className="text-foreground"> {procedure}</span>}
+            <span className="tabular-nums">{dayLabel(patient, pack)}</span>
+            {procedure && <span> · {procedure}</span>}
             {" · "}
             {patient.primary_diagnosis || "No diagnosis recorded"}
           </span>
-
-          {/* ONE chip, not three. Twenty patients carrying "PREOP", "3 to do" and "2 to confirm"
-              put eighty chips on one screen, and a row that shouts three things shouts none of
-              them. Only the most pressing shows: something unchecked outranks something still
-              to do, which outranks a management label that is not going to change today. The
-              other two are on the patient's own page, one tap away. */}
-          {(() => {
-            // Management is deliberately NOT here. "POST OP" only repeats the POD count already
-            // on the line above, and a management label is a standing fact about the patient
-            // rather than something the ward list needs to shout — it lives on their own page.
-            // A critical reading leads this chain: on a round it outranks an unconfirmed
-            // transcription every time. It carries the actual value, not a count, because
-            // "BP 84/50" tells a resident something a bare "1 critical" does not — and it is
-            // exactly the reading recorded, never a diagnosis about it. See lib/ward-flags.ts
-            // for exactly what counts as critical (it is a short, fixed list).
-            const chip = flag
-              ? {
-                  text: [flag.label, flag.value, moreFlags > 0 && `+${moreFlags}`].filter(Boolean).join(" "),
-                  tone: "critical" as const,
-                }
-              : patient.unconfirmed_count > 0
-                ? { text: `${patient.unconfirmed_count} to confirm`, tone: "warn" as const }
-                : patient.open_task_count > 0
-                  ? { text: `${patient.open_task_count} to do`, tone: "plain" as const }
-                  : dischargeable
-                    ? { text: "Nothing pending", tone: "good" as const }
-                    : null;
-
-            return chip && (
-              <span className="mt-1.5 block">
-                <Badge tone={chip.tone}>{chip.text}</Badge>
-              </span>
-            );
-          })()}
+          {sharedBed && (
+            <span className="mt-0.5 block truncate text-footnote text-warn-fg">
+              Bed {patient.bed} is also given to {sharesBedWith.join(", ")}
+            </span>
+          )}
         </span>
+
+        {(status || overdue > 0) && (
+          <span className="flex shrink-0 flex-col items-end gap-1">
+            {status && <Badge tone={status.tone}>{status.text}</Badge>}
+            {overdue > 0 && (
+              <span className="flex items-center gap-1 text-caption text-critical-fg">
+                <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-critical-dot" />
+                {overdue} overdue
+              </span>
+            )}
+          </span>
+        )}
       </Link>
 
-      {/* Both sit outside the link, at the right, where iOS puts a row's accessories. Taps
-          fall through to the link everywhere but the ⋯ itself, so the whole row opens the
-          patient. */}
-      <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center gap-0.5">
-        <div className="pointer-events-auto">
-          <PatientMenu patient={patient} templateChoices={templateChoices} specialty={pack.key} />
-        </div>
-        <ChevronIcon className="h-4 w-4 shrink-0 text-muted" aria-hidden />
+      {/* The row opens the patient; the ⋯ beside it holds edit, move and discharge. Muted, so
+          it reads as an accessory rather than a second thing to press on every row. */}
+      <div className="absolute inset-y-0 right-1 flex items-center text-muted">
+        <PatientMenu patient={patient} templateChoices={templateChoices} specialty={pack.key} />
       </div>
     </li>
   );
@@ -503,19 +512,17 @@ function Badge({
   tone = "plain",
 }: {
   children: React.ReactNode;
-  tone?: "plain" | "warn" | "critical" | "good";
+  tone?: "plain" | "warn" | "critical";
 }) {
   return (
     <span
       className={
-        "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-caption font-medium " +
+        "inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-footnote font-semibold " +
         (tone === "critical"
           ? "bg-critical-bg text-critical-fg"
           : tone === "warn"
             ? "bg-warn-bg text-warn-fg"
-            : tone === "good"
-              ? "bg-good-bg text-good-fg"
-              : "bg-chip text-muted")
+            : "bg-chip text-foreground/80")
       }
     >
       {tone === "critical" && <TriangleAlert className="h-3 w-3" strokeWidth={2.6} />}

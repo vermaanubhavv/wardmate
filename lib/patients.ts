@@ -86,7 +86,8 @@ export function isIdentifierLabel(label: string | null | undefined): boolean {
 export function stripPatientHonorific(name: string): string {
   const original = name.trim();
   const stripped = original.replace(
-    /^(?:(?:mr|mrs|ms|miss|shri|sri|smt)\.?\s+)+/i,
+    // A dot with or without a space after it: registers write "Mr.MANORANJAN" as often as "Mr. X".
+    /^(?:(?:mr|mrs|ms|miss|shri|sri|smt)(?:\.\s*|\s+))+/i,
     ""
   ).trim();
   return stripped || original;
@@ -194,8 +195,18 @@ export function patientName(p: {
   const sex = p.sex === "other" ? null : p.sex;
 
   const detail = [age, sex].filter(Boolean).join("/");
-  const name = stripPatientHonorific(p.display_name);
+  const name = displayCase(stripPatientHonorific(p.display_name));
   return detail ? `${name}, ${detail}` : name;
+}
+
+/** A name typed all in one case — "shikha", or "MANORANJAN" as registers often write them —
+ *  shown with ordinary capitals ("Shikha", "Manoranjan"). Display only: the stored name stays
+ *  as typed. A name in mixed case is the author's and is left exactly as written, so
+ *  "McAllister" or "D'Souza" are never "corrected". */
+export function displayCase(name: string): string {
+  const lower = name.toLowerCase();
+  if (name !== lower && name !== name.toUpperCase()) return name;
+  return lower.replace(/(^|[\s'.-])(\p{L})/gu, (_, sep: string, ch: string) => sep + ch.toUpperCase());
 }
 
 /**
