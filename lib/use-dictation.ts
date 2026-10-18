@@ -89,6 +89,8 @@ export function useDictation(opts: UseDictationOptions) {
   const [status, setStatus] = useState<DictationStatus>("idle");
   const [seconds, setSeconds] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
+  /** The live microphone, while recording — for a level meter or live words beside it. */
+  const [stream, setStream] = useState<MediaStream | null>(null);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -96,6 +98,7 @@ export function useDictation(opts: UseDictationOptions) {
   const recIdRef = useRef<string>("");
   const seqRef = useRef(0);
   const autoStoppedRef = useRef(false);
+  const discardRef = useRef(false);
   const statusRef = useRef<DictationStatus>(status);
   useEffect(() => {
     statusRef.current = status;
@@ -123,18 +126,37 @@ export function useDictation(opts: UseDictationOptions) {
     }
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    setStream(null);
   }, []);
 
+  /** Stop and throw the recording away — nothing is sent, nothing waits in the queue. */
+  const discard = useCallback(() => {
+    discardRef.current = true;
+    const id = recIdRef.current;
+    if (recorderRef.current?.state === "recording") recorderRef.current.stop();
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setStream(null);
+    chunksRef.current = [];
+    setStatus("idle");
+    void dropRecording(id);
+    void clearChunks(id);
+  }, []);
+
+  // A recording always starts from 0:00, so the cap is a timer from the moment it starts.
   useEffect(() => {
-    if (status === "recording" && seconds >= maxSeconds) {
+    if (status !== "recording") return;
+    const id = setTimeout(() => {
       autoStoppedRef.current = true;
       stop();
-    }
-  }, [seconds, status, maxSeconds, stop]);
+    }, maxSeconds * 1000);
+    return () => clearTimeout(id);
+  }, [status, maxSeconds, stop]);
 
   // Phone locked / swiped away / killed mid-dictation: write what we have now. A later clean
   // stop re-saves the fuller take under the same id, so this never doubles it.
   const salvage = useCallback(() => {
+    if (discardRef.current) return;
     if (statusRef.current !== "recording" && statusRef.current !== "working") return;
     const chunks = chunksRef.current;
     const mime = recorderRef.current?.mimeType || "audio/webm";
@@ -167,6 +189,11 @@ export function useDictation(opts: UseDictationOptions) {
 
   const send = useCallback(
     async (mimeType: string) => {
+      if (discardRef.current) {
+        // A last chunk can land after discard() cleared them.
+        void clearChunks(recIdRef.current);
+        return;
+      }
       const blob = new Blob(chunksRef.current, { type: mimeType });
       chunksRef.current = [];
       const id = recIdRef.current;
@@ -243,6 +270,7 @@ export function useDictation(opts: UseDictationOptions) {
     setMessage(null);
     setSeconds(0);
     autoStoppedRef.current = false;
+    discardRef.current = false;
     recIdRef.current = crypto.randomUUID();
     seqRef.current = 0;
 
@@ -251,6 +279,7 @@ export function useDictation(opts: UseDictationOptions) {
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
       streamRef.current = stream;
+      setStream(stream);
 
       // Safari records mp4, Chrome webm. Asking for the wrong one yields a silent empty file.
       const mimeType = [
@@ -265,7 +294,7 @@ export function useDictation(opts: UseDictationOptions) {
       const recId = recIdRef.current;
       const chunkMeta = { ...meta(), mimeType: recorder.mimeType || mimeType || "audio/webm" };
       recorder.ondataavailable = (e) => {
-        if (e.data.size === 0) return;
+        if (e.data.size === 0 || discardRef.current) return;
         chunksRef.current.push(e.data);
         void putChunk(recId, seqRef.current++, e.data, chunkMeta);
       };
@@ -287,7 +316,9 @@ export function useDictation(opts: UseDictationOptions) {
     seconds,
     message,
     setMessage,
+    stream,
     start,
     stop,
+    discard,
   };
 }

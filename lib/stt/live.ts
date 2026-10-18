@@ -67,20 +67,30 @@ export async function openLiveDictation(
   opts: {
     token: string;
     keyterms: string[];
+    /** A microphone the caller already holds. iOS mutes the first audio track when a second
+     *  getUserMedia opens, so a caller that is also recording passes its own stream; the caller
+     *  then owns it, and stop() leaves it running. */
+    stream?: MediaStream;
   } & LiveDictationHandlers
 ): Promise<LiveDictationSession> {
-  const { token, keyterms, ...h } = opts;
+  const { token, keyterms, stream: given, ...h } = opts;
 
   let stream: MediaStream;
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  } catch {
-    throw new Error("Microphone blocked — allow it for this site in your browser settings.");
+  if (given) stream = given;
+  else {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      throw new Error("Microphone blocked — allow it for this site in your browser settings.");
+    }
   }
+  const releaseMic = () => {
+    if (!given) stream.getTracks().forEach((t) => t.stop());
+  };
 
   const mime = pickMime();
   if (!mime) {
-    stream.getTracks().forEach((t) => t.stop());
+    releaseMic();
     throw new Error("This browser cannot stream audio. Use the Speak button on each card instead.");
   }
 
@@ -108,7 +118,7 @@ export async function openLiveDictation(
     } catch {
       /* already stopped */
     }
-    stream.getTracks().forEach((t) => t.stop());
+    releaseMic();
     if (ws.readyState === WebSocket.OPEN) {
       try {
         ws.send(JSON.stringify({ type: "CloseStream" }));

@@ -1197,22 +1197,3 @@ export function openSpaceHeadings(config: ProgressNoteConfig): string[] {
     ...(config.bowelLine ? ["Flatus / Stool"] : []),
   ];
 }
-
-/**
- * The sections the patient page's live dictation sorts into. Drain and intake/output findings
- * always have a home (oncology records lines as drains, medicine charts I/O); only a ward with
- * a drain or catheter line calls it drains.
- */
-export function liveRoundSections(config: ProgressNoteConfig): { key: string; label: string; drug?: boolean }[] {
-  const drains = config.examSections.some((s) => /drain|catheter/.test(s.id));
-  return [
-    { key: "history", label: "Complaints & history" },
-    { key: "vital", label: "Vitals" },
-    { key: "exam", label: "Examination" },
-    { key: "drain", label: drains ? "Drains & intake/output" : "Lines & intake/output" },
-    { key: "dx", label: "Diagnosis & procedure" },
-    { key: "medication", label: "Medications", drug: true },
-    { key: "lab", label: "Investigations" },
-    { key: "plan", label: "Plan & to-do" },
-  ];
-}
