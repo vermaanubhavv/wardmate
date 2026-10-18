@@ -165,9 +165,8 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
     [refresh]
   );
 
-  // Its own height, published so the sticky headers below sit under it rather than under the
-  // clock — and drop the status-bar padding this bar already provides (globals.css, .top-bar).
-  const barRef = usePublishedHeight("--top-inset", 0, TOP_SAFE_COVERED);
+  // Its own height, published so the sticky headers below sit under it (globals.css, .top-bar).
+  const barRef = usePublishedHeight("--top-inset");
 
   // Nothing to say: online, nothing queued, nothing to review, nothing recovered.
   if (online && !savedAt && pending === 0 && reviews.length === 0 && !sending && recovered === 0)
@@ -183,9 +182,9 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
     <div
       ref={barRef}
       className={
-        // The first thing on the page, so on a notched iPhone it starts under the clock unless it
-        // clears the safe area itself. Sticky, so a scrolled page's header never slides under it.
-        "sticky top-0 z-30 px-4 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))] text-footnote print:hidden " +
+        // Sticks just below the status bar (globals.css clears it for the whole page), so a
+        // scrolled page's header never slides under it.
+        "sticky top-[env(safe-area-inset-top)] z-30 px-4 pb-2 pt-2 text-footnote print:hidden " +
         (online && !savedAt ? "bg-chip text-foreground" : "bg-warn-fg text-accent-ink")
       }
       role="status"
@@ -277,7 +276,6 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
 }
 
 /** Set while the bar shows: it already clears the status bar, so headers below must not. */
-const TOP_SAFE_COVERED = { "--top-safe": "0px" };
 
 function timeOf(iso: string) {
   return new Date(iso).toLocaleTimeString("en-IN", {

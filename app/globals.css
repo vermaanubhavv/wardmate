@@ -251,16 +251,40 @@ summary {
   padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
 }
 
-/* The same `viewport-fit=cover` trick that lets the bottom bar reach the home indicator also
-   lets a sticky top bar reach the status bar — literally under it, on an installed PWA with a
-   notch or a Dynamic Island. Every `sticky top-0` header uses this so its own padding, not the
-   bar's edge, sits flush with the safe area rather than the true top of the screen. */
+/* The status bar. `viewport-fit=cover` (needed for the bottom bar to reach the home
+   indicator) also lets every page reach up under the clock and the Dynamic Island — in the app
+   and the home-screen PWA; in a browser tab the inset is 0 and none of this does anything.
+   Clearing it once, here, rather than per header: the pages that built their own header (case
+   history, the note, discharge, Learn, admin…) each had their back link under the clock, out of
+   reach. So the page starts below the status bar, a strip the colour of the page covers that
+   band so nothing scrolls legibly under the clock, and every sticky bar sticks below it. */
+body {
+  padding-top: env(safe-area-inset-top);
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: env(safe-area-inset-top);
+  background: var(--background);
+  z-index: 40;
+}
+@media print {
+  body::before {
+    display: none;
+  }
+}
+/* A centred dialog keeps the same clearance at both ends, so a tall one (Edit patient) never
+   puts its title under the clock. */
+dialog:modal {
+  max-height: calc(100dvh - 2 * max(env(safe-area-inset-top), env(safe-area-inset-bottom)) - 1rem);
+}
+
+/* A sticky header sticks below the status bar, and below the connection bar while that shows
+   (it publishes its height as --top-inset). */
 .top-bar {
-  padding-top: calc(0.625rem + var(--top-safe, env(safe-area-inset-top)));
-  /* Below the connection bar while it shows (it publishes its height as --top-inset and clears
-     the status bar itself, setting --top-safe to 0). Without it the header kept its own
-     status-bar padding under a bar that already had one: a blank band of about 60pt. */
-  top: var(--top-inset, 0px);
+  padding-top: 0.625rem;
+  top: calc(env(safe-area-inset-top) + var(--top-inset, 0px));
 }
 
 /* The mark, working.
