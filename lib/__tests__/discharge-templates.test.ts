@@ -49,6 +49,13 @@ describe("general-surgery discharge template matching", () => {
     expect(pick(text)).toBe(key);
   });
 
+  it("gives every day-case template a day-or-night contact (Bailey & Love 28e Table 22.5)", () => {
+    for (const key of ["benign_breast", "lump_excision", "hernia", "uro_hydrocele_circumcision", "perianal", "varicose_veins"]) {
+      const t = DISCHARGE_TEMPLATES.find((x) => x.key === key)!;
+      expect(t.scaffold.patientActions.some((a) => /day or night/.test(a)), key).toBe(true);
+    }
+  });
+
   it("prints no conditional drug as a plain prescription", () => {
     // A drug given only in some patients must carry its condition inside the [ … ] name, so an
     // unedited row prints as visibly unfinished — never as something every patient received.
