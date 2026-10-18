@@ -33,7 +33,10 @@ export default function BedsideBar({
   const [recording, setRecording] = useState(false);
   // "Still to cover" is about today's round, so it shows on the Today tab only (the tab lives in
   // the URL, see patient-tabs.tsx) — on History or Tests it was a line about something else.
-  const onToday = (useSearchParams().get("tab") ?? "today") === "today";
+  const tab = useSearchParams().get("tab") ?? "today";
+  const onToday = tab === "today";
+  // On Tests the thing to do is photograph a report, so it gets the words and takes Type's place.
+  const onTests = tab === "investigations";
   const [coverOpen, setCoverOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   /** The last save did not go through. The typed words stay in the box either way. */
@@ -154,17 +157,22 @@ export default function BedsideBar({
         toCover={missing.map((m) => m.item.label)}
         copy={copy}
         onBusyChange={onBusyChange}
+        speakLabel={onTests ? "Speak" : undefined}
         idleActions={
-          <>
-            <button
-              type="button"
-              onClick={() => setTyping(true)}
-              className="min-h-11 shrink-0 rounded-full border border-line bg-card px-4 text-subhead font-medium text-accent active:opacity-70"
-            >
-              Type
-            </button>
-            <PhotoButton patientId={patientId} />
-          </>
+          onTests ? (
+            <PhotoButton patientId={patientId} labelled />
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setTyping(true)}
+                className="min-h-11 shrink-0 rounded-full border border-line bg-card px-4 text-subhead font-medium text-accent active:opacity-70"
+              >
+                Type
+              </button>
+              <PhotoButton patientId={patientId} />
+            </>
+          )
         }
       />
       {message && <p role="status" className="text-center text-subhead text-muted">{message}</p>}
