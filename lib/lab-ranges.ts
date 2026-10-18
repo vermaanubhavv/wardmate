@@ -164,7 +164,8 @@ export type RangeSource = "report" | "ward" | "builtin";
 
 export type LabReading = {
   label: string;
-  /** The value exactly as recorded. Never rewritten, never rounded, never unit-converted. */
+  /** The value as recorded, written the way a clinician writes it (lib/display-value.ts):
+   *  "15640.00" as "15,640". Never rounded, never unit-converted. */
   value: string;
   flag: LabFlag | null;
   /** "13–17" — the range the flag was judged against, so the judgement can be checked. */

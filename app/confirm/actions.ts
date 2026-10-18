@@ -31,23 +31,6 @@ export async function confirmMany(ids: string[]): Promise<{ ok: boolean; error?:
   return { ok: true };
 }
 
-export async function confirmAllPending(patientIds: string[]): Promise<{ ok: boolean; error?: string }> {
-  if (patientIds.length === 0) return { ok: true };
-  const supabase = await createClient();
-  const user = await getUser();
-  if (!user) return { ok: false, error: "Not signed in." };
-
-  const { data: rows } = await supabase
-    .from("observations")
-    .select("id")
-    .in("patient_id", patientIds)
-    .eq("needs_confirmation", true)
-    .is("confirmed_at", null);
-
-  const ids = (rows ?? []).map((r) => r.id as string);
-  return confirmMany(ids);
-}
-
 /** A correction from the queue — same rule as the patient page: an emptied value deletes the
  *  observation, any other value is stored and confirmed in one step, and the correction is fed
  *  back to the mis-hearing dictionary. */
