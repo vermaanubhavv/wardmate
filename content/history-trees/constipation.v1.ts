@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * CONSTIPATION — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Bailey & Love 28e review, docs/surgical-history.md §13).
+ * CONSTIPATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical / medicine ward, north India. Separates the constipation of a functional or
  * dietary cause from obstruction and from a colorectal lesion. Differentials: functional /
  * low-fibre, drug-induced, hypothyroidism and hypercalcaemia, colorectal cancer, large-bowel
@@ -14,8 +14,8 @@ export const constipationV1: HistoryTree = {
   complaint: "Constipation",
   triggers: ["constipation", "not passing stools", "hard stools", "difficulty passing stools", "unable to pass stools", "infrequent stools", "obstipation"],
   setting: "Adult surgical / medicine ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
   slots: [
     ...commonHpi("constipation"),

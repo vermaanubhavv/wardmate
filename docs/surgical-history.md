@@ -598,7 +598,8 @@ the general-surgery trees, the daily note and the discharges. Book pages are cit
 and the code comments. **Nothing it says contradicted a signed-off statement outright.** What it
 added falls into the groups below. Every changed tree got a minor version bump and went back to
 `pending_clinician_review`: thirty-one trees in all, counting every tree that spreads
-`surgicalBackground()`, because its shared slots changed.
+`surgicalBackground()`, because its shared slots changed. **All thirty-one, the progress-note chips
+and the discharge changes were read and signed off by Dr Anubhav Verma on 2026-10-18.**
 
 ### 13.1 A safety class: terms that let the wrong quote close a slot
 

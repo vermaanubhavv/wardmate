@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { ATLS, BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, surgicalBackground, TINTINALLI, TRAUMA_BG, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ROAD TRAFFIC ACCIDENT / MULTIPLE INJURIES — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Bailey & Love 28e review, docs/surgical-history.md §13).
+ * ROAD TRAFFIC ACCIDENT / MULTIPLE INJURIES — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Emergency department, north India. The AMPLE history (allergies, medicines, past history,
  * last meal, events) wrapped around the mechanism, because the mechanism predicts the injuries
  * before the examination finds them. The local casemix is dominated by two-wheeler riders
@@ -20,8 +20,8 @@ export const roadTrafficAccidentV1: HistoryTree = {
   complaint: "Road traffic accident / multiple injuries",
   triggers: ["road traffic accident", "rta", "road accident", "road traffic injury", "motor vehicle accident", "mva", "polytrauma", "multiple injuries", "multiple trauma", "bike accident", "motorcycle accident", "two wheeler accident", "scooter accident", "car accident", "truck accident", "tractor accident", "bus accident", "hit by vehicle", "hit by a vehicle", "knocked down by vehicle", "pedestrian hit", "vehicle overturned", "gaadi se takkar", "bike se gira", "gaadi palat gayi"],
   setting: "Emergency department, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, ATLS, TINTINALLI, MACLEODS, HUTCHISONS, BAILEY_LOVE],
   slots: [
     ...commonHpi("injury").filter((s) => !["informant", "onset", "duration", "onset_mode", "progression", "prior_treatment"].includes(s.id)),

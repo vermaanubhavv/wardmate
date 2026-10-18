@@ -28,10 +28,10 @@ import { adv, proc, COMMON_MEDS } from "@/lib/discharge-template-parts";
  * `[ … ]` and the condition beside it, so a row nobody edited prints as visibly unfinished rather
  * than as a prescription every patient received.
  *
- * CLINICAL CONTENT: PENDING REVIEW for the Bailey & Love 28e changes (2026-10-18, docs/surgical-history.md
- * §13) — the matching fixes, the conditional-drug rows, the added follow-up and red-flag lines and the
- * "What to check today" text. Everything else was REVIEWED (Dr Anubhav Verma, 2026-10-11), including
- * the corrections and the nine templates added after the Schwartz 11e review (§12).
+ * CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma) — re-signed on 2026-10-18 after the Bailey & Love 28e
+ * changes (docs/surgical-history.md §13: the matching fixes, the conditional-drug rows, the added
+ * follow-up and red-flag lines and the "What to check today" text); signed off on 2026-10-11 with the
+ * corrections and the nine templates added after the Schwartz 11e review (§12).
  *
  * Medication lines are a STARTING SET to be checked against each patient — allergy, renal
  * function, weight, cultures, what they were already taking.

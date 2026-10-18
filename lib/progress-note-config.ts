@@ -17,8 +17,8 @@ import type { SpecialtyKey } from "@/lib/specialty/types";
  * resident says, never a dose; an exam line that nobody spoke prints its heading and nothing
  * else; nothing here decides a finding.
  *
- * CLINICAL CONTENT: general_surgery PENDING REVIEW for the Bailey & Love 28e chips (2026-10-18);
- * the wound / drains lines and earlier chips were signed off by Dr Anubhav Verma (2026-10-11); every other department was read and signed off with
+ * CLINICAL CONTENT: general_surgery REVIEWED (Dr Anubhav Verma) — the Bailey & Love 28e chips on
+ * 2026-10-18, the wound / drains lines and earlier chips on 2026-10-11; every other department was read and signed off with
  * the PR that added it.
  */
 
