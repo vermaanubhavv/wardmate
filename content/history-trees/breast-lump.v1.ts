@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, rce, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, rce, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BREAST LUMP OR BREAST COMPLAINT — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
+ * BREAST LUMP OR BREAST COMPLAINT — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical ward, north India. Age drives the differential more than any single feature:
  * a mobile rubbery lump in a woman of twenty and a hard fixed lump in a woman of fifty-five are
  * different problems from the first sentence. Differentials: fibroadenoma, fibrocystic change,
@@ -11,12 +11,12 @@ import { BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, M
  */
 export const breastLumpV1: HistoryTree = {
   id: "breast_lump",
-  version: "1.2.0",
+  version: "1.3.0",
   complaint: "Breast lump",
   triggers: ["breast lump", "lump in breast", "breast swelling", "breast mass", "nipple discharge", "breast pain", "mastalgia", "lump in the breast", "breast complaint", "gynaecomastia"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     DAS_CLINICAL_SURGERY,
     HAMILTON_BAILEY,
@@ -25,6 +25,7 @@ export const breastLumpV1: HistoryTree = {
     rce("The rational clinical examination. Does this patient have breast cancer? The screening clinical breast examination: should it be done? How?", 1999, "10517431"),
     MACLEODS,
     HUTCHISONS,
+    BAILEY_LOVE,
   ],
   slots: [
     ...commonHpi("breast lump"),
@@ -39,16 +40,16 @@ export const breastLumpV1: HistoryTree = {
     yn("associated", "arm_swelling", "Swelling of the arm", "Any swelling or heaviness of the arm on that side?", ["arm swelling", "heaviness", "swollen arm", "lymphoedema", "tight"], { tier: "detailed" }),
     yn("associated", "constitutional", "Weight loss / bone pain / cough / breathlessness", "Any weight loss, bone or back pain, cough, or breathlessness?", ["weight loss", "bone pain", "back pain", "cough", "breathlessness", "loss of appetite", "jaundice"]),
     yn("associated", "fever_lactation", "Fever", "Is there fever with the breast pain or redness?", ["fever", "cracked nipple", "engorgement", "abscess", "no fever"]),
-    yn("associated", "trauma", "Injury to the breast", "Any injury or blow to the breast before the lump appeared?", ["injury", "trauma", "blow", "hit", "fall", "seat belt"], { tier: "detailed" }),
+    yn("associated", "trauma", "Injury to the breast", "Any injury or blow to the breast before the lump appeared?", ["injury", "trauma", "blow", "hit", "fall", "seat belt"], { tier: "detailed", teach: "Bailey & Love warns that a history of a blow does not settle fat necrosis, because the injury may only have drawn attention to a lump already there." }),
     // Red flags
     yn("red_flag", "hard_fixed_lump", "Hard, irregular or fixed lump", "Is the lump hard, irregular in outline, or fixed to the skin or to the chest wall?", ["hard", "stony hard", "irregular", "fixed", "does not move", "attached", "chest wall", "tethered", "craggy"], { teach: "A hard irregular lump fixed to skin or chest wall carries the highest pre-test probability of malignancy of any bedside finding here." }),
-    yn("red_flag", "bloody_single_duct_discharge", "Blood-stained discharge from a single duct", "Is there blood-stained discharge, coming on its own from a single duct?", ["blood stained", "bloody", "single duct", "spontaneous", "one point", "stains clothes", "red discharge", "brown discharge"], { teach: "Spontaneous blood-stained discharge from one duct points to a lesion within that duct and needs looking into rather than reassurance." }),
+    yn("red_flag", "bloody_single_duct_discharge", "Blood-stained or clear watery discharge from a single duct", "Is there blood-stained or clear watery discharge, coming on its own from a single duct?", ["blood stained", "bloody", "single duct", "spontaneous", "one point", "stains clothes", "red discharge", "brown discharge", "serous", "clear watery", "watery discharge", "sticky clear"], { teach: "Bailey & Love treats spontaneous single-duct discharge that is serous or blood-stained as pathological, while milky or multicoloured discharge from many ducts is usually physiological, as is a bloody discharge in pregnancy." }),
     yn("red_flag", "skin_nipple_changes", "Skin dimpling / nipple retraction / orange-peel skin", "Any dimpling of the skin, recent pulling in of the nipple, orange-peel skin, or a scaly or eroded nipple?", ["dimpling", "puckering", "nipple retraction", "recently pulled in", "orange peel", "peau d orange", "thickened skin", "ulcer", "eczema", "scaly nipple", "eroded nipple"], { teach: "Skin dimpling and a newly retracted nipple mark tethering by an underlying lesion, and they carry more weight than the size of the lump." }),
     yn("red_flag", "axillary_nodes", "Hard lumps in the armpit", "Is there any lump in the armpit or above the collarbone?", ["armpit", "axillary", "hard", "matted", "fixed", "multiple", "gland", "enlarged", "supraclavicular", "collar bone"], { teach: "Hard or matted axillary nodes alongside a breast lump change both staging and urgency." }),
     yn("hpi", "age_new_lump", "New discrete lump over the age of thirty-five", "Is this a new discrete lump, separate from the rest of the breast tissue?", ["over 35", "over 40", "age", "new lump", "postmenopausal", "first time", "discrete"], { teach: "The same lump carries a very different probability at twenty and at fifty-five, so age is part of the finding, not background." }),
     yn("exposure", "postmenopausal_bleeding_hrt", "Hormone tablets", "Has the patient taken hormone replacement or contraceptive pills, and for how long?", ["postmenopausal", "menopause", "periods stopped", "hormone", "hrt", "oestrogen", "tablets"], { tier: "detailed", teach: "Longer oestrogen exposure, including hormone tablets, adds to breast-cancer risk." }),
     yn("exposure", "family_history_cancer", "Family history of breast or ovarian cancer", "Any breast or ovarian cancer in the mother, sister, daughter, or on the father's side?", ["family history", "breast cancer", "ovarian cancer", "mother", "sister", "daughter", "aunt", "father side", "young age", "both breasts", "male relative", "brother breast cancer"], { teach: "A first-degree relative with breast or ovarian cancer, especially diagnosed young, shifts the whole assessment and may change screening for the family." }),
-    yn("red_flag", "male_patient_lump", "Breast lump in a man", "In a male patient, is there a discrete hard lump rather than generalised breast enlargement?", ["male", "man", "discrete", "hard", "one side", "not generalised", "eccentric", "away from nipple"], { teach: "A discrete hard eccentric lump in a man is a different question from the soft symmetrical enlargement of gynaecomastia." }),
+    yn("red_flag", "male_patient_lump", "Breast lump in a man", "In a male patient, is there a discrete hard lump rather than generalised breast enlargement?", ["male", "man", "discrete", "hard", "one side", "not generalised", "eccentric", "away from nipple", "subareolar", "behind the nipple", "painless lump"], { teach: "Bailey & Love describes male breast cancer as most often a painless lump beneath the areola that involves the nipple early, so position alone does not separate it from gynaecomastia; a discrete hard lump in a man is the question." }),
     PREGNANCY,
     val("exposure", "reproductive_history", "Periods, pregnancy and breastfeeding history", "At what age did periods start and stop, how many children, at what age was the first born, and for how long was breastfeeding?", ["menarche", "periods started", "children", "first child", "age", "breastfed", "how long", "nulliparous", "no children", "menopause at", "periods stopped"], { tier: "detailed" }),
     yn("exposure", "previous_breast_problem", "Previous breast lump, biopsy or surgery", "Any previous breast lump, biopsy, aspiration or breast surgery, and what did the biopsy report say?", ["previous lump", "biopsy", "fnac", "aspiration", "surgery", "excised", "removed", "same breast", "other breast"], { teach: "Schwartz counts earlier biopsies and any atypical hyperplasia on them in the risk models, so the report matters more than the procedure." }),
@@ -66,6 +67,8 @@ export const breastLumpV1: HistoryTree = {
     // Schwartz's Principles of Surgery, 11th ed. (docs/surgical-history.md §12)
     yn("red_flag", "red_swollen_breast_no_fever", "Red, swollen, thickened breast outside lactation", "Has the breast become red, swollen and thickened over weeks, without fever and while not breastfeeding?", ["red breast", "whole breast red", "swollen breast", "thickened skin", "orange peel", "not breastfeeding", "no fever", "antibiotics did not help"], { teach: "Schwartz warns that inflammatory breast cancer may be mistaken for a bacterial infection; redness and swelling outside lactation, without fever or not settling, has to be separated from mastitis." }),
     val("exposure", "alcohol", "Alcohol", "Does the patient drink alcohol, how much and for how long?", ["alcohol", "drinks", "daru", "beer", "whisky", "no alcohol", "never drinks"], { tier: "detailed", teach: "Schwartz records breast-cancer risk rising with the amount of alcohol a woman drinks, through raised oestrogen levels." }),
+    // Bailey & Love, 28th ed. (docs/surgical-history.md §13)
+    yn("exposure", "galactorrhoea_drugs", "Medicines that can bring milk from the nipples", "Is the patient taking medicines for mood, psychosis, nausea or acidity, such as haloperidol, chlorpromazine, amitriptyline, metoclopramide or cimetidine?", ["haloperidol", "chlorpromazine", "amitriptyline", "metoclopramide", "perinorm", "cimetidine", "antipsychotic", "no such medicines"], { tier: "detailed", teach: "Bailey & Love lists these drugs among the causes of galactorrhoea, a milky discharge from several ducts of both nipples outside pregnancy and breastfeeding, alongside a prolactin-secreting pituitary tumour." }),
     ...surgicalBackground({ omit: ["surg_weight_loss", "surg_menstrual_obstetric", "surg_family_illness"] }),
   ],
   differentials: [
@@ -79,6 +82,7 @@ export const breastLumpV1: HistoryTree = {
     { id: "duct_ectasia", name: "Duct ectasia", pointers: ["nipple_discharge", "side_site"], discriminators: ["nipple_discharge", "bloody_single_duct_discharge", "side_site", "skin_nipple_changes", "age_new_lump", "nipple_retraction_since", "previous_breast_abscess", "discharge_spontaneous", "smoking"] },
     { id: "tuberculous_mastitis", name: "Tuberculous mastitis", pointers: ["tb_contact", "constitutional"], discriminators: ["tb_contact", "constitutional", "fever_lactation", "consistency_mobility", "duration", "previous_breast_abscess"] },
     { id: "gynaecomastia", name: "Gynaecomastia", pointers: ["male_patient_lump", "radiation_drugs"], discriminators: ["male_patient_lump", "radiation_drugs", "consistency_mobility", "side_site", "hard_fixed_lump", "male_gynaecomastia_causes"] },
+    { id: "granulomatous_mastitis", name: "Idiopathic granulomatous mastitis", pointers: ["lactation_history", "previous_breast_abscess"], discriminators: ["lactation_history", "previous_breast_abscess", "skin_nipple_changes", "axillary_nodes", "tb_contact", "fever_lactation"] },
   ],
   output: {
     durationSlot: "duration",

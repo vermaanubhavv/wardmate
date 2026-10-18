@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
+import { BAILEY_LOVE, commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * JAUNDICE — v1.1.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * JAUNDICE — v1.1.0. CLINICAL CONTENT: PENDING REVIEW (Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult medicine ward, north India. Differentials: acute viral hepatitis (A/E, B), alcoholic
  * hepatitis, drug-induced liver injury (including anti-tubercular drugs), obstructive jaundice
  * (stone, malignancy), decompensated cirrhosis, haemolysis (including malaria), leptospirosis,
@@ -10,12 +10,12 @@ import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "
  */
 export const jaundiceV1: HistoryTree = {
   id: "jaundice",
-  version: "1.3.0",
+  version: "1.4.0",
   complaint: "Jaundice",
   triggers: ["jaundice", "yellowish discolouration", "yellow discoloration", "yellowness of eyes", "yellow eyes", "icterus", "yellow urine"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("Does this patient with liver disease have cirrhosis?", 2012, "22357834"),
     rce("The rational clinical examination. Physical examination of the liver", 1994, "8196144"),
@@ -23,6 +23,7 @@ export const jaundiceV1: HistoryTree = {
     { title: "Leptospirosis in India: a systematic review and meta-analysis of clinical profile, treatment and outcomes", source: "PubMed", year: 2023, pmid: "37701390" },
     { title: "Does this patient have a severe upper gastrointestinal bleed?", source: "JAMA (Rational Clinical Examination)", year: 2012, pmid: "22416103" },
     MACLEODS,
+    BAILEY_LOVE,
   ],
   slots: [
     ...commonHpi("jaundice"),
@@ -44,18 +45,18 @@ export const jaundiceV1: HistoryTree = {
     yn("associated", "calf_pain_red_eyes", "Calf pain / red eyes", "Any calf pain or redness of the eyes?", ["calf pain", "calf tenderness", "red eyes", "conjunctival suffusion", "redness of eyes"], { tier: "detailed" }),
     yn("associated", "previous_jaundice", "Previous jaundice / known liver disease", "Any previous jaundice, known hepatitis B or C, or known liver disease?", ["previous jaundice", "earlier jaundice", "hepatitis b", "hepatitis c", "hbsag", "liver disease", "cirrhosis", "fatty liver", "known case"]),
     // Red flags
-    yn("red_flag", "altered_sensorium", "Drowsiness / confusion / sleep reversal", "Any drowsiness, confusion, irrelevant talk, or day-night sleep reversal (encephalopathy)?", ["drowsy", "drowsiness", "confused", "confusion", "altered sensorium", "irrelevant talk", "sleep reversal", "irritable", "disoriented", "unconscious", "behaviour change"], { teach: "Drowsiness, sleep reversal or confusion with jaundice asks whether the liver is failing to clear toxins from the blood, which changes where and how urgently the patient is managed." }),
+    yn("red_flag", "altered_sensorium", "Drowsiness / confusion / sleep reversal", "Any drowsiness, confusion, irrelevant talk, or day-night sleep reversal (encephalopathy)?", ["drowsy", "drowsiness", "confused", "confusion", "altered sensorium", "irrelevant talk", "sleep reversal", "irritable", "disoriented", "unconscious", "behaviour change", "inverted sleep", "sleep inversion"], { teach: "Drowsiness, sleep reversal or confusion with jaundice asks whether the liver is failing to clear toxins from the blood, which changes where and how urgently the patient is managed." }),
     yn("red_flag", "bleeding_manifestations", "Bleeding manifestations", "Any bleeding from any site?", ["bleeding", "haematemesis", "hematemesis", "malena", "melena", "epistaxis", "gum bleeding", "petechiae"], { teach: "Bleeding with jaundice means the liver is no longer making clotting factors, or the platelets are low from a large spleen; both are urgent." }),
     yn("red_flag", "urine_output", "Reduced urine output", "Has the urine output reduced?", ["urine output", "decreased urine", "reduced urine", "less urine", "oliguria", "not passing urine"], { teach: "Reduced urine output with jaundice raises hepatorenal syndrome, leptospirosis and severe malaria." }),
     yn("red_flag", "fever_with_rigors_pain", "Fever with rigors and right upper pain", "Is there fever with rigors together with right upper abdominal pain (cholangitis)?", ["rigors", "chills", "fever with", "right hypochondrium", "right upper", "charcot"], { teach: "Fever with rigors and right upper abdominal pain alongside jaundice is Charcot's triad, which asks about an infected, obstructed bile duct — a question of hours rather than days." }),
     yn("exposure", "alcohol", "Alcohol", "How much alcohol, for how long, and when was the last drink?", ["alcohol", "drinks", "drinker", "alcoholic", "daily drinking", "binge", "last drink", "country liquor", "desi"], { teach: "The amount and duration of alcohol, and when the last drink was, separate alcoholic hepatitis and withdrawal from the other causes." }),
-    yn("red_flag", "hepatotoxic_drugs", "Hepatotoxic drugs / ATT / herbal", "Any anti-tubercular drugs, paracetamol excess, herbal or ayurvedic preparations, or other new drugs recently?", ["att", "akt", "anti tubercular", "isoniazid", "rifampicin", "paracetamol", "herbal", "ayurvedic", "desi dawai", "bhasma", "new medicine", "started on", "drug", "supplements", "anabolic"], { teach: "Anti-tuberculosis drugs, paracetamol, herbal and traditional medicines, and many others cause jaundice; the list is only found by asking about every tablet taken." }),
+    yn("red_flag", "hepatotoxic_drugs", "Hepatotoxic drugs / ATT / herbal", "Any anti-tubercular drugs, paracetamol excess, herbal or ayurvedic preparations, or other new drugs recently?", ["att", "akt", "anti tubercular", "isoniazid", "rifampicin", "paracetamol", "herbal", "ayurvedic", "desi dawai", "bhasma", "supplements", "anabolic"], { teach: "Anti-tuberculosis drugs, paracetamol, herbal and traditional medicines, and many others cause jaundice; the list is only found by asking about every tablet taken." }),
     PREGNANCY,
     IMMUNOCOMPROMISE,
     // Exposures
     yn("exposure", "water_food", "Unsafe water / outside food / contacts", "Any outside food, unsafe drinking water, or similar jaundice in family or locality?", ["outside food", "street food", "unsafe water", "contaminated water", "similar cases", "jaundice in family", "others at home", "locality", "outbreak"]),
     yn("exposure", "biliary_intervention", "Previous biliary operation or procedure", "Has the gall bladder ever been removed, or the bile duct stented, or an endoscopy of the bile duct done before?", ["gall bladder removed", "cholecystectomy", "lap chole", "ercp", "stent", "stenting", "bile duct", "biliary", "operated for stones", "pigtail", "drain in the liver"], { teach: "What has already been done to the biliary tree changes what a new episode of jaundice can be and what an ultrasound will show." }),
-    yn("exposure", "blood_sexual", "Blood / needle / sexual exposure", "Any transfusion, injections, tattoo, dialysis, needle sharing, or unprotected sexual exposure?", ["transfusion", "blood transfusion", "injection", "injections", "needle", "tattoo", "dialysis", "sexual", "unprotected", "multiple partners", "iv drug", "surgery", "dental"]),
+    yn("exposure", "blood_sexual", "Blood / needle / sexual exposure", "Any transfusion, injections, tattoo, dialysis, needle sharing, or unprotected sexual exposure?", ["transfusion", "blood transfusion", "injections", "needle", "tattoo", "dialysis", "sexual", "unprotected", "multiple partners", "iv drug"]),
     yn("exposure", "travel_water", "Travel / flood water / rodents", "Any travel, wading through flood water, or rodent exposure?", ["travel", "travelled", "flood", "flood water", "rain water", "wading", "sewage", "rat", "rats", "rodent", "farm", "paddy"], { tier: "detailed" }),
     yn("exposure", "family_history", "Family history of liver disease / anaemia", "Any family history of jaundice, liver disease, or anaemia (haemolytic disorders)?", ["family history", "family", "sibling", "parents", "thalassaemia", "thalassemia", "sickle", "g6pd", "anaemia in family"], { tier: "detailed" }),
   ],

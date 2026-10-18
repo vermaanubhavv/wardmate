@@ -33,6 +33,18 @@ describe("general-surgery discharge template matching", () => {
     ["Right diabetic foot, wet gangrene — ray amputation", "diabetic_foot"],
     ["Varicose veins left leg — EVLA", "varicose_veins"],
     ["Lipoma back — excision", "lump_excision"],
+    // Bailey & Love 28e review (docs/surgical-history.md §13)
+    ["Perforated duodenal ulcer, laparotomy", "perforation"],
+    ["Chronic calculous cholecystitis — lap chole", "lap_chole"],
+    ["Acute on chronic calculous cholecystitis", "acute_cholecystitis"],
+    ["Perforated gall bladder", "acute_cholecystitis"],
+    ["Carcinoma gall bladder, extended cholecystectomy", null],
+    ["Parathyroidectomy", null],
+    ["Traumatic jejunal perforation", "abdominal_trauma"],
+    ["Splenectomy for trauma", "abdominal_trauma"],
+    ["Splenectomy for ITP", null],
+    ["Above knee amputation for trauma", null],
+    ["Strangulated inguinal hernia, resection anastomosis", "obstruction"],
   ])("%s → %s", (text, key) => {
     expect(pick(text)).toBe(key);
   });

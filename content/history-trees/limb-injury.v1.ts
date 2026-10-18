@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, HUTCHISONS, MACLEODS, rce, val, yn } from "@/content/history-trees/_helpers";
+import { ATLS, BAILEY_LOVE, commonHpi, HUTCHISONS, MACLEODS, rce, surgicalBackground, TRAUMA_BG, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LIMB INJURY — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * LIMB INJURY — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Bailey & Love 28e review, docs/surgical-history.md §13).
  * Orthopaedic / emergency ward, north India. The mechanism predicts the injury, and the
  * questions that matter most afterwards are about the circulation, the nerves and the skin
  * over the fracture. Differentials: fracture, dislocation, ligament or tendon injury, soft
@@ -11,20 +11,22 @@ import { commonHpi, HUTCHISONS, MACLEODS, rce, val, yn } from "@/content/history
  */
 export const limbInjuryV1: HistoryTree = {
   id: "limb_injury",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Limb injury",
   triggers: ["limb injury", "fracture", "broken bone", "injury to leg", "injury to arm", "dislocation", "twisted ankle", "fall on hand", "hadi toot", "deformity after fall", "cannot bear weight"],
   setting: "Orthopaedic / emergency ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("Does this patient with shoulder pain have rotator cuff disease? The Rational Clinical Examination systematic review", 2013, "23982370"),
     MACLEODS,
     HUTCHISONS,
+    BAILEY_LOVE,
+    ATLS,
   ],
   slots: [
     ...commonHpi("injury"),
-    val("hpi", "mechanism_injury", "How it happened", "Exactly how did the injury happen — a fall, a twist, a direct blow, a road traffic collision, or machinery?", ["fall", "twist", "direct blow", "road traffic", "motorcycle", "machinery", "crush", "height", "slipped", "sports", "assault"]),
+    val("hpi", "mechanism_injury", "How it happened", "Exactly how did the injury happen — a fall, a twist, a direct blow, a road traffic collision, or machinery?", ["fall", "twist", "direct blow", "road traffic", "motorcycle", "machinery", "crush", "height", "slipped", "sports", "assault", "fall on outstretched hand", "foosh", "electric shock", "electrocution"]),
     val("hpi", "energy_position", "Force and position", "How far was the fall or how fast the impact, and what position was the limb in when it happened?", ["height", "metres", "speed", "outstretched hand", "twisted", "inverted", "direct", "landed on", "trapped"], { numeric: true }),
     val("hpi", "site_pain", "Where it hurts", "Where exactly is the pain, and is there more than one painful area?", ["site", "wrist", "elbow", "shoulder", "hip", "knee", "ankle", "foot", "thigh", "more than one", "also"]),
     yn("hpi", "deformity_swelling", "Deformity or swelling", "Is the limb visibly deformed, shortened, rotated, or rapidly swelling?", ["deformity", "shortened", "rotated", "bent", "angulated", "swelling", "rapid", "bruising"]),
@@ -32,8 +34,6 @@ export const limbInjuryV1: HistoryTree = {
     yn("hpi", "heard_sound", "A sound at the time", "Was any snap, crack or pop heard or felt at the moment of injury?", ["snap", "crack", "pop", "heard", "felt", "giving way", "tearing"]),
     yn("associated", "open_wound", "Break in the skin", "Is there any wound, graze or bleeding over the injured area, and was bone visible?", ["wound", "cut", "graze", "bleeding", "bone visible", "open", "exposed", "dirty", "contaminated"]),
     yn("associated", "numbness_tingling_limb", "Numbness or tingling", "Any numbness, tingling, or loss of feeling beyond the injury?", ["numbness", "tingling", "loss of feeling", "pins and needles", "cannot feel", "fingers", "toes"]),
-    yn("associated", "coldness_colour", "Colour or temperature of the limb", "Are the fingers or toes beyond the injury cold, pale, blue, or is the pulse absent?", ["cold", "pale", "blue", "dusky", "white", "no pulse", "cannot feel pulse", "colour change"]),
-    yn("associated", "pain_severity_progression", "Pain out of proportion", "Is the pain far worse than expected, increasing despite rest, or worse on stretching the fingers or toes?", ["worse than expected", "out of proportion", "increasing", "severe", "on stretching", "unbearable", "not relieved", "tight"]),
     yn("associated", "other_injuries_limb", "Injuries elsewhere", "Any injury to the head, chest, abdomen, spine or another limb?", ["head", "chest", "abdomen", "spine", "another limb", "multiple", "other injuries"]),
     yn("associated", "previous_problem_limb", "Previous problem with that limb", "Any previous injury, surgery, or long-standing pain in the same limb?", ["previous injury", "surgery", "implant", "plate", "long standing pain", "same limb", "operated"], { tier: "detailed" }),
     // Red flags
@@ -47,19 +47,23 @@ export const limbInjuryV1: HistoryTree = {
     yn("red_flag", "spine_injury_limb", "Neck or back pain, or weakness", "Any neck or back pain, or weakness, numbness or bladder change since the injury?", ["neck pain", "back pain", "spine", "weakness", "numbness", "bladder", "cannot move legs", "tingling"], { tier: "detailed", teach: "A high-energy limb injury travels with spinal injury often enough that the spine is asked about before the patient is moved." }),
     yn("exposure", "tetanus_status", "Tetanus immunisation", "Has the patient had a full course of tetanus immunisation, and when was the last dose?", ["tetanus", "tt", "immunisation", "booster", "last", "years ago", "not taken", "unknown", "full course", "three doses"], { teach: "Schwartz decides tetanus cover by the course and its timing together: fewer than three doses, more than five years since the last, or not known." }),
     yn("exposure", "comorbidity_limb", "Diabetes, steroids or bone disease", "Any diabetes, long-term steroids, thin bones, or known bone disease?", ["diabetes", "steroid", "steroids", "osteoporosis", "thin bones", "bone disease", "previous fractures"]),
-    yn("exposure", "anticoagulant_limb", "Blood thinners", "Is the patient on blood thinners or aspirin?", ["blood thinner", "warfarin", "aspirin", "clopidogrel", "anticoagulant"]),
-    yn("exposure", "first_aid_given", "First aid before arrival", "What was done before arrival — a splint, a bandage, traditional bone-setting, or manipulation?", ["splint", "bandage", "plaster", "bone setter", "traditional", "massage", "manipulated", "tied", "outside"], { tier: "detailed" }),
+    yn("exposure", "anticoagulant_limb", "Blood thinners", "Is the patient on blood thinners or aspirin?", ["blood thinner", "warfarin", "aspirin", "clopidogrel", "anticoagulant", "blood thinners", "acitrom", "ecosprin", "antiplatelet", "rivaroxaban", "apixaban"]),
+    yn("exposure", "first_aid_given", "First aid before arrival", "What was done before arrival — a splint, a bandage, traditional bone-setting, or manipulation?", ["splint", "bandage", "plaster", "bone setter", "traditional", "massage", "manipulated", "tied", "outside", "pehelwan", "pahalwan", "tight bandage", "tight plaster", "antibiotic"], { tier: "detailed", teach: "Bailey & Love lists a tight cast or dressing among the causes of a compartment under pressure, so a bandage, plaster or bone-setter's binding applied before arrival is recorded with its time." }),
+    // Bailey & Love, 28th ed. (docs/surgical-history.md §13)
+    val("hpi", "hand_dominance_limb", "Which hand is dominant", "For an arm injury, which hand does the patient write and eat with?", ["right handed", "left handed", "dominant", "non dominant", "writes with", "eats with", "ambidextrous"], { tier: "detailed", teach: "Bailey & Love records hand dominance with occupation in the musculoskeletal history, because the same arm injury costs more on the dominant side and weighs the choice of treatment." }),
+    val("exposure", "pre_injury_mobility", "Walking and independence before the injury", "Before the injury, did the patient walk without help, with a stick or a walker, and manage at home without help?", ["walked without help", "independent", "stick", "walker", "walking aid", "needed help", "bedridden", "housebound", "lives alone"], { tier: "detailed", teach: "Bailey & Love asks about walking aids, home help and accommodation in every musculoskeletal history; in an older patient with a fracture they set the aim of treatment and the plan for discharge." }),
+    ...surgicalBackground({ acute: true, omit: [...TRAUMA_BG.omit, "surg_blood_thinners", "surg_steroid_past_year"], detailed: TRAUMA_BG.detailed }),
   ],
   differentials: [
-    { id: "fracture", name: "Fracture", pointers: ["deformity_swelling", "weight_bearing_use", "heard_sound", "mechanism_injury"], discriminators: ["deformity_swelling", "weight_bearing_use", "heard_sound", "mechanism_injury", "energy_position", "site_pain", "hip_fracture_elderly"] },
+    { id: "fracture", name: "Fracture", pointers: ["deformity_swelling", "weight_bearing_use", "heard_sound", "mechanism_injury"], discriminators: ["deformity_swelling", "weight_bearing_use", "heard_sound", "mechanism_injury", "energy_position", "site_pain", "hip_fracture_elderly", "hand_dominance_limb", "pre_injury_mobility"] },
     { id: "dislocation", name: "Dislocation", pointers: ["deformity_dislocation", "heard_sound"], discriminators: ["deformity_dislocation", "heard_sound", "weight_bearing_use", "site_pain", "neurovascular_compromise"] },
     { id: "ligament_tendon", name: "Ligament or tendon injury", pointers: ["heard_sound", "mechanism_injury", "weight_bearing_use"], discriminators: ["heard_sound", "mechanism_injury", "weight_bearing_use", "deformity_swelling", "site_pain"] },
-    { id: "contusion", name: "Soft tissue contusion", pointers: ["mechanism_injury", "deformity_swelling"], discriminators: ["mechanism_injury", "deformity_swelling", "weight_bearing_use", "heard_sound", "pain_severity_progression"] },
+    { id: "contusion", name: "Soft tissue contusion", pointers: ["mechanism_injury", "deformity_swelling"], discriminators: ["mechanism_injury", "deformity_swelling", "weight_bearing_use", "heard_sound", "compartment_features"] },
     { id: "open_fracture_d", name: "Open fracture", pointers: ["open_fracture", "open_wound"], discriminators: ["open_fracture", "open_wound", "tetanus_status", "mechanism_injury", "first_aid_given"] },
-    { id: "compartment_syndrome", name: "Compartment syndrome", pointers: ["compartment_features", "pain_severity_progression", "numbness_tingling_limb"], discriminators: ["compartment_features", "pain_severity_progression", "numbness_tingling_limb", "first_aid_given", "energy_position"] },
-    { id: "neurovascular_injury", name: "Neurovascular injury", pointers: ["neurovascular_compromise", "coldness_colour", "numbness_tingling_limb"], discriminators: ["neurovascular_compromise", "coldness_colour", "numbness_tingling_limb", "deformity_dislocation", "first_aid_given"] },
+    { id: "compartment_syndrome", name: "Compartment syndrome", pointers: ["compartment_features", "numbness_tingling_limb"], discriminators: ["compartment_features", "numbness_tingling_limb", "first_aid_given", "energy_position"] },
+    { id: "neurovascular_injury", name: "Neurovascular injury", pointers: ["neurovascular_compromise", "numbness_tingling_limb"], discriminators: ["neurovascular_compromise", "numbness_tingling_limb", "deformity_dislocation", "first_aid_given"] },
     { id: "pathological", name: "Pathological fracture", pointers: ["pathological_fracture", "previous_problem_limb", "comorbidity_limb"], discriminators: ["pathological_fracture", "previous_problem_limb", "comorbidity_limb", "energy_position", "mechanism_injury"] },
-    { id: "collapse_then_fall", name: "Collapse that caused the fall", pointers: ["cause_of_fall_limb"], discriminators: ["cause_of_fall_limb", "mechanism_injury", "other_injuries_limb", "hip_fracture_elderly"] },
+    { id: "collapse_then_fall", name: "Collapse that caused the fall", pointers: ["cause_of_fall_limb"], discriminators: ["cause_of_fall_limb", "mechanism_injury", "other_injuries_limb", "hip_fracture_elderly", "pre_injury_mobility"] },
   ],
   output: {
     durationSlot: "duration",

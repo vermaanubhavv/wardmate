@@ -28,8 +28,10 @@ import { adv, proc, COMMON_MEDS } from "@/lib/discharge-template-parts";
  * `[ … ]` and the condition beside it, so a row nobody edited prints as visibly unfinished rather
  * than as a prescription every patient received.
  *
- * CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11) — including the corrections and the
- * nine templates added after the Schwartz 11e review (docs/surgical-history.md §12).
+ * CLINICAL CONTENT: PENDING REVIEW for the Bailey & Love 28e changes (2026-10-18, docs/surgical-history.md
+ * §13) — the matching fixes, the conditional-drug rows, the added follow-up and red-flag lines and the
+ * "What to check today" text. Everything else was REVIEWED (Dr Anubhav Verma, 2026-10-11), including
+ * the corrections and the nine templates added after the Schwartz 11e review (§12).
  *
  * Medication lines are a STARTING SET to be checked against each patient — allergy, renal
  * function, weight, cultures, what they were already taking.
@@ -111,6 +113,9 @@ const ONCO_MDT = "Collect the histopathology report and attend the oncology / mu
 /** Refuses any haystack that names a cancer — used by the benign-breast match. */
 const NOT_CANCER = String.raw`^(?![\s\S]*(carcinoma|cancer|malignan|\bca\b))[\s\S]*`;
 
+/** Refuses any haystack that names an injury — keeps an amputation for trauma off the diabetic-foot plan. */
+const NOT_TRAUMA = String.raw`^(?![\s\S]*\b(trauma|traumatic|crush|road traffic|RTA)\b)[\s\S]*`;
+
 /** Hydrocele / circumcision — the urology unit's reviewed template, reused rather than
  *  re-written; only the clinic name changes on a general-surgery ward. */
 const URO_HYDROCELE = UROLOGY_DISCHARGE_TEMPLATES.find((t) => t.key === "uro_hydrocele_circumcision")!;
@@ -118,6 +123,12 @@ const HYDROCELE: DischargeTemplate = {
   ...URO_HYDROCELE,
   scaffold: {
     ...URO_HYDROCELE.scaffold,
+    // Bailey & Love 28e p. 1070: no routine antibiotic after clean groin / scrotal surgery; the
+    // circumcision jelly is conditional. Both rows print bracketed here, the urology copy is untouched.
+    medications: URO_HYDROCELE.scaffold.medications.map((m) =>
+      m.generic === "Amoxicillin-clavulanate" ? { ...m, generic: "[ Amoxicillin-clavulanate — only if indicated ]", frequency: "TDS", indication: undefined }
+      : m.generic === "Lidocaine 2% jelly" ? { ...m, generic: "[ Lidocaine 2% jelly — after circumcision ]" }
+      : m),
     patientActions: [OPD7, "Sutures are absorbable [ / attend for suture removal on day 7–10 ]."],
   },
 };
@@ -166,6 +177,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         "Attend for suture removal on postoperative day 7–10 [ / sutures are absorbable ].",
         HPE,
         "Report any new lump in either breast.",
+        "[ Phyllodes: margins on the histopathology decide re-excision; attend for clinical review — local recurrence is common. ]",
       ],
       primaryCareActions: [],
       conditionAllSatisfactory: true,
@@ -213,6 +225,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         "Attend for suture removal on postoperative day 10–14.",
         ONCO_MDT,
         "Do the arm exercises every day.",
+        "Follow-up: clinical examination every 3 months for 2 years, then every 6 months to 5 years, then yearly; mammogram every year.",
       ],
       primaryCareActions: [
         "Monitor the wound; aspirate or refer a symptomatic seroma.",
@@ -276,7 +289,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         ONCO_MDT,
         "Keep the stoma-nurse follow-up appointment.",
         "[ Diverting ileostomy: attend for a distal contrast study and stoma closure at 8–12 weeks / after adjuvant therapy. ]",
-        "Surveillance: CEA every 3–6 months; colonoscopy at 1 year, or at 3–6 months if an obstructing tumour prevented a complete colonoscopy before surgery.",
+        "Surveillance: CEA every 3–6 months and CT of chest, abdomen and pelvis [ … ] for the first 3 years; colonoscopy at 1 year, or at 3–6 months if an obstructing tumour prevented a complete colonoscopy before surgery.",
       ],
       primaryCareActions: [
         "Monitor the wound and stoma.",
@@ -289,7 +302,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     clerkingFocus:
       "Change in bowel habit; bleeding per rectum or melaena; tenesmus; mass; weight loss and anorexia; episodes of obstruction; symptoms of anaemia; family history (Lynch syndrome, FAP); previous colonoscopy; stoma-site marking before an operation that may need a stoma. Examination: abdominal mass, hepatomegaly, digital rectal examination (for a rectal tumour — distance from the anal verge, fixity), nodes. Baseline: colonoscopy with biopsy, CEA, CT of chest, abdomen and pelvis, MRI pelvis for rectal tumours, CBC.",
     progressNote:
-      "Each day — enhanced-recovery milestones (out of bed, oral intake, off IV fluids, catheter out, analgesia step-down); flatus / stool or stoma — colour (pink / dusky / black), output volume and consistency; drain output and character; wound; on POD 3–7 the signs that raise a leak question — new tachycardia, fever, rising TLC / CRP, peritonism, ileus that does not settle; voiding once the catheter is out after pelvic dissection; electrolytes if ileostomy output is high; stoma teaching. Discharge — eating, stoma managed independently, drain out, voiding. Discharge with stoma supplies, thromboprophylaxis as decided, and clinic dates.",
+      "Each day — enhanced-recovery milestones (out of bed, oral intake, off IV fluids, catheter out, analgesia step-down); flatus / stool or stoma — mucosal viability from POD 1, colour (pink / dusky / black), mucocutaneous separation or retraction, output volume and consistency; drain output and character, if one was placed; wound; at any point, most often POD 3–7, the signs that raise a leak question — not progressing as expected, new tachycardia or arrhythmia, fever, worsening abdominal pain, rising TLC / CRP, peritonism, ileus that does not settle; voiding once the catheter is out after pelvic dissection; electrolytes if ileostomy output is high; stoma teaching. Discharge — eating, stoma managed independently, drain out, voiding. Discharge with stoma supplies, thromboprophylaxis as decided, and clinic dates.",
   },
 
   // ---- 09 Carcinoma stomach / gastric outlet obstruction ----
@@ -314,7 +327,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         { ...M.pantoprazole, generic: "[ Pantoprazole — distal / subtotal gastrectomy or gastrojejunostomy only ]", frequency: "OD", duration: undefined },
         M.paracetamolSos,
         { generic: "[ Domperidone — only if delayed gastric emptying ]", strength: "10 mg", route: "PO", frequency: "TDS before meals", duration: "maximum 7 days", indication: "if delayed gastric emptying (QT risk — short course only)", status: "new" },
-        { generic: "Vitamin B12", strength: "1000 mcg", route: "IM", frequency: "monthly", indication: "lifelong after total gastrectomy; check B12 yearly after distal gastrectomy", status: "new" },
+        { generic: "[ Vitamin B12 — after total gastrectomy ]", strength: "1000 mcg", route: "IM", frequency: "monthly", indication: "lifelong after total gastrectomy; check B12 yearly after distal gastrectomy", status: "new" },
         { generic: "Ferrous sulfate", route: "PO", frequency: "OD", status: "new" },
         { ...M.enoxaparin28, generic: "[ Enoxaparin — after resection for cancer ]" },
         { generic: "Feeding-jejunostomy feeds / high-calorie oral supplements", status: "new" },
@@ -362,7 +375,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
   {
     key: "thyroidectomy",
     label: "Thyroidectomy (hemi / total)",
-    match: /thyroidectom|thyroid lobectom|hemithyroid|goit(re|er)|\bMNG\b|thyroid (nodule|swelling|carcinoma|cancer|malignancy|neoplasm)|solitary (thyroid )?nodule|\bSTN\b|carcinoma (of )?(the )?thyroid|papillary thyroid|follicular (neoplasm|adenoma|carcinoma)|graves/i,
+    match: /(?<!para)thyroidectom|thyroid lobectom|hemithyroid|goit(re|er)|\bMNG\b|thyroid (nodule|swelling|carcinoma|cancer|malignancy|neoplasm)|solitary (thyroid )?nodule|\bSTN\b|carcinoma (of )?(the )?thyroid|papillary thyroid|follicular (neoplasm|adenoma|carcinoma)|graves/i,
     families: ["thyroidectomy"],
     scaffold: {
       indication:
@@ -396,7 +409,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ]),
       redFlags: [
         "Increasing neck swelling, tightness in the neck, or difficulty or noisy breathing",
-        "Tingling or numbness around the mouth or in the fingertips, or cramps or spasm of the hands",
+        "Tingling or numbness around the mouth, in the fingertips or toes, or cramps or spasm of the hands — most often 2–5 days after the operation",
         "Difficulty swallowing, or choking on liquids",
         "Voice getting worse",
         ...RF_WOUND,
@@ -407,10 +420,12 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         HPE,
         "[ Total thyroidectomy: get serum calcium checked on [ date ] and TSH 6 weeks after starting levothyroxine — the dose is adjusted to it. ]",
         "[ Carcinoma: attend the endocrine / nuclear medicine clinic with the histopathology report to decide on radioiodine. ]",
+        "Attend the clinic at about 4 weeks with the histopathology report for a voice and vocal-cord check.",
       ],
       primaryCareActions: [
         "Check serum calcium if there is tingling or cramps.",
         "Check TSH 6 weeks after starting levothyroxine and adjust the dose.",
+        "[ Hemithyroidectomy: check TSH at [ … ] weeks — about 1 in 3 need levothyroxine. ]",
         "Refer for laryngoscopy if the voice remains hoarse.",
       ],
       conditionAllSatisfactory: true,
@@ -418,7 +433,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     clerkingFocus:
       "Swelling — duration, growth, sudden increase (haemorrhage into a nodule or malignancy); pressure symptoms — dysphagia, breathlessness, stridor, hoarseness; toxic symptoms — weight loss, palpitations, heat intolerance, tremor; hypothyroid symptoms; neck irradiation; family history of thyroid cancer or MEN; current antithyroid drugs and beta-blockers. Examination: moves with swallowing, size, nodularity, lower border (retrosternal extension), tracheal deviation, Pemberton's sign, cervical nodes, eye signs, pulse, tremor. Baseline: thyroid function tests, USG neck (TI-RADS), FNAC (Bethesda), pre-operative vocal-cord check (indirect / video laryngoscopy), serum calcium, CT neck and chest if retrosternal; euthyroid before surgery.",
     progressNote:
-      "Each day — voice; breathing and stridor; neck swelling and drain output; perioral or fingertip tingling, Chvostek's and Trousseau's signs; serum calcium (± PTH) on POD 1 after total thyroidectomy; swallowing; wound. Discharge day — voice stable, no haematoma, calcium normal or stable on supplements, drain out.",
+      "Each day — voice and cough; breathing and stridor; neck swelling or tension under the wound (a haematoma almost always declares itself in the first 24 hours) [ and drain output, if one was placed ]; perioral or fingertip tingling, Chvostek's and Trousseau's signs; serum calcium (± PTH) after total thyroidectomy — repeated in those at highest risk, since hypocalcaemia can first appear on POD 2–5; thyroxine charted from POD 1 after total thyroidectomy; after surgery for thyrotoxicosis — pulse, temperature, restlessness; swallowing; wound. Discharge day — voice stable, no haematoma, calcium normal or stable on supplements, tingling explained to the patient, drain out if one was placed.",
   },
 
   // ---- 06 Acute pancreatitis ----
@@ -465,7 +480,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         "Attend the Surgery OPD in 2 weeks.",
         "[ Moderately severe / severe, or a collection suspected: CECT at about 4 weeks. ]",
         "[ Gallstone pancreatitis: cholecystectomy done in this admission (mild) / planned once collections resolve (moderately severe or severe) — date: ]",
-        "Get a fasting lipid profile and HbA1c done before the follow-up.",
+        "[ Cause not found: serum calcium and fasting lipid profile before discharge; EUS for microlithiasis if attacks recur. ] Get HbA1c done before the follow-up.",
       ],
       primaryCareActions: [
         "Repeat CBC, renal function, LFT and serum calcium after 1 week.",
@@ -477,7 +492,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     clerkingFocus:
       "Pain — epigastric, band-like, radiating to the back, eased by leaning forward; alcohol intake (quantity, last drink); known gallstones; drugs; previous episodes; family history. Examination: epigastric tenderness, distension, signs of a pleural effusion, Cullen's and Grey-Turner's signs, temperature, signs of shock. Baseline: amylase / lipase, LFT, serum calcium, triglycerides, glucose, haematocrit, renal function, blood gas, CRP; USG abdomen for gallstones; severity score (BISAP / modified Glasgow). Contrast CT only if the diagnosis is in doubt, or after 72 hours when not improving or a local complication is suspected — CT does not predict severity.",
     progressNote:
-      "Each day — pain score; oral intake and tolerance (feed as tolerated; Ryle's / nasojejunal feeds if not tolerated by day 3–5); fluid balance and urine output; organ-failure parameters (respiratory rate, SpO₂, BP, creatinine) and whether any has lasted beyond 48 hours; haematocrit / urea trend; abdominal examination and girth, bladder pressure if tense; temperature and CRP trend. On improvement — pain settled; eating; markers down. Mild gallstone pancreatitis — cholecystectomy in the same admission; severe or with collections — interval cholecystectomy once they settle. Discharge with follow-up imaging as needed.",
+      "Each day — pain score; oral intake and tolerance (feed as tolerated; Ryle's / nasojejunal feeds if not tolerated by day 3–5); fluid balance and urine output; organ-failure parameters (respiratory rate, SpO₂, BP, creatinine) and whether any has lasted beyond 48 hours; severity reassessed at 24 hours, 48 hours and day 7; haematocrit / urea trend; blood glucose and calcium; abdominal examination and girth, bladder pressure if tense; temperature and CRP trend; jaundice or signs of cholangitis (raises the question of ERCP within 72 hours for the senior); deterioration, persistent organ failure or sepsis (raises the CT question). On improvement — pain settled; eating; markers down. Mild gallstone pancreatitis — cholecystectomy in the same admission; severe or with collections — interval cholecystectomy once they settle. Discharge with follow-up imaging as needed.",
   },
 
   // ---- 13 Liver abscess — after pancreatitis, BEFORE cbd_stones and perforation ----
@@ -536,6 +551,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [
         "Support completion of the antibiotic course.",
         "Check blood sugar — undiagnosed diabetes is common with a pyogenic abscess.",
+        "[ Pyogenic: look for the source — biliary disease (USG / MRCP) or a colonic cause (diverticulitis, carcinoma) — recurrence is 12–38%. ]",
         "Counsel on alcohol cessation, safe drinking water and hand hygiene.",
       ],
       conditionAllSatisfactory: true,
@@ -543,7 +559,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     clerkingFocus:
       "Fever — duration, rigors; right upper abdominal pain, radiation to the right shoulder, pleuritic pain or cough; recent dysentery; alcohol (quantity, country liquor / toddy); diabetes; biliary disease, recent ERCP or abdominal sepsis; jaundice; weight loss (a necrotic tumour can mimic an abscess). Examination: tender hepatomegaly, intercostal tenderness, right basal chest signs, jaundice, peritonism (rupture). Baseline: CBC, LFT, PT / INR, blood sugar / HbA1c, renal function, amoebic serology, blood culture, USG abdomen (size, segment, liquefaction, volume), CT if complicated or unclear, chest X-ray; pus culture if aspirated.",
     progressNote:
-      "Each day — fever curve; pain and liver tenderness; pigtail output and character; TLC and LFT trend; chest signs; repeat USG when indicated. Discharge — afebrile for 48 hours, pain settled, drain output low or drain out.",
+      "Each day — fever curve; pain and liver tenderness; pigtail output and character (bile-stained output raises a biliary-communication question); aspirate culture report and the antibiotic choice it guides; blood sugar; TLC and LFT trend; chest signs; the source looked for (biliary tract, appendix or diverticular disease); repeat USG when indicated. Discharge — afebrile for 48 hours, pain settled, drain output low or drain out.",
   },
 
   // ---- 14 CBD stones / cholangitis / obstructive jaundice — after liver_abscess, BEFORE
@@ -607,7 +623,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     clerkingFocus:
       "Charcot's triad — fever with rigors, right upper quadrant pain, jaundice; confusion or hypotension (Reynolds' pentad); jaundice — duration, progression, pruritus, pale stools, dark urine; painless progressive jaundice with weight loss and anorexia (malignancy); previous cholecystectomy, ERCP or stent; bleeding tendency. Examination: icterus, scratch marks, palpable gallbladder (Courvoisier), hepatomegaly, mass, signs of sepsis. Baseline: LFT with direct bilirubin, ALP, GGT; PT / INR; CBC; renal function; amylase / lipase; blood culture; USG abdomen (CBD diameter, stones); MRCP; CT if malignancy suspected; Tokyo grade.",
     progressNote:
-      "Each day — temperature and sepsis parameters; bilirubin trend; INR; after ERCP — abdominal pain, amylase, melaena; T-tube output and colour; oral intake. Discharge — afebrile, bilirubin falling, eating; stent and cholecystectomy plan written down.",
+      "Each day — temperature and sepsis parameters; bilirubin trend; INR; after ERCP — abdominal pain, amylase, melaena; T-tube output and colour, and the T-tube cholangiogram once the bile is clear and the patient has recovered; after surgery, bilirubin that rises or bile that keeps leaking raises a retained-stone or duct-injury question; oral intake. Discharge — afebrile, bilirubin falling, eating; stent and cholecystectomy plan written down.",
   },
 
   // ---- 15 Blunt abdominal trauma — after cbd_stones, BEFORE perforation and obstruction ----
@@ -618,7 +634,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
   {
     key: "abdominal_trauma",
     label: "Blunt abdominal trauma (operated / non-operative)",
-    match: /(blunt|penetrating) (trauma )?(to the )?abdom\w*|abdominal (trauma|injury)|trauma abdomen|(splenic|spleen|liver|hepatic|mesenteric|bowel|hollow viscus|pancreatic|duodenal) (injury|injuries|laceration|tear|trauma)|ha?emoperitoneum|trauma laparotomy|(stab|gunshot|penetrating) (injury|wound)[^.]{0,30}abdom/i,
+    match: /(blunt|penetrating) (trauma )?(to the )?abdom\w*|abdominal (trauma|injury)|trauma abdomen|(splenic|spleen|liver|hepatic|mesenteric|bowel|hollow viscus|pancreatic|duodenal) (injury|injuries|laceration|tear|trauma)|ha?emoperitoneum|trauma laparotomy|(stab|gunshot|penetrating) (injury|wound)[^.]{0,30}abdom|traumatic (\w+ ){0,2}perforation|splenectomy[^.]{0,30}(trauma|injury|rupture)|(ruptured|rupture of( the)?) spleen/i,
     scaffold: {
       indication:
         "Patient was admitted following [a road traffic accident / fall from height / assault] on [date] with blunt abdominal trauma; [FAST / CT] showed [grade __ splenic / liver injury / haemoperitoneum / pneumoperitoneum], managed [non-operatively / with exploratory laparotomy].",
@@ -639,12 +655,13 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         M.pantoprazole,
         M.lactulose,
         { generic: "[ Pneumococcal, Haemophilus influenzae type b and meningococcal vaccines — after splenectomy ]", indication: "after splenectomy — from day 14 after the injury, if not given before discharge", status: "new" },
+        { generic: "[ Phenoxymethylpenicillin — after splenectomy ]", strength: "[ … ]", route: "PO", indication: "after splenectomy — at least the first 2–3 years; lifelong if immunocompromised", status: "new" },
       ],
       advice: adv([
         { module: "Activity restrictions", text: "No contact sports, heavy lifting, strenuous exercise or riding a two-wheeler for [ … ] weeks after a spleen or liver injury, even when you feel well — late bleeding can happen." },
         { module: "Wound care", text: "[ If operated: support the wound when coughing; keep it clean and dry. ]" },
         { module: "Lifting restrictions", text: "[ If operated: no lifting over 5 kg for 6–8 weeks. ]" },
-        { module: "Medication instructions", text: "Avoid pain-killers of the NSAID group (ibuprofen, diclofenac) and blood thinners unless the surgical team prescribes them. [ After splenectomy: carry a card saying you have no spleen, have the influenza vaccine every year, and see a doctor the same day for any fever. ]" },
+        { module: "Medication instructions", text: "Avoid pain-killers of the NSAID group (ibuprofen, diclofenac) and blood thinners unless the surgical team prescribes them. [ After splenectomy: carry a card saying you have no spleen, have the influenza vaccine every year, and see a doctor the same day for any fever or after any dog or cat bite. ]" },
       ]),
       redFlags: [
         "Sudden or increasing abdominal pain, or pain in the left shoulder tip",
@@ -664,6 +681,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [
         "Check haemoglobin if the patient feels faint or looks pale.",
         "[ After splenectomy: confirm the vaccines are complete, give the yearly influenza vaccine, and treat any fever promptly. ]",
+        "[ After splenectomy: repeat pneumococcal and meningococcal vaccines every 5 years; check the platelet count — aspirin if it rises above 1000 × 10⁹/L. ]",
       ],
       conditionAllSatisfactory: false,
     },
@@ -678,7 +696,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
   {
     key: "obstruction",
     label: "Acute intestinal obstruction",
-    match: /intestinal obstruction|bowel obstruction|gall\s*stone ileus|\bSAIO\b|adhesive obstruction|obstructed hernia|sigmoid volvulus|\bvolvulus\b|intussusception|adhesiolysis|drip and suck/i,
+    match: /intestinal obstruction|bowel obstruction|gall\s*stone ileus|\bSAIO\b|adhesive obstruction|(obstructed|strangulated) (\w+ ){0,2}hernia|sigmoid volvulus|\bvolvulus\b|intussusception|adhesiolysis|drip and suck/i,
     scaffold: {
       indication:
         "Patient was admitted with colicky abdominal pain, distension, vomiting and absolute constipation, with radiological features of intestinal obstruction, requiring inpatient management [and surgery].",
@@ -749,7 +767,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         "[Site] hernioplasty with mesh repair was performed on [date] under [general / spinal] anaesthesia. Recovery was uneventful; the patient passed urine without difficulty, mobilised and resumed oral intake. Pain was controlled on oral analgesia. The wound is healthy at discharge [and the drain, if placed, was removed on POD __].",
       medications: [M.paracetamol, M.pantoprazole, M.diclofenac, { ...M.lactulose, indication: "avoid straining" }],
       advice: adv([
-        { module: "Wound care", text: "Keep the wound clean and dry; remove the dressing after 48 hours if dry." },
+        { module: "Wound care", text: "Keep the wound clean and dry; remove the dressing after 48 hours if dry. Bruising and swelling in the first week are common; a soft fluid swelling (seroma) usually settles by itself — show it at follow-up." },
         { module: "Lifting restrictions", text: "Resume normal activities, including lifting, as pain allows [ large incisional / ventral mesh repair: avoid heavy lifting for 4–6 weeks ]." },
         { module: "Activity restrictions", text: "Walk from the day of surgery and increase activity as comfort allows. Treat constipation and cough early." },
         { module: "Return-to-work advice", text: "Light or desk work in 1–2 weeks; heavy manual work usually by 3–4 weeks." },
@@ -773,7 +791,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     clerkingFocus:
       "Duration; reducibility (spontaneous / manual / irreducible); dragging pain; episodes of obstruction (colicky pain, vomiting, constipation); precipitating factors — chronic cough, straining at stool, prostatism, ascites, heavy work; previous repair on either side. Examination: cough impulse, defect and contents, reducibility, testis and cord, the contralateral side, external genitalia. Baseline: pre-anaesthetic workup; USG if the diagnosis is uncertain.",
     progressNote:
-      "POD 0 — pain; first void after surgery [ passed / catheterised ] (retention is common after spinal anaesthesia in older men); vitals; scrotal swelling or haematoma. POD 1 — ambulant; orals; wound; scrotal / cord collection. Plan: discharge with advice.",
+      "POD 0 — pain; first void after surgery [ passed / catheterised ] (retention is common after spinal anaesthesia in older men); vitals; walking (local infiltration can block the femoral nerve for some hours); scrotal swelling or haematoma. POD 1 — ambulant; orals; wound; scrotal / cord collection; testicular pain or swelling. Plan: discharge with advice.",
   },
 
   HYDROCELE,
@@ -807,7 +825,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         { module: "Diet", text: "Resume a normal diet gradually as tolerated." },
         { module: "Activity restrictions", text: "Avoid heavy lifting and strenuous activity for 2–4 weeks." },
       ]),
-      redFlags: [...RF_WOUND, ...RF_ABDO, "Inability to tolerate any oral intake"],
+      redFlags: [...RF_WOUND, ...RF_ABDO, "Inability to tolerate any oral intake", "Fever, feeling unwell or loss of appetite returning about 5–7 days after the operation, or diarrhoea with a frequent urge to pass stool (collection)"],
       patientActions: [
         OPD7,
         "Attend for suture removal on postoperative day 7–10.",
@@ -821,20 +839,20 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     clerkingFocus:
       "Migratory pain (peri-umbilical to RIF); anorexia; nausea and vomiting; fever; diarrhoea or urinary symptoms; last menstrual period and gynaecological history in women. Examination: RIF tenderness, guarding, rebound, Rovsing's and psoas signs, mass, temperature. Baseline: CBC with differential, CRP, urine routine, urine pregnancy test in women; USG or CT if diagnosis unclear; Alvarado score.",
     progressNote:
-      "POD 0 — orals as tolerated; pain; vitals; passed urine. POD 1 — diet; ambulant; wound; temperature; [ drain output ]. Perforated or gangrenous — antibiotics about 4 days after source control (no more than 24 hours if gangrenous without perforation); fever, diarrhoea or tenesmus around POD 5–7 raises a pelvic-collection question. Discharge when afebrile, eating and drain out.",
+      "POD 0 — orals as tolerated; pain; vitals; passed urine. POD 1 — diet; ambulant; wound; temperature; [ drain output ]. Perforated or gangrenous — antibiotics about 4 days after source control (no more than 24 hours if gangrenous without perforation); wound pain and redness around POD 4–5 (wound infection question); ileus beyond POD 4–5, especially with fever, raises a continuing-sepsis question; spiking fever, malaise, anorexia, diarrhoea or tenesmus around POD 5–7 raises a pelvic or other intra-abdominal collection question; rigors or jaundice after a gangrenous appendix raise a pylephlebitis question. Discharge when afebrile, eating and drain out — collection symptoms explained to the patient.",
   },
 
   // ---- 01a Acute cholecystitis (acute admission) — checked before the elective template ----
   {
     key: "acute_cholecystitis",
     label: "Acute cholecystitis",
-    match: /\bcholecystitis\b|gall\s*bladder perforation|empyema[^.]*gall\s*bladder|gangrenous cholecystitis|mirizzi/i,
+    match: /(?<!\bchronic (a?calculous )?)\bcholecystitis\b|acute on chronic (a?calculous )?cholecystitis|gall\s*bladder perforation|perforated gall\s*bladder|empyema[^.]*gall\s*bladder|gangrenous cholecystitis|mirizzi/i,
     scaffold: {
       indication:
         "Patient was admitted with acute right upper abdominal pain, fever and ultrasound evidence of acute calculous cholecystitis, requiring inpatient management with intravenous fluids, analgesia and antibiotics [and laparoscopic cholecystectomy].",
       primaryDiagnosis: "Acute [ calculous / acalculous ] cholecystitis — Tokyo Grade [ I / II / III ]",
       procedure: proc({
-        name: "[ Laparoscopic cholecystectomy (early, within 72 h / same admission) / percutaneous cholecystostomy / none — managed without surgery ]",
+        name: "[ Laparoscopic cholecystectomy (early, within 7 days of onset / same admission; otherwise interval surgery at about 6 weeks) / percutaneous cholecystostomy / none — managed without surgery ]",
         anaesthesia: "General anaesthesia",
         findings: "[ acutely inflamed, distended, thick-walled gallbladder; pericholecystic fluid; dense adhesions; empyema / mucocele ]",
         drains: "[ subhepatic drain ]",
@@ -880,7 +898,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
   {
     key: "perforation",
     label: "Perforation peritonitis",
-    match: /perforation|peritonitis|hollow viscus|graham patch|omentopexy|pneumoperitoneum/i,
+    match: /perforat(ion|ed)|peritonitis|hollow viscus|graham patch|omentopexy|pneumoperitoneum/i,
     scaffold: {
       indication:
         "Patient was admitted with acute abdominal pain and clinical features of generalised peritonitis with radiological pneumoperitoneum, requiring emergency exploratory laparotomy.",
@@ -899,7 +917,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         { generic: "[ Antibiotic — only if a course continues after discharge ]", duration: "[ … ]", indication: "most courses finish in hospital: ~4 days after source control (STOP-IT); ≤ 24 h after an uncomplicated or gangrenous non-perforated case", status: "new" },
         { generic: "[ Ileal (enteric) perforation: complete the culture-directed enteric-fever course ]", status: "new" },
         { generic: "[ Tubercular perforation: anti-tubercular treatment after histopathology ]", status: "new" },
-        { ...M.pantoprazole, frequency: "BD", duration: "4 to 6 weeks", indication: "peptic perforation" },
+        { ...M.pantoprazole, generic: "[ Pantoprazole — peptic perforation ]", frequency: "BD", duration: "4 to 6 weeks", indication: "peptic perforation [ — lifelong if NSAIDs must continue ]" },
         { generic: "[ H. pylori: test (ulcer-edge biopsy / stool antigen) and eradicate / empirical triple therapy ]", indication: "peptic perforation", status: "new" },
         M.paracetamolSos,
         { generic: "High-protein oral nutritional supplement", frequency: "BD", status: "new" },
@@ -942,7 +960,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
   {
     key: "lap_chole",
     label: "Gallstone disease (planned lap cholecystectomy)",
-    match: /\blap\s*chole\b|cholelithiasis|gall\s*stones?\s*disease|gall\s*stones?(?!\s*ileus)|chol(e|y)cystectom|choledocholithiasis|biliary colic/i,
+    match: new RegExp(NOT_CANCER + String.raw`(\blap\s*chole\b|cholelithiasis|gall\s*stones?\s*disease|gall\s*stones?(?!\s*ileus)|chol(e|y)cystectom|choledocholithiasis|biliary colic|chronic (a?calculous )?cholecystitis)`, "i"),
     families: ["lap_chole"],
     scaffold: {
       indication:
@@ -1013,7 +1031,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         { generic: "Lactulose", dose: "15–30 ml", route: "PO", frequency: "HS, titrate to a soft stool", duration: "2 weeks", status: "new" },
         { generic: "Isabgol (psyllium husk)", dose: "1 teaspoon", route: "PO", frequency: "HS", status: "new" },
         { generic: "[ Metronidazole — haemorrhoidectomy only ]", strength: "400 mg", route: "PO", frequency: "TDS", duration: "5 days", indication: "reduces pain after haemorrhoidectomy", status: "new" },
-        { generic: "[ Local anaesthetic ointment after haemorrhoidectomy / GTN or diltiazem only for a fissure managed without surgery ]", route: "topical", frequency: "BD", status: "new" },
+        { generic: "[ Local anaesthetic ointment / diltiazem 2% — after haemorrhoidectomy, for pain ]", route: "topical", frequency: "BD", status: "new" },
       ],
       advice: adv([
         { module: "Wound care", text: "Warm sitz baths 2–3 times a day and after every bowel motion. Keep the area clean and dry between baths; avoid local trauma." },
@@ -1024,7 +1042,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         { module: "Wound care", text: "[ Pilonidal: open-wound dressings / flap care as taught; keep the natal cleft free of hair. ]" },
       ]),
       redFlags: [
-        "Heavy or continuous bleeding from the back passage",
+        "Heavy or continuous bleeding from the back passage (most likely in the first day, or around day 7–8)",
         "Inability to pass urine",
         "Inability to pass stool, or severe pain on defecation",
         "Persistent or high fever",
@@ -1037,6 +1055,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         "[ Complete the antibiotic course, if one continues after discharge. ]",
         "Bring any histopathology report to follow-up.",
         "[ Attend for seton adjustment or removal as scheduled. ]",
+        "[ Haemorrhoidectomy: review at 3–4 weeks with a rectal examination for anal narrowing. ]",
       ],
       primaryCareActions: [
         "Reinforce stool softeners and sitz baths.",
@@ -1047,7 +1066,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     clerkingFocus:
       "Bleeding — colour, whether on or after defecation, dripping versus mixed with stool; prolapse — reduces on its own, needs manual reduction, or irreducible; pain — a fissure gives severe pain on defecation lasting hours, an abscess gives constant throbbing pain; discharge; itching; bowel habit and constipation; previous anorectal surgery; risk factors for a specific fistula cause (inflammatory bowel disease, tuberculosis, immunosuppression). Examination: perianal inspection (tags, external opening, sentinel pile), digital rectal examination unless too painful, proctoscopy or sigmoidoscopy, examination under anaesthesia. Baseline: haemoglobin if there is chronic bleeding; colonoscopy if over 40 or with alarm features; MRI pelvis for a complex fistula.",
     progressNote:
-      "POD 0 — pain score; first void [ passed / catheterised ]; bleeding; sitz baths started. POD 1 — first bowel motion [ passed / not yet ] and pain with it; analgesia; voiding; wound / pack. Plan: discharge with sitz baths, stool softeners and follow-up.",
+      "POD 0 — pain score; first void [ passed / catheterised ]; bleeding, including concealed bleeding (pulse, BP; may show only on rectal examination); sitz baths started. POD 1 — first bowel motion [ passed / not yet ] and pain with it; analgesia; voiding; wound / pack. Plan: discharge with sitz baths, stool softeners and follow-up; bleeding around day 7–8 (secondary haemorrhage) explained to the patient.",
   },
   // ---- 16 Varicose veins — after perianal (no collisions with existing regexes) ----
   // Schwartz 11e p. 996: after sclerotherapy, bandage 3–5 days then stockings ≥ 2 weeks;
@@ -1078,7 +1097,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       advice: adv([
         { module: "Mobilisation", text: "Walk for 10 minutes every hour while awake, starting today. Do not sit or stand still for long; when sitting, keep the leg raised. Avoid long journeys for 2 weeks." },
-        { module: "Wound care", text: "Keep the bandage on for [ 48 hours / 3–5 days ] as advised, then wear the compression stocking during the day for at least [ 2–6 ] weeks. Bruising and tender cords along the treated vein are expected and settle over a few weeks." },
+        { module: "Wound care", text: "Keep the bandage on for [ 48 hours / 3–5 days ] as advised, then wear the compression stocking during the day for at least [ 2–6 ] weeks. Bruising and tender cords along the treated vein are expected and settle over a few weeks. Numbness or tingling along the inner leg or ankle can follow stripping and usually improves." },
         { module: "Return-to-work advice", text: "Desk work after [ 1 ] week; work that involves long standing or heavy lifting after [ 2–3 ] weeks." },
       ]),
       redFlags: [
@@ -1094,14 +1113,14 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       primaryCareActions: [
         "Encourage walking, weight control and leg elevation.",
-        "[ Venous ulcer: continue compression and dressings until healed. ]",
+        "[ Venous ulcer: continue compression and dressings until healed, then class 2 below-knee stockings — lifelong if reflux remains, the deep veins are blocked, or the ulcer recurs. ]",
       ],
       conditionAllSatisfactory: true,
     },
     clerkingFocus:
       "Symptoms — aching, heaviness, itching, night cramps, swelling by evening; duration and progression; bleeding from a vein; ulcer; previous DVT (deep-system patency decides the operation); pregnancy, oral contraceptives; occupation with prolonged standing; previous surgery or sclerotherapy. Examination: distribution (GSV / SSV), skin changes (pigmentation, eczema, lipodermatosclerosis, ulcer), cough impulse at the SFJ, Trendelenburg / tourniquet tests, peripheral pulses (ABPI before compression). Baseline: venous duplex (reflux, deep-system patency), CBC, coagulation, pre-anaesthetic workup.",
     progressNote:
-      "POD 0 — mobilised; bandage intact; groin and stab wounds; bleeding. POD 1 — calf soft and non-tender; walking; bandage / stocking in place. Plan: discharge with advice.",
+      "POD 0 — mobilised; bandage intact; groin and stab wounds; bleeding. POD 1 — calf soft and non-tender; walking; bandage / stocking in place; numbness or tingling along the inner leg (saphenous) or outer foot (sural), foot drop after SSV surgery (common peroneal). Plan: discharge with advice.",
   },
 
   // ---- 17 Diabetic foot — after varicose_veins, BEFORE abscess_drainage ----
@@ -1113,7 +1132,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
   {
     key: "diabetic_foot",
     label: "Diabetic foot — debridement / amputation",
-    match: /diabetic foot|\bDFU\b|wagner|neuropathic ulcer|charcot foot|(toe|ray|forefoot|transmetatarsal|chopart|lisfranc|syme'?s?|below[- ]knee|above[- ]knee|guillotine) amputation|\b[AB]KA\b|amputation of (the )?(\w+ )?(toe|ray|foot|leg|limb)|(wet|dry) gangrene|gangrene (of )?(the )?(\w+ )?(toe|foot|leg)|(toe|foot) (gangrene|abscess)|(foot|plantar|heel) ulcer|plantar abscess|web[- ]?space (abscess|infection)/i,
+    match: new RegExp(NOT_TRAUMA + String.raw`(diabetic foot|\bDFU\b|wagner|neuropathic ulcer|charcot foot|(toe|ray|forefoot|transmetatarsal|chopart|lisfranc|syme'?s?|below[- ]knee|above[- ]knee|guillotine) amputation|\b[AB]KA\b|amputation of (the )?(\w+ )?(toe|ray|foot|leg|limb)|(wet|dry) gangrene|gangrene (of )?(the )?(\w+ )?(toe|foot|leg)|(toe|foot) (gangrene|abscess)|(foot|plantar|heel) ulcer|plantar abscess|web[- ]?space (abscess|infection))`, "i"),
     scaffold: {
       indication:
         "Patient, a known case of [type 2] diabetes mellitus [on __], was admitted with [an infected ulcer / abscess / wet gangrene] of the [right / left] foot [with uncontrolled blood sugar], requiring [surgical debridement / amputation].",
@@ -1132,8 +1151,9 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         { ...M.paracetamol, indication: "NSAIDs avoided — diabetic kidney" },
         M.pantoprazole,
         { generic: "[ Culture-directed oral antibiotic ]", duration: "[ … ]", indication: "per tissue / bone culture [ — longer course if osteomyelitis ]", status: "new" },
-        { generic: "Insulin / oral hypoglycaemic agents", strength: "[ … ]", indication: "as per the physician's discharge plan — write each drug and dose in full", status: "changed" },
-        { generic: "[ Aspirin — if peripheral arterial disease ]", strength: "75 mg", route: "PO", frequency: "OD after food", indication: "if peripheral arterial disease — unless contraindicated", status: "new" },
+        { generic: "[ Insulin / oral hypoglycaemic agents — diabetic ]", strength: "[ … ]", indication: "as per the physician's discharge plan — write each drug and dose in full", status: "changed" },
+        { generic: "[ Clopidogrel — if peripheral arterial disease ]", strength: "75 mg", route: "PO", frequency: "OD", indication: "if peripheral arterial disease — aspirin 75 mg OD after food is the alternative; unless contraindicated", status: "new" },
+        { generic: "[ Tramadol — only if pain is not controlled ]", strength: "50 mg", route: "PO", frequency: "SOS", status: "prn" },
         { generic: "Atorvastatin", strength: "[ … ]", route: "PO", frequency: "HS", indication: "diabetes / peripheral arterial disease", status: "new" },
       ],
       advice: adv([
@@ -1141,6 +1161,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         { module: "Activity restrictions", text: "Keep weight off the operated foot — use the walker, crutches or special footwear as advised. Walking on the wound stops it healing." },
         { module: "Foot care", text: "Look at both feet every day (use a mirror for the soles). Wash and dry between the toes. Never walk barefoot, even at home. Wear soft, well-fitting footwear and check inside shoes before putting them on. Do not cut corns yourself or put hot water or heat bags on the feet. Cut nails straight across." },
         { module: "Diet", text: "Diabetic diet as advised. Check blood sugar [ … ] times a day, keep a record and bring it to every visit." },
+        { module: "Medication instructions", text: "Stop smoking completely — it narrows the leg arteries and stops the wound healing." },
         { module: "Physiotherapy", text: "[ Amputation: keep the knee straight — no pillow under the knee; do the stump exercises taught on the ward. ]" },
       ]),
       redFlags: [
@@ -1202,12 +1223,12 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         M.paracetamol,
         M.pantoprazole,
         { ...M.diclofenac, indication: "avoid in diabetic kidney disease or renal impairment" },
-        { ...M.amoxClav, generic: "[ Amoxicillin-clavulanate — only if cellulitis or systemic features persist after drainage, or per pus culture ]" },
+        { ...M.amoxClav, generic: "[ Amoxicillin-clavulanate — only if the cavity was closed or aspirated rather than left open, cellulitis or systemic features persist, or per pus culture; breast abscess: cloxacillin / flucloxacillin for 14 days ]" },
       ],
       advice: adv([
         { module: "Wound care", text: "Get the wound dressed [ daily ] as advised until it heals from the base. Some discharge on the dressing is expected and lessens day by day. [ Perianal: warm sitz baths 2–3 times a day and after each bowel motion. ]" },
         { module: "Medication instructions", text: "[ Diabetic: continue the diabetes treatment as advised and check blood sugar regularly — good sugar control helps the wound heal. ]" },
-        { module: "Breastfeeding", text: "[ Breast abscess: keep feeding from the other breast and empty the affected breast by expressing or pumping; restart feeding from that side when advised. ]" },
+        { module: "Breastfeeding", text: "[ Breast abscess: keep breastfeeding from both breasts every 2 hours and empty the breast after each feed; a drain or aspiration does not stop feeding. ]" },
       ]),
       redFlags: [
         ...RF_WOUND,
@@ -1220,6 +1241,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         OPD7,
         "Complete the course of antibiotics, if prescribed.",
         "Bring the pus culture report to the follow-up visit.",
+        "[ Infected sebaceous (epidermoid) cyst: attend for excision of the whole cyst once the inflammation has settled — otherwise it comes back. ]",
       ],
       primaryCareActions: [
         "Continue dressings until healed.",
@@ -1320,5 +1342,5 @@ export const GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
   clerkingFocus:
     "Presenting complaint with onset, duration and character; associated symptoms and relevant negatives; past medical, surgical and drug history; examination findings on arrival; provisional diagnosis and plan. Baseline investigations as indicated.",
   progressNote:
-    "Each day — symptoms; vitals with temperature; examination; oral intake; flatus / stool; urine output; drains / tubes — output and character; wound; mobilisation; calf tenderness; the day's plan. On readiness — afebrile, eating, mobilising, wound healthy, tubes out. For discharge with advice.",
+    "Each day — symptoms; vitals with temperature; new confusion; pain; examination including chest; oral intake; flatus / stool; urine output; drains / tubes — output and character; wound; cannula sites; pressure areas if bed-bound; mobilisation; calf tenderness; the day's plan. On readiness — afebrile, eating, mobilising, wound healthy, tubes out. For discharge with advice.",
 };

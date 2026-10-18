@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BLEEDING PER RECTUM — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
+ * BLEEDING PER RECTUM — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical ward, north India. Separates anorectal bleeding (bright red, on the paper or
  * pan, after stool) from colonic bleeding (mixed, dark) and from upper-gastrointestinal
  * bleeding (black, tarry). Differentials: haemorrhoids, anal fissure, rectal or colonic cancer,
@@ -10,20 +10,20 @@ import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISO
  */
 export const bleedingPerRectumV1: HistoryTree = {
   id: "bleeding_per_rectum",
-  version: "1.2.0",
+  version: "1.3.0",
   complaint: "Bleeding per rectum",
   triggers: ["bleeding per rectum", "bleeding pr", "rectal bleeding", "blood per rectum", "passing blood", "bloody stools", "hematochezia", "haematochezia", "melaena", "melena", "black stools", "bright red blood"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
   slots: [
     ...commonHpi("bleeding per rectum"),
-    val("hpi", "colour", "Colour of blood", "Is the blood bright red, dark, maroon, or black and tarry?", ["bright red", "dark", "maroon", "black", "tarry", "melaena", "malena", "red", "fresh blood"]),
+    val("hpi", "colour", "Colour of blood", "Is the blood bright red, dark, maroon, or black and tarry?", ["bright red", "dark", "maroon", "black", "tarry", "melaena", "malena", "red", "fresh blood"], { teach: "Bailey & Love warns that the bleeding of rectal cancer is typically bright red and painless and can be indistinguishable from haemorrhoidal bleeding, so colour alone does not settle the source." }),
     val("hpi", "relation_to_stool", "Relation to stool", "Is the blood on the paper, dripping in the pan, streaked on the stool, or mixed in?", ["on paper", "on the pan", "dripping", "streaked", "mixed", "coating", "after stool", "before stool", "with stool", "only blood", "blood and mucus only", "without stool", "separate from stool"]),
     val("hpi", "amount", "Amount", "How much blood — streaks, a few drops, a cupful, or clots?", ["streaks", "drops", "cupful", "clots", "large amount", "small amount", "profuse", "amount"], { numeric: true }),
     val("hpi", "pattern", "Frequency", "Does it come every stool, now and then, or is it a single episode?", ["every stool", "now and then", "single episode", "intermittent", "daily", "on and off", "recurrent"]),
-    yn("hpi", "pain", "Pain on passing stool", "Is there pain on passing stool, and how long does it last?", ["pain on passing", "painful defaecation", "pain during stool", "burning", "cutting", "tearing", "painless"]),
+    yn("hpi", "pain", "Pain on passing stool", "Is there pain on passing stool, and how long does it last?", ["pain on passing", "painful defaecation", "pain during stool", "burning", "cutting", "tearing"]),
     yn("hpi", "prolapse", "Lump / prolapse at the anus", "Any lump coming out at the anus, and does it go back on its own?", ["lump", "prolapse", "coming out", "mass at anus", "swelling", "piles", "goes back"]),
     yn("associated", "bowel_habit", "Change in bowel habit", "Any recent change in bowel habit, constipation, or loose stools?", ["constipation", "loose stools", "change in bowel habit", "diarrhoea", "alternating", "narrow stool", "pencil"]),
     yn("associated", "mucus_tenesmus", "Mucus / tenesmus", "Any mucus, urgency, or a sense of incomplete emptying?", ["mucus", "urgency", "tenesmus", "incomplete", "frequent stool"]),
@@ -35,10 +35,10 @@ export const bleedingPerRectumV1: HistoryTree = {
     yn("red_flag", "haemodynamic", "Giddiness / fainting / palpitations", "Any giddiness, fainting, palpitations, or cold sweats with the bleeding?", ["giddiness", "fainting", "palpitations", "cold sweats", "dizzy", "syncope", "weakness"], { teach: "Giddiness or fainting with bleeding suggests the volume lost is enough to matter, which changes how quickly to look." }),
     yn("red_flag", "large_volume", "Large-volume or repeated bleeding", "Has there been a large amount of blood, clots, or repeated episodes in the same day?", ["large amount", "clots", "profuse", "repeated", "several times", "cupful", "buckets"], { teach: "Large or repeated bleeding sets the pace of everything else; Schwartz notes brisk bleeding still most often comes from the oesophagus, stomach or duodenum even when it appears per rectum." }),
     yn("red_flag", "melaena", "Black tarry stools / vomiting blood", "Are the stools black and tarry, or has the patient vomited blood?", ["black stools", "melaena", "tarry", "vomiting blood", "haematemesis"], { teach: "Black tarry stools point higher in the gut than bright red blood on the paper." }),
-    yn("exposure", "liver_disease", "Known liver disease / varices", "Any known liver disease, alcohol use, or varices?", ["liver disease", "cirrhosis", "alcohol", "varices", "portal hypertension", "hepatitis"], { tier: "detailed", teach: "In a patient with liver disease, bleeding can come from varices or piles of portal origin, which are managed very differently." }),
+    yn("exposure", "liver_disease", "Known liver disease / varices", "Any known liver disease, alcohol use, or varices?", ["liver disease", "cirrhosis", "varices", "portal hypertension", "hepatitis"], { tier: "detailed", teach: "In a patient with liver disease, bleeding can come from varices or piles of portal origin, which are managed very differently." }),
     PREGNANCY,
     yn("exposure", "family_bowel", "Family history of bowel cancer / IBD", "Any family history of bowel cancer, polyps, or inflammatory bowel disease?", ["family history", "bowel cancer", "polyps", "ibd", "colitis", "crohn"], { tier: "detailed" }),
-    yn("exposure", "recent_infection_travel", "Recent gastroenteritis / travel / antibiotics", "Any recent gastroenteritis, travel, or antibiotic course?", ["gastroenteritis", "travel", "antibiotics", "diarrhoea", "food poisoning"], { tier: "detailed" }),
+    yn("exposure", "recent_infection_travel", "Recent gastroenteritis / travel / antibiotics", "Any recent gastroenteritis, travel, or antibiotic course?", ["gastroenteritis", "travel", "antibiotics", "food poisoning"], { tier: "detailed" }),
     yn("exposure", "anal_intercourse_hiv", "Anal sex / sexually transmitted infection / HIV", "Any history of anal intercourse, a sexually transmitted infection, or HIV?", ["anal sex", "anal intercourse", "sti", "hiv", "sexually transmitted"], { tier: "detailed" }),
     // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
     yn("associated", "morning_urgency", "Urgent stool on waking", "Is there an urgent call to stool on waking, passing mostly blood and mucus?", ["early morning", "on waking", "first thing in the morning", "urgent call", "morning diarrhoea", "only blood and mucus", "no morning urgency"], { tier: "detailed", teach: "Das describes this spurious morning diarrhoea from blood, mucus and pus that collect overnight above an ulcerating rectal growth." }),
@@ -51,13 +51,17 @@ export const bleedingPerRectumV1: HistoryTree = {
     // Schwartz's Principles of Surgery, 11th ed. (docs/surgical-history.md §12)
     yn("exposure", "pelvic_radiotherapy", "Radiotherapy to the pelvis", "Has the patient had radiotherapy to the pelvis — for cancer of the cervix, prostate, bladder or rectum?", ["radiotherapy", "radiation", "pelvic radiation", "cancer cervix", "cervix cancer", "prostate cancer", "no radiotherapy"], { tier: "detailed", teach: "Schwartz lists radiation proctitis among causes of non-healing anorectal disease and pelvic irradiation as a possible risk for later rectal cancer; in north India the usual story is radiotherapy for cancer of the cervix." }),
     yn("exposure", "vascular_risk", "Artery disease, aortic surgery or a recent fall in blood pressure", "Is there known heart or artery disease, an operation on the aorta, or a recent episode of very low blood pressure?", ["heart disease", "vascular disease", "peripheral arterial disease", "aortic surgery", "aneurysm repair", "low blood pressure", "shock", "dialysis"], { tier: "detailed", teach: "Schwartz lists vascular disease, diabetes, low blood pressure, smoking and aortic surgery as the risks for ischaemic colitis, which can give bloody diarrhoea with little pain." }),
+    // Bailey & Love, 28th ed. (docs/surgical-history.md §13)
+    yn("associated", "anaemia_symptoms", "Tiredness / breathlessness / pallor", "Any tiredness, breathlessness on exertion or pallor suggesting slow blood loss?", ["tiredness", "fatigue", "breathless on exertion", "pallor", "pale", "anaemia", "low hb", "no tiredness"], { tier: "detailed", teach: "Bailey & Love notes haemorrhoidal bleeding is rarely enough to cause anaemia, so anaemia sends the history looking for another source, such as a right-sided colon cancer." }),
+    val("hpi", "stool_frequency", "Stools per day", "How many times a day are stools passed, and at night as well?", ["times a day", "per day", "stools a day", "motions a day", "at night", "nocturnal", "stool frequency"], { numeric: true, tier: "detailed", teach: "Bailey & Love grades the severity of colitis by the number of bloody stools a day, with more than six marking severe disease." }),
+    yn("exposure", "known_ibd_polyps", "Known colitis, polyps or earlier bowel cancer", "Has the patient been diagnosed before with ulcerative colitis, Crohn's disease, bowel polyps or a bowel cancer?", ["ulcerative colitis", "crohn", "ibd", "polyps", "polypectomy", "bowel cancer", "colon cancer", "no known bowel disease"], { tier: "detailed", teach: "Bailey & Love notes the cancer risk in ulcerative colitis climbs with the years of disease, so a known colitis changes the reading of new bleeding." }),
     ...surgicalBackground({ acute: true, omit: ["surg_weight_loss"], detailed: ["surg_anaesthetic_problem", "surg_exercise_tolerance"] }),
   ],
   differentials: [
-    { id: "haemorrhoids", name: "Haemorrhoids", pointers: ["colour", "relation_to_stool", "prolapse"], discriminators: ["colour", "relation_to_stool", "prolapse", "pain", "amount", "pattern", "previous_anorectal_treatment", "perianal_itching", "stool_avoidance"] },
+    { id: "haemorrhoids", name: "Haemorrhoids", pointers: ["colour", "relation_to_stool", "prolapse"], discriminators: ["colour", "relation_to_stool", "prolapse", "pain", "amount", "pattern", "previous_anorectal_treatment", "perianal_itching", "stool_avoidance", "anaemia_symptoms"] },
     { id: "fissure", name: "Anal fissure", pointers: ["pain", "relation_to_stool"], discriminators: ["pain", "relation_to_stool", "amount", "prolapse", "previous_anorectal_treatment", "stool_avoidance"] },
-    { id: "colorectal_cancer", name: "Colorectal cancer / polyp", pointers: ["bowel_habit", "family_bowel", "appetite_weight"], discriminators: ["bowel_habit", "family_bowel", "appetite_weight", "mucus_tenesmus", "colour", "morning_urgency", "purulent_discharge", "pelvic_radiotherapy"] },
-    { id: "colitis", name: "Colitis (infective / inflammatory)", pointers: ["mucus_tenesmus", "fever", "recent_infection_travel", "abdominal_pain"], discriminators: ["mucus_tenesmus", "fever", "recent_infection_travel", "abdominal_pain", "bowel_habit", "anal_intercourse_hiv", "purulent_discharge", "perianal_itching", "pelvic_radiotherapy"] },
+    { id: "colorectal_cancer", name: "Colorectal cancer / polyp", pointers: ["bowel_habit", "family_bowel", "appetite_weight"], discriminators: ["bowel_habit", "family_bowel", "appetite_weight", "mucus_tenesmus", "colour", "morning_urgency", "purulent_discharge", "pelvic_radiotherapy", "anaemia_symptoms", "known_ibd_polyps"] },
+    { id: "colitis", name: "Colitis (infective / inflammatory)", pointers: ["mucus_tenesmus", "fever", "recent_infection_travel", "abdominal_pain"], discriminators: ["mucus_tenesmus", "fever", "recent_infection_travel", "abdominal_pain", "bowel_habit", "anal_intercourse_hiv", "purulent_discharge", "perianal_itching", "pelvic_radiotherapy", "stool_frequency", "known_ibd_polyps"] },
     { id: "diverticular_angiodysplasia", name: "Diverticular / vascular bleeding", pointers: ["large_volume", "surg_blood_thinners", "haemodynamic"], discriminators: ["large_volume", "surg_blood_thinners", "haemodynamic", "pain", "abdominal_pain"] },
     { id: "upper_gi", name: "Upper gastrointestinal source", pointers: ["melaena", "upper_gi", "liver_disease"], discriminators: ["melaena", "upper_gi", "liver_disease", "surg_blood_thinners", "colour", "large_volume", "haemodynamic"] },
     { id: "ischaemic_colitis", name: "Ischaemic colitis", pointers: ["vascular_risk", "abdominal_pain", "bowel_habit"], discriminators: ["vascular_risk", "abdominal_pain", "bowel_habit", "colour", "haemodynamic"] },
