@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { proofreadDischargeAction } from "./actions";
 import { startWait } from "@/lib/track";
+import { printPage } from "@/lib/print";
 
 /**
  * Print, with Sonnet's proofread (lib/final-check.ts) started the moment the sheet opens, so it
@@ -37,7 +38,7 @@ export default function DischargePrintButton({ patientId }: { patientId: string 
     if (printWhenReady.current && !checking && !refreshing) {
       printWhenReady.current();
       printWhenReady.current = null;
-      window.print();
+      printPage();
     }
   }, [checking, refreshing]);
 
@@ -47,7 +48,7 @@ export default function DischargePrintButton({ patientId }: { patientId: string 
     const stop = startWait("discharge_print");
     if (!checking && !refreshing) {
       stop();
-      return window.print();
+      return printPage();
     }
     printWhenReady.current = stop;
     setWaiting(true);
