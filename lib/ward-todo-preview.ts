@@ -1,6 +1,7 @@
 import type { WardTask } from "./todo";
 import type { ScoringTask } from "./scoring/read";
 import { urgencyRank, type Urgency } from "./urgency";
+import { jobTitle } from "@/lib/urgency";
 
 /**
  * One line for the ward page's to-do preview card — the top few outstanding jobs across
@@ -30,7 +31,7 @@ export function buildWardTodoPreview(tasks: WardTask[], limit = 3): TodoPreviewI
   return tasks
     .map((t) => ({
       id: t.id,
-      text: t.value_text ?? t.label,
+      text: jobTitle(t.value_text ?? t.label, t.recorded_at),
       urgency: t.effective,
       bed: t.patient.bed,
       patientId: t.patient_id,

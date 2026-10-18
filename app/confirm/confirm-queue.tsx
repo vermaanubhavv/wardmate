@@ -7,6 +7,7 @@ import { confirmMany, confirmAllPending, editAndConfirm, discardPending } from "
 import type { PendingConfirm } from "@/lib/confirm-queue";
 import { ActionSheet } from "../action-sheet";
 import BottomBar from "../bottom-bar";
+import { displayValue, isUnreadable } from "@/lib/display-value";
 
 /**
  * The whole unit's outstanding confirmations on one screen — grouped by bed, worked top to
@@ -230,7 +231,9 @@ function SwipeRow({
         <div className="flex items-start gap-3">
           <span className="min-w-0 flex-1 text-subhead">
             <span className="text-muted">{o.label}</span>{" "}
-            <span className="font-medium">{o.value_text}</span>
+            <span className={"font-medium " + (isUnreadable(o.value_text) ? "text-warn-fg" : "")}>
+              {displayValue(o.value_text)}
+            </span>
           </span>
           {!swiping && (
             <span className="flex shrink-0 items-center gap-1">

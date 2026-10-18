@@ -21,7 +21,7 @@ import {
   type PacVerdict,
 } from "@/lib/patient-state";
 import { compareBeds, isIdentifierLabel, stripPatientHonorific, managementChoicesFor } from "@/lib/patients";
-import { describeWhen, effectiveUrgency } from "@/lib/urgency";
+import { effectiveUrgency, jobTitle } from "@/lib/urgency";
 import BedsideBar from "./bedside-bar";
 import type { DictationCopy } from "./recorder";
 import { liveRoundSections, progressNoteConfigFor } from "@/lib/progress-note-config";
@@ -449,8 +449,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 // "Tomorrow" is only true on the day it was said. Rewritten fresh on every
                 // read, the same way effectiveUrgency below re-reads the colour — neither is
                 // stored, both are computed from the calendar as it stands right now. See
-                // lib/urgency.ts describeWhen.
-                const jobText = describeWhen(o.value_text ?? o.label, o.recorded_at);
+                // lib/urgency.ts jobTitle / describeWhen.
+                const jobText = jobTitle(o.value_text ?? o.label, o.recorded_at);
                 // The row's left edge repeats the dot's colour, so a red job reads as red from
                 // arm's length; an ungraded job keeps a bare edge rather than looking decided.
                 const edge = TODO_EDGE[effectiveUrgency(o).urgency ?? "none"];

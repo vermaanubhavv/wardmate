@@ -3,6 +3,7 @@
 import { useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { replaceTodayNoteSection } from "./note/actions";
+import { displayLabel } from "@/lib/display-value";
 
 type Row = {
   id: string;
@@ -128,7 +129,7 @@ export default function SoapRows({
   }
 
   function line(g: Group) {
-    const label = g.labels.join(" · ");
+    const label = g.labels.map(displayLabel).join(" · ");
     if (editing === g.key) return <div key={g.key}>{editor(g.labels, "Leave blank to clear", g.key)}</div>;
     return (
       <button

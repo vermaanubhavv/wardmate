@@ -4,8 +4,9 @@ import { getCurrentWard } from "@/lib/ward";
 import { dayLabel, managementLabel, patientName } from "@/lib/patients";
 import { getWardHandover, formatHandoverText, type HandoverPatient } from "@/lib/handover";
 import type { SpecialtyPack } from "@/lib/specialty";
-import { effectiveUrgency, istDate } from "@/lib/urgency";
+import { effectiveUrgency, istDate, jobTitle } from "@/lib/urgency";
 import CopyHandoverButton from "./copy-button";
+import { displayValue } from "@/lib/display-value";
 
 export default async function HandoverPage() {
   const { ward, error: wardError } = await getCurrentWard();
@@ -125,13 +126,13 @@ function PatientSummary({ patient, pack }: { patient: HandoverPatient; pack: Spe
           <ul className="mt-2 flex flex-col gap-1">
             {openTasks.map((t) => (
               <li key={t.id} className="text-subhead">
-                <span className="text-muted">To do:</span> {t.value_text ?? t.label}
+                <span className="text-muted">To do:</span> {jobTitle(t.value_text ?? t.label, t.recorded_at)}
               </li>
             ))}
             {pending.map((o) => (
               <li key={o.id} className="text-subhead text-warn-fg">
                 <span aria-hidden>●</span> Confirm {o.label}
-                {o.value_text ? ` — ${o.value_text}` : ""}
+                {o.value_text ? ` — ${displayValue(o.value_text)}` : ""}
               </li>
             ))}
           </ul>
