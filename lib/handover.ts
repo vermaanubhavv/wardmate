@@ -11,7 +11,8 @@ import { getSpecialtyPack, type SpecialtyPack } from "@/lib/specialty";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { readsChemoColumns, usesBurnClock } from "@/lib/specialty/clocks";
 import { hasOperationClock } from "@/lib/specialty/intake";
-import { effectiveUrgency, istDate, URGENCY_META } from "@/lib/urgency";
+import { effectiveUrgency, istDate, jobTitle, URGENCY_META } from "@/lib/urgency";
+import { displayValue } from "@/lib/display-value";
 
 /** One line of what actually happened today — a resulted investigation, the operation if
  *  done today, or a job ticked off. Deliberately NOT "everything recorded today": routine
@@ -60,7 +61,7 @@ export function deriveDoneToday(
 
   for (const o of rawObservations) {
     if (o.kind === "lab" && istDate(o.recorded_at) === todayKey) {
-      items.push({ id: o.id, text: `${o.label}${o.value_text ? `: ${o.value_text}` : ""}` });
+      items.push({ id: o.id, text: `${o.label}${o.value_text ? `: ${displayValue(o.value_text)}` : ""}` });
     } else if (o.kind === "procedure_done" && istDate(o.recorded_at) === todayKey) {
       items.push({ id: o.id, text: `${operative ? "Operated" : "Procedure done"}: ${o.value_text ?? o.label}` });
     }
@@ -254,10 +255,10 @@ export function formatHandoverText(handover: WardHandover): string {
           ? `[${URGENCY_META[effective.urgency].label.toUpperCase()}] `
           : "";
         const note = effective.note ? ` (${effective.note})` : "";
-        lines.push(`  To do: ${mark}${t.value_text ?? t.label}${note}`);
+        lines.push(`  To do: ${mark}${jobTitle(t.value_text ?? t.label, t.recorded_at)}${note}`);
       }
       for (const o of pending) {
-        lines.push(`  Confirm: ${o.label}${o.value_text ? ` — ${o.value_text}` : ""}`);
+        lines.push(`  Confirm: ${o.label}${o.value_text ? ` — ${displayValue(o.value_text)}` : ""}`);
       }
       if (missing.length > 0) {
         lines.push(`  Not yet recorded: ${missing.map((m) => m.item.label).join(", ")}`);

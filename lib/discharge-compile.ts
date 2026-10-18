@@ -22,6 +22,7 @@ import { type DischargeTemplate } from "@/lib/discharge-templates";
 import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
 import { matchDischargeTemplateFor } from "@/lib/specialty/discharge";
 import { hasOperationClock } from "@/lib/specialty/intake";
+import { displayValue } from "@/lib/display-value";
 
 /**
  * Compile a PROPOSED discharge draft from what is already on the record.
@@ -187,7 +188,7 @@ function compileProcedures(context: DischargeContext): Procedure[] {
     .map((o) => (o.value_text ?? o.label).trim())[0] ?? null;
   const drainObs = observations
     .filter((o) => o.kind === "drain" || /drain/i.test(o.label))
-    .map((o) => (o.value_text ? `${o.label}: ${o.value_text}` : o.label).trim());
+    .map((o) => (o.value_text ? `${o.label}: ${displayValue(o.value_text)}` : o.label).trim());
   const procedureDone = observations.find((o) => o.kind === "procedure_done")?.value_text?.trim() ?? null;
 
   const name = procedure ?? procedureDone ?? "";

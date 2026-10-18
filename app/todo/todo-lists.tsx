@@ -16,7 +16,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { WardTask } from "@/lib/todo";
 import { Row as ScoringRow, type WardScoringTask } from "./scoring-section";
-import { URGENCY_META, urgencyRank, type Urgency } from "@/lib/urgency";
+import { jobTitle, URGENCY_META, urgencyRank, type Urgency } from "@/lib/urgency";
 import UrgencyDot from "../patients/[id]/urgency-dot";
 import Tick from "../patients/[id]/tick";
 import { quoteAddsNothing } from "@/lib/dedupe-tasks";
@@ -255,7 +255,7 @@ function TaskRow({ task }: { task: WardTask }) {
 
       <div className="min-w-0 flex-1">
         <p className="text-subhead">
-          {task.value_text ?? task.label}
+          {jobTitle(task.value_text ?? task.label, task.recorded_at)}
           {/* Said again on a later round — the same badge the patient page uses. */}
           {task.repeats > 0 && (
             <span

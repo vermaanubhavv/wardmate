@@ -2,6 +2,7 @@ import { classifyLab, canonicalLabName, type SuppliedRange } from "@/lib/lab-ran
 import { groupInvestigations } from "@/lib/investigations";
 import type { Observation } from "@/lib/patient-state";
 import type { WardRanges } from "@/lib/exam-summary";
+import { displayValue } from "@/lib/display-value";
 
 /** How one result is judged: the range printed on its own report, then this ward's learned
  *  range. Neither invented — with neither, classifyLab falls back to its built-in table, and
@@ -102,7 +103,7 @@ export default function InvestigationsSection({
                           (reading?.flag ? "font-semibold text-critical-fg" : "")
                         }
                       >
-                        {value.value_text ?? "—"}
+                        {value.value_text == null ? "—" : displayValue(value.value_text)}
                         {value.unit ? ` ${value.unit}` : ""}
                       </span>
                       {/* The colour shows its work, the same way the vitals tiles do — a flag
