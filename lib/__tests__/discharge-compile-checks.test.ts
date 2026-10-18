@@ -47,6 +47,7 @@ const observations = [
 ];
 
 const context = {
+  pack: generalSurgeryPack,
   patient: {
     id: "pt1",
     ward_id: "w1",

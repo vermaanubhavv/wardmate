@@ -28,7 +28,8 @@ describe("which clocks a pack uses", () => {
 
   it("checklist field label per unit", () => {
     expect(checklistFieldLabel("general_surgery")).toBe("Operation");
-    expect(checklistFieldLabel(null)).toBe("Operation");
+    expect(checklistFieldLabel(null)).toBe("Checklist");
+    expect(checklistFieldLabel("general")).toBe("Checklist");
     expect(checklistFieldLabel("orthopaedics")).toBe("Operation");
     expect(checklistFieldLabel("medical_oncology")).toBe("Chemo cycle / checklist");
     expect(checklistFieldLabel("internal_medicine")).toBe("Checklist");

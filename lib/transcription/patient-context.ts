@@ -20,7 +20,7 @@ import { MEDICAL_KEYTERMS } from "@/lib/stt";
 /** The core boosted when the caller does not say which unit this is. General surgery, so an
  *  un-migrated database and every existing unit keep exactly the keyterms they had. A caller
  *  that knows the unit passes its pack's `lexiconSpecialty` instead. */
-export const DEFAULT_SPECIALTY: Specialty = "general-surgery";
+export const DEFAULT_SPECIALTY: Specialty = "general";
 
 type PatientRow = {
   primary_diagnosis?: string | null;
@@ -164,7 +164,9 @@ export function deriveWardDictationContext(
  * gets its own lexicon's core instead of lap chole and Monocef.
  */
 export function wardKeyterms(specialty: Specialty): string[] {
-  if (specialty === DEFAULT_SPECIALTY) return [...MEDICAL_KEYTERMS];
+  // General surgery keeps the static list it has always had; every other unit (General included)
+  // gets its own lexicon.
+  if (specialty === "general-surgery") return [...MEDICAL_KEYTERMS];
   return getDeepgramKeyterms(deriveDictationContext({ patient: {}, specialty, noteType: "ward-round" }));
 }
 
