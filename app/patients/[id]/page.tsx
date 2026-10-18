@@ -437,16 +437,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 // stored, both are computed from the calendar as it stands right now. See
                 // lib/urgency.ts jobTitle / describeWhen.
                 const jobText = jobTitle(o.value_text ?? o.label, o.recorded_at);
-                // The row's left edge repeats the dot's colour, so a red job reads as red from
-                // arm's length; an ungraded job keeps a bare edge rather than looking decided.
-                const edge = TODO_EDGE[effectiveUrgency(o).urgency ?? "none"];
                 return (
                 <SwipeDelete
                   key={o.id}
                   ids={o.ids}
                   patientId={patient.id}
                   label={jobText}
-                  className={"flex items-start gap-3 border-l-[3px] py-3 pl-3 pr-4 " + edge}
+                  className="flex items-start gap-3 py-3 pl-4 pr-4"
                 >
                   <Tick
                     observationId={o.id}
@@ -475,8 +472,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                           ×{o.repeats + 1}
                         </span>
                       )}
-                      <CameDue observation={o} />
                     </p>
+                    <CameDue observation={o} />
                     {/* The words it came from, so a job is never just the app's paraphrase —
                         shown only when they say more than the job itself does. */}
                     {!quoteAddsNothing(o.value_text ?? o.label, o.source_quote) && (
@@ -1499,14 +1496,6 @@ function kindToSoapSection(kind: string): (typeof SOAP_ORDER)[number] {
   }
 }
 
-/** Left-edge colour per urgency, keyed by what effectiveUrgency returns (null → "none"). */
-const TODO_EDGE: Record<string, string> = {
-  red: "border-l-critical-dot",
-  yellow: "border-l-warn-dot",
-  green: "border-l-good-dot",
-  none: "border-l-transparent",
-};
-
 const SOAP_LOOK: Record<(typeof SOAP_ORDER)[number], { icon: LucideIcon; chip: string }> = {
   subjective: { icon: MessageSquareText, chip: "bg-chip text-accent" },
   objective: { icon: Ruler, chip: "bg-good-bg text-good-fg" },
@@ -1594,17 +1583,17 @@ function dayHeading(iso: string, todayKey: string): string {
 }
 
 /**
- * "due today" or "2 days overdue", shown only when the calendar has moved a job rather than
- * the resident. Said in words, so an escalation never looks like something they graded.
+ * "due today" or "due 3 Oct · 2 days overdue", shown only when the calendar has moved a job
+ * rather than the resident. Said in words, so an escalation never looks like something they
+ * graded — and on its own line, muted: the dot already carries the red.
  */
 function CameDue({ observation }: { observation: Observation }) {
   const effective = effectiveUrgency(observation);
   if (!effective.note) return null;
 
-  return <span className="ml-2 whitespace-nowrap text-caption text-critical-fg">— {effective.note}</span>;
+  return <p className="mt-0.5 text-footnote text-muted">{effective.note}</p>;
 }
 
-/** One of the header's three counts — same look as the ward page's StatTile, without the link. */
 /** One outstanding count beside the patient's name: jobs, values to check, gaps to fill. */
 function StatusPill({
   icon: Icon,

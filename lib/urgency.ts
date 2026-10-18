@@ -1,5 +1,3 @@
-const URGENCY_ORDER = ["red", "yellow", "green", null] as const;
-
 export type Urgency = "red" | "yellow" | "green" | null;
 
 export const URGENCY_META: Record<
@@ -31,16 +29,6 @@ export const URGENCY_META: Record<
     edge: "border-l-good-dot",
   },
 };
-
-/**
- * Tapping a job walks red -> yellow -> green -> ungraded -> red. Ungraded stays in the cycle
- * deliberately: a colour set by mistake has to be removable, and "nobody has decided yet" is
- * a real state the list shows separately rather than a gap to be filled with a guess.
- */
-export function nextUrgency(current: Urgency): Urgency {
-  const i = URGENCY_ORDER.indexOf(current as never);
-  return URGENCY_ORDER[(i + 1) % URGENCY_ORDER.length] as Urgency;
-}
 
 /** Calendar date in Indian time — the same reason day numbers are counted in IST. */
 export function istDate(iso: string): string {

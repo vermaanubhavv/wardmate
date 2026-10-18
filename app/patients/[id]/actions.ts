@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 import { revalidatePatient } from "@/lib/revalidate";
-import { nextUrgency, type Urgency } from "@/lib/urgency";
+import { type Urgency } from "@/lib/urgency";
 import { istDayKey } from "@/lib/patient-state";
 import { extractObservations } from "@/lib/extract";
 import { getWardSpecialtyStored } from "@/lib/ward";
@@ -270,25 +270,22 @@ async function confirmIds(ids: string[], patientId: string) {
 }
 
 /**
- * Cycle a job's colour by hand. Records that a person set it, so the grade a doctor stands
- * behind is distinguishable from the one read out of a sentence.
+ * Grade a job by hand: Now, Soon, Has time, or back to not graded (null). Records that a person
+ * set it, so the grade a doctor stands behind is distinguishable from the one read out of a
+ * sentence. The value is checked here, not trusted from the page.
  */
-export async function cycleUrgency(formData: FormData) {
-  const id = String(formData.get("observation_id") ?? "");
-  const patientId = String(formData.get("patient_id") ?? "");
-  const current = String(formData.get("current") ?? "") || null;
+export async function setUrgency(id: string, patientId: string, value: Urgency): Promise<void> {
   if (!id) return;
+  if (value !== null && value !== "red" && value !== "yellow" && value !== "green") return;
 
   const supabase = await createClient();
   const user = await getUser();
   if (!user) return;
 
-  const next = nextUrgency(current as Urgency);
-
   await supabase
     .from("observations")
     .update({
-      urgency: next,
+      urgency: value,
       graded_by: user.id,
       graded_at: new Date().toISOString(),
     })

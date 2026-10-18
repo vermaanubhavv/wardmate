@@ -20,7 +20,7 @@ import { jobTitle, URGENCY_META, urgencyRank, type Urgency } from "@/lib/urgency
 import UrgencyDot from "../patients/[id]/urgency-dot";
 import Tick from "../patients/[id]/tick";
 import { quoteAddsNothing } from "@/lib/dedupe-tasks";
-import { stripPatientHonorific } from "@/lib/patients";
+import { displayCase, stripPatientHonorific } from "@/lib/patients";
 import {
   classifyTaskCategory,
   TASK_CATEGORY_META,
@@ -95,7 +95,7 @@ function ByUrgency({
       key: title,
       title,
       note,
-      dot: key ? URGENCY_META[key].dot : "border-2 border-dashed border-muted/60",
+      dot: key ? URGENCY_META[key].dot : "border-[1.5px] border-dashed border-muted",
       group: tasks.filter((t) => t.effective === key && !isOverdue(t)),
     })),
   ];
@@ -138,11 +138,7 @@ function ByUrgency({
               </div>
               <p className="mb-2 text-footnote text-muted">{note}</p>
 
-              <ul className="ios-group divide-y divide-line">
-                {group.map((t) => (
-                  <TaskRow key={t.id} task={t} />
-                ))}
-              </ul>
+              <ByPatient tasks={group} />
             </div>
           );
         })
@@ -220,23 +216,60 @@ function ByType({ tasks, scoringTasks }: { tasks: WardTask[]; scoringTasks: Ward
           <p className="mb-2 text-body font-medium">
             {CATEGORY_LABELS[category]} · {wardTasks.length + sTasks.length}
           </p>
-          <ul className="ios-group divide-y divide-line">
-            {sTasks.map((t) => (
-              <ScoringRow key={t.id} t={t} />
-            ))}
-            {wardTasks.map((t) => (
-              <TaskRow key={t.id} task={t} />
-            ))}
-          </ul>
+          {sTasks.length > 0 && (
+            <ul className="ios-group mb-2 divide-y divide-line">
+              {sTasks.map((t) => (
+                <ScoringRow key={t.id} t={t} />
+              ))}
+            </ul>
+          )}
+          {wardTasks.length > 0 && <ByPatient tasks={wardTasks} />}
         </div>
       ))}
     </>
   );
 }
 
+/**
+ * Jobs under one header per patient: "1 · Shyamlal · 7 jobs", then the jobs. Every row used to
+ * repeat the bed and name, so seven of one patient's jobs took a screen to say whose they were.
+ * Patients are kept in bed order, so working down the list is still a walk.
+ */
+function ByPatient({ tasks }: { tasks: WardTask[] }) {
+  const byPatient = new Map<string, WardTask[]>();
+  for (const t of tasks) byPatient.set(t.patient_id, [...(byPatient.get(t.patient_id) ?? []), t]);
+  return (
+    <div className="flex flex-col gap-2">
+      {[...byPatient.values()].map((jobs) => (
+        <ul key={jobs[0].patient_id} className="ios-group divide-y divide-line">
+          <li>
+            <Link
+              href={`/patients/${jobs[0].patient_id}`}
+              className="flex min-h-11 items-center gap-2 px-4 py-2 active:bg-chip"
+            >
+              <span className="grid h-7 min-w-7 place-items-center rounded-[7px] bg-chip px-1 font-mono text-footnote font-semibold tabular-nums">
+                {jobs[0].patient.bed}
+              </span>
+              <span className="min-w-0 flex-1 truncate text-subhead font-semibold">
+                {displayCase(stripPatientHonorific(jobs[0].patient.display_name))}
+              </span>
+              <span className="text-footnote text-muted">
+                {jobs.length} {jobs.length === 1 ? "job" : "jobs"}
+              </span>
+            </Link>
+          </li>
+          {jobs.map((t) => (
+            <TaskRow key={t.id} task={t} />
+          ))}
+        </ul>
+      ))}
+    </div>
+  );
+}
+
 function TaskRow({ task }: { task: WardTask }) {
   return (
-    <li className={"flex items-start gap-3 border-l-[3px] py-3 pl-3 pr-4 " + (task.effective ? URGENCY_META[task.effective].edge : "border-l-transparent")}>
+    <li className="flex items-start gap-3 py-3 pl-4 pr-4">
       <Tick
         observationId={task.id}
         patientId={task.patient_id}
@@ -265,22 +298,10 @@ function TaskRow({ task }: { task: WardTask }) {
               ×{task.repeats + 1}
             </span>
           )}
-          {/* Said in words, so a job that climbed with the calendar never looks like one
-              somebody graded red. */}
-          {task.note && (
-            <span className="ml-2 whitespace-nowrap text-caption text-critical-fg">— {task.note}</span>
-          )}
         </p>
-        {/* Which bed to walk to — the thing that turns a list into a route. */}
-        <Link
-          href={`/patients/${task.patient_id}`}
-          className="flex min-h-11 items-center gap-1.5 truncate text-footnote text-accent active:opacity-60"
-        >
-          <span className="rounded bg-chip px-1 font-mono tabular-nums text-muted">
-            {task.patient.bed}
-          </span>
-          {stripPatientHonorific(task.patient.display_name)}
-        </Link>
+        {/* Said in words, so a job that climbed with the calendar never looks like one somebody
+            graded red. The dot carries the colour; this line carries the date. */}
+        {task.note && <p className="mt-0.5 text-footnote text-muted">{task.note}</p>}
         {/* Only when it says something the job does not. */}
         {!quoteAddsNothing(task.value_text ?? task.label, task.source_quote) && (
           <p className="mt-0.5 truncate text-footnote italic text-muted">“{task.source_quote}”</p>
