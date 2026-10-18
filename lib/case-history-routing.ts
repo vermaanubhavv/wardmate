@@ -1,5 +1,6 @@
 import { FAST_MODEL, anthropic, replyJson } from "@/lib/model";
 import { correctTranscript } from "@/lib/glossary";
+import { numbersIn } from "@/lib/complaint-duration";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { log } from "@/lib/observability";
 import { askJev, chosenProbability, type JevAnswers } from "@/lib/jev";
@@ -233,6 +234,13 @@ async function routeWithTypeSafe(
 }
 
 /** Deepgram's smart_format punctuates, so sentence boundaries are real. */
+/** The sentence sharing most words with `text`. */
+function closestSentence(text: string, sentences: string[]): string {
+  const words = new Set(text.toLowerCase().match(/[a-z]{3,}/g) ?? []);
+  const score = (x: string) => (x.toLowerCase().match(/[a-z]{3,}/g) ?? []).filter((w) => words.has(w)).length;
+  return sentences.reduce((best, x) => (score(x) > score(best) ? x : best), sentences[0] ?? text);
+}
+
 export function splitSentences(text: string): string[] {
   const seg = new Intl.Segmenter("en", { granularity: "sentence" });
   return [...seg.segment(text)].map((s) => s.segment.trim()).filter(Boolean);
@@ -308,10 +316,15 @@ async function routeWithHaiku(
   const parsed: { segments?: unknown[] } = replyJson(response, { segments: [] });
 
   const segments: RoutedSegment[] = [];
+  const said = numbersIn(corrected);
   for (const raw of Array.isArray(parsed.segments) ? parsed.segments : []) {
     const r = raw as Record<string, unknown>;
     const section = String(r.section ?? "") as RoutableSection;
-    const segText = String(r.text ?? "").trim();
+    let segText = String(r.text ?? "").trim();
+    // "Fix obvious mis-hearings" never extends to a number: a segment carrying a number the
+    // resident did not say ("10 days" come back as "thirty days") is replaced by the sentence it
+    // came from, word for word.
+    if ([...numbersIn(segText)].some((n) => !said.has(n))) segText = closestSentence(segText, splitSentences(corrected));
     // Only a section this unit actually has. A model that reaches for an oncology section on
     // a surgical clerking has the segment dropped rather than filed somewhere it cannot be
     // reviewed — the same "the model's word alone is not enough" rule the rest of the app uses.

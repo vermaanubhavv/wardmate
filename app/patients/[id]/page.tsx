@@ -61,6 +61,7 @@ import { getPatientScoringTasks, getScoreCards } from "@/lib/scoring/read";
 import { diagnosisFromProcedure } from "@/lib/diagnosis-from-procedure";
 import { reopenTask } from "./actions";
 import ConfirmDictation from "./confirm-dictation";
+import AddDrug from "./add-drug";
 import BottomBar from "../../bottom-bar";
 import { listedComorbidities } from "@/lib/comorbidities";
 import { summariseObjective, type WardRanges } from "@/lib/exam-summary";
@@ -616,8 +617,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       {/* What is being done for the patient, in one place: the drugs on record (each keeping
           the words it came from, so it is never only the app's paraphrase), then today's plan,
           then the checks (consent, procedure, fitness), which are part of the management too. */}
-      {(medications.length > 0 || planGroups.length > 0) && (
-        <section className="px-4 pb-6">
+      {/* Always shown, even empty, so a drug can be added from here. */}
+      <section className="px-4 pb-6">
           <p className="ios-group-header mb-2 flex items-center gap-1.5 px-4">
             <Pill className="h-3.5 w-3.5 text-accent" strokeWidth={2.4} />
             Plan &amp; treatment
@@ -649,9 +650,11 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 />
               </li>
             ))}
+            <li>
+              <AddDrug patientId={patient.id} wardId={patient.ward_id} current={medications.map((m) => m.value_text ?? m.label)} />
+            </li>
           </ul>
         </section>
-      )}
 
       <Suspense fallback={null}>
         <ScoringCards scoring={scoringP} />

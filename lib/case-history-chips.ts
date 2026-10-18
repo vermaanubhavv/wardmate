@@ -536,3 +536,22 @@ export function complaintChipsFor(specialty: string | null | undefined): string[
 export function pastChipsFor(specialty: string | null | undefined): string[] {
   return PAST_CHIPS_BY_SPECIALTY[(specialty ?? "").trim()] ?? PAST_CHIPS_BY_SPECIALTY.general_surgery;
 }
+
+// A chip is present only as a whole phrase: "Smoker" must not light up inside "Non-smoker".
+const chipRe = (c: string, prefix = "") =>
+  new RegExp(`(?<![\\w-])(?:${prefix.trim().replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")}\\s*)?${c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w-])`, "i");
+export const hasChip = (text: string, c: string) => chipRe(c).test(text);
+
+/** Tap a chip: on → appended; tapped again → removed; a rival in its exclusive group → removed. */
+export function toggleChip(text: string, c: string, prefix = "", exclusive: string[][] = []): string {
+  const drop = (t: string, x: string) =>
+    t
+      .split(/;\s*/)
+      .filter((part) => !chipRe(x, prefix).test(part) || part.replace(chipRe(x, prefix), "").trim() !== "")
+      .join("; ");
+  if (hasChip(text, c)) return drop(text, c);
+  let t = text;
+  for (const rival of exclusive.find((g) => g.includes(c)) ?? []) if (rival !== c) t = drop(t, rival);
+  t = t.replace(/[;\s]+$/, "");
+  return (t ? `${t}; ` : "") + `${prefix}${c}`;
+}

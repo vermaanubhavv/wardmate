@@ -5,7 +5,9 @@ import { startWait } from "@/lib/track";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { caseHistorySectionOf, seedHopi } from "@/lib/case-history";
-import { complaintChipsFor, pastChipsFor } from "@/lib/case-history-chips";
+import { durationToDays, splitComplaint } from "@/lib/complaint-duration";
+import { answerOf, negativeChecklist, setAnswer } from "@/lib/relevant-negatives";
+import { complaintChipsFor, hasChip, pastChipsFor, toggleChip } from "@/lib/case-history-chips";
 import { leadsFor, readField, writeField } from "@/lib/case-history-departments";
 import {
   CNS_PILLS,
@@ -50,33 +52,6 @@ import {
   approveCaseHistoryPlan,
 } from "./actions";
 
-/** "3 days", "2 weeks", "6/12", "1 yr" → an approximate day count, for ordering complaints
- *  longest-standing first. Unparseable durations sort last (Infinity keeps tap order stable
- *  only when every complaint has one). */
-function durationToDays(raw: string): number {
-  const s = raw.toLowerCase().trim();
-  if (!s) return Number.POSITIVE_INFINITY;
-  const m = s.match(/(\d+(?:\.\d+)?)\s*(hour|hr|h|day|d|week|wk|w|month|mon|mo|m|year|yr|y)/);
-  if (!m) return Number.POSITIVE_INFINITY;
-  const n = parseFloat(m[1]);
-  const u = m[2];
-  if (/^h/.test(u)) return n / 24;
-  if (/^d/.test(u)) return n;
-  if (/^w/.test(u)) return n * 7;
-  if (/^(mo|mon|m)$/.test(u)) return n * 30;
-  return n * 365;
-}
-
-/** Split a stored complaint back into its bare name and duration. Only the canonical "<name> ×
- *  <duration>" shape this file writes is recognised — a comma, a semicolon, or a long tail
- *  means it is not a single "name × duration" and is returned untouched. */
-function splitDuration(stored: string): { name: string; duration: string } {
-  const m = stored.match(/^(.+?)\s*[×x]\s*([^,;×x]{1,24})$/);
-  if (m && m[1].trim() && durationToDays(m[2]) !== Number.POSITIVE_INFINITY) {
-    return { name: m[1].trim(), duration: m[2].trim() };
-  }
-  return { name: stored.trim(), duration: "" };
-}
 
 export type WorkspaceObs = { id: string; kind: string; label: string; value: string | null };
 
@@ -99,6 +74,12 @@ const PERSONAL_CHIPS = [
   "Gutka / paan chewing",
   "Vegetarian diet",
   "Normal bowel & bladder",
+];
+
+/** Chips that answer the same question — picking one drops the others from the text. */
+const PERSONAL_EXCLUSIVE = [
+  ["Non-smoker", "Smoker", "Ex-smoker"],
+  ["Alcohol — occasional", "Alcohol — regular"],
 ];
 
 const MED_CHIPS = [
@@ -306,7 +287,6 @@ export default function CaseHistoryWorkspace({
   const [step, setStep] = useState(0);
   const [dictating, setDictating] = useState(() => searchParams.get("dictate") === "1");
   const [message, setMessage] = useState<string | null>(null);
-  const [dirty, setDirty] = useState<Set<StepId>>(new Set());
   const [generating, setGenerating] = useState<string | null>(null);
 
   const wardRanges: WardRanges = useMemo(() => new Map(rangeEntries), [rangeEntries]);
@@ -329,16 +309,11 @@ export default function CaseHistoryWorkspace({
   const seededComplaintRows = useMemo(
     () =>
       (bySection.chief ?? [])
-        .map((o) => splitDuration((o.value ?? "").trim()))
+        .map((o) => splitComplaint((o.value ?? "").trim()))
         .filter((r) => r.name),
     [bySection]
   );
   const [complaints, setComplaints] = useState<string[]>(seededComplaintRows.map((r) => r.name));
-  const [complaintDur, setComplaintDur] = useState<Record<string, string>>(() => {
-    const out: Record<string, string> = {};
-    for (const r of seededComplaintRows) if (r.duration) out[r.name] = r.duration;
-    return out;
-  });
   const [customComplaint, setCustomComplaint] = useState("");
 
   // HOPI is stored as "<complaint>: (<duration>) <narrative>" — pull the three apart on the way in.
@@ -350,8 +325,24 @@ export default function CaseHistoryWorkspace({
       ),
     [bySection, seededComplaintRows]
   );
-  const [hopi, setHopi] = useState<Record<string, string>>(() => seededHopi.text);
-  const [hopiDur, setHopiDur] = useState<Record<string, string>>(() => seededHopi.dur);
+  // One duration per complaint: the Complaints card and that complaint's HOPI page edit the same
+  // value. An older record whose HOPI carried its own "(duration)" fills a complaint that had none.
+  const [complaintDur, setComplaintDur] = useState<Record<string, string>>(() => {
+    const out: Record<string, string> = { ...seededHopi.dur };
+    for (const r of seededComplaintRows) if (r.duration) out[r.name] = r.duration;
+    return out;
+  });
+  // A site said with the complaint ("pain in the right upper abdomen") starts its HOPI page with
+  // that Site chip already on.
+  const [hopi, setHopi] = useState<Record<string, string>>(() => {
+    const out = { ...seededHopi.text };
+    for (const r of seededComplaintRows) if (r.site && !out[r.name]?.trim()) out[r.name] = r.site;
+    return out;
+  });
+  // …and that HOPI page counts as unsaved, so the site lifted off the complaint is written there.
+  const [dirty, setDirty] = useState<Set<StepId>>(() =>
+    seededComplaintRows.some((r) => r.site && !seededHopi.text[r.name]?.trim()) ? new Set<StepId>(["hopi"]) : new Set()
+  );
 
   const seedHistory = (key: string): { mode: Mode; text: string } => {
     const lines = (bySection[key] ?? []).map((o) => (o.value ?? "").trim()).filter(Boolean);
@@ -542,13 +533,15 @@ export default function CaseHistoryWorkspace({
   const otherHistoryIds = historyIds.filter((id) => id !== "past" && id !== "medication" && !leadIds.includes(id));
   /** The sections a card saves when the resident leaves it. */
   const sectionsOf = (id: StepId): StepId[] =>
-    id === "past_meds" ? pastMedIds : id === "histories" ? otherHistoryIds : [id];
+    // HOPI edits the complaint's own duration, so leaving it saves the complaint list too.
+    id === "past_meds" ? pastMedIds : id === "histories" ? otherHistoryIds : id === "hopi" ? ["complaints", "hopi"] : [id];
 
   const STEPS: { id: StepId; title: string }[] = [
     { id: "demographics", title: "Demographics" },
     { id: "complaints", title: "Complaints" },
     ...complaintList.map((c, i) => ({ id: `hopi` as StepId, title: `HOPI — ${c}`, _c: c, _i: i })),
-    ...(hasDiagnosisForNegatives ? [{ id: "negatives" as StepId, title: "Relevant negatives" }] : []),
+    // Straight after HOPI, diagnosis or not: the Yes / No list comes from the complaints themselves.
+    { id: "negatives" as StepId, title: "Relevant negatives" },
     // The department's lead cards come straight after the presenting illness — an obstetric
     // history is most of an OBG clerking — each its own card, with its department prompts. Then
     // past and medication history together on one card, then every other history as closed
@@ -599,8 +592,8 @@ export default function CaseHistoryWorkspace({
         L,
         "note",
         complaintList
-          .filter((c) => (hopi[c] ?? "").trim() || (hopiDur[c] ?? "").trim())
-          .map((c) => `${c}: ${(hopiDur[c] ?? "").trim() ? `(${hopiDur[c].trim()}) ` : ""}${(hopi[c] ?? "").trim()}`.trim())
+          .filter((c) => (hopi[c] ?? "").trim() || (complaintDur[c] ?? "").trim())
+          .map((c) => `${c}: ${(complaintDur[c] ?? "").trim() ? `(${complaintDur[c].trim()}) ` : ""}${(hopi[c] ?? "").trim()}`.trim())
       );
     else if (id === "negatives") res = await applyRelevantNegatives(patientId, negatives.text);
     else if (id === "past") res = await replaceCaseHistorySection(patientId, "past history", "note", composeHistory(past));
@@ -695,7 +688,6 @@ export default function CaseHistoryWorkspace({
       });
     }
     setStep(index);
-    maybeAutoDraftNegatives(index);
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   }
 
@@ -830,15 +822,8 @@ export default function CaseHistoryWorkspace({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current.id, compiled, generating, dirty.size, hasHistory]);
 
-  // Landing on the Relevant-negatives card with a diagnosis and nothing written yet drafts it
-  // once (kicked from goTo, not an effect). Manual "Rewrite with AI" covers re-runs.
-  const autoNegativesDone = useRef(false);
-  function maybeAutoDraftNegatives(index: number) {
-    if (STEPS[index]?.id !== "negatives" || autoNegativesDone.current) return;
-    if (generating || negatives.text.trim() || !hasDiagnosisForNegatives) return;
-    autoNegativesDone.current = true;
-    void generate("negatives");
-  }
+  // No auto-draft on landing: the card is now a Yes / No list the resident answers by asking;
+  // "Draft with AI" stays one tap away once a diagnosis exists.
 
   // --- card bodies ------------------------------------------------------------------
 
@@ -849,7 +834,7 @@ export default function CaseHistoryWorkspace({
     state: { mode: Mode; text: string },
     setState: (s: { mode: Mode; text: string }) => void,
     id: StepId,
-    opts?: { chips?: string[]; placeholder?: string; chipPrefix?: string }
+    opts?: { chips?: string[]; placeholder?: string; chipPrefix?: string; exclusive?: string[][] }
   ) {
     // "K/C/O " reads right for a declared medical history ("K/C/O DM"); personal-history chips
     // ("Non-smoker", "Tobacco chewing") are plain statements and take no prefix at all.
@@ -871,13 +856,9 @@ export default function CaseHistoryWorkspace({
                 {opts.chips.map((c) => (
                   <SelChip
                     key={c}
-                    selected={new RegExp(`\\b${c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(state.text)}
+                    selected={hasChip(state.text, c)}
                     onClick={() => {
-                      const has = new RegExp(`\\b${c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(state.text);
-                      const text = has
-                        ? state.text
-                        : (state.text ? `${state.text.replace(/[;\s]+$/, "")}; ` : "") + `${prefix}${c}`;
-                      setState({ ...state, text });
+                      setState({ ...state, text: toggleChip(state.text, c, prefix, opts?.exclusive) });
                       mark(id);
                     }}
                   >
@@ -1083,23 +1064,24 @@ export default function CaseHistoryWorkspace({
               <button
                 key={d}
                 type="button"
-                onClick={() => { setHopiDur({ ...hopiDur, [c]: d }); mark("hopi"); }}
+                onClick={() => { setComplaintDur({ ...complaintDur, [c]: d }); mark("complaints"); mark("hopi"); }}
                 className={
                   "rounded-full px-2 py-1 text-caption2 whitespace-nowrap " +
-                  ((hopiDur[c] ?? "").trim().toLowerCase() === d ? "bg-accent text-accent-ink" : "bg-chip text-muted")
+                  ((complaintDur[c] ?? "").trim().toLowerCase() === d ? "bg-accent text-accent-ink" : "bg-chip text-muted")
                 }
               >
                 {d}
               </button>
             ))}
             <input
-              value={hopiDur[c] ?? ""}
-              onChange={(e) => { setHopiDur({ ...hopiDur, [c]: e.target.value }); mark("hopi"); }}
+              value={complaintDur[c] ?? ""}
+              onChange={(e) => { setComplaintDur({ ...complaintDur, [c]: e.target.value }); mark("complaints"); mark("hopi"); }}
               placeholder="e.g. 3 days"
               className="h-9 w-28 rounded-[10px] border border-line bg-card px-2.5 text-subhead outline-none focus:border-accent"
             />
           </div>
-          {attrs.map((a) => (
+          {/* Duration has its own box above — one duration per complaint, never two. */}
+          {attrs.filter((a) => a.label !== "Duration").map((a) => (
             <AttrGroup key={a.label} attr={a} value={hopi[c] ?? ""} onChange={set} />
           ))}
           <DictateArea value={hopi[c] ?? ""} onChange={set} placeholder={`${c} — in the patient's own words`} rows={4} />
@@ -1112,6 +1094,7 @@ export default function CaseHistoryWorkspace({
       return historyCard(personal, (s) => setPersonal(s), "personal", {
         chips: PERSONAL_CHIPS,
         chipPrefix: "",
+        exclusive: PERSONAL_EXCLUSIVE,
         placeholder: "e.g. non-smoker, occasional alcohol, normal bowel and bladder",
       });
     if (id === "family") return historyCard(family, (s) => setFamily(s), "family", { placeholder: "e.g. Father — carcinoma colon" });
@@ -1534,28 +1517,49 @@ export default function CaseHistoryWorkspace({
         </>
       );
 
-    if (id === "negatives")
+    if (id === "negatives") {
+      const items = negativeChecklist(complaintList, complaintList.map((c) => hopi[c] ?? "").join(" "));
+      const setNeg = (text: string) => { setNegatives({ ...negatives, text }); mark("negatives"); };
       return (
         <>
           <p className="text-caption leading-[1.45] text-muted">
-            The pertinent negatives that close the history of presenting illness — the ones that
-            support{" "}
-            <span className="font-medium">{(primaryDiagnosis ?? diagnosis.text ?? "the diagnosis").trim() || "the diagnosis"}</span>{" "}
-            and argue against the differentials. One or two sentences, main points only. It
-            prints at the end of the HOPI on the case sheet and folds into the discharge summary.
+            Ask each one and tap the answer. Anything left untapped is not written — it stays
+            &ldquo;not asked&rdquo;. It prints at the end of the HOPI on the case sheet.
           </p>
-          <button type="button" disabled={generating === "negatives"} onClick={() => generate("negatives")} className={genBtn}>
-            {generating === "negatives" ? "Writing…" : negatives.text.trim() ? "Rewrite with AI" : "Draft with AI"}
-          </button>
+          {items.length > 0 && (
+            <div className="flex flex-col divide-y divide-line rounded-xl bg-card">
+              {items.map((label) => {
+                const a = answerOf(negatives.text, label);
+                return (
+                  <div key={label} className="flex items-center justify-between gap-3 px-3 py-2">
+                    <span className="text-subhead">{label}</span>
+                    <div className="flex shrink-0 gap-1.5">
+                      {(["yes", "no"] as const).map((v) => (
+                        <SelChip key={v} selected={a === v} onClick={() => setNeg(setAnswer(negatives.text, label, v))}>
+                          {v === "yes" ? "Yes" : "No"}
+                        </SelChip>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {hasDiagnosisForNegatives && (
+            <button type="button" disabled={generating === "negatives"} onClick={() => generate("negatives")} className={genBtn}>
+              {generating === "negatives" ? "Writing…" : negatives.text.trim() ? "Rewrite with AI" : "Draft with AI"}
+            </button>
+          )}
           <UncertainList points={negatives.uncertain} />
           <Area
             value={negatives.text}
-            onChange={(v) => { setNegatives({ ...negatives, text: v }); mark("negatives"); }}
+            onChange={(v) => setNeg(v)}
             rows={4}
-            placeholder="e.g. There is no history of fever, weight loss or altered bowel habit, and no previous similar episodes."
+            placeholder="One point per line, e.g. There is no history of jaundice."
           />
         </>
       );
+    }
 
     if (id === "plan") {
       const hasAny = plan.workup.length > 0 || plan.conservative.length > 0 || plan.medications.length > 0;
