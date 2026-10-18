@@ -558,7 +558,7 @@ function FindingList({ findings }: { findings: Finding[] }) {
     <ul className="flex flex-col gap-1">
       {findings.map((f, i) => (
         <li key={`${f.label}-${i}`} className="wm-pop flex items-baseline gap-2 text-footnote" style={{ animationDelay: `${i * 80}ms` }}>
-          <span aria-hidden className={"mt-1 h-1.5 w-1.5 shrink-0 rounded-full " + (f.needs_confirmation ? "bg-warn-dot" : "bg-good-dot")} />
+          <span aria-hidden className={"mt-1 h-1.5 w-1.5 shrink-0 rounded-full " + (f.needs_confirmation ? "bg-warn-dot" : "bg-accent")} />
           <span className="text-muted">{f.label}</span>
           <span className="font-medium">{f.value_text}</span>
           {f.needs_confirmation && <span className="text-caption2 font-medium text-warn-fg">check</span>}

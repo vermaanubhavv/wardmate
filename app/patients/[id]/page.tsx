@@ -498,7 +498,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
           {doneTasks.length > 0 && (
             <details className="border-t border-line px-4 py-3">
-              <summary className="flex cursor-pointer items-center gap-1.5 text-footnote text-good-fg">
+              <summary className="flex cursor-pointer items-center gap-1.5 text-footnote text-muted">
                 <Check className="h-3.5 w-3.5" strokeWidth={3} />
                 {doneTasks.length} done
               </summary>
