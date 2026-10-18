@@ -28,7 +28,9 @@ import { adv, proc, COMMON_MEDS } from "@/lib/discharge-template-parts";
  * `[ … ]` and the condition beside it, so a row nobody edited prints as visibly unfinished rather
  * than as a prescription every patient received.
  *
- * CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma) — the out-of-hours contact line on the six day-case
+ * CLINICAL CONTENT: three matching fixes (2026-10-19, docs/surgical-history.md §13.5 — phyllodes
+ * mastectomy, burns / pressure-sore debridement, Graves eye disease) are PENDING REVIEW.
+ * REVIEWED (Dr Anubhav Verma) — the out-of-hours contact line on the six day-case
  * templates (OUT_OF_HOURS) signed off on 2026-10-18; the rest re-signed on 2026-10-18 after the Bailey & Love 28e
  * changes (docs/surgical-history.md §13: the matching fixes, the conditional-drug rows, the added
  * follow-up and red-flag lines and the "What to check today" text); signed off on 2026-10-11 with the
@@ -116,6 +118,9 @@ const ONCO_MDT = "Collect the histopathology report and attend the oncology / mu
 /** Refuses any haystack that names a cancer — used by the benign-breast match. */
 const NOT_CANCER = String.raw`^(?![\s\S]*(carcinoma|cancer|malignan|\bca\b))[\s\S]*`;
 
+/** Refuses a mastectomy — a phyllodes tumour large enough for one is not the lump-excision plan. */
+const NOT_MASTECTOMY = String.raw`^(?![\s\S]*mastectomy)`;
+
 /** Refuses any haystack that names an injury — keeps an amputation for trauma off the diabetic-foot plan. */
 const NOT_TRAUMA = String.raw`^(?![\s\S]*\b(trauma|traumatic|crush|road traffic|RTA)\b)[\s\S]*`;
 
@@ -149,7 +154,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
     key: "benign_breast",
     label: "Benign breast lump (fibroadenoma) — excision",
     match: new RegExp(
-      NOT_CANCER +
+      NOT_MASTECTOMY + NOT_CANCER +
         String.raw`(fibroadenom|phyllodes|benign breast (lump|disease)|fibroadenosis|excision (biopsy )?of (a |the )?(right |left )?breast lump|breast lump excision|microdochectomy|(total )?duct excision|hadfield)`,
       "i"
     ),
@@ -196,7 +201,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
   {
     key: "breast_ca",
     label: "Carcinoma breast",
-    match: /carcinoma breast|(carcinoma|cancer|malignancy|\bca\b) (of )?(the )?(right |left |b\/l |bilateral )?breast|breast (cancer|carcinoma|malignancy)|\bMRM\b|modified radical mastectomy|(?<!subcutaneous )mastectomy(?![^.]*gyn(a)?ecomastia)|breast conservation|\bBCS\b|axillary (clearance|dissection)|breast[^.]{0,40}sentinel|sentinel[^.]{0,40}breast/i,
+    match: /^(?![\s\S]*phyllodes)[\s\S]*?(?:carcinoma breast|(carcinoma|cancer|malignancy|\bca\b) (of )?(the )?(right |left |b\/l |bilateral )?breast|breast (cancer|carcinoma|malignancy)|\bMRM\b|modified radical mastectomy|(?<!subcutaneous )mastectomy(?![^.]*gyn(a)?ecomastia)|breast conservation|\bBCS\b|axillary (clearance|dissection)|breast[^.]{0,40}sentinel|sentinel[^.]{0,40}breast)/i,
     scaffold: {
       indication:
         "Patient was admitted for [modified radical mastectomy / breast conservation surgery with axillary clearance] for carcinoma of the [right / left] breast.",
@@ -379,7 +384,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
   {
     key: "thyroidectomy",
     label: "Thyroidectomy (hemi / total)",
-    match: /(?<!para)thyroidectom|thyroid lobectom|hemithyroid|goit(re|er)|\bMNG\b|thyroid (nodule|swelling|carcinoma|cancer|malignancy|neoplasm)|solitary (thyroid )?nodule|\bSTN\b|carcinoma (of )?(the )?thyroid|papillary thyroid|follicular (neoplasm|adenoma|carcinoma)|graves/i,
+    match: /(?<!para)thyroidectom|thyroid lobectom|hemithyroid|goit(re|er)|\bMNG\b|thyroid (nodule|swelling|carcinoma|cancer|malignancy|neoplasm)|solitary (thyroid )?nodule|\bSTN\b|carcinoma (of )?(the )?thyroid|papillary thyroid|follicular (neoplasm|adenoma|carcinoma)|graves(?!'?s?\s+(ophthalmopathy|orbitopathy|eye))/i,
     families: ["thyroidectomy"],
     scaffold: {
       indication:
@@ -1211,7 +1216,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
   {
     key: "abscess_drainage",
     label: "Abscess / soft-tissue infection — I&D / debridement",
-    match: /incision (and|&) drainage|\bI\s*(&|and)\s*D\b|(breast|sub-?areolar|axillary|gluteal|buttock|thigh|leg|arm|forearm|hand|neck|back|scalp|chest wall|abdominal wall|parotid|peri-?anal|ischio-?rectal|perineal|scrotal|groin|inguinal|injection[- ]site|subcutaneous|soft[- ]tissue|skin|stitch|wound) abscess|carbuncle|furuncle|\bboils?\b|necroti[sz]ing (fasciitis|soft[- ]tissue)|fournier|debridement|cellulitis|mastitis/i,
+    match: /incision (and|&) drainage|\bI\s*(&|and)\s*D\b|(breast|sub-?areolar|axillary|gluteal|buttock|thigh|leg|arm|forearm|hand|neck|back|scalp|chest wall|abdominal wall|parotid|peri-?anal|ischio-?rectal|perineal|scrotal|groin|inguinal|injection[- ]site|subcutaneous|soft[- ]tissue|skin|stitch|wound) abscess|carbuncle|furuncle|\bboils?\b|necroti[sz]ing (fasciitis|soft[- ]tissue)|fournier|(?<!\b(burns?|pressure sore|bed ?sore) )debridement(?![^.]{0,40}\b(burns?|pressure|bed ?sore)\b)|cellulitis|mastitis/i,
     families: ["abscess_debridement"],
     scaffold: {
       indication:

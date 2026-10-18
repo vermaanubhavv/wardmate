@@ -45,6 +45,14 @@ describe("general-surgery discharge template matching", () => {
     ["Splenectomy for ITP", null],
     ["Above knee amputation for trauma", null],
     ["Strangulated inguinal hernia, resection anastomosis", "obstruction"],
+    ["Simple mastectomy for phyllodes tumour", null],
+    ["Benign phyllodes — wide local excision", "benign_breast"],
+    ["Ca breast, MRM", "breast_ca"],
+    ["Burns debridement", null],
+    ["Pressure sore debridement", null],
+    ["Debridement of burn wound", null],
+    ["Graves ophthalmopathy", null],
+    ["Graves' disease — total thyroidectomy", "thyroidectomy"],
   ])("%s → %s", (text, key) => {
     expect(pick(text)).toBe(key);
   });

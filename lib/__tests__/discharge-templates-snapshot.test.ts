@@ -39,6 +39,6 @@ describe("discharge template content", () => {
       ]),
     );
     // A deliberate content change updates this hash; a refactor must not.
-    expect(createHash("sha256").update(stable(data)).digest("hex")).toBe("cecc92b766d52faacca4522fdfa3b94a5516707b97638e86a3934f638cad6f52");
+    expect(createHash("sha256").update(stable(data)).digest("hex")).toBe("d3a0547e634b02577c59ccb4997b5447f05590a4df7a6c9c00a085370ee708f1");
   });
 });
