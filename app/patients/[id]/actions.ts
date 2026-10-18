@@ -8,6 +8,8 @@ import { type Urgency } from "@/lib/urgency";
 import { istDayKey } from "@/lib/patient-state";
 import { extractObservations } from "@/lib/extract";
 import { getWardSpecialtyStored } from "@/lib/ward";
+import { getSpecialtyPack } from "@/lib/specialty";
+import { shorthandPair } from "@/lib/shorthand";
 import { getTemplateForPatient, matchTemplate } from "@/lib/templates";
 
 const CONCERNING_RE =
@@ -199,6 +201,12 @@ export async function updateObservation(formData: FormData) {
   if (!value && !label) {
     await supabase.from("observations").delete().eq("id", id).eq("patient_id", patientId);
   } else {
+    // Read before the write: an edit into a shorter form ("pain in the right iliac fossa" →
+    // "pain RIF") is ward shorthand the display table may not have yet.
+    const [{ data: before }, { data: owner }] = await Promise.all([
+      supabase.from("observations").select("value_text").eq("id", id).maybeSingle(),
+      supabase.from("patients").select("ward_id").eq("id", patientId).maybeSingle(),
+    ]);
     await supabase
       .from("observations")
       .update({
@@ -210,6 +218,13 @@ export async function updateObservation(formData: FormData) {
       })
       .eq("id", id)
       .eq("patient_id", patientId);
+    if (!label && before?.value_text && owner?.ward_id) {
+      const specialty = getSpecialtyPack(await getWardSpecialtyStored(owner.ward_id)).key;
+      const pair = shorthandPair(before.value_text, value, specialty);
+      // A suggestion for an admin (supabase/patches/0109), never applied from here. Best effort:
+      // the edit is saved whether or not this lands.
+      if (pair) await supabase.rpc("flag_shorthand_suggestion", { spec: specialty, long_text: pair.long, short_text: pair.short });
+    }
   }
 
   revalidateEverywhere(patientId);

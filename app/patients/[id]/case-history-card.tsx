@@ -24,11 +24,14 @@ export function CaseHistoryCard({
   sex,
   wardRanges,
   etiology = null,
+  specialty,
 }: {
   observations: Observation[];
   sex: string | null;
   wardRanges: WardRanges;
   etiology?: EtiologyKey | null;
+  /** The unit's pack key, for its department's ward shorthand (lib/shorthand.ts). */
+  specialty?: string | null;
 }) {
   const { sections, other } = summariseCaseHistory(observations);
 
@@ -82,7 +85,7 @@ export function CaseHistoryCard({
           <p className="mb-0.5 text-caption font-semibold uppercase tracking-wide text-muted">
             Examination
           </p>
-          <ObjectiveSummaryView summary={exam} />
+          <ObjectiveSummaryView summary={exam} specialty={specialty} />
         </div>
       )}
     </div>
@@ -100,8 +103,10 @@ export function ObjectiveSummaryView({
   nadPhrases = [],
   pertinentNegatives = [],
   emptyText,
+  specialty,
 }: {
   summary: ReturnType<typeof summariseObjective>;
+  specialty?: string | null;
   /** Objective checklist items nobody dictated that have no "normal" phrase of their own —
    *  shown as "Drain, oral intake — NAD". */
   outstanding?: string[];
@@ -148,7 +153,7 @@ export function ObjectiveSummaryView({
       {/* The abnormalities, which are the reason anyone reads this section. */}
       {summary.findings.map((f) => (
         <p key={f.id} className="mt-1">
-          <span className="text-muted">{displayLabel(f.label)}</span> <span className="font-medium">{shortFinding(f.value)}</span>
+          <span className="text-muted">{displayLabel(f.label)}</span> <span className="font-medium">{shortFinding(f.value, specialty)}</span>
         </p>
       ))}
 

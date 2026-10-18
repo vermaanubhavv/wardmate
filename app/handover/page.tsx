@@ -11,6 +11,7 @@ import {
 } from "@/lib/handover";
 import type { SpecialtyPack } from "@/lib/specialty";
 import { effectiveUrgency, istDate, jobTitle, URGENCY_META } from "@/lib/urgency";
+import { shortFinding } from "@/lib/shorthand";
 import CopyHandoverButton from "./copy-button";
 import { displayValue } from "@/lib/display-value";
 
@@ -137,7 +138,7 @@ function WatchCard({ patient, pack }: { patient: HandoverPatient; pack: Specialt
           <span className="text-foreground tabular-nums">{dayLabel(patient, pack)}</span>
           {patient.procedure && <span className="text-foreground"> {patient.procedure}</span>}
           {" · "}
-          {patient.primary_diagnosis || "No diagnosis recorded"}
+          {patient.primary_diagnosis ? shortFinding(patient.primary_diagnosis, pack.key) : "No diagnosis recorded"}
           {management && <> · {management}</>}
         </p>
 
@@ -145,7 +146,7 @@ function WatchCard({ patient, pack }: { patient: HandoverPatient; pack: Specialt
           <ul className="flex flex-col gap-1">
             {patient.doneToday.map((d) => (
               <li key={d.id} className="text-subhead">
-                <span className="text-muted">Today:</span> {d.text}
+                <span className="text-muted">Today:</span> {shortFinding(d.text, pack.key)}
               </li>
             ))}
           </ul>
@@ -167,7 +168,7 @@ function WatchCard({ patient, pack }: { patient: HandoverPatient; pack: Specialt
                     }
                   />
                   <span>
-                    {jobTitle(t.value_text ?? t.label, t.recorded_at)}
+                    {jobTitle(t.value_text ?? t.label, t.recorded_at, undefined, pack.key)}
                     {effective.note && <span className="text-muted"> · {effective.note}</span>}
                   </span>
                 </li>

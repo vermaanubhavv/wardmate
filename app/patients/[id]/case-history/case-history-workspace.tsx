@@ -1679,7 +1679,7 @@ export default function CaseHistoryWorkspace({
         </div>
 
         <div className="rounded-[10px] border border-line bg-card">
-          <CaseHistoryCard observations={fullObservations} sex={sex} wardRanges={wardRanges} />
+          <CaseHistoryCard observations={fullObservations} sex={sex} wardRanges={wardRanges} specialty={specialty} />
         </div>
         {dirty.size > 0 && <p className="text-footnote text-warn-fg">{dirty.size} card(s) not yet saved — step back into them.</p>}
 

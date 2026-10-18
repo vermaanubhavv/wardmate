@@ -12,6 +12,7 @@ import { getWardSpecialtyStored } from "@/lib/ward";
 import { readsChemoColumns, usesBurnClock } from "@/lib/specialty/clocks";
 import { hasOperationClock } from "@/lib/specialty/intake";
 import { effectiveUrgency, istDate, jobTitle, URGENCY_META } from "@/lib/urgency";
+import { shortFinding } from "@/lib/shorthand";
 import { displayValue, isUnreadable } from "@/lib/display-value";
 import { classifyLab, type SuppliedRange } from "@/lib/lab-ranges";
 
@@ -273,13 +274,13 @@ export function checkSummaryText(s: ReturnType<typeof checkSummary>): string {
 }
 
 /** A job as the handover says it: the words, and when it was due if it has come due. */
-function jobLine(t: Observation): string {
+function jobLine(t: Observation, specialty: string): string {
   const effective = effectiveUrgency(t);
   // Urgency is spelt out rather than coloured: a handover message has no colours, and "NOW"
   // carries in plain text where a red dot would simply be lost.
   const mark = effective.urgency ? `[${URGENCY_META[effective.urgency].label.toUpperCase()}] ` : "";
   const note = effective.note ? ` (${effective.note})` : "";
-  return `${mark}${jobTitle(t.value_text ?? t.label, t.recorded_at)}${note}`;
+  return `${mark}${jobTitle(t.value_text ?? t.label, t.recorded_at, undefined, specialty)}${note}`;
 }
 
 /**
@@ -306,15 +307,15 @@ export function formatHandoverText(handover: WardHandover): string {
   const { watch, jobsOpen, clear } = handoverGroups(handover.patients);
   const heading = (p: HandoverPatient) => {
     const management = managementLabel(p, handover.pack);
-    return `Bed ${p.bed} · ${patientName(p)} · ${dayLabel(p, handover.pack)}${p.procedure ? ` ${p.procedure}` : ""} · ${p.primary_diagnosis || "no diagnosis recorded"}${management ? ` · ${management}` : ""}`;
+    return `Bed ${p.bed} · ${patientName(p)} · ${dayLabel(p, handover.pack)}${p.procedure ? ` ${p.procedure}` : ""} · ${p.primary_diagnosis ? shortFinding(p.primary_diagnosis, handover.pack.key) : "no diagnosis recorded"}${management ? ` · ${management}` : ""}`;
   };
 
   if (watch.length > 0) {
     lines.push("", "*WATCH TONIGHT*");
     for (const p of watch) {
       lines.push(heading(p));
-      for (const d of p.doneToday) lines.push(`- Today: ${d.text}`);
-      for (const t of p.state.openTasks) lines.push(`- ${jobLine(t)}`);
+      for (const d of p.doneToday) lines.push(`- Today: ${shortFinding(d.text, handover.pack.key)}`);
+      for (const t of p.state.openTasks) lines.push(`- ${jobLine(t, handover.pack.key)}`);
       if (p.state.pending.length > 0) lines.push(`- ${checkSummaryText(checkSummary(p.state.pending, p.sex))}`);
       if (p.state.missing.length > 0) {
         lines.push(`- Not yet recorded: ${p.state.missing.map((m) => m.item.label).join(", ")}`);
@@ -328,7 +329,7 @@ export function formatHandoverText(handover: WardHandover): string {
     lines.push("", "*JOBS OPEN, NONE DUE*");
     for (const p of jobsOpen) {
       lines.push(`Bed ${p.bed} · ${patientName(p)}`);
-      for (const t of p.state.openTasks) lines.push(`- ${jobLine(t)}`);
+      for (const t of p.state.openTasks) lines.push(`- ${jobLine(t, handover.pack.key)}`);
     }
   }
 
