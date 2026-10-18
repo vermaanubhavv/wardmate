@@ -122,6 +122,22 @@ export function jobTitle(text: string, recordedAtIso: string, now: string = new 
   return said.charAt(0).toUpperCase() + said.slice(1);
 }
 
+// Jobs that only follow an operation. A drain put in on the ward (a pigtail, an intercostal
+// drain, a percutaneous one) is not one, so those words rule it out.
+const POST_OP_JOB = /\b(drains?|sutures?|stitch(?:es)?|staples?|port[- ]?sites?)\b/i;
+const WARD_DRAIN = /\b(pigtail|icd|intercostal|pcd|percutaneous|chest)\b/i;
+
+/**
+ * The first open job that only makes sense after an operation ("Remove drain", "Suture
+ * removal") — for the patient page's question when no operation is recorded. Null if none.
+ */
+export function postOpJob<T extends { label: string; value_text: string | null }>(tasks: T[]): T | null {
+  return tasks.find((t) => {
+    const text = (t.value_text ?? t.label).trim();
+    return POST_OP_JOB.test(text) && !WARD_DRAIN.test(text);
+  }) ?? null;
+}
+
 /** Whole days between two instants, by IST calendar date rather than elapsed hours: a job
  *  said at 11pm and read at 8am the next morning is one day old, not zero. */
 function daysApart(fromIso: string, toIso: string): number {
