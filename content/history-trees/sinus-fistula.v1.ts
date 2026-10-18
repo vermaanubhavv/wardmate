@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, IMMUNOCOMPROMISE, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * DISCHARGING SINUS / FISTULA — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
+ * DISCHARGING SINUS / FISTULA — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical ward, north India. Built from S. Das, A Manual on Clinical Surgery, 13th ed.,
  * ch. 5 (history: since birth, abscess that burst or was opened, bone chips, earlier gland
  * swelling, previous operation, TB / Crohn's / colitis, family history, number and position of
@@ -16,12 +16,12 @@ import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, 
  */
 export const sinusFistulaV1: HistoryTree = {
   id: "sinus_fistula",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Discharging sinus / fistula",
   triggers: ["discharging sinus", "sinus tract", "fistula", "discharging opening", "pus from opening", "opening discharging", "non healing opening", "stitch sinus", "preauricular sinus", "branchial fistula", "faecal fistula", "urinary fistula", "nasoor", "nasur"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, BAILEY_LOVE, BROWSE],
   slots: [
     ...commonHpi("discharge"),
@@ -29,7 +29,7 @@ export const sinusFistulaV1: HistoryTree = {
     yn("hpi", "since_birth", "Present since birth", "Has the opening been there since birth or early childhood?", ["since birth", "from birth", "since childhood", "born with", "always there", "congenital", "appeared later", "not since birth"], { teach: "Das gives the preauricular sinus and branchial fistula as openings present from birth, though often noticed only in early adult life." }),
     val("hpi", "how_it_began", "How it began", "Did it begin as a painful swelling or abscess that burst or was cut open, after an operation or injury, or on its own?", ["abscess", "boil", "swelling burst", "burst", "incised", "cut open", "drained", "after operation", "after injury", "on its own", "painless swelling", "cold abscess", "softened", "lump burst", "slowly softened"], { teach: "Das traces most sinuses to an abscess that burst or was opened; a hot painful abscess and a cold painless one lead to different causes." }),
     yn("hpi", "bone_fever_before", "High fever with bone pain before the opening", "Before the opening appeared, was there high fever followed by pain and swelling in the bone beneath?", ["high fever", "bone pain", "bone swelling", "fever then swelling", "osteomyelitis", "no bone pain"], { tier: "detailed", teach: "Das gives high fever, then bone pain and swelling, then an abscess that bursts, as the story of an osteomyelitic sinus." }),
-    val("hpi", "discharge_nature", "What comes out", "What comes out of the opening — thick pus, thin watery or blood-stained fluid, or yellow grains, and does it smell?", ["pus", "thick pus", "watery", "blood stained", "serosanguinous", "yellow grains", "granules", "foul smell"], { teach: "Das reads the discharge: pus in osteomyelitis, blood-stained fluid in tuberculosis, sulphur granules in actinomycosis, and urine, faeces or bile from a fistula into a hollow organ." }),
+    val("hpi", "discharge_nature", "What comes out", "What comes out of the opening — thick pus, thin watery or blood-stained fluid, or yellow grains, and does it smell?", ["pus", "thick pus", "watery", "blood stained", "serosanguinous", "yellow grains", "granules", "foul smell", "hair", "hairs"], { teach: "Das reads the discharge: pus in osteomyelitis, blood-stained fluid in tuberculosis, sulphur granules in actinomycosis, and urine, faeces or bile from a fistula into a hollow organ." }),
     val("hpi", "opening_count", "Number of openings", "How many openings are there, and have new ones appeared nearby?", ["one opening", "single", "two openings", "many openings", "multiple", "new opening", "more openings"], { tier: "detailed", teach: "Das notes most sinuses are single, while multiple openings are typical of actinomycosis, Crohn's disease and the watering-can perineum." }),
     yn("hpi", "heals_and_reopens", "Heals and reopens", "Does the opening close for a while and then open and discharge again?", ["heals", "closes", "reopens", "opens again", "on and off", "recurs", "never closes", "keeps discharging"], { teach: "Das lists why a sinus will not stay closed — a foreign body or dead tissue in the depth, poor drainage, a specific infection, or a track that has become lined with skin." }),
     yn("hpi", "bone_pieces_out", "Pieces of bone have come out", "Have small pieces of bone ever come out of the opening?", ["bone pieces", "bone chips", "piece of bone", "sequestrum", "bone came out", "no bone pieces"], { teach: "Das records the passage of bone chips as pointing to dead bone kept at the depth of an osteomyelitic sinus." }),
@@ -53,6 +53,9 @@ export const sinusFistulaV1: HistoryTree = {
     yn("hpi", "retained_material", "Something driven in at the site", "Before the opening appeared, did a thorn, splinter, glass, or piece of cloth go into the skin at that place?", ["thorn", "splinter", "glass", "wood", "cloth", "foreign body", "something went in", "pricked", "no injury"], { tier: "detailed", teach: "Hamilton Bailey lists foreign material carried in by an injury, such as clothing, among the causes that keep an abscess cavity discharging through a sinus, so a penetrating injury at the site is asked for." }),
     // Schwartz's Principles of Surgery, 11th ed. (docs/surgical-history.md §12)
     yn("exposure", "radiotherapy_sinus", "Radiotherapy to the area", "Has the area of the opening ever been treated with radiotherapy?", ["radiotherapy", "radiation", "sikai", "cancer treatment", "no radiotherapy"], { tier: "detailed", teach: "Browse lists previous radiation with tuberculosis and Crohn's disease behind a sinus that will not close, and Schwartz lists ionising radiation among the local factors that impair healing." }),
+    // Bailey & Love, 28th ed. (docs/surgical-history.md §13)
+    yn("red_flag", "longstanding_sinus_change", "Long-standing opening that has changed", "Has an opening present for years begun to grow, bleed easily, or develop heaped-up edges or a growth at its mouth?", ["bleeds easily", "heaped up", "raised edges", "growth at the opening", "cauliflower", "no recent change"], { teach: "Bailey & Love lists chronic sinus tracts and osteomyelitis among the long-standing inflammation in which a squamous carcinoma can arise, and asks for a biopsy from the wall of any sinus that persists." }),
+    yn("associated", "recurrent_boils_axilla_groin", "Repeated painful boils in the armpits or groins", "Have there been repeated painful boils or lumps in the armpits, groins or under the breasts that burst and leave tracks?", ["recurrent boils", "boils in armpit", "boils in groin", "repeated abscesses", "lumps under arm", "hidradenitis", "no recurrent boils"], { tier: "detailed", teach: "Bailey & Love describes hidradenitis suppurativa as painful abscesses, sinus tracts and scarring in the armpits and groins, commoner in women and linked to obesity, smoking and puberty." }),
     ...surgicalBackground({ omit: ["surg_weight_loss", "surg_family_illness"] }),
   ],
   differentials: [
@@ -66,7 +69,8 @@ export const sinusFistulaV1: HistoryTree = {
     { id: "foreign_body", name: "Foreign-body or stitch sinus", pointers: ["operation_at_site", "heals_and_reopens"], discriminators: ["operation_at_site", "heals_and_reopens", "discharge_nature", "sinus_pain", "retained_material"] },
     { id: "viscus_fistula", name: "Fistula into a hollow organ (bowel, bladder, biliary)", pointers: ["viscus_discharge", "operation_at_site"], discriminators: ["viscus_discharge", "operation_at_site", "discharge_nature", "how_it_began", "gas_from_opening", "radiotherapy_sinus"] },
     { id: "chronic_empyema", name: "Sinus from chronic empyema", pointers: ["chest_infection_empyema"], discriminators: ["chest_infection_empyema", "tb_history", "sinus_site"] },
-    { id: "malignant", name: "Fistula with an underlying growth", pointers: ["bowel_bleeding_change", "weight_loss_sinus"], discriminators: ["bowel_bleeding_change", "weight_loss_sinus", "sinus_site", "opening_count", "radiotherapy_sinus"] },
+    { id: "malignant", name: "Fistula with an underlying growth", pointers: ["bowel_bleeding_change", "weight_loss_sinus"], discriminators: ["bowel_bleeding_change", "weight_loss_sinus", "sinus_site", "opening_count", "radiotherapy_sinus", "longstanding_sinus_change"] },
+    { id: "hidradenitis", name: "Hidradenitis suppurativa", pointers: ["recurrent_boils_axilla_groin", "sinus_site"], discriminators: ["recurrent_boils_axilla_groin", "sinus_site", "opening_count", "heals_and_reopens"] },
   ],
   output: {
     durationSlot: "duration",

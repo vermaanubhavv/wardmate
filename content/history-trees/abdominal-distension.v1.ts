@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ABDOMINAL DISTENSION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
+ * ABDOMINAL DISTENSION — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical / medicine ward, north India. The classical "five Fs": fluid, flatus, faeces,
  * fat, foetus (and a mass). Differentials: ascites (portal hypertension, tuberculous, malignant,
  * cardiac, nephrotic), intestinal obstruction, organomegaly or a mass, urinary retention,
@@ -10,12 +10,12 @@ import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISO
  */
 export const abdominalDistensionV1: HistoryTree = {
   id: "abdominal_distension",
-  version: "1.2.0",
+  version: "1.3.0",
   complaint: "Abdominal distension",
   triggers: ["abdominal distension", "distension of abdomen", "distended abdomen", "swelling of abdomen", "abdominal swelling", "bloating", "bloated", "increased abdominal girth", "swollen abdomen", "belly swelling"],
   setting: "Adult surgical / medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
   slots: [
     ...commonHpi("abdominal distension"),
@@ -23,7 +23,7 @@ export const abdominalDistensionV1: HistoryTree = {
     val("hpi", "girth", "Change in girth", "By how much has the belly grown — clothes tight, belt notches, measured girth?", ["clothes tight", "belt", "girth", "measured", "notch", "increased size", "trousers", "saree"]),
     yn("associated", "pain", "Abdominal pain", "Any abdominal pain, and is it colicky?", ["pain", "colicky", "cramps", "abdominal pain"]),
     yn("associated", "vomiting", "Vomiting", "Any vomiting, and is it bilious or faeculent?", ["vomiting", "vomit", "bilious", "faeculent"]),
-    yn("associated", "leg_swelling", "Swelling of legs / face", "Any swelling of the legs or face?", ["swelling", "pedal oedema", "oedema", "edema", "puffiness", "leg swelling"]),
+    yn("associated", "leg_swelling", "Swelling of legs / face", "Any swelling of the legs or face?", ["pedal oedema", "oedema", "edema", "puffiness", "leg swelling", "swelling of legs", "swelling of feet", "facial swelling"]),
     yn("associated", "jaundice", "Yellowness of eyes", "Any yellowness of the eyes or dark urine?", ["jaundice", "yellow eyes", "yellowness", "dark urine", "icterus"]),
     yn("associated", "breathlessness", "Breathlessness / orthopnoea", "Any breathlessness, especially lying flat?", ["breathlessness", "breathless", "orthopnoea", "lying flat", "pnd"]),
     yn("associated", "fever_sweats", "Fever / night sweats", "Any fever or night sweats?", ["fever", "night sweats", "evening rise", "chills"]),
@@ -31,11 +31,11 @@ export const abdominalDistensionV1: HistoryTree = {
     yn("associated", "menstrual_pregnancy", "Missed periods / menstrual change", "In a woman, any missed periods or change in periods?", ["missed periods", "amenorrhoea", "lmp", "pregnant", "menstrual", "heavy periods"], { tier: "detailed" }),
     yn("associated", "gas_belching", "Belching / passing gas / food-related", "Is it related to food, with belching, passing gas, or intolerance of milk or wheat?", ["belching", "gas", "flatulence", "milk", "wheat", "lactose", "after meals"], { tier: "detailed" }),
     // Red flags
-    yn("red_flag", "obstruction", "Absolute constipation with vomiting", "Has the patient stopped passing both stool and flatus?", ["no stool", "no flatus", "absolute constipation", "vomiting", "colicky", "obstipation"], { teach: "A swollen abdomen with vomiting and no stool or flatus is the pattern of obstruction, where timing decides the outcome." }),
-    yn("red_flag", "acute_pain_fever", "Severe pain with fever", "Is there severe abdominal pain with fever or a rigid abdomen?", ["severe pain", "fever", "rigid", "peritonitis", "worst pain", "guarding"], { teach: "Fever with sudden severe pain and a swollen abdomen asks about infection of the fluid or a hollow organ leak." }),
+    yn("red_flag", "obstruction", "Absolute constipation with vomiting", "Has the patient stopped passing both stool and flatus?", ["no stool", "no flatus", "absolute constipation", "obstipation"], { teach: "A swollen abdomen with vomiting and no stool or flatus is the pattern of obstruction, where timing decides the outcome." }),
+    yn("red_flag", "acute_pain_fever", "Severe pain with fever", "Is there severe abdominal pain with fever or a rigid abdomen?", ["severe pain", "peritonitis", "worst pain"], { teach: "Fever with sudden severe pain and a swollen abdomen asks about infection of the fluid or a hollow organ leak." }),
     yn("red_flag", "gi_bleed", "Vomiting blood / black stools", "Any vomiting of blood or black stools?", ["haematemesis", "vomiting blood", "melaena", "black stools", "hematemesis", "coffee ground"], { teach: "Vomiting blood with a swollen abdomen asks about portal hypertension and varices." }),
     yn("red_flag", "confusion", "Confusion / drowsiness", "Any confusion, day-night reversal, or drowsiness?", ["confusion", "drowsy", "day night reversal", "altered sensorium", "irrelevant talk", "sleep reversal"], { teach: "Confusion with a swollen abdomen in liver disease points to a brain effect of liver failure." }),
-    yn("associated", "weight_loss_mass", "Lump felt / early fullness", "Has the patient felt a lump in the abdomen, or felt full after a few mouthfuls?", ["weight loss", "lump", "mass", "early satiety", "full after", "hard lump"], { teach: "Weight loss with progressive swelling raises a mass or a malignancy-related collection." }),
+    yn("associated", "weight_loss_mass", "Lump felt / early fullness", "Has the patient felt a lump in the abdomen, or felt full after a few mouthfuls?", ["lump", "mass", "early satiety", "full after", "hard lump"], { teach: "Weight loss with progressive swelling raises a mass or a malignancy-related collection." }),
     yn("red_flag", "urinary_retention", "Not passing urine", "Has the patient not passed urine for many hours, with lower abdominal fullness?", ["not passing urine", "retention", "no urine", "lower abdominal fullness", "full bladder"], { teach: "A tense lower swelling with no urine raises a bladder question before an abdominal one." }),
     PREGNANCY,
     yn("exposure", "alcohol_liver", "Alcohol / hepatitis / liver disease", "Any alcohol, past hepatitis, or known liver disease?", ["alcohol", "hepatitis", "liver disease", "cirrhosis", "jaundice", "hbv", "hcv", "drinker"]),
@@ -54,16 +54,18 @@ export const abdominalDistensionV1: HistoryTree = {
     yn("hpi", "meal_after_fast", "Large meal after a fast", "Did the swelling begin after a large meal following a religious fast?", ["after fasting", "broke fast", "after roza", "after vrat", "navratri", "large meal", "heavy meal", "no fasting"], { tier: "detailed", teach: "Hamilton Bailey lists a large meal after religious fasting among the triggers of sigmoid volvulus." }),
     // Schwartz's Principles of Surgery, 11th ed. (docs/surgical-history.md §12)
     yn("exposure", "ileus_setting", "Began in hospital, after an operation, or on morphine-type drugs", "Did the swelling begin while in hospital — after an operation or injury, during bed rest, or while on morphine-type pain medicines?", ["in hospital", "after operation", "post-operative", "bed rest", "bedridden", "morphine", "tramadol", "opioid", "after injury", "after caesarean"], { tier: "detailed", teach: "Schwartz describes colonic pseudo-obstruction in patients already in hospital, on narcotics or bed rest, where the colon dilates with no mechanical block." }),
+    // Bailey & Love, 28th ed. (docs/surgical-history.md §13)
+    yn("exposure", "psychiatric_drugs", "Long-term medicines for a mental illness", "Is the patient on long-term medicines for a psychiatric illness?", ["psychiatric medicine", "antipsychotic", "antidepressant", "mental illness", "clozapine", "haloperidol", "olanzapine", "no psychiatric medicines"], { tier: "detailed", teach: "Bailey & Love links sigmoid volvulus to chronic constipation and long-term psychotropic drug use." }),
     ...surgicalBackground({ acute: true, omit: ["surg_weight_loss", "surg_menstrual_obstetric"], detailed: ["surg_anaesthetic_problem", "surg_transfusion", "surg_exercise_tolerance", "surg_bleeding_tendency"] }),
   ],
   differentials: [
     { id: "ascites_portal", name: "Ascites (portal hypertension)", pointers: ["alcohol_liver", "jaundice", "leg_swelling", "gi_bleed"], discriminators: ["alcohol_liver", "jaundice", "leg_swelling", "gi_bleed", "confusion", "appetite_weight"] },
     { id: "ascites_tb_malignant", name: "Ascites (tuberculous / malignant)", pointers: ["fever_sweats", "tb_contact", "appetite_weight", "weight_loss_mass"], discriminators: ["fever_sweats", "tb_contact", "appetite_weight", "weight_loss_mass", "pain", "previous_cancer", "postmenopausal_bleeding"] },
     { id: "ascites_cardiac_renal", name: "Ascites (cardiac / nephrotic)", pointers: ["cardiac_renal", "leg_swelling", "breathlessness"], discriminators: ["cardiac_renal", "leg_swelling", "breathlessness"] },
-    { id: "obstruction", name: "Intestinal obstruction", pointers: ["obstruction", "vomiting", "pain"], discriminators: ["obstruction", "vomiting", "pain", "previous_surgery", "pain_became_constant", "blood_mucus_stool", "vomiting_timing", "laxative_escalation", "previous_cancer", "previous_attacks", "meal_after_fast", "ileus_setting"] },
+    { id: "obstruction", name: "Intestinal obstruction", pointers: ["obstruction", "vomiting", "pain"], discriminators: ["obstruction", "vomiting", "pain", "previous_surgery", "pain_became_constant", "blood_mucus_stool", "vomiting_timing", "laxative_escalation", "previous_cancer", "previous_attacks", "meal_after_fast", "ileus_setting", "psychiatric_drugs"] },
     { id: "mass", name: "Mass / organomegaly", pointers: ["weight_loss_mass", "appetite_weight"], discriminators: ["weight_loss_mass", "appetite_weight", "pain", "girth", "laxative_escalation", "postmenopausal_bleeding"] },
     { id: "pregnancy", name: "Pregnancy", pointers: ["menstrual_pregnancy", "pregnancy"], discriminators: ["menstrual_pregnancy", "pregnancy", "girth"] },
-    { id: "gas_functional", name: "Gaseous distension / functional", pointers: ["gas_belching", "pattern"], discriminators: ["gas_belching", "pattern", "obstruction", "appetite_weight", "previous_attacks", "ileus_setting"] },
+    { id: "gas_functional", name: "Gaseous distension / functional", pointers: ["gas_belching", "pattern"], discriminators: ["gas_belching", "pattern", "obstruction", "appetite_weight", "previous_attacks", "ileus_setting", "psychiatric_drugs"] },
   ],
   output: {
     durationSlot: "duration",

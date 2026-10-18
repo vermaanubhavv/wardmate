@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { BROWSE, commonHpi, DAS_CLINICAL_SURGERY, ebem, HAMILTON_BAILEY, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, ebem, HAMILTON_BAILEY, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LEG ULCER / NON-HEALING WOUND — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
+ * LEG ULCER / NON-HEALING WOUND — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical ward, north India. Site, pain and the state of the circulation separate most of
  * this list: an ulcer above the medial malleolus in a heavy aching leg is venous, a painful
  * punched-out ulcer on the toes with rest pain is arterial, and a painless ulcer under the
@@ -12,12 +12,12 @@ import { BROWSE, commonHpi, DAS_CLINICAL_SURGERY, ebem, HAMILTON_BAILEY, HUTCHIS
  */
 export const legUlcerV1: HistoryTree = {
   id: "leg_ulcer",
-  version: "1.3.0",
+  version: "1.4.0",
   complaint: "Leg ulcer / non-healing wound",
   triggers: ["leg ulcer", "ulcer", "non healing wound", "wound not healing", "foot ulcer", "diabetic foot", "sore on leg", "wound on foot", "chronic ulcer", "ghaav", "gangrene", "blackening of toes"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     DAS_CLINICAL_SURGERY,
     HAMILTON_BAILEY,
@@ -27,10 +27,11 @@ export const legUlcerV1: HistoryTree = {
     ebem("The evidence-based diagnosis of deep venous thrombosis", 2009, "19135283"),
     MACLEODS,
     HUTCHISONS,
+    BAILEY_LOVE,
   ],
   slots: [
     ...commonHpi("ulcer"),
-    val("hpi", "site", "Site", "Where exactly is the ulcer — above the inner ankle, on the toes or heel, under the sole, or over a bony point?", ["inner ankle", "medial malleolus", "above the ankle", "toes", "heel", "sole", "under the foot", "metatarsal", "shin", "over the bone", "pressure point", "buttock", "sacrum"]),
+    val("hpi", "site", "Site", "Where exactly is the ulcer — above the inner ankle, on the toes or heel, under the sole, or over a bony point?", ["inner ankle", "medial malleolus", "above the ankle", "toes", "heel", "sole", "under the foot", "metatarsal", "shin", "over the bone", "pressure point", "buttock", "sacrum", "between the toes", "top of the foot", "dorsum of foot", "outer ankle", "lateral malleolus", "gaiter"], { teach: "Bailey & Love places venous ulcers in the gaiter area, mostly on the inner side; an ulcer on the foot or the upper calf sends the questions to other causes, while arterial ulcers favour the toes, the top of the foot and around the ankles." }),
     val("hpi", "how_it_started", "How it began", "Did it start after an injury, a blister, a boil, or did it appear on its own?", ["injury", "trauma", "blister", "boil", "thorn", "burn", "footwear", "on its own", "spontaneous", "insect bite", "scratched"]),
     yn("hpi", "healed_and_broke_down", "Healed and broke down again", "Has the ulcer ever healed completely and then broken down again at the same place?", ["healed", "closed", "broke down", "broke open", "came back", "recurred", "same place", "never healed"], { tier: "detailed" }),
     val("hpi", "size_progression", "Size and whether it is growing", "How big is it, and is it getting bigger, staying the same, or slowly healing?", ["size", "getting bigger", "increasing", "same", "healing", "deeper", "spreading", "cm", "inch"], { numeric: true }),
@@ -39,7 +40,7 @@ export const legUlcerV1: HistoryTree = {
     val("hpi", "edge_floor", "Appearance of the ulcer", "What do the edges and the base look like — sloping, punched out, rolled or everted, and is bone or tendon visible?", ["sloping", "punched out", "rolled", "everted", "undermined", "base", "slough", "granulation", "black", "bone visible", "tendon"], { tier: "detailed" }),
     yn("associated", "claudication_rest_pain", "Pain in the calf, thigh or buttock on walking", "Does walking a set distance bring on cramping pain in the calf, thigh or buttock that goes on standing still, and how far can the patient walk?", ["calf pain", "cramping", "after walking", "distance", "metres", "stops to rest", "claudication", "thigh", "buttock"]),
     yn("associated", "leg_swelling_varicose", "Leg swelling / varicose veins / skin darkening", "Any swelling of the leg, prominent veins, itching, or darkening and thickening of the skin around the ankle?", ["swelling", "varicose veins", "prominent veins", "itching", "darkening", "pigmentation", "thickened", "eczema", "heaviness", "end of day"]),
-    yn("associated", "numbness_burning", "Numbness or burning of the feet", "Any numbness, tingling, or burning of the feet, or loss of feeling so that injuries go unnoticed?", ["numbness", "tingling", "burning", "loss of sensation", "did not feel", "unnoticed", "neuropathy", "pins and needles"]),
+    yn("associated", "numbness_burning", "Numbness or burning of the feet", "Any numbness, tingling, or burning of the feet, or loss of feeling so that injuries go unnoticed?", ["numbness", "tingling", "burning", "loss of sensation", "unnoticed", "neuropathy", "pins and needles"]),
     yn("associated", "fever_spreading", "Fever / spreading redness", "Any fever, or spreading redness and swelling around the ulcer?", ["fever", "spreading", "redness", "swelling", "warm", "cellulitis", "chills", "red streaks"]),
     yn("associated", "colour_change_toes", "Colour change or blackening of the toes", "Any blackening, blue discolouration, or coldness of the toes or foot?", ["blackening", "black", "blue", "discolouration", "cold", "gangrene", "dusky", "pale", "dry"]),
     yn("associated", "weight_loss_cough", "Weight loss / cough / night sweats", "Any weight loss, cough, or night sweats?", ["weight loss", "cough", "night sweats", "loss of appetite", "evening rise", "lost weight"], { tier: "detailed" }),
@@ -47,7 +48,7 @@ export const legUlcerV1: HistoryTree = {
     yn("associated", "joint_skin_disease", "Joint pain / rash / other ulcers", "Any joint pains, rash, mouth ulcers, or ulcers elsewhere on the body?", ["joint pain", "rash", "mouth ulcers", "other ulcers", "vasculitis", "arthritis", "photosensitivity"], { tier: "detailed" }),
     // Red flags
     yn("red_flag", "spreading_infection_sepsis", "Spreading redness with fever / crackling / foul discharge", "Any rapidly spreading redness, crackling under the skin, foul discharge, pain far worse than the ulcer looks, or severe illness with fever?", ["rapidly spreading", "crackling", "crepitus", "foul", "blackening", "severe illness", "toxic", "high fever", "necrosis", "gas"], { teach: "Rapid spread with crackling under the skin or foul discharge marks a deep infection destroying tissue, where the delay changes how much limb is lost." }),
-    yn("red_flag", "critical_ischaemia", "Pain in the foot at rest, relieved by hanging the leg down", "Is there pain in the foot at rest, worse in bed at night and relieved by hanging the leg over the edge?", ["rest pain", "at night", "in bed", "hanging", "over the edge", "sits up", "relieved by dependency", "cannot sleep", "severe"], { teach: "Foot pain at rest that eases when the leg hangs down marks a circulation that can no longer supply the foot even at rest." }),
+    yn("red_flag", "critical_ischaemia", "Pain in the foot at rest, relieved by hanging the leg down", "Is there pain in the foot at rest, worse in bed at night and relieved by hanging the leg over the edge?", ["rest pain", "at night", "in bed", "hanging", "over the edge", "sits up", "relieved by dependency", "cannot sleep", "severe", "sleeps in a chair", "sleeps sitting up", "foot out of bed", "bedclothes"], { teach: "Foot pain at rest that eases when the leg hangs down marks a circulation that can no longer supply the foot even at rest." }),
     yn("red_flag", "probing_to_bone", "Ulcer deep enough to see or feel bone", "Is the ulcer deep enough that bone or tendon can be seen or felt at its base?", ["bone visible", "bone", "tendon", "deep", "probe", "touches bone", "exposed", "cavity"], { teach: "An ulcer that reaches bone strongly suggests the bone itself is infected, which changes both the treatment duration and the surgery." }),
     yn("exposure", "diabetes", "Diabetes", "Is the patient diabetic, for how many years, and how well controlled?", ["diabetes", "diabetic", "sugar", "years", "controlled", "uncontrolled", "insulin", "hba1c"], { teach: "In diabetes an ulcer can be painless, deep and infected while looking unremarkable, so the usual warning signs arrive late or not at all." }),
     yn("red_flag", "sudden_cold_painful_limb", "Suddenly cold, pale, painful limb", "Did the limb suddenly become cold, pale, numb and painful?", ["suddenly", "cold", "pale", "numb", "painful", "cannot move", "no pulse", "white", "acute"], { teach: "A suddenly cold pale painful limb marks an arterial blockage, where the tissue tolerates only a few hours." }),
@@ -71,17 +72,20 @@ export const legUlcerV1: HistoryTree = {
     // Schwartz's Principles of Surgery, 11th ed. (docs/surgical-history.md §12)
     yn("exposure", "previous_amputation_revasc", "Previous amputation, angioplasty or bypass", "Has the patient had a toe or part of a limb amputated, or an angioplasty or bypass in either leg?", ["amputation", "toe removed", "leg cut", "angioplasty", "bypass", "stent in leg", "no amputation"], { tier: "detailed", teach: "Schwartz notes that once a diabetic foot ulcerates the chance of another ulcer is high; an earlier amputation or revascularisation marks a foot already at that stage." }),
     yn("associated", "foot_shape_change", "Change in the shape of the foot", "Has the shape of the foot changed — the arch collapsed, or the foot become swollen and warm without much pain?", ["arch collapsed", "foot changed shape", "deformed foot", "rocker bottom", "swollen warm foot", "charcot", "no deformity"], { tier: "detailed", teach: "Schwartz names foot deformity from motor neuropathy, with sensory loss and ischaemia, as the main contributors to a diabetic ulcer." }),
+    // Bailey & Love, 28th ed. (docs/surgical-history.md §13)
+    yn("associated", "cold_colour_change", "Fingers or toes turning white or blue in the cold", "Have the fingers or toes ever turned white, then blue, then red on exposure to cold?", ["white fingers", "white toes", "blue fingers", "fingers change colour", "toes change colour", "colour change in cold", "raynaud", "no colour change in cold"], { tier: "detailed", teach: "Bailey & Love describes Buerger's disease in young male smokers as small-artery blockage with inflamed surface veins and Raynaud's colour change, and Raynaud's with a connective-tissue disease as a cause of finger and toe necrosis." }),
+    yn("exposure", "bowel_disease_ulcer", "Bowel disease or long-standing bloody diarrhoea", "Has the patient been told of ulcerative colitis or Crohn's disease, or had long-standing diarrhoea with blood or mucus?", ["ulcerative colitis", "crohn", "crohns", "colitis", "inflammatory bowel disease", "ibd", "bloody diarrhoea", "blood and mucus in stool", "no bowel disease"], { tier: "detailed", teach: "Bailey & Love describes pyoderma gangrenosum, a fast painful ulcer with purple undermined edges, arising with inflammatory bowel disease, rheumatoid arthritis or a lymphoma, and notes that surgery may make it worse." }),
     ...surgicalBackground({ omit: ["surg_weight_loss", "surg_occupation_residence", "surg_other_illnesses"] }),
   ],
   differentials: [
     { id: "venous", name: "Venous ulcer", pointers: ["site", "leg_swelling_varicose", "pain_character", "dvt_history"], discriminators: ["site", "leg_swelling_varicose", "pain_character", "dvt_history", "edge_floor", "claudication_rest_pain", "discharge_smell"] },
-    { id: "arterial", name: "Arterial ulcer", pointers: ["claudication_rest_pain", "critical_ischaemia", "colour_change_toes", "smoking"], discriminators: ["claudication_rest_pain", "critical_ischaemia", "colour_change_toes", "smoking", "site", "edge_floor", "pain_character", "vascular_risk", "previous_amputation_revasc"] },
+    { id: "arterial", name: "Arterial ulcer", pointers: ["claudication_rest_pain", "critical_ischaemia", "colour_change_toes", "smoking"], discriminators: ["claudication_rest_pain", "critical_ischaemia", "colour_change_toes", "smoking", "site", "edge_floor", "pain_character", "vascular_risk", "previous_amputation_revasc", "cold_colour_change"] },
     { id: "neuropathic", name: "Diabetic neuropathic ulcer", pointers: ["diabetes", "numbness_burning", "site"], discriminators: ["diabetes", "numbness_burning", "site", "footwear_occupation", "pain_character", "probing_to_bone", "nerve_spine_disease", "foot_self_check", "previous_amputation_revasc", "foot_shape_change"] },
     { id: "diabetic_foot_infection", name: "Diabetic foot infection / osteomyelitis", pointers: ["diabetes", "probing_to_bone", "spreading_infection_sepsis", "fever_spreading"], discriminators: ["diabetes", "probing_to_bone", "spreading_infection_sepsis", "fever_spreading", "discharge_smell", "colour_change_toes", "foot_self_check", "previous_amputation_revasc"] },
     { id: "pressure", name: "Pressure ulcer", pointers: ["immobility", "site"], discriminators: ["immobility", "site", "how_it_started", "edge_floor", "numbness_burning", "bandage_plaster_pressure"] },
     { id: "tuberculous", name: "Tuberculous ulcer", pointers: ["tb_contact", "weight_loss_cough", "edge_floor"], discriminators: ["tb_contact", "weight_loss_cough", "edge_floor", "discharge_smell", "duration", "pain_character", "began_as_swelling"] },
     { id: "malignant", name: "Malignant ulcer", pointers: ["chronic_ulcer_change", "edge_floor", "size_progression"], discriminators: ["chronic_ulcer_change", "edge_floor", "size_progression", "duration", "discharge_smell", "weight_loss_cough", "began_as_swelling", "radiotherapy_site"] },
-    { id: "vasculitic", name: "Vasculitic ulcer", pointers: ["joint_skin_disease", "pain_character"], discriminators: ["joint_skin_disease", "pain_character", "site", "edge_floor", "size_progression", "pain_before_ulcer"] },
+    { id: "vasculitic", name: "Vasculitic ulcer", pointers: ["joint_skin_disease", "pain_character"], discriminators: ["joint_skin_disease", "pain_character", "site", "edge_floor", "size_progression", "pain_before_ulcer", "cold_colour_change", "bowel_disease_ulcer"] },
     { id: "acute_ischaemia", name: "Acute limb ischaemia", pointers: ["sudden_cold_painful_limb", "colour_change_toes"], discriminators: ["sudden_cold_painful_limb", "colour_change_toes", "onset_mode", "claudication_rest_pain", "vascular_risk"] },
     { id: "traumatic", name: "Traumatic ulcer", pointers: ["how_it_started", "footwear_occupation"], discriminators: ["how_it_started", "footwear_occupation", "size_progression", "numbness_burning", "diabetes", "bandage_plaster_pressure"] },
   ],

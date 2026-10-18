@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * GROIN SWELLING — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
+ * GROIN SWELLING — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical ward, north India. The history separates a hernia from everything else that
  * sits in the groin, and then asks the only question that changes the timing: does it still go
  * back. Differentials: inguinal hernia, femoral hernia, inguinal lymphadenopathy (reactive,
@@ -11,13 +11,13 @@ import { BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, M
  */
 export const groinSwellingV1: HistoryTree = {
   id: "groin_swelling",
-  version: "1.2.0",
+  version: "1.3.0",
   complaint: "Groin swelling",
   triggers: ["groin swelling", "swelling in groin", "inguinal swelling", "inguinal hernia", "hernia", "lump in groin", "groin lump", "swelling in the groin", "bulge in groin", "femoral swelling"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
-  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BROWSE, SABISTON],
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
+  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BROWSE, SABISTON, BAILEY_LOVE],
   slots: [
     ...commonHpi("groin swelling"),
     val("hpi", "side", "Which side", "Which side — left, right, or both?", ["left", "right", "both", "one side", "bilateral"]),
@@ -28,7 +28,7 @@ export const groinSwellingV1: HistoryTree = {
     yn("hpi", "cough_impulse_strain", "Appears on coughing or straining", "Does it appear or get bigger on coughing, straining, lifting, or standing for long?", ["coughing", "straining", "lifting", "standing", "gets bigger", "appears", "bearing down", "at work", "end of day"]),
     yn("hpi", "pain_dragging", "Pain or dragging sensation", "Is there pain or a dragging sensation, and when is it worst?", ["pain", "dragging", "heaviness", "ache", "end of day", "on lifting", "painless", "discomfort", "on walking"]),
     yn("associated", "fever_skin_change", "Fever", "Is there fever along with the swelling?", ["fever", "chills", "rigors", "evening rise", "no fever"]),
-    yn("associated", "urinary_or_genital", "Urinary symptoms / genital sores or infection", "Any sore, wound or infection on the genitals, perineum, leg or foot on that side?", ["straining", "poor stream", "prostate", "genital sores", "ulcer", "infection", "foot", "leg", "wound", "boil"]),
+    yn("associated", "urinary_or_genital", "Sore or infection in the area the groin nodes drain", "Any sore, wound or infection on the genitals, perineum, leg or foot on that side?", ["genital sores", "ulcer", "infection", "foot", "leg", "wound", "boil", "perineum", "no genital sore"]),
     yn("associated", "weight_loss_fever", "Weight loss / night sweats", "Any weight loss, night sweats, or lumps elsewhere in the body?", ["weight loss", "night sweats", "lumps elsewhere", "neck", "axilla", "loss of appetite", "evening rise"]),
     yn("associated", "back_pain", "Back pain or a hump in the back", "Any back pain, or a visible hump or bend in the spine?", ["back pain", "hump", "gibbus", "spine", "deformity", "difficulty walking"], { tier: "detailed" }),
     yn("associated", "varicose_veins", "Varicose veins in the leg", "Any visible varicose veins in the leg on that side?", ["varicose veins", "veins", "prominent", "leg", "swelling of leg", "ulcer near ankle"], { tier: "detailed" }),
@@ -55,11 +55,14 @@ export const groinSwellingV1: HistoryTree = {
     // Schwartz's Principles of Surgery, 11th ed. (docs/surgical-history.md §12)
     yn("associated", "bowel_habit_change", "Recent change in bowel habit", "Has the bowel habit changed recently — new constipation or thinner stools?", ["change in bowel habit", "new constipation", "thin stools", "alternating", "no change in bowel habit"], { teach: "Schwartz asks about a change in bowel habit alongside a groin hernia, because the straining that pushed it out may come from a growth in the bowel." }),
     yn("exposure", "ascites_dialysis", "Fluid in the abdomen or peritoneal dialysis", "Is there fluid in the abdomen from liver or kidney disease, or is the patient on peritoneal dialysis?", ["ascites", "fluid in abdomen", "liver disease", "cirrhosis", "peritoneal dialysis", "capd", "tapping", "no ascites"], { tier: "detailed", teach: "Schwartz lists ascites among the causes of raised pressure inside the abdomen that push a groin hernia out, and its control changes the timing of any repair." }),
+    // Bailey & Love, 28th ed. (docs/surgical-history.md §13)
+    val("exposure", "smoking", "Smoking", "Does the patient smoke, how much, and for how long?", ["smoker", "smokes", "cigarettes", "bidi", "hookah", "non smoker", "never smoked"], { tier: "detailed", teach: "Bailey & Love counts smoking among the causes of hernia, through poor collagen maturation." }),
+    val("exposure", "day_case_support", "Support at home after the operation", "Who will look after the patient at home on the first night after an operation, and how far from the hospital do they live?", ["lives with", "lives alone", "attendant at home", "someone at home", "far from hospital", "distance from hospital", "nearby"], { tier: "detailed", teach: "Bailey & Love asks about home support, distance from the hospital and mobility, because many hernia repairs are day-case or single-night stays." }),
     ...surgicalBackground({ acute: true, omit: ["surg_weight_loss", "surg_occupation_residence"] }),
   ],
   differentials: [
-    { id: "inguinal_hernia", name: "Inguinal hernia", pointers: ["reducibility", "cough_impulse_strain", "position", "occupation_straining"], discriminators: ["reducibility", "cough_impulse_strain", "position", "pain_dragging", "irreducible_painful", "previous_hernia_surgery", "first_site_spread", "post_repair_pain", "bowel_habit_change", "ascites_dialysis"] },
-    { id: "femoral_hernia", name: "Femoral hernia", pointers: ["position", "irreducible_painful"], discriminators: ["position", "reducibility", "irreducible_painful", "obstruction_features", "size_and_growth", "first_site_spread"] },
+    { id: "inguinal_hernia", name: "Inguinal hernia", pointers: ["reducibility", "cough_impulse_strain", "position", "occupation_straining"], discriminators: ["reducibility", "cough_impulse_strain", "position", "pain_dragging", "irreducible_painful", "previous_hernia_surgery", "first_site_spread", "post_repair_pain", "bowel_habit_change", "ascites_dialysis", "smoking"] },
+    { id: "femoral_hernia", name: "Femoral hernia", pointers: ["position", "irreducible_painful"], discriminators: ["position", "reducibility", "irreducible_painful", "obstruction_features", "size_and_growth", "first_site_spread", "smoking"] },
     { id: "lymphadenopathy", name: "Inguinal lymphadenopathy", pointers: ["urinary_or_genital", "hard_matted_nodes", "weight_loss_fever", "fever_skin_change"], discriminators: ["urinary_or_genital", "hard_matted_nodes", "weight_loss_fever", "reducibility", "cough_impulse_strain", "sexual_exposure", "tb_contact", "anal_lesion"] },
     { id: "saphena_varix", name: "Saphena varix", pointers: ["varicose_veins", "reducibility", "cough_impulse_strain"], discriminators: ["varicose_veins", "reducibility", "position", "pain_dragging", "size_and_growth"] },
     { id: "cord_hydrocele", name: "Hydrocele of the cord or canal of Nuck", pointers: ["position", "size_and_growth"], discriminators: ["position", "reducibility", "cough_impulse_strain", "pain_dragging", "size_and_growth", "first_site_spread"] },
