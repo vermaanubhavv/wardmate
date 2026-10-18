@@ -207,12 +207,34 @@ export async function saveRecording(
 }
 
 /** Drop a recording once the server has it — the counterpart to saveRecording(). Silent if
- *  it was already sent and removed. */
+ *  it was already sent and removed.
+ *
+ *  Announces the change itself. Callers used to, and the one that forgot (a recording the
+ *  server turned down as empty) left the connection bar saying "1 recording still to send"
+ *  beside "Nothing was heard", about a recording that no longer existed. */
 export async function dropRecording(id: string) {
   try {
     await remove(id);
   } catch {
     // Already gone, or no database. Nothing waiting to send is the outcome either way.
+  }
+  window.dispatchEvent(new Event("outbox-changed"));
+}
+
+/** The resident chose to throw a waiting recording away: the audio and any leftover chunks. */
+export async function discardRecording(id: string) {
+  await clearChunks(id).catch(() => {});
+  await dropRecording(id);
+}
+
+/** Everything waiting to be sent, oldest first, each marked with whether a recorder is
+ *  uploading it right now (shown as "sending", not offered for retry or deletion).
+ *  Empty when there is no database, which is also the truth: nothing can be waiting in it. */
+export async function listWaiting(): Promise<(Pending & { sending: boolean })[]> {
+  try {
+    return (await listPending()).map((i) => ({ ...i, sending: inFlight.has(i.id) }));
+  } catch {
+    return [];
   }
 }
 
@@ -244,15 +266,32 @@ async function remove(id: string) {
  * send.
  */
 const inFlight = new Set<string>();
+// Both announce the change: an upload that gives up leaves its row waiting, and the
+// connection bar has to hear that to offer Try again / Delete for it.
 export function markInFlight(id: string) {
   inFlight.add(id);
+  window.dispatchEvent(new Event("outbox-changed"));
 }
 export function clearInFlight(id: string) {
   inFlight.delete(id);
+  window.dispatchEvent(new Event("outbox-changed"));
 }
 
 async function bumpAttempts(item: Pending) {
   await tx("readwrite", (s) => s.put({ ...item, attempts: item.attempts + 1 }));
+}
+
+/**
+ * Which waiting recordings a flush should try.
+ *
+ * Never one a recorder is uploading itself right now (it drops it on success). And never one
+ * the server has already refused, unless the resident pressed Try again: a refused recording
+ * stays refused, and retrying it automatically is how a single empty recording was uploaded
+ * 831 times in a minute — every flush ended, the bar's automatic send fired again, and the
+ * same file went straight back out.
+ */
+export function toSend(items: Pending[], uploading: Set<string>, retryRefused: boolean) {
+  return items.filter((i) => !uploading.has(i.id) && (retryRefused || i.attempts === 0));
 }
 
 export type FlushResult = {
@@ -270,10 +309,9 @@ export type FlushResult = {
  * partially send a large blob. A failure that is NOT the network — a rejected file, an expired
  * session — is counted and left in place for the next try.
  */
-export async function flush(): Promise<FlushResult> {
+export async function flush({ retryRefused = false } = {}): Promise<FlushResult> {
   const result: FlushResult = { sent: 0, failed: 0, reviews: [] };
-  // Skip anything a recorder is uploading itself right now — it will drop it on success.
-  const items = (await listPending()).filter((i) => !inFlight.has(i.id));
+  const items = toSend(await listPending(), inFlight, retryRefused);
 
   for (const item of items) {
     // The transcriber picks its decoder from the file extension, so a queued recording has to
