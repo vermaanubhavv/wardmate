@@ -1,5 +1,5 @@
 import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
-import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { generalPack, type SpecialtyPack } from "@/lib/specialty";
 import { forWard } from "@/lib/specialty/prompt-words";
 
 export type SpokenPatient = {
@@ -54,7 +54,7 @@ const SCHEMA = {
 
 export async function readSpokenPatient(
   transcript: string,
-  pack: SpecialtyPack = generalSurgeryPack
+  pack: SpecialtyPack = generalPack
 ): Promise<SpokenPatientResult> {
   const client = anthropic();
 

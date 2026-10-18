@@ -45,7 +45,7 @@ describe("buildDischargeDocument hospital branding", () => {
 
 describe("red flags on a post-op summary", () => {
   function draftFor(surgeryDate: string | null) {
-    const context = oneOffContext({ name: "Test Patient" }, ward, null, new Map(), [], derivePatientState([], null), []);
+    const context = oneOffContext({ name: "Test Patient" }, ward, null, new Map(), [], derivePatientState([], null), [], getSpecialtyPack("general_surgery"));
     return compileDischargeDraft({ ...context, patient: { ...context.patient, surgery_date: surgeryDate } });
   }
 

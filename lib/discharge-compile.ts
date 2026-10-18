@@ -19,7 +19,7 @@ import {
   RED_FLAG_SUGGESTIONS,
 } from "@/lib/discharge-entities";
 import { type DischargeTemplate } from "@/lib/discharge-templates";
-import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { generalPack, type SpecialtyPack } from "@/lib/specialty";
 import { matchDischargeTemplateFor } from "@/lib/specialty/discharge";
 import { hasOperationClock } from "@/lib/specialty/intake";
 import { displayValue } from "@/lib/display-value";
@@ -453,7 +453,7 @@ export function applyDischargeTemplate(
 export function templateForDischarge(
   context: DischargeContext,
   primaryDiagnosis: string | null | undefined,
-  pack: SpecialtyPack = generalSurgeryPack
+  pack: SpecialtyPack = generalPack
 ): DischargeTemplate | null {
   return matchDischargeTemplateFor(pack, {
     procedureText: context.procedure ?? context.patient.procedure_text,
@@ -522,7 +522,7 @@ export function compileDischargeDraft(
   const template =
     options?.template !== undefined
       ? options.template
-      : templateForDischarge(context, base.diagnoses.find((d) => d.category === "primary")?.text, options?.pack);
+      : templateForDischarge(context, base.diagnoses.find((d) => d.category === "primary")?.text, options?.pack ?? context.pack);
 
   const drafted = template ? applyDischargeTemplate(base, template, options?.seedAll ?? false) : base;
 
@@ -532,7 +532,7 @@ export function compileDischargeDraft(
   // Only reaches a draft whose red-flag section was never saved — a stored choice still wins.
   // Only where the unit operates: an older medicine patient may carry an operation date from a
   // bedside procedure (before #133), and that is not a post-op discharge.
-  if (patient.surgery_date && hasOperationClock(options?.pack ?? context.pack ?? generalSurgeryPack)) {
+  if (patient.surgery_date && hasOperationClock(options?.pack ?? context.pack ?? generalPack)) {
     const items = drafted.redFlags.items.length > 0 ? drafted.redFlags.items : [...RED_FLAG_SUGGESTIONS];
     return { ...drafted, redFlags: { items, included: true } };
   }

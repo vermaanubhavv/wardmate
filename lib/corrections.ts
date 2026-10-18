@@ -25,7 +25,7 @@
  * what the app changed. A correction here is a suggestion on the record, not a rewriting of it.
  */
 
-import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { generalPack, type SpecialtyPack } from "@/lib/specialty";
 import { hasOperationClock } from "@/lib/specialty/intake";
 
 export type Correction = { from: string; to: string };
@@ -227,7 +227,7 @@ const RULES: { pattern: RegExp; to: string; op?: boolean }[] = (
  */
 export function applyCorrections(
   transcript: string,
-  pack: SpecialtyPack = generalSurgeryPack
+  pack: SpecialtyPack = generalPack
 ): {
   text: string;
   changes: Correction[];
