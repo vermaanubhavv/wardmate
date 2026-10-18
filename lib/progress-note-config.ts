@@ -17,8 +17,8 @@ import type { SpecialtyKey } from "@/lib/specialty/types";
  * resident says, never a dose; an exam line that nobody spoke prints its heading and nothing
  * else; nothing here decides a finding.
  *
- * CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma) — general_surgery including the wound / drains
- * lines and the chip changes (2026-10-11); every other department was read and signed off with
+ * CLINICAL CONTENT: general_surgery REVIEWED (Dr Anubhav Verma) — the Bailey & Love 28e chips on
+ * 2026-10-18, the wound / drains lines and earlier chips on 2026-10-11; every other department was read and signed off with
  * the PR that added it.
  */
 
@@ -214,6 +214,7 @@ const GENERAL_SURGERY: ProgressNoteConfig = {
     "Cough",
     "Breathlessness",
     "Calf pain",
+    "Chest pain",
     "Giddiness",
   ],
   // A surgical round is about the wound and every tube in the patient, so both get a line of
@@ -222,7 +223,7 @@ const GENERAL_SURGERY: ProgressNoteConfig = {
   examSections: [
     ABDOMEN,
     // printOpenSpace: false on wound and drains keeps the sheet's spacing as it always printed.
-    { ...WOUND, pills: [...WOUND.pills, "Induration", "Staples intact", "Port sites healthy"], printOpenSpace: false, onlyIfOperated: true },
+    { ...WOUND, pills: [...WOUND.pills, "Induration", "Staples intact", "Port sites healthy", "Serosanguinous discharge", "Haematoma", "Seroma"], printOpenSpace: false, onlyIfOperated: true },
     {
       id: "drains",
       title: "Drains, tubes & output",
@@ -237,7 +238,7 @@ const GENERAL_SURGERY: ProgressNoteConfig = {
         "intake output", "intake / output", "input / output", "i/o",
       ],
       pills: [
-        "No drain", "Drain serous", "Drain serosanguinous", "Drain haemorrhagic", "Drain bilious", "Drain feculent", "Drain removed",
+        "No drain", "Drain serous", "Drain serosanguinous", "Drain haemorrhagic", "Drain bilious", "Drain feculent", "Drain purulent", "Drain removed",
         "Ryle's aspirate clear", "Ryle's aspirate bilious", "Ryle's removed",
         "Catheter draining clear", "Catheter removed", "Voiding well",
         "Stoma pink, functioning", "Stoma dusky",
@@ -268,6 +269,9 @@ const GENERAL_SURGERY: ProgressNoteConfig = {
     "Suture / staple removal",
     "Stoma care / teaching",
     "DVT prophylaxis review",
+    "Pressure area care",
+    "Nutrition review / dietitian",
+    "Change IV cannula",
     "Step down antibiotics",
     "Stop antibiotics",
     "Culture report follow-up",

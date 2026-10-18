@@ -3,7 +3,7 @@ import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, 
 
 /**
  * SWELLING OF THE ABDOMINAL WALL (UMBILICAL / EPIGASTRIC / INCISIONAL HERNIA) — v1.0.0.
- * CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
+ * CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Built from S. Das, A Manual on Clinical Surgery, 13th ed., ch. 38 pp. 609–610: the varieties
  * are separated by site (at the navel, beside it, in the upper midline, in a scar), the
  * para-umbilical hernia of the obese middle-aged woman gives intermittent pain because its
@@ -18,7 +18,7 @@ import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, 
  */
 export const ventralHerniaV1: HistoryTree = {
   id: "ventral_hernia",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Swelling of the abdominal wall (umbilical / epigastric / incisional hernia)",
   triggers: ["umbilical hernia", "paraumbilical hernia", "para umbilical hernia", "para-umbilical hernia", "incisional hernia", "epigastric hernia", "ventral hernia", "swelling at the navel", "swelling near the navel", "swelling at umbilicus", "umbilical swelling", "bulge in scar", "swelling in scar", "swelling at the scar"],
   setting: "Adult surgical ward and OPD, north India",
@@ -27,7 +27,7 @@ export const ventralHerniaV1: HistoryTree = {
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, BROWSE, BAILEY_LOVE],
   slots: [
     ...commonHpi("swelling"),
-    val("hpi", "site_on_abdomen", "Where on the abdomen", "Is the swelling at the navel, just above or beside it, in the upper midline, or in an old operation scar?", ["navel", "umbilicus", "above the navel", "beside the navel", "upper midline", "epigastrium", "in the scar", "old wound", "stitch line"], { teach: "Das separates the abdominal-wall hernias by where they sit, so the site is the first thing the history records." }),
+    val("hpi", "site_on_abdomen", "Where on the abdomen", "Is the swelling at the navel, just above or beside it, in the upper midline, or in an old operation scar?", ["navel", "umbilicus", "above the navel", "beside the navel", "upper midline", "epigastrium", "in the scar", "old wound", "stitch line", "side of the abdomen", "edge of the rectus", "lower abdomen", "iliac fossa", "flank", "loin"], { teach: "Das separates the abdominal-wall hernias by where they sit, so the site is the first thing the history records." }),
     val("hpi", "size_and_growth", "Size and change over time", "How big is it, and has it grown since it was first noticed?", ["size", "small", "large", "grown", "increased", "same", "lemon", "orange", "gradually", "over years"], { numeric: true }),
     yn("hpi", "reducibility", "Whether it goes back", "Does the swelling go back on lying down or on pushing it, and has that changed recently?", ["goes back", "reduces", "disappears", "on lying down", "on pushing", "no longer goes back", "irreducible", "stays out", "changed recently"]),
     yn("hpi", "cough_impulse_strain", "Appears on coughing or straining", "Does it appear or get bigger on coughing, straining, lifting, or standing?", ["coughing", "straining", "lifting", "standing", "gets bigger", "appears", "bearing down"]),
@@ -39,7 +39,7 @@ export const ventralHerniaV1: HistoryTree = {
     // Red flags — the same three that decide timing in any hernia
     yn("red_flag", "irreducible_painful", "No longer reducible, painful and tense", "Has a swelling that used to go back become painful, tense, and impossible to push back?", ["no longer goes back", "irreducible", "cannot push back", "painful", "tense", "hard", "suddenly", "stuck"], { teach: "A hernia that used to reduce and now will not, with pain, marks trapped contents, and the blood supply is the thing at risk." }),
     yn("red_flag", "obstruction_features", "Vomiting with absolute constipation and distension", "Along with the swelling, has the patient stopped passing stool and flatus, with vomiting and a distended abdomen?", ["vomiting", "no stool", "no flatus", "absolute constipation", "distension", "obstipation", "colicky pain", "bilious", "faecal vomiting"], { teach: "An abdominal-wall swelling with vomiting and no stool or flatus describes bowel obstructed inside the sac, which is a theatre problem rather than a clinic one." }),
-    yn("red_flag", "skin_changes_over_swelling", "Redness, warmth, blackening or thinning of the skin over it", "Is the skin over the swelling red, warm, blackened, very tender, or thin and shiny?", ["redness", "warm", "blackening", "black", "severe tenderness", "discolouration", "thin skin", "shiny", "ulcerated"], { teach: "Skin changes over an irreducible swelling suggest the contents have been compromised; thin, ulcerating skin over a large hernia can give way." }),
+    yn("red_flag", "skin_changes_over_swelling", "Redness, warmth, blackening or thinning of the skin over it", "Is the skin over the swelling red, warm, blackened, very tender, or thin and shiny?", ["redness", "warm", "blackening", "black", "severe tenderness", "discolouration", "thin skin", "shiny", "ulcerated"], { teach: "Skin changes over an irreducible swelling suggest the contents have been compromised; Bailey & Love sees thin, ulcerated skin over large umbilical hernias but calls spontaneous rupture extremely rare." }),
 
     // What sits behind it (Das)
     yn("exposure", "raised_abdominal_pressure", "Raised pressure inside the abdomen", "Is there a recent pregnancy, fluid in the abdomen, a distended abdomen, or a known ovarian cyst or fibroid?", ["pregnancy", "pregnant", "ascites", "fluid in abdomen", "distension", "ovarian cyst", "fibroid", "liver disease", "none of these"], { teach: "Das says an acquired umbilical hernia is almost always pushed through by raised pressure inside the abdomen, and the history has to find the cause." }),
@@ -56,16 +56,21 @@ export const ventralHerniaV1: HistoryTree = {
     yn("red_flag", "ascites_skin_leak", "Fluid weeping through the skin over the navel", "In a patient with fluid in the abdomen, is the skin over the navel swelling weeping fluid or broken?", ["weeping", "leaking fluid", "fluid from navel", "skin broken", "burst", "ascites", "liver disease", "no leak"], { teach: "Schwartz describes skin breakdown over an umbilical hernia under uncontrolled ascites, with rupture, weeping and infection of the peritoneal fluid." }),
     yn("hpi", "sudden_wall_lump_cough", "Sudden painful lump after coughing or exertion", "Did a painful lump in the abdominal wall appear suddenly after a bout of coughing, straining or exercise?", ["suddenly appeared", "after coughing", "coughing fit", "after exercise", "painful lump", "bruise", "no sudden lump"], { teach: "Schwartz describes bleeding within the rectus sheath as an acute painful abdominal-wall mass after coughing fits or exertion, commoner on blood thinners, and easily mistaken for a problem inside the abdomen." }),
     val("exposure", "smoking", "Smoking", "Does the patient smoke, how much, and for how long?", ["smoker", "smokes", "cigarettes", "bidi", "hookah", "non smoker", "never smoked"], { tier: "detailed", teach: "Schwartz lists smoking with diabetes, obesity, steroids and malnutrition as patient factors behind incisional hernia." }),
+    // Bailey & Love, 28th ed. (docs/surgical-history.md §13)
+    yn("exposure", "pregnancy_planned", "Pregnancy planned in the coming years", "In a woman, is a pregnancy planned in the next few years?", ["planning pregnancy", "wants more children", "plans to conceive", "family complete", "tubectomy", "not planning pregnancy"], { tier: "detailed", teach: "Bailey & Love advises against umbilical hernia repair before or during a pregnancy, and notes hernias that appear with a pregnancy, often with divarication, may settle within months." }),
+    yn("associated", "hard_navel_nodule", "Hard nodule in the navel", "Is there a hard, reddish nodule in the navel rather than a soft swelling that goes back?", ["hard nodule", "hard lump in navel", "nodule at umbilicus", "red nodule", "no nodule"], { tier: "detailed", teach: "Bailey & Love describes a malignant nodule at the navel as usually spread from an organ inside the abdomen and a sign of very advanced disease." }),
     ...surgicalBackground({ acute: true }),
   ],
   differentials: [
-    { id: "paraumbilical", name: "Para-umbilical hernia", pointers: ["site_on_abdomen", "intermittent_abdominal_pain", "weight_gain"], discriminators: ["site_on_abdomen", "intermittent_abdominal_pain", "reducibility", "weight_gain", "surg_menstrual_obstetric", "previously_stuck", "swelling_with_periods", "umbilical_discharge"] },
+    { id: "paraumbilical", name: "Para-umbilical hernia", pointers: ["site_on_abdomen", "intermittent_abdominal_pain", "weight_gain"], discriminators: ["site_on_abdomen", "intermittent_abdominal_pain", "reducibility", "weight_gain", "surg_menstrual_obstetric", "previously_stuck", "swelling_with_periods", "umbilical_discharge", "pregnancy_planned"] },
     { id: "acquired_umbilical", name: "Acquired umbilical hernia", pointers: ["raised_abdominal_pressure", "site_on_abdomen", "ascites_skin_leak"], discriminators: ["raised_abdominal_pressure", "site_on_abdomen", "reducibility", "cough_impulse_strain", "umbilical_discharge", "ascites_skin_leak"] },
     { id: "epigastric", name: "Epigastric hernia", pointers: ["pain_after_meals", "site_on_abdomen"], discriminators: ["pain_after_meals", "site_on_abdomen", "reducibility", "cough_impulse_strain", "size_and_growth"] },
     { id: "incisional", name: "Incisional hernia", pointers: ["scar_origin", "scar_wound_infection"], discriminators: ["scar_origin", "scar_wound_infection", "site_on_abdomen", "previous_hernia_repair", "weight_gain", "occupation_straining", "swelling_with_periods", "stoma", "smoking"] },
-    { id: "divarication", name: "Divarication of the recti", pointers: ["surg_menstrual_obstetric", "cough_impulse_strain"], discriminators: ["surg_menstrual_obstetric", "site_on_abdomen", "previously_stuck", "intermittent_abdominal_pain"] },
+    { id: "divarication", name: "Divarication of the recti", pointers: ["surg_menstrual_obstetric", "cough_impulse_strain"], discriminators: ["surg_menstrual_obstetric", "site_on_abdomen", "previously_stuck", "intermittent_abdominal_pain", "pregnancy_planned"] },
     { id: "lipoma", name: "Lipoma of the abdominal wall", pointers: ["size_and_growth"], discriminators: ["size_and_growth", "reducibility", "cough_impulse_strain", "pain_after_meals", "swelling_with_periods"] },
     { id: "rectus_sheath_haematoma", name: "Rectus sheath haematoma", pointers: ["sudden_wall_lump_cough", "surg_blood_thinners"], discriminators: ["sudden_wall_lump_cough", "surg_blood_thinners", "reducibility", "cough_impulse_strain"] },
+    { id: "spigelian", name: "Spigelian hernia", pointers: ["site_on_abdomen", "intermittent_abdominal_pain"], discriminators: ["site_on_abdomen", "intermittent_abdominal_pain", "reducibility", "cough_impulse_strain", "obstruction_features"] },
+    { id: "umbilical_deposit", name: "Malignant deposit at the navel", pointers: ["hard_navel_nodule", "surg_weight_loss"], discriminators: ["hard_navel_nodule", "surg_weight_loss", "reducibility", "umbilical_discharge"] },
   ],
   output: {
     durationSlot: "duration",

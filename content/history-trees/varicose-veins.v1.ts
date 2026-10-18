@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, SABISTON_VENOUS, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * VARICOSE VEINS / PROMINENT LEG VEINS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
+ * VARICOSE VEINS / PROMINENT LEG VEINS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical ward and OPD, north India. Built from Sabiston (20th ed.) ch. 64 "Venous
  * Disease": the symptom pattern of venous pooling (dull ache and heaviness, absent on waking,
  * worse by evening and after standing, relieved by raising the leg), the risk factors it lists
@@ -18,7 +18,7 @@ import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, 
  */
 export const varicoseVeinsV1: HistoryTree = {
   id: "varicose_veins",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Varicose veins / prominent leg veins",
   triggers: ["varicose veins", "varicose vein", "varicosity", "varicosities", "prominent veins", "dilated veins", "swollen veins", "veins on leg", "veins in leg", "tortuous veins", "spider veins", "heaviness of legs", "heaviness in legs"],
   setting: "Adult surgical ward and OPD, north India",
@@ -28,7 +28,7 @@ export const varicoseVeinsV1: HistoryTree = {
   slots: [
     ...commonHpi("prominent veins"),
     val("hpi", "side_extent", "Which leg, and where", "Which leg or legs, and where are the veins — inner thigh, calf, behind the knee, or around the ankle?", ["right leg", "left leg", "both legs", "bilateral", "thigh", "inner thigh", "calf", "behind the knee", "ankle", "whole leg"]),
-    yn("hpi", "aching_heaviness", "Aching or heaviness", "Is there a dull ache, heaviness or tiredness in the leg?", ["aching", "ache", "heaviness", "heavy", "tired legs", "fatigue", "dull pain", "discomfort", "no pain", "painless"]),
+    yn("hpi", "aching_heaviness", "Aching or heaviness", "Is there a dull ache, heaviness or tiredness in the leg?", ["aching", "ache", "heaviness", "heavy", "tired legs", "fatigue", "dull pain", "discomfort", "no pain", "painless", "throbbing"]),
     yn("hpi", "worse_standing_evening", "Worse by evening, better with the leg raised", "Is the discomfort absent on waking, worse by evening or after long standing, and better on lying down or raising the leg?", ["worse in the evening", "evening", "after standing", "long standing", "better on lying", "relieved by raising", "raising the leg", "elevation", "absent in the morning", "better in the morning"], { teach: "Sabiston describes this daily pattern as the signature of venous pooling; pain that does not follow it sends the questions elsewhere." }),
     yn("associated", "swelling_ankle", "Ankle swelling", "Does the ankle or lower leg swell, and does the swelling go down overnight?", ["swelling", "swollen ankle", "ankle swelling", "pedal oedema", "puffy", "goes down overnight", "persists", "no swelling"]),
     yn("associated", "skin_change", "Itching or skin change near the ankle", "Is there itching, darkening, thickening, or an eczema-like rash on the skin above the ankle?", ["itching", "itchy", "darkening", "pigmentation", "black skin", "thickened skin", "hard skin", "eczema", "rash", "no skin change"], { teach: "Skin change above the ankle marks venous disease that has gone on long enough to injure the skin, which Sabiston grades separately from veins alone." }),
@@ -63,10 +63,13 @@ export const varicoseVeinsV1: HistoryTree = {
     yn("exposure", "cancer_history", "Cancer or cancer treatment", "Has the patient ever been diagnosed with or treated for a cancer?", ["cancer", "malignancy", "tumour", "chemotherapy", "radiotherapy", "no cancer"], { tier: "detailed", teach: "Hamilton Bailey lists malignancy with older age, previous clot, immobility and hormones as major risk factors for clot in the veins." }),
     // Schwartz's Principles of Surgery, 11th ed. (docs/surgical-history.md §12)
     yn("exposure", "hormone_pill", "Contraceptive or hormone pill", "In a woman, is she taking a contraceptive pill or hormone replacement, and when was the last one?", ["contraceptive pill", "oral pill", "mala d", "mala n", "ocp", "hormone pill", "hormone replacement", "hrt", "not on pills"], { tier: "detailed", teach: "Schwartz lists the contraceptive pill and hormone replacement among the acquired risk factors for a clot in the veins." }),
+    // Bailey & Love, 28th ed. (docs/surgical-history.md §13)
+    val("hpi", "effect_on_daily_life", "Effect on work and daily life", "How much do the symptoms interfere with work, housework or caring for others?", ["cannot stand at work", "stopped working", "affects work", "difficulty with housework", "limits daily activities", "no effect on work", "only appearance", "cosmetic only"], { tier: "detailed", teach: "Bailey & Love notes that varicose symptoms can be severe enough to interfere with work and caring for others whatever the veins look like, and that symptomatic veins gain most from treatment." }),
+    yn("associated", "groin_lump_standing", "Groin lump that appears on standing", "Is there a soft lump in the groin that appears on standing and goes away on lying down?", ["lump in groin", "groin swelling", "swelling on standing", "disappears on lying", "saphena varix", "no groin lump"], { tier: "detailed", teach: "Bailey & Love describes a saphena varix as a usually painless groin lump that comes up on standing and vanishes on lying down, and warns that it can be mistaken for a hernia." }),
     ...surgicalBackground({ omit: ["surg_family_illness", "surg_menstrual_obstetric", "surg_occupation_residence"] }),
   ],
   differentials: [
-    { id: "primary", name: "Primary varicose veins", pointers: ["aching_heaviness", "worse_standing_evening", "family_history"], discriminators: ["worse_standing_evening", "side_extent", "occupation_standing", "pregnancies", "family_history", "previous_dvt_injury", "since_childhood", "night_cramps", "constipation", "smoking"] },
+    { id: "primary", name: "Primary varicose veins", pointers: ["aching_heaviness", "worse_standing_evening", "family_history"], discriminators: ["worse_standing_evening", "side_extent", "occupation_standing", "pregnancies", "family_history", "previous_dvt_injury", "since_childhood", "night_cramps", "constipation", "smoking", "effect_on_daily_life", "groin_lump_standing"] },
     { id: "post_thrombotic", name: "Post-thrombotic (secondary) venous disease", pointers: ["previous_dvt_injury", "venous_claudication"], discriminators: ["previous_dvt_injury", "venous_claudication", "swelling_ankle", "skin_change", "side_extent", "abdominal_swelling", "white_leg_pregnancy", "family_clot_young", "hormone_pill"] },
     { id: "cvi_skin", name: "Chronic venous insufficiency with skin change", pointers: ["skin_change", "venous_ulcer"], discriminators: ["skin_change", "venous_ulcer", "swelling_ankle", "duration", "burning"] },
     { id: "thrombophlebitis", name: "Superficial thrombophlebitis", pointers: ["tender_cord"], discriminators: ["tender_cord", "sudden_leg_swelling", "previous_dvt_injury", "side_extent"] },

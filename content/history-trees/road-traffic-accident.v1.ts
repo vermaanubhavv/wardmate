@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { ATLS, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, surgicalBackground, TINTINALLI, TRAUMA_BG, val, yn } from "@/content/history-trees/_helpers";
+import { ATLS, BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, surgicalBackground, TINTINALLI, TRAUMA_BG, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ROAD TRAFFIC ACCIDENT / MULTIPLE INJURIES — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
+ * ROAD TRAFFIC ACCIDENT / MULTIPLE INJURIES — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Emergency department, north India. The AMPLE history (allergies, medicines, past history,
  * last meal, events) wrapped around the mechanism, because the mechanism predicts the injuries
  * before the examination finds them. The local casemix is dominated by two-wheeler riders
@@ -16,13 +16,13 @@ import { ATLS, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MAC
  */
 export const roadTrafficAccidentV1: HistoryTree = {
   id: "road_traffic_accident",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Road traffic accident / multiple injuries",
   triggers: ["road traffic accident", "rta", "road accident", "road traffic injury", "motor vehicle accident", "mva", "polytrauma", "multiple injuries", "multiple trauma", "bike accident", "motorcycle accident", "two wheeler accident", "scooter accident", "car accident", "truck accident", "tractor accident", "bus accident", "hit by vehicle", "hit by a vehicle", "knocked down by vehicle", "pedestrian hit", "vehicle overturned", "gaadi se takkar", "bike se gira", "gaadi palat gayi"],
   setting: "Emergency department, north India",
   reviewStatus: "reviewed",
   reviewedBy: "Dr Anubhav Verma",
-  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, ATLS, TINTINALLI, MACLEODS, HUTCHISONS],
+  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, ATLS, TINTINALLI, MACLEODS, HUTCHISONS, BAILEY_LOVE],
   slots: [
     ...commonHpi("injury").filter((s) => !["informant", "onset", "duration", "onset_mode", "progression", "prior_treatment"].includes(s.id)),
     val("informant", "scene_informant", "Who brought the patient", "Who brought the patient — ambulance crew, police, a bystander or family — and did anyone see the crash happen?", ["ambulance", "108", "police", "bystander", "passer by", "family", "brought by", "witnessed", "no one saw", "found on road"]),
@@ -32,17 +32,17 @@ export const roadTrafficAccidentV1: HistoryTree = {
     val("hpi", "speed_impact", "Speed and direction of impact", "How fast were the vehicles going, and did the impact come from the front, the side or behind?", ["speed", "fast", "slow", "km", "highway", "front", "side", "behind", "t bone", "impact"], { tier: "detailed", numeric: true }),
     yn("hpi", "helmet_belt_worn", "Helmet or seat belt worn", "Was a helmet or seat belt being worn, and was the helmet strapped and did it come off?", ["helmet", "no helmet", "without helmet", "seat belt", "seatbelt", "not wearing", "strapped", "came off", "cracked helmet"]),
     val("hpi", "time_since_injury", "Time since injury", "At what time did the crash happen, and how many hours ago was that?", ["hours ago", "minutes ago", "time of accident", "o clock", "last night", "this morning", "since"], { numeric: true }),
-    val("hpi", "prehospital_care", "Care before arrival", "What was done before arrival — collar, splint, dressing, fluids, a first hospital or a referral — and at what time was the patient referred?", ["collar", "splint", "dressing", "bandage", "drip", "fluids", "first aid", "referred", "referral", "another hospital", "district hospital", "chc", "private hospital", "stitches"]),
-    yn("hpi", "consciousness_lost", "Loss of consciousness", "Was consciousness lost at any point, and for how long?", ["unconscious", "loss of consciousness", "blacked out", "did not respond", "knocked out", "conscious throughout", "remembers everything"]),
+    val("hpi", "prehospital_care", "Care before arrival", "What was done before arrival — collar, splint, dressing, fluids, a first hospital or a referral — and at what time was the patient referred?", ["collar", "splint", "dressing", "bandage", "drip", "fluids", "first aid", "referred", "referral", "another hospital", "district hospital", "chc", "private hospital", "stitches", "pelvic binder", "binder", "tourniquet", "tranexamic", "txa", "antibiotic"]),
+    yn("hpi", "consciousness_lost", "Loss of consciousness", "Was consciousness lost at any point, and for how long?", ["unconscious", "loss of consciousness", "blacked out", "did not respond", "knocked out", "conscious throughout", "remembers everything", "loc"]),
     val("hpi", "pain_sites", "Where it hurts", "Where does the patient have pain, and which part hurts the most?", ["pain in", "hurts", "chest", "abdomen", "pelvis", "hip", "thigh", "leg", "arm", "back", "neck", "head", "everywhere"]),
     // Associated injuries, region by region
     yn("associated", "chest_injury_symptoms", "Chest pain or breathlessness", "Any chest pain, pain on breathing in, or breathlessness since the crash?", ["chest pain", "pain on breathing", "breathless", "breathlessness", "difficulty breathing", "rib pain", "chest injury", "cannot take deep breath"]),
     yn("associated", "abdominal_injury_symptoms", "Abdominal pain", "Any abdominal pain, distension, or pain going to the shoulder tip since the crash?", ["abdominal pain", "pain abdomen", "pet me dard", "distension", "swelling of abdomen", "shoulder tip", "left shoulder pain", "handlebar", "seat belt mark"]),
-    yn("associated", "limb_deformity", "Limb pain, swelling or deformity", "Is any limb painful, swollen, deformed, or impossible to move or bear weight on?", ["deformity", "swelling", "cannot move", "cannot bear weight", "bent", "shortened", "fracture", "broken", "thigh", "leg", "arm", "forearm"]),
+    yn("associated", "limb_deformity", "Limb pain, swelling or deformity", "Is any limb painful, swollen, deformed, or impossible to move or bear weight on?", ["deformity", "swelling", "cannot move", "cannot bear weight", "bent", "shortened", "fracture", "broken", "thigh", "leg", "arm", "forearm", "fractures"]),
     yn("associated", "neck_pain_crash", "Neck pain", "Any neck pain or stiffness since the crash, and was the neck held still afterwards?", ["neck pain", "neck stiffness", "gardan", "collar", "held still", "cannot turn neck"]),
     yn("associated", "external_bleeding", "Bleeding at the scene", "How much blood was lost at the scene or on the way, and from where?", ["bleeding", "blood loss", "soaked", "pool of blood", "bleeding from", "wound", "cut", "lacerated", "profuse"]),
     yn("associated", "vomiting_after", "Vomiting", "Any vomiting since the crash, and how many times?", ["vomiting", "vomited", "ulti", "times", "repeated"]),
-    yn("associated", "urine_after", "Blood in urine or unable to pass urine", "Has urine been passed since, was there blood in it or at the tip of the penis, or has the patient been unable to pass urine?", ["blood in urine", "red urine", "blood at meatus", "blood at tip", "cannot pass urine", "not passed urine", "urine retention", "passed urine"]),
+    yn("associated", "urine_after", "Blood in urine or unable to pass urine", "Has urine been passed since, was there blood in it or at the tip of the penis, or has the patient been unable to pass urine?", ["blood in urine", "red urine", "blood at meatus", "blood at tip", "cannot pass urine", "not passed urine", "urine retention", "passed urine", "haematuria", "hematuria", "blood at the meatus"]),
     yn("associated", "facial_injury", "Injury to the face or jaw", "Any injury to the face or jaw — bleeding from the mouth or nose, loose teeth, or difficulty opening the mouth?", ["face", "jaw", "bleeding from mouth", "bleeding from nose", "teeth", "loose teeth", "cannot open mouth", "swollen face", "eye swelling"], { tier: "detailed" }),
     // Red flags
     yn("red_flag", "high_energy_crash", "High-energy mechanism", "Was the patient ejected or thrown, did the vehicle overturn, was someone else killed in the crash, or did the patient go under a truck or tractor wheel?", ["ejected", "thrown", "overturned", "rolled over", "rollover", "someone died", "death at scene", "under the wheel", "run over", "went under", "tractor overturned", "high speed"], { teach: "Ejection, a rollover, a death in the same vehicle, or going under a wheel each predict serious hidden injury even when the patient looks well on arrival." }),

@@ -31,9 +31,13 @@ describe("tree registry", () => {
     // A tree must not drift into "reviewed" as a side effect of an edit — the chip on the card
     // is the only thing telling a resident whether the content was read by a clinician.
     //
-    // All hundred and seven are signed off (Dr Anubhav Verma, 2026-10-11), including every tree
-    // changed by the surgical-text work and the Schwartz review (docs/surgical-history.md §9-§12).
-    // Previously: all hundred and two were signed off. `burns` was re-read as the shipped file (the earlier
+    // All hundred and seven are signed off (Dr Anubhav Verma). The thirty-one surgical trees
+    // changed by the Bailey & Love 28e review (docs/surgical-history.md §13) were re-signed on
+    // 2026-10-18 at their bumped versions.
+    // Previously: all hundred and seven were signed off (Dr Anubhav Verma, 2026-10-11), including
+    // every tree changed by the surgical-text work and the Schwartz review (§9-§12).
+    // Before that: all hundred and two.
+    // `burns` was re-read as the shipped file (the earlier
     // sign-off was of a different, independently-written burns tree and did not transfer).
     // `jaundice` IS here, at v1.1.0: it was signed off at v1.0.0, then gained four obstructive
     // questions, and the reviewer read those four and re-signed it rather than the list being

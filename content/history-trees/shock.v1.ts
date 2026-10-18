@@ -1,8 +1,8 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
+import { BAILEY_LOVE, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SHOCK / UNDIFFERENTIATED HYPOTENSION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * SHOCK / UNDIFFERENTIATED HYPOTENSION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Emergency ward, north India. A history taken in parallel with resuscitation rather than
  * before it, organised around the four mechanisms: loss of volume, failure of the pump,
  * obstruction to filling, and loss of vascular tone. Differentials: hypovolaemic shock from
@@ -12,7 +12,7 @@ import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val,
  */
 export const shockV1: HistoryTree = {
   id: "shock",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Shock / low blood pressure",
   triggers: ["shock", "hypotension", "low bp", "low blood pressure", "collapse", "collapsed", "unrecordable bp", "cold peripheries", "pulse not felt", "fainting", "peripheries cold"],
   setting: "Emergency ward, north India",
@@ -23,10 +23,11 @@ export const shockV1: HistoryTree = {
     rce("Does this patient with chest pain have acute coronary syndrome? The Rational Clinical Examination systematic review", 2015, "26547467"),
     MACLEODS,
     HUTCHISONS,
+    BAILEY_LOVE,
   ],
   slots: [
     ...commonHpi("collapse"),
-    val("informant", "collateral", "Collateral history", "Who brought the patient, what did they see, and what treatment was given before arrival?", ["brought by", "family", "saw", "found", "local doctor", "treatment outside", "drip", "injection", "referred from"]),
+    val("informant", "collateral", "Collateral history", "Who brought the patient, what did they see, and what treatment was given before arrival?", ["brought by", "family", "saw", "found", "local doctor", "treatment outside", "drip", "injection", "referred from", "tranexamic", "txa", "ambulance", "108"]),
     val("hpi", "speed_of_onset", "How quickly it came on", "Did the collapse happen over seconds, minutes, or hours to days?", ["seconds", "minutes", "hours", "days", "sudden", "gradual", "suddenly", "over time", "abrupt"]),
     val("hpi", "preceding_symptoms", "What came first", "What was the first thing the patient complained of before collapsing — fever, chest pain, breathlessness, bleeding, pain, or giddiness?", ["fever", "chest pain", "breathlessness", "bleeding", "pain", "giddiness", "vomiting", "loose stools", "abdominal pain", "rash", "first complained"]),
     yn("hpi", "posture_related", "Related to standing", "Did it happen on standing up or after prolonged standing?", ["on standing", "after standing", "got up", "postural", "prolonged standing", "sitting up"]),
@@ -36,7 +37,7 @@ export const shockV1: HistoryTree = {
     yn("associated", "chest_pain_breathless", "Chest pain or breathlessness", "Any chest pain, breathlessness, or palpitations before the collapse?", ["chest pain", "breathlessness", "breathless", "palpitations", "tightness", "radiating", "sweating with chest pain"]),
     yn("associated", "abdominal_pain", "Abdominal or back pain", "Any severe abdominal or back pain, and did it come on suddenly?", ["abdominal pain", "back pain", "severe", "sudden", "tearing", "colicky", "distension"]),
     yn("associated", "rash_swelling", "Rash, itching or swelling of the face", "Any rash, itching, swelling of the lips or face, or difficulty breathing soon after a drug, food or sting?", ["rash", "itching", "hives", "swelling of lips", "face", "throat", "wheeze", "after injection", "after food", "sting", "immediately"]),
-    yn("associated", "urine_output", "Urine passed", "How much urine has been passed since this began?", ["urine", "not passed", "reduced", "less urine", "catheter", "dark", "how much"]),
+    yn("associated", "urine_output", "Urine passed", "How much urine has been passed since this began?", ["urine", "not passed", "reduced", "less urine", "catheter", "dark", "how much", "oliguria", "anuria", "decreased urine output"]),
     yn("associated", "altered_sensorium", "Drowsiness or confusion", "Any drowsiness, confusion, or restlessness?", ["drowsy", "confusion", "restless", "agitated", "unresponsive", "irrelevant talk", "altered"]),
     yn("associated", "limb_weakness_trauma", "Injury or limb weakness", "Any injury, especially to the chest, abdomen or spine, or any weakness of the limbs?", ["injury", "trauma", "accident", "fall", "chest", "abdomen", "spine", "weakness", "cannot move legs"]),
     // Red flags
@@ -49,16 +50,17 @@ export const shockV1: HistoryTree = {
     yn("red_flag", "envenomation_poisoning", "Snake bite, sting or poisoning", "Any snake bite, scorpion sting, or substance swallowed before this?", ["snake bite", "scorpion", "sting", "poison", "swallowed", "insecticide", "celphos", "phosphide", "tablet"], { teach: "Envenomation and several common poisons cause collapse directly, and each has its own course that a general approach will miss." }),
     yn("red_flag", "pregnancy_bleeding", "Pregnancy or recent delivery", "Is the patient pregnant, recently delivered, or has she missed a period, and is there any bleeding or abdominal pain?", ["pregnant", "missed period", "amenorrhoea", "delivered", "postpartum", "bleeding", "abdominal pain", "lmp", "ectopic"], { teach: "In a woman of childbearing age, collapse with abdominal pain and a missed period is a ruptured ectopic pregnancy until excluded." }),
     IMMUNOCOMPROMISE,
-    PREGNANCY,
     yn("exposure", "cardiac_history", "Known heart disease", "Any known heart disease, previous heart attack, valve disease, or pacemaker?", ["heart disease", "heart attack", "myocardial infarction", "valve", "rheumatic", "pacemaker", "cardiomyopathy", "ejection fraction"]),
-    yn("exposure", "medications", "Regular medicines", "What regular medicines are being taken, especially blood pressure tablets, water tablets, insulin, or blood thinners?", ["antihypertensive", "bp tablets", "diuretic", "water tablet", "insulin", "blood thinner", "beta blocker", "recently started", "dose changed"]),
+    yn("exposure", "medications", "Regular medicines", "What regular medicines are being taken, especially blood pressure tablets, water tablets, insulin, or blood thinners?", ["antihypertensive", "bp tablets", "diuretic", "water tablet", "insulin", "blood thinner", "beta blocker", "recently started", "dose changed", "blood thinners", "beta blockers"], { teach: "Bailey & Love notes that a beta-blocker or a pacemaker can stop the pulse rising in shock, so a normal pulse rate does not reassure." }),
     yn("exposure", "recent_procedure", "Recent surgery, procedure or immobility", "Any recent surgery, procedure, plaster cast, long journey, or prolonged bed rest?", ["surgery", "operation", "procedure", "plaster", "long journey", "bed rest", "immobile", "recently discharged"]),
     yn("exposure", "dialysis_organ_failure", "Dialysis or known organ failure", "Is the patient on dialysis, or known to have kidney, liver or lung failure?", ["dialysis", "kidney failure", "ckd", "liver failure", "cirrhosis", "copd", "oxygen at home", "missed dialysis"], { tier: "detailed" }),
+    // Bailey & Love, 28th ed. (docs/surgical-history.md §13)
+    val("exposure", "usual_bp", "Usual blood pressure", "What is the patient's usual blood pressure, and is the patient known to have high blood pressure?", ["usual bp", "known hypertensive", "hypertension", "high blood pressure", "bp normally", "on bp tablets"], { numeric: true, tier: "detailed", teach: "Bailey & Love warns that an older patient who is usually hypertensive can be in shock with a reading that looks normal, so the pressure is weighed against the patient's own usual value." }),
   ],
   differentials: [
-    { id: "haemorrhagic", name: "Haemorrhagic shock", pointers: ["ongoing_bleeding", "bleeding_visible", "trauma_mechanism", "pregnancy_bleeding"], discriminators: ["ongoing_bleeding", "bleeding_visible", "trauma_mechanism", "pregnancy_bleeding", "abdominal_pain", "speed_of_onset"] },
-    { id: "hypovolaemic_nonhaemorrhagic", name: "Hypovolaemic shock from fluid loss", pointers: ["fluid_losses", "urine_output", "posture_related"], discriminators: ["fluid_losses", "urine_output", "posture_related", "fever_infection", "speed_of_onset", "bleeding_visible"] },
-    { id: "septic", name: "Septic shock", pointers: ["fever_infection", "altered_sensorium", "immunocompromise"], discriminators: ["fever_infection", "altered_sensorium", "immunocompromise", "urine_output", "speed_of_onset", "dialysis_organ_failure"] },
+    { id: "haemorrhagic", name: "Haemorrhagic shock", pointers: ["ongoing_bleeding", "bleeding_visible", "trauma_mechanism", "pregnancy_bleeding"], discriminators: ["ongoing_bleeding", "bleeding_visible", "trauma_mechanism", "pregnancy_bleeding", "abdominal_pain", "speed_of_onset", "usual_bp"] },
+    { id: "hypovolaemic_nonhaemorrhagic", name: "Hypovolaemic shock from fluid loss", pointers: ["fluid_losses", "urine_output", "posture_related"], discriminators: ["fluid_losses", "urine_output", "posture_related", "fever_infection", "speed_of_onset", "bleeding_visible", "usual_bp"] },
+    { id: "septic", name: "Septic shock", pointers: ["fever_infection", "altered_sensorium", "immunocompromise"], discriminators: ["fever_infection", "altered_sensorium", "immunocompromise", "urine_output", "speed_of_onset", "dialysis_organ_failure", "usual_bp"] },
     { id: "cardiogenic", name: "Cardiogenic shock", pointers: ["chest_pain_ischaemic", "chest_pain_breathless", "cardiac_history"], discriminators: ["chest_pain_ischaemic", "chest_pain_breathless", "cardiac_history", "medications", "speed_of_onset", "sudden_breathlessness"] },
     { id: "obstructive", name: "Obstructive shock (tamponade, tension pneumothorax, pulmonary embolism)", pointers: ["sudden_breathlessness", "recent_procedure", "trauma_mechanism"], discriminators: ["sudden_breathlessness", "recent_procedure", "trauma_mechanism", "chest_pain_breathless", "cardiac_history"] },
     { id: "anaphylaxis", name: "Anaphylaxis", pointers: ["anaphylaxis_trigger", "rash_swelling"], discriminators: ["anaphylaxis_trigger", "rash_swelling", "speed_of_onset", "sudden_breathlessness"] },

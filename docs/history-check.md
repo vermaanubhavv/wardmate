@@ -16,7 +16,8 @@ a chip for each: amber "Pending clinician review", or green "Reviewed · <review
 **All hundred and seven trees, all eighteen examination checklists and the safety-level
 thresholds are reviewed and signed off by Dr Anubhav Verma** — re-signed on 2026-10-11 after the
 surgical-text work, the Schwartz review and the immunocompromise change (`docs/surgical-history.md`
-§9–§12). As with the scoring pathways, that
+§9–§12), and the thirty-one surgical trees changed by the Bailey & Love 28e review (§13) re-signed
+on 2026-10-18. As with the scoring pathways, that
 is a single-clinician sign-off covering content that spans nine specialties; departmental review
 is still outstanding.
 

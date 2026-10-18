@@ -33,8 +33,27 @@ describe("general-surgery discharge template matching", () => {
     ["Right diabetic foot, wet gangrene — ray amputation", "diabetic_foot"],
     ["Varicose veins left leg — EVLA", "varicose_veins"],
     ["Lipoma back — excision", "lump_excision"],
+    // Bailey & Love 28e review (docs/surgical-history.md §13)
+    ["Perforated duodenal ulcer, laparotomy", "perforation"],
+    ["Chronic calculous cholecystitis — lap chole", "lap_chole"],
+    ["Acute on chronic calculous cholecystitis", "acute_cholecystitis"],
+    ["Perforated gall bladder", "acute_cholecystitis"],
+    ["Carcinoma gall bladder, extended cholecystectomy", null],
+    ["Parathyroidectomy", null],
+    ["Traumatic jejunal perforation", "abdominal_trauma"],
+    ["Splenectomy for trauma", "abdominal_trauma"],
+    ["Splenectomy for ITP", null],
+    ["Above knee amputation for trauma", null],
+    ["Strangulated inguinal hernia, resection anastomosis", "obstruction"],
   ])("%s → %s", (text, key) => {
     expect(pick(text)).toBe(key);
+  });
+
+  it("gives every day-case template a day-or-night contact (Bailey & Love 28e Table 22.5)", () => {
+    for (const key of ["benign_breast", "lump_excision", "hernia", "uro_hydrocele_circumcision", "perianal", "varicose_veins"]) {
+      const t = DISCHARGE_TEMPLATES.find((x) => x.key === key)!;
+      expect(t.scaffold.patientActions.some((a) => /day or night/.test(a)), key).toBe(true);
+    }
   });
 
   it("prints no conditional drug as a plain prescription", () => {

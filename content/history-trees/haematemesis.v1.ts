@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * HAEMATEMESIS / UPPER GI BLEEDING — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
+ * HAEMATEMESIS / UPPER GI BLEEDING — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult medicine / surgical ward, north India. Two questions run in parallel: how much has been
  * lost and is the patient compensating, and where is it coming from. Differentials: peptic
  * ulcer, oesophageal or gastric varices, Mallory-Weiss tear, erosive gastritis (painkillers,
@@ -10,7 +10,7 @@ import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISO
  */
 export const haematemesisV1: HistoryTree = {
   id: "haematemesis",
-  version: "1.3.0",
+  version: "1.4.0",
   complaint: "Vomiting of blood",
   triggers: ["haematemesis", "hematemesis", "vomiting blood", "vomited blood", "blood in vomit", "coffee ground vomit", "coffee ground", "khoon ki ulti", "upper gi bleed", "blood in vomitus"],
   setting: "Adult medicine / surgical ward, north India",
@@ -41,13 +41,13 @@ export const haematemesisV1: HistoryTree = {
     // Red flags
     yn("red_flag", "shock_features", "Giddiness on standing / cold clammy / low BP", "Any severe giddiness on sitting up, cold clammy skin, or a recorded low blood pressure?", ["severe giddiness", "on standing", "cold", "clammy", "low bp", "hypotension", "pulse fast", "shock", "unrecordable"], { teach: "Postural giddiness severe enough to stop the patient sitting up marks a large loss, and a normal lying blood pressure does not exclude it." }),
     yn("red_flag", "ongoing_large_bleed", "Large or continuing bleeding", "Is the bleeding large in volume, with clots, or still continuing?", ["large amount", "clots", "continuing", "still bleeding", "repeated", "several times", "profuse", "fresh blood"], { teach: "Volume and whether the bleeding has stopped set the pace of everything that follows." }),
-    yn("red_flag", "known_liver_disease", "Known liver disease / alcohol / varices", "Any known liver disease, cirrhosis, hepatitis B or C, or previously diagnosed varices?", ["liver disease", "cirrhosis", "hepatitis", "alcohol", "varices", "portal hypertension", "hbv", "hcv", "banding", "endoscopy"], { teach: "Bleeding in known liver disease is taken as variceal until endoscopy shows otherwise, because that pathway and its timing differ from an ulcer." }),
+    yn("red_flag", "known_liver_disease", "Known liver disease / alcohol / varices", "Any known liver disease, cirrhosis, hepatitis B or C, or previously diagnosed varices?", ["liver disease", "cirrhosis", "hepatitis", "varices", "portal hypertension", "hbv", "hcv", "banding"], { teach: "Bleeding in known liver disease is taken as variceal until endoscopy shows otherwise, because that pathway and its timing differ from an ulcer." }),
     yn("exposure", "nsaid_steroid_anticoagulant", "Painkillers / steroids / blood thinners", "Has the patient taken painkillers, including aspirin, or steroids in the recent weeks?", ["nsaid", "painkillers", "diclofenac", "ibuprofen", "aspirin", "steroid", "blood thinner", "warfarin", "clopidogrel", "anticoagulant"], { teach: "Painkillers and blood thinners both cause and worsen upper gut bleeding, and the patient rarely volunteers them without being asked." }),
     yn("associated", "previous_bleed_ulcer", "Previous bleed or ulcer", "Any previous episode of vomiting blood, black stools, or a known ulcer?", ["previous bleed", "previous episode", "known ulcer", "peptic ulcer", "black stools before", "endoscopy", "h pylori"], { teach: "A previous bleed names the likely source and raises the chance of another one." }),
     yn("red_flag", "chest_pain_breathless", "Chest pain / breathlessness", "Any chest pain or breathlessness with the bleeding?", ["chest pain", "breathlessness", "breathless", "angina", "palpitations"], { teach: "Blood loss strains a heart with narrowed arteries, and chest pain during a bleed changes the urgency." }),
     PREGNANCY,
     val("exposure", "alcohol", "Alcohol", "How much alcohol, and when was the last drink?", ["alcohol", "drinking", "last drink", "daily", "binge", "desi", "whisky", "quarter"]),
-    yn("exposure", "h_pylori_family_cancer", "Family history of ulcer or stomach cancer", "Any family history of peptic ulcer or stomach cancer?", ["family history", "ulcer", "stomach cancer", "gastric cancer", "father", "mother", "sibling"], { tier: "detailed" }),
+    yn("exposure", "h_pylori_family_cancer", "Family history of ulcer or stomach cancer", "Any family history of peptic ulcer or stomach cancer?", ["family history", "stomach cancer", "gastric cancer", "father", "mother", "sibling", "family history of ulcer"], { tier: "detailed" }),
     yn("exposure", "caustic_traditional", "Corrosive or traditional remedies", "Any corrosive substance swallowed, or traditional or herbal remedies taken?", ["corrosive", "acid", "caustic", "herbal", "ayurvedic", "traditional", "desi dawa", "swallowed"], { tier: "detailed" }),
     // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
     yn("exposure", "iron_bismuth", "Iron or bismuth tablets", "Is the patient taking iron or bismuth tablets that could blacken the stool?", ["iron tablets", "iron", "bismuth", "haematinic", "black stools from iron", "no iron"], { tier: "detailed", teach: "Das points out that iron and bismuth blacken the stool, which is formed and not sticky, unlike true melaena." }),
@@ -62,11 +62,13 @@ export const haematemesisV1: HistoryTree = {
     // Schwartz's Principles of Surgery, 11th ed. (docs/surgical-history.md §12)
     yn("red_flag", "aortic_graft", "Previous aortic operation or graft", "Has the patient had an operation on the aorta, or a graft or stent for an aneurysm?", ["aortic graft", "aortic surgery", "aneurysm repair", "aneurysm", "stent graft", "evar", "no aortic surgery"], { teach: "Schwartz asks that a fistula between an aortic graft and the gut be considered in every patient with a graft who bleeds; a small first bleed can precede a torrential one." }),
     IMMUNOCOMPROMISE,
+    // Bailey & Love, 28th ed. (docs/surgical-history.md §13)
+    yn("exposure", "beta_blocker", "Beta-blocker", "Is the patient taking a beta-blocker such as propranolol, carvedilol, metoprolol or atenolol?", ["beta blocker", "propranolol", "carvedilol", "metoprolol", "atenolol", "nebivolol", "no beta blocker"], { teach: "Bailey & Love warns that a bleeding patient on a beta-blocker will not have a rise in pulse in proportion to the blood lost; in liver disease, propranolol or carvedilol often means varices were found before." }),
     ...surgicalBackground({ acute: true, omit: ["surg_weight_loss"], detailed: ["surg_anaesthetic_problem", "surg_exercise_tolerance"] }),
   ],
   differentials: [
     { id: "peptic_ulcer", name: "Peptic ulcer", pointers: ["abdominal_pain", "nsaid_steroid_anticoagulant", "previous_bleed_ulcer", "melaena"], discriminators: ["abdominal_pain", "nsaid_steroid_anticoagulant", "previous_bleed_ulcer", "appearance", "h_pylori_family_cancer", "smoking", "pain_periodicity", "stale_food_vomiting", "dietary_habit", "stress_illness"] },
-    { id: "varices", name: "Oesophageal or gastric varices", pointers: ["known_liver_disease", "jaundice_swelling", "confusion", "alcohol"], discriminators: ["known_liver_disease", "jaundice_swelling", "confusion", "alcohol", "amount", "appearance"] },
+    { id: "varices", name: "Oesophageal or gastric varices", pointers: ["known_liver_disease", "jaundice_swelling", "confusion", "alcohol"], discriminators: ["known_liver_disease", "jaundice_swelling", "confusion", "alcohol", "amount", "appearance", "beta_blocker"] },
     { id: "mallory_weiss", name: "Mallory-Weiss tear", pointers: ["retching_first"], discriminators: ["retching_first", "amount", "alcohol", "appearance"] },
     { id: "erosive_gastritis", name: "Erosive gastritis", pointers: ["nsaid_steroid_anticoagulant", "alcohol", "abdominal_pain"], discriminators: ["nsaid_steroid_anticoagulant", "alcohol", "abdominal_pain", "amount", "caustic_traditional", "stress_illness"] },
     { id: "malignancy", name: "Gastric or oesophageal malignancy", pointers: ["weight_appetite_dysphagia", "h_pylori_family_cancer"], discriminators: ["weight_appetite_dysphagia", "h_pylori_family_cancer", "duration", "abdominal_pain", "appearance", "pain_periodicity", "stale_food_vomiting"] },

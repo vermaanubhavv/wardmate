@@ -590,3 +590,141 @@ All of §12 — the trees, the general-surgery progress note and the discharge t
   terms, on the owner's ruling that diabetes says nothing about immune status: "no diabetes" was
   being accepted as a denial of immunocompromise. Trees that need diabetes as an infection risk
   ask it in their own slot. Every tree carrying the flag was version-bumped and set to pending.
+
+## 13. Senior review against Bailey & Love, 28th ed. (2026-10-18)
+
+Bailey & Love's *Short Practice of Surgery*, 28th ed., was read chapter by chapter against
+the general-surgery trees, the daily note and the discharges. Book pages are cited in the teach lines
+and the code comments. **Nothing it says contradicted a signed-off statement outright.** What it
+added falls into the groups below. Every changed tree got a minor version bump and went back to
+`pending_clinician_review`: thirty-one trees in all, counting every tree that spreads
+`surgicalBackground()`, because its shared slots changed. **All thirty-one, the progress-note chips
+and the discharge changes were read and signed off by Dr Anubhav Verma on 2026-10-18.**
+
+### 13.1 A safety class: terms that let the wrong quote close a slot
+
+`quoteNegatesItem` accepts a denial when a negation word comes before one of the slot's terms.
+Two kinds of term broke that.
+- **Generic words in a red flag.** A generic word such as "pain" or "blood" let an unrelated
+  denial ("no pain") close a specific red flag. These were removed from the GI trees.
+- **A present finding written with its own negation word.** Examples are "not passed urine",
+  "not responding", "did not wake" and "wound did not heal". A quote that *affirms* the finding
+  was then stored as a negative. Each was reworded to the plain form: "anuria", "unresponsive",
+  "delayed waking", "non healing wound", "unable to tolerate", "immobile", and so on.
+
+The validator itself is unchanged. Terms such as "no fever" are how a denial is recorded, so the
+fix belongs in the terms. The rule for anyone writing a term: **a term that names a present
+finding never contains no / not / never / did not**.
+
+Plurals were added where `containsTerm` needs a word boundary: "blood thinners" and "fractures"
+did not match the singular. "loc" and "ent bleed" were added as the standard ED dictation.
+
+### 13.2 Shared background (`surgicalBackground()`, every surgical tree)
+
+- **Blood thinners.** Adds ecosprin, apixaban, rivaroxaban, dabigatran, ticagrelor, prasugrel and
+  dual antiplatelets.
+- **Anaesthetic trouble.** Adds suxamethonium (scoline) apnoea, malignant hyperthermia and
+  difficult airway (Table 21.1).
+- **Regular drugs.** Adds lithium, antidepressants, anti-epileptics and Parkinson's medicines
+  (p. 292).
+- **`PREGNANCY`.** Breastfeeding was *not* added to the shared pregnancy flag, because "not
+  breastfeeding" would then deny pregnancy.
+- **`head_injury` and `limb_injury`** now carry the background (the AMPLE history, ATLS). The
+  blood-thinner slot is omitted where the tree already asks it.
+
+### 13.3 Per-tree changes (summary)
+
+- **GI.** abdominal pain, distension, lump, constipation, haematemesis, bleeding per rectum,
+  anorectal pain and jaundice:
+  - the term-leak fixes from §13.1;
+  - previous episodes added to the appendicitis discriminators;
+  - new slots: pain eased by passing stool, mucus, beta-blocker, anaemia symptoms, stool
+    frequency, known IBD or polyps, obstetric injury and urinary straining.
+- **Peri-operative.**
+  - pre-op: hypo- and hyperglycaemic episodes; stroke timing (three months, ideally nine before
+    elective surgery); combined vs progesterone-only pill; neuromuscular disease; cancer
+    treatment; objection to blood.
+  - post-op: dehiscence days 5–8 and the "pop"; a neck swelling with noisy breathing after neck
+    surgery as a red flag; baseline cognition for delirium; pressure areas.
+- **Vascular, wound and bone.**
+  - leg ulcer: Raynaud's / Buerger's colour change; IBD and pyoderma.
+  - varicose veins: effect on daily life; saphena varix.
+  - pressure-sore: staging words.
+  - bone swelling: smoking; a changing sinus or scar over bone (Marjolin) as a red flag.
+  - sinus: the same red flag, plus hidradenitis as a new differential.
+- **Hernia, neck, breast and lump.**
+  - groin: smoking; day-case support; prostatism terms taken off the lymph-node slot.
+  - ventral: pregnancy planned; Sister Joseph's nodule; Spigelian and umbilical-deposit
+    differentials.
+  - scrotal: torsion pain in the lower abdomen; a painful tumour; alcohol for Fournier's; an
+    epididymal-cyst differential.
+  - thyroid: the pain teach; viral illness before the pain; referred ear pain; pregnancy.
+  - breast: the "four S" discharge (serous counts); male cancer is subareolar; fat necrosis;
+    galactorrhoea drugs; a granulomatous-mastitis differential.
+  - dysphagia: achalasia gives solids and liquids together; perforation after dilatation; atopy;
+    previous head-and-neck cancer; betel; an eosinophilic-oesophagitis differential.
+  - lump: Marjolin sources; ear pain and nasal blockage with a neck node; change in a mole.
+- **Injury and burns.**
+  - head: amnesia before and after; medical cause of the fall; condition at the scene; an
+    account that does not fit the injury (a red flag).
+  - burns: 20 minutes of running water within the hour; chemical in the eye (a red flag);
+    alcohol or drugs; mental illness or self-harm.
+  - limb: two duplicate slots folded; hand dominance; pre-injury mobility.
+  - shock: the duplicate `PREGNANCY` removed; usual blood pressure; a beta-blocker blunts the
+    pulse.
+  - limp: hip OA also wakes at night; radiotherapy as a slip risk.
+  - Term additions in RTA, spinal injury, hand injury and post-burn contracture.
+
+### 13.4 Daily progress note (general surgery)
+
+- **Wound:** serosanguinous discharge, haematoma and seroma.
+- **Drains:** purulent drain.
+- **Complaint:** chest pain.
+- **Plan:** pressure-area care, nutrition review and change IV cannula.
+- The ten "What to check today" texts were rewritten from B&L's postoperative chapters.
+
+### 13.5 Discharges (general surgery)
+
+- **Matching.**
+  - "Perforated duodenal ulcer" now reaches `perforation`.
+  - "Chronic calculous cholecystitis" reaches `lap_chole`, not the acute template.
+  - Parathyroidectomy no longer reaches thyroidectomy.
+  - Traumatic perforation and splenectomy for trauma reach `abdominal_trauma`.
+  - A strangulated hernia reaches `obstruction`.
+  - Gall-bladder cancer is kept off `lap_chole`, and an amputation for trauma off `diabetic_foot`.
+  - Each is pinned in the matching test.
+- **Conditional rows now print bracketed:**
+  - diabetic drugs;
+  - peptic-perforation PPI;
+  - B12 after total gastrectomy;
+  - the hydrocele antibiotic (TDS, only if indicated) and circumcision jelly;
+  - the abscess antibiotic (only when the cavity was closed or aspirated);
+  - GTN or diltiazem as a post-haemorrhoidectomy pain adjunct.
+- **Added rows:** clopidogrel as the first antiplatelet in PAD (aspirin the alternative), tramadol
+  after amputation, and penicillin prophylaxis after splenectomy.
+- **Follow-up and red flags:**
+  - thyroid: vocal-cord check at about 4 weeks; TSH after hemithyroidectomy; hypocalcaemia
+    days 2–5.
+  - breast cancer: the follow-up schedule.
+  - phyllodes: margins.
+  - colorectal: CT in the surveillance.
+  - pancreatitis: find the cause before discharge.
+  - pyogenic liver abscess: look for the source.
+  - cholecystitis: early within 7 days.
+  - appendix: a collection at days 5–7.
+  - splenectomy: bites, revaccination and platelets.
+  - haemorrhoidectomy: review at 3–4 weeks and bleeding on days 7–8.
+  - venous ulcer: lifelong stockings.
+  - stripping: saphenous numbness.
+  - diabetic foot: smoking.
+  - sebaceous cyst: excision once it settles.
+  - breast abscess: keep feeding from both sides.
+  - hernia: seroma.
+- **Out-of-hours contact** (B&L Table 22.5), added after the sign-off and signed off by Dr Anubhav
+  Verma on 2026-10-18: the six
+  day-case templates (benign breast, lump excision, hernia, hydrocele, perianal, varicose veins)
+  print "If any warning sign appears, day or night, call [ ward / emergency phone number ] or come
+  to the hospital emergency."
+- **Not done:**
+  - the minor matching overlaps (phyllodes mastectomy; burns and pressure-sore debridement;
+    Graves ophthalmopathy).

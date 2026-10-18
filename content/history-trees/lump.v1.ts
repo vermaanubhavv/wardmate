@@ -1,21 +1,21 @@
 import type { HistoryTree } from "@/lib/history-check/types";
-import { BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
+import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LUMP / SWELLING (a localised lump) — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
+ * LUMP / SWELLING (a localised lump) — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical ward, north India. Generic lump history to be read alongside the site-specific
  * one (breast, neck, groin, abdominal wall). Differentials: lipoma or cyst, abscess, hernia,
  * lymph node (reactive, tuberculous, malignant), soft-tissue tumour, thyroid swelling, vascular.
  */
 export const lumpV1: HistoryTree = {
   id: "lump",
-  version: "1.2.0",
+  version: "1.3.0",
   complaint: "Lump",
   triggers: ["lump", "swelling in", "mass", "growth", "nodule", "lump in", "lump neck", "lump breast", "lump groin", "swelling neck", "inguinal swelling"],
   setting: "Adult surgical ward, north India",
   reviewStatus: "reviewed",
   reviewedBy: "Dr Anubhav Verma",
-  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BROWSE, SABISTON],
+  references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BROWSE, SABISTON, BAILEY_LOVE],
   slots: [
     ...commonHpi("lump"),
     val("hpi", "site", "Site", "Where exactly is the lump — which region of the body, and is it on one side?", ["neck", "breast", "groin", "axilla", "abdomen", "scalp", "back", "thigh", "arm", "left side", "right side", "one side", "site"]),
@@ -43,7 +43,7 @@ export const lumpV1: HistoryTree = {
     val("hpi", "pain_swelling_order", "Which came first, pain or swelling", "Which came first — the pain or the swelling — or has the lump always been painless?", ["pain first", "pain before", "swelling first", "swelling before", "pain came later", "pain started after", "always painless", "no pain"], { teach: "Das stresses the order: in inflammation the pain comes before the swelling, while in tumours the swelling is present long before any pain." }),
     yn("associated", "drainage_area_infection", "Cut, sore or infection in the area the lump drains", "Is there any cut, sore, boil, bad tooth or skin infection in the area the lump drains — the scalp, face, mouth, hand, foot, leg or genitals?", ["cut", "wound", "sore", "boil", "abrasion", "bad tooth", "tooth infection", "scalp infection", "foot infection", "genital sore", "no wound", "no infection nearby"], { teach: "Das asks for the primary focus whenever a node is enlarged, because an insignificant abrasion in the drainage area may be the whole cause." }),
     yn("hpi", "sudden_enlargement", "Sudden growth after years unchanged", "After staying the same size for a long time, has the lump suddenly started to grow?", ["suddenly grew", "suddenly increased", "started growing", "same for years", "static for years", "recently enlarging", "no recent change"], { tier: "detailed", teach: "Das reads a sudden increase after a long stationary period as possible change in a benign growth, which a single question about speed of growth can hide." }),
-    yn("hpi", "arose_from_scar_or_mole", "Arose from a scar, mole or birthmark", "Did the lump grow out of an old scar, a mole, or a birthmark?", ["scar", "burn scar", "old scar", "ear piercing", "mole", "black mole", "birthmark", "naevus", "from a scar", "no mole", "normal skin"], { tier: "detailed", teach: "Das notes that a keloid may begin in a burn or ear-prick scar and a melanoma usually in a pre-existing naevus, so the ground the lump rose from narrows the list." }),
+    yn("hpi", "arose_from_scar_or_mole", "Arose from a scar, mole or birthmark", "Did the lump grow out of an old scar, a long-standing ulcer or discharging sinus, a mole, or a birthmark?", ["scar", "burn scar", "old scar", "ear piercing", "mole", "black mole", "birthmark", "naevus", "from a scar", "no mole", "normal skin", "long standing ulcer", "chronic ulcer", "old ulcer", "discharging sinus", "osteomyelitis", "marjolin"], { tier: "detailed", teach: "Das notes that a keloid may begin in a burn or ear-prick scar and a melanoma usually in a pre-existing naevus, so the ground the lump rose from narrows the list." }),
     yn("associated", "loss_of_movement", "Movement limited by the lump", "Does the lump limit movement of the nearby joint, limb or spine?", ["cannot move", "restricted movement", "stiff", "cannot bend", "limping", "back stiffness", "movement normal", "no restriction"], { tier: "detailed", teach: "Das lists impairment of function separately; a lump that limits a joint or the spine asks about a deep origin such as a bone tumour or a cold abscess from the spine." }),
     yn("associated", "swelling_with_meals", "Swelling under the jaw at meals", "For a swelling under the jaw, does it come up or hurt while eating?", ["swells while eating", "swells at meals", "pain while eating", "pain on eating", "swelling with food", "under the jaw", "no change with meals"], { tier: "detailed", teach: "Das points out that a submandibular swelling that comes up painfully during meals asks about a stone blocking the salivary duct." }),
     // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
@@ -54,14 +54,18 @@ export const lumpV1: HistoryTree = {
     // Schwartz's Principles of Surgery, 11th ed. (docs/surgical-history.md §12)
     yn("red_flag", "pulsatile", "Lump that pulsates", "Does the lump pulsate or throb in time with the heartbeat?", ["pulsates", "pulsatile", "throbbing", "beats", "expansile", "pulse in lump", "no pulsation"], { teach: "A pulsating lump may be an aneurysm or a leak from an artery after a puncture, drug injection or injury, and has to be known before any needle or incision." }),
     yn("associated", "mouth_throat_ulcer", "Non-healing sore in the mouth or throat", "For a lump in the neck, is there a sore in the mouth or throat that has not healed?", ["mouth ulcer", "non healing ulcer", "sore in mouth", "white patch", "throat sore", "ulcer on tongue", "no mouth ulcer"], { teach: "Schwartz asks about the upper aerodigestive tract first in an adult neck lump, because a node may be the first sign of a cancer of the mouth or throat." }),
+    // Bailey & Love, 28th ed. (docs/surgical-history.md §13)
+    yn("associated", "referred_ear_pain", "Ear pain with a neck lump", "For a lump in the neck, is there pain in the ear on the same side?", ["ear pain", "earache", "pain in the ear", "pain radiating to ear", "no ear pain"], { tier: "detailed", teach: "Bailey & Love lists ear pain referred from the throat among the presenting complaints of nasopharyngeal and hypopharyngeal cancer, which can show first as a neck node." }),
+    yn("associated", "nasal_blockage_bleeding", "Blocked nose with blood-stained discharge", "For a lump in the neck, is there a blocked nose with blood-stained discharge or nosebleeds?", ["blocked nose", "nasal obstruction", "nosebleed", "nosebleeds", "epistaxis", "blood in nasal discharge", "no nasal complaint"], { tier: "detailed", teach: "Bailey & Love gives a neck node with nasal blockage, bloody discharge or nosebleeds as the commonest presentation of nasopharyngeal cancer." }),
+    yn("associated", "mole_change", "Change in a mole's colour, shape or edge", "Has the mole changed colour, become irregular in shape or edge, or grown spots of colour around it?", ["changed colour", "darker", "irregular edge", "changed shape", "spreading pigment", "satellite", "no change in mole"], { tier: "detailed", teach: "Bailey & Love lists change in size, shape, colour and thickness and pigment spreading around a naevus as the features suggesting melanoma; itching and discharge are usually late." }),
     ...surgicalBackground({ omit: ["surg_weight_loss", "surg_family_illness", "surg_patient_concern"] }),
   ],
   differentials: [
     { id: "cyst_lipoma", name: "Lipoma / cyst / soft-tissue benign lump", pointers: ["growth", "pain"], discriminators: ["growth", "pain", "first_noticed", "variation", "skin_changes", "pain_swelling_order", "arose_from_scar_or_mole", "lump_discharge_character"] },
     { id: "abscess", name: "Abscess / infective swelling", pointers: ["fever", "skin_changes", "pain", "trauma_injection"], discriminators: ["fever", "skin_changes", "pain", "trauma_injection", "onset_mode", "pain_swelling_order", "drainage_area_infection", "lump_discharge_character", "recent_sore_throat"] },
     { id: "hernia", name: "Hernia", pointers: ["variation", "irreducible_painful"], discriminators: ["variation", "irreducible_painful", "site", "compressive"] },
-    { id: "lymph_node", name: "Lymph node enlargement (reactive / tuberculous / malignant)", pointers: ["other_lumps", "fever", "weight_loss", "tb_contact"], discriminators: ["other_lumps", "fever", "weight_loss", "tb_contact", "growth", "radiation_hiv", "drainage_area_infection", "lump_discharge_character", "recent_sore_throat", "mouth_throat_ulcer"] },
-    { id: "malignant", name: "Malignant lump", pointers: ["rapid_growth_hard", "weight_loss", "family_cancer"], discriminators: ["rapid_growth_hard", "weight_loss", "family_cancer", "tobacco_alcohol", "growth", "pain_swelling_order", "sudden_enlargement", "arose_from_scar_or_mole", "loss_of_movement", "facial_weakness", "bleeding_itching", "mouth_throat_ulcer"] },
+    { id: "lymph_node", name: "Lymph node enlargement (reactive / tuberculous / malignant)", pointers: ["other_lumps", "fever", "weight_loss", "tb_contact"], discriminators: ["other_lumps", "fever", "weight_loss", "tb_contact", "growth", "radiation_hiv", "drainage_area_infection", "lump_discharge_character", "recent_sore_throat", "mouth_throat_ulcer", "referred_ear_pain", "nasal_blockage_bleeding"] },
+    { id: "malignant", name: "Malignant lump", pointers: ["rapid_growth_hard", "weight_loss", "family_cancer"], discriminators: ["rapid_growth_hard", "weight_loss", "family_cancer", "tobacco_alcohol", "growth", "pain_swelling_order", "sudden_enlargement", "arose_from_scar_or_mole", "loss_of_movement", "facial_weakness", "bleeding_itching", "mouth_throat_ulcer", "referred_ear_pain", "nasal_blockage_bleeding", "mole_change"] },
     { id: "thyroid", name: "Thyroid swelling", pointers: ["compressive", "site"], discriminators: ["compressive", "site", "variation", "growth"] },
     { id: "vascular", name: "Vascular swelling (aneurysm or false aneurysm)", pointers: ["pulsatile"], discriminators: ["pulsatile", "trauma_injection", "growth", "pain"] },
   ],
