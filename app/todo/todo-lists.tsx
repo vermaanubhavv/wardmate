@@ -231,7 +231,7 @@ function ByType({ tasks, scoringTasks }: { tasks: WardTask[]; scoringTasks: Ward
 }
 
 /**
- * Jobs under one header per patient: "1 · Shyamlal · 7 jobs", then the jobs. Every row used to
+ * Jobs under one header per patient: "1 · Shyamlal · 7 To-Do", then the jobs. Every row used to
  * repeat the bed and name, so seven of one patient's jobs took a screen to say whose they were.
  * Patients are kept in bed order, so working down the list is still a walk.
  */
@@ -254,7 +254,7 @@ function ByPatient({ tasks }: { tasks: WardTask[] }) {
                 {displayCase(stripPatientHonorific(jobs[0].patient.display_name))}
               </span>
               <span className="text-footnote text-muted">
-                {jobs.length} {jobs.length === 1 ? "job" : "jobs"}
+                {jobs.length} To-Do
               </span>
             </Link>
           </li>

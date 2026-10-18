@@ -17,7 +17,7 @@ import Wordmark from "../wordmark";
 import Mark from "../mark";
 import { createClient } from "@/lib/supabase/server";
 import { countWardPendingConfirmations } from "@/lib/confirm-queue";
-import { criticalFlags, isDischargeable, type WardFlag } from "@/lib/ward-flags";
+import { abnormalTemp, criticalFlags, isDischargeable, type WardFlag } from "@/lib/ward-flags";
 import { getWardTasks } from "@/lib/todo";
 import { TriangleAlert, CircleCheckBig, Settings } from "lucide-react";
 import { getMyWards } from "@/lib/ward";
@@ -299,6 +299,8 @@ export default async function Home({
                 patient={p}
                 flag={flags.get(p.id) ?? null}
                 moreFlags={Math.max(0, (allFlags.get(p.id)?.length ?? 0) - 1)}
+                // Already in the Critical chip as hypothermia: not said twice.
+                temp={allFlags.get(p.id)?.some((f) => f.label === "Temp") ? null : abnormalTemp(p, pack.key)}
                 overdue={overdueCounts.get(p.id) ?? 0}
                 sharesBedWith={sharesBedWith(p)}
                 procedures={procedures}
@@ -402,6 +404,7 @@ function PatientRow({
   patient,
   flag,
   moreFlags,
+  temp,
   overdue,
   sharesBedWith,
   procedures,
@@ -413,6 +416,8 @@ function PatientRow({
   flag: WardFlag | null;
   /** How many further critical findings sit behind `flag` — shown as "+N". */
   moreFlags: number;
+  /** The temperature as recorded, when it is off normal for the patient's age (abnormalTemp). */
+  temp: string | null;
   /** Jobs past the day they were due. */
   overdue: number;
   /** Other patients given this same bed number, by name. */
@@ -440,7 +445,7 @@ function PatientRow({
     : patient.unconfirmed_count > 0
       ? { text: `${patient.unconfirmed_count} to check`, tone: "warn" as const }
       : patient.open_task_count > 0
-        ? { text: `${patient.open_task_count} ${patient.open_task_count === 1 ? "job" : "jobs"}`, tone: "plain" as const }
+        ? { text: `${patient.open_task_count} To-Do`, tone: "plain" as const }
         : null;
   const sharedBed = sharesBedWith.length > 0;
 
@@ -485,9 +490,12 @@ function PatientRow({
           )}
         </span>
 
-        {(status || overdue > 0) && (
+        {(status || temp || overdue > 0) && (
           <span className="flex shrink-0 flex-col items-end gap-1">
             {status && <Badge tone={status.tone}>{status.text}</Badge>}
+            {/* A temperature off normal for the patient's age — under the count, quietly, so
+                the name keeps its width. */}
+            {temp && <Badge>Temp {temp}</Badge>}
             {overdue > 0 && (
               <span className="flex items-center gap-1 text-caption text-critical-fg">
                 <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-critical-dot" />

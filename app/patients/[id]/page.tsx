@@ -913,7 +913,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             ))}
             {openCount > 0 && (
               <StatusPill icon={ListChecks}>
-                {openCount} {openCount === 1 ? "job" : "jobs"}
+                {openCount} To-Do
               </StatusPill>
             )}
             {pending.length > 0 && (

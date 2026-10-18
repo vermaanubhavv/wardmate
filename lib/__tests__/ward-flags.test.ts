@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { criticalFlag, criticalFlags, currentVitals, isDischargeable, risingCreatinine } from "@/lib/ward-flags";
+import { abnormalTemp, criticalFlag, criticalFlags, currentVitals, isDischargeable, risingCreatinine } from "@/lib/ward-flags";
 import type { WardPatient } from "@/lib/patients";
 
 function patient(over: Partial<WardPatient>): WardPatient {
@@ -290,5 +290,35 @@ describe("each vital's own newest reading reaches the alarms (patch 0107)", () =
     const p = patient({ vitals: [v("SpO2", "89", "08:00")] });
     expect(currentVitals(p)).toEqual(p.vitals);
     expect(criticalFlags(p, "general_surgery").map((f) => f.reason)).toEqual(["hypoxia"]);
+  });
+});
+
+describe("abnormalTemp — the ward row's temperature bubble", () => {
+  const temp = (value: string, age: number | null = 40, unit?: string) =>
+    abnormalTemp(patient({ age_years: age, vitals: [vital("Temp", value)] }), unit);
+
+  it("adults: nothing inside NEWS2's 0-point band, 36.1–38.0 °C", () => {
+    expect(temp("36.1")).toBeNull();
+    expect(temp("38.0")).toBeNull();
+    expect(temp("98.6 F")).toBeNull();
+  });
+  it("adults: 36.0 and below, 38.1 and above, as recorded", () => {
+    expect(temp("36.0")).toBe("36.0");
+    expect(temp("38.1")).toBe("38.1");
+    expect(temp("101 F")).toBe("101 F");
+  });
+  it("under 16: 38 °C or more, or below 36 °C", () => {
+    expect(temp("38.0", 4)).toBe("38.0");
+    expect(temp("37.9", 4)).toBeNull();
+    expect(temp("36.0", 4)).toBeNull();
+    expect(temp("35.9", 4)).toBe("35.9");
+  });
+  it("no age: a child on a paediatric unit, an adult elsewhere", () => {
+    expect(temp("38.0", null, "paediatrics")).toBe("38.0");
+    expect(temp("38.0", null, "general_surgery")).toBeNull();
+  });
+  it("no temperature, or afebrile in words: nothing", () => {
+    expect(abnormalTemp(patient({ vitals: [vital("PR", "88")] }))).toBeNull();
+    expect(temp("afebrile")).toBeNull();
   });
 });
