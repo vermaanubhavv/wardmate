@@ -21,13 +21,14 @@ import {
   type PacVerdict,
 } from "@/lib/patient-state";
 import { compareBeds, displayCase, isIdentifierLabel, stripPatientHonorific, managementChoicesFor } from "@/lib/patients";
-import { effectiveUrgency, jobTitle } from "@/lib/urgency";
+import { effectiveUrgency, jobTitle, postOpJob } from "@/lib/urgency";
 import BedsideBar from "./bedside-bar";
 import type { DictationCopy } from "./recorder";
 import { progressNoteConfigFor } from "@/lib/progress-note-config";
 import PatientTabs from "./patient-tabs";
 import EditIdentity from "../edit-identity";
 import UrgencyDot from "./urgency-dot";
+import NoOperationQuestion from "./no-operation-question";
 import { ChevronIcon } from "../../icons";
 import {
   Check,
@@ -334,6 +335,10 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const flaggedVitals = latestVitalTiles(allObservations).filter((t) => t.flag && !t.takenAt);
   // Jobs a resident said — the scoring engine's suggestions are listed below but not counted.
   const openCount = openTasks.length;
+  // A post-op job with no operation on record — asked as a question under the header.
+  const postOpTask = hasOperationClock(pack) && beforeSurgery ? postOpJob(openTasks) : null;
+  // Worded as the To-Do list words it: "tomorrow" said 17 days ago is a date, not "tomorrow".
+  const orphanPostOpJob = postOpTask && jobTitle(postOpTask.value_text ?? postOpTask.label, postOpTask.recorded_at);
 
   const procedure = procedureFor(patient, procedures);
   const caseHistoryDiagnosis = caseHistoryEntries
@@ -925,6 +930,14 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
               <StatusPill tone="gap">{missing.length} not recorded</StatusPill>
             )}
           </div>
+        )}
+        {orphanPostOpJob && (
+          <NoOperationQuestion
+            job={orphanPostOpJob}
+            patient={patientWithBurn}
+            templateChoices={templateChoices}
+            specialty={pack.key}
+          />
         )}
       </header>
 
