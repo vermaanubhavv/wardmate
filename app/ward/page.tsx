@@ -197,8 +197,8 @@ export default async function Home({
               "None overdue"
             )}
           </SummaryCell>
-          <SummaryCell href="/confirm" label="Confirm" value={pendingConfirmCount} warn={pendingConfirmCount > 0}>
-            {pendingConfirmCount > 0 ? "Values to check" : "All checked"}
+          <SummaryCell href="/confirm" label="To check" value={pendingConfirmCount} warn={pendingConfirmCount > 0}>
+            {pendingConfirmCount > 0 ? "Values waiting" : "All checked"}
           </SummaryCell>
           <SummaryCell href="/handover" label="Handover" value="Open">
             For the next shift
@@ -431,14 +431,14 @@ function PatientRow({
   // the right — the green "Nothing pending" pill and rail it used to carry made the calm rows
   // the loudest thing on screen, and green belongs to job urgency. Only the most pressing
   // status shows: a critical reading (its actual value, never a diagnosis about it), then
-  // values to confirm, then jobs.
+  // values to check, then jobs.
   const status = flag
     ? {
         text: [flag.label, flag.value, moreFlags > 0 && `+${moreFlags}`].filter(Boolean).join(" "),
         tone: "critical" as const,
       }
     : patient.unconfirmed_count > 0
-      ? { text: `${patient.unconfirmed_count} to confirm`, tone: "warn" as const }
+      ? { text: `${patient.unconfirmed_count} to check`, tone: "warn" as const }
       : patient.open_task_count > 0
         ? { text: `${patient.open_task_count} ${patient.open_task_count === 1 ? "job" : "jobs"}`, tone: "plain" as const }
         : null;

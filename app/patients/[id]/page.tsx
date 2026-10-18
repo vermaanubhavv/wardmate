@@ -943,7 +943,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             sections below. "Not recorded" is amber, not red: it is a gap to fill, not an alarm. */}
         <div className="mt-2 grid grid-cols-3 gap-2">
           <CountTile icon={ListChecks} value={openCount} label="To do" tone="neutral" />
-          <CountTile icon={CircleAlert} value={pending.length} label="To confirm" tone={pending.length > 0 ? "warn" : "neutral"} />
+          <CountTile icon={CircleAlert} value={pending.length} label="To check" tone={pending.length > 0 ? "warn" : "neutral"} />
           <CountTile icon={ClipboardX} value={missing.length} label="Not recorded" tone={missing.length > 0 ? "warn" : "neutral"} />
         </div>
       </header>
