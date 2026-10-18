@@ -13,9 +13,10 @@
 // wrong against the new code — the activate handler below deletes every cache not named here,
 // so a version bump wipes the old ones on the next load. (v2: the discharge workspace became
 // a card stack; old cached discharge pages rendered the previous accordion. v3: payloads are
-// keyed by path alone, and background prefetches are no longer stored.)
+// keyed by path alone, and background prefetches are no longer stored. v4: a payload's key is
+// marked so it can never be found for — or overwrite — the same path's page.)
 const SHELL = "wardmate-shell-v2";
-const PAGES = "wardmate-pages-v3";
+const PAGES = "wardmate-pages-v4";
 
 // How long a screen's network fetch may take before the saved copy is shown instead.
 const PATIENCE_MS = 3000;
@@ -98,10 +99,15 @@ self.addEventListener("fetch", (event) => {
   // A payload is saved under its path with `_rsc` taken off, so there is one copy per screen and
   // each visit replaces the last. `_rsc` changes with every build and with where the tap came
   // from, so keyed by it the cache filled with near-duplicates and a lookup returned any of them.
+  //
+  // The `wm-payload` mark keeps it apart from the page at the same path. Without it the two
+  // shared one key: whichever came last overwrote the other, and a page that took longer than
+  // PATIENCE_MS was answered with the saved payload — the app drew a screen of raw React data.
   const key = isPayload
     ? (() => {
         const u = new URL(request.url);
         u.searchParams.delete("_rsc");
+        u.searchParams.set("wm-payload", "1");
         return u.toString();
       })()
     : request;
