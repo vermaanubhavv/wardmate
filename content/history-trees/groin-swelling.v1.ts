@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * GROIN SWELLING — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Bailey & Love 28e review, docs/surgical-history.md §13).
+ * GROIN SWELLING — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical ward, north India. The history separates a hernia from everything else that
  * sits in the groin, and then asks the only question that changes the timing: does it still go
  * back. Differentials: inguinal hernia, femoral hernia, inguinal lymphadenopathy (reactive,
@@ -15,8 +15,8 @@ export const groinSwellingV1: HistoryTree = {
   complaint: "Groin swelling",
   triggers: ["groin swelling", "swelling in groin", "inguinal swelling", "inguinal hernia", "hernia", "lump in groin", "groin lump", "swelling in the groin", "bulge in groin", "femoral swelling"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BROWSE, SABISTON, BAILEY_LOVE],
   slots: [
     ...commonHpi("groin swelling"),

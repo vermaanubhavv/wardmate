@@ -13,11 +13,11 @@ return 404, and nothing under `lib/history-check/` is queried. Off by default.
 Clinical content carries `reviewStatus` and `reviewedBy`, and the card and learning pages show
 a chip for each: amber "Pending clinician review", or green "Reviewed · <reviewer>".
 
-**Seventy-six of the hundred and seven trees, all eighteen examination checklists and the
-safety-level thresholds are reviewed and signed off by Dr Anubhav Verma.** All hundred and seven
-were re-signed on 2026-10-11 after the surgical-text work, the Schwartz review and the
-immunocompromise change (`docs/surgical-history.md` §9–§12); the thirty-one surgical trees changed
-by the Bailey & Love 28e review (§13, 2026-10-18) are back to pending until he reads them. As with the scoring pathways, that
+**All hundred and seven trees, all eighteen examination checklists and the safety-level
+thresholds are reviewed and signed off by Dr Anubhav Verma** — re-signed on 2026-10-11 after the
+surgical-text work, the Schwartz review and the immunocompromise change (`docs/surgical-history.md`
+§9–§12), and the thirty-one surgical trees changed by the Bailey & Love 28e review (§13) re-signed
+on 2026-10-18. As with the scoring pathways, that
 is a single-clinician sign-off covering content that spans nine specialties; departmental review
 is still outstanding.
 
