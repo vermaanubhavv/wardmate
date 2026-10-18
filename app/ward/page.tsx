@@ -327,7 +327,7 @@ export default async function Home({
             <span className="mt-1.5 text-caption text-muted">Add</span>
           </div>
 
-          <RoundRecorder />
+          <RoundRecorder unitName={ward.name} />
           <RegisterButton />
         </div>
       </BottomBar>

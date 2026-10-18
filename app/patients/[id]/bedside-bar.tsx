@@ -15,10 +15,13 @@ type MissingItem = { item: { label: string; hint: string | null } };
  */
 export default function BedsideBar({
   patientId,
+  who,
   missing,
   copy,
 }: {
   patientId: string;
+  /** Whose bed — the recording sheet's title. */
+  who: { bed: string | null; name: string; line?: string };
   missing: MissingItem[];
   /** The unit's dictation wording, read on the server — see DictationCopy. */
   copy: DictationCopy;
@@ -147,6 +150,8 @@ export default function BedsideBar({
       )}
       <Recorder
         patientId={patientId}
+        who={who}
+        toCover={missing.map((m) => m.item.label)}
         copy={copy}
         onBusyChange={onBusyChange}
         idleActions={

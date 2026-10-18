@@ -12,11 +12,13 @@ import {
   putChunk,
   saveRecording,
 } from "@/lib/outbox";
-import LiveDictation, { type LiveLine, type LiveSection } from "./live-dictation";
+import { useLiveWords } from "@/lib/stt/use-live-words";
+import RecordingSheet, { CoverChips, HeardBox } from "@/app/recording-sheet";
 import { extFor, REC_MIME } from "./card-kit";
 
-type Status = "idle" | "starting" | "recording" | "working";
-type Mode = "batch" | null;
+type Status = "idle" | "starting" | "recording" | "finishing" | "working";
+/** Live: each pause is filed as it is said. Batch: one recording, sent on Done. */
+type Mode = "live" | "batch" | null;
 
 type Finding = {
   kind: string;
@@ -30,41 +32,46 @@ type Finding = {
 const MAX_SECONDS = 180;
 
 /**
- * Tap to start, tap again to stop.
+ * Speak at the bedside. A tap opens the recording sheet (app/recording-sheet.tsx — the same one
+ * the unit round uses) with the patient's name, what is still to cover, and the words as they
+ * are heard.
  *
- * This replaced hold-to-talk, which could not work: starting needs `getUserMedia`, which on
- * iPhone opens a permission prompt and takes real time. The finger came up before the
- * recorder object existed, so the release handler had nothing to stop — and recording then
- * began after release and never ended. With two separate taps the slow part no longer sits
- * inside a gesture.
+ * Tap to start and Done to finish, not hold-to-talk: starting needs `getUserMedia`, which on
+ * iPhone opens a permission prompt and takes real time — a finger lifted before the recorder
+ * existed left it recording for good.
  *
- * Every tap tries LIVE dictation first: the shared panel (./live-dictation.tsx) streams the
- * words as they are said, and at each pause files that thought through /api/entries/text — the
- * same extractor, verbatim-quote check and amber rules as a recording — so each finding drops
- * into its table (vitals, examination, plan…) while the resident is still talking. If live
- * cannot start (offline, not configured) it falls back to the original record-then-upload path
- * silently. After a recording, the transcript is shown with every captured phrase highlighted
- * and the findings drop in one by one.
+ * LIVE first: at each pause the thought is filed through /api/entries/text — the same
+ * extractor, verbatim-quote check and amber rules as a recording — so it is saved while the
+ * resident is still talking, the findings appear under the words, and the "Still to cover"
+ * chips tick off. Nothing said at a bedside may be lost, which is why there is no Discard once
+ * a pause has been filed.
+ *
+ * With no signal for live words (offline, or the socket drops) the same microphone carries on
+ * as one recording, kept on the phone a second at a time and sent on Done — the
+ * record-then-upload path, transcript and findings shown in the bar afterwards.
  */
 /** The unit's dictation wording, read from its progress-note config on the server so the whole
  *  config table stays out of the patient page bundle. */
 export type DictationCopy = {
   /** The Type box's placeholder. */
   bedsideExample: string;
-  /** The example shown while live dictation listens. */
+  /** The example shown on the sheet before anything is heard. */
   dictationExample: string;
-  /** Which sections live dictation sorts into. */
-  liveSections: LiveSection[];
 };
 
 export default function Recorder({
   patientId,
+  who,
+  toCover,
   onBusyChange,
   idleActions,
   copy,
 }: {
   patientId: string;
-  /** The unit's department wording — which sections live dictation sorts into, and its example. */
+  /** Whose bed, for the sheet's title. */
+  who: { bed: string | null; name: string; line?: string };
+  /** What is still to cover today — re-read from the server after each filed pause. */
+  toCover: string[];
   copy: DictationCopy;
   onBusyChange?: (busy: boolean) => void;
   /** Sits in the same row as the mic while nothing is recording — the bar's other controls. */
@@ -74,21 +81,20 @@ export default function Recorder({
   const [status, setStatus] = useState<Status>("idle");
   const [mode, setMode] = useState<Mode>(null);
   const [seconds, setSeconds] = useState(0);
-  const [level, setLevel] = useState(0);
-  const [live, setLive] = useState(false);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  /** The list as it stood when the sheet opened; an item gone from `toCover` since is ticked. */
+  const [coverAtOpen, setCoverAtOpen] = useState<string[]>([]);
   const filedRef = useRef(0);
   const [message, setMessage] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<string | null>(null);
   const [findings, setFindings] = useState<Finding[]>([]);
-  /** A live transcript whose save failed — kept so it can be retried without re-dictating. */
+  /** Live words whose save failed — kept so they can be retried without re-dictating. */
   const [unsaved, setUnsaved] = useState<string | null>(null);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const autoStoppedRef = useRef(false);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const rafRef = useRef<number | null>(null);
   // One id per recording, used as the IndexedDB key, the per-chunk key, and the server's
   // dedup `client_uuid` — so a salvage, a clean save and a queue retry are all the same row.
   const recIdRef = useRef<string>("");
@@ -102,30 +108,42 @@ export default function Recorder({
     modeRef.current = mode;
   }, [mode]);
 
+  const sheetOpen = status === "starting" || status === "recording" || status === "finishing";
   useEffect(() => {
-    onBusyChange?.(live || status === "recording" || status === "starting");
-  }, [live, status, onBusyChange]);
+    onBusyChange?.(sheetOpen);
+  }, [sheetOpen, onBusyChange]);
 
-  // Nothing is holding a finger down any more, so the elapsed count is the signal that the
-  // app is still listening.
+  const live = useLiveWords(mode === "live" ? stream : null, {
+    patientId,
+    onPause: fileFragment,
+    // No live words on this signal: the same microphone carries on as one recording.
+    onUnavailable: () => {
+      if (streamRef.current && statusRef.current === "recording") startBatch(streamRef.current);
+    },
+  });
+
+  // Live words are only heard once the socket is open; until then the sheet says "Starting…".
+  const listening = status === "recording" && !(mode === "live" && live.state !== "live");
+
+  // Nothing is holding a finger down, so the running count is the sign it is still listening.
   useEffect(() => {
-    if (status !== "recording") return;
+    if (!listening) return;
     const id = setInterval(() => setSeconds((s) => s + 1), 1000);
     return () => clearInterval(id);
-  }, [status]);
+  }, [listening]);
 
   useEffect(() => {
     if (status === "recording" && seconds >= MAX_SECONDS) {
       autoStoppedRef.current = true;
-      stop();
+      void done();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seconds, status]);
 
   // Phone locked / swiped away / killed mid-dictation: write what the batch recorder has to
   // IndexedDB now, before the tab can be frozen. A later clean stop re-saves the fuller take
-  // under the same id, so this never doubles it. The live path needs none of this — its words
-  // are filed at every pause.
+  // under the same id, so this never doubles it. Live words need none of this — they are filed
+  // at every pause.
   const salvage = useCallback(() => {
     if (modeRef.current !== "batch") return;
     if (statusRef.current !== "recording" && statusRef.current !== "working") return;
@@ -163,69 +181,52 @@ export default function Recorder({
       window.removeEventListener("pagehide", salvage);
       document.removeEventListener("visibilitychange", onHide);
       salvage();
-      stopMeter();
+      releaseMic();
     };
   }, [salvage]);
 
-  function startMeter(stream: MediaStream) {
-    try {
-      const Ctx =
-        window.AudioContext ??
-        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!Ctx) return;
-      const ctx = new Ctx();
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 32;
-      ctx.createMediaStreamSource(stream).connect(analyser);
-      audioCtxRef.current = ctx;
-      const buf = new Uint8Array(analyser.frequencyBinCount);
-      const tick = () => {
-        analyser.getByteTimeDomainData(buf);
-        let sum = 0;
-        for (let i = 0; i < buf.length; i++) {
-          const v = (buf[i] - 128) / 128;
-          sum += v * v;
-        }
-        setLevel(Math.min(1, Math.sqrt(sum / buf.length) * 3.2));
-        rafRef.current = requestAnimationFrame(tick);
-      };
-      rafRef.current = requestAnimationFrame(tick);
-    } catch {
-      // The meter is decoration — a browser that will not open an AudioContext still records.
-    }
-  }
-
-  function stopMeter() {
-    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-    rafRef.current = null;
-    audioCtxRef.current?.close().catch(() => {});
-    audioCtxRef.current = null;
-    setLevel(0);
+  function releaseMic() {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setStream(null);
   }
 
   async function start() {
-    // Guards the window where getUserMedia has not resolved yet — the exact race that broke
-    // the previous version. A second tap here must do nothing at all.
+    // Guards the window where getUserMedia has not resolved yet — a second tap must do nothing.
     if (status !== "idle") return;
     setStatus("starting");
+    setMode(null);
     setMessage(null);
     setTranscript(null);
     setFindings([]);
+    filedRef.current = 0;
     setSeconds(0);
+    setCoverAtOpen(toCover);
     autoStoppedRef.current = false;
     recIdRef.current = crypto.randomUUID();
     seqRef.current = 0;
 
-    if (!navigator.onLine) return void startBatch();
-    filedRef.current = 0;
-    setStatus("idle");
-    setLive(true);
+    let mic: MediaStream;
+    try {
+      mic = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+    } catch {
+      setStatus("idle");
+      setMessage("Microphone permission was refused. Allow it in your phone's settings.");
+      return;
+    }
+    streamRef.current = mic;
+    setStream(mic);
+    setStatus("recording");
+    navigator.vibrate?.(30);
+    if (navigator.onLine) setMode("live");
+    else startBatch(mic);
   }
 
-
-  /** One pause of live dictation, filed exactly as a typed note is. Words that could not be
-   *  sent are held for "Save these words" — at a bedside nothing said may be lost. */
-  async function fileFragment(text: string): Promise<{ lines: LiveLine[]; error?: string }> {
+  /** One pause of live words, filed exactly as a typed note is. Words that could not be sent
+   *  are held for "Save these words" — at a bedside nothing said may be lost. */
+  async function fileFragment(text: string) {
     try {
       const res = await fetch("/api/entries/text", {
         method: "POST",
@@ -235,33 +236,25 @@ export default function Recorder({
       const data = await res.json();
       if (!res.ok) {
         if (res.status >= 500) keepUnsaved(text);
-        return { lines: [], error: data.error ?? "Could not file that." };
+        else setMessage(data.error ?? "Could not file that.");
+        return;
       }
       const found = normaliseFindings(data.observations);
-      filedRef.current += found.length;
-      return {
-        lines: found.map((f) => ({
-          section: SECTION_OF_KIND[f.kind] ?? "history",
-          text: `${f.label}: ${f.value_text}`,
-          check: f.needs_confirmation,
-        })),
-        error: data.error ?? (found.length === 0 ? `Nothing clinical in “${text}”.` : undefined),
-      };
+      if (found.length > 0) {
+        filedRef.current += found.length;
+        setFindings((f) => [...f, ...found]);
+        // Re-reads what is still to cover, so the chips on the sheet tick off.
+        router.refresh();
+      }
     } catch {
       keepUnsaved(text);
-      return { lines: [], error: `No signal — “${text}” is kept to save after you stop.` };
     }
   }
 
-  async function startBatch() {
+  function startBatch(mic: MediaStream) {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-      });
-      streamRef.current = stream;
-
       // Safari on iPhone records mp4; Chrome records webm.
-      const recorder = new MediaRecorder(stream, REC_MIME ? { mimeType: REC_MIME } : undefined);
+      const recorder = new MediaRecorder(mic, REC_MIME ? { mimeType: REC_MIME } : undefined);
       chunksRef.current = [];
       const recId = recIdRef.current;
       recorder.ondataavailable = (e) => {
@@ -279,31 +272,60 @@ export default function Recorder({
         });
       };
       recorder.onstop = () => void send(recorder.mimeType || "audio/webm");
-
       recorder.start(1000);
       recorderRef.current = recorder;
       setMode("batch");
       setStatus("recording");
-      startMeter(stream);
-      navigator.vibrate?.(30);
     } catch {
-      setStatus("idle");
+      releaseMic();
       setMode(null);
-      setMessage("Microphone permission was refused. Allow it in your phone's settings.");
+      setStatus("idle");
+      setMessage("This phone could not start recording. Type the note instead.");
     }
   }
 
-  function stop() {
-    stopMeter();
-    if (recorderRef.current?.state === "recording") {
-      recorderRef.current.stop();
+  async function done() {
+    if (statusRef.current !== "recording") return;
+    navigator.vibrate?.(15);
+    if (modeRef.current === "batch") {
+      // Live words already heard before the switch were filed at their pauses.
+      void live.finish();
       setStatus("working");
-      navigator.vibrate?.(15);
-    } else {
-      setStatus("idle");
+      if (recorderRef.current?.state === "recording") recorderRef.current.stop();
+      else setStatus("idle");
+      releaseMic();
+      return;
     }
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
+    setStatus("finishing");
+    await live.finish();
+    releaseMic();
+    setMode(null);
+    setStatus("idle");
+    const n = filedRef.current;
+    setMessage(
+      n > 0
+        ? `${n} finding${n === 1 ? "" : "s"} filed. Anything amber waits under To check.`
+        : autoStoppedRef.current
+          ? "Stopped at 3 minutes."
+          : null
+    );
+    router.refresh();
+  }
+
+  /** Throw away a recording nothing has been filed from. */
+  function discard() {
+    const id = recIdRef.current;
+    if (recorderRef.current) {
+      recorderRef.current.ondataavailable = null;
+      recorderRef.current.onstop = null;
+      if (recorderRef.current.state === "recording") recorderRef.current.stop();
+    }
+    chunksRef.current = [];
+    void dropRecording(id);
+    void clearChunks(id);
+    releaseMic();
+    setMode(null);
+    setStatus("idle");
   }
 
   /** "Save these words": files words a live pause could not send — the same transcript, so
@@ -328,14 +350,12 @@ export default function Recorder({
       setUnsaved((u) => (u === text ? null : u));
       setFindings(normaliseFindings(data.observations));
       setMessage(
-        data.error ??
-          ((data.observations ?? []).length === 0 ? "Nothing clinical was found in that." : null) ??
-          (autoStoppedRef.current ? "Stopped at 3 minutes." : null)
+        data.error ?? ((data.observations ?? []).length === 0 ? "Nothing clinical was found in that." : null)
       );
       router.refresh();
     } catch {
       // Unlike a blob, finished words have nowhere to queue (lib/outbox.ts holds audio only) —
-      // but they are already on screen, word for word, and held here for the retry button.
+      // but they are on screen, word for word, and held here for the retry button.
       setStatus("idle");
       keepUnsaved(text);
       setMessage("No signal to save that. The words are shown above — not saved yet.");
@@ -359,6 +379,7 @@ export default function Recorder({
     const blob = new Blob(chunksRef.current, { type: mimeType });
     chunksRef.current = [];
     const id = recIdRef.current;
+    setMode(null);
 
     if (blob.size < 1000) {
       setStatus("idle");
@@ -420,7 +441,7 @@ export default function Recorder({
       void dropRecording(id);
       void clearChunks(id);
       window.dispatchEvent(new Event("outbox-changed"));
-      setFindings(normaliseFindings(data.observations));
+      setFindings((f) => [...f, ...normaliseFindings(data.observations)]);
       setMessage(
         data.error ??
           ((data.observations ?? []).length === 0 ? "Nothing clinical was found in that." : null) ??
@@ -437,42 +458,67 @@ export default function Recorder({
     }
   }
 
-  const recording = status === "recording";
-  const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
-  const ss = String(seconds % 60).padStart(2, "0");
+  const heard = [...live.heard, live.current].join(" ").trim();
+  const covered = new Set(coverAtOpen.filter((c) => !toCover.includes(c)));
+  // Once live words have been heard (and so filed), there is nothing left to throw away.
+  const canDiscard = mode === "batch" && live.heard.length === 0;
 
   return (
     <div className="flex flex-col gap-2">
-      {live && (
-        <LiveDictation
-          patientId={patientId}
-          title="Speaking at the bedside"
-          example={`e.g. “${copy.dictationExample}”`}
-          sections={copy.liveSections}
-          route={fileFragment}
-          onUnavailable={(reason) => {
-            setLive(false);
-            setMessage(`Live words unavailable (${reason}) — recording; the transcript appears when you stop.`);
-            void startBatch();
-          }}
-          onClose={() => {
-            setLive(false);
-            const n = filedRef.current;
-            setMessage(n > 0 ? `${n} finding${n === 1 ? "" : "s"} filed — anything amber is waiting under Confirm dictation.` : null);
-            router.refresh();
-          }}
-        />
+      {sheetOpen && (
+        <RecordingSheet
+          // Done is held while starting, so nothing is said into a microphone nobody hears.
+          status={status === "finishing" ? "finishing" : listening ? "recording" : "starting"}
+          title={
+            <>
+              {who.bed && <span className="font-mono">{who.bed}</span>}
+              {who.bed && " · "}
+              {who.name}
+            </>
+          }
+          subtitle={who.line}
+          seconds={seconds}
+          maxSeconds={MAX_SECONDS}
+          stream={stream}
+          note={
+            mode === "batch"
+              ? live.heard.length > 0
+                ? "Live words stopped on this signal. The rest is recorded and saved when you tap Done."
+                : "No live words on this signal. Recording; it is saved when you tap Done."
+              : "Each pause is saved as you speak. Anything amber waits under To check."
+          }
+          onDiscard={canDiscard ? discard : undefined}
+          onDone={() => void done()}
+        >
+          <CoverChips items={coverAtOpen} covered={covered} />
+          <HeardBox>
+            {heard ? (
+              <p className="text-body leading-snug">{heard}</p>
+            ) : (
+              <p className="text-subhead text-muted">
+                {mode === "batch" ? "The words appear once you tap Done." : `e.g. “${copy.dictationExample}”`}
+              </p>
+            )}
+            {findings.length > 0 && <FindingList findings={findings} />}
+          </HeardBox>
+        </RecordingSheet>
       )}
-      <span className="sr-only" role="status">
-        {status === "recording" ? "Recording" : status === "working" ? "Transcribing" : ""}
-      </span>
+
       {/* At rest, one compact row — a round mic beside its label, with the bar's other controls
-          after it — so the bar does not sit a second full-width teal button under the page's
-          own "Make Today's Note". Once tapped, the full-width button below takes over: stopping
-          is the one thing that matters then, and it should be impossible to miss. */}
-      {status === "idle" ? (
+          after it. Recording happens on the sheet; the bar only says when it is transcribing. */}
+      {status === "working" ? (
+        <div role="status" className="btn flex w-full items-center justify-center gap-2 bg-chip text-muted">
+          <Mark className="h-5 w-5" spinning />
+          Transcribing…
+        </div>
+      ) : (
         <div className="flex items-center gap-2">
-          <button type="button" onClick={start} className="flex min-h-12 min-w-0 flex-1 items-center gap-3 text-left active:opacity-70">
+          <button
+            type="button"
+            onClick={start}
+            disabled={status !== "idle"}
+            className="flex min-h-12 min-w-0 flex-1 items-center gap-3 text-left active:opacity-70"
+          >
             <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-line bg-card text-accent shadow-sm">
               <MicIcon className="h-6 w-6" />
             </span>
@@ -480,54 +526,15 @@ export default function Recorder({
           </button>
           {idleActions}
         </div>
-      ) : (
-      <button
-        type="button"
-        onClick={stop}
-        disabled={!recording}
-        className={"btn w-full transition-colors " + (recording ? "bg-recording text-white" : "bg-chip text-muted")}
-      >
-        {recording ? (
-          <span className="flex items-center justify-center gap-3">
-            <LevelMeter level={level} />
-            Tap to stop
-            <span className="font-mono text-body tabular-nums opacity-90">
-              {mm}:{ss}
-            </span>
-          </span>
-        ) : status === "starting" ? (
-          "Starting…"
-        ) : status === "working" ? (
-          <span className="flex items-center justify-center gap-2">
-            <Mark className="h-5 w-5" spinning />
-            Transcribing…
-          </span>
-        ) : null}
-      </button>
       )}
 
-      {transcript && (
+      {!sheetOpen && transcript && (
         <div className="rounded-lg bg-chip/60 px-3 py-2 text-footnote leading-relaxed text-muted">
           {findings.length > 0 ? highlight(transcript, findings.map((f) => f.source_quote)) : <>“{transcript}”</>}
         </div>
       )}
 
-      {findings.length > 0 && (
-        <ul className="flex flex-col gap-1">
-          {findings.map((f, i) => (
-            <li
-              key={`${f.label}-${i}`}
-              className="wm-pop flex items-baseline gap-2 text-footnote"
-              style={{ animationDelay: `${i * 80}ms` }}
-            >
-              <span aria-hidden className={"mt-1 h-1.5 w-1.5 shrink-0 rounded-full " + (f.needs_confirmation ? "bg-warn-dot" : "bg-good-dot")} />
-              <span className="text-muted">{f.label}</span>
-              <span className="font-medium">{f.value_text}</span>
-              {f.needs_confirmation && <span className="text-caption2 font-medium text-warn-fg">check</span>}
-            </li>
-          ))}
-        </ul>
-      )}
+      {!sheetOpen && findings.length > 0 && <FindingList findings={findings} />}
 
       {unsaved && status === "idle" && (
         <div className="flex flex-col gap-2">
@@ -545,22 +552,21 @@ export default function Recorder({
   );
 }
 
-/** Which live table each extracted kind lands in. */
-const SECTION_OF_KIND: Record<string, string> = {
-  note: "history",
-  vital: "vital",
-  exam: "exam",
-  drain: "drain",
-  intake_output: "drain",
-  diagnosis: "dx",
-  day_number: "dx",
-  planned_procedure: "dx",
-  procedure_done: "dx",
-  pac_status: "dx",
-  medication: "medication",
-  lab: "lab",
-  plan: "plan",
-};
+/** What was filed, one line each — amber for anything waiting to be checked. */
+function FindingList({ findings }: { findings: Finding[] }) {
+  return (
+    <ul className="flex flex-col gap-1">
+      {findings.map((f, i) => (
+        <li key={`${f.label}-${i}`} className="wm-pop flex items-baseline gap-2 text-footnote" style={{ animationDelay: `${i * 80}ms` }}>
+          <span aria-hidden className={"mt-1 h-1.5 w-1.5 shrink-0 rounded-full " + (f.needs_confirmation ? "bg-warn-dot" : "bg-good-dot")} />
+          <span className="text-muted">{f.label}</span>
+          <span className="font-medium">{f.value_text}</span>
+          {f.needs_confirmation && <span className="text-caption2 font-medium text-warn-fg">check</span>}
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 function normaliseFindings(raw: unknown): Finding[] {
   return (Array.isArray(raw) ? raw : []).map(
@@ -582,24 +588,6 @@ function joinSpoken(base: string, addition: string): string {
   if (!a) return b;
   if (!b) return a;
   return `${a} ${b}`;
-}
-
-/** Four bars that rise with the mic level — the "it is hearing you" signal that a static dot
- *  was only pretending to be. Each bar reacts a little differently so it reads as sound, not a
- *  single slider. */
-function LevelMeter({ level }: { level: number }) {
-  const factors = [0.55, 1, 0.75, 0.4];
-  return (
-    <span className="flex items-end gap-[3px]" aria-hidden>
-      {factors.map((f, i) => (
-        <span
-          key={i}
-          className="w-[3px] rounded-full bg-white"
-          style={{ height: `${6 + Math.min(1, level * f * 1.4) * 14}px`, transition: "height 0.08s linear" }}
-        />
-      ))}
-    </span>
-  );
 }
 
 /** The transcript with every phrase a finding was drawn from marked in it — so you can see at

@@ -5,7 +5,6 @@ import {
   MED_PRESETS,
   PROGRESS_NOTE_CONFIGS,
   RESERVED_SECTION_IDS,
-  liveRoundSections,
   medPresetsFor,
   openSpaceHeadings,
   progressNoteConfigFor,
@@ -187,16 +186,5 @@ describe("per-ward presets, examples and print spacing", () => {
     expect(openSpaceHeadings(PROGRESS_NOTE_CONFIGS.internal_medicine)).toEqual(["C/O", "CVS", "Chest", "P/Abdomen", "CNS", "Assessment"]);
     const note = buildProgressNote(patient, [], [], null, { noteConfig: PROGRESS_NOTE_CONFIGS.paediatrics });
     expect(note.openSpace).toEqual(openSpaceHeadings(PROGRESS_NOTE_CONFIGS.paediatrics));
-  });
-
-  it("live dictation: surgery keeps its eight sections and drains; medicine and paediatrics say lines", () => {
-    const label = (key: string) => liveRoundSections(progressNoteConfigFor(key)).find((s) => s.key === "drain")?.label;
-    expect(label("general_surgery")).toBe("Drains & intake/output");
-    expect(label("urology")).toBe("Drains & intake/output");
-    expect(label("internal_medicine")).toBe("Lines & intake/output");
-    expect(label("paediatrics")).toBe("Lines & intake/output");
-    expect(liveRoundSections(progressNoteConfigFor("general_surgery")).map((s) => s.key)).toEqual([
-      "history", "vital", "exam", "drain", "dx", "medication", "lab", "plan",
-    ]);
   });
 });
