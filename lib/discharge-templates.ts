@@ -28,8 +28,8 @@ import { adv, proc, COMMON_MEDS } from "@/lib/discharge-template-parts";
  * `[ … ]` and the condition beside it, so a row nobody edited prints as visibly unfinished rather
  * than as a prescription every patient received.
  *
- * CLINICAL CONTENT: the out-of-hours contact line on the six day-case templates (OUT_OF_HOURS,
- * 2026-10-18) is PENDING REVIEW. Everything else: REVIEWED (Dr Anubhav Verma) — re-signed on 2026-10-18 after the Bailey & Love 28e
+ * CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma) — the out-of-hours contact line on the six day-case
+ * templates (OUT_OF_HOURS) signed off on 2026-10-18; the rest re-signed on 2026-10-18 after the Bailey & Love 28e
  * changes (docs/surgical-history.md §13: the matching fixes, the conditional-drug rows, the added
  * follow-up and red-flag lines and the "What to check today" text); signed off on 2026-10-11 with the
  * corrections and the nine templates added after the Schwartz 11e review (§12).
