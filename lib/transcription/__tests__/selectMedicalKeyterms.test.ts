@@ -231,3 +231,62 @@ describe("surgical ward phrases only on units that operate", () => {
     expect(list).toContain("post operative day");
   });
 });
+
+/**
+ * A family token used to match as a plain substring, so a short one landed inside an unrelated
+ * word and quietly put another specialty's vocabulary on the wire. Every case below was real
+ * before `tokenIn` moved to word-run matching, and every one is a wrong keyterm sent to
+ * Deepgram for a patient who has nothing to do with it.
+ *
+ * The per-specialty `*-collisions.test.ts` files guard the same bug class from the other end,
+ * by keeping short triggers out of the lexicon. They stay useful — a two-letter alias is still
+ * a bad keyterm — but they could only ever cover the lexicons that remembered to add them.
+ * This covers the matcher itself, so a new lexicon cannot reintroduce the bug.
+ */
+describe("a family token never matches inside an unrelated word", () => {
+  const CASES: [string, DictationContext, string[]][] = [
+    // "anc" sits inside "pancreatitis"; "cr" inside "necrotic".
+    ["pancreatitis", { diagnoses: ["Acute pancreatitis"] }, ["absolute neutrophil count", "complete response"]],
+    // "dic" sits inside "appendicitis".
+    ["appendicitis", { diagnoses: ["Acute appendicitis"], procedures: ["Appendicectomy"] }, ["disseminated intravascular coagulation"]],
+    // "abg" sits inside "cabg" — the case the pulmonary collision test names.
+    ["CABG", { procedures: ["CABG"] }, ["copd exacerbation", "venous blood gas"]],
+    // "pd" sits inside "copd".
+    ["COPD", { diagnoses: ["COPD with acute exacerbation"] }, ["progressive disease"]],
+    // "al" sits at the end of "inguinal" and pulls an antimalarial onto a hernia.
+    ["hernia", { diagnoses: ["Right inguinal hernia"] }, ["artemether-lumefantrine"]],
+    // "pr" sits inside "pre-eclampsia".
+    ["pre-eclampsia", { diagnoses: ["Severe pre-eclampsia"], specialty: "obstetrics-gynaecology" }, ["partial response"]],
+  ];
+
+  for (const [name, ctx, forbidden] of CASES) {
+    it(`${name} does not drag in ${forbidden.join(", ")}`, () => {
+      const list = terms(ctx);
+      for (const f of forbidden) expect(list, `${name} should not carry "${f}"`).not.toContain(f);
+    });
+  }
+});
+
+describe("a family token still matches a whole word, however it is spelled", () => {
+  it("matches a token that the chart has pluralised", () => {
+    // The grafting entry triggers on "burn"; a chart says "burns". Losing this to a stricter
+    // matcher would take the grafting vocabulary off a burns patient.
+    expect(terms({ diagnoses: ["40% flame burns"] })).toContain("split skin grafting");
+  });
+
+  it("looks through a hyphen, a slash and an apostrophe", () => {
+    // Each of these holds the matching word, hidden behind punctuation: "burn" in
+    // "post-burn", "chemotherapy" in "chemotherapy-induced", "ryle" in "ryle's".
+    expect(terms({ diagnoses: ["Post-burn contracture of neck"] })).toContain("split skin grafting");
+    expect(terms({ diagnoses: ["Chemotherapy-induced cytopenia"], specialty: "medical-oncology" }).length).toBeGreaterThan(0);
+    const withRyles = terms({ devices: ["Ryle's tube"] });
+    expect(withRyles.some((t) => /ryle/i.test(t))).toBe(true);
+  });
+
+  it("still matches a token that is a whole word inside a longer real phrase", () => {
+    // "fever" inside "dengue fever" and "chest" inside "chest x-ray" are real word matches,
+    // not the bug — the word-run rule must keep them.
+    expect(terms({ diagnoses: ["Dengue fever"] }).length).toBeGreaterThan(0);
+    expect(terms({ investigations: ["Chest X-ray"], diagnoses: ["Pulmonary tuberculosis"] }).length).toBeGreaterThan(0);
+  });
+});
