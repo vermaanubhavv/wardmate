@@ -1,5 +1,5 @@
-import type { AdviceItem } from "@/lib/discharge-entities";
 import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-templates";
+import { adv, proc, COMMON_MEDS } from "@/lib/discharge-template-parts";
 
 /**
  * OPHTHALMOLOGY discharge templates. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-09-28).
@@ -19,8 +19,6 @@ import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-temp
  * vitrectomy-with-IOL take the more specific set).
  */
 
-const adv = (items: { module: string; text: string }[]): AdviceItem[] =>
-  items.map((it, i) => ({ id: `adv-${i}`, module: it.module, text: it.text }));
 
 // --- reusable pieces -------------------------------------------------------------------
 
@@ -34,8 +32,8 @@ const M = {
   cmc: { generic: "Carboxymethylcellulose 0.5% eye drops", dose: "1 drop", route: `topical — ${EYE}`, frequency: "QID", duration: "1 month", status: "new" } as TemplateMedication,
   timolol: { generic: "Timolol 0.5% eye drops", dose: "1 drop", route: `topical — ${EYE}`, frequency: "BD", duration: "[ … ]", indication: "only if IOP is raised; avoid in asthma / heart block", status: "new" } as TemplateMedication,
   acetazolamide: { generic: "Acetazolamide", strength: "250 mg", route: "PO", frequency: "[ BD–TDS ]", duration: "[ … ] days", indication: "only if IOP is raised; with potassium supplement; avoid in sulfa allergy / renal impairment", status: "new" } as TemplateMedication,
-  paracetamolSos: { generic: "Paracetamol", strength: "650 mg", route: "PO", frequency: "SOS for pain", status: "prn" } as TemplateMedication,
-  paracetamol: { generic: "Paracetamol", strength: "650 mg", route: "PO", frequency: "TDS", duration: "5 days", status: "new" } as TemplateMedication,
+  paracetamolSos: COMMON_MEDS.paracetamolSos,
+  paracetamol: COMMON_MEDS.paracetamol,
   amoxClav: { generic: "Amoxicillin-clavulanate", strength: "625 mg", route: "PO", frequency: "TDS", duration: "5 days", status: "new" } as TemplateMedication,
 };
 
@@ -67,14 +65,13 @@ export const OPHTHALMOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with an open-globe injury of the [ right / left ] eye following [ mechanism ] on [ date ], requiring primary repair.",
       primaryDiagnosis: "[ Right / left ] open-globe injury — [ corneal / corneoscleral / scleral ] [ laceration / rupture ] [ with uveal prolapse / traumatic cataract / IOFB ], zone [ I / II / III ]",
-      procedure: {
+      procedure: proc({
         name: "[ Right / left ] primary [ corneal / corneoscleral / scleral ] tear repair [ + uveal tissue abscission / reposition ] [ + lens removal ] [ + IOFB removal ]",
         anaesthesia: "[ General / peribulbar ] anaesthesia",
         findings: "[ wound site, length and zone; tissue prolapse; lens; vitreous; number of sutures; IOFB ]",
         drains: "",
-        complications: "Nil",
         outcome: "Globe integrity restored; wound watertight.",
-      },
+      }),
       clinicalCourse:
         "Presented [ __ ] hours after injury with an open globe of the [ right / left ] eye; a shield was applied, tetanus prophylaxis and intravenous antibiotics were given, and primary repair was performed on [ date ]. Postoperatively the wound is well apposed with a formed anterior chamber and no signs of endophthalmitis. Visual acuity at discharge [ __ ]; IOP [ __ ]. [ B-scan: __. ] [ Further surgery planned: __. ]",
       medications: [
@@ -119,14 +116,13 @@ export const OPHTHALMOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with a [ alkali / acid ] chemical injury to the [ right / left / both ] eye(s) from [ agent ] on [ date ], requiring irrigation and intensive topical treatment.",
       primaryDiagnosis: "[ Right / left / bilateral ] [ alkali / acid ] chemical injury — [ Roper-Hall / Dua ] grade [ __ ]",
-      procedure: {
+      procedure: proc({
         name: "[ Copious irrigation; removal of particulate matter ] [ + amniotic membrane transplantation ] [ + debridement ]",
         anaesthesia: "[ Topical / local ] anaesthesia",
         findings: "[ pH before and after irrigation; epithelial defect size; limbal ischaemia (clock hours); corneal haze; conjunctival involvement ]",
         drains: "",
-        complications: "Nil",
         outcome: "[ pH neutralised; epithelial defect __ at discharge ]",
-      },
+      }),
       clinicalCourse:
         "Irrigated until the pH was neutral; particulate matter was removed from the fornices. Treated with intensive topical steroid, antibiotic, cycloplegic and lubricants [ with oral vitamin C and doxycycline ]. [ Amniotic membrane was applied on [ date ]. ] The epithelial defect [ is reducing / has healed ]; IOP [ __ ]; visual acuity at discharge [ __ ]. Fornices were swept [ daily ] to prevent adhesions.",
       medications: [
@@ -171,14 +167,13 @@ export const OPHTHALMOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [ corneal opacity / corneal perforation / non-healing corneal ulcer / bullous keratopathy / keratoconus ] of the [ right / left ] eye, for [ optical / therapeutic / tectonic ] keratoplasty.",
       primaryDiagnosis: "[ Right / left ] [ indication ] — status post [ penetrating / lamellar / endothelial ] keratoplasty",
-      procedure: {
+      procedure: proc({
         name: "[ Right / left ] [ penetrating keratoplasty / DALK / DSEK / DMEK ] [ + cataract extraction with IOL / + anterior vitrectomy ]",
         anaesthesia: "[ Peribulbar / general ] anaesthesia",
         findings: "[ host and donor trephine size; suture type and number (interrupted / continuous); donor cornea details; lens status ]",
         drains: "",
-        complications: "Nil",
         outcome: "Graft in place, sutures intact, anterior chamber formed.",
-      },
+      }),
       clinicalCourse:
         "[ Procedure ] was performed on [ date ]. Postoperatively the graft is [ clear / mildly oedematous ], sutures are intact and buried, the anterior chamber is formed and there is no wound leak. [ Epithelium: healed / defect __ ]. IOP [ __ ]. Visual acuity at discharge [ __ ]. [ For a therapeutic graft: no recurrence of infection; continuing antimicrobials as per culture. ]",
       medications: [
@@ -224,14 +219,13 @@ export const OPHTHALMOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with a [ bacterial / fungal / acanthamoeba / mixed ] corneal ulcer of the [ right / left ] eye [ with hypopyon ] for intensive topical treatment and close monitoring.",
       primaryDiagnosis: "[ Right / left ] [ bacterial / fungal / acanthamoeba ] keratitis — [ organism on smear / culture ]; size [ __ × __ mm ]",
-      procedure: {
+      procedure: proc({
         name: "[ Corneal scraping for smear and culture ] [ + intrastromal / intracameral antimicrobial injection ] [ + debridement ]",
         anaesthesia: "[ Topical / local ] anaesthesia",
         findings: "[ smear (Gram / KOH): __; culture: __ ]",
         drains: "",
-        complications: "Nil",
         outcome: "[ Responding to treatment — infiltrate reducing, epithelium healing ]",
-      },
+      }),
       clinicalCourse:
         "Corneal scrapings were sent on [ date ] [ smear: __; culture: __ ]. Treated with [ hourly topical antimicrobials, tapered with response ], cycloplegic [ and antiglaucoma medication ]. The ulcer is responding — the infiltrate is [ reducing / consolidating ], the epithelial defect is [ __ mm / healed ], and the hypopyon has [ resolved / reduced ]. Visual acuity at discharge [ __ ]. No thinning or perforation.",
       medications: [
@@ -278,14 +272,13 @@ export const OPHTHALMOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [ primary open-angle / angle-closure / secondary ] glaucoma of the [ right / left ] eye, uncontrolled on maximal medical therapy, for trabeculectomy.",
       primaryDiagnosis: "[ Right / left ] [ POAG / PACG / secondary ] glaucoma — pre-op IOP [ __ mmHg ], CDR [ __ ]",
-      procedure: {
+      procedure: proc({
         name: "[ Right / left ] trabeculectomy [ with mitomycin C ] [ + phacoemulsification / SICS with IOL ]",
         anaesthesia: "[ Peribulbar / sub-Tenon ] anaesthesia",
         findings: "[ flap; releasable sutures; MMC concentration and time; AC at end ]",
         drains: "",
-        complications: "Nil",
         outcome: "Procedure completed successfully; bleb formed.",
-      },
+      }),
       clinicalCourse:
         "Trabeculectomy was performed on [ date ]. Postoperatively the bleb is [ diffuse, well formed ], the anterior chamber is [ deep / formed ], there is no wound leak (Seidel negative) and no choroidal detachment. IOP at discharge [ __ mmHg ]; visual acuity [ __ ]. All antiglaucoma medication in the operated eye has been stopped.",
       medications: [
@@ -331,14 +324,13 @@ export const OPHTHALMOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [ rhegmatogenous retinal detachment / vitreous haemorrhage / macular hole / tractional detachment ] of the [ right / left ] eye, for vitreoretinal surgery.",
       primaryDiagnosis: "[ Right / left ] [ macula-on / macula-off rhegmatogenous retinal detachment / vitreous haemorrhage — cause / macular hole ]",
-      procedure: {
+      procedure: proc({
         name: "[ Right / left ] [ pars plana vitrectomy / scleral buckling ] [ + endolaser ] [ + membrane peeling ] with [ silicone oil / SF6 / C3F8 gas / air ] tamponade [ + lens removal / IOL ]",
         anaesthesia: "[ Peribulbar / general ] anaesthesia",
         findings: "[ extent of detachment; breaks (number and site); PVR grade; macula status; tamponade used ]",
         drains: "",
-        complications: "Nil",
         outcome: "[ Retina attached under tamponade ]",
-      },
+      }),
       clinicalCourse:
         "[ Procedure ] was performed on [ date ]. Postoperatively the retina is [ attached ] under [ tamponade ], and the patient maintained [ face-down / right-side / left-side ] posture. IOP [ __ mmHg ]. Visual acuity at discharge [ __ ]. [ Silicone oil removal planned after __ months. ]",
       medications: [
@@ -388,14 +380,13 @@ export const OPHTHALMOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [ senile / complicated / traumatic ] cataract of the [ right / left ] eye with visual acuity [ __ ], for cataract extraction with intraocular lens implantation.",
       primaryDiagnosis: "[ Right / left ] [ immature / mature / hypermature ] [ senile / complicated / traumatic ] cataract",
-      procedure: {
+      procedure: proc({
         name: "[ Right / left ] [ manual small-incision cataract surgery (SICS) / phacoemulsification ] with [ posterior-chamber ] IOL implantation",
         anaesthesia: "[ Peribulbar / topical ] anaesthesia",
         findings: "[ nucleus grade; IOL type and power; posterior capsule intact / rent; vitreous loss ]",
         drains: "",
-        complications: "Nil",
         outcome: "Procedure completed successfully; IOL in the bag.",
-      },
+      }),
       clinicalCourse:
         "[ SICS / phacoemulsification ] with IOL implantation was performed on [ date ]. On the first postoperative day the wound was well apposed, the cornea [ clear / mild oedema ], the anterior chamber formed with [ mild ] reaction, the IOL centred and the pupil round. Unaided visual acuity at discharge [ __ ]; IOP [ __ ].",
       medications: [
@@ -440,14 +431,13 @@ export const OPHTHALMOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       indication:
         "Patient was admitted with [ chronic dacryocystitis / nasolacrimal duct obstruction ] of the [ right / left ] side with epiphora [ and discharge ], for dacryocystorhinostomy.",
       primaryDiagnosis: "[ Right / left ] [ chronic dacryocystitis / primary acquired nasolacrimal duct obstruction / mucocele of the lacrimal sac ]",
-      procedure: {
+      procedure: proc({
         name: "[ Right / left ] [ external / endoscopic ] dacryocystorhinostomy [ + silicone intubation ]",
         anaesthesia: "[ Local / general ] anaesthesia",
         findings: "[ sac size and contents; flaps; osteotomy; stent ]",
         drains: "[ nasal pack — removed on POD __ / silicone stent in situ ]",
-        complications: "Nil",
         outcome: "Procedure completed successfully; patency confirmed on table.",
-      },
+      }),
       clinicalCourse:
         "[ External / endoscopic ] DCR was performed on [ date ]. [ The nasal pack was removed on POD __. ] There was no significant bleeding. The wound is healthy [ and the silicone stent is in place ]. The patient is comfortable at discharge.",
       medications: [
@@ -493,14 +483,13 @@ export const OPHTHALMOLOGY_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     indication:
       "Patient was admitted with [ presenting problem ] of the [ right / left / both ] eye(s) for [ investigation / eye surgery / medical management ].",
     primaryDiagnosis: "",
-    procedure: {
+    procedure: proc({
       name: "[ Procedure during this admission, if any — eye and side ]",
       anaesthesia: "",
       findings: "[ relevant operative findings ]",
       drains: "",
-      complications: "Nil",
       outcome: "[ Outcome ]",
-    },
+    }),
     clinicalCourse:
       "Admitted on [ date ] with [ presenting complaint ]. [ Procedure / treatment during the admission. ] Visual acuity at discharge [ right __ / left __ ]; IOP [ right __ / left __ ]. The patient was fit for discharge on [ date ] with the plan below.",
     medications: [],

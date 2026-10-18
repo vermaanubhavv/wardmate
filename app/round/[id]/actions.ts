@@ -2,9 +2,12 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, type Supa } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
+import { istDayKey } from "@/lib/patient-state";
 import type { DraftSegment } from "@/lib/round-draft";
 import { applyProcedureDone } from "@/lib/apply-procedure-done";
+import { getWardPack } from "@/lib/ward";
 
 /**
  * Writes the segments the resident approved, and only those.
@@ -18,9 +21,7 @@ export async function applyRound(formData: FormData) {
   if (!dictationId) return;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return;
 
   const { data: dictation } = await supabase
@@ -33,6 +34,8 @@ export async function applyRound(formData: FormData) {
 
   const segments = ((dictation.raw as { segments?: DraftSegment[] } | null)?.segments ??
     []) as DraftSegment[];
+
+  const pack = await getWardPack(dictation.ward_id);
 
   for (let i = 0; i < segments.length; i++) {
     const segment = segments[i];
@@ -88,7 +91,7 @@ export async function applyRound(formData: FormData) {
       .select("surgery_date, template_family, template_variant, procedure_text")
       .eq("id", patientId)
       .maybeSingle();
-    if (patient) await applyProcedureDone(supabase, patientId, patient, segment.observations);
+    if (patient) await applyProcedureDone(supabase, patientId, patient, segment.observations, pack);
 
     revalidatePath(`/patients/${patientId}`);
   }
@@ -134,7 +137,7 @@ async function admitPatient(
   segment: DraftSegment,
   wardId: string,
   userId: string,
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: Supa
 ) {
   if (String(formData.get(`admit_${i}`) ?? "") !== "yes") return;
 
@@ -148,7 +151,7 @@ async function admitPatient(
   const diagnosis = String(formData.get(`diagnosis_${i}`) ?? "").trim();
 
   // Admitted today: the app is being told about them now, and no admission date was spoken.
-  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+  const today = istDayKey(new Date().toISOString());
 
   const { data: patient } = await supabase
     .from("patients")

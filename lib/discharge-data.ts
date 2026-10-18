@@ -72,7 +72,7 @@ export type DischargeContext = {
   wardId: string;
   wardName: string | null;
   /** Consultant in charge of the unit — stored on the ward, or the seeded default for its
-   *  unit number. Seeds encounter.consultant on a fresh discharge. */
+   *  unit number. Seeds admission.consultant on a fresh discharge. */
   wardConsultant: string | null;
   letterhead: string | null;
   logoUrl: string | null;
@@ -97,6 +97,9 @@ export type DischargeContext = {
   formularySize: number;
   /** The stored discharge_summaries row, or null when nothing has been saved yet. */
   row: DischargeRow | null;
+  /** Nobody has worked on the stored AI draft and the record has grown since it was written
+   *  (aiDraftIsStale) — its AI sections are dropped and drafted again from the whole stay. */
+  aiDraftStale: boolean;
   /** The unit's specialty pack — it decides which set of discharge templates a diagnosis is
    *  matched against. Always present; general surgery when nothing else is known. */
   pack: SpecialtyPack;
@@ -104,6 +107,22 @@ export type DischargeContext = {
 
 const DISCHARGE_ROW_COLUMNS =
   "id, status, finalised_at, indication_for_admission, encounter, diagnoses, procedures, clinical_course, relevant_investigations, histopathology, medications, condition_at_discharge, primary_care_actions, patient_actions, advice, red_flags, authentication, final_check, updated_at";
+
+/**
+ * An AI draft only ever reflects the record at the moment it was written. A clinical history or
+ * progress notes added afterwards never reached it — the workspace saw `generatedAt` and did not
+ * draft again. So a draft nobody has worked on (patch 0102) that predates the latest observation
+ * is stale and gets redrafted. Anything a resident edited or approved is never touched.
+ */
+export function aiDraftIsStale(
+  updatedAt: string | null | undefined,
+  workedOn: boolean | null | undefined,
+  observations: { recorded_at: string }[]
+): boolean {
+  if (workedOn !== false || !updatedAt) return false;
+  const written = Date.parse(updatedAt);
+  return observations.some((o) => Date.parse(o.recorded_at) > written);
+}
 
 export async function getDischargeContext(patientId: string): Promise<DischargeContext | null> {
   const supabase = await createClient();
@@ -129,6 +148,9 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
     wardFormats,
     { data: dischargeRow },
     isEsicFaridabad,
+    { data: dischargeWork },
+    consultantStored,
+    specialtyStored,
   ] = await Promise.all([
     supabase
       .from("entries")
@@ -137,7 +159,8 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
       )
       .eq("patient_id", patientId)
       .order("recorded_at", { ascending: false }),
-    getProcedureLabels(),
+    // The unit's own operations — an orthopaedic unit's "ORIF" is not in surgery's list.
+    getWardSpecialtyStored(patient.ward_id).then(getProcedureLabels),
     supabase.from("wards").select("name, letterhead").eq("id", patient.ward_id).maybeSingle(),
     getUser().then((u) => supabase.from("profiles").select("display_name, designation, department").eq("id", u?.id ?? "").maybeSingle()),
     getTemplateForPatient(patient),
@@ -146,6 +169,12 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
     getWardFormats(patient.ward_id),
     supabase.from("discharge_summaries").select(DISCHARGE_ROW_COLUMNS).eq("patient_id", patientId).maybeSingle(),
     getWardIsEsicFaridabad(patient.ward_id),
+    // Read on its own, as the patient page does: if it fails, the draft is treated as worked
+    // on and left exactly as stored.
+    supabase.from("discharge_summaries").select("discharge_worked_on").eq("patient_id", patientId).maybeSingle(),
+    // Need only the ward id, so they ride in the batch rather than two trips after it.
+    getWardConsultantStored(patient.ward_id),
+    getWardSpecialtyStored(patient.ward_id),
   ]);
 
   // Bed number and the patient's own name are properties of the patient, not clinical findings
@@ -176,8 +205,8 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
     patient: patient as DischargePatient,
     wardId: patient.ward_id as string,
     wardName: wardRow?.name ?? null,
-    wardConsultant: consultantForWard(await getWardConsultantStored(patient.ward_id), wardRow?.name),
-    pack: getSpecialtyPack(await getWardSpecialtyStored(patient.ward_id)),
+    wardConsultant: consultantForWard(consultantStored, wardRow?.name),
+    pack: getSpecialtyPack(specialtyStored),
     letterhead: wardRow?.letterhead ?? null,
     logoUrl: wardFormats.get("logo")?.url ?? null,
     isEsicFaridabad,
@@ -196,5 +225,10 @@ export async function getDischargeContext(patientId: string): Promise<DischargeC
     formularyMappings,
     formularySize,
     row: (dischargeRow as DischargeRow | null) ?? null,
+    aiDraftStale: aiDraftIsStale(
+      (dischargeRow as DischargeRow | null)?.updated_at,
+      (dischargeWork as { discharge_worked_on?: boolean } | null)?.discharge_worked_on,
+      observations
+    ),
   };
 }

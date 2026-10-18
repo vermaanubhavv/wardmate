@@ -12,7 +12,7 @@ import { commonHpi, DHINGRA, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } f
  */
 export const earDischargeV1: HistoryTree = {
   id: "ear_discharge",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Ear discharge / hearing loss",
   triggers: ["ear discharge", "discharge from ear", "ear pain", "earache", "otalgia", "otorrhoea", "otorrhea", "hearing loss", "decreased hearing", "hard of hearing", "deafness", "kaan behna", "pus from ear", "blocked ear", "ear infection"],
   setting: "ENT ward, north India",

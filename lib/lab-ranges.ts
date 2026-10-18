@@ -1,9 +1,12 @@
+import { displayValue } from "@/lib/display-value";
+
 /**
  * Typical adult reference ranges, used for one purpose only: deciding which recorded blood
  * result is worth putting in front of a resident on the progress screen.
  *
  * WHAT THIS IS NOT. It does not create, alter or interpret a value. The number shown is the
- * number that was recorded, unchanged. This decides display order and nothing else.
+ * number that was recorded, written the way a clinician writes it ("15640.00" as "15,640",
+ * lib/display-value.ts) and never rounded or changed. This decides display order and nothing else.
  *
  * WHY IT IS ALLOWED TO EXIST AT ALL, given this app does not make clinical judgements: because
  * the judgement is shown rather than hidden. Every flagged result prints the range it was
@@ -161,7 +164,8 @@ export type RangeSource = "report" | "ward" | "builtin";
 
 export type LabReading = {
   label: string;
-  /** The value exactly as recorded. Never rewritten, never rounded, never unit-converted. */
+  /** The value as recorded, written the way a clinician writes it (lib/display-value.ts):
+   *  "15640.00" as "15,640". Never rounded, never unit-converted. */
   value: string;
   flag: LabFlag | null;
   /** "13–17" — the range the flag was judged against, so the judgement can be checked. */
@@ -249,9 +253,11 @@ export function classifyLab(
 
   const name = def?.label ?? label;
   const v = value.trim();
+  // Judged on the value as printed; shown as a clinician would write it (lib/display-value.ts).
+  const shown = displayValue(v);
 
   // What the resident said outranks any range: they were looking at the patient.
-  const said = (flag: LabFlag): LabReading => ({ label: name, value: v, flag, range: null, source: null });
+  const said = (flag: LabFlag): LabReading => ({ label: name, value: shown, flag, range: null, source: null });
   if (SAID_ABNORMAL.test(v)) return said("abnormal");
   if (SAID_HIGH.test(v)) return said("high");
   if (SAID_LOW.test(v)) return said("low");
@@ -259,7 +265,7 @@ export function classifyLab(
   const n = firstNumber(v);
   // An unreadable value is shown, not judged — flag null with no range means "we could not
   // tell", and the caller must display it rather than fold it away.
-  if (n === null) return { label: name, value: v, flag: null, range: null, source: null };
+  if (n === null) return { label: name, value: shown, flag: null, range: null, source: null };
 
   // The report's own printed range beats the ward's accumulated one, which beats the built-in
   // table. The one printed beside this very number is the closest thing to ground truth there is.
@@ -286,12 +292,12 @@ export function classifyLab(
     printed = `${trim(r.low)}–${trim(r.high)}`;
     source = "builtin";
   } else {
-    return { label: name, value: v, flag: null, range: null, source: null };
+    return { label: name, value: shown, flag: null, range: null, source: null };
   }
 
-  if (low !== null && n < low) return { label: name, value: v, flag: "low", range: printed, source };
-  if (high !== null && n > high) return { label: name, value: v, flag: "high", range: printed, source };
-  return { label: name, value: v, flag: null, range: printed, source };
+  if (low !== null && n < low) return { label: name, value: shown, flag: "low", range: printed, source };
+  if (high !== null && n > high) return { label: name, value: shown, flag: "high", range: printed, source };
+  return { label: name, value: shown, flag: null, range: printed, source };
 }
 
 /**

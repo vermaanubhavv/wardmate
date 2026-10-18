@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { getCurrentWard, getWardIsEsicFaridabad } from "@/lib/ward";
+import { getUser } from "@/lib/auth";
+import { getCurrentWard, getWardIsEsicFaridabad, getWardSpecialtyStored } from "@/lib/ward";
+import { getSpecialtyPack } from "@/lib/specialty";
 import { getWardFormats } from "@/lib/formats";
 import { getFormularyMappings } from "@/lib/formulary";
 import { derivePatientState } from "@/lib/patient-state";
@@ -16,10 +17,7 @@ import { oneOffContext } from "@/lib/discharge-oneoff";
  * doctor's own unit heading.
  */
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   let body: { identity?: Record<string, string>; draft?: DischargeDraft };
@@ -31,10 +29,11 @@ export async function POST(request: Request) {
   if (!body.draft) return NextResponse.json({ error: "Nothing to render." }, { status: 400 });
 
   const { ward } = await getCurrentWard();
-  const [formats, formularyMappings, isEsicFaridabad] = await Promise.all([
+  const [formats, formularyMappings, isEsicFaridabad, specialty] = await Promise.all([
     ward ? getWardFormats(ward.id) : Promise.resolve(new Map()),
     ward ? getFormularyMappings(ward.id) : Promise.resolve(new Map<string, string>()),
     ward ? getWardIsEsicFaridabad(ward.id) : Promise.resolve(true),
+    ward ? getWardSpecialtyStored(ward.id) : Promise.resolve(null),
   ]);
 
   const context = oneOffContext(
@@ -45,7 +44,9 @@ export async function POST(request: Request) {
     [],
     derivePatientState([], null),
     [],
-    undefined,
+    // The unit's own department — it decides the Procedures heading and line style, which the
+    // surgical default would otherwise print on every unit.
+    getSpecialtyPack(specialty),
     isEsicFaridabad
   );
 

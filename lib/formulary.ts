@@ -1,9 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { drugKey } from "@/lib/drug-key";
-
-// Re-exported so the many call sites that reach for it alongside the formulary itself do not
-// all have to change; the function lives in its own file for the reason given there.
-export { drugKey };
 
 /**
  * The ward's hospital formulary, and what each drug WardMate records corresponds to in it.

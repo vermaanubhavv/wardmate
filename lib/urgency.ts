@@ -1,5 +1,3 @@
-const URGENCY_ORDER = ["red", "yellow", "green", null] as const;
-
 export type Urgency = "red" | "yellow" | "green" | null;
 
 export const URGENCY_META: Record<
@@ -31,16 +29,6 @@ export const URGENCY_META: Record<
     edge: "border-l-good-dot",
   },
 };
-
-/**
- * Tapping a job walks red -> yellow -> green -> ungraded -> red. Ungraded stays in the cycle
- * deliberately: a colour set by mistake has to be removable, and "nobody has decided yet" is
- * a real state the list shows separately rather than a gap to be filled with a guess.
- */
-export function nextUrgency(current: Urgency): Urgency {
-  const i = URGENCY_ORDER.indexOf(current as never);
-  return URGENCY_ORDER[(i + 1) % URGENCY_ORDER.length] as Urgency;
-}
 
 /** Calendar date in Indian time — the same reason day numbers are counted in IST. */
 export function istDate(iso: string): string {
@@ -124,6 +112,32 @@ export function describeWhen(text: string, recordedAtIso: string, now: string = 
   return text;
 }
 
+/**
+ * A job's title for any screen: the words as said, with a "tomorrow" that has since passed
+ * taken out (describeWhen), and a capital first letter. Every list that shows a job uses this,
+ * so none of them can show "drain to be removed tomorrow — 14 days overdue".
+ */
+export function jobTitle(text: string, recordedAtIso: string, now: string = new Date().toISOString()): string {
+  const said = describeWhen(text, recordedAtIso, now);
+  return said.charAt(0).toUpperCase() + said.slice(1);
+}
+
+// Jobs that only follow an operation. A drain put in on the ward (a pigtail, an intercostal
+// drain, a percutaneous one) is not one, so those words rule it out.
+const POST_OP_JOB = /\b(drains?|sutures?|stitch(?:es)?|staples?|port[- ]?sites?)\b/i;
+const WARD_DRAIN = /\b(pigtail|icd|intercostal|pcd|percutaneous|chest)\b/i;
+
+/**
+ * The first open job that only makes sense after an operation ("Remove drain", "Suture
+ * removal") — for the patient page's question when no operation is recorded. Null if none.
+ */
+export function postOpJob<T extends { label: string; value_text: string | null }>(tasks: T[]): T | null {
+  return tasks.find((t) => {
+    const text = (t.value_text ?? t.label).trim();
+    return POST_OP_JOB.test(text) && !WARD_DRAIN.test(text);
+  }) ?? null;
+}
+
 /** Whole days between two instants, by IST calendar date rather than elapsed hours: a job
  *  said at 11pm and read at 8am the next morning is one day old, not zero. */
 function daysApart(fromIso: string, toIso: string): number {
@@ -167,12 +181,19 @@ export function effectiveUrgency(
   const since = task.graded_at ?? task.recorded_at;
   const age = daysApart(since, now);
 
+  // The day it was due, named in the note: "14 days overdue" alone left the resident to work
+  // backwards to when that was. Yellow ("today or tomorrow") was due the day after it was said;
+  // red was due the day it was said.
+  const saidOn = istDate(since);
+  const overdue = (days: number, dueKey: string) =>
+    `due ${shortDate(dueKey)} · ${days} ${days === 1 ? "day" : "days"} overdue`;
+
   if (task.urgency === "yellow" && age >= 1) {
     return {
       urgency: "red",
       escalated: true,
       age,
-      note: age === 1 ? "due today" : `${age - 1} ${age === 2 ? "day" : "days"} overdue`,
+      note: age === 1 ? "due today" : overdue(age - 1, addDays(saidOn, 1)),
     };
   }
 
@@ -181,7 +202,7 @@ export function effectiveUrgency(
       urgency: "red",
       escalated: false,
       age,
-      note: `${age} ${age === 1 ? "day" : "days"} overdue`,
+      note: overdue(age, saidOn),
     };
   }
 

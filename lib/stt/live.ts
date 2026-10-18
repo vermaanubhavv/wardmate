@@ -67,34 +67,40 @@ export async function openLiveDictation(
   opts: {
     token: string;
     keyterms: string[];
+    /** A microphone the caller already holds. iOS mutes the first audio track when a second
+     *  getUserMedia opens, so a caller that is also recording passes its own stream; the caller
+     *  then owns it, and stop() leaves it running. */
+    stream?: MediaStream;
   } & LiveDictationHandlers
 ): Promise<LiveDictationSession> {
-  const { token, keyterms, ...h } = opts;
+  const { token, keyterms, stream: given, ...h } = opts;
 
   let stream: MediaStream;
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  } catch {
-    throw new Error("Microphone blocked — allow it for this site in your browser settings.");
+  if (given) stream = given;
+  else {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      throw new Error("Microphone blocked — allow it for this site in your browser settings.");
+    }
   }
+  const releaseMic = () => {
+    if (!given) stream.getTracks().forEach((t) => t.stop());
+  };
 
   const mime = pickMime();
   if (!mime) {
-    stream.getTracks().forEach((t) => t.stop());
+    releaseMic();
     throw new Error("This browser cannot stream audio. Use the Speak button on each card instead.");
   }
 
   const params = buildDeepgramParams(keyterms, {
-    model: "nova-3-medical",
-    language: "en-IN",
-    extra: {
-      smart_format: true,
-      interim_results: true,
-      // UtteranceEnd after 1 s of silence (Deepgram's minimum) — each thought lands in its
-      // section as soon as the resident pauses.
-      utterance_end_ms: 1000,
-      vad_events: true,
-    },
+    smart_format: true,
+    interim_results: true,
+    // UtteranceEnd after 1 s of silence (Deepgram's minimum) — each thought lands in its
+    // section as soon as the resident pauses.
+    utterance_end_ms: 1000,
+    vad_events: true,
   });
   const url = `${DEEPGRAM_WSS}?${params.toString()}`;
 
@@ -106,12 +112,13 @@ export async function openLiveDictation(
   const teardown = () => {
     if (closed) return;
     closed = true;
+    clearTimeout(openTimer);
     try {
       if (recorder && recorder.state !== "inactive") recorder.stop();
     } catch {
       /* already stopped */
     }
-    stream.getTracks().forEach((t) => t.stop());
+    releaseMic();
     if (ws.readyState === WebSocket.OPEN) {
       try {
         ws.send(JSON.stringify({ type: "CloseStream" }));
@@ -127,7 +134,17 @@ export async function openLiveDictation(
     h.onClose?.();
   };
 
+  // On weak signal the socket can sit in CONNECTING with no error and no close, leaving the
+  // button on "Starting…" for good. Give it a few seconds, then hand over to the fallback.
+  const openTimer = setTimeout(() => {
+    if (closed || ws.readyState === WebSocket.OPEN) return;
+    h.onError?.("Live transcription could not connect. Falling back to the card buttons.");
+    teardown();
+  }, 5000);
+
   ws.onopen = () => {
+    clearTimeout(openTimer);
+    if (closed) return;
     h.onOpen?.();
     recorder = new MediaRecorder(stream, { mimeType: mime });
     recorder.ondataavailable = (e) => {

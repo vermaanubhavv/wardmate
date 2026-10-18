@@ -74,3 +74,29 @@ export const SUPPORTED_HELD_OUT: SupportedCase[] = [
   { label: "pain", value: "relieved", quote: "pain was relieved after the injection but has come back", supported: false },
   { label: "PAC", value: "fit", quote: "anaesthesia says unfit for now, optimise sugars first", supported: false },
 ];
+
+/**
+ * Lines read off a photo rather than dictated: a printed lab-report line or a handwritten
+ * register row, with the value read from it. The misreads are the photo kind — a value taken
+ * from the neighbouring line, a finding from another patient's row, a range read as a result.
+ * Run with --lines. Same rule as above: everything invented.
+ */
+export const SUPPORTED_LINES: SupportedCase[] = [
+  { label: "Haemoglobin", value: "11.2", quote: "Haemoglobin 11.2 gm% 13.0 - 17.0", supported: true },
+  { label: "Serum creatinine", value: "1.4", quote: "S. Creatinine 1.4 mg/dL 0.7-1.3", supported: true },
+  { label: "Total leucocyte count", value: "14,200", quote: "TLC 14,200 /cumm 4000-11000", supported: true },
+  { label: "Serum sodium", value: "131", quote: "Sodium (Na+) 131 mmol/L 135-145", supported: true },
+  { label: "Blood pressure", value: "124/82", quote: "BP 124/82 mmHg", supported: true },
+  { label: "temperature", value: "100 F", quote: "Bed 4 Ramesh POD 2 temp 100 F, abd soft, drain 40 ml serous", supported: true },
+  { label: "drain", value: "40 ml serous", quote: "Bed 4 Ramesh POD 2 temp 100 F, abd soft, drain 40 ml serous", supported: true },
+  { label: "plan", value: "remove drain tomorrow", quote: "Bed 7 Sita POD 5 afebrile / remove drain tomorrow, start soft diet", supported: true },
+
+  { label: "Haemoglobin", value: "13.0", quote: "Haemoglobin 11.2 gm% 13.0 - 17.0", supported: false },
+  { label: "Serum potassium", value: "1.4", quote: "S. Creatinine 1.4 mg/dL 0.7-1.3", supported: false },
+  { label: "Serum sodium", value: "145", quote: "Sodium (Na+) 131 mmol/L 135-145", supported: false },
+  { label: "Platelet count", value: "14,200", quote: "TLC 14,200 /cumm 4000-11000", supported: false },
+  { label: "temperature", value: "102 F", quote: "Bed 4 Ramesh POD 2 temp 100 F, abd soft, drain 40 ml serous", supported: false },
+  { label: "drain", value: "120 ml haemorrhagic", quote: "Bed 4 Ramesh POD 2 temp 100 F, abd soft, drain 40 ml serous", supported: false },
+  { label: "plan", value: "start soft diet", quote: "Bed 4 Ramesh POD 2 temp 100 F, abd soft, drain 40 ml serous", supported: false },
+  { label: "abdomen", value: "distended, tender", quote: "Bed 7 Sita POD 5 afebrile / remove drain tomorrow, start soft diet", supported: false },
+];

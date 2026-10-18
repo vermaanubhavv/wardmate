@@ -2,8 +2,6 @@ import { getWardActivity } from "@/lib/admin";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { Cell, Empty, ErrorNote, Row, Section, Table, ago } from "../ui";
 
-export const dynamic = "force-dynamic";
-
 export default async function AdminWardsPage() {
   const { rows, error } = await getWardActivity();
   if (error) return <ErrorNote message={error} />;

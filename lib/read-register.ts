@@ -1,5 +1,8 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { AI_MODEL } from "@/lib/model";
+import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
+import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { hasOperationClock } from "@/lib/specialty/intake";
+import { forWard } from "@/lib/specialty/prompt-words";
+import { judgeRegisterRows, type TaskCategoryJudgment } from "@/lib/jev-observations";
 
 export type RegisterRow = {
   /** Patient name as written in the register. Empty if the row has none. */
@@ -12,8 +15,11 @@ export type RegisterRow = {
   findings: { label: string; value_text: string }[];
   /** Anything to be done, as written. */
   plans: string[];
-  /** Handwriting unclear, cut off, overwritten, or ambiguous. */
+  /** Handwriting unclear, cut off, overwritten, or ambiguous — or Jev read a finding or plan
+   *  as not in its own row (lib/jev-observations.ts). */
   uncertain: boolean;
+  /** One per plan, same order: Jev's to-do rescue and bucket. Absent on reads from before. */
+  plan_judgments?: { task_open: boolean | null; task_category: TaskCategoryJudgment | null }[];
 };
 
 export type RegisterResult = {
@@ -22,7 +28,7 @@ export type RegisterResult = {
   raw: unknown;
 };
 
-const SYSTEM_PROMPT = `You read a photograph of a hospital ward round register and transcribe what is written in it, one entry per patient.
+export const SYSTEM_PROMPT = `You read a photograph of a hospital ward round register and transcribe what is written in it, one entry per patient.
 
 You are transcribing handwriting, not interpreting medicine. You are not being asked what the entries mean or whether they are complete.
 
@@ -82,21 +88,35 @@ const SCHEMA = {
   additionalProperties: false,
 } as const;
 
+/** The register prompt for this unit. A ward with no operation clock keeps no POD column and
+ *  no drains, so its examples are a medical ward's; general surgery's text is unchanged. */
+export function registerPrompt(pack: SpecialtyPack): string {
+  return forWard(
+    SYSTEM_PROMPT,
+    pack,
+    hasOperationClock(pack)
+      ? []
+      : [
+          ["DIAGNOSIS, POD, FINDINGS", "DIAGNOSIS, DAY, FINDINGS"],
+          ["plus the diagnosis and post-operative day", "plus the diagnosis and day of admission"],
+          ["drain output, oral intake", "urine output, oral intake"],
+          ['"remove drain tomorrow"', '"repeat chest X-ray tomorrow"'],
+        ]
+  );
+}
+
 export async function readRegister(
   base64Image: string,
-  mediaType: "image/jpeg" | "image/png" | "image/webp"
+  mediaType: "image/jpeg" | "image/png" | "image/webp",
+  pack: SpecialtyPack = generalSurgeryPack
 ): Promise<RegisterResult> {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
-
-  const model = AI_MODEL;
-  const client = new Anthropic({ apiKey: key });
+  const client = anthropic();
 
   const response = await client.messages.create({
-    model,
+    model: AI_MODEL,
     // A full register page is many rows of handwriting; give it room.
     max_tokens: 16000,
-    system: SYSTEM_PROMPT,
+    system: registerPrompt(pack),
     // Dense handwriting, read once, and a wrong row boundary puts a value on the wrong
     // patient — so if any read earns "high" it is this one. It is still set to "medium":
     // "high" is off across the whole app for now, on cost. If register accuracy proves not
@@ -120,8 +140,10 @@ export async function readRegister(
     ],
   });
 
-  const text = response.content.find((b) => b.type === "text");
-  const parsed = text && text.type === "text" ? JSON.parse(text.text) : { rows: [] };
+  const parsed = replyJson(response, { rows: [] });
 
-  return { rows: parsed.rows ?? [], model, raw: parsed };
+  const rows: RegisterRow[] = parsed.rows ?? [];
+  // Second look before anything is shown: see judgeRegisterRows. No key or an error: unchanged.
+  await judgeRegisterRows(rows, pack);
+  return { rows, model: AI_MODEL, raw: parsed };
 }

@@ -1,5 +1,5 @@
 /**
- * Shared helpers for the deploy scripts (db-push, env-sync, ship, deploy-init).
+ * Shared helpers for the deploy scripts (db-push, env-sync).
  * Everything here is best-effort auto-discovery so the scripts need as little hand-set
  * configuration as possible.
  */
@@ -10,25 +10,11 @@ import path from "node:path";
 
 export const ROOT = fileURLToPath(new URL("../", import.meta.url));
 
-/** Parse a KEY=VALUE .env file into a Map. Ignores blank lines and `#` comments. */
-export function parseEnv(text) {
-  const out = new Map();
-  for (const line of text.split("\n")) {
-    if (/^\s*#/.test(line) || !line.trim()) continue;
-    const m = line.match(/^\s*([A-Za-z0-9_]+)\s*=\s*(.*?)\s*$/);
-    if (m) out.set(m[1], m[2].replace(/^["']|["']$/g, ""));
-  }
-  return out;
-}
-
-/** Load the named .env files into process.env (without overwriting anything already set). */
+/** Load the named .env files into process.env (never overwrites what is already set). */
 export function loadEnvFiles(...files) {
   for (const f of files) {
     const p = path.join(ROOT, f);
-    if (!existsSync(p)) continue;
-    for (const [k, v] of parseEnv(readFileSync(p, "utf8"))) {
-      if (!(k in process.env)) process.env[k] = v;
-    }
+    if (existsSync(p)) process.loadEnvFile(p);
   }
 }
 
@@ -80,11 +66,4 @@ export function vercelApi(token, teamId) {
     if (!res.ok) throw new Error(`${method} ${pathname} -> ${res.status} ${await res.text()}`);
     return res.status === 204 ? null : res.json();
   };
-}
-
-export function friendlyExit() {
-  process.on("unhandledRejection", (e) => {
-    console.error("\n" + (e?.message ?? e) + "\n");
-    process.exit(1);
-  });
 }

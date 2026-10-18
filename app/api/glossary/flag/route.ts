@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 
 const CATEGORIES = ["drug", "procedure", "ward_shorthand", "anatomy"];
 
@@ -20,9 +21,7 @@ const CATEGORIES = ["drug", "procedure", "ward_shorthand", "anatomy"];
 export async function POST(request: Request) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   let body: { wrongTerm?: unknown; correctTerm?: unknown; category?: unknown };

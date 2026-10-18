@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { AI_MODEL } from "@/lib/model";
+import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
 import { getSpecialtyPack } from "@/lib/specialty";
 
 /** Details printed on an OPD paper or admission sheet that can safely prefill a new record. */
@@ -113,13 +112,9 @@ export async function readAdmissionPaper(
   specialty?: string | null
 ): Promise<AdmissionPaperResult> {
   const pack = getSpecialtyPack(specialty);
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
-
-  const model = AI_MODEL;
-  const client = new Anthropic({ apiKey: key });
+  const client = anthropic();
   const response = await client.messages.create({
-    model,
+    model: AI_MODEL,
     max_tokens: 1000,
     system: SYSTEM_PROMPT,
     output_config: {
@@ -143,8 +138,7 @@ export async function readAdmissionPaper(
     ],
   });
 
-  const text = response.content.find((block) => block.type === "text");
-  const parsed = text && text.type === "text" ? JSON.parse(text.text) : {};
+  const parsed = replyJson(response, {});
   const age =
     typeof parsed.age_years === "number" &&
     Number.isInteger(parsed.age_years) &&
@@ -178,6 +172,6 @@ export async function readAdmissionPaper(
       cycle_number: cycle,
       cycle_started_on: isoDateOrNull(parsed.cycle_started_on),
     },
-    model,
+    model: AI_MODEL,
   };
 }

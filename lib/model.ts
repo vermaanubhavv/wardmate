@@ -1,3 +1,5 @@
+import Anthropic from "@anthropic-ai/sdk";
+
 /**
  * The model every AI path in WardMate uses.
  *
@@ -6,6 +8,13 @@
  *
  * claude-sonnet-5, chosen by the user on 2026-08-30 for cost: $2/$10 per million tokens against
  * Opus 5's $5/$25, roughly a 60% saving on a bill that is dominated by photographs.
+ *
+ * claude-sonnet-5-5 since 2026-10-17, at the same $2/$10 (standing preference: the newest Sonnet
+ * whenever it costs the same). Measured first on the synthetic routes in scripts/eval-models:
+ * equal or better on every route, and it flagged a drug in a plan ("start oral iron") for
+ * confirmation where Sonnet 5 did not. What it changes for this code: `thinking: disabled`, a
+ * forced `tool_choice` and non-default sampling all return 400 on it — none is used here — and
+ * its effort levels are recalibrated (default high; every call here sets low or medium).
  *
  * SONNET IS THE CEILING. Standing decision, 2026-09-26: no path in this app runs on Opus (or
  * anything above it). Cheaper is fine — the live-dictation router already runs on Haiku — but
@@ -35,8 +44,31 @@
  * own words and should not be trusted like one. `needs_confirmation` in lib/extract.ts is the
  * mechanism that already exists for surfacing exactly that kind of value for a one-tap check.
  */
-export const AI_MODEL = "claude-sonnet-5";
+export const AI_MODEL = "claude-sonnet-5-5";
 
 /** The cheaper model, for small high-volume passes where Sonnet's extra care is not needed: the
- *  live-dictation router and the final proofread of case histories and progress notes. */
-export const FAST_MODEL = "claude-haiku-4-5-20251001";
+ *  live-dictation router and the final proofread of case histories and progress notes.
+ *
+ *  claude-haiku-5-5 since 2026-10-17, replacing Haiku 4.5: about a tenth of the price ($0.10 /
+ *  $0.50 per million tokens against $1 / $5) and, at effort "low", as good or better on every
+ *  fast job in scripts/eval-models — live routing 79/80 (one item missed, nothing invented),
+ *  date check level, final proofread 6/6 against 5/6 — and a little quicker (1.2 s against
+ *  1.4 s median on routing). Unlike Haiku 4.5 it accepts `effort`, and thinks by default, so
+ *  every fast call sets effort "low" to keep that latency. */
+export const FAST_MODEL = "claude-haiku-5-5";
+
+/** The one Anthropic client constructor. Throws when the key is missing, so a misconfigured
+ *  server fails loudly rather than sending a keyless request. */
+export function anthropic(): Anthropic {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
+  return new Anthropic({ apiKey });
+}
+
+/** The reply's first text block parsed as JSON, or `fallback` when the reply carries no text
+ *  block. Malformed JSON throws, as JSON.parse does — callers decide whether that is fatal. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function replyJson(response: Anthropic.Message, fallback: unknown): any {
+  const block = response.content.find((b) => b.type === "text");
+  return block && block.type === "text" ? JSON.parse(block.text) : fallback;
+}

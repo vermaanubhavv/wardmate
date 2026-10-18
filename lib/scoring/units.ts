@@ -191,7 +191,8 @@ export function normalizeUnit(
   return { ok: false, reason: "unsupported_unit", detail: `${rawUnit ?? "(none)"} for ${analyte}` };
 }
 
-function round(n: number, dp = 1): number {
+/** Round to `dp` decimal places (default 1). */
+export function round(n: number, dp = 1): number {
   const f = 10 ** dp;
   return Math.round(n * f) / f;
 }

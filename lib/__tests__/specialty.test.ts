@@ -8,16 +8,13 @@ import { describe, it, expect } from "vitest";
 import {
   getSpecialtyPack,
   generalSurgeryPack,
-  medicalOncologyPack,
-  internalMedicinePack,
-  obstetricsGynaecologyPack,
   listSpecialties,
   offersChecklistFamily,
 } from "@/lib/specialty";
 import { buildSystemPrompt } from "@/lib/extract";
 import { dayLabel } from "@/lib/patients";
 import { evaluateTrigger, type TriggerContext } from "@/lib/checklist-triggers";
-import { matchDischargeTemplateFor, listDischargeTemplatesFor } from "@/lib/specialty/discharge";
+import { matchDischargeTemplateFor, listDischargeTemplatesFor, dischargeTemplatesFor } from "@/lib/specialty/discharge";
 import { HISTORY_SECTION_LABEL, sectionsForSpecialty } from "@/lib/case-history-sections";
 import { caseHistorySectionOf, summariseCaseHistory } from "@/lib/case-history";
 
@@ -145,7 +142,7 @@ describe("burns counts from the burn, which happened before the admission", () =
 });
 
 describe("medical oncology counts by the cycle", () => {
-  const p = medicalOncologyPack;
+  const p = getSpecialtyPack("medical_oncology");
 
   it("names the cycle and the day within it", () => {
     expect(p.dayCount({ post_op_day: null, admission_day: 2, cycle_day: 3, cycle_number: 2 }).text)
@@ -196,21 +193,21 @@ describe("medical oncology counts by the cycle", () => {
 });
 
 describe("internal medicine counts by the hospital day", () => {
-  const p = internalMedicinePack;
+  const p = getSpecialtyPack("internal_medicine");
 
   it("always reads the admission day — never POD, never a cycle", () => {
     expect(p.dayCount({ post_op_day: null, admission_day: 3 })).toEqual({
       clock: "admission",
       n: 3,
-      text: "HD 4",
+      text: "Day 3",
     });
-    // The admission date (admission_day 0) is hospital day 1, never "Day 0".
-    expect(p.dayCount({ post_op_day: null, admission_day: 0 }).text).toBe("HD 1");
+    // The admission date is Day 0 — the unit's convention.
+    expect(p.dayCount({ post_op_day: null, admission_day: 0 }).text).toBe("Day 0");
     // A bedside procedure (a tap, a line) must not flip a medicine patient to POD 0.
-    expect(p.dayCount({ post_op_day: 0, admission_day: 4 }).text).toBe("HD 5");
+    expect(p.dayCount({ post_op_day: 0, admission_day: 4 }).text).toBe("Day 4");
     // Stray chemo fields (wrong-pack data) are ignored too.
     expect(p.dayCount({ post_op_day: null, admission_day: 5, cycle_day: 2, cycle_number: 1 }).text)
-      .toBe("HD 6");
+      .toBe("Day 5");
   });
 
   it("its extraction prompt is a physician's note and keeps every shared safety rule", () => {
@@ -242,15 +239,11 @@ describe("internal medicine counts by the hospital day", () => {
     expect(p.formatKinds).not.toContain("ot_notes");
   });
 
-  it("anchors its checklist on admission, not the operation", () => {
-    expect(p.checklistAnchor).toBe("admission");
-  });
-
   it("ships the condition-keyed templates plus the generic fallback (published 2026-09-13)", () => {
     // MEDICINE_DISCHARGE_TEMPLATES was deliberately empty through the pilot build; published
     // for alpha testing on the product owner's direction — see the file header.
-    expect(p.dischargeTemplates.length).toBeGreaterThan(10);
-    expect(listDischargeTemplatesFor(p).map((t) => t.key)).toContain(p.genericDischargeTemplate.key);
+    expect(dischargeTemplatesFor(p).templates.length).toBeGreaterThan(10);
+    expect(listDischargeTemplatesFor(p).map((t) => t.key)).toContain(dischargeTemplatesFor(p).generic.key);
     expect(matchDischargeTemplateFor(p, { diagnosisText: "dengue fever with warning signs" })?.key).toBe("dengue");
   });
 
@@ -258,10 +251,10 @@ describe("internal medicine counts by the hospital day", () => {
     // Changed 2026-09-28 on the product owner's direction: medicine now pre-fills a starting set
     // like every other department. What must still never be guessed is a dose that is titrated
     // on the ward or set by organ function or a specialist.
-    for (const t of p.dischargeTemplates) expect(t.scaffold.medications.length, t.key).toBeGreaterThan(0);
-    expect(p.genericDischargeTemplate.scaffold.medications).toEqual([]);
+    for (const t of dischargeTemplatesFor(p).templates) expect(t.scaffold.medications.length, t.key).toBeGreaterThan(0);
+    expect(dischargeTemplatesFor(p).generic.scaffold.medications).toEqual([]);
     const titrated = /insulin|glargine|amlodipine|telmisartan|chlorthalidone|prednisolone|hydroxychloroquine|mycophenolate|azathioprine|att|isoniazid|rifampicin|tenofovir|dolutegravir|cotrimoxazole|metformin|hypoglycaemic/i;
-    for (const t of p.dischargeTemplates) {
+    for (const t of dischargeTemplatesFor(p).templates) {
       for (const m of t.scaffold.medications.filter((m) => titrated.test(m.generic))) {
         expect(`${m.strength ?? ""} ${m.dose ?? ""}`, `${t.key}: ${m.generic}`).not.toMatch(/\d/);
       }
@@ -290,11 +283,11 @@ describe("every department's own discharge templates", () => {
 
   it("every department has condition templates and a generic that never auto-matches", () => {
     for (const p of packs) {
-      expect(p.dischargeTemplates.length, p.key).toBeGreaterThan(0);
-      const keys = [...p.dischargeTemplates, p.genericDischargeTemplate].map((t) => t.key);
+      expect(dischargeTemplatesFor(p).templates.length, p.key).toBeGreaterThan(0);
+      const keys = [...dischargeTemplatesFor(p).templates, dischargeTemplatesFor(p).generic].map((t) => t.key);
       expect(new Set(keys).size, `${p.key} has a duplicate template key`).toBe(keys.length);
       for (const probe of ["cataract", "tonsillectomy", "fever", "LSCS", "fracture", ""]) {
-        expect(p.genericDischargeTemplate.match.test(probe), `${p.key} generic matched "${probe}"`).toBe(false);
+        expect(dischargeTemplatesFor(p).generic.match.test(probe), `${p.key} generic matched "${probe}"`).toBe(false);
       }
     }
   });
@@ -302,17 +295,17 @@ describe("every department's own discharge templates", () => {
   it("only general surgery and medicine share their sets — nobody borrows any more", () => {
     const owners = new Map<unknown, string>();
     for (const p of packs) {
-      const prior = owners.get(p.dischargeTemplates);
+      const prior = owners.get(dischargeTemplatesFor(p).templates);
       expect(prior, `${p.key} borrows ${prior}'s templates`).toBeUndefined();
-      owners.set(p.dischargeTemplates, p.key);
+      owners.set(dischargeTemplatesFor(p).templates, p.key);
     }
   });
 
   it("a paediatric (or infant) template never states a dose", () => {
     const infant = [
-      ...getSpecialtyPack("paediatrics").dischargeTemplates,
-      ...getSpecialtyPack("neurosurgery").dischargeTemplates.filter((t) => /myelomeningocele/i.test(t.label)),
-      ...getSpecialtyPack("burns_plastic_surgery").dischargeTemplates.filter((t) => /cleft/i.test(t.label)),
+      ...dischargeTemplatesFor(getSpecialtyPack("paediatrics")).templates,
+      ...dischargeTemplatesFor(getSpecialtyPack("neurosurgery")).templates.filter((t) => /myelomeningocele/i.test(t.label)),
+      ...dischargeTemplatesFor(getSpecialtyPack("burns_plastic_surgery")).templates.filter((t) => /cleft/i.test(t.label)),
     ];
     expect(infant.length).toBeGreaterThan(10);
     for (const t of infant) {
@@ -333,7 +326,7 @@ describe("every department's own discharge templates", () => {
 });
 
 describe("obstetrics & gynaecology counts like a surgical unit, not a medicine one", () => {
-  const p = obstetricsGynaecologyPack;
+  const p = getSpecialtyPack("obstetrics_gynaecology");
 
   it("an operated or delivered patient reads POD; everyone else reads the admission day", () => {
     expect(p.dayCount(surgical)).toEqual({ clock: "post_op", n: 2, text: "POD 2" });
@@ -363,13 +356,9 @@ describe("obstetrics & gynaecology counts like a surgical unit, not a medicine o
     expect(p.formatKinds).toContain("ot_notes");
   });
 
-  it("anchors its (not-yet-seeded) checklist on the operation/delivery, the surgical model", () => {
-    expect(p.checklistAnchor).toBe("post_op");
-  });
-
   it("ships its own condition templates — LSCS is picked before a normal delivery", () => {
-    expect(p.dischargeTemplates.length).toBeGreaterThan(5);
-    expect(listDischargeTemplatesFor(p).map((t) => t.key)).toContain(p.genericDischargeTemplate.key);
+    expect(dischargeTemplatesFor(p).templates.length).toBeGreaterThan(5);
+    expect(listDischargeTemplatesFor(p).map((t) => t.key)).toContain(dischargeTemplatesFor(p).generic.key);
     expect(matchDischargeTemplateFor(p, { procedureText: "Emergency LSCS" })?.key).toBe("obg_lscs");
     expect(matchDischargeTemplateFor(p, { procedureText: "Normal vaginal delivery" })?.key).toBe("obg_nvd");
   });
@@ -418,7 +407,7 @@ describe("cycle-anchored checklist triggers", () => {
 
 describe("discharge templates follow the unit", () => {
   it("febrile neutropenia matches the oncology set, not the surgical one", () => {
-    const onc = matchDischargeTemplateFor(medicalOncologyPack, {
+    const onc = matchDischargeTemplateFor(getSpecialtyPack("medical_oncology"), {
       diagnosisText: "febrile neutropenia post chemotherapy",
     });
     expect(onc?.key).toBe("febrile_neutropenia");
@@ -436,8 +425,8 @@ describe("discharge templates follow the unit", () => {
 
   it("every oncology template goes home with the fever red flag", () => {
     const all = [
-      ...medicalOncologyPack.dischargeTemplates,
-      medicalOncologyPack.genericDischargeTemplate,
+      ...dischargeTemplatesFor(getSpecialtyPack("medical_oncology")).templates,
+      dischargeTemplatesFor(getSpecialtyPack("medical_oncology")).generic,
     ];
     expect(all.length).toBeGreaterThan(5);
     for (const t of all) {
@@ -449,11 +438,11 @@ describe("discharge templates follow the unit", () => {
     // What the ward list sets on a patient (care_templates.family, seeded by patch 0061) has
     // to reach the right discharge template even when nobody typed a diagnosis.
     expect(
-      matchDischargeTemplateFor(medicalOncologyPack, { templateFamily: "febrile_neutropenia" })
+      matchDischargeTemplateFor(getSpecialtyPack("medical_oncology"), { templateFamily: "febrile_neutropenia" })
         ?.key
     ).toBe("febrile_neutropenia");
     expect(
-      matchDischargeTemplateFor(medicalOncologyPack, { templateFamily: "myeloma" })?.key
+      matchDischargeTemplateFor(getSpecialtyPack("medical_oncology"), { templateFamily: "myeloma" })?.key
     ).toBe("myeloma");
   });
 
@@ -461,11 +450,11 @@ describe("discharge templates follow the unit", () => {
     expect(generalSurgeryPack.pickerPhase).toBe("after_surgery");
     // A medical oncology patient never has an operation date, so phaseFor() computes
     // before_surgery for them — the picker has to offer the rows filed under it.
-    expect(medicalOncologyPack.pickerPhase).toBe("before_surgery");
+    expect(getSpecialtyPack("medical_oncology").pickerPhase).toBe("before_surgery");
   });
 
   it("the picker lists the unit's own templates plus its generic fallback", () => {
-    const keys = listDischargeTemplatesFor(medicalOncologyPack).map((t) => t.key);
+    const keys = listDischargeTemplatesFor(getSpecialtyPack("medical_oncology")).map((t) => t.key);
     expect(keys).toContain("chemo_cycle");
     expect(keys).toContain("oncology_generic");
     expect(keys).not.toContain("breast_ca");
@@ -576,10 +565,10 @@ describe("the oncology examination cards", () => {
 
 describe("offersChecklistFamily — the picker follows the department chosen at unit setup", () => {
   it("keeps oncology and medicine apart, though both are filed under before_surgery", () => {
-    expect(offersChecklistFamily(medicalOncologyPack, "chemo_cycle")).toBe(true);
-    expect(offersChecklistFamily(medicalOncologyPack, "dengue")).toBe(false);
-    expect(offersChecklistFamily(internalMedicinePack, "dengue")).toBe(true);
-    expect(offersChecklistFamily(internalMedicinePack, "febrile_neutropenia")).toBe(false);
+    expect(offersChecklistFamily(getSpecialtyPack("medical_oncology"), "chemo_cycle")).toBe(true);
+    expect(offersChecklistFamily(getSpecialtyPack("medical_oncology"), "dengue")).toBe(false);
+    expect(offersChecklistFamily(getSpecialtyPack("internal_medicine"), "dengue")).toBe(true);
+    expect(offersChecklistFamily(getSpecialtyPack("internal_medicine"), "febrile_neutropenia")).toBe(false);
   });
 
   it("offers general surgery its own procedure checklists (0097 / 0098) and no other department", () => {
@@ -629,11 +618,35 @@ describe("offersChecklistFamily — the picker follows the department chosen at 
     // Its casemix, borrowed from medicine along with the discharge templates and Wells scores.
     for (const family of ["cap", "pulmonary_tb", "vte_suspected"]) {
       expect(offersChecklistFamily(pulmonary, family)).toBe(true);
-      expect(offersChecklistFamily(internalMedicinePack, family)).toBe(true);
+      expect(offersChecklistFamily(getSpecialtyPack("internal_medicine"), family)).toBe(true);
     }
     // The rest of medicine's list is not a chest ward's.
     for (const family of ["dka", "sle_flare", "enteric_fever"]) {
       expect(offersChecklistFamily(pulmonary, family)).toBe(false);
     }
+  });
+});
+
+describe("discharge template: the diagnosis head decides, not a trailing mention", () => {
+  const pick = (procedureText: string, diagnosisText: string) =>
+    matchDischargeTemplateFor(generalSurgeryPack, { procedureText, diagnosisText })?.key ?? null;
+
+  it("a trailing SAIO no longer picks the obstruction template", () => {
+    expect(
+      pick(
+        "Incision and drainage",
+        "Deep organ space SSI ? Post op bile leak with s/p lap cholecystectomy with post exp. laparotomy ivo pyoperitoneum and SAIO With I&D"
+      )
+    ).toBe("abscess_drainage");
+  });
+
+  it("the head still wins over a more specific word in the tail", () => {
+    expect(pick("", "Acute appendicitis with localised peritonitis")).toBe("appendicectomy");
+    expect(pick("Exploratory laparotomy", "Duodenal ulcer perforation with peritonitis")).toBe("perforation");
+    expect(pick("", "SAIO due to adhesions")).toBe("obstruction");
+  });
+
+  it("falls back to everything together when the head names nothing", () => {
+    expect(pick("", "Pain abdomen with cholelithiasis")).toBe("lap_chole");
   });
 });

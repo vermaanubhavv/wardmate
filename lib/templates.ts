@@ -48,15 +48,25 @@ export function phaseFor(patient: { surgery_date: string | null }) {
   return patient.surgery_date ? "after_surgery" : "before_surgery";
 }
 
-export const getTemplateForPatient = cache(async function getTemplateForPatient(patient: {
+export async function getTemplateForPatient(patient: {
   template_family: string | null;
   template_variant: string | null;
   surgery_date: string | null;
 }): Promise<CareTemplate | null> {
   if (!patient.template_family) return null;
+  // Keyed on the three values the answer depends on, not on the patient object: cache()
+  // matches object arguments by identity, so a ward of patients on the same operation was
+  // re-reading the same template once per patient (handover). Per request only.
+  return loadTemplate(patient.template_family, patient.template_variant ?? null, phaseFor(patient));
+}
 
+const loadTemplate = cache(async function loadTemplate(
+  family: string,
+  variant: string | null,
+  phase: "before_surgery" | "after_surgery"
+): Promise<CareTemplate | null> {
+  const patient = { template_family: family, template_variant: variant };
   const supabase = await createClient();
-  const phase = phaseFor(patient);
 
   // A published protocol scoped to this procedure and phase takes over from the old
   // care_templates row — see supabase/patches/0037_lap_chole_checklist_protocol_seed.sql. This

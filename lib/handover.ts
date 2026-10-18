@@ -9,7 +9,11 @@ import {
 import { derivePatientState, type Observation, type PatientState } from "@/lib/patient-state";
 import { getSpecialtyPack, type SpecialtyPack } from "@/lib/specialty";
 import { getWardSpecialtyStored } from "@/lib/ward";
-import { effectiveUrgency, istDate, URGENCY_META } from "@/lib/urgency";
+import { readsChemoColumns, usesBurnClock } from "@/lib/specialty/clocks";
+import { hasOperationClock } from "@/lib/specialty/intake";
+import { effectiveUrgency, istDate, jobTitle, URGENCY_META } from "@/lib/urgency";
+import { displayValue, isUnreadable } from "@/lib/display-value";
+import { classifyLab, type SuppliedRange } from "@/lib/lab-ranges";
 
 /** One line of what actually happened today — a resulted investigation, the operation if
  *  done today, or a job ticked off. Deliberately NOT "everything recorded today": routine
@@ -47,14 +51,20 @@ export type HandoverPatient = {
  * drown the two or three things worth telling a consultant about, so neither kind is
  * included here — see the confirmed scope in the plan this was built from.
  */
-export function deriveDoneToday(rawObservations: Observation[], doneTasks: Observation[], todayKey: string): DoneTodayItem[] {
+export function deriveDoneToday(
+  rawObservations: Observation[],
+  doneTasks: Observation[],
+  todayKey: string,
+  /** A unit that operates says "Operated"; a chemoport or a tap on a medical unit is not one. */
+  operative = true
+): DoneTodayItem[] {
   const items: DoneTodayItem[] = [];
 
   for (const o of rawObservations) {
     if (o.kind === "lab" && istDate(o.recorded_at) === todayKey) {
-      items.push({ id: o.id, text: `${o.label}${o.value_text ? `: ${o.value_text}` : ""}` });
+      items.push({ id: o.id, text: `${o.label}${o.value_text ? `: ${displayValue(o.value_text)}` : ""}` });
     } else if (o.kind === "procedure_done" && istDate(o.recorded_at) === todayKey) {
-      items.push({ id: o.id, text: `Operated: ${o.value_text ?? o.label}` });
+      items.push({ id: o.id, text: `${operative ? "Operated" : "Procedure done"}: ${o.value_text ?? o.label}` });
     }
   }
 
@@ -123,8 +133,8 @@ export async function getWardHandover(ward: { id: string; name: string }): Promi
   const pack = getSpecialtyPack(await getWardSpecialtyStored(ward.id));
   const PATIENT_COLUMNS =
     BASE_PATIENT_COLUMNS +
-    (pack.key === "general_surgery" ? "" : CHEMO_PATIENT_COLUMNS) +
-    (pack.key === "burns_plastic_surgery" ? BURN_PATIENT_COLUMNS : "");
+    (readsChemoColumns(pack) ? CHEMO_PATIENT_COLUMNS : "") +
+    (usesBurnClock(pack) ? BURN_PATIENT_COLUMNS : "");
 
   const { data: patients } = await supabase
     .from("current_patients")
@@ -139,18 +149,26 @@ export async function getWardHandover(ward: { id: string; name: string }): Promi
     .sort((a, b) => compareBeds(a.bed, b.bed));
   if (rows.length === 0) return { ward, pack, patients: [], generated_at };
 
-  // Every observation on the ward in one query, newest first, so grouping by patient below
-  // preserves the newest-first order derivePatientState relies on to pick the latest value.
-  const { data: entries } = await supabase
-    .from("entries")
-    .select(
-      "patient_id, observations(id, kind, label, value_text, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at)"
-    )
-    .in(
-      "patient_id",
-      rows.map((p) => p.id)
-    )
-    .order("recorded_at", { ascending: false });
+  // The entries, the operation names and each patient's checklist need only the rows, so they
+  // go out together rather than one after another — and the checklists not one patient at a
+  // time: patients on the same operation share one read (getTemplateForPatient is cached per
+  // request on family/variant/phase).
+  const [{ data: entries }, procedures, templates] = await Promise.all([
+    // Every observation on the ward in one query, newest first, so grouping by patient below
+    // preserves the newest-first order derivePatientState relies on to pick the latest value.
+    supabase
+      .from("entries")
+      .select(
+        "patient_id, observations(id, kind, label, value_text, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at, ref_low, ref_high, ref_text)"
+      )
+      .in(
+        "patient_id",
+        rows.map((p) => p.id)
+      )
+      .order("recorded_at", { ascending: false }),
+    getProcedureLabels(pack.key),
+    Promise.all(rows.map((p) => getTemplateForPatient(p))),
+  ]);
 
   const byPatient = new Map<string, Observation[]>();
   for (const entry of (entries ?? []) as unknown as {
@@ -162,12 +180,11 @@ export async function getWardHandover(ward: { id: string; name: string }): Promi
     byPatient.set(entry.patient_id, list);
   }
 
-  const procedures = await getProcedureLabels();
   const todayKey = istDate(generated_at);
 
   const out: HandoverPatient[] = [];
-  for (const p of rows) {
-    const template = await getTemplateForPatient(p);
+  for (const [i, p] of rows.entries()) {
+    const template = templates[i];
     const rawObs = byPatient.get(p.id) ?? [];
     const state = derivePatientState(
       rawObs,
@@ -187,7 +204,7 @@ export async function getWardHandover(ward: { id: string; name: string }): Promi
       template,
       procedure: procedureFor(p, procedures),
       state,
-      doneToday: deriveDoneToday(rawObs, state.doneTasks, todayKey),
+      doneToday: deriveDoneToday(rawObs, state.doneTasks, todayKey, hasOperationClock(pack)),
     });
   }
 
@@ -195,10 +212,79 @@ export async function getWardHandover(ward: { id: string; name: string }): Promi
 }
 
 /**
- * A plain-text version of the same handover, in the order it's read off the screen — meant to
- * be copied straight into the unit's handover message. Deliberately only the things that need
- * someone's attention (jobs, unconfirmed values, template gaps), the same filter the ward list
- * badges already use, not a full reproduction of every value on the chart.
+ * The handover in three groups, so it can be read aloud at shift change in a couple of minutes:
+ *
+ * - Watch tonight: a job that is red as of today (graded Now, or a Soon that has come due), or
+ *   a value still waiting to be checked.
+ * - Jobs open, none due: jobs outstanding, nothing pressing — one line each.
+ * - Nothing outstanding: no jobs, nothing to check — a single line of beds.
+ *
+ * Template gaps alone do not put a patient on watch: nearly every patient has one, so ranking
+ * on them would sort nothing. Beds keep their order within each group.
+ */
+export function handoverGroups(patients: HandoverPatient[]) {
+  const watch = patients.filter(needsWatch);
+  const rest = patients.filter((p) => !needsWatch(p));
+  return {
+    watch,
+    jobsOpen: rest.filter((p) => p.state.openTasks.length > 0),
+    clear: rest.filter((p) => p.state.openTasks.length === 0),
+  };
+}
+
+function needsWatch(p: HandoverPatient): boolean {
+  return p.state.pending.length > 0 || p.state.openTasks.some((t) => effectiveUrgency(t).urgency === "red");
+}
+
+/**
+ * A patient's values waiting to be checked, said in one line rather than one line each: one
+ * blood count used to turn into fifteen orange lines and push every other patient off the
+ * screen. Only values the report itself flagged high or low (against its printed range, or the
+ * built-in one) are named, as printed; the rest are counted. An unreadable value is counted as
+ * such, never shown as a number.
+ */
+export function checkSummary(pending: Observation[], sex: string | null) {
+  const flagged: string[] = [];
+  let unreadable = 0;
+  for (const o of pending) {
+    if (isUnreadable(o.value_text)) {
+      unreadable++;
+      continue;
+    }
+    if (o.kind !== "lab") continue;
+    const supplied: SuppliedRange | null =
+      o.ref_low != null || o.ref_high != null
+        ? { low: o.ref_low ?? null, high: o.ref_high ?? null, text: o.ref_text ?? null, source: "report" }
+        : null;
+    const reading = classifyLab(o.label, o.value_text, sex, supplied);
+    if (reading?.flag === "low" || reading?.flag === "high") {
+      flagged.push(`${o.label} ${reading.value}${o.unit ? ` ${o.unit}` : ""} ${reading.flag === "low" ? "L" : "H"}`);
+    }
+  }
+  return { total: pending.length, flagged, unreadable };
+}
+
+/** "21 values to check — flagged on the report: Hb 9.8 L, …; 2 unreadable". */
+export function checkSummaryText(s: ReturnType<typeof checkSummary>): string {
+  const parts = [`${s.total} ${s.total === 1 ? "value" : "values"} to check`];
+  if (s.flagged.length > 0) parts.push(`flagged: ${s.flagged.join(", ")}`);
+  if (s.unreadable > 0) parts.push(`${s.unreadable} unreadable`);
+  return parts.join(" — ");
+}
+
+/** A job as the handover says it: the words, and when it was due if it has come due. */
+function jobLine(t: Observation): string {
+  const effective = effectiveUrgency(t);
+  // Urgency is spelt out rather than coloured: a handover message has no colours, and "NOW"
+  // carries in plain text where a red dot would simply be lost.
+  const mark = effective.urgency ? `[${URGENCY_META[effective.urgency].label.toUpperCase()}] ` : "";
+  const note = effective.note ? ` (${effective.note})` : "";
+  return `${mark}${jobTitle(t.value_text ?? t.label, t.recorded_at)}${note}`;
+}
+
+/**
+ * The plain-text handover, for the unit's WhatsApp group — the same three groups as the screen,
+ * so what is read off the phone and what is pasted say the same thing.
  */
 export function formatHandoverText(handover: WardHandover): string {
   const when = new Date(handover.generated_at).toLocaleString("en-IN", {
@@ -209,46 +295,46 @@ export function formatHandoverText(handover: WardHandover): string {
     minute: "2-digit",
   });
 
-  const lines: string[] = [`${handover.ward.name} — ward round`, when, ""];
+  const n = handover.patients.length;
+  const lines: string[] = [`*${handover.ward.name} handover*, ${when}`, `${n} ${n === 1 ? "patient" : "patients"}`];
 
-  if (handover.patients.length === 0) {
-    lines.push("No active patients.");
+  if (n === 0) {
+    lines.push("", "No active patients.");
     return lines.join("\n");
   }
 
-  for (const p of handover.patients) {
+  const { watch, jobsOpen, clear } = handoverGroups(handover.patients);
+  const heading = (p: HandoverPatient) => {
     const management = managementLabel(p, handover.pack);
-    lines.push(
-      `${p.bed} · ${patientName(p)} · ${dayLabel(p, handover.pack)}${p.procedure ? ` ${p.procedure}` : ""} · ${p.primary_diagnosis || "no diagnosis recorded"}${management ? ` · ${management}` : ""}`
-    );
+    return `Bed ${p.bed} · ${patientName(p)} · ${dayLabel(p, handover.pack)}${p.procedure ? ` ${p.procedure}` : ""} · ${p.primary_diagnosis || "no diagnosis recorded"}${management ? ` · ${management}` : ""}`;
+  };
 
-    for (const d of p.doneToday) {
-      lines.push(`  Today: ${d.text}`);
+  if (watch.length > 0) {
+    lines.push("", "*WATCH TONIGHT*");
+    for (const p of watch) {
+      lines.push(heading(p));
+      for (const d of p.doneToday) lines.push(`- Today: ${d.text}`);
+      for (const t of p.state.openTasks) lines.push(`- ${jobLine(t)}`);
+      if (p.state.pending.length > 0) lines.push(`- ${checkSummaryText(checkSummary(p.state.pending, p.sex))}`);
+      if (p.state.missing.length > 0) {
+        lines.push(`- Not yet recorded: ${p.state.missing.map((m) => m.item.label).join(", ")}`);
+      }
+      lines.push("");
     }
+    lines.pop();
+  }
 
-    const { openTasks, pending, missing } = p.state;
-    if (openTasks.length === 0 && pending.length === 0 && missing.length === 0) {
-      lines.push("  Nothing outstanding.");
-    } else {
-      for (const t of openTasks) {
-        // Urgency is spelt out rather than coloured: a handover message has no colours, and
-        // "NOW" carries in plain text where a red dot would simply be lost. Graded as of
-        // today, so a job that has come due hands over as due.
-        const effective = effectiveUrgency(t);
-        const mark = effective.urgency
-          ? `[${URGENCY_META[effective.urgency].label.toUpperCase()}] `
-          : "";
-        const note = effective.note ? ` (${effective.note})` : "";
-        lines.push(`  To do: ${mark}${t.value_text ?? t.label}${note}`);
-      }
-      for (const o of pending) {
-        lines.push(`  Confirm: ${o.label}${o.value_text ? ` — ${o.value_text}` : ""}`);
-      }
-      if (missing.length > 0) {
-        lines.push(`  Not yet recorded: ${missing.map((m) => m.item.label).join(", ")}`);
-      }
+  if (jobsOpen.length > 0) {
+    lines.push("", "*JOBS OPEN, NONE DUE*");
+    for (const p of jobsOpen) {
+      lines.push(`Bed ${p.bed} · ${patientName(p)}`);
+      for (const t of p.state.openTasks) lines.push(`- ${jobLine(t)}`);
     }
-    lines.push("");
+  }
+
+  if (clear.length > 0) {
+    lines.push("", `*NOTHING OUTSTANDING (${clear.length})*`);
+    lines.push(clear.map((p) => `${p.bed} ${patientName(p)}`).join(" · "));
   }
 
   return lines.join("\n").trimEnd();

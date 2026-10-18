@@ -12,7 +12,7 @@ import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val,
  */
 export const shockV1: HistoryTree = {
   id: "shock",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Shock / low blood pressure",
   triggers: ["shock", "hypotension", "low bp", "low blood pressure", "collapse", "collapsed", "unrecordable bp", "cold peripheries", "pulse not felt", "fainting", "peripheries cold"],
   setting: "Emergency ward, north India",

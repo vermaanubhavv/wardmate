@@ -1,8 +1,6 @@
 import { getEventSummary, getWaitSummary } from "@/lib/admin";
 import { Cell, Empty, ErrorNote, Row, Section, Table, ago } from "../ui";
 
-export const dynamic = "force-dynamic";
-
 export default async function AdminEventsPage() {
   const [{ rows, error }, waits] = await Promise.all([getEventSummary(), getWaitSummary()]);
   if (error) return <ErrorNote message={error} />;

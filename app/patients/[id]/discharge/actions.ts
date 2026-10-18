@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { searchFormulary } from "@/lib/formulary";
 import type { DischargeSectionId } from "@/lib/discharge-entities";
 import {
@@ -101,9 +102,7 @@ export async function findFormularyOptions(wardId: string, query: string): Promi
  */
 export async function confirmFormularyMapping(formData: FormData) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return;
 
   const wardId = String(formData.get("ward_id") ?? "");

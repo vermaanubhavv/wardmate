@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { plainAiError } from "@/lib/ai-error";
 import { routeClerkingChunk } from "@/lib/case-history-routing";
 import { appendCaseHistoryDictation } from "@/app/patients/[id]/case-history/actions";
@@ -17,9 +18,7 @@ import { getWardSpecialtyStored } from "@/lib/ward";
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: patientId } = await params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   let body: { text?: string; knownComplaints?: unknown };
@@ -39,14 +38,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // from the request: the caller must not be able to widen the section list.
   const { data: patient } = await supabase
     .from("patients")
-    .select("ward_id")
+    .select("ward_id, display_name, bed")
     .eq("id", patientId)
     .maybeSingle();
   const specialty = patient?.ward_id ? await getWardSpecialtyStored(patient.ward_id) : null;
 
   let segments;
   try {
-    ({ segments } = await routeClerkingChunk(text, knownComplaints, specialty));
+    ({ segments } = await routeClerkingChunk(text, knownComplaints, specialty, { name: patient?.display_name, bed: patient?.bed }));
   } catch (e) {
     return NextResponse.json({ error: plainAiError(e) }, { status: 502 });
   }

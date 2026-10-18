@@ -2,6 +2,11 @@ import type { DischargeContext } from "@/lib/discharge-data";
 import type { Observation, PatientState } from "@/lib/patient-state";
 import { consultantForWard } from "@/lib/unit-consultants";
 import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { getDischargeTemplateFor, matchDischargeTemplateFor } from "@/lib/specialty/discharge";
+import { compileDischargeDraft } from "@/lib/discharge-compile";
+import { buildCheckContext, type DischargeCheckContext } from "@/lib/discharge-checks";
+import type { DischargeDraft } from "@/lib/discharge-entities";
+import type { DischargeTemplate } from "@/lib/discharge-templates";
 
 /**
  * The in-memory DischargeContext a one-off discharge summary is compiled and rendered from —
@@ -74,5 +79,36 @@ export function oneOffContext(
     formularyMappings,
     formularySize: 0,
     row: null,
+    aiDraftStale: false,
+  };
+}
+
+/** The template picker's "No template — start blank". */
+export const NO_TEMPLATE = "__none__";
+
+/**
+ * A one-off draft, compiled by the same compileDischargeDraft and checked by the same
+ * buildCheckContext a ward patient's discharge uses, along the diagnosis template the resident
+ * chose: NO_TEMPLATE = none; a key = that template; otherwise the one the typed procedure /
+ * diagnosis points at. seedAll — with no record, the template's `[ … ]` blanks fill every
+ * section it has a skeleton for.
+ */
+export function buildOneOffDraft(
+  context: DischargeContext,
+  templateKey: string | null | undefined,
+  identity: OneOffIdentity
+): { draft: DischargeDraft; checkContext: DischargeCheckContext; template: DischargeTemplate | null } {
+  const template =
+    templateKey === NO_TEMPLATE
+      ? null
+      : (getDischargeTemplateFor(context.pack, templateKey) ??
+        matchDischargeTemplateFor(context.pack, {
+          procedureText: identity.procedure,
+          diagnosisText: identity.diagnosis,
+        }));
+  return {
+    draft: compileDischargeDraft(context, { template, seedAll: true, pack: context.pack }),
+    checkContext: buildCheckContext(context),
+    template,
   };
 }

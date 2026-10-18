@@ -1,8 +1,9 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { FAST_MODEL } from "@/lib/model";
+import { FAST_MODEL, anthropic, replyJson } from "@/lib/model";
 import { correctTranscript } from "@/lib/glossary";
+import { getSpecialtyPack } from "@/lib/specialty";
 import { log } from "@/lib/observability";
 import { askJev, chosenProbability, type JevAnswers } from "@/lib/jev";
+import { redactFor, type PatientIdentifiers } from "@/lib/jev-observations";
 import {
   ROUTABLE_SECTIONS,
   sectionsForSpecialty,
@@ -40,13 +41,7 @@ export type { RoutableSection, RoutedSegment } from "@/lib/case-history-sections
 
 const ROUTING_MODEL = FAST_MODEL;
 // ponytail: fixed bar, untuned — set it from a labelled synthetic eval once fallback rates are in.
-const MIN_PROBABILITY = 0.7;
-
-function client(): Anthropic {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
-  return new Anthropic({ apiKey });
-}
+export const MIN_PROBABILITY = 0.7;
 
 const SYSTEM = `You sort a fragment of dictated clerking into the correct section(s) of a case sheet. The resident is dictating out of order and pausing between thoughts; you receive one pause-delimited fragment at a time, plus the list of complaints already mentioned.
 
@@ -110,17 +105,33 @@ const SCHEMA = {
  * sections are. Sent as part of the varying half of the prompt, after the cached block, so
  * adding a specialty never invalidates the shared prefix cache.
  */
-const MEDICAL_EXAM_BLOCK = `Extra sections for this unit:
-- "cvs" — cardiovascular examination findings: heart sounds, murmurs, JVP, pedal oedema found on examination ("S1 S2 heard, no murmur", "JVP raised")
-- "cns" — nervous system examination findings: sensorium, GCS, higher functions, power, tone, reflexes, plantars, neck stiffness ("power 3 by 5 in the right upper limb, plantar extensor")
+const CVS_LINE = `- "cvs" — cardiovascular examination findings: heart sounds, murmurs, JVP, pedal oedema found on examination ("S1 S2 heard, no murmur", "JVP raised")`;
+const CNS_LINE = `- "cns" — nervous system examination findings: sensorium, GCS, higher functions, power, tone, reflexes, plantars, neck stiffness ("power 3 by 5 in the right upper limb, plantar extensor")`;
+const SYSTEMS_RULE = `chest and lung findings stay in "chest"; a symptom the patient reports (breathlessness, weakness) is history, not examination.`;
 
-Filing between these: chest and lung findings stay in "chest"; a symptom the patient reports (breathlessness, weakness) is history, not examination.`;
+const MEDICAL_EXAM_BLOCK = `Extra sections for this unit:
+${CVS_LINE}
+${CNS_LINE}
+
+Filing between these: ${SYSTEMS_RULE}`;
 
 const SPECIALTY_SECTION_BLOCKS: Record<string, string> = {
   internal_medicine: MEDICAL_EXAM_BLOCK,
   paediatrics: MEDICAL_EXAM_BLOCK,
   pulmonary_medicine: MEDICAL_EXAM_BLOCK,
   emergency_medicine: MEDICAL_EXAM_BLOCK,
+  psychiatry: `Extra sections for this unit (psychiatry):
+${CVS_LINE}
+${CNS_LINE}
+- "mse" — mental status examination findings, what is observed or elicited in the interview: appearance and behaviour, speech, mood and affect, thought form and content, perception, cognition, insight and judgement ("speech slow, low in volume", "affect restricted", "insight partial")
+
+Filing between these: ${SYSTEMS_RULE} A symptom told as the reason for admission, with how long it has been there, is "complaints" or "hopi"; what the resident observes or elicits on examining the mental state goes to "mse". Orientation, attention and memory tested as part of the mental state go to "mse", not "cns".`,
+  dermatology: `Extra sections for this unit (dermatology):
+- "skin" — cutaneous examination findings: the lesions' morphology, distribution and configuration, and the mucosa, nails and hair ("erythematous scaly plaques over both shins", "nails pitted", "oral mucosa shows erosions")
+${CVS_LINE}
+${CNS_LINE}
+
+Filing between these: ${SYSTEMS_RULE} The patient's own account of the rash or itch (when it began, how it spread) is history; what is seen on the skin, mucosa, nails or hair on examination goes to "skin", not "local".`,
   medical_oncology: `Extra sections for this unit (medical oncology):
 - "onco_disease" — what the cancer IS: primary site, histology, immunohistochemistry, stage, when it was diagnosed, biopsy or scan findings that establish it ("carcinoma left breast, IDC grade 2, ER positive, cT2N1M0, diagnosed March")
 - "onco_treatment" — what has ALREADY been given for it: previous surgery, radiotherapy, earlier lines of chemotherapy with how many cycles and what the response was ("six cycles of FOLFOX last year, partial response")
@@ -129,8 +140,10 @@ const SPECIALTY_SECTION_BLOCKS: Record<string, string> = {
 - "performance" — performance status and what the patient can and cannot do ("ECOG 2, in bed about half the day")
 - "onco_nodes" — lymph node examination findings, station by station: cervical, supraclavicular, axillary, inguinal — size, number, mobility, tenderness, matting ("left supraclavicular node, 2 cm, firm, non-tender, fixed")
 - "onco_mucosa_line" — oral mucosa / mucositis grade, skin and nail changes (hand-foot syndrome, rash), and the chemoport / PICC / central line site ("grade 2 mucositis, ulcers on the buccal mucosa" / "port site clean, no erythema")
+${CVS_LINE}
+${CNS_LINE}
 
-Filing between these: a fact about the tumour goes to "onco_disease" even when a drug is named as part of establishing it. A drug being given NOW goes to "onco_cycle"; the same drug given in the past goes to "onco_treatment". A side effect goes to "onco_toxicity" and NOT to "complaints", unless the resident is presenting it as the reason for this admission. A physical finding on a lymph node goes to "onco_nodes" even when the same node is also the presenting complaint. Mouth ulcers or a rash found ON EXAMINATION go to "onco_mucosa_line"; the patient's own report of mouth pain as a symptom still goes to "onco_toxicity".`,
+Filing between these: ${SYSTEMS_RULE} A fact about the tumour goes to "onco_disease" even when a drug is named as part of establishing it. A drug being given NOW goes to "onco_cycle"; the same drug given in the past goes to "onco_treatment". A side effect goes to "onco_toxicity" and NOT to "complaints", unless the resident is presenting it as the reason for this admission. A physical finding on a lymph node goes to "onco_nodes" even when the same node is also the presenting complaint. Mouth ulcers or a rash found ON EXAMINATION go to "onco_mucosa_line"; the patient's own report of mouth pain as a symptom still goes to "onco_toxicity".`,
 };
 
 export async function routeClerkingChunk(
@@ -138,16 +151,18 @@ export async function routeClerkingChunk(
   knownComplaints: string[],
   /** The unit's department. Decides which extra sections exist; anything unrecognised gets
    *  the base set, which is what every unit had before specialty packs. */
-  specialty?: string | null
+  specialty?: string | null,
+  /** The patient being clerked: their name and bed are kept out of what Jev is sent. */
+  who?: PatientIdentifiers
 ): Promise<{ segments: RoutedSegment[]; model: string }> {
   const text = chunk.trim();
   if (!text) return { segments: [], model: ROUTING_MODEL };
 
   // Same ward-vocabulary correction every other dictation path runs.
-  const corrected = (await correctTranscript(text)).text.trim() || text;
+  const corrected = (await correctTranscript(text, getSpecialtyPack(specialty))).text.trim() || text;
 
   if (process.env.TYPESAFE_API_KEY) {
-    const first = await routeWithTypeSafe(corrected, knownComplaints, specialty);
+    const first = await routeWithTypeSafe(corrected, knownComplaints, specialty, who);
     if ("segments" in first) return first;
     // The reason only, never the dictation.
     log.info("route-dictation: TypeSafe declined, using Haiku", { reason: first.fallback });
@@ -158,7 +173,8 @@ export async function routeClerkingChunk(
 async function routeWithTypeSafe(
   corrected: string,
   knownComplaints: string[],
-  specialty?: string | null
+  specialty?: string | null,
+  who?: PatientIdentifiers
 ): Promise<{ segments: RoutedSegment[]; model: string } | { fallback: string }> {
   const allowed = sectionsForSpecialty(specialty);
   const specialtyBlock = SPECIALTY_SECTION_BLOCKS[(specialty ?? "").trim()] ?? "";
@@ -199,11 +215,21 @@ async function routeWithTypeSafe(
     }
   });
 
-  const jev = await askJev({ complaints_already_mentioned: knownComplaints, sentences }, questions);
+  // Segments are filed from the original sentences; only the copy sent to Jev is redacted.
+  const jev = await askJev(
+    {
+      complaints_already_mentioned: knownComplaints.map((c) => redactFor(c, who)),
+      sentences: sentences.map((s) => redactFor(s, who)),
+    },
+    questions
+  );
   if ("fallback" in jev) return jev;
 
   const result = segmentsFromJev(sentences, jev.answers, knownComplaints, allowed);
-  return "segments" in result ? { segments: result.segments, model: jev.model } : result;
+  if (!("segments" in result)) return result;
+  // Counts only, as "jev judged" does: how much live clerking Jev files on its own.
+  log.info("route-dictation: Jev filed", { "jev.sentences": sentences.length, "jev.segments": result.segments.length });
+  return { segments: result.segments, model: jev.model };
 }
 
 /** Deepgram's smart_format punctuates, so sentence boundaries are real. */
@@ -261,12 +287,14 @@ async function routeWithHaiku(
   const allowed = sectionsForSpecialty(specialty);
   const specialtyBlock = SPECIALTY_SECTION_BLOCKS[(specialty ?? "").trim()] ?? "";
 
-  const response = await client().messages.create({
+  const response = await anthropic().messages.create({
     model: ROUTING_MODEL,
     max_tokens: 700,
     system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
-    // No `effort`: Haiku 4.5 rejects it with a 400, which failed every fallback fragment.
+    // Low effort: Haiku 5.5 thinks by default and this sits behind live dictation. (Haiku 4.5
+    // rejected `effort` with a 400; Haiku 5.5 accepts it — lib/model.ts FAST_MODEL.)
     output_config: {
+      effort: "low",
       format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> },
     },
     messages: [
@@ -277,9 +305,7 @@ async function routeWithHaiku(
     ],
   });
 
-  const block = response.content.find((b) => b.type === "text");
-  const parsed =
-    block && block.type === "text" ? (JSON.parse(block.text) as { segments?: unknown[] }) : { segments: [] };
+  const parsed: { segments?: unknown[] } = replyJson(response, { segments: [] });
 
   const segments: RoutedSegment[] = [];
   for (const raw of Array.isArray(parsed.segments) ? parsed.segments : []) {

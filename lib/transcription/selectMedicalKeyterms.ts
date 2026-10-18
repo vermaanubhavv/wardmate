@@ -1,10 +1,9 @@
 import {
   MASTER_LEXICON,
-  mergeLexicon,
+  NON_OPERATIVE_SPECIALTIES,
   type MedicalLexiconEntry,
   type DictationContext,
   type SelectedKeyterm,
-  type SelectKeytermOptions,
 } from "./lexicon";
 
 /**
@@ -23,8 +22,6 @@ import {
 const DEFAULTS = {
   /** Hard application safety cap. Deepgram's own limit is higher; this leaves headroom. */
   maxTerms: 80,
-  /** The selector aims to stay at or below this before the hard cap bites. */
-  targetTerms: 50,
   /** If a real patient context produces fewer than this, top up from the specialty core. */
   targetMin: 16,
   /** Application-side token ceiling, well below Deepgram's ~500-token API limit. */
@@ -60,18 +57,9 @@ export function estimateTotalTokens(terms: readonly string[]): number {
   return terms.reduce((n, t) => n + estimateKeytermTokens(t), 0);
 }
 
-/** Case-insensitive dedupe that keeps first-seen casing and trims each entry. */
-export function dedupeCaseInsensitive(terms: readonly string[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const t of terms) {
-    const key = t.trim().toLowerCase();
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    out.push(t.trim());
-  }
-  return out;
-}
+// Lives in buildDeepgramUrl.ts so the browser's live-dictation code can use it without
+// pulling the whole master lexicon (this file's import) into every page's bundle.
+export { dedupeCaseInsensitive } from "./buildDeepgramUrl";
 
 // --- context shaping ------------------------------------------------------------------
 
@@ -316,17 +304,13 @@ function dedupe(sorted: Scored[]): Scored[] {
 
 // --- public API -------------------------------------------------------------------
 
-export function selectMedicalKeyterms(
-  context: DictationContext,
-  options: SelectKeytermOptions = {}
-): SelectedKeyterm[] {
-  const cfg = { ...DEFAULTS, ...options };
+export function selectMedicalKeyterms(context: DictationContext): SelectedKeyterm[] {
+  const cfg = DEFAULTS;
   const ctx = shape(context);
 
-  const lexicon = mergeLexicon(MASTER_LEXICON, [
-    ...(options.extraTerms ?? []),
-    ...(context.customTerms ?? []),
-  ]);
+  // A unit that does not operate never gets the surgical ward phrases boosted.
+  const nonOperative = !!ctx.specialty && NON_OPERATIVE_SPECIALTIES.has(ctx.specialty);
+  const lexicon = MASTER_LEXICON.filter((e) => !(nonOperative && e.operativeOnly));
 
   const lexIndex: LexIndexEntry[] = lexicon.map((e) => ({
     names: [e.term, ...(e.aliases ?? [])].map(norm),
@@ -365,11 +349,8 @@ export function selectMedicalKeyterms(
 }
 
 /** The flat list to feed straight into the Deepgram keyterm parameter. */
-export function getDeepgramKeyterms(
-  context: DictationContext,
-  options: SelectKeytermOptions = {}
-): string[] {
-  return selectMedicalKeyterms(context, options).map((s) => s.term);
+export function getDeepgramKeyterms(context: DictationContext): string[] {
+  return selectMedicalKeyterms(context).map((s) => s.term);
 }
 
 /**
@@ -377,10 +358,9 @@ export function getDeepgramKeyterms(
  * no patient name, UHID, phone number or free text — only the chosen terms and why.
  */
 export function describeSelection(
-  context: DictationContext,
-  options: SelectKeytermOptions = {}
+  context: DictationContext
 ): { selectedCount: number; estimatedTokens: number; reasons: string[]; terms: string[] } {
-  const selected = selectMedicalKeyterms(context, options);
+  const selected = selectMedicalKeyterms(context);
   const terms = selected.map((s) => s.term);
   const reasons = Array.from(
     new Set(selected.flatMap((s) => s.reason))

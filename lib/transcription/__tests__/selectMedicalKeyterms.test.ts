@@ -214,19 +214,20 @@ describe("selectMedicalKeyterms", () => {
     expect(list.length).toBeLessThanOrEqual(12);
     expect(list.map((t) => t.toLowerCase())).toContain("per abdomen");
   });
+});
 
-  it("custom hospital terms merge through the same selector", () => {
-    const list = getDeepgramKeyterms({
-      diagnoses: ["Acute pancreatitis"],
-      customTerms: [
-        {
-          term: "ESIC Basaidarapur",
-          categories: ["india-ward"],
-          triggers: ["pancreatitis"],
-          priority: 90,
-        },
-      ],
-    });
-    expect(list).toContain("ESIC Basaidarapur");
+describe("surgical ward phrases only on units that operate", () => {
+  const SURGICAL = ["post operative day", "passing flatus", "suture line healthy"];
+
+  it("never sends them on a unit that does not operate", () => {
+    for (const specialty of ["internal-medicine", "pulmonary-medicine", "paediatrics", "medical-oncology", "emergency-medicine"] as const) {
+      const list = terms({ specialty, diagnoses: ["Community-acquired pneumonia"] });
+      expect(hasSome(list, SURGICAL), specialty).toEqual([]);
+    }
+  });
+
+  it("still sends them on general surgery", () => {
+    const list = terms({ specialty: "general-surgery", procedures: ["Laparoscopic cholecystectomy"], postOpDay: 2 });
+    expect(list).toContain("post operative day");
   });
 });

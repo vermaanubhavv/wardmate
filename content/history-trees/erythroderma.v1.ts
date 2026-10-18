@@ -15,7 +15,7 @@ import { commonHpi, HUTCHISONS, IADVL, IMMUNOCOMPROMISE, MACLEODS, val, yn } fro
  */
 export const erythrodermaV1: HistoryTree = {
   id: "erythroderma",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Redness and scaling of the whole body",
   triggers: ["erythroderma", "exfoliative dermatitis", "exfoliation", "red all over", "whole body red", "redness of whole body", "redness all over", "scaling all over", "skin shedding", "scales falling", "flakes falling", "poore sharir pe laali", "chamdi utar rahi"],
   setting: "Dermatology ward and OPD, north India",

@@ -1,5 +1,5 @@
 import { matchTemplate, type CareTemplate, type MatchedItem } from "@/lib/templates";
-import { effectiveUrgency, urgencyRank, type Urgency } from "@/lib/urgency";
+import { effectiveUrgency, istDate, urgencyRank, type Urgency } from "@/lib/urgency";
 import { dedupeTasks } from "@/lib/dedupe-tasks";
 import { isActionableTask } from "@/lib/task-classification";
 
@@ -34,7 +34,7 @@ export type Observation = {
 export type PacVerdict = "fit" | "fit_with_conditions" | "unfit" | "pending" | null;
 
 /** An outstanding job, with how many earlier sayings of it are folded underneath. */
-type OpenTask = Observation & { repeats: number };
+type OpenTask = Observation & { repeats: number; ids: string[] };
 
 export type PatientState = {
   matched: MatchedItem[];
@@ -93,7 +93,7 @@ export function derivePatientState(
   // outranks. Deduping before sorting matters: the newest saying carries the urgency that
   // decides the order.
   const openTasks: OpenTask[] = dedupeTasks(allPlans.filter((o) => !o.done_at))
-    .map(({ task, repeats }) => ({ ...task, repeats: repeats.length }))
+    .map(({ task, repeats }) => ({ ...task, repeats: repeats.length, ids: [task.id, ...repeats.map((r) => r.id)] }))
     .sort(
       (a, b) =>
         urgencyRank(effectiveUrgency(a).urgency) - urgencyRank(effectiveUrgency(b).urgency)
@@ -184,10 +184,9 @@ export function groupIntoSittings<T extends { recorded_at: string }>(
 }
 
 /** The calendar day an instant falls on in IST — the day the round actually happened, which
- *  is not the same as the UTC day for anything recorded after 5.30am. */
-export function istDayKey(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
-}
+ *  is not the same as the UTC day for anything recorded after 5.30am. One implementation,
+ *  lib/urgency.ts's istDate (a client-safe leaf); this name is kept for its callers. */
+export const istDayKey = istDate;
 
 /**
  * Sittings gathered into the day they happened on.

@@ -1,6 +1,10 @@
 import type { ExtractedObservation } from "@/lib/extract";
+import type { ReadLabValue } from "@/lib/read-lab-photo";
+import type { RegisterRow } from "@/lib/read-register";
 import { askJev, chosenProbability, type JevAnswers } from "@/lib/jev";
 import { log } from "@/lib/observability";
+import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { forWard } from "@/lib/specialty/prompt-words";
 import { isActionableTask } from "@/lib/task-classification";
 import type { TaskCategory } from "@/lib/task-category";
 
@@ -64,20 +68,20 @@ export function supportedQuestion(row: string) {
 
 /** The "By type" question, about the plan text at `path`. Exported so
  *  scripts/eval-task-category.ts scores exactly what production asks. */
-export function categoryQuestion(path: string) {
+export function categoryQuestion(path: string, pack: SpecialtyPack = generalSurgeryPack) {
   return {
     type: "choice",
-    instructions: `\`${path}\` is a job from a surgical ward-round plan. Which ward work-stream does the job itself belong to? Judge by the action to be done, not by a word mentioned in passing.`,
+    instructions: forWard(`\`${path}\` is a job from a surgical ward-round plan. Which ward work-stream does the job itself belong to? Judge by the action to be done, not by a word mentioned in passing.`, pack),
     criteria: CATEGORY_CRITERIA,
   };
 }
 
 /** The rescue question, about the plan text at `path` in the state. Exported so
  *  scripts/eval-task-open.ts scores exactly what production asks. */
-export function openQuestion(path: string) {
+export function openQuestion(path: string, pack: SpecialtyPack = generalSurgeryPack) {
   return {
     type: "noul",
-    instructions: `A surgical resident dictated \`${path}\` as part of a ward-round plan. Does it leave anything for the ward team to do, check or follow up?`,
+    instructions: forWard(`A surgical resident dictated \`${path}\` as part of a ward-round plan. Does it leave anything for the ward team to do, check or follow up?`, pack),
     criteria: {
       true: "Something is still to be done or watched: a test to send or repeat, a report awaited or to review, a tube, drain, catheter or sutures to remove, a diet to change, charting or monitoring to keep up, someone to inform on a condition, a shift to OT",
       false: "It only records what was given, done, started or simply goes on unchanged — a drug, fluid, transfusion or dressing — with nothing further for anyone to do or check",
@@ -85,7 +89,22 @@ export function openQuestion(path: string) {
   };
 }
 
-export async function judgeObservations(observations: ExtractedObservation[]): Promise<void> {
+/** Who the text is about, so their name and bed can be taken out before it goes to Jev. */
+export type PatientIdentifiers = { name?: string | null; bed?: string | null };
+
+/** redactIdentifiers for a patient who may be unknown — then the text goes as it is. */
+export function redactFor(text: string, who?: PatientIdentifiers): string {
+  return who ? redactIdentifiers(text, who.name ?? "", who.bed ?? "") : text;
+}
+
+export async function judgeObservations(
+  observations: ExtractedObservation[],
+  who?: PatientIdentifiers,
+  /** The unit, so the questions name its own kind of round. General surgery when omitted. */
+  pack?: SpecialtyPack,
+  /** Where the rows came from, for the outcome log only. */
+  source: "dictation" | "lab photo" | "register" = "dictation"
+): Promise<void> {
   const questions: Record<string, unknown> = {};
   observations.forEach((o, i) => {
     if (!o.needs_confirmation) {
@@ -93,33 +112,135 @@ export async function judgeObservations(observations: ExtractedObservation[]): P
     }
     if (o.kind !== "plan") return;
     if (!isActionableTask(o.value_text || o.label)) {
-      questions[`open_${i}`] = openQuestion(`observations[${i}].value`);
+      questions[`open_${i}`] = openQuestion(`observations[${i}].value`, pack);
     }
-    questions[`category_${i}`] = categoryQuestion(`observations[${i}].value`);
+    questions[`category_${i}`] = categoryQuestion(`observations[${i}].value`, pack);
   });
 
   const state = {
-    observations: observations.map((o) => ({ label: o.label, value: o.value_text, quote: o.source_quote })),
+    // A resident may say the patient's name aloud; only the copy sent to Jev is redacted.
+    observations: observations.map((o) => ({
+      label: redactFor(o.label, who),
+      value: redactFor(o.value_text, who),
+      quote: redactFor(o.source_quote, who),
+    })),
   };
   const jev = await askJev(state, questions);
   if ("fallback" in jev) {
     if (jev.fallback !== "no key") log.info("extract: Jev unavailable", { reason: jev.fallback });
     return;
   }
-  applyJudgments(observations, jev.answers);
+  const changed = applyJudgments(observations, jev.answers);
+  // Counts only — never the words — so whether Jev earns its keep shows in Sentry. Keys avoid
+  // the free-text names lib/sentry-scrub.ts strips.
+  log.info("jev judged", {
+    "jev.source": source,
+    "jev.rows": observations.length,
+    "jev.checked": Object.keys(questions).filter((k) => k.startsWith("supported_")).length,
+    "jev.amber": changed.amber,
+    "jev.plans": observations.filter((o) => o.kind === "plan").length,
+    "jev.rescued": changed.rescued,
+    "jev.sorted": changed.sorted,
+  });
 }
 
-/** Pure: write Jev's answers onto the observations. Exported for the test. */
-export function applyJudgments(observations: ExtractedObservation[], answers: JevAnswers): void {
+/** Pure: write Jev's answers onto the observations, and say how many it changed. Exported
+ *  for the test. */
+export function applyJudgments(
+  observations: ExtractedObservation[],
+  answers: JevAnswers
+): { amber: number; rescued: number; sorted: number } {
+  const changed = { amber: 0, rescued: 0, sorted: 0 };
   observations.forEach((o, i) => {
     const supported = answers[`supported_${i}`]?.noul;
-    if (supported != null && supported < UNSUPPORTED_BELOW) o.needs_confirmation = true;
+    if (supported != null && supported < UNSUPPORTED_BELOW && !o.needs_confirmation) {
+      o.needs_confirmation = true;
+      changed.amber++;
+    }
     if (o.kind !== "plan") return;
     const open = answers[`open_${i}`]?.noul;
-    if (open != null && open >= RESCUE_AT) o.task_open = true;
+    if (open != null && open >= RESCUE_AT) {
+      o.task_open = true;
+      changed.rescued++;
+    }
     const category = answers[`category_${i}`];
     if (category?.choice && category.choice in CATEGORY_CRITERIA && chosenProbability(category) >= CATEGORY_AT) {
       o.task_category = category.choice as TaskCategoryJudgment;
+      changed.sorted++;
     }
   });
+  return changed;
+}
+
+/**
+ * Takes a patient's own name and bed out of text before it is sent to Jev. TypeSafe keeps
+ * nothing (zero data retention since 2026-10-08) but has no BAA, so identifiers do not go at
+ * all; a finding needs neither to be judged. The whole name and each part of it of three
+ * letters or more are replaced; a bed is replaced where it follows the word "bed", or anywhere
+ * when it is a ward label like "SW-12" — a bare "4" elsewhere is a value, not a bed.
+ */
+export function redactIdentifiers(text: string, name: string, bed: string): string {
+  const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  let out = text;
+  const parts = [name.trim(), ...name.trim().split(/\s+/)].filter((p) => p.replace(/[^a-z]/gi, "").length >= 3);
+  for (const p of parts.sort((a, b) => b.length - a.length)) {
+    out = out.replace(new RegExp(`(?<![a-z])${esc(p)}(?![a-z])`, "gi"), "[name]");
+  }
+  const b = bed.trim();
+  if (b) {
+    out = out.replace(new RegExp(`\\b(bed\\s*(?:no\\.?|number)?\\s*[:#-]?\\s*)${esc(b)}(?![\\w])`, "gi"), "$1[bed]");
+    if (/[a-z]/i.test(b) && /\d/.test(b)) out = out.replace(new RegExp(`(?<![\\w-])${esc(b)}(?![\\w-])`, "gi"), "[bed]");
+  }
+  return out;
+}
+
+/** A read value in the shape judgeObservations asks about. needs_confirmation starts false so
+ *  the "does the quote say it" question is asked; the caller reads the answer back. */
+function asObservation(kind: ExtractedObservation["kind"], label: string, value: string, quote: string): ExtractedObservation {
+  return {
+    kind, label, value_text: value, value_num: null, unit: null, source_quote: quote,
+    needs_confirmation: false, urgency: null, pac_verdict: null,
+  };
+}
+
+/**
+ * Lab photo (lib/read-lab-photo.ts): every value is amber already, so a value its own printed
+ * line does not support — the neighbouring line's number, a range read as the result — is
+ * marked `uncertain`, which every caller shows as "check against the photo" and which keeps a
+ * misread range from teaching the ward its lab ranges. Checked on photo lines in
+ * scripts/eval-supported.ts --lines: 8/8 misreads caught, 0/8 false, at the same bar.
+ */
+export async function judgeLabValues(values: ReadLabValue[]): Promise<void> {
+  const obs = values.map((v) => asObservation(v.category === "vital" ? "vital" : "lab", v.label, v.value_text, v.source_quote));
+  await judgeObservations(obs, undefined, undefined, "lab photo");
+  obs.forEach((o, i) => {
+    if (o.needs_confirmation) values[i].uncertain = true;
+  });
+}
+
+/**
+ * Register (lib/read-register.ts), one Jev request per row as dictation sends one note: a
+ * finding or plan its own row does not say marks the row `uncertain` ("check against the
+ * register photo"), and each plan gets the to-do rescue and "By type" bucket that dictated
+ * plans get — register plans were the ones without them.
+ */
+export async function judgeRegisterRows(rows: RegisterRow[], pack?: SpecialtyPack): Promise<void> {
+  await Promise.all(
+    rows.map(async (row) => {
+      // A register row is written as "Bed 4 <name> POD 2 …". Only the copy sent to Jev is
+      // redacted; the stored quote stays exactly as written.
+      const clean = (t: string) => redactIdentifiers(t, row.name, row.bed);
+      const quote = clean(row.source_quote);
+      const obs = [
+        ...row.findings.map((f) => asObservation("note", clean(f.label), clean(f.value_text), quote)),
+        ...row.plans.map((p) => asObservation("plan", "plan", clean(p), quote)),
+      ];
+      if (obs.length === 0) return;
+      await judgeObservations(obs, undefined, pack, "register");
+      if (obs.some((o) => o.needs_confirmation)) row.uncertain = true;
+      row.plan_judgments = obs
+        .slice(row.findings.length)
+        .map((o) => ({ task_open: o.task_open ?? null, task_category: o.task_category ?? null }));
+    })
+  );
 }

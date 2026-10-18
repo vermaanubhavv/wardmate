@@ -2,7 +2,7 @@
  * Scores Jev's to-do rescue (lib/jev-observations.ts, `open_i`) on the synthetic plans in
  * lib/evals/task-open-cases.ts, for the live wording and the candidates below.
  *
- *   node --env-file=.env.local --import ./scripts/alias-register.mjs scripts/eval-task-open.ts [--held-out]
+ *   node --env-file=.env.local node_modules/.bin/vite-node --config vitest.config.ts scripts/eval-task-open.ts [--held-out]
  *
  * Needs TYPESAFE_API_KEY. One Jev request per wording (all cases batched), so a run is cheap.
  *

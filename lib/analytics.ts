@@ -1,4 +1,5 @@
 import "server-only";
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -16,22 +17,32 @@ export async function logEvent(
   name: string,
   opts: { path?: string; wardId?: string | null; props?: Record<string, unknown> } = {}
 ): Promise<void> {
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
+  const write = async () => {
+    try {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
 
-    await supabase.from("app_events").insert({
-      actor_id: user.id,
-      name: name.slice(0, 80),
-      path: opts.path ? opts.path.slice(0, 200) : null,
-      ward_id: opts.wardId ?? null,
-      props: sanitiseProps(opts.props),
-    });
+      await supabase.from("app_events").insert({
+        actor_id: user.id,
+        name: name.slice(0, 80),
+        path: opts.path ? opts.path.slice(0, 200) : null,
+        ward_id: opts.wardId ?? null,
+        props: sanitiseProps(opts.props),
+      });
+    } catch {
+      // Deliberately silent — see the note above.
+    }
+  };
+  // Two round trips (verify the user, insert) that the doctor should never wait on: after()
+  // runs them once the response has gone. Server Actions and Route Handlers may read cookies
+  // inside it. Outside a request scope after() throws, so the write then runs inline instead.
+  try {
+    after(write);
   } catch {
-    // Deliberately silent — see the note above.
+    await write();
   }
 }
 

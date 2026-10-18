@@ -8,6 +8,7 @@ function formatList(items: string[]): string {
 import { summariseObjective, type WardRanges } from "@/lib/exam-summary";
 import type { EtiologyKey, ImagingSummary } from "@/lib/imaging-summary";
 import type { Observation } from "@/lib/patient-state";
+import { displayLabel } from "@/lib/display-value";
 
 /**
  * The clerking note, ordered the way a case sheet is written — see lib/case-history.ts for the
@@ -146,7 +147,7 @@ export function ObjectiveSummaryView({
       {/* The abnormalities, which are the reason anyone reads this section. */}
       {summary.findings.map((f) => (
         <p key={f.id} className="mt-1">
-          <span className="text-muted">{f.label}</span> <span className="font-medium">{f.value}</span>
+          <span className="text-muted">{displayLabel(f.label)}</span> <span className="font-medium">{f.value}</span>
         </p>
       ))}
 
@@ -154,7 +155,7 @@ export function ObjectiveSummaryView({
           checkable at a glance rather than taken on trust — see lib/lab-ranges.ts. */}
       {summary.labs.map((l) => (
         <p key={l.id} className="mt-1">
-          <span className="text-muted">{l.label}</span>{" "}
+          <span className="text-muted">{displayLabel(l.label)}</span>{" "}
           <span className="font-medium tabular-nums">{l.value}</span>
           {l.flag === "high" && <span className="ml-0.5 font-medium text-critical-fg">↑</span>}
           {l.flag === "low" && <span className="ml-0.5 font-medium text-critical-fg">↓</span>}
@@ -180,7 +181,7 @@ export function ObjectiveSummaryView({
           </summary>
           {summary.keyLabs.map((l) => (
             <p key={l.id} className="mt-1">
-              <span className="text-muted">{l.label}</span>{" "}
+              <span className="text-muted">{displayLabel(l.label)}</span>{" "}
               <span className="font-medium tabular-nums">{l.value}</span>
               {l.range && (
                 <span className="ml-1 text-footnote text-muted">
@@ -275,7 +276,7 @@ function MutedLabs({
 function ImagingReport({ imaging }: { imaging: ImagingSummary }) {
   const line = (r: { id: string; label: string; value: string }) => (
     <p key={r.id} className="mt-1">
-      <span className="text-muted">{r.label}</span>{" "}
+      <span className="text-muted">{displayLabel(r.label)}</span>{" "}
       <span className="font-medium">{r.value}</span>
     </p>
   );

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ABDOMINAL PAIN — v1.0.0. CLINICAL CONTENT: PENDING REVIEW (Sabiston background added, docs/surgical-history.md §9).
+ * ABDOMINAL PAIN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-11).
  * Adult medicine / surgery ward, north India. Differentials: acute appendicitis, acute
  * cholecystitis / biliary colic, acute pancreatitis, peptic ulcer / perforation, intestinal
  * obstruction, renal colic / pyelonephritis, acute gastroenteritis, abdominal tuberculosis,
@@ -10,12 +10,12 @@ import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, IMMUNOCO
  */
 export const abdominalPainV1: HistoryTree = {
   id: "abdominal_pain",
-  version: "1.2.0",
+  version: "1.3.0",
   complaint: "Abdominal pain",
   triggers: ["abdominal pain", "pain abdomen", "pain in abdomen", "stomach pain", "pain in stomach", "epigastric pain", "acute abdomen", "abdomen pain"],
   setting: "Adult medicine / general surgery ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     DAS_CLINICAL_SURGERY,
     HAMILTON_BAILEY,

@@ -1,6 +1,7 @@
 import ScreenHeader from "../../screen-header";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWard } from "@/lib/ward";
+import { hoursLeft } from "@/lib/format-date";
 import { compareBeds, patientName } from "@/lib/patients";
 import { restoreFromTrash } from "../../patients/actions";
 
@@ -91,15 +92,9 @@ export default async function TrashPage() {
   );
 }
 
-function hoursLeft(trashedAt: string | null): number {
-  if (!trashedAt) return TRASH_HOURS;
-  const elapsedMs = Date.now() - new Date(trashedAt).getTime();
-  const remaining = TRASH_HOURS - elapsedMs / 3_600_000;
-  return Math.max(0, Math.ceil(remaining));
-}
 
 function TrashCard({ patient }: { patient: TrashedPatient }) {
-  const left = hoursLeft(patient.trashed_at);
+  const left = hoursLeft(patient.trashed_at, TRASH_HOURS);
 
   return (
     <div className="ios-group p-4">

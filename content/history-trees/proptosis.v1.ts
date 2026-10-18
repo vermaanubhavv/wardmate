@@ -15,7 +15,7 @@ import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PARSONS_EYE, val, yn
  */
 export const proptosisV1: HistoryTree = {
   id: "proptosis",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Bulging of the eye",
   triggers: ["proptosis", "exophthalmos", "bulging eye", "bulging of eye", "bulging of the eye", "protruding eye", "eye coming out", "eye pushed forward", "prominent eye", "aankh bahar aa gayi", "aankh bahar nikal rahi", "aankh ubhri hui"],
   setting: "Eye ward and OPD, north India",

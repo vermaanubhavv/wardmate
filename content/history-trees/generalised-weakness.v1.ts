@@ -10,7 +10,7 @@ import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, val, yn }
  */
 export const generalisedWeaknessV1: HistoryTree = {
   id: "generalised_weakness",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Generalised weakness",
   triggers: ["generalised weakness", "generalized weakness", "general weakness", "fatigue", "tiredness", "lethargy", "easy fatigability", "malaise", "body ache and weakness"],
   setting: "Adult medicine ward, north India",

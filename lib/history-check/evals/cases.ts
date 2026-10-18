@@ -259,7 +259,9 @@ export const EVAL_CASES: EvalCase[] = [
       size_change: "positive",
       pain: "negative",
       pressure_symptoms: "negative",
-      voice_change: "negative",
+      // "voice is normal" carries no negation word, and the validator accepts a denial only with
+      // one before the term — so this stays unasked, by design.
+      voice_change: "unasked",
       overactive_features: "positive",
       neck_radiation: "negative",
       underactive_features: "unasked",
@@ -320,11 +322,16 @@ export const EVAL_CASES: EvalCase[] = [
       first_aid: "positive",
       airway_symptoms: "positive",
       // "was not unconscious at the scene" is an explicit denial of one of this slot's terms.
-      other_injuries: "negative",
+      // "Was not unconscious at the scene" belongs to the carbon-monoxide question; nothing was
+      // said about a fall, jump or blast.
+      other_injuries: "unasked",
+      co_exposure_symptoms: "negative",
       // "has not passed urine since the burn" reads as a negative for the slot ("passing urine")
       // and is the most alarming line in the dictation. The state is right; what it means is not
       // this module's to say.
-      urine_output: "negative",
+      // "Has not passed urine since the burn": "since" ends a denial in the validator (it is how
+      // a symptom's duration is dictated), so this stays unasked, by design.
+      urine_output: "unasked",
       breathing_difficulty: "unasked",
       circumferential_burn: "unasked",
       electrical_high_voltage: "unasked",

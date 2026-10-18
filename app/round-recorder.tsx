@@ -2,10 +2,13 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { MicIcon, StopIcon } from "./icons";
+import { MicIcon } from "./icons";
 import Mark from "./mark";
+import RecordingSheet, { HeardBox } from "./recording-sheet";
 import { track } from "@/lib/track";
 import { useDictation } from "@/lib/use-dictation";
+import { useLiveWords } from "@/lib/stt/use-live-words";
+import { heardByBed } from "@/lib/heard-by-bed";
 
 /** Longer than the bedside button: this is meant to cover a run of beds in one go. */
 const MAX_SECONDS = 300;
@@ -14,8 +17,13 @@ const MAX_SECONDS = 300;
  * Dictate a run of beds from the ward list — "bed 1 discharge today, bed 2 send fresh
  * investigations".
  *
- * Tap to start, tap again to stop, for the same reason the bedside button works that way:
- * getUserMedia's permission prompt cannot live inside a press-and-hold gesture.
+ * Tap to start; the recording sheet (./recording-sheet.tsx, the same one the bedside uses)
+ * rises with the words as they are heard, split at each bed number said. Done or Discard ends
+ * it. Not press-and-hold: getUserMedia's permission prompt cannot live inside that gesture.
+ *
+ * The recording is the record. The live words on the sheet are a preview from a second
+ * listener on the same microphone; on no signal they simply do not appear and the recording
+ * carries on.
  *
  * This never writes to a patient. It always lands on a review screen, because one recording
  * touching several patients is the same risk as one photograph of the register touching
@@ -25,10 +33,10 @@ const MAX_SECONDS = 300;
  * The capture / persist / upload lifecycle is `useDictation` — shared with the bedside and
  * case-history recorders so it cannot drift.
  */
-export default function RoundRecorder() {
+export default function RoundRecorder({ unitName }: { unitName: string }) {
   const router = useRouter();
 
-  const { status, recording, seconds, message, setMessage, start, stop } = useDictation({
+  const { status, seconds, message, setMessage, stream, start, stop, discard } = useDictation({
     kind: "round",
     url: "/api/round",
     label: "Round dictation",
@@ -51,60 +59,65 @@ export default function RoundRecorder() {
     void start();
   }
 
-  // The caption under the circle carries the state the button's own words used to. Recording
-  // shows the count against the cap, because the one thing you want to know mid-dictation is
-  // how long you have been talking — and how long is left before it stops on its own.
-  const caption =
-    status === "recording"
-      ? `${clock(seconds)} / ${clock(MAX_SECONDS)}`
-      : status === "starting"
-        ? "Starting…"
-        : status === "working"
-          ? "Transcribing…"
-          : "Dictate round";
+  const live = useLiveWords(stream);
+  const groups = heardByBed([...live.heard, live.current].join(" "));
 
   return (
     <div className="flex flex-col items-center">
       <button
         type="button"
-        onClick={recording ? stop : onStart}
-        disabled={status === "working" || status === "starting"}
-        aria-label={recording ? "Stop recording" : "Dictate the round"}
-        className={
-          "grid h-14 w-14 place-items-center rounded-full disabled:opacity-60 active:opacity-80 " +
-          (recording ? "bg-recording text-white" : "bg-accent text-accent-ink")
-        }
+        onClick={onStart}
+        disabled={status !== "idle"}
+        aria-label="Dictate the round"
+        className="grid h-14 w-14 place-items-center rounded-full bg-accent text-accent-ink active:opacity-80 disabled:opacity-60"
       >
-        {recording ? (
-          // The ping sits behind the square, at the same size, and swells out from under it.
-          <span className="relative inline-flex h-6 w-6 items-center justify-center">
-            <span aria-hidden className="wm-listen absolute inset-0 rounded-full bg-white/70" />
-            <StopIcon className="relative h-6 w-6" />
-          </span>
-        ) : status === "working" ? (
-          <Mark className="h-7 w-7" spinning />
-        ) : (
-          <MicIcon className="h-6 w-6" />
-        )}
+        {status === "working" ? <Mark className="h-7 w-7" spinning /> : <MicIcon className="h-6 w-6" />}
       </button>
 
-      <span
-        className={
-          "mt-1.5 text-caption tabular-nums " +
-          (recording ? (seconds >= MAX_SECONDS - 30 ? "text-warn-fg" : "text-recording") : "text-muted")
-        }
-      >
-        {caption}
-      </span>
+      <span className="mt-1.5 text-caption text-muted">{status === "working" ? "Transcribing…" : "Dictate round"}</span>
+
+      {(status === "starting" || status === "recording") && (
+        <RecordingSheet
+          status={status}
+          title={`${unitName} round`}
+          subtitle="Say the bed number before each patient."
+          seconds={seconds}
+          maxSeconds={MAX_SECONDS}
+          stream={stream}
+          note="Nothing is saved until you tap Done. You check each bed before anything is filed."
+          onDiscard={() => {
+            track("round_recording_discarded");
+            discard();
+          }}
+          onDone={stop}
+        >
+          <HeardBox>
+            {groups.length > 0 ? (
+              groups.map((g, i) => (
+                <div key={i} className="flex items-baseline gap-2.5">
+                  {g.bed !== null && (
+                    <span className="grid h-6 min-w-[1.625rem] shrink-0 place-items-center rounded-[6px] bg-card px-1 font-mono text-footnote font-semibold">
+                      {g.bed}
+                    </span>
+                  )}
+                  <span className="text-body">{g.text}</span>
+                </div>
+              ))
+            ) : (
+              <p className="text-subhead text-muted">
+                {live.state === "unavailable"
+                  ? "No live words on this signal. The recording carries on; you see every word on the review screen."
+                  : "e.g. “Bed 1, discharge today. Bed 2, send fresh investigations.”"}
+              </p>
+            )}
+          </HeardBox>
+        </RecordingSheet>
+      )}
 
       {/* Above the bar, full width: these run to a sentence and must not stretch the row. */}
       {message && <BarMessage message={message} onDismiss={() => setMessage(null)} />}
     </div>
   );
-}
-
-function clock(total: number) {
-  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }
 
 /** A sentence hung above the bottom bar, on its own background so it reads over the list

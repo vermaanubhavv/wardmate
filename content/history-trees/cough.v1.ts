@@ -9,7 +9,7 @@ import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, rce, val, yn } from "@/content/h
  */
 export const coughV1: HistoryTree = {
   id: "cough",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Cough",
   triggers: ["cough", "coughing", "expectoration", "haemoptysis", "hemoptysis", "blood in sputum"],
   setting: "Adult medicine ward, north India",

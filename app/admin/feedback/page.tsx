@@ -2,8 +2,6 @@ import { getFeedbackResponses } from "@/lib/admin";
 import { Cell, Empty, ErrorNote, Row, Section, Table, ago } from "../ui";
 import FeedbackFormLink from "./form-link";
 
-export const dynamic = "force-dynamic";
-
 export default async function AdminFeedbackPage() {
   const { rows, error } = await getFeedbackResponses();
   if (error) return <ErrorNote message={error} />;

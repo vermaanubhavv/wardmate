@@ -63,9 +63,9 @@ photograph it was read off. A number in this app is never only the app's word fo
 recorded, rather than quietly omitting the field. Knowing what you have not been told is worth
 more than a document that looks complete.
 
-**It stores almost nothing about the patient.** A name and a bed. No hospital number, no
-insurance number, no contact details — which costs the resident three lines of handwriting per
-discharge, deliberately. If this database leaked it would be close to useless.
+**It stores almost nothing about the patient.** A name, age, sex and bed, and — only if the unit
+chooses to — the hospital's own UHID/IP and MRD numbers. No insurance number, no phone, no
+address. If this database leaked it would be close to useless.
 
 **The dangerous actions ask first, and say what they will do.** Not "are you sure?" but
 "their six recordings and everything taken from them will be destroyed".
@@ -86,11 +86,51 @@ intelligence; it needs to be trusted with a drug dose.
 
 ## How it looks today
 
-Light, near-white, content on plain white cards, hairline rules, one red used only for the
-thing you press. Deliberately close to iOS, because it sits on the same phone as Settings and
-Health and should feel like it belongs there rather than like a hospital intranet.
+Paste this section into a design tool along with the rest of the brief; it is what the shipped
+app looks like, so new screens fit it rather than fight it.
 
-The current placeholder mark is a red rounded square with a "W". That is a slot, not a design.
+**Base.** Deliberately close to iOS, because it sits on the same phone as Settings and Health:
+the grouped grey background (`#f2f2f7`), content on white cards, hairline separators
+(`#c6c6c8`), the system font and Apple's type scale (caption to large title). One fixed light
+theme — ward lighting varies too much for a phone that changes appearance between rooms.
+
+**The mark.** A teal ring, open at the lower right like a speech bubble, with three dots inside
+— someone talking. `public/mark.png` is the designer's own artwork; the app icon and the small
+"wardmate" lockup at the top of the ward list use it. A redrawn vector of it turns while the app
+is busy.
+
+**Colour — each one has one job.**
+
+| Colour | Value | Its only job |
+| --- | --- | --- |
+| Teal | `#0b7f79` (mark: `#0f9e96`) | What you press: buttons, links, the mic, the selected tab |
+| Orange | `#c2410c` on `#ffedd5` | "Check this": an unconfirmed number, drug or dose; a value still not recorded is the same orange as an outline, never filled |
+| Red / yellow / green | red-500, amber-500, emerald-500 | How soon a job is due — Now, Soon, Has time — and nothing else |
+| Red | `#ef4444` | The mic is live |
+| Grey | `#636366` | Everything secondary: dates, labels, "nothing outstanding" |
+
+A screen with nothing to do should look calm and nearly empty; colour appears only where
+something needs the resident.
+
+**Principles the screens follow.**
+
+1. Quiet by default, loud by exception.
+2. One fact, one place — each value, count and drug appears once per screen.
+3. Numbers look clinical: the clinician's formatting, units and the report's own H/L flags,
+   never raw machine text.
+4. The check is the easy path: the safe action is the biggest button; shortcuts sit one step
+   away ("Confirm all" asks "checked the report?").
+5. Colour has one job each (above).
+
+**The screens that exist.** The ward list (bed-first rows, a unit switcher in the title, To do
+/ To check / Handover in one row). A patient, in four tabs — Today, History, Tests, Discharge —
+under one clinical header (bed, name, day · operation · diagnosis) and three vitals (BP, PR,
+SpO₂). To check (each value with the photo it was read off). To do (jobs under each patient,
+graded Now / Soon / Has time). The handover (Watch tonight / Jobs open / Nothing outstanding,
+and the same as WhatsApp text). One recording sheet for a single bed and for the whole round.
+The round review, the clerking and progress note, the discharge summary in the unit's format,
+search, unit settings, and the Learn shelf. It works offline and says so when what is shown was
+saved earlier.
 
 ## The name
 
@@ -119,8 +159,9 @@ Worth knowing about, rather than discovered later:
 
 ## Practical facts for whoever builds the identity
 
-- Lives at a web address, installed to the phone's home screen — so it needs an **app icon**
-  that reads at 60px, not just a logo.
-- The icon slot in the product is a fixed square; artwork drops straight in.
-- Currently one unit, one country, one specialty: **general surgery in India**. Design for
-  that, honestly, rather than for a global product that does not exist yet.
+- Lives at wardmate.in, installed to the phone's home screen, and as an iPhone app that wraps
+  the same site (docs/ios-app.md) — so it needs an **app icon** that reads at 60px, not just a
+  logo.
+- Built first for **general surgery in India**; other departments run on their own specialty
+  packs (docs/specialty-packs.md). Design for Indian wards, honestly, rather than for a global
+  product that does not exist yet.

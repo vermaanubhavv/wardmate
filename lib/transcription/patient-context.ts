@@ -6,6 +6,7 @@ import {
   dedupeCaseInsensitive as dedupe,
 } from "./selectMedicalKeyterms";
 import { getSpecialtyPack } from "@/lib/specialty";
+import { MEDICAL_KEYTERMS } from "@/lib/stt";
 
 /**
  * Map WardMate's existing patient data onto the DictationContext the keyterm selector reads.
@@ -55,7 +56,6 @@ export function deriveDictationContext(input: {
   ward?: string;
   noteType?: NoteType;
   specialty?: Specialty;
-  customTerms?: DictationContext["customTerms"];
 }): DictationContext {
   const { patient, observations = [] } = input;
   const operated = Boolean(patient.surgery_date) || patient.post_op_day != null;
@@ -122,7 +122,6 @@ export function deriveDictationContext(input: {
     investigations,
     postOpDay: patient.post_op_day ?? null,
     freeTextContext: plans.slice(0, 12),
-    customTerms: input.customTerms,
   };
 }
 
@@ -134,7 +133,8 @@ export function deriveDictationContext(input: {
  */
 export function deriveWardDictationContext(
   patients: PatientRow[],
-  ward?: string
+  ward?: string,
+  specialty: Specialty = DEFAULT_SPECIALTY
 ): DictationContext {
   const diagnoses: string[] = [];
   const procedures: string[] = [];
@@ -148,7 +148,7 @@ export function deriveWardDictationContext(
   }
 
   return {
-    specialty: DEFAULT_SPECIALTY,
+    specialty,
     ward,
     noteType: "ward-round",
     diagnoses: dedupe(diagnoses),
@@ -156,6 +156,16 @@ export function deriveWardDictationContext(
     plannedProcedures: dedupe(plannedProcedures),
     postOpDay: null,
   };
+}
+
+/**
+ * The keyterms when there is no patient yet — the add-patient screen, a card's speak button.
+ * General surgery keeps the static ward list it always had (MEDICAL_KEYTERMS); any other unit
+ * gets its own lexicon's core instead of lap chole and Monocef.
+ */
+export function wardKeyterms(specialty: Specialty): string[] {
+  if (specialty === DEFAULT_SPECIALTY) return [...MEDICAL_KEYTERMS];
+  return getDeepgramKeyterms(deriveDictationContext({ patient: {}, specialty, noteType: "ward-round" }));
 }
 
 function templateLabel(row: PatientRow): string {

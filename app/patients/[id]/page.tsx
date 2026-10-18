@@ -1,7 +1,7 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getActivePatients } from "@/lib/ward";
 import {
   getTemplateForPatient,
   getProcedureLabels,
@@ -20,33 +20,33 @@ import {
   type Observation,
   type PacVerdict,
 } from "@/lib/patient-state";
-import { isIdentifierLabel, stripPatientHonorific, managementChoicesFor } from "@/lib/patients";
-import { describeWhen, effectiveUrgency } from "@/lib/urgency";
+import { compareBeds, displayCase, isIdentifierLabel, stripPatientHonorific, managementChoicesFor } from "@/lib/patients";
+import { effectiveUrgency, jobTitle, postOpJob } from "@/lib/urgency";
 import BedsideBar from "./bedside-bar";
+import type { DictationCopy } from "./recorder";
+import { progressNoteConfigFor } from "@/lib/progress-note-config";
 import PatientTabs from "./patient-tabs";
 import EditIdentity from "../edit-identity";
 import UrgencyDot from "./urgency-dot";
+import NoOperationQuestion from "./no-operation-question";
 import { ChevronIcon } from "../../icons";
 import {
-  Activity,
   Check,
   ClipboardList,
-  ClipboardX,
   CircleAlert,
-  Droplets,
-  HeartPulse,
   ListChecks,
   MessageSquareText,
   Pill,
   Ruler,
   ShieldCheck,
   Stethoscope,
-  Thermometer,
-  Wind,
+  TriangleAlert,
   type LucideIcon,
 } from "lucide-react";
 import { quoteAddsNothing } from "@/lib/dedupe-tasks";
 import Tick from "./tick";
+import SwipeDelete from "./swipe-delete";
+import PacSelect from "./pac-select";
 import EntryCard from "./entry-card";
 import CaseHistoryCapture from "./case-history-capture";
 import { CaseHistoryCard, ObjectiveSummaryView } from "./case-history-card";
@@ -69,11 +69,13 @@ import { classifyVital, matchVitalLabel } from "@/lib/vital-ranges";
 import { getWardLabRanges } from "@/lib/ward-lab-ranges";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { hasOperationClock } from "@/lib/specialty/intake";
+import { usesBurnClock } from "@/lib/specialty/clocks";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { getUser } from "@/lib/auth";
 import HistoryCheckCard from "./history-check-card";
 import { loadHistoryCheckCard } from "@/lib/history-check/page-data";
 import { getExamChecklist } from "@/lib/history-check/exams";
+import { shortDate, dateTime } from "@/lib/format-date";
 
 type Entry = {
   id: string;
@@ -119,7 +121,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
   // The unit's department, resolved once: it decides how this patient's day is counted, which
   // checklist rows the picker offers, and whether the edit dialog shows chemotherapy fields.
-  const pack = getSpecialtyPack(await getWardSpecialtyStored(patient.ward_id));
+  // Started here and awaited inside the batch below, so the reads that do not need it are not
+  // queueing behind it.
+  const packP = getWardSpecialtyStored(patient.ward_id).then(getSpecialtyPack);
 
   // The burn columns (patch 0085) are read in a second, tiny query instead of being named in
   // the select above, and only for a burns unit. The select above runs for EVERY patient on
@@ -128,8 +132,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // burns unit if 0085 has run, so asking here is always safe. Same reasoning as includeChemo
   // in lib/ward.ts, arrived at the other way round — there the pack is known before the query,
   // here it is only known after it.
-  const burns =
-    pack.key === "burns_plastic_surgery"
+  const burnsP = packP.then(async (p) =>
+    usesBurnClock(p)
       ? (
           await supabase
             .from("current_patients")
@@ -137,32 +141,98 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             .eq("id", patient.id)
             .maybeSingle()
         ).data
-      : null;
-  const patientWithBurn = { ...patient, ...(burns ?? {}) };
+      : null
+  );
 
-  // The next bed in walking order, so finishing one patient and starting the next is one tap
-  // rather than a trip back through the ward list.
+  // Made a real promise once: a Supabase query is a thenable that runs again each time it is
+  // awaited, and this one is awaited twice below.
+  const entriesP = Promise.resolve(
+    supabase
+      .from("entries")
+      .select(
+        "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, is_case_history, matched_protocol_ids, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at, pac_verdict, task_open, ref_low, ref_high, ref_text)"
+      )
+      .eq("patient_id", id)
+      .order("recorded_at", { ascending: false })
+  );
+
+  // Short-lived links for the stored photographs (private bucket, one-hour expiry, minted only
+  // here for a doctor already confirmed on this patient's ward) and the titles of any matched
+  // protocols. Both need only the entry list, so they start the moment it lands instead of
+  // waiting for the rest of the batch and the scoring reads after it.
+  const photosAndProtocolsP = entriesP.then(({ data }) => {
+    const rows = (data ?? []) as unknown as Entry[];
+    const photoPaths = rows.map((e) => e.photo_path).filter((p): p is string => Boolean(p));
+    const matchedIds = Array.from(new Set(rows.flatMap((e) => e.matched_protocol_ids ?? [])));
+    return Promise.all([
+      photoPaths.length > 0
+        ? supabase.storage.from("evidence").createSignedUrls(photoPaths, 3600)
+        : Promise.resolve({ data: [] as { path?: string | null; signedUrl?: string | null }[] }),
+      matchedIds.length > 0
+        ? supabase.from("company_protocols").select("id, title").in("id", matchedIds)
+        : Promise.resolve({ data: [] as { id: string; title: string }[] }),
+    ]);
+  });
+
+  // History check (behind NEXT_PUBLIC_HISTORY_CHECK). Suggestions come from the chief
+  // complaints of the case history as dictated (identifier labels dropped, exactly as
+  // allEntries does below); the card itself is rendered from stored runs, never live. Needs
+  // only the entries and the pack, so it starts as soon as both land; awaited further down.
+  const historyCheckP = Promise.all([entriesP, packP]).then(([{ data }, p]) =>
+    loadHistoryCheckCard(
+      supabase,
+      patient,
+      ((data ?? []) as unknown as Entry[])
+        .filter((e) => e.is_case_history)
+        .flatMap((e) => e.observations)
+        .filter((o) => !isIdentifierLabel(o.label))
+        .filter((o) => /chief complaint|presenting complaint/i.test(o.label))
+        .map((o) => o.value_text ?? o.label),
+      p.historyTreeIds
+    )
+  );
+  historyCheckP.catch(() => {});
+
+  // Clinical scoring & auto-trigger engine: bring pathways in step with the latest observations,
+  // then read the tasks and cards. A no-op unless NEXT_PUBLIC_SCORING_ENGINE=on and the ward has
+  // opted in (lib/scoring/flag.ts). It IS on in production, and timed there in October 2026 it
+  // was the slowest read on this page (~200 ms typical, 1.3 s seen) — each open pathway is
+  // recomputed one query at a time. So it starts here and nothing above the scoring section
+  // waits for it: ScoringTodo and ScoringCards stream in behind Suspense once it lands, still
+  // reading a freshly recomputed set.
+  const scoringP = syncPatientPathways(id).then(() =>
+    Promise.all([getPatientScoringTasks(id), getScoreCards(id)])
+  );
+  // Read by the streamed sections later; this only stops Node calling a failure "unhandled" in
+  // the meantime. They still await scoringP itself, so an error still reaches error.tsx.
+  scoringP.catch(() => {});
+
   const [
-    { patients: ward },
+    pack,
+    burns,
+    { data: wardBeds },
     { data: entriesData },
     procedures,
     templateChoices,
     template,
     { data: dischargeRow },
     wardRanges,
-    ,
     { data: dischargeWork },
   ] = await Promise.all([
-      getActivePatients(patient.ward_id, pack.key !== "general_surgery", pack.key === "burns_plastic_surgery"),
+      packP,
+      burnsP,
+      // The next bed in walking order, so finishing one patient and starting the next is one
+      // tap rather than a trip back through the ward list. Only ids and beds: getActivePatients
+      // also pulls every observation and entry on the ward for the list's badges, which this
+      // screen never shows and which grew with the ward — it was most of this page's wait.
       supabase
-        .from("entries")
-        .select(
-          "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, is_case_history, matched_protocol_ids, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at, pac_verdict, task_open, ref_low, ref_high, ref_text)"
-        )
-        .eq("patient_id", id)
-        .order("recorded_at", { ascending: false }),
-      getProcedureLabels(pack.key),
-      listTemplateChoices(pack.key),
+        .from("current_patients")
+        .select("id, bed")
+        .eq("ward_id", patient.ward_id)
+        .eq("status", "active"),
+      entriesP,
+      packP.then((p) => getProcedureLabels(p.key)),
+      packP.then((p) => listTemplateChoices(p.key)),
       // Needs only fields already in hand from the patient row, so it was queueing behind the
       // batch for nothing.
       getTemplateForPatient(patient),
@@ -172,17 +242,14 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       // Needs only patient.ward_id, so it belongs in the batch rather than a round trip of its
       // own after it.
       getWardLabRanges(patient.ward_id),
-      // Keeps scoring pathways in step with the latest observations. Instant no-op unless
-      // NEXT_PUBLIC_SCORING_ENGINE=on (lib/scoring/store.ts), so it costs nothing here today;
-      // when a pilot ward turns it on, the recompute still finishes before the reads below
-      // because this promise is awaited as part of the batch.
-      syncPatientPathways(id),
       // Whether anyone has worked on the draft (patch 0102's computed column), read on its own:
       // opening this tab pre-writes AI sections, so "a row exists" is not "someone started".
       // If this read fails the tab behaves exactly as before — the status above is untouched,
       // so it can never look empty and re-run the AI over a resident's edits.
       supabase.from("discharge_summaries").select("discharge_worked_on").eq("patient_id", id).maybeSingle(),
     ]);
+  const patientWithBurn = { ...patient, ...(burns ?? {}) };
+  const ward = (wardBeds ?? []).sort((a, b) => compareBeds(a.bed, b.bed));
   const dischargeStatus =
     dischargeRow?.status === "draft" &&
     (dischargeWork as { discharge_worked_on?: boolean } | null)?.discharge_worked_on === false
@@ -210,30 +277,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const caseHistoryEntries = allEntries.filter((e) => e.is_case_history);
   const entries = allEntries.filter((e) => !e.is_case_history);
 
-  // Titles for whatever protocols got matched, fetched once for the whole page rather than
-  // once per entry — the same batching reasoning as the photo URLs just above.
-  const matchedIds = Array.from(
-    new Set(allEntries.flatMap((e) => e.matched_protocol_ids ?? []))
-  );
-  // Clinical scoring & auto-trigger engine. Inert unless the ward has opted in AND
-  // NEXT_PUBLIC_SCORING_ENGINE=on (lib/scoring/flag.ts) — with the flag closed both calls
-  // return immediately without touching the database (DOCX test 16). syncPatientPathways
-  // already ran in the batch above, so these reads see a fresh set.
-  const [scoringTasks, scoreCards] = await Promise.all([getPatientScoringTasks(id), getScoreCards(id)]);
-
-  // Short-lived links for the stored photographs (private bucket, one-hour expiry, minted only
-  // here for a doctor already confirmed on this patient's ward) and the titles of any matched
-  // protocols. Both need the entry list that just came back, and neither needs the other, so
-  // they go out together rather than one after the next.
-  const photoPaths = allEntries.map((e) => e.photo_path).filter((p): p is string => Boolean(p));
-  const [signedRes, matchedProtocolsRes] = await Promise.all([
-    photoPaths.length > 0
-      ? supabase.storage.from("evidence").createSignedUrls(photoPaths, 3600)
-      : Promise.resolve({ data: [] as { path?: string | null; signedUrl?: string | null }[] }),
-    matchedIds.length > 0
-      ? supabase.from("company_protocols").select("id, title").in("id", matchedIds)
-      : Promise.resolve({ data: [] as { id: string; title: string }[] }),
-  ]);
+  // Started off the entries, so usually in by now.
+  const [signedRes, matchedProtocolsRes] = await photosAndProtocolsP;
 
   const photoUrls = new Map<string, string>();
   for (const s of signedRes.data ?? []) {
@@ -284,19 +329,16 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const days = groupByDay(sittings);
   const todayKey = istDayKey(new Date().toISOString());
 
-  // The banner's left edge, same language as the ward row: red for a flagged latest vital,
-  // amber while something is unconfirmed, green once nothing is open. A colour, not a verdict —
-  // nothing here is stored or claimed beyond what the numbers below already show.
-  const hasFlaggedVital = latestVitalTiles(allObservations).some((t) => t.flag && !t.takenAt);
-  const bannerEdge = hasFlaggedVital
-    ? "border-l-critical-dot"
-    : pending.length > 0
-      ? "border-l-warn-dot"
-      : openTasks.length + scoringTasks.length === 0
-        ? "border-l-good-dot"
-        : "border-l-transparent";
+  // Any vital in the latest reading that is out of range — temperature and RR included, though
+  // the vitals box shows only BP, PR and SpO₂ — named in red beside the patient's name, with
+  // the reading itself. A colour with the number, never a verdict.
+  const flaggedVitals = latestVitalTiles(allObservations).filter((t) => t.flag && !t.takenAt);
   // Jobs a resident said — the scoring engine's suggestions are listed below but not counted.
   const openCount = openTasks.length;
+  // A post-op job with no operation on record — asked as a question under the header.
+  const postOpTask = hasOperationClock(pack) && beforeSurgery ? postOpJob(openTasks) : null;
+  // Worded as the To-Do list words it: "tomorrow" said 17 days ago is a date, not "tomorrow".
+  const orphanPostOpJob = postOpTask && jobTitle(postOpTask.value_text ?? postOpTask.label, postOpTask.recorded_at);
 
   const procedure = procedureFor(patient, procedures);
   const caseHistoryDiagnosis = caseHistoryEntries
@@ -324,17 +366,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // helper also recognises older entries captured before the extractor used this label.
   const comorbidities = listedComorbidities(allObservations);
 
-  // History check (behind NEXT_PUBLIC_HISTORY_CHECK). Suggestions come from the chief
-  // complaints as dictated; the card itself is rendered from stored runs, never live.
-  const historyCheck = await loadHistoryCheckCard(
-    supabase,
-    patient,
-    caseHistoryEntries
-      .flatMap((e) => e.observations)
-      .filter((o) => /chief complaint|presenting complaint/i.test(o.label))
-      .map((o) => o.value_text ?? o.label),
-    pack.historyTreeIds
-  );
+  // History check: started off the entries and the pack (historyCheckP, above), so its reads overlapped the
+  // batch rather than adding a round trip here.
+  const historyCheck = await historyCheckP;
 
   // Latest of each drug recorded, for the discharge brief. Taken from the same observations
   // the rest of the screen uses, so it can hold nothing that was not said.
@@ -355,13 +389,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
   // Two blocks: the SOAP card carries S, O and A; Plan, Checks (consent, procedure, fitness —
   // part of the management itself) and the drug list share one "Plan & treatment" block.
-  // Drugs come out of Plan since the drug list has every one.
-  const groups = soapGroups(matched, extra, vitalSets(allObservations).sets.length > 0);
+  const groups = soapGroups(matched, extra, vitalSets(allObservations).sets.length > 0, medications.length > 0);
   const noteGroups = groups.filter((g) => g.section !== "plan" && g.section !== "checks");
-  const planGroups = groups
-    .filter((g) => g.section === "plan" || g.section === "checks")
-    .map((g) => ({ ...g, extraItems: g.extraItems.filter((o) => o.kind !== "medication") }))
-    .filter((g) => g.matchedItems.length > 0 || g.extraItems.length > 0);
+  const planGroups = groups.filter((g) => g.section === "plan" || g.section === "checks");
 
   const todayPanel = (
     <>
@@ -397,13 +427,17 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         </section>
       )}
 
-      {(openTasks.length > 0 || doneTasks.length > 0 || scoringTasks.length > 0) && (
+      {/* With no job a resident said, the section is left out and the scoring suggestions, if
+          any, arrive in a section of their own — see ScoringTodo. */}
+      {openTasks.length === 0 && doneTasks.length === 0 && (
+        <Suspense fallback={null}>
+          <ScoringTodo scoring={scoringP} patientId={patient.id} standalone />
+        </Suspense>
+      )}
+
+      {(openTasks.length > 0 || doneTasks.length > 0) && (
         <section className="px-4 pb-6">
-          <p className="ios-group-header mb-2 flex items-center gap-1.5 px-4">
-            <ListChecks className="h-3.5 w-3.5 text-accent" strokeWidth={2.4} />
-            Advices, plans &amp; to do
-            {openTasks.length + scoringTasks.length > 0 ? ` · ${openTasks.length + scoringTasks.length}` : ""}
-          </p>
+          <TodoHeader count={openTasks.length} />
 
           <div className="ios-group">
           {openTasks.length > 0 ? (
@@ -412,13 +446,16 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 // "Tomorrow" is only true on the day it was said. Rewritten fresh on every
                 // read, the same way effectiveUrgency below re-reads the colour — neither is
                 // stored, both are computed from the calendar as it stands right now. See
-                // lib/urgency.ts describeWhen.
-                const jobText = describeWhen(o.value_text ?? o.label, o.recorded_at);
-                // The row's left edge repeats the dot's colour, so a red job reads as red from
-                // arm's length; an ungraded job keeps a bare edge rather than looking decided.
-                const edge = TODO_EDGE[effectiveUrgency(o).urgency ?? "none"];
+                // lib/urgency.ts jobTitle / describeWhen.
+                const jobText = jobTitle(o.value_text ?? o.label, o.recorded_at);
                 return (
-                <li key={o.id} className={"flex items-start gap-3 border-l-[3px] py-3 pl-3 pr-4 " + edge}>
+                <SwipeDelete
+                  key={o.id}
+                  ids={o.ids}
+                  patientId={patient.id}
+                  label={jobText}
+                  className="flex items-start gap-3 py-3 pl-4 pr-4"
+                >
                   <Tick
                     observationId={o.id}
                     patientId={patient.id}
@@ -446,8 +483,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                           ×{o.repeats + 1}
                         </span>
                       )}
-                      <CameDue observation={o} />
                     </p>
+                    <CameDue observation={o} />
                     {/* The words it came from, so a job is never just the app's paraphrase —
                         shown only when they say more than the job itself does. */}
                     {!quoteAddsNothing(o.value_text ?? o.label, o.source_quote) && (
@@ -456,21 +493,23 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                       </p>
                     )}
                   </div>
-                </li>
+                </SwipeDelete>
                 );
               })}
             </ul>
-          ) : scoringTasks.length === 0 ? (
+          ) : (
             <p className="px-4 py-3 text-subhead text-muted">
               Nothing outstanding.
             </p>
-          ) : null}
+          )}
 
-          <ScoringTaskRows patientId={patient.id} tasks={scoringTasks} />
+          <Suspense fallback={null}>
+            <ScoringTodo scoring={scoringP} patientId={patient.id} />
+          </Suspense>
 
           {doneTasks.length > 0 && (
             <details className="border-t border-line px-4 py-3">
-              <summary className="flex cursor-pointer items-center gap-1.5 text-footnote text-good-fg">
+              <summary className="flex cursor-pointer items-center gap-1.5 text-footnote text-muted">
                 <Check className="h-3.5 w-3.5" strokeWidth={3} />
                 {doneTasks.length} done
               </summary>
@@ -575,8 +614,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       )}
 
       {/* What is being done for the patient, in one place: the drugs on record (each keeping
-          the words it came from, so it is never only the app's paraphrase), then the rest of
-          today's plan. A drug round and a ward round both read it off this one list. */}
+          the words it came from, so it is never only the app's paraphrase), then today's plan,
+          then the checks (consent, procedure, fitness), which are part of the management too. */}
       {(medications.length > 0 || planGroups.length > 0) && (
         <section className="px-4 pb-6">
           <p className="ios-group-header mb-2 flex items-center gap-1.5 px-4">
@@ -614,15 +653,20 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         </section>
       )}
 
-      <ScoreCards cards={scoreCards} />
+      <Suspense fallback={null}>
+        <ScoringCards scoring={scoringP} />
+      </Suspense>
 
-      {/* Only before surgery, and shown even when empty — an unanswered PAC is the single
-          thing most likely to stop a list, so "nobody has recorded one" has to be visible
-          rather than inferred from a section that isn't there. It sits below Today rather
-          than above it: the verdict is a standing fact about the admission, and the question
-          asked first at a bedside is still how the patient is this morning. A unit with no
-          operation clock (medicine, oncology…) shows it only once a PAC has been recorded. */}
-      {beforeSurgery && (hasOperationClock(pack) || pac.length > 0) && <PacSection pac={pac} />}
+      {/* Every surgical unit (any unit with an operation clock) always shows it, even empty —
+          an unanswered PAC is the single thing most likely to stop a list. A unit with no
+          operation clock (medicine, oncology…) shows it only before surgery once one is recorded. */}
+      {/* Before surgery only: once operated, a PAC is history, and an amber "Not recorded" on a
+          patient fifty days after the operation was a gap that was never going to be filled.
+          Every surgical unit shows it then, even empty — an unanswered PAC is the single thing
+          most likely to stop a list; other units show it once one is recorded. */}
+      {beforeSurgery && (hasOperationClock(pack) || pac.length > 0) && (
+        <PacSection pac={pac} patientId={patient.id} />
+      )}
     </>
   );
 
@@ -773,17 +817,21 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
   // A tab with nothing in it says so, rather than opening on empty space. History, Investigations
   // and Discharge each carry their own empty state, so only Today is decided here.
-  const todayEmpty =
+  const todayEmptyBesidesScoring =
     openTasks.length === 0 &&
     doneTasks.length === 0 &&
-    scoringTasks.length === 0 &&
-    scoreCards.length === 0 &&
     pending.length === 0 &&
     matched.length === 0 &&
     extra.length === 0 &&
     medications.length === 0 &&
     !beforeSurgery &&
+    !hasOperationClock(pack) &&
     !allObservations.some((o) => CHARTED_VITALS.has(matchVitalLabel(o.label) ?? "") && o.value_text);
+  // Only a record with nothing else on Today waits for scoring — rare (a new patient, no round
+  // yet, on a unit without an operation clock), and it has to know whether scoring is all there is.
+  const todayEmpty =
+    todayEmptyBesidesScoring &&
+    (await scoringP).every((list) => list.length === 0);
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
@@ -817,114 +865,104 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         </div>
       </div>
 
-      <header className="px-4 pb-6 pt-4">
-        <div className="flex items-center gap-2.5">
-          <div className="min-w-0 flex-1">
-            <h1 className="flex min-w-0 items-baseline gap-2 text-[clamp(1.05rem,5vw,1.5rem)] tracking-tight">
-              <span className="shrink-0 rounded-md bg-chip px-1.5 py-0.5 font-mono text-[0.72em] font-semibold text-accent">
-                {patient.bed}
-              </span>
-              <span className="min-w-0 truncate font-bold">
-                {stripPatientHonorific(patient.display_name)}
-              </span>
-              <span className="shrink-0 whitespace-nowrap text-[0.72em] font-medium tracking-normal text-muted">
-                {[
-                  patient.age_years !== null ? patient.age_years : null,
-                  patient.sex === "other" ? "O" : patient.sex,
-                ]
-                  .filter((value) => value !== null && value !== "")
-                  .join("/")}
-              </span>
-            </h1>
-            {patient.uhid_ip_no && (
-              <p className="mt-2 truncate pl-0.5 text-caption text-muted">
-                <span className="uppercase tracking-wide">IP no.</span>
-                <span className="mx-1.5">·</span>
-                <span className="font-mono text-foreground/80">{patient.uhid_ip_no}</span>
-              </p>
-            )}
-          </div>
-          <div className="shrink-0">
+      {/* One clinical thought, then only what is outstanding. The bed leads, as it does on the
+          ward list; the name carries age and sex; one line says the day, the operation and the
+          diagnosis. The banner card and three count tiles this replaced put two boxes and a row
+          of zeros between the name and the record. */}
+      <header className="flex flex-col gap-2.5 px-4 pb-5 pt-4">
+        <div className="flex items-center gap-3">
+          <span className="grid h-[46px] min-w-[46px] shrink-0 place-items-center rounded-[11px] bg-chip px-1.5 font-mono text-title3 font-semibold tabular-nums">
+            {patient.bed}
+          </span>
+          <h1 className="flex min-w-0 flex-1 items-baseline gap-2">
+            <span className="min-w-0 truncate text-title1 font-bold tracking-tight">
+              {displayCase(stripPatientHonorific(patient.display_name))}
+            </span>
+            <span className="shrink-0 whitespace-nowrap text-body text-muted">
+              {[
+                patient.age_years !== null ? patient.age_years : null,
+                patient.sex === "other" ? "O" : patient.sex,
+              ]
+                .filter((value) => value !== null && value !== "")
+                .join("/")}
+            </span>
+          </h1>
+          <div className="-mr-2 shrink-0">
             <EditIdentity patient={patientWithBurn} templateChoices={templateChoices} specialty={pack.key} />
           </div>
         </div>
 
-        {/* Only the clinical facts needed to identify the admission live here. Bed and hospital
-            number have moved into the header above; the rest of the record follows below.
-
-            The banner leads with whichever fact matters most right now: once operated, that IS
-            the headline (POD 0 Lap chole) with the diagnosis dropped to a parenthetical below
-            it — nobody rounding on a post-op patient reads "diagnosis" first. Before that, there
-            is no operation to lead with, so the diagnosis takes the same top spot instead, with
-            the phase of care (Pre-op / Conservative / Workup) as its own parenthetical. */}
-        <div className={"ios-group mt-5 border-l-[4px] " + bannerEdge}>
-          {/* The day count and what it counts from, with the note one tap away — read together,
-              because the banner is where the eye lands and "what did we write today" is the
-              question most often asked from it. */}
-          <div className="flex items-start justify-between gap-3 px-4 py-3">
-            <div className="min-w-0">
-              {day.clock !== "admission" ? (
-                <>
-                  {/* The headline is the day count and what it counts from — "POD 0 Lap chole"
-                      on a surgical ward, "C2 D3 R-CHOP" on an oncology one. Both are the one
-                      fact a round leads with; the diagnosis drops to a parenthetical below. */}
-                  <p className="text-title3 font-bold leading-snug">
-                    {day.text}
-                    {day.clock === "cycle"
-                      ? patient.regimen
-                        ? ` ${patient.regimen}`
-                        : ""
-                      : procedure
-                        ? ` ${procedure}`
-                        : ""}
-                  </p>
-                  <p className="mt-0.5 text-footnote text-muted">
-                    {/* A derived diagnosis reads exactly like a recorded one. It is a fixed
-                        mapping from the operation — see lib/diagnosis-from-procedure.ts — and
-                        the unit reads "lap chole" as gall stone disease without being told so
-                        every time it opens a patient. Nothing is stored either way. */}
-                    ({diagnosis ?? derivedDiagnosis?.text ?? "diagnosis not recorded"})
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-title3 font-bold leading-snug">
-                    {diagnosis ?? "Diagnosis not recorded"}
-                  </p>
-                  {(() => {
-                    const managementChoice = managementChoicesFor(pack.key, patient.management ?? "").find(
-                      (c) => c.value === patient.management
-                    );
-                    return managementChoice ? (
-                      <p className="mt-0.5 text-footnote text-muted">({managementChoice.label})</p>
-                    ) : null;
-                  })()}
-                </>
+        {/* The headline leads with whichever fact matters most right now: once operated, the day
+            and operation ("POD 0 · Lap chole") with the diagnosis after it; before that, the
+            diagnosis itself with the phase of care. A derived diagnosis is a fixed mapping from
+            the operation (lib/diagnosis-from-procedure.ts) and reads like a recorded one. */}
+        <p className="text-body leading-snug">
+          {day.clock !== "admission" ? (
+            <>
+              <span className="font-semibold tabular-nums">{day.text}</span>
+              {day.clock === "cycle"
+                ? patient.regimen && <span> · {patient.regimen}</span>
+                : procedure && <span> · {procedure}</span>}
+              {(diagnosis ?? derivedDiagnosis?.text) && (
+                <span className="text-muted"> · {diagnosis ?? derivedDiagnosis?.text}</span>
               )}
-            </div>
-            <Link
-              href={`/patients/${patient.id}/note`}
-              className="tap flex shrink-0 items-center pt-0.5 text-footnote font-semibold text-accent active:opacity-60"
-            >
-              Print sheet
-              <ChevronIcon className="h-3 w-3" />
-            </Link>
+            </>
+          ) : (
+            <>
+              {diagnosis && <span className="font-semibold">{diagnosis}</span>}
+              {(() => {
+                const managementChoice = managementChoicesFor(pack.key, patient.management ?? "").find(
+                  (c) => c.value === patient.management
+                );
+                return managementChoice ? <span className="text-muted"> · {managementChoice.label}</span> : null;
+              })()}
+            </>
+          )}
+        </p>
+        {(comorbidities.length > 0 || patient.uhid_ip_no) && (
+          <p className="-mt-1.5 text-footnote text-muted">
+            {comorbidities.join(" · ")}
+            {comorbidities.length > 0 && patient.uhid_ip_no && "  ·  "}
+            {patient.uhid_ip_no && (
+              <>
+                IP no. <span className="font-mono text-foreground/80">{patient.uhid_ip_no}</span>
+              </>
+            )}
+          </p>
+        )}
+
+        {/* Only what is outstanding, and only when it is: a zero is not shown at all. */}
+        {(flaggedVitals.length > 0 || openCount > 0 || pending.length > 0 || missing.length > 0) && (
+          <div className="flex flex-wrap gap-2">
+            {flaggedVitals.map((t) => (
+              <StatusPill key={t.id} icon={TriangleAlert} tone="critical">
+                {t.label} {t.value}
+              </StatusPill>
+            ))}
+            {openCount > 0 && (
+              <StatusPill icon={ListChecks}>
+                {openCount} To-Do
+              </StatusPill>
+            )}
+            {pending.length > 0 && (
+              <StatusPill icon={CircleAlert} tone="warn">
+                {pending.length} to check
+              </StatusPill>
+            )}
+            {missing.length > 0 && (
+              <StatusPill tone="gap">{missing.length} not recorded</StatusPill>
+            )}
           </div>
-          <SummaryRow
-            label="Co-morbidities"
-            value={comorbidities.length > 0 ? comorbidities.join(" · ") : "Not recorded"}
+        )}
+        {orphanPostOpJob && (
+          <NoOperationQuestion
+            job={orphanPostOpJob}
+            patient={patientWithBurn}
+            templateChoices={templateChoices}
+            specialty={pack.key}
           />
-        </div>
-
-        {/* The three counts this page already works out, so they need not be added up from the
-            sections below. "Not recorded" is amber, not red: it is a gap to fill, not an alarm. */}
-        <div className="mt-2 grid grid-cols-3 gap-2">
-          <CountTile icon={ListChecks} value={openCount} label="To do" tone="neutral" />
-          <CountTile icon={CircleAlert} value={pending.length} label="To confirm" tone={pending.length > 0 ? "warn" : "neutral"} />
-          <CountTile icon={ClipboardX} value={missing.length} label="Not recorded" tone={missing.length > 0 ? "warn" : "neutral"} />
-        </div>
+        )}
       </header>
-
 
       <PatientTabs
         tabs={[
@@ -943,7 +981,19 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
       {/* Fixed, so the button is under your thumb no matter how long the record has grown. */}
       <BottomBar>
-        <BedsideBar patientId={patient.id} missing={missing} specialty={pack.key} />
+        <BedsideBar
+          patientId={patient.id}
+          who={{
+            bed: patient.bed,
+            name: displayCase(stripPatientHonorific(patient.display_name)),
+            line:
+              [day.clock !== "admission" ? day.text : null, day.clock === "cycle" ? patient.regimen : procedure ?? diagnosis]
+                .filter(Boolean)
+                .join(" · ") || undefined,
+          }}
+          missing={missing}
+          copy={dictationCopy(pack.key)}
+        />
       </BottomBar>
     </div>
   );
@@ -1027,11 +1077,7 @@ function CaseHistorySection({
                   embedded
                   entryId={entry.id}
                   patientId={patientId}
-                  time={new Date(entry.recorded_at).toLocaleDateString("en-IN", {
-                    timeZone: "Asia/Kolkata",
-                    day: "numeric",
-                    month: "short",
-                  })}
+                  time={shortDate(entry.recorded_at)}
                   transcript={entry.transcript}
                   heard={entry.original_transcript}
                   photoUrl={entry.photo_path ? (photoUrls.get(entry.photo_path) ?? null) : null}
@@ -1145,7 +1191,7 @@ const PAC_META: Record<
     dot: "bg-critical-dot",
   },
   pending: {
-    word: "Pending",
+    word: "Not done",
     chip: "bg-warn-bg text-warn-fg",
     dot: "bg-warn-dot",
   },
@@ -1233,13 +1279,8 @@ function latestVitalTiles(observations: Observation[]) {
   return vitalSets(observations).tiles;
 }
 
-const VITAL_ICONS: Record<string, LucideIcon> = {
-  bp: Activity,
-  pr: HeartPulse,
-  spo2: Droplets,
-  temp: Thermometer,
-  rr: Wind,
-};
+/** The vitals the box on the Today tab shows — BP, PR and SpO₂, nothing else. */
+const BOX_VITALS = new Set(["bp", "pr", "spo2"]);
 
 function VitalsPanel({ observations }: { observations: Observation[] }) {
   const { sets, tiles } = vitalSets(observations);
@@ -1263,48 +1304,40 @@ function VitalsPanel({ observations }: { observations: Observation[] }) {
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        {tiles.map((t) => {
-          const Icon = VITAL_ICONS[t.key] ?? Activity;
-          return (
+      {/* Three vitals, one row: BP, PR and SpO₂. Temperature and RR stay in the record and in
+          the earlier readings below; an out-of-range one is named beside the patient's name. A
+          vital with no reading is a dash in amber — absence shown, never left blank. */}
+      <div className="grid grid-cols-3 overflow-hidden rounded-[12px] bg-card">
+        {tiles
+          .filter((t) => BOX_VITALS.has(t.key))
+          .map((t) => (
             <div
               key={t.id}
               className={
-                "flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 " +
-                (t.key === "bp" ? "col-span-2 " : "") +
-                (t.flag ? "bg-critical-bg" : "bg-card")
+                "flex min-w-0 flex-col gap-0.5 border-l border-line/60 px-3 py-2.5 first:border-l-0 " +
+                (t.flag ? "bg-critical-bg" : "")
               }
             >
-              <span
-                className={
-                  "grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[9px] " +
-                  (t.flag ? "bg-critical-fg/10 text-critical-fg" : "bg-chip text-accent")
-                }
-              >
-                <Icon className="h-[16px] w-[16px]" strokeWidth={2.2} />
-              </span>
-              <div className="min-w-0">
-                <span className="block text-caption2 uppercase tracking-wide text-muted">{t.label}</span>
-                {t.value === null ? (
-                  <span className="text-subhead font-medium text-warn-fg">Not recorded</span>
-                ) : (
-                  <span
-                    className={
-                      "text-body font-semibold tabular-nums " + (t.flag ? "text-critical-fg" : "text-foreground")
-                    }
-                  >
-                    {t.value}
-                  </span>
-                )}
-                {/* The range rides along with the flag rather than the flag standing alone —
-                    a colour with no stated reason is exactly the "trust me" the rival app asks
-                    for. This one shows its work. */}
-                {t.flag && <span className="ml-1 text-caption2 font-medium text-critical-fg">({t.range})</span>}
-                {t.takenAt && <span className="block text-caption2 text-muted">{vitalsWhen(t.takenAt)}</span>}
-              </div>
+              <span className="text-caption text-muted">{t.label}</span>
+              {t.value === null ? (
+                <span aria-label="Not recorded" className="text-title3 font-semibold text-warn-fg">
+                  –
+                </span>
+              ) : (
+                <span
+                  className={
+                    "truncate text-title3 font-semibold tabular-nums " + (t.flag ? "text-critical-fg" : "text-foreground")
+                  }
+                >
+                  {t.value}
+                </span>
+              )}
+              {/* The range rides along with the flag rather than the flag standing alone — a
+                  colour with no stated reason is exactly the "trust me" this app refuses. */}
+              {t.flag && <span className="text-caption2 font-medium text-critical-fg">({t.range})</span>}
+              {t.takenAt && <span className="truncate text-caption2 text-muted">{vitalsWhen(t.takenAt)}</span>}
             </div>
-          );
-        })}
+          ))}
       </div>
 
       {earlier.length > 0 && (
@@ -1329,13 +1362,7 @@ function VitalsPanel({ observations }: { observations: Observation[] }) {
 }
 
 function vitalsWhen(iso: string): string {
-  return new Date(iso).toLocaleString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return dateTime(iso);
 }
 
 /**
@@ -1352,41 +1379,24 @@ function vitalsWhen(iso: string): string {
  * said anything, this says exactly that instead of guessing from the fact that a patient is on
  * a list.
  */
-function PacSection({ pac }: { pac: Observation[] }) {
+function PacSection({ pac, patientId }: { pac: Observation[]; patientId: string }) {
   const [latest, ...earlier] = pac;
   const meta = latest?.pac_verdict ? PAC_META[latest.pac_verdict] : null;
 
   return (
     <section className="px-4 pb-6">
-      <details className="ios-group [&[open]_.pac-chev]:rotate-90">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-subhead font-semibold active:bg-chip [&::-webkit-details-marker]:hidden">
+      <div className="ios-group">
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 text-subhead font-semibold">
           <span className="flex items-center gap-2">
             <Stethoscope className="h-4 w-4 text-accent" strokeWidth={2.2} />
             Pre-anaesthetic checkup
           </span>
-          <span className="flex items-center gap-2">
-            {/* The verdict rides on the closed card, because on the morning of a list this one
-                word is the entire reason anyone opens this patient. */}
-            <span
-              className={
-                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-caption font-semibold " +
-                (meta ? meta.chip : "bg-warn-bg text-warn-fg")
-              }
-            >
-              {meta ? meta.word : "Not recorded"}
-            </span>
-            <ChevronIcon className="pac-chev h-4 w-4 text-muted transition-transform" />
-          </span>
-        </summary>
+          <PacSelect patientId={patientId} verdict={latest?.pac_verdict ?? null} />
+        </div>
 
-        <div className="border-t border-line px-4 py-3">
-          {!latest || !meta ? (
-            <p className="text-subhead text-warn-fg">
-              Nobody has said whether this patient is fit for surgery.
-            </p>
-          ) : (
-            <>
-              {/* The chip above is the app's reading of the sentence. This is the sentence,
+        {latest && meta && (
+          <div className="border-t border-line px-4 py-3">
+              {/* The dropdown above is the app's reading of the sentence. This is the sentence,
                   kept beside it and never replaced by it. */}
               <p className="text-subhead leading-snug">{latest.value_text ?? latest.label}</p>
               <p className="mt-0.5 text-footnote text-muted">{pacWhen(latest.recorded_at)}</p>
@@ -1421,20 +1431,15 @@ function PacSection({ pac }: { pac: Observation[] }) {
                   ))}
                 </ul>
               )}
-            </>
-          )}
-        </div>
-      </details>
+          </div>
+        )}
+      </div>
     </section>
   );
 }
 
 function pacWhen(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    day: "numeric",
-    month: "short",
-  });
+  return shortDate(iso);
 }
 
 /**
@@ -1539,14 +1544,6 @@ function kindToSoapSection(kind: string): (typeof SOAP_ORDER)[number] {
   }
 }
 
-/** Left-edge colour per urgency, keyed by what effectiveUrgency returns (null → "none"). */
-const TODO_EDGE: Record<string, string> = {
-  red: "border-l-critical-dot",
-  yellow: "border-l-warn-dot",
-  green: "border-l-good-dot",
-  none: "border-l-transparent",
-};
-
 const SOAP_LOOK: Record<(typeof SOAP_ORDER)[number], { icon: LucideIcon; chip: string }> = {
   subjective: { icon: MessageSquareText, chip: "bg-chip text-accent" },
   objective: { icon: Ruler, chip: "bg-good-bg text-good-fg" },
@@ -1576,12 +1573,21 @@ function SoapHeading({ section, label }: { section: (typeof SOAP_ORDER)[number];
  * been migrated and backfilled) falls back the same way an "extra" observation does, so nothing
  * silently disappears — it just lands in Checks until it's classified.
  */
-function soapGroups(matched: MatchedItem[], extra: Observation[], vitalsPanelShown: boolean) {
+function soapGroups(
+  matched: MatchedItem[],
+  extra: Observation[],
+  vitalsPanelShown: boolean,
+  treatmentShown: boolean
+) {
   // Display only — every line below is still in the record and the note. A stored day count
   // is hidden because the header's computed day is the true one; a vital because the Vitals
-  // panel above already shows it; a repeat because the fuller or later line says it all.
+  // panel above already shows it; a drug because the Treatment list below already lists it,
+  // with its quote (every drug used to appear twice on this tab); a repeat because the fuller
+  // or later line says it all.
   const hide = (kind: string, label: string) =>
-    isDayCountLabel(kind, label) || (vitalsPanelShown && isVitalLine(label));
+    isDayCountLabel(kind, label) ||
+    (vitalsPanelShown && isVitalLine(label)) ||
+    (treatmentShown && kind === "medication");
   return SOAP_ORDER.map((section) => {
     // A checklist row with no value is a gap to fill, and stays whatever its label.
     const m = matched.filter(
@@ -1612,11 +1618,7 @@ function isVitalLine(label: string): boolean {
  * gets written in the notes.
  */
 function dayHeading(iso: string, todayKey: string): string {
-  const date = new Date(iso).toLocaleDateString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    day: "numeric",
-    month: "short",
-  });
+  const date = shortDate(iso);
 
   const key = istDayKey(iso);
   if (key === todayKey) return `Today · ${date}`;
@@ -1629,65 +1631,99 @@ function dayHeading(iso: string, todayKey: string): string {
 }
 
 /**
- * "due today" or "2 days overdue", shown only when the calendar has moved a job rather than
- * the resident. Said in words, so an escalation never looks like something they graded.
+ * "due today" or "due 3 Oct · 2 days overdue", shown only when the calendar has moved a job
+ * rather than the resident. Said in words, so an escalation never looks like something they
+ * graded — and on its own line, muted: the dot already carries the red.
  */
 function CameDue({ observation }: { observation: Observation }) {
   const effective = effectiveUrgency(observation);
   if (!effective.note) return null;
 
-  return <span className="ml-2 whitespace-nowrap text-caption text-critical-fg">— {effective.note}</span>;
+  return <p className="mt-0.5 text-footnote text-muted">{effective.note}</p>;
 }
 
-/** A fact in the patient identity block. The long text gets room; the label stays scannable. */
-function SummaryRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="ios-row flex items-start gap-2.5 px-4 py-3">
-      <HeartPulse className="mt-0.5 h-4 w-4 shrink-0 text-muted" strokeWidth={2.2} />
-      <div className="min-w-0">
-        <dt className="text-caption2 font-medium uppercase tracking-[0.08em] text-muted">{label}</dt>
-        <dd className="mt-0.5 text-callout leading-snug">{value}</dd>
-      </div>
-    </div>
-  );
-}
-
-/** One of the header's three counts — same look as the ward page's StatTile, without the link. */
-function CountTile({
+/** One outstanding count beside the patient's name: jobs, values to check, gaps to fill. */
+function StatusPill({
   icon: Icon,
-  value,
-  label,
-  tone,
+  tone = "plain",
+  children,
 }: {
-  icon: LucideIcon;
-  value: number;
-  label: string;
-  tone: "neutral" | "warn";
+  icon?: LucideIcon;
+  tone?: "plain" | "warn" | "gap" | "critical";
+  children: React.ReactNode;
 }) {
-  const warn = tone === "warn";
   return (
-    <div className={"flex flex-col gap-1.5 rounded-[12px] px-3 py-2.5 " + (warn ? "bg-warn-bg" : "bg-card")}>
-      <span
-        className={
-          "grid h-[24px] w-[24px] place-items-center rounded-[7px] " +
-          (warn ? "bg-warn-fg/10 text-warn-fg" : "bg-chip text-accent")
-        }
-      >
-        <Icon className="h-[15px] w-[15px]" strokeWidth={2.3} />
-      </span>
-      <span>
-        <span className={"block text-title3 font-bold leading-none tabular-nums " + (warn ? "text-warn-fg" : "text-foreground")}>
-          {value}
-        </span>
-        <span className={"mt-0.5 block text-caption " + (warn ? "text-warn-fg" : "text-muted")}>{label}</span>
-      </span>
-    </div>
+    <span
+      className={
+        "inline-flex h-8 items-center gap-1.5 rounded-full bg-card px-3 text-subhead font-medium " +
+        (tone === "critical"
+          ? "bg-critical-bg text-critical-fg"
+          : tone === "warn"
+            ? "text-warn-fg"
+            : tone === "gap"
+              ? "text-warn-fg ring-1 ring-inset ring-warn-bg"
+              : "text-foreground")
+      }
+    >
+      {Icon && <Icon className={"h-[15px] w-[15px] " + (tone === "plain" ? "text-accent" : "")} strokeWidth={2.4} />}
+      {/* A gap is drawn as an empty ring, the same mark as "not graded" — something not yet said. */}
+      {tone === "gap" && <span aria-hidden className="h-[7px] w-[7px] rounded-full border-[1.5px] border-warn-fg" />}
+      {children}
+    </span>
   );
 }
 
+/** The to-do section's header. The count is jobs a resident said, not scoring suggestions. */
+function TodoHeader({ count }: { count: number }) {
+  return (
+    <p className="ios-group-header mb-2 flex items-center gap-1.5 px-4">
+      <ListChecks className="h-3.5 w-3.5 text-accent" strokeWidth={2.4} />
+      Advices, plans &amp; to do
+      {count > 0 ? ` · ${count}` : ""}
+    </p>
+  );
+}
+
+type Scoring = Promise<[Awaited<ReturnType<typeof getPatientScoringTasks>>, Awaited<ReturnType<typeof getScoreCards>>]>;
+
+/**
+ * The scoring engine's suggested tasks, streamed in once the recompute lands (see scoringP).
+ * Inside the to-do section when there is one; `standalone`, it brings the section's own header,
+ * so suggestions on a patient with no spoken jobs are not left without a heading.
+ */
+async function ScoringTodo({
+  scoring,
+  patientId,
+  standalone = false,
+}: {
+  scoring: Scoring;
+  patientId: string;
+  standalone?: boolean;
+}) {
+  const [tasks] = await scoring;
+  if (tasks.length === 0) return null;
+  const rows = <ScoringTaskRows patientId={patientId} tasks={tasks} />;
+  if (!standalone) return rows;
+  return (
+    <section className="px-4 pb-6">
+      <TodoHeader count={0} />
+      <div className="ios-group">{rows}</div>
+    </section>
+  );
+}
+
+/** The scoring engine's score cards, streamed in the same way. */
+async function ScoringCards({ scoring }: { scoring: Scoring }) {
+  const [, cards] = await scoring;
+  return <ScoreCards cards={cards} />;
+}
+
+/** The unit's dictation wording for the bedside bar, picked here so the client never loads the
+ *  progress-note config table. */
+function dictationCopy(specialty: string): DictationCopy {
+  const config = progressNoteConfigFor(specialty);
+  return {
+    bedsideExample: config.bedsideExample,
+    dictationExample: config.dictationExample,
+  };
+}

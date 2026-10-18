@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentWard } from "@/lib/ward";
+import { getUser } from "@/lib/auth";
+import { getCurrentWard, getWardPack } from "@/lib/ward";
 import { readRegister } from "@/lib/read-register";
 import { claimPhotoRead } from "@/lib/photo-cap";
 
@@ -16,9 +17,7 @@ const MAX_BYTES = 16 * 1024 * 1024;
 export async function POST(request: Request) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const { ward } = await getCurrentWard();
@@ -76,7 +75,7 @@ export async function POST(request: Request) {
   await supabase.from("register_reads").update({ photo_path: path }).eq("id", read.id);
 
   try {
-    const result = await readRegister(bytes.toString("base64"), mediaType);
+    const result = await readRegister(bytes.toString("base64"), mediaType, await getWardPack(ward.id));
     await supabase
       .from("register_reads")
       .update({ raw: { model: result.model, rows: result.rows } as never })

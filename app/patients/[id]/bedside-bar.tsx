@@ -1,10 +1,9 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
-import Recorder from "./recorder";
+import { useRouter, useSearchParams } from "next/navigation";
+import Recorder, { type DictationCopy } from "./recorder";
 import PhotoButton from "./photo-button";
-import { progressNoteConfigFor } from "@/lib/progress-note-config";
 
 type MissingItem = { item: { label: string; hint: string | null } };
 
@@ -16,19 +15,26 @@ type MissingItem = { item: { label: string; hint: string | null } };
  */
 export default function BedsideBar({
   patientId,
+  who,
   missing,
-  specialty,
+  copy,
 }: {
   patientId: string;
+  /** Whose bed — the recording sheet's title. */
+  who: { bed: string | null; name: string; line?: string };
   missing: MissingItem[];
-  /** The ward's specialty pack key — picks the Type box's example. */
-  specialty?: string;
+  /** The unit's dictation wording, read on the server — see DictationCopy. */
+  copy: DictationCopy;
 }) {
   const router = useRouter();
   const [typing, setTyping] = useState(false);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false);
+  // "Still to cover" is about today's round, so it shows on the Today tab only (the tab lives in
+  // the URL, see patient-tabs.tsx) — on History or Tests it was a line about something else.
+  const onToday = (useSearchParams().get("tab") ?? "today") === "today";
+  const [coverOpen, setCoverOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   /** The last save did not go through. The typed words stay in the box either way. */
   const [failed, setFailed] = useState(false);
@@ -85,7 +91,7 @@ export default function BedsideBar({
           rows={4}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={progressNoteConfigFor(specialty).bedsideExample ?? "Day 3 post lap chole, afebrile, drain 30 ml serous…"}
+          placeholder={copy.bedsideExample}
           aria-label="Bedside note"
           className="field"
         />
@@ -121,18 +127,32 @@ export default function BedsideBar({
           on, see lib/templates.ts getTemplateForPatient(). One line at rest so the bar stays
           small; two lines, and bolder, while the mic is actually live: that is exactly the
           moment it needs to be read, not the moment before tapping the button. */}
-      {missing.length > 0 && (
-        <p
+      {missing.length > 0 && onToday && (
+        // A count first, then as many of the items as fit; a tap shows them all. It used to be
+        // the whole list on one line, cut off mid-word at the edge of every phone.
+        <button
+          type="button"
+          onClick={() => setCoverOpen((o) => !o)}
+          aria-expanded={coverOpen || recording}
           className={
-            recording ? "line-clamp-2 text-subhead font-medium text-warn-fg" : "truncate text-footnote text-muted"
+            "text-left " +
+            (recording
+              ? "line-clamp-2 text-subhead font-medium text-warn-fg"
+              : coverOpen
+                ? "text-subhead text-muted"
+                : "truncate text-subhead text-muted")
           }
         >
-          <span className={recording ? undefined : "text-warn-fg"}>Still to cover:</span>{" "}
-          {missing.map((m) => m.item.hint ?? m.item.label).join(" · ")}
-        </p>
+          <span className="font-semibold text-warn-fg">{missing.length} still to cover</span>
+          {" · "}
+          {missing.map((m) => m.item.hint ?? m.item.label).join(coverOpen || recording ? " · " : ", ")}
+        </button>
       )}
       <Recorder
         patientId={patientId}
+        who={who}
+        toCover={missing.map((m) => m.item.label)}
+        copy={copy}
         onBusyChange={onBusyChange}
         idleActions={
           <>

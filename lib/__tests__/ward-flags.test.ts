@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { criticalFlag, criticalFlags, isDischargeable } from "@/lib/ward-flags";
+import { abnormalTemp, criticalFlag, criticalFlags, currentVitals, isDischargeable, risingCreatinine } from "@/lib/ward-flags";
 import type { WardPatient } from "@/lib/patients";
 
 function patient(over: Partial<WardPatient>): WardPatient {
@@ -135,7 +135,12 @@ describe("criticalFlags — per department, every hit", () => {
     expect(medicine({ labs: [lab("Sr. creatinine", "6.2")] })).toEqual([]);
     expect(medicine({ vitals: [vital("RR", "30 /min")] })[0]?.reason).toBe("tachypnoea");
     expect(medicine({ vitals: [vital("GCS", "E2V2M4")] })[0]?.value).toBe("E2V2M4");
-    expect(medicine({ vitals: [vital("GCS", "9/15")] })).toEqual([]);
+    // NEWS2: anything short of Alert (GCS below 15) is a 3-point parameter.
+    expect(medicine({ vitals: [vital("GCS", "14/15")] })[0]?.reason).toBe("reduced consciousness");
+    expect(medicine({ vitals: [vital("GCS", "15/15")] })).toEqual([]);
+    expect(medicine({ vitals: [vital("RR", "25")] })[0]?.reason).toBe("tachypnoea");
+    expect(medicine({ vitals: [vital("SpO2", "91")] })[0]?.reason).toBe("hypoxia");
+    expect(criticalFlags(patient({ vitals: [vital("Pulse", "131")] }), "pulmonary_medicine")[0]?.reason).toBe("tachycardia");
     expect(medicine({ vitals: [vital("GCS", "E2VTM4")] })).toEqual([]);
   });
 
@@ -163,5 +168,157 @@ describe("isDischargeable — nothing critical, nothing outstanding", () => {
 
   it("is not dischargeable with an open task", () => {
     expect(isDischargeable(patient({ unconfirmed_count: 0, open_task_count: 1 }), null)).toBe(false);
+  });
+});
+
+describe("NICE vital-sign bars: emergency medicine, oncology, paediatrics", () => {
+  const reasons = (key: string, over: Partial<WardPatient>) => criticalFlags(patient(over), key).map((f) => f.reason);
+  const em = (...v: [string, string][]) => reasons("emergency_medicine", { vitals: v.map(([l, x]) => vital(l, x)) });
+
+  it("flags a single NEWS2 parameter scoring 3 on emergency medicine (NG253 1.6.2)", () => {
+    expect(em(["RR", "25"])).toEqual(["tachypnoea"]);
+    expect(em(["RR", "24"])).toEqual([]);
+    expect(em(["RR", "8"])).toEqual(["bradypnoea"]);
+    expect(em(["SpO2", "91"])).toEqual(["hypoxia"]);
+    expect(em(["SpO2", "92"])).toEqual([]);
+    expect(em(["BP", "90/60"])).toEqual(["hypotension"]);
+    expect(em(["BP", "91/60"])).toEqual([]);
+    expect(em(["BP", "220/110"])).toEqual(["severe hypertension"]);
+    expect(em(["Pulse", "131"])).toEqual(["tachycardia"]);
+    expect(em(["Pulse", "130"])).toEqual([]);
+    expect(em(["Pulse", "40"])).toEqual(["bradycardia"]);
+    expect(em(["Temp", "35.0"])).toEqual(["hypothermia"]);
+    expect(em(["Temp", "95"])).toEqual(["hypothermia"]); // °F
+    expect(em(["Temp", "96.8"])).toEqual([]);
+    expect(em(["GCS", "14"])).toEqual(["reduced consciousness"]);
+    expect(em(["GCS", "15"])).toEqual([]);
+  });
+
+  it("flags neutropenia on oncology from an absolute count only (CG151 1.4.4.1)", () => {
+    const onco = (label: string, value: string) => reasons("medical_oncology", { labs: [lab(label, value)] });
+    expect(onco("ANC", "0.4")).toEqual(["severe neutropenia"]);
+    expect(onco("Absolute neutrophil count", "450")).toEqual(["severe neutropenia"]);
+    expect(onco("ANC", "600")).toEqual([]);
+    expect(onco("Neutrophils", "0.3")).toEqual([]);
+    expect(onco("ANC", "40%")).toEqual([]);
+    expect(reasons("internal_medicine", { labs: [lab("ANC", "0.2")] })).toEqual([]);
+  });
+
+  it("uses NICE NG254 high-risk criteria by age on paediatrics", () => {
+    const child = (age: number | null, ...v: [string, string][]) =>
+      reasons("paediatrics", { age_years: age, vitals: v.map(([l, x]) => vital(l, x)) });
+    expect(child(0, ["RR", "60"])).toEqual(["tachypnoea"]);
+    expect(child(0, ["RR", "59"])).toEqual([]);
+    expect(child(2, ["Pulse", "150"])).toEqual(["tachycardia"]);
+    expect(child(2, ["Pulse", "149"])).toEqual([]);
+    expect(child(4, ["Temp", "35.9"])).toEqual(["hypothermia"]);
+    expect(child(6, ["Temp", "35.9"])).toEqual([]);
+    expect(child(9, ["RR", "25"])).toEqual(["tachypnoea"]);
+    expect(child(13, ["BP", "90/60"])).toEqual(["hypotension"]);
+    expect(child(13, ["Pulse", "130"])).toEqual([]);
+    expect(child(7, ["Pulse", "55"])).toEqual(["bradycardia"]);
+    expect(child(null, ["RR", "70"])).toEqual([]);
+    expect(child(null, ["SpO2", "89"])).toEqual(["hypoxia"]);
+    expect(child(17, ["RR", "25"])).toEqual(["tachypnoea"]);
+    // Adult lab bars do not transfer to children.
+    expect(reasons("paediatrics", { age_years: 5, labs: [lab("TLC", "25000"), lab("K", "6.4")] })).toEqual([]);
+  });
+
+  it("leaves surgery's vital bar exactly as it was", () => {
+    const s = (...v: [string, string][]) => reasons("general_surgery", { vitals: v.map(([l, x]) => vital(l, x)) });
+    expect(s(["RR", "34"], ["Temp", "94"], ["BP", "230/120"], ["Pulse", "38"], ["SpO2", "91"])).toEqual([]);
+    expect(s(["SpO2", "89"], ["BP", "88/50"], ["Pulse", "121"])).toEqual(["hypoxia", "hypotension", "tachycardia"]);
+  });
+});
+
+describe("rising creatinine — NICE NG148 rec 1.3.1", () => {
+  const at = (hoursAgo: number) => new Date(Date.parse("2026-10-15T08:00:00Z") - hoursAgo * 3600_000).toISOString();
+  const cr = (value_text: string, hoursAgo: number) => ({ value_text, recorded_at: at(hoursAgo) });
+
+  it("flags a rise of 26 micromol/L or more within 48 hours", () => {
+    expect(risingCreatinine([cr("1.4", 0), cr("1.1", 24)])).toEqual({
+      label: "Creatinine",
+      value: "1.1 → 1.4",
+      reason: "rising creatinine (AKI)",
+    }); // 0.3 mg/dL = 26.5 micromol/L
+    expect(risingCreatinine([cr("1.35", 0), cr("1.1", 24)])).toBeNull(); // 22 micromol/L
+    expect(risingCreatinine([cr("126", 0), cr("100", 40)])?.value).toBe("100 → 126"); // micromol/L
+    expect(risingCreatinine([cr("1.4", 0), cr("1.1", 60)])).toBeNull(); // > 48 h, < 50%
+  });
+
+  it("flags a 50% rise over the lowest result of the past 7 days", () => {
+    expect(risingCreatinine([cr("1.5", 0), cr("1.3", 30), cr("1.0", 120)])?.value).toBe("1.0 → 1.5");
+    expect(risingCreatinine([cr("1.4", 0), cr("1.0", 120)])).toBeNull(); // 40%
+    expect(risingCreatinine([cr("2.0", 0), cr("1.0", 200)])).toBeNull(); // older than 7 days
+  });
+
+  it("never flags a falling or a single result, or a stable high one (known CKD)", () => {
+    expect(risingCreatinine([cr("1.0", 0), cr("2.0", 24)])).toBeNull();
+    expect(risingCreatinine([cr("4.2", 0)])).toBeNull();
+    expect(risingCreatinine([cr("6.1", 0), cr("6.0", 24), cr("5.9", 72)])).toBeNull();
+    expect(risingCreatinine([])).toBeNull();
+  });
+
+  it("is on for every unit, surgical ones included", () => {
+    const p = { creatinine_7d: [cr("1.5", 0), cr("1.0", 24)] };
+    for (const key of ["internal_medicine", "pulmonary_medicine", "emergency_medicine", "medical_oncology", "paediatrics", "general_surgery", "orthopaedics", "urology"]) {
+      expect(criticalFlags(patient(p), key).map((f) => f.reason), key).toContain("rising creatinine (AKI)");
+    }
+  });
+});
+
+describe("each vital's own newest reading reaches the alarms (patch 0107)", () => {
+  const v = (label: string, value_text: string, hhmm: string) => ({ label, value_text, recorded_at: `2026-10-15T${hhmm}:00Z` });
+
+  it("keeps a 6am RR the 8am set left out", () => {
+    const p = patient({
+      vitals: [v("BP", "120/80", "08:00"), v("Pulse", "88", "08:00")],
+      vitals_recent: [v("BP", "120/80", "08:00"), v("Pulse", "88", "08:00"), v("RR", "32", "06:00")],
+    });
+    expect(criticalFlags(p, "internal_medicine").map((f) => f.reason)).toEqual(["tachypnoea"]);
+  });
+
+  it("lets a re-measured vital replace the earlier one", () => {
+    const p = patient({
+      vitals_recent: [v("RR", "18", "08:00"), v("RR", "32", "06:00"), v("Pulse", "135", "05:00"), v("PR", "90", "07:00")],
+    });
+    expect(criticalFlags(p, "internal_medicine")).toEqual([]);
+    expect(currentVitals(p).map((x) => `${x.label} ${x.value_text}`).sort()).toEqual(["PR 90", "RR 18"]);
+  });
+
+  it("falls back to the latest set when the database has no vitals_recent", () => {
+    const p = patient({ vitals: [v("SpO2", "89", "08:00")] });
+    expect(currentVitals(p)).toEqual(p.vitals);
+    expect(criticalFlags(p, "general_surgery").map((f) => f.reason)).toEqual(["hypoxia"]);
+  });
+});
+
+describe("abnormalTemp — the ward row's temperature bubble", () => {
+  const temp = (value: string, age: number | null = 40, unit?: string) =>
+    abnormalTemp(patient({ age_years: age, vitals: [vital("Temp", value)] }), unit);
+
+  it("adults: nothing inside NEWS2's 0-point band, 36.1–38.0 °C", () => {
+    expect(temp("36.1")).toBeNull();
+    expect(temp("38.0")).toBeNull();
+    expect(temp("98.6 F")).toBeNull();
+  });
+  it("adults: 36.0 and below, 38.1 and above, as recorded", () => {
+    expect(temp("36.0")).toBe("36.0");
+    expect(temp("38.1")).toBe("38.1");
+    expect(temp("101 F")).toBe("101 F");
+  });
+  it("under 16: 38 °C or more, or below 36 °C", () => {
+    expect(temp("38.0", 4)).toBe("38.0");
+    expect(temp("37.9", 4)).toBeNull();
+    expect(temp("36.0", 4)).toBeNull();
+    expect(temp("35.9", 4)).toBe("35.9");
+  });
+  it("no age: a child on a paediatric unit, an adult elsewhere", () => {
+    expect(temp("38.0", null, "paediatrics")).toBe("38.0");
+    expect(temp("38.0", null, "general_surgery")).toBeNull();
+  });
+  it("no temperature, or afebrile in words: nothing", () => {
+    expect(abnormalTemp(patient({ vitals: [vital("PR", "88")] }))).toBeNull();
+    expect(temp("afebrile")).toBeNull();
   });
 });

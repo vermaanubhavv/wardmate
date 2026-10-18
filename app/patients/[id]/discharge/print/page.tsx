@@ -58,10 +58,10 @@ export default async function DischargePrintPage({ params }: { params: Promise<{
       <section className="flex flex-col gap-2 px-4 pb-10 print:hidden">
         <PrintSections
           sections={[
-            { id: "encounter", title: "Encounter Details" },
+            { id: "admission", title: "Admission Details" },
             { id: "indication", title: "Indication for Admission" },
             { id: "diagnoses", title: "Diagnoses" },
-            ...(doc.procedures.length > 0 ? [{ id: "procedures", title: "Operation / Procedures" }] : []),
+            ...(doc.procedures.length > 0 ? [{ id: "procedures", title: doc.proceduresHeading }] : []),
             { id: "clinicalCourse", title: "Clinical Course" },
             { id: "conditionAtDischarge", title: "Condition at Discharge" },
             ...(doc.investigations.length > 0

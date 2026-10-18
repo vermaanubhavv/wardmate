@@ -44,7 +44,7 @@ function sourceFiles(dir: string, out: string[] = []): string[] {
 
 describe("the model ceiling", () => {
   it("pins AI_MODEL to Sonnet", () => {
-    expect(AI_MODEL).toBe("claude-sonnet-5");
+    expect(AI_MODEL).toBe("claude-sonnet-5-5");
   });
 
   it("calls no model above Sonnet anywhere in lib/ or app/", () => {

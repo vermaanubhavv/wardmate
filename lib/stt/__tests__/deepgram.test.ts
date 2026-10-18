@@ -1,23 +1,23 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { DeepgramTranscriber } from "../deepgram";
-import { MEDICAL_KEYTERMS } from "../types";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { MEDICAL_KEYTERMS, transcribe } from "..";
 import { MAX_KEYTERMS } from "@/lib/transcription/buildDeepgramUrl";
 
 const OK_BODY = JSON.stringify({
   results: { channels: [{ alternatives: [{ transcript: "Bed five is afebrile." }] }] },
 });
 
-describe("DeepgramTranscriber", () => {
-  afterEach(() => vi.unstubAllGlobals());
+describe("transcribe (Deepgram)", () => {
+  beforeEach(() => vi.stubEnv("DEEPGRAM_API_KEY", "dg-test-key"));
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
 
   it("sends audio to Nova-3 Medical in en-IN, falling back to the ward keyterms", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(OK_BODY, { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await new DeepgramTranscriber("dg-test-key").transcribe(
-      new Blob(["audio"], { type: "audio/webm" }),
-      "prose hint the engine cannot use"
-    );
+    const result = await transcribe(new Blob(["audio"], { type: "audio/webm" }));
 
     expect(result).toEqual({
       text: "Bed five is afebrile.",
@@ -49,9 +49,7 @@ describe("DeepgramTranscriber", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const keyterms = ["acute pancreatitis", "Ranson's criteria", "CECT abdomen"];
-    await new DeepgramTranscriber("k").transcribe(new Blob(["a"], { type: "audio/webm" }), "hint", {
-      keyterms,
-    });
+    await transcribe(new Blob(["a"], { type: "audio/webm" }), keyterms);
 
     const url = new URL(fetchMock.mock.calls[0][0] as string);
     expect(url.searchParams.getAll("keyterm")).toEqual(keyterms);
@@ -64,7 +62,7 @@ describe("DeepgramTranscriber", () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(OK_BODY, { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
-    await new DeepgramTranscriber("dg-test-key").transcribe(new Blob(["audio"]), "hint");
+    await transcribe(new Blob(["audio"]));
 
     const init = fetchMock.mock.calls[0][1] as RequestInit;
     expect(init.headers).toMatchObject({ "Content-Type": "audio/webm" });
@@ -77,7 +75,7 @@ describe("DeepgramTranscriber", () => {
     );
 
     await expect(
-      new DeepgramTranscriber("dg-test-key").transcribe(new Blob(["audio"]), "hint")
+      transcribe(new Blob(["audio"]))
     ).rejects.toThrow(/Deepgram speech-to-text failed \(400\).*bad audio/);
   });
 
@@ -92,7 +90,7 @@ describe("DeepgramTranscriber", () => {
       )
     );
 
-    const result = await new DeepgramTranscriber("k").transcribe(new Blob(["a"]), "hint");
+    const result = await transcribe(new Blob(["a"]));
     expect(result.text).toBe("");
   });
 });

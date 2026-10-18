@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
-import { createClient } from "@/lib/supabase/server";
-import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
+import { getUser } from "@/lib/auth";
+import { transcribe } from "@/lib/stt";
 import { correctTranscript } from "@/lib/glossary";
+import { getCurrentWardPack } from "@/lib/ward";
+import { wardKeyterms } from "@/lib/transcription/patient-context";
 
 /**
  * Speech to text and nothing else — for the "speak" button on a card in the case-history
@@ -14,10 +16,7 @@ import { correctTranscript } from "@/lib/glossary";
  * way wherever it is spoken.
  */
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const form = await request.formData();
@@ -26,16 +25,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No audio was recorded." }, { status: 400 });
   }
 
+  // No patient is sent: the vocabulary and the corrections are the selected unit's.
+  const pack = await getCurrentWardPack();
+
   let heard: string;
   try {
-    const stt = getTranscriber();
-    const result = await stt.transcribe(audio, MEDICAL_VOCABULARY_HINT);
+    const result = await transcribe(audio, wardKeyterms(pack.lexiconSpecialty));
     heard = result.text;
   } catch (e) {
     return NextResponse.json({ error: plainAiError(e) }, { status: 502 });
   }
 
-  const corrected = await correctTranscript(heard);
+  const corrected = await correctTranscript(heard, pack);
   const text = corrected.text.trim();
   if (!text) {
     return NextResponse.json(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCopy } from "../../../use-copy";
 import type { EsicPayload } from "@/lib/esic-payload";
 
 /**
@@ -13,26 +13,16 @@ import type { EsicPayload } from "@/lib/esic-payload";
  * with any other text, and every one of them visible.
  */
 export default function CopyForEsic({ payload }: { payload: EsicPayload }) {
-  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+  const [state, copy] = useCopy(2500);
 
   const mapped = payload.medications.filter((m) => m.formulary).length;
   const total = payload.medications.length;
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(JSON.stringify(payload));
-      setState("copied");
-    } catch {
-      setState("failed");
-    }
-    setTimeout(() => setState("idle"), 2500);
-  }
 
   return (
     <div className="print:hidden">
       <button
         type="button"
-        onClick={copy}
+        onClick={() => copy(JSON.stringify(payload))}
         className="w-full rounded-xl bg-card px-4 py-3 text-center text-body font-semibold text-accent active:opacity-70"
       >
         {state === "copied" ? "Copied" : "Copy for hospital system"}

@@ -256,7 +256,11 @@ summary {
    notch or a Dynamic Island. Every `sticky top-0` header uses this so its own padding, not the
    bar's edge, sits flush with the safe area rather than the true top of the screen. */
 .top-bar {
-  padding-top: calc(0.625rem + env(safe-area-inset-top));
+  padding-top: calc(0.625rem + var(--top-safe, env(safe-area-inset-top)));
+  /* Below the connection bar while it shows (it publishes its height as --top-inset and clears
+     the status bar itself, setting --top-safe to 0). Without it the header kept its own
+     status-bar padding under a bar that already had one: a blank band of about 60pt. */
+  top: var(--top-inset, 0px);
 }
 
 /* The mark, working.

@@ -1,5 +1,5 @@
-import type { AdviceItem } from "@/lib/discharge-entities";
 import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-templates";
+import { adv, proc } from "@/lib/discharge-template-parts";
 
 /**
  * MEDICAL ONCOLOGY discharge templates — one per admission type a medical oncology unit
@@ -22,8 +22,6 @@ import type { DischargeTemplate, TemplateMedication } from "@/lib/discharge-temp
  * oncology summary carries an anaesthesia line.
  */
 
-const adv = (items: { module: string; text: string }[]): AdviceItem[] =>
-  items.map((it, i) => ({ id: `adv-${i}`, module: it.module, text: it.text }));
 
 const M = {
   ondansetron: { generic: "Ondansetron", strength: "8 mg", route: "PO", frequency: "BD", duration: "3 days", indication: "then SOS for vomiting", status: "new" } as TemplateMedication,
@@ -87,14 +85,13 @@ export const ONCOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         "Patient on chemotherapy for [ diagnosis ] was admitted with fever on day [ … ] of cycle [ … ] of [ regimen ], with an absolute neutrophil count of [ … ].",
       primaryDiagnosis:
         "Febrile neutropenia — [ diagnosis, stage ] on [ regimen ], cycle [ … ] day [ … ]; ANC [ … ]; [ source identified / no source identified ]",
-      procedure: {
+      procedure: proc({
         name: "Empirical intravenous antibiotic therapy for febrile neutropenia",
         anaesthesia: "",
         findings: "[ ANC at presentation; blood cultures from peripheral and line; urine, chest imaging, examined sites — mouth, perianum, line site, chest, skin ]",
         drains: "[ chemoport / PICC — kept or removed, tip culture if removed ]",
-        complications: "Nil",
         outcome: "Afebrile with count recovery; discharged on the plan below.",
-      },
+      }),
       clinicalCourse:
         "Admitted with fever on day [ … ] of cycle [ … ] of [ regimen ]. Blood cultures were taken from a peripheral vein and from the line BEFORE the first antibiotic dose, and empirical [ piperacillin-tazobactam ] was started within one hour. ANC at admission was [ … ]. Cultures grew [ … / no growth at 48 hours ]. Antibiotics were [ continued / de-escalated / escalated ] on day [ … ] after review. G-CSF was [ given / not given ]. The patient became afebrile on [ date ] and the neutrophil count recovered to [ … ] on [ date ]. Fit for discharge, afebrile for 48 hours with a recovering count.",
       medications: [M.gcsf, M.paracetamolSos, M.chlorhexidine, M.pantoprazole],
@@ -160,14 +157,13 @@ export const ONCOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         "Patient on [ regimen ] for [ diagnosis ] was admitted on day [ … ] of cycle [ … ] with [ grade … mucositis / intractable vomiting / diarrhoea ] and [ dehydration / inability to maintain oral intake ].",
       primaryDiagnosis:
         "[ Chemotherapy-induced mucositis / nausea and vomiting / diarrhoea ], grade [ … ] — on [ regimen ], cycle [ … ] day [ … ], for [ diagnosis, stage ]",
-      procedure: {
+      procedure: proc({
         name: "Supportive management of chemotherapy toxicity",
         anaesthesia: "",
         findings: "[ grade of the toxicity; counts; electrolytes and renal function on admission; stool and blood cultures if fever ]",
         drains: "[ chemoport / PICC / peripheral line ]",
-        complications: "Nil",
         outcome: "Toxicity settled to grade [ … ]; maintaining oral intake at discharge.",
-      },
+      }),
       clinicalCourse:
         "Admitted on day [ … ] of cycle [ … ] of [ regimen ] with [ toxicity ], graded [ … ]. There was no fever and the ANC was [ … ] [ / febrile neutropenia was excluded / treated — see above ]. The patient was managed with intravenous fluids, [ antiemetics / mouth care and analgesia / antidiarrhoeals ], correction of [ potassium / magnesium / sodium ], and nutritional support. Oral intake was re-established on [ date ]. The toxicity settled to grade [ … ] and the patient was fit for discharge. The next cycle will be [ delayed to … / given at a reduced dose of … % ] and this has been recorded on the treatment card.",
       medications: [M.ondansetron, M.chlorhexidine, M.fluconazole, M.ors, M.loperamide, M.pantoprazole, M.paracetamolSos],
@@ -352,14 +348,13 @@ export const ONCOLOGY_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     indication:
       "Patient with [ diagnosis, stage ] was admitted for [ chemotherapy / management of a complication of treatment / symptom control / investigation ].",
     primaryDiagnosis: "",
-    procedure: {
+    procedure: proc({
       name: "[ Treatment given during this admission ]",
       anaesthesia: "",
       findings: "[ pre-treatment counts and organ function; what was given and at what dose ]",
       drains: "[ chemoport / PICC / peripheral line ]",
-      complications: "Nil",
       outcome: "[ Outcome of this admission ]",
-    },
+    }),
     clinicalCourse:
       "Admitted with [ presentation ] on day [ … ] of cycle [ … ] of [ regimen ] for [ diagnosis ]. [ Management given. ] The patient improved and was fit for discharge on [ date ] with the plan below.",
     medications: [M.ondansetron, M.pantoprazole, M.chlorhexidine, M.paracetamolSos],

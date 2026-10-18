@@ -3,11 +3,15 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { updatePatientIdentity, type EditPatientState } from "./actions";
 import DiagnosisCombobox from "./diagnosis-combobox";
+import { PenIcon } from "../icons";
 import {
   LOCATION_CHOICES,
   managementChoicesFor,
   stripPatientHonorific,
 } from "@/lib/patients";
+import { getSpecialtyPack } from "@/lib/specialty";
+import { hasOperationClock } from "@/lib/specialty/intake";
+import { checklistFieldLabel, usesBurnClock, usesCycleClock } from "@/lib/specialty/clocks";
 
 type Patient = {
   id: string;
@@ -53,14 +57,11 @@ type TemplateChoice = { family: string; variant: string | null; label: string };
  * oncology patient has no operation and (for medicine especially) no equivalent management
  * state, so the field was unreachable: neither department could attach any of their published
  * checklists (febrile illness, DKA, febrile neutropenia, …) to a patient at all. Fixed by
- * showing the field whenever the specialty isn't general surgery, on top of the existing
- * pre-op/post-op gate — labelled for what it actually picks in each department.
+ * showing the field on any unit that does not operate, on top of the existing
+ * pre-op/post-op gate — labelled for what it actually picks in each department
+ * (lib/specialty/clocks.ts checklistFieldLabel). A unit without an operation clock gets it
+ * always; an operative one behind pre-op/post-op, exactly as surgery always has.
  */
-function checklistFieldLabel(specialty: string): string {
-  if (specialty === "medical_oncology") return "Chemo cycle / checklist";
-  if (specialty === "general_surgery") return "Operation";
-  return "Checklist";
-}
 
 /** What to put in the box: the unit's own wording if there is any, otherwise the name of the
  *  template this patient was linked to before free text existed. */
@@ -88,6 +89,7 @@ export default function EditIdentity({
   specialty = "general_surgery",
   openSignal,
   hideTrigger = false,
+  openAsOperated = false,
 }: {
   patient: Patient;
   templateChoices: TemplateChoice[];
@@ -97,7 +99,10 @@ export default function EditIdentity({
   /** Bumped by a parent (the ⋯ menu) to open the dialog without its own pen button. */
   openSignal?: number;
   hideTrigger?: boolean;
+  /** Opened from "Was this patient operated?": start on Post-op, at the date of operation. */
+  openAsOperated?: boolean;
 }) {
+  const pack = getSpecialtyPack(specialty);
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const [state, formAction, pending] = useActionState<EditPatientState, FormData>(
     updatePatientIdentity,
@@ -121,8 +126,16 @@ export default function EditIdentity({
     // a menu click (openSignal), not to patient changing, so it belongs here rather than in a
     // separate effect keyed on patient.
     /* eslint-disable-next-line react-hooks/set-state-in-effect */
-    setManagement(currentManagementChoice(patient));
+    setManagement(openAsOperated ? "postop" : currentManagementChoice(patient));
     dialogRef.current?.showModal();
+    if (openAsOperated) {
+      // After the Post-op render has added the date field. The name field takes focus on open,
+      // and its keyboard would cover the date — so focus goes too.
+      setTimeout(() => {
+        (document.activeElement as HTMLElement | null)?.blur();
+        dialogRef.current?.querySelector('input[name="operation_date"]')?.scrollIntoView({ block: "center" });
+      }, 100);
+    }
     // Deliberately keyed on openSignal only, not patient: this must fire on every menu click,
     // not on every patient prop change (which happens on every ward-list revalidation).
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -144,7 +157,7 @@ export default function EditIdentity({
           }}
           className="shrink-0 rounded-lg p-2 text-muted active:bg-chip"
         >
-          <PenIcon />
+          <PenIcon className="h-[18px] w-[18px]" />
         </button>
       )}
 
@@ -283,9 +296,9 @@ export default function EditIdentity({
           {/* A conservative or workup SURGICAL patient has no operation to name and no date to
               give — that part of the gate is unchanged. A non-surgical patient never has an
               operation either, but does still need to reach the checklist picker, so the field
-              is also shown whenever the specialty isn't general surgery (see
-              checklistFieldLabel above for why). */}
-          {management === "preop" || management === "postop" || specialty !== "general_surgery" ? (
+              is also shown on any unit without an operation clock (see
+              the comment above checklistFieldLabel's import for why). */}
+          {management === "preop" || management === "postop" || !hasOperationClock(pack) ? (
             <>
               <label className="flex flex-col gap-2">
                 <span className="text-subhead text-muted">{checklistFieldLabel(specialty)}</span>
@@ -312,6 +325,9 @@ export default function EditIdentity({
                     {management === "postop" ? "Date of operation" : "Planned date of operation"}
                   </span>
                   <input
+                    // Remounted when Pre-op and Post-op swap: otherwise the planned date stays in
+                    // the box and saves as the date the operation happened — a guess.
+                    key={management}
                     type="date"
                     name="operation_date"
                     required={management === "postop"}
@@ -342,7 +358,7 @@ export default function EditIdentity({
             />
           )}
 
-          {specialty === "medical_oncology" && (
+          {usesCycleClock(pack) && (
             <>
               <label className="flex flex-col gap-2">
                 <span className="text-subhead text-muted">Regimen</span>
@@ -396,7 +412,7 @@ export default function EditIdentity({
             </>
           )}
 
-          {specialty === "burns_plastic_surgery" && (
+          {usesBurnClock(pack) && (
             <label className="flex flex-col gap-2">
               <span className="text-subhead text-muted">Date of burn</span>
               <input
@@ -441,21 +457,3 @@ export default function EditIdentity({
   );
 }
 
-function PenIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-    </svg>
-  );
-}

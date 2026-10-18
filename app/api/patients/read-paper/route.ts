@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { readAdmissionPaper } from "@/lib/read-admission-paper";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { getCurrentWard, getWardSpecialtyStored } from "@/lib/ward";
 import { claimPhotoRead } from "@/lib/photo-cap";
 
@@ -10,9 +11,7 @@ const MAX_BYTES = 12 * 1024 * 1024;
 /** Read a paper into suggestions only. Creating the patient remains a separate, reviewed action. */
 export async function POST(request: Request) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const form = await request.formData();

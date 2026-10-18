@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { plainAiError } from "@/lib/ai-error";
 import { istDayKey } from "@/lib/patient-state";
-import { managementChoicesFor } from "@/lib/patients";
+import { clockColumns, noteStatusLine } from "@/lib/specialty/clocks";
+import type { DayCountPatient } from "@/lib/specialty/types";
 import { compileProgressNote } from "@/lib/progress-note-ai";
 import { finalCheck } from "@/lib/final-check";
 import { FAST_MODEL } from "@/lib/model";
@@ -19,9 +21,7 @@ import { getWardSpecialtyStored } from "@/lib/ward";
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: patientId } = await params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const since = new Date(Date.now() - 48 * 3600 * 1000).toISOString();
@@ -63,13 +63,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       })
       .join("\n") || "(nothing)";
 
-  const specialtyKey = getSpecialtyPack(
-    patient?.ward_id ? await getWardSpecialtyStored(patient.ward_id) : null
-  ).key;
-  const status = patient?.surgery_date
-    ? `Post Op Day (${patient.post_op_day ?? "—"})`
-    : managementChoicesFor(specialtyKey, patient?.management ?? "").find((c) => c.value === patient?.management)
-        ?.label ?? null;
+  const pack = getSpecialtyPack(patient?.ward_id ? await getWardSpecialtyStored(patient.ward_id) : null);
+  const specialtyKey = pack.key;
+  // Same phase line as the printed sheet — see app/patients/[id]/note/page.tsx.
+  const extraCols = clockColumns(pack);
+  const clock = extraCols
+    ? ((await supabase.from("current_patients").select(extraCols).eq("id", patientId).maybeSingle()).data as unknown as Partial<DayCountPatient> | null)
+    : null;
+  const status = patient ? noteStatusLine(pack, { ...patient, ...clock }) : null;
 
   // This department's exam lines and ward wording — lib/progress-note-config.ts.
   const noteConfig = progressNoteConfigFor(specialtyKey);

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { isSpecialtyKey, specialtyPacksEnabled } from "@/lib/specialty";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 
 export type JoinState = { error: string | null; joined?: string };
 export type CreateWardState = { error: string | null };
@@ -29,9 +30,7 @@ export async function createWard(
     specialtyPacksEnabled() && isSpecialtyKey(chosen) ? chosen : "general_surgery";
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return { error: "You are signed out. Sign in again." };
 
   // The two-argument overload (patch 0060). If the patch has not been run the function does
@@ -67,9 +66,7 @@ export async function joinWard(_prev: JoinState, formData: FormData): Promise<Jo
   if (!code) return { error: "Enter the code." };
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return { error: "You are signed out. Sign in again." };
 
   const { data, error } = await supabase.rpc("join_ward_by_code", { code });
@@ -191,9 +188,7 @@ export async function switchWard(formData: FormData) {
   if (!wardId) return;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return;
 
   // Row security decides whether they may see this ward at all; writing the preference
@@ -217,9 +212,7 @@ export async function leaveWard(formData: FormData) {
   if (!wardId) return;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return;
 
   const { data: ward } = await supabase
@@ -248,9 +241,7 @@ export async function leaveWard(formData: FormData) {
  */
 export async function saveProfile(formData: FormData) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return;
 
   const name = String(formData.get("display_name") ?? "").trim();
@@ -298,9 +289,7 @@ export async function importFormulary(
   formData: FormData
 ): Promise<ImportFormularyState> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return { ok: false, message: "You are signed out. Sign in again." };
 
   const wardId = String(formData.get("ward_id") ?? "");
@@ -436,9 +425,7 @@ export async function copySetupFromWard(
   if (targetId === sourceId) return { ok: false, message: "That is this unit." };
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return { ok: false, message: "You are signed out. Sign in again." };
 
   // Both reads are limited by row security to units this doctor belongs to, so a ward id typed

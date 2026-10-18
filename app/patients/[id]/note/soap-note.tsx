@@ -7,10 +7,12 @@ function Section({
   label,
   lines,
   minHeight,
+  openSpace,
 }: {
   label: string;
   lines: string[];
   minHeight: string;
+  openSpace: string[];
 }) {
   const content = lines.filter((l) => l.trim() !== "");
   return (
@@ -20,7 +22,7 @@ function Section({
       </p>
       <div className={`px-3 py-3 text-subhead leading-relaxed ${minHeight}`}>
         {content.length > 0 ? (
-          content.map((line, i) => renderNoteLine(line, i, { compact: true }))
+          content.map((line, i) => renderNoteLine(line, i, { compact: true, openSpace }))
         ) : (
           <p className="text-muted">Nothing recorded yet today.</p>
         )}
@@ -59,10 +61,10 @@ export default function SoapNote({ note }: { note: ProgressNote }) {
         </div>
       </div>
 
-      <Section label="Subjective" lines={note.subjective} minHeight="min-h-[110px]" />
-      <Section label="Objective" lines={note.objective} minHeight="min-h-[140px]" />
-      <Section label="Assessment" lines={note.assessment} minHeight="min-h-[110px]" />
-      <Section label="Plan" lines={note.plan} minHeight="min-h-[110px]" />
+      <Section label="Subjective" lines={note.subjective} openSpace={note.openSpace} minHeight="min-h-[110px]" />
+      <Section label="Objective" lines={note.objective} openSpace={note.openSpace} minHeight="min-h-[140px]" />
+      <Section label="Assessment" lines={note.assessment} openSpace={note.openSpace} minHeight="min-h-[110px]" />
+      <Section label="Plan" lines={note.plan} openSpace={note.openSpace} minHeight="min-h-[110px]" />
 
       <div className="px-3 py-2 text-subhead">
         <span className="font-semibold">Practitioner&rsquo;s name:</span>{" "}

@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { readPaper } from "@/lib/read-paper";
 import { readLabPhoto } from "@/lib/read-lab-photo";
-import { getCurrentWard } from "@/lib/ward";
+import { getCurrentWard, getWardPack } from "@/lib/ward";
 import { claimPhotoRead } from "@/lib/photo-cap";
 
 const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp"] as const;
@@ -20,9 +21,7 @@ const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const form = await request.formData();
@@ -50,7 +49,7 @@ export async function POST(request: Request) {
 
   let read;
   try {
-    read = await readPaper(base64, mediaType);
+    read = await readPaper(base64, mediaType, await getWardPack(ward?.id));
   } catch (e) {
     return NextResponse.json(
       { error: plainAiError(e) },

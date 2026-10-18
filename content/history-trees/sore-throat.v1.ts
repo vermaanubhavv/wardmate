@@ -12,7 +12,7 @@ import { commonHpi, ebem, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce
  */
 export const soreThroatV1: HistoryTree = {
   id: "sore_throat",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Sore throat",
   triggers: ["sore throat", "throat pain", "pain in throat", "painful swallowing", "odynophagia", "pharyngitis", "tonsillitis", "gala kharab", "throat infection", "scratchy throat"],
   setting: "Adult medicine / ENT ward, north India",

@@ -23,6 +23,7 @@ export const CORE: MedicalLexiconEntry[] = [
     aliases: ["POD", "post-op day", "postoperative day"],
     categories: ["core", "india-round"],
     priority: PRIORITY.INDIA_WARD,
+    operativeOnly: true,
   },
   {
     term: "urine output",
@@ -35,6 +36,7 @@ export const CORE: MedicalLexiconEntry[] = [
     aliases: ["not passing flatus", "flatus passed"],
     categories: ["core", "india-round"],
     priority: PRIORITY.INDIA_WARD,
+    operativeOnly: true,
   },
   {
     term: "bowels opened",
@@ -59,5 +61,6 @@ export const CORE: MedicalLexiconEntry[] = [
     aliases: ["suture line", "wound healthy", "staple line healthy"],
     categories: ["core", "india-round"],
     priority: PRIORITY.INDIA_WARD,
+    operativeOnly: true,
   },
 ];

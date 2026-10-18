@@ -129,7 +129,7 @@ counts read zero with a note naming the patch. Check before debugging a "bug".
 
 ```
 speak / photograph
-  → STT (lib/stt, gpt-4o-transcribe, given MEDICAL_VOCABULARY_HINT)
+  → STT (lib/stt, Deepgram nova-3-medical, given medical keyterms)
   → lib/glossary.ts correctTranscript()      ← code list, then the unit's learned glossary
   → lib/extract.ts extractObservations()     ← claude-opus-5, VERBATIM-QUOTE CHECK IN CODE
   → observations rows, each with source_quote

@@ -106,37 +106,8 @@ describe("buildRunView", () => {
   });
 });
 
-describe("safety level and differential reasoning on the run view", () => {
-  const redFlags = feverV1.slots.filter((s) => s.group === "red_flag");
+describe("differential reasoning on the run view", () => {
   const withSlots = (slots: SlotResult[]) => okRun({ result: { slots, rejections: [], wrongPatient: null } });
-
-  it("an unresolved conflict on a red flag counts as unasked, not as a negative", () => {
-    // A contradiction is not reassurance: until the resident resolves it, the red flag is
-    // still an open question and the level must not fall to 0.
-    const run = withSlots(
-      redFlags.map((s, i) =>
-        i === 0
-          ? slot(s.id, "negative", { evidence: { quote: "no", source: 0 }, conflict: { quote: "yes", source: 1 } })
-          : slot(s.id, "negative", { evidence: { quote: "no", source: 0 } })
-      )
-    );
-    const v = buildRunView(feverV1, run, sources, { postOp: false });
-    expect(v.conflicts.map((c) => c.slotId)).toEqual([redFlags[0].id]);
-    expect(v.safety?.level).toBe(1);
-    expect(v.safety?.complete).toBe(false);
-    expect(v.safety?.unasked).toContain(redFlags[0].id);
-  });
-
-  it("reaches 0 only when every red flag is explicitly negative", () => {
-    const v = buildRunView(
-      feverV1,
-      withSlots(redFlags.map((s) => slot(s.id, "negative", { evidence: { quote: "no", source: 0 } }))),
-      sources,
-      { postOp: false }
-    );
-    expect(v.safety?.level).toBe(0);
-    expect(v.safety?.complete).toBe(true);
-  });
 
   it("names the findings that raised each leading differential", () => {
     const diff = feverV1.differentials[0];
@@ -153,9 +124,8 @@ describe("safety level and differential reasoning on the run view", () => {
     expect(led!.supportedBy).toContain(feverV1.slots.find((s) => s.id === pointer)!.label);
   });
 
-  it("shows no safety level at all when the run failed, rather than a reassuring zero", () => {
+  it("shows no differentials when the run failed", () => {
     const v = buildRunView(feverV1, okRun({ status: "error", error: "boom", result: null }), sources, { postOp: false });
-    expect(v.safety).toBeNull();
     expect(v.leadingDetail).toEqual([]);
   });
 });

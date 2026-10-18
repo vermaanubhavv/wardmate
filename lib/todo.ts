@@ -35,27 +35,37 @@ export type WardTask = {
 export async function getWardTasks(wardId: string): Promise<WardTask[]> {
   const supabase = await createClient();
 
-  const { data: patients } = await supabase
-    .from("patients")
-    .select("id, display_name, bed")
-    .eq("ward_id", wardId)
-    .eq("status", "active");
-
-  if (!patients || patients.length === 0) return [];
-
-  const byId = new Map(patients.map((p) => [p.id, p]));
-
-  const { data: tasks } = await supabase
+  // One round trip, not two: the ward's active patients are joined through rather than listed
+  // first just to get ids to filter by — the same filter getActivePatients uses.
+  const { data: joined } = await supabase
     .from("observations")
-    .select("id, patient_id, label, value_text, source_quote, urgency, graded_at, recorded_at, task_open, task_category")
-    .in(
-      "patient_id",
-      patients.map((p) => p.id)
+    .select(
+      "id, patient_id, label, value_text, source_quote, urgency, graded_at, recorded_at, task_open, task_category, patients!inner(id, display_name, bed, ward_id, status)"
     )
+    .eq("patients.ward_id", wardId)
+    .eq("patients.status", "active")
     .eq("kind", "plan")
     .is("done_at", null)
     // Newest first, which is what folding repeats relies on.
     .order("recorded_at", { ascending: false });
+
+  const byId = new Map<string, { id: string; display_name: string; bed: string }>();
+  const tasks = ((joined ?? []) as unknown as {
+    id: string;
+    patient_id: string;
+    label: string;
+    value_text: string | null;
+    source_quote: string;
+    urgency: string;
+    graded_at: string | null;
+    recorded_at: string;
+    task_open: boolean | null;
+    task_category: TaskCategory | "other" | null;
+    patients: { id: string; display_name: string; bed: string };
+  }[]).map(({ patients: p, ...t }) => {
+    byId.set(p.id, { id: p.id, display_name: p.display_name, bed: p.bed });
+    return t;
+  });
 
   // Repeats folded per patient, never across the ward: two patients both needing a drain out
   // are two jobs, and merging them would hide one entirely.

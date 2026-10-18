@@ -11,7 +11,7 @@ import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, val, yn }
  */
 export const burningMicturitionV1: HistoryTree = {
   id: "burning_micturition",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Burning micturition",
   triggers: ["burning micturition", "burning urine", "dysuria", "painful urination", "pain on passing urine", "burning while passing urine", "frequency of urine", "urgency", "urinary frequency"],
   setting: "Adult medicine / surgical ward, north India",

@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
-import { createClient } from "@/lib/supabase/server";
-import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
+import { getUser } from "@/lib/auth";
+import { transcribe } from "@/lib/stt";
 import { correctTranscript } from "@/lib/glossary";
 import { readSpokenPatient } from "@/lib/read-new-patient";
+import { getCurrentWardPack } from "@/lib/ward";
+import { wardKeyterms } from "@/lib/transcription/patient-context";
 
 /**
  * Speech in, form fields out. Writes nothing.
@@ -13,30 +15,40 @@ import { readSpokenPatient } from "@/lib/read-new-patient";
  * correction rather than a wrong patient.
  */
 export async function POST(request: Request) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
-  const form = await request.formData();
-  const audio = form.get("audio");
+  // The patient is joining the selected unit, so its vocabulary, corrections and prompt apply.
+  const pack = await getCurrentWardPack();
 
-  if (!(audio instanceof Blob) || audio.size === 0) {
-    return NextResponse.json({ error: "Nothing was recorded." }, { status: 400 });
-  }
-
+  // Live dictation on the add-patient screen streams its own transcript (lib/stt/live.ts) and
+  // sends the text; the record-then-send button sends the audio clip.
   let transcript: string;
-  try {
-    const stt = getTranscriber();
-    const result = await stt.transcribe(audio, MEDICAL_VOCABULARY_HINT);
-    transcript = (await correctTranscript(result.text)).text;
-  } catch (e) {
-    return NextResponse.json(
-      { error: plainAiError(e) },
-      { status: 502 }
-    );
+  if (request.headers.get("content-type")?.includes("application/json")) {
+    let body: { transcript?: string };
+    try {
+      body = (await request.json()) as { transcript?: string };
+    } catch {
+      return NextResponse.json({ error: "Malformed request." }, { status: 400 });
+    }
+    transcript = (await correctTranscript(String(body.transcript ?? "").slice(0, 4000), pack)).text;
+  } else {
+    const form = await request.formData();
+    const audio = form.get("audio");
+
+    if (!(audio instanceof Blob) || audio.size === 0) {
+      return NextResponse.json({ error: "Nothing was recorded." }, { status: 400 });
+    }
+
+    try {
+      const result = await transcribe(audio, wardKeyterms(pack.lexiconSpecialty));
+      transcript = (await correctTranscript(result.text, pack)).text;
+    } catch (e) {
+      return NextResponse.json(
+        { error: plainAiError(e) },
+        { status: 502 }
+      );
+    }
   }
 
   if (!transcript.trim()) {
@@ -47,7 +59,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { patient } = await readSpokenPatient(transcript);
+    const { patient } = await readSpokenPatient(transcript, pack);
     return NextResponse.json({ patient, transcript });
   } catch (e) {
     return NextResponse.json(

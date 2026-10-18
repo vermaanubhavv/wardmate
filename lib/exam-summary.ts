@@ -32,6 +32,7 @@ import {
   type EtiologyKey,
   type ImagingSummary,
 } from "@/lib/imaging-summary";
+import { istDate } from "@/lib/urgency";
 import { matchVitalLabel, type VitalKey } from "@/lib/vital-ranges";
 
 export type ExamValue = {
@@ -155,6 +156,8 @@ const SYSTEM_NAMES: { label: string; aliases: string[] }[] = [
   { label: "P/R", aliases: ["per rectal", "p/r", "pr examination", "rectal examination", "per rectum"] },
   { label: "P/V", aliases: ["per vaginum", "p/v", "vaginal examination", "per vagina"] },
   { label: "CNS", aliases: ["cns", "central nervous system", "neurological examination", "neuro"] },
+  { label: "MSE", aliases: ["mse", "mental status examination", "mental state examination"] },
+  { label: "Skin", aliases: ["skin examination", "cutaneous examination", "dermatological examination"] },
 ];
 
 /**
@@ -431,9 +434,6 @@ export function summariseObjective(
   };
 }
 
-/** The calendar day an instant falls on in IST — the day the round actually happened. */
-const istDay = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
 /**
  * "3 d ago", or null for anything recorded today.
@@ -444,8 +444,8 @@ const istDay = (iso: string) =>
  */
 function agoLabel(recordedAt: string | null, now: Date): string | null {
   if (!recordedAt) return null;
-  const then = istDay(recordedAt);
-  const today = istDay(now.toISOString());
+  const then = istDate(recordedAt);
+  const today = istDate(now.toISOString());
   if (then === today) return null;
   const days = Math.round(
     (Date.parse(`${today}T00:00:00Z`) - Date.parse(`${then}T00:00:00Z`)) / 86400000

@@ -6,7 +6,7 @@ import { medicationFields } from "@/lib/medication-fields";
 import { drugKey } from "@/lib/drug-key";
 import {
   CONDITION_VARIABLES,
-  ALL_CONDITION_VARIABLES,
+  buildConditionProse,
   compiledRowId,
   type ConditionAtDischarge,
   type ConditionVariableKey,
@@ -21,6 +21,8 @@ import {
 import { type DischargeTemplate } from "@/lib/discharge-templates";
 import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
 import { matchDischargeTemplateFor } from "@/lib/specialty/discharge";
+import { hasOperationClock } from "@/lib/specialty/intake";
+import { displayValue } from "@/lib/display-value";
 
 /**
  * Compile a PROPOSED discharge draft from what is already on the record.
@@ -127,22 +129,7 @@ function latestByKinds(observations: Observation[], kinds: string[]): Observatio
   return out;
 }
 
-/** The concise Condition-at-Discharge prose the protocol allows the app to assemble from the
- *  variables the resident has marked satisfactory. Deterministic, never AI. */
-export function buildConditionProse(vars: Record<ConditionVariableKey, ConditionVariableValue>): string {
-  const phrases: string[] = [];
-  for (const v of ALL_CONDITION_VARIABLES) {
-    const value = vars[v.key];
-    if (value === true) phrases.push(v.satisfactory);
-    else if (typeof value === "string" && value.trim()) phrases.push(value.trim());
-  }
-  if (phrases.length === 0) return "";
-  const joined =
-    phrases.length === 1
-      ? phrases[0]
-      : `${phrases.slice(0, -1).join(", ")} and ${phrases[phrases.length - 1]}`;
-  return `Patient is ${joined}.`;
-}
+export { buildConditionProse };
 
 function compileDiagnoses(context: DischargeContext): Diagnosis[] {
   const { patient, observations } = context;
@@ -201,7 +188,7 @@ function compileProcedures(context: DischargeContext): Procedure[] {
     .map((o) => (o.value_text ?? o.label).trim())[0] ?? null;
   const drainObs = observations
     .filter((o) => o.kind === "drain" || /drain/i.test(o.label))
-    .map((o) => (o.value_text ? `${o.label}: ${o.value_text}` : o.label).trim());
+    .map((o) => (o.value_text ? `${o.label}: ${displayValue(o.value_text)}` : o.label).trim());
   const procedureDone = observations.find((o) => o.kind === "procedure_done")?.value_text?.trim() ?? null;
 
   const name = procedure ?? procedureDone ?? "";
@@ -357,9 +344,8 @@ function compilePatientActions(context: DischargeContext): string[] {
  * Only ever for the one-off flow, and only into sections the record left empty. This is the
  * same class of thing as the standard-medication default: an editable scaffold a doctor signs
  * off, carrying `[ … ]` blanks for the parts only they can fill — never a clinical fact.
- * `seedAll` is true for the one-off (no record at all); a real patient's workspace would only
- * ever take the advice / red-flag lists, and even those stay switched off until the resident
- * opts in.
+ * `seedAll` is true for the one-off (no record at all); a real patient's workspace takes only
+ * the advice, red-flag and follow-up lists (switched on, for the resident to untick).
  */
 export function applyDischargeTemplate(
   draft: DischargeDraft,
@@ -369,15 +355,21 @@ export function applyDischargeTemplate(
   const s = template.scaffold;
   const next: DischargeDraft = { ...draft };
 
+  // The diagnosis's standard advice, warnings and follow-up are the ward's own wording, not
+  // clinical findings — so they arrive switched on for every patient, for the resident to
+  // untick what does not apply.
   if (draft.advice.items.length === 0) {
-    next.advice = { items: s.advice.map((a) => ({ ...a })), included: seedAll };
+    next.advice = { items: s.advice.map((a) => ({ ...a })), included: true };
   }
   if (draft.redFlags.items.length === 0) {
-    next.redFlags = { items: [...s.redFlags], included: seedAll };
+    next.redFlags = { items: [...s.redFlags], included: true };
   }
+  if (draft.patientActions.length === 0) next.patientActions = [...s.patientActions];
+  if (draft.primaryCareActions.length === 0) next.primaryCareActions = [...s.primaryCareActions];
 
-  // A ward patient stops here: the record compiles their diagnosis, operation, course and
-  // medications — the template only OFFERS the advice and red-flag cards above (switched off).
+  // A ward patient stops here: the record compiles their diagnosis, operation and medications,
+  // and the AI writes the indication and course from the record ALONG this template
+  // (lib/discharge-ai.ts) — the template's own facts are never copied in as the patient's.
   if (!seedAll) return next;
 
   if (!draft.indicationForAdmission.text.trim()) {
@@ -441,9 +433,6 @@ export function applyDischargeTemplate(
       },
     ];
   }
-  if (draft.patientActions.length === 0) next.patientActions = [...s.patientActions];
-  if (draft.primaryCareActions.length === 0) next.primaryCareActions = [...s.primaryCareActions];
-
   // The specimen the operation sends, pending, with the line that makes the report get traced —
   // now that the procedure name is resolved.
   if (next.histopathology.length === 0) {
@@ -457,6 +446,20 @@ export function applyDischargeTemplate(
   // states it, the draft does not assume it.
 
   return next;
+}
+
+/** The diagnosis template a ward patient's discharge is formed along — shared by the compiler
+ *  and the AI drafts so both follow the same one. */
+export function templateForDischarge(
+  context: DischargeContext,
+  primaryDiagnosis: string | null | undefined,
+  pack: SpecialtyPack = generalSurgeryPack
+): DischargeTemplate | null {
+  return matchDischargeTemplateFor(pack, {
+    procedureText: context.procedure ?? context.patient.procedure_text,
+    diagnosisText: primaryDiagnosis,
+    templateFamily: context.patient.template_family,
+  });
 }
 
 export function compileDischargeDraft(
@@ -479,7 +482,7 @@ export function compileDischargeDraft(
     finalisedAt: null,
 
     indicationForAdmission: { text: "", source: "compiled" },
-    encounter: {
+    admission: {
       admittedAt: patient.admitted_on,
       dischargedAt: null,
       department: doctor?.department ?? null,
@@ -514,13 +517,12 @@ export function compileDischargeDraft(
   // its diagnosis / operation points at, applied with seedAll=false — so only the advice and
   // red-flag cards are offered (switched off), and everything else stays compiled from the
   // record.
+  // `template: null` is an explicit "no template" (the one-off's "start blank"); only an absent
+  // template is matched from the record.
   const template =
-    options?.template ??
-    matchDischargeTemplateFor(options?.pack ?? generalSurgeryPack, {
-      procedureText: context.procedure ?? patient.procedure_text,
-      diagnosisText: base.diagnoses.find((d) => d.category === "primary")?.text,
-      templateFamily: patient.template_family,
-    });
+    options?.template !== undefined
+      ? options.template
+      : templateForDischarge(context, base.diagnoses.find((d) => d.category === "primary")?.text, options?.pack);
 
   const drafted = template ? applyDischargeTemplate(base, template, options?.seedAll ?? false) : base;
 
@@ -528,7 +530,9 @@ export function compileDischargeDraft(
   // on a post-op summary is the costlier mistake, and the resident can still untick any or turn
   // the section off. The template's own list when it has one, else the generic post-op list.
   // Only reaches a draft whose red-flag section was never saved — a stored choice still wins.
-  if (patient.surgery_date) {
+  // Only where the unit operates: an older medicine patient may carry an operation date from a
+  // bedside procedure (before #133), and that is not a post-op discharge.
+  if (patient.surgery_date && hasOperationClock(options?.pack ?? context.pack ?? generalSurgeryPack)) {
     const items = drafted.redFlags.items.length > 0 ? drafted.redFlags.items : [...RED_FLAG_SUGGESTIONS];
     return { ...drafted, redFlags: { items, included: true } };
   }

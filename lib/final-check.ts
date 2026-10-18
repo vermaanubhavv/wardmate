@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { AI_MODEL } from "@/lib/model";
+import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
 
 /**
  * The last pass over a finished document — case history, progress note, discharge summary.
@@ -141,25 +140,22 @@ const SCHEMA = {
 export async function finalCheck(fields: Record<string, string>, what: string, model: string = AI_MODEL): Promise<FinalCheck> {
   let proposed: { field: string; kind: string; before: string; after: string }[] = [];
   let questions: string[] = [];
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (key && Object.keys(fields).length > 0) {
+  if (process.env.ANTHROPIC_API_KEY && Object.keys(fields).length > 0) {
     try {
-      const response = await new Anthropic({ apiKey: key }).messages.create(
+      const response = await anthropic().messages.create(
         {
           model,
           max_tokens: 2000,
           system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
           output_config: {
-            // Haiku rejects `effort` outright (400), which the failsafe would swallow as "skipped".
-            ...(model === AI_MODEL ? { effort: "low" as const } : {}),
+            effort: "low",
             format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> },
           },
           messages: [{ role: "user", content: `The finished ${what}, field by field:\n\n${JSON.stringify(fields, null, 2)}` }],
         },
         { timeout: TIMEOUT_MS, maxRetries: 0 }
       );
-      const block = response.content.find((b) => b.type === "text");
-      const parsed = block && block.type === "text" ? JSON.parse(block.text) : {};
+      const parsed = replyJson(response, {});
       proposed = Array.isArray(parsed.edits) ? parsed.edits : [];
       // Product rule: suggestions are questions. Anything else is dropped, not rephrased.
       questions = (Array.isArray(parsed.questions) ? parsed.questions : [])
@@ -212,10 +208,9 @@ Return JSON: { "text": string }.`;
 
 /** Re-frame a prose paragraph. Never throws; returns the input on failure or a failed guard. */
 export async function polishProse(text: string, what: string): Promise<string> {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key || !text.trim()) return text;
+  if (!process.env.ANTHROPIC_API_KEY || !text.trim()) return text;
   try {
-    const response = await new Anthropic({ apiKey: key }).messages.create(
+    const response = await anthropic().messages.create(
       {
         model: AI_MODEL,
         max_tokens: 2000,
@@ -231,8 +226,7 @@ export async function polishProse(text: string, what: string): Promise<string> {
       },
       { timeout: TIMEOUT_MS, maxRetries: 0 }
     );
-    const block = response.content.find((b) => b.type === "text");
-    const out = String((block && block.type === "text" ? JSON.parse(block.text) : {}).text ?? "").trim();
+    const out = String(replyJson(response, {}).text ?? "").trim();
     if (out && sameFacts(text, out)) return out;
     if (out) console.warn("final-check: rewording dropped, a fact did not survive");
   } catch (e) {

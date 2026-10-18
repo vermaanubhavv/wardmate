@@ -37,7 +37,7 @@ on read (like post-op day).
 gallstone / non-gallstone, change-from-baseline, 48-hour locked checkpoints), Revised Atlanta /
 Modified Marshall with a persistence timer, documentation-only cards (Modified CTSI). These live
 as `PANCREATITIS_EXTENDED_CARDS` in `definitions/acute-pancreatitis.v1.ts`, exercised only by
-`lib/scoring/__tests__/`. The remaining DOCX pathways are stubs in `definitions/skeletons.ts`.
+`lib/scoring/__tests__/`. The remaining DOCX pathways are recorded (not built) under §8 "Unbuilt pathways".
 
 Everything here is **behind a feature flag and OFF by default**. With the flag closed, nothing
 in `lib/scoring/` or `supabase/patches/0053` is read or written and WardMate behaves exactly as
@@ -190,17 +190,39 @@ timestamps" is answerable (`getCardHistory()` / the panel's history view).
 3. Add tests under `lib/scoring/__tests__/` — every threshold, including equality boundaries,
    and the time-window isolation cases.
 4. Governance: fill in the clinical owner, sources, changelog, and expiry. Flip `status` to
-   `"active"` only after sign-off (or set `SCORING_ENGINE_ALLOW_DRAFTS=on` for a pilot).
+   `"active"` only after sign-off. A `draft` never triggers (the old
+   `SCORING_ENGINE_ALLOW_DRAFTS` pilot switch was removed when no draft remained; re-add it in
+   `triggerableDefinitions()` if a draft ever needs piloting).
 
 There is a worked example: the whole of `acute-pancreatitis.v1.ts` is nothing but data + two
 local builder functions for the repeated Ranson variants.
 
-### Skeletons
+### Unbuilt pathways
 
-`definitions/skeletons.ts` holds the remaining pathways as `status: "unavailable"` records —
-preferred scoring system(s), trigger concepts, timing, card type, and a `licensingReview` flag
-for AJCC / AIS-ISS / BI-RADS / TI-RADS content. The engine never activates them and the UI
-never shows them to ordinary users.
+The remaining DOCX top-20 pathways are recorded here, not in code ("Mark a pathway unavailable
+rather than implementing a formula from memory"). Each row is the *product* decision — preferred
+scoring system(s), trigger concepts, timing, card type — so a clinical author has a starting
+point. It deliberately carries NO thresholds. Rows marked **licensing review** carry proprietary
+content (AJCC, AIS/ISS, BI-RADS, TI-RADS) that needs content-governance / licensing review. Some
+(MPI, LRINEC, ABSI) have since shipped as their own definitions; the notes still apply.
+
+| Pathway | Preferred systems | Trigger concepts | Timing | Card type | Notes |
+|---|---|---|---|---|---|
+| Adhesive small-bowel obstruction (`adhesive_sbo`, MVP1) | Bologna/WSES red-flag pathway; 24-hour water-soluble contrast checkpoint | small bowel obstruction, adhesive obstruction, SAIO, sub-acute intestinal obstruction | Admission checklist; 24-h contrast radiograph checkpoint; hard reassessment by 72 h | structured classification | DOCX: 'Do not invent a score' — timed checklist with red flags, not a number. Peritonitis / strangulation / ischaemia contraindicate non-operative management. |
+| Perforation peritonitis / secondary peritonitis (`perforation_peritonitis`, MVP1) | Mannheim Peritonitis Index; SOFA (ongoing organ dysfunction) | perforation peritonitis, hollow viscus perforation, secondary peritonitis, pneumoperitoneum | MPI partly intra-operative — must not delay source control; SOFA repeated with change | calculator | Display institution-selected MPI threshold; never treat as a surgical-indication score. |
+| Acute diverticulitis (`acute_diverticulitis`, MVP3) | WSES CT classification; modified Hinchey (academic familiarity) | acute diverticulitis, sigmoid diverticulitis, complicated diverticulitis | CT-based staging when clinically appropriate; reassess on peritonitis / organ dysfunction | structured classification | Avoid auto-generating colonoscopy during the acute episode. |
+| Diabetic foot ulcer / infection (`diabetic_foot`, MVP2) | IWGDF/IDSA infection severity; SVS WIfI; Wagner (secondary academic descriptor) | diabetic foot, diabetic foot infection, diabetic foot ulcer, DFU, DFI | Infection severity + WIfI at presentation; serial reassessment | structured classification | WIfI ischaemia: prefer toe pressure / TcPO₂ in diabetes (ABI may be falsely high). |
+| Necrotising soft-tissue infection / Fournier gangrene (`nsti`, MVP2) | Clinical emergency pathway (primary); LRINEC (adjunct only); SOFA; FGSI (optional, Fournier) | necrotising fasciitis, NSTI, Fournier gangrene, necrotising soft tissue infection | Immediate senior review timer; scoring/imaging must not delay exploration | calculator | SAFETY: a low LRINEC must NEVER produce an 'NSTI excluded' or reassuring green state. Sensitivity ~68% at ≥6, ~41% at ≥8. |
+| Groin and ventral/incisional hernia (`hernia`, MVP3) | European Hernia Society (EHS) classification | inguinal hernia, incisional hernia, ventral hernia, femoral hernia, paraumbilical hernia | Structured documentation card — not an emergency risk calculator | structured classification | Incarceration/obstruction/strangulation → launch the acute-abdomen / bowel-obstruction workflow instead. |
+| Haemorrhoidal disease (`haemorrhoids`, MVP3) | Goligher grade I–IV; symptom/complication descriptors; ACRSI 2016 suffix (optional local extension) | haemorrhoids, piles, prolapsing haemorrhoids, thrombosed pile | Examination documentation and procedure selection | structured classification | Do not attribute rectal bleeding to haemorrhoids without age/risk-appropriate evaluation. |
+| Fistula-in-ano (`fistula_in_ano`, MVP3) | Parks classification; St James University Hospital MRI grade; Garg (optional, complex) | fistula in ano, anal fistula, perianal fistula, recurrent anal fistula | Structured descriptors; MRI for recurrent/complex disease when clinically selected | structured classification | Do not let Goodsall's rule auto-assign the internal opening. |
+| Breast lesion / breast cancer (`breast_cancer`, MVP3) | ACR BI-RADS; Nottingham histologic grade; current AJCC TNM / prognostic stage | breast lump, breast cancer, carcinoma breast, BIRADS 4, BIRADS 5 | Imaging assessment → tissue diagnosis → verified oncology staging field | documentation only, structured classification; **licensing review** | LICENSING: BI-RADS content and AJCC staging tables need a commercial content agreement. Final stage group assigned by the managing physician, not the app. |
+| Thyroid nodule / thyroid cancer (`thyroid_nodule`, MVP3) | ACR TI-RADS; Bethesda System 2023; current AJCC TNM | thyroid nodule, thyroid cancer, TIRADS 4, TIRADS 5, Bethesda | US risk + size thresholds → FNA decision → verified staging for confirmed cancer | documentation only, structured classification; **licensing review** | LICENSING: TI-RADS and AJCC content need content-governance/licensing review. Discordance triggers senior review, not an automatic operation. |
+| Colorectal cancer (`colorectal_cancer`, MVP3) | current AJCC TNM; CAP-style synoptic elements | colon cancer, rectal cancer, colorectal carcinoma, CRC | Primarily extraction, completeness checking and longitudinal tracking | documentation only; **licensing review** | LICENSING: do not reproduce licensed AJCC tables without a commercial content agreement. Do not compute a final stage group from incomplete pathology/imaging. |
+| Major trauma / polytrauma (`major_trauma`, MVP2) | GCS + Shock Index (immediate); Revised Trauma Score (first pre-intervention obs); ISS after AIS coding | polytrauma, major trauma, RTA polytrauma, blunt trauma | GCS + SI immediately; RTS from first valid pre-intervention observations; ISS after definitive AIS coding | calculator, documentation only; **licensing review** | LICENSING: AIS/ISS is a licensed standard — do not generate AIS codes from casual text. RTS: preserve first pre-intervention values; flag intubation/sedation limits. |
+| Blunt solid-organ abdominal trauma (`solid_organ_trauma`, MVP2) | AAST Organ Injury Scale (as reported); WSES class (anatomy + haemodynamics) | liver laceration, splenic injury, blunt abdominal trauma, AAST grade | AAST-OIS grade from radiology/operation; WSES class combines with haemodynamic status | documentation only, structured classification; **licensing review** | SAFETY: haemodynamic instability overrides a low anatomic grade. LICENSING: AAST-OIS is official/licensed grading content. |
+| Blunt chest trauma (`blunt_chest_trauma`, MVP2) | Thoracic Trauma Severity Score (TTSS); RibScore (optional, CT fracture pattern) | blunt chest trauma, rib fractures, flail chest, pulmonary contusion, haemothorax | Monitoring/escalation aid — not a substitute for immediate treatment of tension pneumothorax or respiratory failure | calculator | TTSS 13–25 predicts high ARDS risk. |
+| Major burns (`major_burns`, MVP2) | TBSA + burn depth (core record); revised Baux (adult mortality risk); ABSI (optional) | burns, flame burn, scald, electrical burn, inhalation injury | TBSA/depth at presentation; serial evolution; Baux is prognostic, not treatment-withholding | calculator, documentation only | FLUIDS: do not hard-code one Parkland order. Make the formula institution-configurable, show time since burn, subtract fluid already given, require clinician confirmation. |
 
 ## 9. Rolling out a new pathway version
 
@@ -208,9 +230,9 @@ never shows them to ordinary users.
 * A running `pathway_instance` keeps its exact `pathway_version` forever — `store.ts` resolves
   the definition by `(pathwayId, pathwayVersion)`, never "latest". A new publication never
   mutates an in-progress or completed run.
-* A DB row in `pathway_definitions` for a new `(pathway_id, pathway_version)` adds a version
-  without a deploy; a row that re-uses an existing version overrides the built-in for future
-  recomputes of instances on that version.
+* Definitions are built-in only (`definitions/registry.ts`); a new version ships with a deploy.
+  The `pathway_definitions` table exists (patch 0053) but nothing writes it and the engine no
+  longer reads it.
 
 ## 10. Feature flags
 
@@ -218,7 +240,6 @@ never shows them to ordinary users.
 |---|---|---|
 | `NEXT_PUBLIC_SCORING_ENGINE=on` | env (Vercel + `.env.local`) | global kill-switch; module inert |
 | a `ward_scoring_engine` row for the ward | DB (ward owner opts in) | that ward is untouched |
-| `SCORING_ENGINE_ALLOW_DRAFTS=on` | env | lets a `draft` pathway trigger for piloting |
 | `ward_scoring_toggles` rows | DB, per ward + pathway | disable a specific generated-task toggle (e.g. `ranson_extended`) |
 
 `isScoringEngineEnabled(wardId)` requires **both** the env switch and the ward row.
@@ -250,7 +271,7 @@ low score reads "does not exclude", plus a score-independent urgent-review task)
 wards too. New engine kind `max_points` (KDIGO stage = worst sub-score, never the sum).
 
 Licensing review required before enabling: **AJCC TNM, AIS/ISS, BI-RADS, ACR TI-RADS**, and any
-third-party calculator text/logo (`skeletons.ts` → `licensingReview: true`).
+third-party calculator text/logo (§8 "Unbuilt pathways", rows marked **licensing review**).
 
 ## 12. Test strategy
 

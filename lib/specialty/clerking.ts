@@ -396,10 +396,25 @@ const MEDICINE_FEVER: Template = {
 
 const MEDICINE_OVERRIDES: Template[] = [MEDICINE_FEVER];
 
+/** Fever on chemotherapy: the medicine fever history plus where it sits against the last cycle
+ *  and the line — prompts only, so a neutropenic fever's timing is asked, never assumed. */
+const ONCOLOGY_FEVER: Template = {
+  id: "fever_oncology",
+  match: MEDICINE_FEVER.match,
+  attrs: [
+    ...MEDICINE_FEVER.attrs.slice(0, -1),
+    { label: "Against chemotherapy", options: ["Since last chemo cycle", "Within 2 weeks of a cycle"] },
+    { label: "With the line", options: ["Chills / rigors with infusion", "Chills / rigors on flushing the line", "Redness at port / line site"] },
+    MEDICINE_FEVER.attrs[MEDICINE_FEVER.attrs.length - 1],
+  ],
+};
+
 const OVERRIDES: Partial<Record<SpecialtyKey, Template[]>> = {
   internal_medicine: MEDICINE_OVERRIDES,
   emergency_medicine: MEDICINE_OVERRIDES,
   pulmonary_medicine: MEDICINE_OVERRIDES,
+  paediatrics: MEDICINE_OVERRIDES,
+  medical_oncology: [ONCOLOGY_FEVER],
 };
 
 /** The template id a complaint gets on this unit — exported for the test. */
@@ -415,7 +430,7 @@ export function hopiAttrsFor(complaint: string, specialty?: string | null): Hopi
 
 // --- examination cards ---------------------------------------------------------------------
 
-export type ExamCardId = "piccle" | "vitals" | "abdomen" | "chest" | "cvs" | "cns" | "local";
+export type ExamCardId = "piccle" | "vitals" | "abdomen" | "chest" | "cvs" | "cns" | "mse" | "skin" | "local";
 
 /** Each systemic card: its title, the label it is stored under, and the labels it is seeded from. */
 export const EXAM_CARD: Record<Exclude<ExamCardId, "piccle" | "vitals">, { title: string; label: string; aliases: string[] }> = {
@@ -423,6 +438,8 @@ export const EXAM_CARD: Record<Exclude<ExamCardId, "piccle" | "vitals">, { title
   chest: { title: "Chest", label: "chest", aliases: ["chest", "respiratory system", "rs"] },
   cvs: { title: "Cardiovascular system", label: "cardiovascular system", aliases: ["cardiovascular system", "cvs", "s1 s2", "s1s2", "heart sounds"] },
   cns: { title: "Central nervous system", label: "central nervous system", aliases: ["central nervous system", "cns", "neurological examination", "neuro"] },
+  mse: { title: "Mental status examination", label: "mental status examination", aliases: ["mental status examination", "mental state examination", "mse"] },
+  skin: { title: "Skin examination", label: "skin examination", aliases: ["skin examination", "cutaneous examination", "dermatological examination"] },
   local: { title: "Local examination", label: "local examination", aliases: ["local examination", "local exam"] },
 };
 
@@ -433,6 +450,14 @@ export const CNS_PILLS = [
   "Plantar flexor", "Plantar extensor", "Neck stiffness", "Kernig's sign",
 ];
 
+/** The MSE and skin cards' domains — headings to write under, never findings: a tap adds the
+ *  heading, the resident says what was seen. */
+export const MSE_PILLS = [
+  "Appearance & behaviour", "Speech", "Mood", "Affect", "Thought form", "Thought content",
+  "Perception", "Cognition", "Insight", "Judgement",
+];
+export const SKIN_PILLS = ["Morphology", "Distribution", "Configuration", "Mucosa", "Nails", "Hair"];
+
 const SURGICAL_EXAM: ExamCardId[] = ["piccle", "vitals", "abdomen", "chest", "local"];
 const MEDICINE_EXAM: ExamCardId[] = ["piccle", "vitals", "cvs", "chest", "abdomen", "cns"];
 
@@ -442,6 +467,12 @@ const EXAM_STEPS: Partial<Record<SpecialtyKey, ExamCardId[]>> = {
   // These two keep Local examination: the chest diagram and the trauma body chart hang off it.
   pulmonary_medicine: ["piccle", "vitals", "chest", "cvs", "abdomen", "cns", "local"],
   emergency_medicine: ["piccle", "vitals", "cvs", "chest", "abdomen", "cns", "local"],
+  // Oncology keeps Local examination too: the body chart hangs off it. Its node, mucosa and
+  // performance cards come from lib/case-history-sections.ts and walk before these.
+  medical_oncology: [...MEDICINE_EXAM, "local"],
+  psychiatry: [...MEDICINE_EXAM, "mse"],
+  // The skin is the presenting problem, so it is walked first.
+  dermatology: ["piccle", "vitals", "skin", "cvs", "chest", "abdomen", "cns"],
 };
 
 /**
@@ -450,7 +481,7 @@ const EXAM_STEPS: Partial<Record<SpecialtyKey, ExamCardId[]>> = {
  */
 export function examStepsFor(specialty?: string | null, recorded: (id: ExamCardId) => boolean = () => false): ExamCardId[] {
   const steps = EXAM_STEPS[(specialty ?? "") as SpecialtyKey] ?? SURGICAL_EXAM;
-  const extra = (["local"] as ExamCardId[]).filter((id) => !steps.includes(id) && recorded(id));
+  const extra = (["local", "mse", "skin"] as ExamCardId[]).filter((id) => !steps.includes(id) && recorded(id));
   return [...steps, ...extra];
 }
 
@@ -484,6 +515,8 @@ const EXAM_FORMAT: Record<ExamCardId, FormatStep> = {
   chest: { title: "Respiratory system", hint: "air entry, breath sounds, added sounds" },
   cvs: { title: "Cardiovascular system", hint: "S1 S2, murmurs, JVP, pedal oedema" },
   cns: { title: "Central nervous system", hint: "sensorium / GCS, higher functions, power, tone, reflexes, plantars, meningeal signs" },
+  mse: { title: "Mental status examination", hint: "appearance and behaviour, speech, mood and affect, thought form and content, perception, cognition, insight and judgement" },
+  skin: { title: "Skin examination", hint: "morphology, distribution and configuration of the lesions; mucosa, nails, hair" },
   local: { title: "Local examination", hint: "the lump, wound or affected part in detail" },
 };
 
@@ -512,3 +545,45 @@ export function clerkingFormatFor(specialty?: string | null, sex?: string | null
   if (!steps) return forSex(SURGICAL_FORMAT);
   return [...forSex(HISTORY_FORMAT), ...steps.map((id) => EXAM_FORMAT[id]), ...CLOSING_FORMAT];
 }
+
+// --- per-department wording ----------------------------------------------------------------
+
+/** Units whose clerking always walks the obstetric card, whatever sex is recorded. */
+const ALWAYS_OBSTETRIC = new Set<SpecialtyKey>(["obstetrics_gynaecology"]);
+
+export const alwaysShowsObstetricCard = (specialty?: string | null) =>
+  ALWAYS_OBSTETRIC.has((specialty ?? "") as SpecialtyKey);
+
+/** What the Local examination card is for, under its heading. */
+const LOCAL_EXAM_HINT: Partial<Record<SpecialtyKey, string>> = {
+  internal_medicine: "The examination of the affected part itself — a joint, a swelling, an ulcer, a wound.",
+  pulmonary_medicine: "The examination of the chest wall and the affected part itself.",
+  emergency_medicine: "The examination of the injured or affected part itself — mark injuries on the body chart.",
+  medical_oncology: "The examination of the primary tumour or the affected part itself — site, size, fixity, the skin over it.",
+  orthopaedics: "The examination of the limb, joint or spine itself — look, feel, move, distal pulses and sensation.",
+  ent: "The examination of the ear, nose, throat and neck itself.",
+  ophthalmology: "The examination of each eye itself — adnexa, anterior segment, pupil, fundus.",
+  urology: "The examination of the kidneys, bladder and external genitalia itself.",
+  neurosurgery: "The examination of the head, scalp or spine itself — wound, swelling, tenderness.",
+  burns_plastic_surgery: "The examination of the burn or wound itself — site, depth, extent; mark it on the body chart.",
+  obstetrics_gynaecology: "The obstetric or gynaecological examination itself — per abdomen, per speculum, per vaginum.",
+};
+
+export const localExamHintFor = (specialty?: string | null) =>
+  LOCAL_EXAM_HINT[(specialty ?? "") as SpecialtyKey] ??
+  "The examination of the presenting problem itself — the lump, the hernia, the wound, the perianal region.";
+
+/** The example under "Dictating the clerking" — synthetic, in the unit's own idiom. */
+const CLERKING_EXAMPLE: Partial<Record<SpecialtyKey, string>> = {
+  internal_medicine: "e.g. “fever for five days with chills… diabetic for ten years… S1 S2 heard, JVP raised…”",
+  paediatrics: "e.g. “cough and fever for three days… immunised for age… crepitations in the right lower zone…”",
+  pulmonary_medicine: "e.g. “breathlessness for a month… smokes ten bidis a day… wheeze over both lung fields…”",
+  emergency_medicine: "e.g. “fell from a two-wheeler an hour ago… GCS fifteen… abrasion over the left forearm…”",
+  medical_oncology: "e.g. “cycle 3 of R-CHOP, day 10… fever since yesterday… grade 2 mucositis…”",
+  psychiatry: "e.g. “not sleeping for two weeks… hearing voices at night… speech slow, mood low, insight partial…”",
+  dermatology: "e.g. “itchy rash over both legs for a month… erythematous scaly plaques over the shins… nails pitted…”",
+};
+
+export const clerkingExampleFor = (specialty?: string | null) =>
+  CLERKING_EXAMPLE[(specialty ?? "") as SpecialtyKey] ??
+  "e.g. “pain right iliac fossa two days… diabetic for ten years… abdomen soft, tender in the RIF…”";

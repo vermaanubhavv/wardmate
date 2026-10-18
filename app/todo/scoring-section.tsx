@@ -10,20 +10,11 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import type { ScoringTask } from "@/lib/scoring/read";
+import { asSuggestion } from "@/lib/scoring/wording";
 import { completeScoringTask, declineScoringTask } from "../patients/[id]/scoring/actions";
 
 export type WardScoringTask = ScoringTask & { bed: string; name: string };
 
-const PAST: Record<string, string> = { send: "sent", order: "ordered", arrange: "arranged", chart: "charted" };
-
-/** A suggestion is asked, never told: "Send CBC and CRP" reads "Has CBC and CRP been sent
- *  for Ravi?". A multi-part or unfamiliar action is asked whole. The stored action is untouched. */
-export function asQuestion(action: string, name: string): string {
-  const who = name ? ` for ${name}` : "";
-  const m = /^(Send|Order|Arrange|Chart)\s+(.+)$/.exec(action.trim());
-  if (m && !m[2].includes(";")) return `Has ${m[2]} been ${PAST[m[1].toLowerCase()]}${who}?`;
-  return `Has this been considered${who}: ${action.trim().replace(/[.?]$/, "")}?`;
-}
 
 export function Row({ t }: { t: WardScoringTask }) {
   const [pending, start] = useTransition();
@@ -42,7 +33,7 @@ export function Row({ t }: { t: WardScoringTask }) {
         <span className="block h-[22px] w-[22px] rounded-full border-2 border-line" />
       </button>
       <div className="min-w-0 flex-1">
-        <p className="text-subhead">{asQuestion(t.action, t.name)}</p>
+        <p className="text-subhead">{asSuggestion(t.action)}</p>
         <Link
           href={`/patients/${t.patientId}`}
           className="flex min-h-11 items-center gap-1.5 truncate text-footnote text-accent active:opacity-60"

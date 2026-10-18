@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { readPaper } from "@/lib/read-paper";
 import { readLabPhoto } from "@/lib/read-lab-photo";
 import { claimPhotoRead } from "@/lib/photo-cap";
+import { getWardPack } from "@/lib/ward";
 
 const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp"] as const;
 const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
@@ -30,9 +32,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { id: patientId } = await params;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   // Row security decides whether this doctor may see the patient at all; a patient they are
@@ -94,7 +94,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     labValuesEarly = found ? lab.values : null;
   } else {
     try {
-      read = await readPaper(base64, mediaType);
+      read = await readPaper(base64, mediaType, await getWardPack(patient.ward_id));
     } catch (e) {
       return NextResponse.json(
         { error: plainAiError(e) },

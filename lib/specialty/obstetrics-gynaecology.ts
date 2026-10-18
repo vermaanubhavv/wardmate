@@ -1,9 +1,5 @@
-import {
-  OBGYN_DISCHARGE_TEMPLATES,
-  OBGYN_GENERIC_DISCHARGE_TEMPLATE,
-} from "@/lib/discharge-templates-obgyn";
 import type { FormatKind } from "@/lib/formats";
-import type { SpecialtyPack } from "./types";
+import { surgicalDayCount, type SpecialtyPack } from "./types";
 
 /**
  * The obstetrics & gynaecology pack.
@@ -17,7 +13,7 @@ import type { SpecialtyPack } from "./types";
  *    admission. `dayCount` below is therefore general surgery's exact logic, not medicine's
  *    admission-only one — an O&G ward genuinely does operate, unlike a medicine ward.
  *
- * 2. THE ADMISSION IS OFTEN A PREGNANCY, NOT A DIAGNOSIS. `admissionNoun` is "case" — the
+ * 2. THE ADMISSION IS OFTEN A PREGNANCY, NOT A DIAGNOSIS. It is a "case" — the
  *    ward's own word for it ("an antenatal case", "a gynaecology case") — and the extraction
  *    guidance below teaches the model the gravida/para notation and the LMP/EDD/POG vocabulary
  *    a surgical or medicine prompt has no reason to know.
@@ -59,23 +55,13 @@ export const obstetricsGynaecologyPack: SpecialtyPack = {
   label: "Obstetrics & Gynaecology",
   blurb: "Counts post-operative or post-delivery days. Pregnancy-aware clerking and dictation.",
 
-  terminology: {
-    dayLabel: "POD",
-    admissionNoun: "case",
-  },
-
   admissionPhrase: "an obstetrics and gynaecology admission",
 
   // Same logic as general surgery's dayCount, moved here rather than shared, so a future change
   // to one unit's counting can never silently change the other's. A delivered or operated
   // patient counts from the operation/delivery; everyone else (antenatal, gynaecology workup)
   // counts from admission — and the label always says which.
-  dayCount: (p) => {
-    if (p.post_op_day !== null) {
-      return { clock: "post_op", n: p.post_op_day, text: `POD ${p.post_op_day}` };
-    }
-    return { clock: "admission", n: p.admission_day, text: `Day ${p.admission_day}` };
-  },
+  dayCount: surgicalDayCount,
 
   extractRoleLine:
     "You convert an obstetrics and gynaecology resident's spoken ward-round note into structured observations.",
@@ -91,16 +77,6 @@ Obstetrics and gynaecology ward — what the words mean here:
 - FETAL WELLBEING TERMS — "FHS present", "NST reactive", "CTG category I", "liquor adequate" — are exam findings on the mother's chart, kind "exam", exactly as said. Never infer fetal wellbeing from the mother's vitals alone.
 - Abbreviations to leave EXPANDED-AS-SAID and never resolve yourself: "PIH"/"PE"/"eclampsia" (never decide which the transcript meant), "APH"/"PPH", "IUGR", "PROM"/"PPROM", "MTP". Store the letters that were said.
 `.trim(),
-
-  // No delivery/operation to hang an admission-anchored trigger off differently from surgery's
-  // own model — an O&G ward's post-op checklist would anchor on post_op the same way surgery's
-  // does. No checklist protocols are seeded yet (see the file header), so this is unreachable
-  // in practice until one is written, but it is set to the clinically correct value now rather
-  // than left wrong for a future author to discover.
-  checklistAnchor: "post_op",
-
-  dischargeTemplates: OBGYN_DISCHARGE_TEMPLATES,
-  genericDischargeTemplate: OBGYN_GENERIC_DISCHARGE_TEMPLATE,
 
   // Deliberately empty — see the file header. No surgical or medicine pathway can trigger here
   // either way, because only listed pathwayIds are ever offered to a unit.

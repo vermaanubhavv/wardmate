@@ -2,7 +2,6 @@
 
 import { ActionSheet } from "../../../action-sheet";
 import { startWait } from "@/lib/track";
-import { takeDischargeWarmup } from "@/lib/discharge-warmup";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -20,17 +19,17 @@ import {
   type DiagnosisCategory,
   type HistopathologyStatus,
 } from "@/lib/discharge-entities";
-import { buildConditionProse } from "@/lib/discharge-compile";
+import { buildConditionProse } from "@/lib/discharge-entities";
 import { runDischargeChecks, type DischargeCheckContext } from "@/lib/discharge-checks";
 import type { DischargeCheck } from "@/lib/discharge-checks";
 import FormularyLink from "./formulary-link";
 import LiveDictation, { DictateButton, routeVia, type LiveLine, type LiveSection } from "../live-dictation";
-import type { DischargeProfile } from "@/lib/specialty/discharge";
+import type { DischargeProfile } from "@/lib/specialty/discharge-profile";
 import type { FinalFix } from "@/lib/final-check";
 import { Field, Area, StringList, SuggestField, SelectField, SegmentedField } from "./discharge-fields";
 import { DEFAULT_UNIT_CONSULTANTS } from "@/lib/unit-consultants";
 import DiagnosisCombobox from "../../diagnosis-combobox";
-import { IconCheck, statusChip, SelChip, OptionRow, Toggle, genBtn, approveBtn } from "../card-kit";
+import { IconCheck, statusChip, SelChip, OptionRow, Toggle, genBtn, approveBtn, StepShell } from "../card-kit";
 import {
   saveDischargeSection,
   revalidateDischargeAction,
@@ -39,15 +38,19 @@ import {
   reopenDischargeAction,
   resetDischargeAction,
 } from "./actions";
+import OneOffStart, { EMPTY_ONE_OFF_START, type OneOffStartState } from "./one-off-start";
+import DischargeSheet from "./sheet";
+import PrintButton from "../note/print-button";
+import type { DischargeDocument } from "@/lib/discharge-render";
 
 const uid = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `r-${Math.round(Math.random() * 1e9)}`);
 
-// The Encounter card's option lists — real ones, kept short. Department/Specialty/Unit are
+// The Admission Details card's option lists — real ones, kept short. Department/Specialty/Unit are
 // suggestions only; typing anything else is still fine. Consultant is a closed set on purpose —
 // which unit a discharge is written on already says who the consultant is (compiled in from the
 // ward's own setting, lib/unit-consultants.ts), so this is a dropdown to correct it, not a box
 // to retype it every time and risk a typo on the paper.
-const DEPARTMENT_SUGGESTIONS = ["General Surgery", "Surgical Gastroenterology", "Surgical Oncology"];
+const SURGICAL_DEPARTMENTS = ["General Surgery", "Surgical Gastroenterology", "Surgical Oncology"];
 const UNIT_SUGGESTIONS = ["Unit Alpha", "Unit 1", "Unit 2", "Unit 3", "Unit 4"];
 const CONSULTANT_SUGGESTIONS = Array.from(new Set(Object.values(DEFAULT_UNIT_CONSULTANTS)));
 const ADMISSION_TYPES = ["Emergency", "Elective"];
@@ -65,7 +68,7 @@ const ADMISSION_TYPES = ["Emergency", "Elective"];
 // The card UI primitives (SelChip, OptionRow, Toggle, …) live in ../card-kit so the
 // case-history workspace can wear the same look.
 
-type StepId = DischargeSectionId | "review";
+type StepId = DischargeSectionId | "review" | "start";
 
 // Patient Actions and Red Flags live inside the Advice card rather than as their own steps —
 // same data, same checks, one less card to page through. Diagnoses comes first, ahead of
@@ -86,15 +89,19 @@ const ALL_STEPS: { id: StepId; title: string; required: boolean }[] = [
 
 /** The cards this unit walks through. A non-operating unit sees "Procedures", and no
  *  Histopathology card unless the draft already holds a specimen — nothing on record is hidden. */
-function stepsFor(profile: DischargeProfile, hasHistopathology: boolean) {
-  if (profile.operative) return ALL_STEPS;
-  return ALL_STEPS.filter((s) => s.id !== "histopathology" || hasHistopathology).map((s) =>
-    s.id === "procedures" ? { ...s, title: "Procedures" } : s
-  );
+function stepsFor(profile: DischargeProfile, hasHistopathology: boolean, oneOff: boolean) {
+  const steps = profile.operative
+    ? ALL_STEPS
+    : ALL_STEPS.filter((s) => s.id !== "histopathology" || hasHistopathology).map((s) =>
+        s.id === "procedures" ? { ...s, title: "Procedures" } : s
+      );
+  // A one-off has no record to compile from: its first card is who it is for, the papers and the template.
+  return oneOff ? [{ id: "start" as StepId, title: "Start", required: true }, ...steps] : steps;
 }
 
 /** Sections whose checks/nav should surface on the Advice card now that they share it. */
 function cardSections(id: StepId): DischargeSectionId[] {
+  if (id === "start") return [];
   return id === "advice" ? ["advice", "patientActions", "redFlags"] : [id as DischargeSectionId];
 }
 
@@ -143,7 +150,9 @@ export default function DischargeWorkspace({
   aiReady,
   finalCheck,
   profile,
+  oneOff = false,
 }: {
+  /** "" in one-off mode. */
   patientId: string;
   initialDraft: DischargeDraft;
   checkContext: DischargeCheckContext;
@@ -154,15 +163,27 @@ export default function DischargeWorkspace({
   finalCheck: { fixes: FinalFix[]; questions: string[] } | null;
   /** What this unit's specialty offers — lib/specialty/discharge.ts. */
   profile: DischargeProfile;
+  /**
+   * A discharge for somebody who is not in WardMate (app/prepare-discharge/new). The same cards,
+   * with a Start card in front; the draft lives in this component's state only — no autosave,
+   * no AI drafting, no dictation, no patient server action — and Finalise becomes Preview &
+   * print. Every guard below is `if (oneOff)`, so the patient path is untouched.
+   */
+  oneOff?: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [draft, setDraft] = useState<DischargeDraft>(initialDraft);
-  // Fixed for the visit: a card must not vanish under the resident mid-edit.
+  // Fixed for the visit: a card must not vanish under the resident mid-edit. (A one-off's Build
+  // can add a specimen, which switches the card on; nothing switches it off.)
+  const [oneOffHistopathology, setOneOffHistopathology] = useState(false);
+  const hasHistopathology = oneOff ? oneOffHistopathology : initialDraft.histopathology.length > 0;
   const STEPS = useMemo(
-    () => stepsFor(profile, initialDraft.histopathology.length > 0),
-    [profile, initialDraft.histopathology.length]
+    () => stepsFor(profile, hasHistopathology, oneOff),
+    [profile, hasHistopathology, oneOff]
   );
+  // The unit's own department first; surgery's sub-departments only where the unit operates.
+  const departmentSuggestions = [...new Set([profile.specialtyLabel, ...(profile.operative ? SURGICAL_DEPARTMENTS : [])])];
   const [dirty, setDirty] = useState<Set<DischargeSectionId>>(new Set());
   const [pending, startTransition] = useTransition();
   const [isFinalising, setIsFinalising] = useState(false);
@@ -179,11 +200,16 @@ export default function DischargeWorkspace({
   // N" blocker would greet every resident as a red error. It is shown once they have reached
   // Review & sign — the only place Finalise lives.
   const [reachedReview, setReachedReview] = useState(() => STEPS[step].id === "review");
-  const [menuOpen, setMenuOpen] = useState(false);
   const [askReset, setAskReset] = useState(false);
   const [openMed, setOpenMed] = useState<string | null>(null);
   // The drug last removed, and where it sat, for the inline Undo — no confirm dialog.
   const [removedMed, setRemovedMed] = useState<{ med: DischargeDraft["medications"][number]; index: number } | null>(null);
+  // One-off only: the Start card's pages and identity, the checks' facts from the pages read
+  // in, the template the last Build used, and the rendered sheet once previewed.
+  const [start, setStart] = useState<OneOffStartState>(EMPTY_ONE_OFF_START);
+  const [oneOffCheckContext, setOneOffCheckContext] = useState(checkContext);
+  const [usedTemplate, setUsedTemplate] = useState<string | null>(null);
+  const [oneOffDoc, setOneOffDoc] = useState<DischargeDocument | null>(null);
 
   // --- real-time autosave -------------------------------------------------------------
   //
@@ -204,7 +230,7 @@ export default function DischargeWorkspace({
   const sectionValue = (d: DischargeDraft, section: DischargeSectionId): unknown =>
     ({
       indication: d.indicationForAdmission,
-      encounter: d.encounter,
+      admission: d.admission,
       diagnoses: d.diagnoses,
       procedures: d.procedures,
       clinicalCourse: d.clinicalCourse,
@@ -222,6 +248,7 @@ export default function DischargeWorkspace({
   // Autosaves skip revalidation (saveDischargeSection); this notes one owed on the way out.
   const savedQuietly = useRef(false);
   const flushSaves = async (revalidate = false): Promise<boolean> => {
+    if (oneOff) return true; // nothing is stored
     if (saveTimer.current) {
       clearTimeout(saveTimer.current);
       saveTimer.current = null;
@@ -249,6 +276,7 @@ export default function DischargeWorkspace({
   };
 
   const scheduleSave = () => {
+    if (oneOff) return;
     setSaveState("saving");
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => void flushSaves(), 900);
@@ -257,6 +285,7 @@ export default function DischargeWorkspace({
   // Anything still unsaved when the resident leaves — flush it without blocking the navigation.
   useEffect(() => {
     return () => {
+      if (oneOff) return;
       if (dirtyRef.current.size > 0) void flushSaves(true);
       else if (savedQuietly.current) void revalidateDischargeAction(patientId);
       if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -340,22 +369,12 @@ export default function DischargeWorkspace({
       done([section]);
     };
 
-    const warmup = takeDischargeWarmup(patientId);
-    const needed = [...autoGen];
-    if (needed.length === 0) return;
-    if (!warmup) return void needed.forEach((s) => void draftOne(s));
-    // The tab already asked for all three: wait for that rather than asking again. Only if it
-    // failed outright does the workspace draft them itself.
-    void warmup.then((data) => {
-      if (!data) return void needed.forEach((s) => void draftOne(s));
-      apply("clinical_course", data.clinicalCourse);
-      apply("indication", data.indication);
-      apply("investigations", data.relevantInvestigations);
-      done(needed);
-    });
+    // Drafted only now, on opening the workspace, from the whole stay as it stands.
+    autoGen.forEach((s) => void draftOne(s));
   }, [autoGen, patientId]);
 
-  const checks = useMemo(() => runDischargeChecks(draft, checkContext), [draft, checkContext]);
+  const liveCheckContext = oneOff ? oneOffCheckContext : checkContext;
+  const checks = useMemo(() => runDischargeChecks(draft, liveCheckContext), [draft, liveCheckContext]);
   const blockingBySection = useMemo(() => {
     const m = new Map<DischargeSectionId, DischargeCheck[]>();
     for (const c of checks.blocking) m.set(c.section, [...(m.get(c.section) ?? []), c]);
@@ -441,7 +460,6 @@ export default function DischargeWorkspace({
     if (index < 0 || index >= STEPS.length) return;
     if (STEPS[index].id === "review") setReachedReview(true);
     setStep(index);
-    setMenuOpen(false);
     setOpenMed(null);
     setRemovedMed(null);
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
@@ -517,6 +535,7 @@ export default function DischargeWorkspace({
     else if (section === "indication")
       setDraft((d) => ({ ...d, indicationForAdmission: { ...d.indicationForAdmission, approvedAt: now } }));
     else setDraft((d) => ({ ...d, relevantInvestigations: { ...d.relevantInvestigations, approvedAt: now } }));
+    if (oneOff) return; // approval is the resident's, on this screen; nothing to persist
 
     void (async () => {
       await flushSaves(); // the edited text must be stored before it is approved
@@ -534,6 +553,7 @@ export default function DischargeWorkspace({
   }
 
   function finalise() {
+    if (oneOff) return void previewOneOff();
     setIsFinalising(true);
     const stop = startWait("discharge_finalise");
     startTransition(async () => {
@@ -556,6 +576,27 @@ export default function DischargeWorkspace({
       // Straight to the finished summary — finalise and print are one motion.
       router.push(`/patients/${patientId}/discharge/print`);
     });
+  }
+
+  /** One-off "finalise": render the sheet from the draft as it stands, to print. Nothing stored. */
+  async function previewOneOff() {
+    setIsFinalising(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/prepare-discharge/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identity: start.identity, draft }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setOneOffDoc(data.doc as DischargeDocument);
+        if (typeof window !== "undefined") window.scrollTo({ top: 0 });
+      } else setMessage(data.error ?? "Could not render the summary.");
+    } catch {
+      setMessage("No signal. Try again when you have a bar.");
+    }
+    setIsFinalising(false);
   }
 
   function reopen() {
@@ -600,7 +641,7 @@ export default function DischargeWorkspace({
     switch (id) {
       case "indication":
         return !!draft.indicationForAdmission.text.trim();
-      case "encounter":
+      case "admission":
         return true;
       case "diagnoses":
         return draft.diagnoses.some((d) => d.category === "primary" && d.text.trim());
@@ -640,7 +681,7 @@ export default function DischargeWorkspace({
           : draft.indicationForAdmission.text
             ? statusChip("review", "warn")
             : statusChip("empty", "muted");
-      case "encounter":
+      case "admission":
         return statusChip("compiled", "muted");
       case "diagnoses":
         return draft.diagnoses.some((d) => d.category === "primary")
@@ -685,14 +726,32 @@ export default function DischargeWorkspace({
   // --- section bodies -------------------------------------------------------------
   function renderSection(id: StepId): React.ReactNode {
     switch (id) {
+      case "start":
+        return (
+          <OneOffStart
+            state={start}
+            setState={setStart}
+            specialty={profile.specialty}
+            onBuilt={(built, ctx, label) => {
+              setDraft(built);
+              if (built.histopathology.length > 0) setOneOffHistopathology(true);
+              setOneOffCheckContext(ctx);
+              setUsedTemplate(label);
+              setDirty(new Set());
+              setReachedReview(false);
+              goTo(1);
+            }}
+          />
+        );
+
       case "indication": {
         const drafting = autoGen.has("indication") && !draft.indicationForAdmission.text.trim();
         return (
           <>
             <p className="text-caption leading-[1.45] text-muted">
-              Why admission was needed — not a repeat of the diagnosis. The AI drafts it from the record; you approve.
+              Why admission was needed — not a repeat of the diagnosis.{oneOff ? "" : " The AI drafts it from the record; you approve."}
             </p>
-            {drafting ? (
+            {oneOff ? null : drafting ? (
               <p className="text-footnote text-accent">Drafting from the record…</p>
             ) : (
               <button type="button" disabled={readOnly || generating === "indication"} onClick={() => generate("indication")} className={genBtn}>
@@ -709,17 +768,17 @@ export default function DischargeWorkspace({
         );
       }
 
-      case "encounter":
+      case "admission":
         return (
           <div className="grid grid-cols-2 gap-3">
-            <SuggestField label="Department" value={draft.encounter.department} options={DEPARTMENT_SUGGESTIONS} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, department: v })} />
-            <SuggestField label="Specialty" value={draft.encounter.specialty} options={DEPARTMENT_SUGGESTIONS} placeholder={profile.specialtyLabel} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, specialty: v })} />
-            <Field label="Ward" value={draft.encounter.ward} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, ward: v })} />
-            <Field label="Bed" value={draft.encounter.bed} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, bed: v })} />
-            <SelectField label="Consultant" value={draft.encounter.consultant} options={CONSULTANT_SUGGESTIONS} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, consultant: v })} />
-            <SuggestField label="Unit" value={draft.encounter.unit} options={UNIT_SUGGESTIONS} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, unit: v })} />
+            <SuggestField label="Department" value={draft.admission.department} options={departmentSuggestions} onChange={(v) => patch("admission", "admission", { ...draft.admission, department: v })} />
+            <SuggestField label="Specialty" value={draft.admission.specialty} options={departmentSuggestions} placeholder={profile.specialtyLabel} onChange={(v) => patch("admission", "admission", { ...draft.admission, specialty: v })} />
+            <Field label="Ward" value={draft.admission.ward} onChange={(v) => patch("admission", "admission", { ...draft.admission, ward: v })} />
+            <Field label="Bed" value={draft.admission.bed} onChange={(v) => patch("admission", "admission", { ...draft.admission, bed: v })} />
+            <SelectField label="Consultant" value={draft.admission.consultant} options={CONSULTANT_SUGGESTIONS} onChange={(v) => patch("admission", "admission", { ...draft.admission, consultant: v })} />
+            <SuggestField label="Unit" value={draft.admission.unit} options={UNIT_SUGGESTIONS} onChange={(v) => patch("admission", "admission", { ...draft.admission, unit: v })} />
             <div className="col-span-2">
-              <SegmentedField label="Admission type" value={draft.encounter.admissionType} options={ADMISSION_TYPES} onChange={(v) => patch("encounter", "encounter", { ...draft.encounter, admissionType: v })} />
+              <SegmentedField label="Admission type" value={draft.admission.admissionType} options={ADMISSION_TYPES} onChange={(v) => patch("admission", "admission", { ...draft.admission, admissionType: v })} />
             </div>
           </div>
         );
@@ -788,12 +847,23 @@ export default function DischargeWorkspace({
                 <div key={p.id} className="flex flex-col gap-2 rounded-[10px] border border-line p-2.5">
                   <SuggestField label="Procedure" value={p.name} options={profile.procedureSuggestions} onChange={(v) => setP({ name: v })} />
                   <Field label="Date" type="date" value={p.date} onChange={(v) => setP({ date: v || null })} />
-                  <Field label="Indication" value={p.indication} onChange={(v) => setP({ indication: v })} />
-                  <Field label="Anaesthesia" value={p.anaesthesia} onChange={(v) => setP({ anaesthesia: v })} />
-                  <Area label="Significant findings" value={p.findings} onChange={(v) => setP({ findings: v })} rows={2} />
-                  <Field label="Drains" value={p.drains} onChange={(v) => setP({ drains: v })} />
-                  <Field label="Complications" value={p.complications} onChange={(v) => setP({ complications: v })} />
-                  <Field label="Outcome" value={p.outcome} onChange={(v) => setP({ outcome: v })} />
+                  {/* A unit that does not operate prints one line — what, when, what it found —
+                      so it asks only for that. */}
+                  {profile.operative ? (
+                    <>
+                      <Field label="Indication" value={p.indication} onChange={(v) => setP({ indication: v })} />
+                      <Field label="Anaesthesia" value={p.anaesthesia} onChange={(v) => setP({ anaesthesia: v })} />
+                      <Area label="Significant findings" value={p.findings} onChange={(v) => setP({ findings: v })} rows={2} />
+                      <Field label="Drains" value={p.drains} onChange={(v) => setP({ drains: v })} />
+                      <Field label="Complications" value={p.complications} onChange={(v) => setP({ complications: v })} />
+                      <Field label="Outcome" value={p.outcome} onChange={(v) => setP({ outcome: v })} />
+                    </>
+                  ) : (
+                    <>
+                      <Area label="Key findings" value={p.findings} onChange={(v) => setP({ findings: v })} rows={2} />
+                      <Field label="Complications" value={p.complications} onChange={(v) => setP({ complications: v })} />
+                    </>
+                  )}
                   <button type="button" onClick={() => patch("procedures", "procedures", draft.procedures.filter((_, j) => j !== i))} className="self-start text-caption text-muted">
                     Remove procedure
                   </button>
@@ -811,19 +881,10 @@ export default function DischargeWorkspace({
             >
               ＋ Add a procedure
             </OptionRow>
-            {/* A positive statement the resident makes, never a default: offered only on an
-                empty card, and stored as a row that prints as written. */}
             {!profile.operative && draft.procedures.length === 0 && (
-              <OptionRow
-                dashed
-                onClick={() =>
-                  patch("procedures", "procedures", [
-                    { id: uid(), name: NO_PROCEDURE_NAME, date: null, indication: null, anaesthesia: null, findings: null, drains: null, complications: null, outcome: null, source: "resident" as const },
-                  ])
-                }
-              >
-                No procedure done
-              </OptionRow>
+              <p className="text-caption text-muted">
+                Add only a procedure actually done this admission. With none, this section is left off the summary.
+              </p>
             )}
           </>
         );
@@ -833,9 +894,9 @@ export default function DischargeWorkspace({
         return (
           <>
             <p className="text-caption leading-[1.45] text-muted">
-              Mandatory. The AI synthesises it from the whole record; read it against the rounds, edit, then approve.
+              Mandatory.{oneOff ? " Write the stay, then approve." : " The AI synthesises it from the whole record; read it against the rounds, edit, then approve."}
             </p>
-            {drafting ? (
+            {oneOff ? null : drafting ? (
               <p className="text-footnote text-accent">Synthesising the admission from the record…</p>
             ) : (
               <button
@@ -872,9 +933,9 @@ export default function DischargeWorkspace({
         return (
           <>
             <p className="text-caption leading-[1.45] text-muted">
-              The short, meaningful results — not whole panels. The AI proposes from what was recorded; keep the ones that matter.
+              The short, meaningful results — not whole panels.{oneOff ? "" : " The AI proposes from what was recorded; keep the ones that matter."}
             </p>
-            {drafting ? (
+            {oneOff ? null : drafting ? (
               <p className="text-footnote text-accent">Picking out the results that mattered…</p>
             ) : (
               <button
@@ -1179,7 +1240,7 @@ export default function DischargeWorkspace({
           <>
             <div className="flex flex-col gap-2">
               <p className="text-caption leading-[1.45] text-muted">Clear tasks the patient must do. Prefer 0–3.</p>
-              <StringList items={draft.patientActions} onChange={(v) => patch("patientActions", "patientActions", v)} placeholder="e.g. Attend Surgery OPD after 7 days for wound review" noneLabel="None." />
+              <StringList items={draft.patientActions} onChange={(v) => patch("patientActions", "patientActions", v)} placeholder={profile.operative ? "e.g. Attend Surgery OPD after 7 days for wound review" : `e.g. Attend ${profile.specialtyLabel} OPD after 7 days with reports`} noneLabel="None." />
             </div>
 
             <div className="my-1 border-t border-line" />
@@ -1192,17 +1253,15 @@ export default function DischargeWorkspace({
               <>
                 {draft.advice.items.map((a, i) => (
                   <div key={a.id} className="flex flex-col gap-2 rounded-[10px] border border-line p-2.5">
-                    <div className="flex flex-wrap gap-1.5">
-                      {ADVICE_MODULES.map((mod) => (
-                        <SelChip
-                          key={mod}
-                          selected={a.module === mod}
-                          onClick={() => patch("advice", "advice", { ...draft.advice, items: draft.advice.items.map((x, j) => (j === i ? { ...x, module: mod } : x)) })}
-                        >
-                          {mod}
-                        </SelChip>
-                      ))}
-                    </div>
+                    {/* A dropdown, not a row of 13 chips: "Wound care" was the first chip, right
+                        where a thumb lands, and one stray tap retagged diet advice as wound care
+                        on a printed summary. Changing a heading should take a deliberate pick. */}
+                    <SelectField
+                      label="Heading"
+                      value={a.module}
+                      onChange={(mod) => patch("advice", "advice", { ...draft.advice, items: draft.advice.items.map((x, j) => (j === i ? { ...x, module: mod } : x)) })}
+                      options={[...ADVICE_MODULES]}
+                    />
                     <Area value={a.text} onChange={(v) => patch("advice", "advice", { ...draft.advice, items: draft.advice.items.map((x, j) => (j === i ? { ...x, text: v } : x)) })} rows={2} />
                     <button type="button" onClick={() => patch("advice", "advice", { ...draft.advice, items: draft.advice.items.filter((_, j) => j !== i) })} className="self-start text-caption text-muted">
                       Remove
@@ -1323,6 +1382,9 @@ export default function DischargeWorkspace({
               <PreviewLine label="Course" onEdit={() => goTo(stepIndexOf("clinicalCourse"))}>
                 {courseSnippet ? `${courseSnippet}…` : <em className="text-warn-fg">not written</em>}
               </PreviewLine>
+              <PreviewLine label="Condition" onEdit={() => goTo(stepIndexOf("conditionAtDischarge"))}>
+                {dc.prose.trim() || dc.freeText?.trim() || <em className="text-warn-fg">not set</em>}
+              </PreviewLine>
               <PreviewLine label="Investigations" onEdit={() => goTo(stepIndexOf("relevantInvestigations"))}>
                 {acceptedInv.length ? acceptedInv.map((i) => i.group).filter(Boolean).join(", ") : <em className="text-muted">none</em>}
               </PreviewLine>
@@ -1335,9 +1397,6 @@ export default function DischargeWorkspace({
               )}
               <PreviewLine label="Medication" onEdit={() => goTo(stepIndexOf("medications"))}>
                 {draft.medications.length ? draft.medications.map((m) => m.generic).filter(Boolean).join(", ") : <em className="text-muted">none listed</em>}
-              </PreviewLine>
-              <PreviewLine label="Condition" onEdit={() => goTo(stepIndexOf("conditionAtDischarge"))}>
-                {dc.prose.trim() || dc.freeText?.trim() || <em className="text-warn-fg">not set</em>}
               </PreviewLine>
               <PreviewLine label="Patient to" onEdit={() => goTo(stepIndexOf("advice"))}>
                 {draft.patientActions.length ? draft.patientActions.join("; ") : <em className="text-muted">nothing added</em>}
@@ -1357,6 +1416,7 @@ export default function DischargeWorkspace({
               </PreviewLine>
             </div>
 
+            {!oneOff && (
             <div className="mt-1 flex items-center gap-4">
               <Link href={`/patients/${patientId}/discharge/print`} className="text-footnote text-accent">
                 Full page preview
@@ -1367,6 +1427,7 @@ export default function DischargeWorkspace({
                 </button>
               )}
             </div>
+            )}
           </>
         );
       }
@@ -1376,7 +1437,6 @@ export default function DischargeWorkspace({
     }
   }
 
-  const pct = Math.round(((step + 1) / STEPS.length) * 100);
   const isOptionalEmpty =
     current.id !== "review" && !current.required && !filledFor(current.id) && !dirty.has(current.id as DischargeSectionId);
   // An AI card still waiting on approval: the bar's primary approves it on the way past, so
@@ -1391,8 +1451,34 @@ export default function DischargeWorkspace({
           ? "relevantInvestigations"
           : null;
 
+  if (oneOffDoc) {
+    return (
+      <div className="flex flex-col gap-3 px-4 pb-8 print:px-0">
+        <p className="text-footnote leading-relaxed text-muted print:hidden">
+          Nothing here has been stored. Print or save it now — leaving this screen loses it.
+        </p>
+        <DischargeSheet doc={oneOffDoc} wardId="" patientId="" formularyAvailable={false} />
+        <div className="print:hidden">
+          <PrintButton />
+        </div>
+        <button
+          type="button"
+          onClick={() => setOneOffDoc(null)}
+          className="rounded-[10px] border border-line px-4 py-3 text-subhead print:hidden"
+        >
+          Back to editing
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3 px-4 pb-[var(--bar-height)]">
+      {oneOff && usedTemplate && current.id !== "start" && (
+        <p className="text-footnote leading-relaxed text-muted">
+          Filled from the {usedTemplate} template. Replace every <span className="font-mono">[ … ]</span> with the patient&rsquo;s details.
+        </p>
+      )}
       {live && (
         <LiveDictation
           patientId={patientId}
@@ -1404,7 +1490,7 @@ export default function DischargeWorkspace({
           onClose={() => setLive(null)}
         />
       )}
-      {!finalised && !live && (
+      {!finalised && !live && !oneOff && (
         <DictateButton
           title="Dictate the discharge"
           sub="Speak the summary — each part fills its section as you talk."
@@ -1452,105 +1538,61 @@ export default function DischargeWorkspace({
         </div>
       )}
 
-      {/* THE CARD */}
-      <div className="ios-group overflow-hidden">
-        <div className="px-4 pt-4 pb-3">
-          <p className="text-caption2 font-semibold uppercase tracking-[0.03em] text-muted">
-            Discharge · {step + 1} of {STEPS.length}
-          </p>
-          <div className="mt-0.5 flex items-start justify-between gap-2">
-            <h2 className="text-title1 font-bold leading-tight tracking-[-0.021em]">{current.title}</h2>
-            {current.id !== "review" && badgeFor(current.id)}
-          </div>
-        </div>
-
-        <div className="h-[3px] bg-chip">
-          <div className="h-full bg-accent transition-all" style={{ width: `${pct}%` }} />
-        </div>
-
-        <div className="flex flex-col gap-3 px-4 py-4">
-          {current.id !== "review" && cardSections(current.id).some((s) => blockingFor(s).length > 0) && (
-            <div className="rounded-[10px] bg-critical-bg px-3 py-2">
-              {cardSections(current.id)
-                .flatMap(blockingFor)
-                .map((c) => (
-                  <p key={c.id} className="text-footnote text-critical-fg">
-                    {c.message}
-                  </p>
-                ))}
-            </div>
-          )}
-          {renderSection(current.id)}
-        </div>
-      </div>
-
-      {/* jump to any section */}
-      <button type="button" onClick={() => setMenuOpen((o) => !o)} className="self-center text-footnote font-medium text-accent">
-        {menuOpen ? "Hide sections" : "Jump to a section"}
-      </button>
-
-      {/* Reading the paper file in is a step of THIS summary, not a rival to it — so it lives
-          here, quietly, rather than as a button on the patient page. */}
-      {!finalised && (
-        <Link
-          href={`/patients/${patientId}/prepare-discharge`}
-          className="self-center text-footnote text-muted underline decoration-line underline-offset-2"
-        >
-          Read in the paper file
-        </Link>
-      )}
-      {menuOpen && (
-        <div className="ios-group flex flex-col p-1.5">
-          {STEPS.map((s, i) => {
-            const isBlocking = s.id !== "review" && cardSections(s.id).some((sec) => blockingBySection.has(sec));
-            const done = s.id === "review" ? checks.blocking.length === 0 : filledFor(s.id);
-            const dot = isBlocking ? "bg-recording" : done ? "bg-accent" : "bg-line";
-            return (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => goTo(i)}
-                className={"flex items-center gap-2 rounded-[8px] px-2.5 py-2 text-left text-subhead " + (i === step ? "bg-chip font-medium" : "")}
+      {/* THE CARD, the jump menu and the fixed navigation */}
+      <StepShell
+        kicker="Discharge"
+        step={step}
+        steps={STEPS.length}
+        title={current.title}
+        badge={current.id !== "review" && badgeFor(current.id)}
+        noun="section"
+        items={STEPS.map((s) => {
+          const isBlocking = s.id !== "review" && cardSections(s.id).some((sec) => blockingBySection.has(sec));
+          const done = s.id === "review" ? checks.blocking.length === 0 : filledFor(s.id);
+          return {
+            title: s.title,
+            dot: isBlocking ? "bg-recording" : done ? "bg-accent" : "bg-line",
+            trailing: !oneOff && dirty.has(s.id as DischargeSectionId) && <span className="text-caption2 text-accent">unsaved</span>,
+          };
+        })}
+        onJump={goTo}
+        between={
+          <>
+            {/* Reading the paper file in is a step of THIS summary, not a rival to it — so it lives
+                here, quietly, rather than as a button on the patient page. */}
+            {!finalised && !oneOff && (
+              <Link
+                href={`/patients/${patientId}/prepare-discharge`}
+                className="self-center text-footnote text-muted underline decoration-line underline-offset-2"
               >
-                <span className={"h-2 w-2 shrink-0 rounded-full " + dot} />
-                <span className="text-muted">{i + 1}.</span>
-                <span className="flex-1">{s.title}</span>
-                {dirty.has(s.id as DischargeSectionId) && <span className="text-caption2 text-accent">unsaved</span>}
-              </button>
-            );
-          })}
-        </div>
-      )}
+                Read in the paper file
+              </Link>
+            )}
+          </>
+        }
+        after={
+          <>
+            <div className="flex items-center gap-2 text-caption text-muted">
+              {saveState === "saving" && <span>Saving…</span>}
+              {saveState === "saved" && dirty.size === 0 && <span className="text-accent">All changes saved</span>}
+              {saveState === "error" && <span className="text-critical-fg">Not saved — check your connection</span>}
+              {message && <span>· {message}</span>}
+            </div>
 
-      <div className="flex items-center gap-2 text-caption text-muted">
-        {saveState === "saving" && <span>Saving…</span>}
-        {saveState === "saved" && dirty.size === 0 && <span className="text-accent">All changes saved</span>}
-        {saveState === "error" && <span className="text-critical-fg">Not saved — check your connection</span>}
-        {message && <span>· {message}</span>}
-      </div>
-
-      {/* fixed navigation */}
-      <ActionSheet
-        open={askReset}
-        title="Rebuild this summary from the record?"
-        message="Every edit made here is discarded and the summary is compiled again from what was recorded."
-        action="Discard edits and rebuild"
-        onCancel={() => setAskReset(false)}
-        onConfirm={reset}
-      />
-
-      <div className="bottom-bar fixed inset-x-0 bottom-0 z-10 mx-auto max-w-md border-t border-line bg-background/90 px-4 pt-3 backdrop-blur-xl">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => goTo(step - 1)}
-            disabled={step === 0}
-            className="rounded-[12px] border border-line px-5 py-3 text-subhead font-semibold disabled:opacity-40"
-          >
-            Back
-          </button>
-
-          {current.id !== "review" ? (
+            <ActionSheet
+              open={askReset}
+              title="Rebuild this summary from the record?"
+              message="Every edit made here is discarded and the summary is compiled again from what was recorded."
+              action="Discard edits and rebuild"
+              onCancel={() => setAskReset(false)}
+              onConfirm={reset}
+            />
+          </>
+        }
+        onBack={() => goTo(step - 1)}
+        backDisabled={step === 0}
+        next={
+          current.id !== "review" ? (
             <button
               type="button"
               onClick={() => {
@@ -1575,11 +1617,34 @@ export default function DischargeWorkspace({
               disabled={pending || checks.blocking.length > 0}
               className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-callout font-semibold text-accent-ink disabled:opacity-50"
             >
-              {isFinalising ? "Finalising…" : checks.blocking.length > 0 ? `Finalise (${checks.blocking.length} to fix)` : "Finalise & print"}
+              {oneOff
+                ? isFinalising
+                  ? "Rendering…"
+                  : checks.blocking.length > 0
+                    ? `Preview & print (${checks.blocking.length} to fix)`
+                    : "Preview & print"
+                : isFinalising
+                  ? "Finalising…"
+                  : checks.blocking.length > 0
+                    ? `Finalise (${checks.blocking.length} to fix)`
+                    : "Finalise & print"}
             </button>
-          )}
-        </div>
-      </div>
+          )
+        }
+      >
+        {current.id !== "review" && cardSections(current.id).some((s) => blockingFor(s).length > 0) && (
+          <div className="rounded-[10px] bg-critical-bg px-3 py-2">
+            {cardSections(current.id)
+              .flatMap(blockingFor)
+              .map((c) => (
+                <p key={c.id} className="text-footnote text-critical-fg">
+                  {c.message}
+                </p>
+              ))}
+          </div>
+        )}
+        {renderSection(current.id)}
+      </StepShell>
     </div>
   );
 }

@@ -14,7 +14,7 @@ import {
   ImageRun,
   VerticalAlign,
 } from "docx";
-import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { getDischargeContext } from "@/lib/discharge-data";
 import { mergeDischargeDraft, proofreadDischarge } from "@/lib/discharge-store";
 import {
@@ -34,10 +34,7 @@ import {
  */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   // Same proofread as Print (lib/final-check.ts), so the Word file is never the untidied copy.
@@ -195,9 +192,9 @@ function buildBody(doc: DischargeDocument, logoBytes: Buffer | null): (Paragraph
     })
   );
 
-  // 2. Encounter Details
-  out.push(heading("Encounter Details"));
-  for (const row of doc.encounter) out.push(new Paragraph({ children: [bold(`${row.label}: `), plain(row.value || BLANK)] }));
+  // 2. Admission Details
+  out.push(heading("Admission Details"));
+  for (const row of doc.admission) out.push(new Paragraph({ children: [bold(`${row.label}: `), plain(row.value || BLANK)] }));
 
   // 3. Indication for Admission
   out.push(heading("Indication for Admission"));
@@ -220,9 +217,9 @@ function buildBody(doc: DischargeDocument, logoBytes: Buffer | null): (Paragraph
 
   // 5. Operation / Procedures
   if (doc.procedures.length > 0) {
-    out.push(heading("Operation / Procedures"));
+    out.push(heading(doc.proceduresHeading));
     for (const p of doc.procedures) {
-      procedureLines(p).forEach((l, i) =>
+      procedureLines(p, doc.proceduresBrief).forEach((l, i) =>
         out.push(new Paragraph({ indent: i === 0 ? undefined : { left: 300 }, children: [i === 0 ? bold(l) : plain(l)] }))
       );
     }

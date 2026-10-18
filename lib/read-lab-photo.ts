@@ -1,5 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { AI_MODEL } from "@/lib/model";
+import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
+import { judgeLabValues } from "@/lib/jev-observations";
 
 export type ReadLabValue = {
   label: string;
@@ -110,14 +110,10 @@ export async function readLabPhoto(
   base64Image: string,
   mediaType: "image/jpeg" | "image/png" | "image/webp"
 ): Promise<LabPhotoResult> {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new Error("ANTHROPIC_API_KEY is not set on the server.");
-
-  const model = AI_MODEL;
-  const client = new Anthropic({ apiKey: key });
+  const client = anthropic();
 
   const response = await client.messages.create({
-    model,
+    model: AI_MODEL,
     max_tokens: 8000,
     // Marked for caching; inert on Sonnet 5 for the same reason as lib/read-paper.ts — ~700
     // tokens against a 1024-token minimum. Harmless, and live again on a model with a lower one.
@@ -140,19 +136,21 @@ export async function readLabPhoto(
     ],
   });
 
-  const text = response.content.find((b) => b.type === "text");
-  const parsed =
-    text && text.type === "text" ? JSON.parse(text.text) : { values: [], report_type: "" };
+  const parsed = replyJson(response, { values: [], report_type: "" });
 
   const values: ReadLabValue[] = (parsed.values ?? []).map((v: ReadLabValue) => ({
     ...v,
     category: v.category === "vital" || v.category === "other" ? v.category : "lab",
   }));
 
+  // Second look: a value its own printed line does not support becomes uncertain. See
+  // judgeLabValues. No key or an error: unchanged.
+  await judgeLabValues(values);
+
   return {
     values,
     report_type: parsed.report_type ?? "",
-    model,
+    model: AI_MODEL,
     raw: parsed,
   };
 }

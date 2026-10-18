@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MicIcon } from "@/app/icons";
+import { usePublishedHeight } from "@/lib/use-published-height";
 
 /**
  * The card-stack look, shared between the discharge workspace and the case-history workspace.
@@ -29,23 +30,9 @@ export function IconCheck({ className = "h-[17px] w-[17px]" }: { className?: str
   );
 }
 
-/** The small grey/teal/amber status pill shown beside a section title. */
-export function statusChip(text: string, tone: "ok" | "warn" | "muted") {
-  return (
-    <span
-      className={
-        "shrink-0 rounded-full px-2 py-0.5 text-caption2 font-medium " +
-        (tone === "ok"
-          ? "bg-accent/10 text-accent"
-          : tone === "warn"
-            ? "bg-warn-bg text-warn-fg"
-            : "bg-chip text-muted")
-      }
-    >
-      {text}
-    </span>
-  );
-}
+// Server-safe: lives in its own module so server pages (Learn) can call it — this file is a
+// client module. Re-exported here so client callers keep importing it from card-kit.
+export { statusChip } from "./status-chip";
 
 /** A pill the resident taps on/off — the Claude-Code multi-select feel. */
 export function SelChip({
@@ -142,13 +129,14 @@ export const approveBtn =
 
 /** The container/codec MediaRecorder produces varies by browser — Safari/iOS gives mp4,
  *  Chrome/Android webm/opus. The transcriber picks its decoder from the file extension, so the
- *  real type has to be carried through. Same list the round recorder uses. */
-const REC_MIME =
+ *  real type is carried through as the file's extension. Every recorder asks for the first of
+ *  these the browser supports. */
+export const REC_MIME =
   ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/mpeg"].find(
     (t) => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(t)
-  ) ?? "";
+  );
 
-function extFor(mime: string): string {
+export function extFor(mime: string): string {
   if (mime.includes("mp4")) return "m4a";
   if (mime.includes("mpeg")) return "mp3";
   if (mime.includes("ogg")) return "ogg";
@@ -192,7 +180,7 @@ export function DictateArea({
     rec.ondataavailable = (e) => e.data.size > 0 && chunksRef.current.push(e.data);
     rec.onstop = async () => {
       stream.getTracks().forEach((t) => t.stop());
-      const mime = rec.mimeType || REC_MIME || "audio/webm";
+      const mime = rec.mimeType || "audio/webm";
       const blob = new Blob(chunksRef.current, { type: mime });
       if (blob.size < 1200) {
         setStatus("idle");
@@ -257,6 +245,43 @@ export function DictateArea({
   );
 }
 
+/**
+ * A row of chips showing only the commonest up front — every chip list is ordered commonest
+ * first — with the rest behind one "+N more" chip. A selected chip always shows, wherever it
+ * sits in the list, so nothing the resident picked is ever hidden.
+ */
+export function ChipRow({
+  items,
+  selected,
+  onToggle,
+}: {
+  items: string[];
+  selected: (c: string) => boolean;
+  onToggle: (c: string) => void;
+}) {
+  const [all, setAll] = useState(false);
+  const shown = all ? items : items.filter((c, i) => i < 8 || selected(c));
+  const hidden = items.length - shown.length;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {shown.map((c) => (
+        <SelChip key={c} selected={selected(c)} onClick={() => onToggle(c)}>
+          {c}
+        </SelChip>
+      ))}
+      {hidden > 0 && (
+        <button
+          type="button"
+          onClick={() => setAll(true)}
+          className="inline-flex min-h-11 items-center rounded-full border border-dashed border-line px-3 py-1.5 text-footnote text-accent"
+        >
+          +{hidden} more
+        </button>
+      )}
+    </div>
+  );
+}
+
 /** The "AI could not resolve these" box, shared by every compile/propose card. */
 export function UncertainList({ points }: { points: string[] }) {
   if (points.length === 0) return null;
@@ -305,14 +330,130 @@ export function PillsAndText({
   };
   return (
     <>
-      <div className="flex flex-wrap gap-1.5">
-        {pills.map((p) => (
-          <SelChip key={p} selected={has(p)} onClick={() => toggle(p)}>
-            {p}
-          </SelChip>
-        ))}
-      </div>
+      <ChipRow items={pills} selected={has} onToggle={toggle} />
       <DictateArea value={value} onChange={onChange} placeholder={placeholder} rows={rows} />
+    </>
+  );
+}
+
+/**
+ * The chrome every step-by-step workspace shares (note, discharge, case history): the card with
+ * its "N of M" kicker and 3px progress bar, the jump menu, and the fixed Back / Next bar. The
+ * menu is a native <details>, keyed on the step so moving to another card closes it.
+ */
+export function StepShell({
+  kicker,
+  step,
+  steps,
+  title,
+  badge,
+  children,
+  noun,
+  items,
+  onJump,
+  track = "bg-chip",
+  between,
+  after,
+  notice,
+  onBack,
+  backDisabled,
+  next,
+}: {
+  /** "Today's note · 9 Oct" — the "· N of M" is added here. */
+  kicker: React.ReactNode;
+  step: number;
+  steps: number;
+  title: React.ReactNode;
+  /** Beside the title, e.g. an "unsaved" chip. */
+  badge?: React.ReactNode;
+  children: React.ReactNode;
+  /** "card" or "section": the menu reads "Jump to a card" / "Hide cards". */
+  noun: string;
+  /** One row per step: its title, the dot's colour class, anything trailing. */
+  items: { title: React.ReactNode; dot: string; trailing?: React.ReactNode }[];
+  onJump: (index: number) => void;
+  /** The progress bar's track colour class. */
+  track?: string;
+  /** Rendered between the jump toggle and the open menu. */
+  between?: React.ReactNode;
+  /** Rendered between the jump menu and the fixed bar. */
+  after?: React.ReactNode;
+  /** A line above the buttons inside the fixed bar. */
+  notice?: React.ReactNode;
+  onBack: () => void;
+  backDisabled: boolean;
+  /** The bar's primary action. */
+  next: React.ReactNode;
+}) {
+  const pct = Math.round(((step + 1) / steps) * 100);
+  // The workspace pages reserve room for this bar with --bar-height; it sets that itself.
+  const barRef = usePublishedHeight("--bar-height", 16);
+  // The menu closes whenever the step changes.
+  const [open, setOpen] = useState(false);
+  const [openStep, setOpenStep] = useState(step);
+  if (openStep !== step) {
+    setOpenStep(step);
+    setOpen(false);
+  }
+  return (
+    <>
+      <div className="ios-group overflow-hidden">
+        <div className="px-4 pt-4 pb-3">
+          <p className="text-caption2 font-semibold uppercase tracking-[0.03em] text-muted">
+            {kicker} · {step + 1} of {steps}
+          </p>
+          <div className="mt-0.5 flex items-start justify-between gap-2">
+            <h2 className="text-title1 font-bold leading-tight tracking-[-0.021em]">{title}</h2>
+            {badge}
+          </div>
+        </div>
+        <div className={"h-[3px] " + track}>
+          <div className="h-full bg-accent transition-all" style={{ width: `${pct}%` }} />
+        </div>
+        <div className="flex flex-col gap-3 px-4 py-4">{children}</div>
+      </div>
+
+      <button type="button" onClick={() => setOpen((o) => !o)} className="tap self-center text-footnote font-medium text-accent">
+        {open ? `Hide ${noun}s` : `Jump to a ${noun}`}
+      </button>
+      {between}
+      {open && (
+        <div className="ios-group flex flex-col p-1.5">
+          {items.map((s, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onJump(i)}
+              className={"flex items-center gap-2 rounded-[8px] px-2.5 py-2 text-left text-subhead " + (i === step ? "bg-chip font-medium" : "")}
+            >
+              <span className={"h-2 w-2 shrink-0 rounded-full " + s.dot} />
+              <span className="text-muted">{i + 1}.</span>
+              <span className="flex-1">{s.title}</span>
+              {s.trailing}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {after}
+
+      <div
+        ref={barRef}
+        className="bottom-bar fixed inset-x-0 bottom-0 z-10 mx-auto max-w-md border-t border-line bg-background/90 px-4 pt-3 backdrop-blur-xl"
+      >
+        {notice}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onBack}
+            disabled={backDisabled}
+            className="rounded-[12px] border border-line px-5 py-3 text-subhead font-semibold disabled:opacity-40"
+          >
+            Back
+          </button>
+          {next}
+        </div>
+      </div>
     </>
   );
 }

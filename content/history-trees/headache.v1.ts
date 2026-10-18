@@ -10,7 +10,7 @@ import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "
  */
 export const headacheV1: HistoryTree = {
   id: "headache",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Headache",
   triggers: ["headache", "head ache", "head pain", "pain in head", "migraine"],
   setting: "Adult medicine ward, north India",

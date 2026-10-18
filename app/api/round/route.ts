@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { plainAiError } from "@/lib/ai-error";
 import { createClient } from "@/lib/supabase/server";
-import { getTranscriber, MEDICAL_VOCABULARY_HINT } from "@/lib/stt";
+import { getUser } from "@/lib/auth";
+import { STT_MODEL, STT_PROVIDER, transcribe } from "@/lib/stt";
 import { deriveWardDictationContext } from "@/lib/transcription/patient-context";
 import { getDeepgramKeyterms } from "@/lib/transcription/selectMedicalKeyterms";
 import { correctTranscript } from "@/lib/glossary";
 import { buildRoundDraft } from "@/lib/round-draft";
-import { getCurrentWard, getActivePatients } from "@/lib/ward";
+import { getCurrentWard, getActivePatients, getWardPack } from "@/lib/ward";
 import { readReceipt, saveReceipt } from "@/lib/dictation-receipt";
 import { tagRequest, log } from "@/lib/observability";
 
@@ -20,9 +21,7 @@ import { tagRequest, log } from "@/lib/observability";
 export async function POST(request: Request) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const { ward } = await getCurrentWard();
@@ -47,21 +46,21 @@ export async function POST(request: Request) {
   // 1. Speech to text, unless it was typed.
   // The ward's active patients — needed now for the Deepgram keyterms (every bed's diagnosis
   // and operation), and again below to split the transcript by bed.
-  const { patients } = await getActivePatients(ward.id);
+  const [{ patients }, pack] = await Promise.all([getActivePatients(ward.id), getWardPack(ward.id)]);
 
   let transcript = typed;
-  let stt: ReturnType<typeof getTranscriber> | null = null;
+  let spoken = false;
 
   if (!transcript && audio instanceof Blob) {
     try {
-      stt = getTranscriber();
-      const keyterms = getDeepgramKeyterms(deriveWardDictationContext(patients, ward.name));
-      const result = await stt.transcribe(audio, MEDICAL_VOCABULARY_HINT, {
-        keyterms: keyterms.length ? keyterms : undefined,
-      });
+      const keyterms = getDeepgramKeyterms(
+        deriveWardDictationContext(patients, ward.name, pack.lexiconSpecialty)
+      );
+      const result = await transcribe(audio, keyterms);
+      spoken = true;
       // Only what the engine heard. `typed` above is the resident's own writing and is left
       // exactly as they wrote it — this fixes mishearings, not people.
-      transcript = (await correctTranscript(result.text)).text;
+      transcript = (await correctTranscript(result.text, pack)).text;
     } catch (e) {
       return NextResponse.json(
         { error: plainAiError(e) },
@@ -81,7 +80,7 @@ export async function POST(request: Request) {
   // this unit writes beds — never so a bed nobody mentioned can acquire instructions.
   let read;
   try {
-    read = await buildRoundDraft(transcript, patients);
+    read = await buildRoundDraft(transcript, patients, pack);
   } catch (e) {
     return NextResponse.json(
       { error: plainAiError(e) },
@@ -111,8 +110,8 @@ export async function POST(request: Request) {
       author_id: user.id,
       transcript,
       audio_path: audioPath,
-      stt_provider: stt?.provider ?? null,
-      stt_model: stt?.model ?? null,
+      stt_provider: spoken ? STT_PROVIDER : null,
+      stt_model: spoken ? STT_MODEL : null,
       raw: read.raw as never,
       model: read.model,
     })
@@ -130,7 +129,7 @@ export async function POST(request: Request) {
   await saveReceipt(supabase, clientUuid, user.id, "round", body);
   log.info("round draft built", {
     segments: read.segments.length,
-    "stt.provider": stt?.provider ?? "typed",
+    "stt.provider": spoken ? STT_PROVIDER : "typed",
     "transcript.chars": transcript.length,
     patients: patients.length,
   });

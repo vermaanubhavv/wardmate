@@ -6,6 +6,20 @@
  * feel like a different product bolted on.
  */
 
+import Link from "next/link";
+
+/** A filter pill. Chips are links, so a filter is just a URL — shareable, back-button friendly. */
+export function Chip({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className={`rounded-full px-3 py-1 text-footnote ${active ? "bg-accent text-white" : "bg-chip text-foreground/70 active:opacity-60"}`}
+    >
+      {children}
+    </Link>
+  );
+}
+
 export function ErrorNote({ message }: { message: string }) {
   return (
     <p className="mt-4 ios-group px-4 py-3 text-subhead text-warn-fg">

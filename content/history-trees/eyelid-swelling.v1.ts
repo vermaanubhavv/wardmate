@@ -13,7 +13,7 @@ import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PARSONS_EYE, val, yn
  */
 export const eyelidSwellingV1: HistoryTree = {
   id: "eyelid_swelling",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Swelling of the eyelid / around the eye",
   triggers: ["eyelid swelling", "swelling of eyelid", "swollen eyelid", "lid swelling", "swelling around eye", "periorbital swelling", "puffy eyes", "stye", "chalazion", "gudheri", "anjani", "aankh sooj gayi", "aankh me sujan"],
   setting: "Eye ward and casualty, north India",
