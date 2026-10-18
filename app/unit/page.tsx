@@ -21,6 +21,7 @@ import { getUser } from "@/lib/auth";
 import { getFormularySize } from "@/lib/formulary";
 import { DESIGNATION_CHOICES } from "@/lib/patients";
 import { ChecklistIcon, DocumentIcon } from "../icons";
+import { Check } from "lucide-react";
 import { specialtyChoices } from "../onboarding/specialty-choices";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { getFinalisedDischargeMap, visibleDischargedFilter } from "@/lib/discharged";
@@ -179,7 +180,6 @@ export default async function UnitPage() {
 
 
 
-      <h2 className="px-4 pb-2 pt-2 text-title3 font-semibold">You</h2>
       {/* Ahead of everything, and only ever once: somebody who has just entered the unit code
           has no name on them yet, and every screen after this one shows them as "Doctor" until
           they set one. Picking it off the unit's own list is one tap instead of typing. It
@@ -246,21 +246,19 @@ export default async function UnitPage() {
       {myWards.length > 0 && (
         <section className="px-4 pb-6">
           <p className="ios-group-header mb-2 px-4">Your units</p>
-          <ul className="flex flex-col gap-2">
+          {/* One grouped list with a tick on the current unit — the same shape as the switcher
+              in the ward title, and as every other list in the app. */}
+          <ul className="ios-group divide-y divide-line">
             {myWards.map((w) => (
               <li key={w.id}>
                 <form action={switchWard}>
                   <input type="hidden" name="ward_id" value={w.id} />
                   <button
-                    className={
-                      "w-full rounded-[10px] border px-4 py-3 text-left text-subhead " +
-                      (w.id === ward.id
-                        ? "border-accent text-accent"
-                        : "border-line text-foreground")
-                    }
+                    className="flex min-h-12 w-full items-center gap-3 px-4 text-left text-body active:bg-chip"
+                    aria-current={w.id === ward.id ? "true" : undefined}
                   >
-                    {w.name}
-                    {w.id === ward.id && " · current"}
+                    <span className="flex-1 truncate">{w.name}</span>
+                    {w.id === ward.id && <Check className="h-5 w-5 text-accent" strokeWidth={2.6} aria-hidden />}
                   </button>
                 </form>
               </li>
