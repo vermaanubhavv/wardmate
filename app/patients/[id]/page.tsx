@@ -387,6 +387,12 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // nothing is reordered inside a group — see patient-tabs.tsx for why they are filed
   // rather than stacked.
 
+  // Two blocks: the SOAP card carries S, O and A; Plan, Checks (consent, procedure, fitness —
+  // part of the management itself) and the drug list share one "Plan & treatment" block.
+  const groups = soapGroups(matched, extra, vitalSets(allObservations).sets.length > 0, medications.length > 0);
+  const noteGroups = groups.filter((g) => g.section !== "plan" && g.section !== "checks");
+  const planGroups = groups.filter((g) => g.section === "plan" || g.section === "checks");
+
   const todayPanel = (
     <>
       {/* Vitals first. The round asks how the patient is this morning before it asks anything
@@ -563,7 +569,10 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 cards of their own — nesting one ios-group inside another draws white on white
                 and reads as a box in a box. */}
             <div className="border-t border-line px-4 py-3">
-            {soapGroups(matched, extra, vitalSets(allObservations).sets.length > 0, medications.length > 0).map(({ section, label, matchedItems, extraItems }) => {
+            {noteGroups.length === 0 && (
+              <p className="text-subhead text-muted">Nothing recorded yet.</p>
+            )}
+            {noteGroups.map(({ section, label, matchedItems, extraItems }) => {
               // A never-mentioned symptom is written into the note as a pertinent negative
               // ("no complaints of fever"), not shown as a blank row to chase.
               const negatives = matchedItems
@@ -585,7 +594,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 ) : (
                 <SoapRows
                   patientId={patient.id}
-                  writeKind={section === "plan" ? "plan" : "note"}
+                  writeKind="note"
                   rows={matchedItems.map((m) => ({
                     id: m.item.id,
                     label: m.item.label,
@@ -604,16 +613,14 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         </section>
       )}
 
-      {/* The drug list belongs with today: it is what the patient is on right now, and a drug
-          round reads it off the same screen the ward round was written on. */}
-      {/* The drugs currently on record, in their own block rather than buried in the Plan
-          section of the SOAP above. At a drug round this is the one list being scanned, and
-          each row keeps the words it came from, so it is never only the app's paraphrase. */}
-      {medications.length > 0 && (
+      {/* What is being done for the patient, in one place: the drugs on record (each keeping
+          the words it came from, so it is never only the app's paraphrase), then today's plan,
+          then the checks (consent, procedure, fitness), which are part of the management too. */}
+      {(medications.length > 0 || planGroups.length > 0) && (
         <section className="px-4 pb-6">
           <p className="ios-group-header mb-2 flex items-center gap-1.5 px-4">
             <Pill className="h-3.5 w-3.5 text-accent" strokeWidth={2.4} />
-            Treatment
+            Plan &amp; treatment
           </p>
           <ul className="ios-group divide-y divide-line">
             {medications.map((m) => (
@@ -624,6 +631,22 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                     “{m.source_quote}”
                   </p>
                 )}
+              </li>
+            ))}
+            {planGroups.map(({ section, matchedItems, extraItems }) => (
+              <li key={section} className="px-4 py-1.5">
+                <SoapRows
+                  patientId={patient.id}
+                  writeKind={section === "plan" ? "plan" : "note"}
+                  rows={matchedItems.map((m) => ({
+                    id: m.item.id,
+                    label: m.item.label,
+                    value: m.value,
+                    missing: m.missing,
+                    pertinentNegative: m.pertinentNegative,
+                  }))}
+                  extras={extraItems.map((o) => ({ id: o.id, label: o.label, value: o.value_text }))}
+                />
               </li>
             ))}
           </ul>
