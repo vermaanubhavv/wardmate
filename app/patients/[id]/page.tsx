@@ -20,7 +20,7 @@ import {
   type Observation,
   type PacVerdict,
 } from "@/lib/patient-state";
-import { compareBeds, isIdentifierLabel, stripPatientHonorific, managementChoicesFor } from "@/lib/patients";
+import { compareBeds, displayCase, isIdentifierLabel, stripPatientHonorific, managementChoicesFor } from "@/lib/patients";
 import { effectiveUrgency, jobTitle } from "@/lib/urgency";
 import BedsideBar from "./bedside-bar";
 import type { DictationCopy } from "./recorder";
@@ -30,21 +30,16 @@ import EditIdentity from "../edit-identity";
 import UrgencyDot from "./urgency-dot";
 import { ChevronIcon } from "../../icons";
 import {
-  Activity,
   Check,
   ClipboardList,
-  ClipboardX,
   CircleAlert,
-  Droplets,
-  HeartPulse,
   ListChecks,
   MessageSquareText,
   Pill,
   Ruler,
   ShieldCheck,
   Stethoscope,
-  Thermometer,
-  Wind,
+  TriangleAlert,
   type LucideIcon,
 } from "lucide-react";
 import { quoteAddsNothing } from "@/lib/dedupe-tasks";
@@ -333,19 +328,10 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const days = groupByDay(sittings);
   const todayKey = istDayKey(new Date().toISOString());
 
-  // The banner's left edge, same language as the ward row: red for a flagged latest vital,
-  // amber while something is unconfirmed, green once no job a resident said is open. A colour,
-  // not a verdict — nothing here is stored or claimed beyond what the numbers below already
-  // show. The scoring engine's suggestions do not hold it back from green: they are listed
-  // under the jobs, but they stream in after the page and are suggestions, not jobs.
-  const hasFlaggedVital = latestVitalTiles(allObservations).some((t) => t.flag && !t.takenAt);
-  const bannerEdge = hasFlaggedVital
-    ? "border-l-critical-dot"
-    : pending.length > 0
-      ? "border-l-warn-dot"
-      : openTasks.length === 0
-        ? "border-l-good-dot"
-        : "border-l-transparent";
+  // Any vital in the latest reading that is out of range — temperature and RR included, though
+  // the vitals box shows only BP, PR and SpO₂ — named in red beside the patient's name, with
+  // the reading itself. A colour with the number, never a verdict.
+  const flaggedVitals = latestVitalTiles(allObservations).filter((t) => t.flag && !t.takenAt);
   // Jobs a resident said — the scoring engine's suggestions are listed below but not counted.
   const openCount = openTasks.length;
 
@@ -575,7 +561,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 cards of their own — nesting one ios-group inside another draws white on white
                 and reads as a box in a box. */}
             <div className="border-t border-line px-4 py-3">
-            {soapGroups(matched, extra, vitalSets(allObservations).sets.length > 0).map(({ section, label, matchedItems, extraItems }) => {
+            {soapGroups(matched, extra, vitalSets(allObservations).sets.length > 0, medications.length > 0).map(({ section, label, matchedItems, extraItems }) => {
               // A never-mentioned symptom is written into the note as a pertinent negative
               // ("no complaints of fever"), not shown as a blank row to chase.
               const negatives = matchedItems
@@ -649,7 +635,11 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       {/* Every surgical unit (any unit with an operation clock) always shows it, even empty —
           an unanswered PAC is the single thing most likely to stop a list. A unit with no
           operation clock (medicine, oncology…) shows it only before surgery once one is recorded. */}
-      {(hasOperationClock(pack) || (beforeSurgery && pac.length > 0)) && (
+      {/* Before surgery only: once operated, a PAC is history, and an amber "Not recorded" on a
+          patient fifty days after the operation was a gap that was never going to be filled.
+          Every surgical unit shows it then, even empty — an unanswered PAC is the single thing
+          most likely to stop a list; other units show it once one is recorded. */}
+      {beforeSurgery && (hasOperationClock(pack) || pac.length > 0) && (
         <PacSection pac={pac} patientId={patient.id} />
       )}
     </>
@@ -850,104 +840,96 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         </div>
       </div>
 
-      <header className="px-4 pb-6 pt-4">
-        <div className="flex items-center gap-2.5">
-          <div className="min-w-0 flex-1">
-            <h1 className="flex min-w-0 items-baseline gap-2 text-[clamp(1.05rem,5vw,1.5rem)] tracking-tight">
-              <span className="shrink-0 rounded-md bg-chip px-1.5 py-0.5 font-mono text-[0.72em] font-semibold text-accent">
-                {patient.bed}
-              </span>
-              <span className="min-w-0 truncate font-bold">
-                {stripPatientHonorific(patient.display_name)}
-              </span>
-              <span className="shrink-0 whitespace-nowrap text-[0.72em] font-medium tracking-normal text-muted">
-                {[
-                  patient.age_years !== null ? patient.age_years : null,
-                  patient.sex === "other" ? "O" : patient.sex,
-                ]
-                  .filter((value) => value !== null && value !== "")
-                  .join("/")}
-              </span>
-            </h1>
-            {patient.uhid_ip_no && (
-              <p className="mt-2 truncate pl-0.5 text-caption text-muted">
-                <span className="uppercase tracking-wide">IP no.</span>
-                <span className="mx-1.5">·</span>
-                <span className="font-mono text-foreground/80">{patient.uhid_ip_no}</span>
-              </p>
-            )}
-          </div>
-          <div className="shrink-0">
+      {/* One clinical thought, then only what is outstanding. The bed leads, as it does on the
+          ward list; the name carries age and sex; one line says the day, the operation and the
+          diagnosis. The banner card and three count tiles this replaced put two boxes and a row
+          of zeros between the name and the record. */}
+      <header className="flex flex-col gap-2.5 px-4 pb-5 pt-4">
+        <div className="flex items-center gap-3">
+          <span className="grid h-[46px] min-w-[46px] shrink-0 place-items-center rounded-[11px] bg-chip px-1.5 font-mono text-title3 font-semibold tabular-nums">
+            {patient.bed}
+          </span>
+          <h1 className="flex min-w-0 flex-1 items-baseline gap-2">
+            <span className="min-w-0 truncate text-title1 font-bold tracking-tight">
+              {displayCase(stripPatientHonorific(patient.display_name))}
+            </span>
+            <span className="shrink-0 whitespace-nowrap text-body text-muted">
+              {[
+                patient.age_years !== null ? patient.age_years : null,
+                patient.sex === "other" ? "O" : patient.sex,
+              ]
+                .filter((value) => value !== null && value !== "")
+                .join("/")}
+            </span>
+          </h1>
+          <div className="-mr-2 shrink-0">
             <EditIdentity patient={patientWithBurn} templateChoices={templateChoices} specialty={pack.key} />
           </div>
         </div>
 
-        {/* Only the clinical facts needed to identify the admission live here. Bed and hospital
-            number have moved into the header above; the rest of the record follows below.
-
-            The banner leads with whichever fact matters most right now: once operated, that IS
-            the headline (POD 0 Lap chole) with the diagnosis dropped to a parenthetical below
-            it — nobody rounding on a post-op patient reads "diagnosis" first. Before that, there
-            is no operation to lead with, so the diagnosis takes the same top spot instead, with
-            the phase of care (Pre-op / Conservative / Workup) as its own parenthetical. */}
-        <div className={"ios-group mt-5 border-l-[4px] " + bannerEdge}>
-          {/* Diagnosis, then co-morbidities on the next line. Nothing recorded, nothing shown. */}
-          <div className="px-4 py-2.5">
-            <div className="min-w-0">
-              {day.clock !== "admission" ? (
-                <>
-                  {/* The headline is the day count and what it counts from — "POD 0 Lap chole"
-                      on a surgical ward, "C2 D3 R-CHOP" on an oncology one. Both are the one
-                      fact a round leads with; the diagnosis drops to a parenthetical below. */}
-                  <p className="text-body font-semibold leading-snug">
-                    {day.text}
-                    {day.clock === "cycle"
-                      ? patient.regimen
-                        ? ` ${patient.regimen}`
-                        : ""
-                      : procedure
-                        ? ` ${procedure}`
-                        : ""}
-                  </p>
-                  {(diagnosis ?? derivedDiagnosis?.text) && (
-                  <p className="mt-0.5 text-footnote text-muted">
-                    {/* A derived diagnosis reads exactly like a recorded one. It is a fixed
-                        mapping from the operation — see lib/diagnosis-from-procedure.ts — and
-                        the unit reads "lap chole" as gall stone disease without being told so
-                        every time it opens a patient. Nothing is stored either way. */}
-                    ({diagnosis ?? derivedDiagnosis?.text})
-                  </p>
-                  )}
-                </>
-              ) : (
-                <>
-                  {diagnosis && <p className="text-body font-semibold leading-snug">{diagnosis}</p>}
-                  {(() => {
-                    const managementChoice = managementChoicesFor(pack.key, patient.management ?? "").find(
-                      (c) => c.value === patient.management
-                    );
-                    return managementChoice ? (
-                      <p className="mt-0.5 text-footnote text-muted">({managementChoice.label})</p>
-                    ) : null;
-                  })()}
-                </>
+        {/* The headline leads with whichever fact matters most right now: once operated, the day
+            and operation ("POD 0 · Lap chole") with the diagnosis after it; before that, the
+            diagnosis itself with the phase of care. A derived diagnosis is a fixed mapping from
+            the operation (lib/diagnosis-from-procedure.ts) and reads like a recorded one. */}
+        <p className="text-body leading-snug">
+          {day.clock !== "admission" ? (
+            <>
+              <span className="font-semibold tabular-nums">{day.text}</span>
+              {day.clock === "cycle"
+                ? patient.regimen && <span> · {patient.regimen}</span>
+                : procedure && <span> · {procedure}</span>}
+              {(diagnosis ?? derivedDiagnosis?.text) && (
+                <span className="text-muted"> · {diagnosis ?? derivedDiagnosis?.text}</span>
               )}
-            </div>
-            {comorbidities.length > 0 && (
-              <p className="mt-0.5 text-footnote leading-snug">{comorbidities.join(" · ")}</p>
+            </>
+          ) : (
+            <>
+              {diagnosis && <span className="font-semibold">{diagnosis}</span>}
+              {(() => {
+                const managementChoice = managementChoicesFor(pack.key, patient.management ?? "").find(
+                  (c) => c.value === patient.management
+                );
+                return managementChoice ? <span className="text-muted"> · {managementChoice.label}</span> : null;
+              })()}
+            </>
+          )}
+        </p>
+        {(comorbidities.length > 0 || patient.uhid_ip_no) && (
+          <p className="-mt-1.5 text-footnote text-muted">
+            {comorbidities.join(" · ")}
+            {comorbidities.length > 0 && patient.uhid_ip_no && "  ·  "}
+            {patient.uhid_ip_no && (
+              <>
+                IP no. <span className="font-mono text-foreground/80">{patient.uhid_ip_no}</span>
+              </>
+            )}
+          </p>
+        )}
+
+        {/* Only what is outstanding, and only when it is: a zero is not shown at all. */}
+        {(flaggedVitals.length > 0 || openCount > 0 || pending.length > 0 || missing.length > 0) && (
+          <div className="flex flex-wrap gap-2">
+            {flaggedVitals.map((t) => (
+              <StatusPill key={t.id} icon={TriangleAlert} tone="critical">
+                {t.label} {t.value}
+              </StatusPill>
+            ))}
+            {openCount > 0 && (
+              <StatusPill icon={ListChecks}>
+                {openCount} {openCount === 1 ? "job" : "jobs"}
+              </StatusPill>
+            )}
+            {pending.length > 0 && (
+              <StatusPill icon={CircleAlert} tone="warn">
+                {pending.length} to check
+              </StatusPill>
+            )}
+            {missing.length > 0 && (
+              <StatusPill tone="gap">{missing.length} not recorded</StatusPill>
             )}
           </div>
-        </div>
-
-        {/* The three counts this page already works out, so they need not be added up from the
-            sections below. "Not recorded" is amber, not red: it is a gap to fill, not an alarm. */}
-        <div className="mt-2 grid grid-cols-3 gap-2">
-          <CountTile icon={ListChecks} value={openCount} label="To do" tone="neutral" />
-          <CountTile icon={CircleAlert} value={pending.length} label="To check" tone={pending.length > 0 ? "warn" : "neutral"} />
-          <CountTile icon={ClipboardX} value={missing.length} label="Not recorded" tone={missing.length > 0 ? "warn" : "neutral"} />
-        </div>
+        )}
       </header>
-
 
       <PatientTabs
         tabs={[
@@ -1252,13 +1234,8 @@ function latestVitalTiles(observations: Observation[]) {
   return vitalSets(observations).tiles;
 }
 
-const VITAL_ICONS: Record<string, LucideIcon> = {
-  bp: Activity,
-  pr: HeartPulse,
-  spo2: Droplets,
-  temp: Thermometer,
-  rr: Wind,
-};
+/** The vitals the box on the Today tab shows — BP, PR and SpO₂, nothing else. */
+const BOX_VITALS = new Set(["bp", "pr", "spo2"]);
 
 function VitalsPanel({ observations }: { observations: Observation[] }) {
   const { sets, tiles } = vitalSets(observations);
@@ -1282,48 +1259,40 @@ function VitalsPanel({ observations }: { observations: Observation[] }) {
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        {tiles.map((t) => {
-          const Icon = VITAL_ICONS[t.key] ?? Activity;
-          return (
+      {/* Three vitals, one row: BP, PR and SpO₂. Temperature and RR stay in the record and in
+          the earlier readings below; an out-of-range one is named beside the patient's name. A
+          vital with no reading is a dash in amber — absence shown, never left blank. */}
+      <div className="grid grid-cols-3 overflow-hidden rounded-[12px] bg-card">
+        {tiles
+          .filter((t) => BOX_VITALS.has(t.key))
+          .map((t) => (
             <div
               key={t.id}
               className={
-                "flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 " +
-                (t.key === "bp" ? "col-span-2 " : "") +
-                (t.flag ? "bg-critical-bg" : "bg-card")
+                "flex min-w-0 flex-col gap-0.5 border-l border-line/60 px-3 py-2.5 first:border-l-0 " +
+                (t.flag ? "bg-critical-bg" : "")
               }
             >
-              <span
-                className={
-                  "grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[9px] " +
-                  (t.flag ? "bg-critical-fg/10 text-critical-fg" : "bg-chip text-accent")
-                }
-              >
-                <Icon className="h-[16px] w-[16px]" strokeWidth={2.2} />
-              </span>
-              <div className="min-w-0">
-                <span className="block text-caption2 uppercase tracking-wide text-muted">{t.label}</span>
-                {t.value === null ? (
-                  <span className="text-subhead font-medium text-warn-fg">Not recorded</span>
-                ) : (
-                  <span
-                    className={
-                      "text-body font-semibold tabular-nums " + (t.flag ? "text-critical-fg" : "text-foreground")
-                    }
-                  >
-                    {t.value}
-                  </span>
-                )}
-                {/* The range rides along with the flag rather than the flag standing alone —
-                    a colour with no stated reason is exactly the "trust me" the rival app asks
-                    for. This one shows its work. */}
-                {t.flag && <span className="ml-1 text-caption2 font-medium text-critical-fg">({t.range})</span>}
-                {t.takenAt && <span className="block text-caption2 text-muted">{vitalsWhen(t.takenAt)}</span>}
-              </div>
+              <span className="text-caption text-muted">{t.label}</span>
+              {t.value === null ? (
+                <span aria-label="Not recorded" className="text-title3 font-semibold text-warn-fg">
+                  –
+                </span>
+              ) : (
+                <span
+                  className={
+                    "truncate text-title3 font-semibold tabular-nums " + (t.flag ? "text-critical-fg" : "text-foreground")
+                  }
+                >
+                  {t.value}
+                </span>
+              )}
+              {/* The range rides along with the flag rather than the flag standing alone — a
+                  colour with no stated reason is exactly the "trust me" this app refuses. */}
+              {t.flag && <span className="text-caption2 font-medium text-critical-fg">({t.range})</span>}
+              {t.takenAt && <span className="truncate text-caption2 text-muted">{vitalsWhen(t.takenAt)}</span>}
             </div>
-          );
-        })}
+          ))}
       </div>
 
       {earlier.length > 0 && (
@@ -1567,12 +1536,21 @@ function SoapHeading({ section, label }: { section: (typeof SOAP_ORDER)[number];
  * been migrated and backfilled) falls back the same way an "extra" observation does, so nothing
  * silently disappears — it just lands in Checks until it's classified.
  */
-function soapGroups(matched: MatchedItem[], extra: Observation[], vitalsPanelShown: boolean) {
+function soapGroups(
+  matched: MatchedItem[],
+  extra: Observation[],
+  vitalsPanelShown: boolean,
+  treatmentShown: boolean
+) {
   // Display only — every line below is still in the record and the note. A stored day count
   // is hidden because the header's computed day is the true one; a vital because the Vitals
-  // panel above already shows it; a repeat because the fuller or later line says it all.
+  // panel above already shows it; a drug because the Treatment list below already lists it,
+  // with its quote (every drug used to appear twice on this tab); a repeat because the fuller
+  // or later line says it all.
   const hide = (kind: string, label: string) =>
-    isDayCountLabel(kind, label) || (vitalsPanelShown && isVitalLine(label));
+    isDayCountLabel(kind, label) ||
+    (vitalsPanelShown && isVitalLine(label)) ||
+    (treatmentShown && kind === "medication");
   return SOAP_ORDER.map((section) => {
     // A checklist row with no value is a gap to fill, and stays whatever its label.
     const m = matched.filter(
@@ -1627,35 +1605,34 @@ function CameDue({ observation }: { observation: Observation }) {
 }
 
 /** One of the header's three counts — same look as the ward page's StatTile, without the link. */
-function CountTile({
+/** One outstanding count beside the patient's name: jobs, values to check, gaps to fill. */
+function StatusPill({
   icon: Icon,
-  value,
-  label,
-  tone,
+  tone = "plain",
+  children,
 }: {
-  icon: LucideIcon;
-  value: number;
-  label: string;
-  tone: "neutral" | "warn";
+  icon?: LucideIcon;
+  tone?: "plain" | "warn" | "gap" | "critical";
+  children: React.ReactNode;
 }) {
-  const warn = tone === "warn";
   return (
-    <div className={"flex flex-col gap-1.5 rounded-[12px] px-3 py-2.5 " + (warn ? "bg-warn-bg" : "bg-card")}>
-      <span
-        className={
-          "grid h-[24px] w-[24px] place-items-center rounded-[7px] " +
-          (warn ? "bg-warn-fg/10 text-warn-fg" : "bg-chip text-accent")
-        }
-      >
-        <Icon className="h-[15px] w-[15px]" strokeWidth={2.3} />
-      </span>
-      <span>
-        <span className={"block text-title3 font-bold leading-none tabular-nums " + (warn ? "text-warn-fg" : "text-foreground")}>
-          {value}
-        </span>
-        <span className={"mt-0.5 block text-caption " + (warn ? "text-warn-fg" : "text-muted")}>{label}</span>
-      </span>
-    </div>
+    <span
+      className={
+        "inline-flex h-8 items-center gap-1.5 rounded-full bg-card px-3 text-subhead font-medium " +
+        (tone === "critical"
+          ? "bg-critical-bg text-critical-fg"
+          : tone === "warn"
+            ? "text-warn-fg"
+            : tone === "gap"
+              ? "text-warn-fg ring-1 ring-inset ring-warn-bg"
+              : "text-foreground")
+      }
+    >
+      {Icon && <Icon className={"h-[15px] w-[15px] " + (tone === "plain" ? "text-accent" : "")} strokeWidth={2.4} />}
+      {/* A gap is drawn as an empty ring, the same mark as "not graded" — something not yet said. */}
+      {tone === "gap" && <span aria-hidden className="h-[7px] w-[7px] rounded-full border-[1.5px] border-warn-fg" />}
+      {children}
+    </span>
   );
 }
 
