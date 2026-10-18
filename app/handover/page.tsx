@@ -67,7 +67,7 @@ export default async function HandoverPage() {
                         <BedChip bed={p.bed} />
                         <span className="min-w-0 flex-1 truncate text-subhead">{patientName(p)}</span>
                         <span className="text-footnote text-muted">
-                          {p.state.openTasks.length} {p.state.openTasks.length === 1 ? "job" : "jobs"}
+                          {p.state.openTasks.length} To-Do
                         </span>
                       </Link>
                     </li>

@@ -135,8 +135,7 @@ export function criticalFlags(patient: WardPatient, specialty?: string | null): 
         if (t.rrAtMost !== undefined && n <= t.rrAtMost) hits.push({ label: "RR", value: String(n), reason: "bradypnoea" });
       }
       if (c.label === "Temp") {
-        // Wards here chart in °F as often as °C; nothing human reads above 45 °C.
-        const celsius = n > 45 ? ((n - 32) * 5) / 9 : n;
+        const celsius = toCelsius(n);
         const low =
           (t.tempAtMost !== undefined && celsius <= t.tempAtMost) ||
           (t.tempBelow !== undefined && celsius < t.tempBelow);
@@ -200,6 +199,42 @@ export function criticalFlags(patient: WardPatient, specialty?: string | null): 
 const HOUR = 3600_000;
 
 type Vital = NonNullable<WardPatient["vitals"]>[number];
+
+/** Wards here chart in °F as often as °C; nothing human reads above 45 °C. */
+function toCelsius(n: number): number {
+  return n > 45 ? ((n - 32) * 5) / 9 : n;
+}
+
+/**
+ * A temperature outside normal for this patient, for the ward row's small bubble beside the
+ * To-Do count — not the Critical chip, which keeps its own, higher bar. A normal temperature
+ * shows nothing.
+ *
+ *   • 16 and over — outside the band NEWS2 scores 0, 36.1–38.0 °C (RCP NEWS2 chart 1, the
+ *     scoring system NICE NG253 uses): 36.0 or below, or 38.1 or above.
+ *   • Under 16, or no age on a paediatric unit — 38 °C or more ("a high temperature is 38C or
+ *     more", NHS: fever in children), or below 36 °C (NICE NG254 tables 1–3, every age under 16).
+ *
+ * The value is returned exactly as recorded.
+ */
+export function abnormalTemp(
+  patient: Pick<WardPatient, "vitals" | "vitals_recent" | "age_years">,
+  specialty?: string | null
+): string | null {
+  const age = patient.age_years;
+  const child = age !== null && age !== undefined ? age < 16 : specialty === "paediatrics";
+  for (const v of currentVitals(patient)) {
+    for (const c of classifyVital(v.label, v.value_text)) {
+      if (c.label !== "Temp") continue;
+      const n = num(c.value);
+      if (n === null) continue;
+      const t = toCelsius(n);
+      const off = child ? t >= 38 || t < 36 : t <= 36.0 || t >= 38.1;
+      if (off) return (v.value_text ?? "").trim() || c.value.trim();
+    }
+  }
+  return null;
+}
 
 /**
  * The vitals the alarms read: each vital's own newest value from the last day of readings
