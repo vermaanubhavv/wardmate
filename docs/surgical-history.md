@@ -720,7 +720,10 @@ did not match the singular. "loc" and "ent bleed" were added as the standard ED 
   - sebaceous cyst: excision once it settles.
   - breast abscess: keep feeding from both sides.
   - hernia: seroma.
+- **Out-of-hours contact** (B&L Table 22.5), added after the sign-off and pending review: the six
+  day-case templates (benign breast, lump excision, hernia, hydrocele, perianal, varicose veins)
+  print "If any warning sign appears, day or night, call [ ward / emergency phone number ] or come
+  to the hospital emergency."
 - **Not done:**
-  - an out-of-hours contact line on the day-case templates (B&L Table 22.5);
   - the minor matching overlaps (phyllodes mastectomy; burns and pressure-sore debridement;
     Graves ophthalmopathy).

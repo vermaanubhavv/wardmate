@@ -28,7 +28,8 @@ import { adv, proc, COMMON_MEDS } from "@/lib/discharge-template-parts";
  * `[ … ]` and the condition beside it, so a row nobody edited prints as visibly unfinished rather
  * than as a prescription every patient received.
  *
- * CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma) — re-signed on 2026-10-18 after the Bailey & Love 28e
+ * CLINICAL CONTENT: the out-of-hours contact line on the six day-case templates (OUT_OF_HOURS,
+ * 2026-10-18) is PENDING REVIEW. Everything else: REVIEWED (Dr Anubhav Verma) — re-signed on 2026-10-18 after the Bailey & Love 28e
  * changes (docs/surgical-history.md §13: the matching fixes, the conditional-drug rows, the added
  * follow-up and red-flag lines and the "What to check today" text); signed off on 2026-10-11 with the
  * corrections and the nine templates added after the Schwartz 11e review (§12).
@@ -107,6 +108,8 @@ const RF_ABDO = [
 const OPD7 = "Attend the Surgery OPD after 7 days for a wound review.";
 const HPE = "Bring the histopathology report to the follow-up visit.";
 const LMWH28 = "Complete the full 28-day course of the blood-thinning injections.";
+/** Day-case discharges carry a contact for the night — Bailey & Love 28e Table 22.5 (p. 303). */
+const OUT_OF_HOURS = "If any warning sign appears, day or night, call [ ward / emergency phone number ] or come to the hospital emergency.";
 const ONCO_MDT = "Collect the histopathology report and attend the oncology / multidisciplinary clinic with it to decide further treatment.";
 
 
@@ -129,7 +132,7 @@ const HYDROCELE: DischargeTemplate = {
       m.generic === "Amoxicillin-clavulanate" ? { ...m, generic: "[ Amoxicillin-clavulanate — only if indicated ]", frequency: "TDS", indication: undefined }
       : m.generic === "Lidocaine 2% jelly" ? { ...m, generic: "[ Lidocaine 2% jelly — after circumcision ]" }
       : m),
-    patientActions: [OPD7, "Sutures are absorbable [ / attend for suture removal on day 7–10 ]."],
+    patientActions: [OPD7, "Sutures are absorbable [ / attend for suture removal on day 7–10 ].", OUT_OF_HOURS],
   },
 };
 
@@ -178,6 +181,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         HPE,
         "Report any new lump in either breast.",
         "[ Phyllodes: margins on the histopathology decide re-excision; attend for clinical review — local recurrence is common. ]",
+        OUT_OF_HOURS,
       ],
       primaryCareActions: [],
       conditionAllSatisfactory: true,
@@ -784,6 +788,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         OPD7,
         "Attend for suture removal on postoperative day 10.",
         "Return to heavy manual work usually by 3–4 weeks, as pain allows [ large incisional / ventral repair: after 4–6 weeks ].",
+        OUT_OF_HOURS,
       ],
       primaryCareActions: ["Treat chronic cough / constipation / prostatism to reduce recurrence."],
       conditionAllSatisfactory: true,
@@ -1056,6 +1061,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         "Bring any histopathology report to follow-up.",
         "[ Attend for seton adjustment or removal as scheduled. ]",
         "[ Haemorrhoidectomy: review at 3–4 weeks with a rectal examination for anal narrowing. ]",
+        OUT_OF_HOURS,
       ],
       primaryCareActions: [
         "Reinforce stool softeners and sitz baths.",
@@ -1110,6 +1116,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
         "Attend the Surgery OPD after 7 days for a wound review [ and a duplex scan to confirm closure of the vein after ablation ].",
         "Attend for suture removal on postoperative day 7–10 [ / sutures are absorbable ].",
         "Wear the compression stocking as advised.",
+        OUT_OF_HOURS,
       ],
       primaryCareActions: [
         "Encourage walking, weight control and leg elevation.",
@@ -1290,6 +1297,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       patientActions: [
         "Attend the Surgery OPD after 7 days for a wound review and suture removal [ day 10–14 on the back or over a joint ].",
         HPE,
+        OUT_OF_HOURS,
       ],
       primaryCareActions: [
         "[ Lymph node biopsy: start treatment according to the report — e.g. anti-tubercular treatment through the national TB programme. ]",
