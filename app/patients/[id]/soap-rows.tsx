@@ -129,7 +129,14 @@ export default function SoapRows({
   }
 
   function line(g: Group) {
-    const label = g.labels.map(displayLabel).join(" · ");
+    // A label the value already starts with says nothing twice: "review pas" over "review PAs to
+    // be done", "cholelithiasis" over "cholelithiasis". The value alone carries it.
+    // So does a label that only names the section it sits under: "Plan" under PLAN.
+    const repeats =
+      !!g.value &&
+      g.labels.length === 1 &&
+      (startsWithLabel(g.value, g.labels[0]) || g.labels[0].trim().toLowerCase() === writeKind);
+    const label = repeats ? null : g.labels.map(displayLabel).join(" · ");
     if (editing === g.key) return <div key={g.key}>{editor(g.labels, "Leave blank to clear", g.key)}</div>;
     return (
       <button
@@ -138,7 +145,7 @@ export default function SoapRows({
         onClick={() => open(g.key, g.value)}
         className="block w-full py-1.5 text-left active:bg-chip"
       >
-        <span className="block text-footnote text-muted">{label}</span>
+        {label && <span className="block text-footnote text-muted">{label}</span>}
         {g.value ? (
           <span className="mt-0.5 block text-subhead leading-snug">{g.value}</span>
         ) : (
@@ -177,4 +184,11 @@ export default function SoapRows({
       {error && <p className="mt-1 text-footnote text-warn-fg">{error}</p>}
     </>
   );
+}
+
+/** True when the value begins with the label's words, ignoring case and punctuation. */
+function startsWithLabel(value: string, label: string): boolean {
+  const norm = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  const l = norm(label);
+  return l.length > 0 && (norm(value) + " ").startsWith(l + " ");
 }
