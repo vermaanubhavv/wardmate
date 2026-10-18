@@ -19,6 +19,7 @@ import PrintButton from "./print-button";
 import OverlayNote from "./overlay-note";
 import SoapNote from "./soap-note";
 import { renderNoteLine } from "./note-line";
+import { BackBar } from "@/app/screen-header";
 
 /**
  * Today's progress sheet, laid out the way the unit's own paper form is — see the ESIC form the
@@ -152,11 +153,9 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col bg-background print:max-w-none print:bg-white">
-      <header className="px-4 pb-3 pt-6 print:hidden">
-        <Link href={`/patients/${id}`} className="text-body text-accent">
-          ‹ Patient
-        </Link>
-        <h1 className="mt-3 ios-large-title">Print sheet</h1>
+      <BackBar href={`/patients/${id}`} label="Patient" />
+      <header className="px-4 pb-3 pt-4 print:hidden">
+        <h1 className="ios-large-title">Print sheet</h1>
         <p className="mt-1 text-subhead text-muted">
           Everything below is what was actually recorded today. Blank lines are for what
           wasn&rsquo;t.

@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Prepare from "./prepare";
+import { BackBar } from "@/app/screen-header";
 
 /**
  * "Prepare discharge" — the patient's papers photographed, read, checked, and turned into the
@@ -30,10 +30,8 @@ export default async function PrepareDischargePage({
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-6 pb-16 pt-8">
-      <Link href={`/patients/${id}/discharge`} className="text-body text-accent">
-        ‹ Discharge summary
-      </Link>
-      <h1 className="mt-3 ios-large-title text-title1 leading-tight">Add investigation reports</h1>
+      <BackBar href={`/patients/${id}/discharge`} label="Discharge summary" className="-mx-6 -mt-8" />
+      <h1 className="mt-4 ios-large-title text-title1 leading-tight">Add investigation reports</h1>
       <p className="mt-1 text-subhead text-muted">
         {patient.display_name}
         {patient.bed ? ` · bed ${patient.bed}` : ""}

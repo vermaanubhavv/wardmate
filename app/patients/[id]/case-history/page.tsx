@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { stripPatientHonorific } from "@/lib/patients";
@@ -7,6 +6,7 @@ import { getWardSpecialtyStored } from "@/lib/ward";
 import { getSpecialtyPack } from "@/lib/specialty";
 import type { Observation } from "@/lib/patient-state";
 import CaseHistoryWorkspace, { type WorkspaceObs } from "./case-history-workspace";
+import { BackBar } from "@/app/screen-header";
 
 /**
  * The case-history review workspace — the clerking note walked one card at a time, the same
@@ -64,15 +64,10 @@ export default async function CaseHistoryWorkspacePage({
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
-      <header className="flex items-baseline justify-between gap-3 px-4 pb-3 pt-6">
-        <Link href={`/patients/${id}`} className="text-body text-accent">
-          ‹ Patient
-        </Link>
-        <p className="truncate text-footnote text-muted">
-          Case history · {stripPatientHonorific(patient.display_name)}
-          {patient.bed ? ` · bed ${patient.bed}` : ""}
-        </p>
-      </header>
+      <BackBar href={`/patients/${id}`} label="Patient" className="mb-3">
+        Case history · {stripPatientHonorific(patient.display_name)}
+        {patient.bed ? ` · bed ${patient.bed}` : ""}
+      </BackBar>
 
       <CaseHistoryWorkspace
         patientId={id}

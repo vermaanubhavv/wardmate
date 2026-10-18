@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { historyCheckEnabled } from "@/lib/history-check/flag";
 import { getTree } from "@/lib/history-check/trees";
 import { SLOT_GROUPS, type SlotGroup } from "@/lib/history-check/types";
 import { statusChip } from "@/app/patients/[id]/status-chip";
 import ReferenceList from "../../reference-list";
+import { BackBar } from "@/app/screen-header";
 
 const GROUP_TITLE: Record<SlotGroup, string> = {
   informant: "Informant",
@@ -28,10 +28,7 @@ export default async function LearnHistoryPage({ params }: { params: Promise<{ t
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
-      <header className="flex items-baseline justify-between gap-3 px-4 pb-3 pt-6">
-        <Link href="/learn" className="text-body text-accent">‹ Learn</Link>
-        <p className="truncate text-footnote text-muted">{tree.complaint}</p>
-      </header>
+      <BackBar href="/learn" label="Learn" className="mb-3">{tree.complaint}</BackBar>
 
       <section className="px-4 pb-4">
         <div className="ios-group px-4 py-3">
