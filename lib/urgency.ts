@@ -1,3 +1,5 @@
+import { shortJob } from "@/lib/shorthand";
+
 export type Urgency = "red" | "yellow" | "green" | null;
 
 export const URGENCY_META: Record<
@@ -118,8 +120,8 @@ export function describeWhen(text: string, recordedAtIso: string, now: string = 
  * so none of them can show "drain to be removed tomorrow — 14 days overdue".
  */
 export function jobTitle(text: string, recordedAtIso: string, now: string = new Date().toISOString()): string {
-  const said = describeWhen(text, recordedAtIso, now);
-  return said.charAt(0).toUpperCase() + said.slice(1);
+  // Ward shorthand by rule (lib/shorthand.ts): "we need to send complete blood count" reads "Send CBC".
+  return shortJob(describeWhen(text, recordedAtIso, now));
 }
 
 // Jobs that only follow an operation. A drain put in on the ward (a pigtail, an intercostal

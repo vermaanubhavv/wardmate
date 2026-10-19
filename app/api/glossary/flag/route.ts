@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
+import { numbersIn } from "@/lib/complaint-duration";
 
 const CATEGORIES = ["drug", "procedure", "ward_shorthand", "anatomy"];
 
@@ -53,6 +54,10 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
+
+  // A changed number is a correction to this patient's record, not a word the transcriber
+  // keeps mishearing — never learned (lib/glossary.ts skips any that got in before this).
+  if (numbersIn(wrongTerm).size || numbersIn(correctTerm).size) return NextResponse.json({ ok: true, learned: false });
 
   const { error } = await supabase.rpc("flag_glossary_term", {
     wrong: wrongTerm,

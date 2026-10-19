@@ -21,16 +21,17 @@ const sha = (s: string) => createHash("sha256").update(s).digest("hex");
  * The extraction prompt every unit with an operation clock sent before department-neutral
  * examples existed, pinned by hash. A change here is a change to what general surgery (and the
  * other operating units) are sent — it must be deliberate, never a side effect.
+ * Last deliberate change: rule 3's chart shorthand for exam findings and diagnoses (lib/chart-shorthand.ts).
  */
 const PINNED: Record<string, string> = {
-  general_surgery: "8fd148deeccdf4eb9f20e80604fbe7e4558e2b7911ae0d67abd4501f19e84a05",
-  obstetrics_gynaecology: "7dd3bc56807a1a696bdee6a0959cd1dff4939ae6e7ab7c5908c6da48a9448024",
-  ent: "0171d4b6dd0dce7d3cd514bf5bc1bd1db72fb5cd246a12f8def887634616c73a",
-  ophthalmology: "214d1fe53705408b34bf0f2b45b59fbb98dff9b818002c739d7952cf12cf0911",
-  burns_plastic_surgery: "e0224538ba3425407fbb3d036343ec195888b8605fd722e76a4a6213ef4b8d0d",
-  orthopaedics: "0b9dca78dee4ca24c753fbf7f5db0ca425cdc40a66343aa0a8adefed86afb0d1",
-  urology: "b457f81091470137982cc60cdb032d9f357765ffae902fd083c3c76a8954828e",
-  neurosurgery: "7bf92bb198bae698503688afa66b22d278b627cc315681c52d4e9b90ea3d421c",
+  general_surgery: "d88207460aa1044ab33c26e41455acb6314edca78a1d3cb9ee312e9196b36954",
+  obstetrics_gynaecology: "23c5ed958923392e6ff63e51b6573777adae2ea4a1b163b920d2160ec9f0425d",
+  ent: "88ed5ed5f40e5d552a35f7c5c26ece9865cb7d6fd4401fa5cb114f1211484e36",
+  ophthalmology: "420867dfc2d82ba45def9552ecb82fbba0ff5bf19abedc2fdce8b7252dfeed11",
+  burns_plastic_surgery: "4fe7a31f3d6c2eecd97be15b61464df6b5fbe5ed8f64a73d2261813183bb934f",
+  orthopaedics: "4de20e9b76865f50560edd6eff10a4c173ae81b2c2c8517105ab18988f4b92cf",
+  urology: "4ffef888c43dc5eab0eaae19304c5a9d17089f819cc133c4a0db677a1c86a3b0",
+  neurosurgery: "0ef5af7b5813528b71562a7bd59175c5ba36607592399d9673f970756572f17e",
 };
 
 describe("extraction prompt per unit", () => {

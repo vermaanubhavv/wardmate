@@ -1,5 +1,6 @@
 "use client";
 
+import { shortFinding } from "@/lib/shorthand";
 import { useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { replaceTodayNoteSection } from "./note/actions";
@@ -147,7 +148,7 @@ export default function SoapRows({
       >
         {label && <span className="block text-footnote text-muted">{label}</span>}
         {g.value ? (
-          <span className="mt-0.5 block text-subhead leading-snug">{g.value}</span>
+          <span className="mt-0.5 block text-subhead leading-snug">{shortFinding(g.value)}</span>
         ) : (
           <span className={"mt-0.5 block text-subhead " + (g.missing ? "text-warn-fg" : "text-muted/50")}>
             not recorded

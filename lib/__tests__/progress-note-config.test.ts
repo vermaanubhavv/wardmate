@@ -3,6 +3,7 @@ import { buildProgressNote, type ProgressNotePatient } from "@/lib/progress-note
 import { systemPromptFor } from "@/lib/progress-note-ai";
 import {
   MED_PRESETS,
+  sectionsForPatient,
   PROGRESS_NOTE_CONFIGS,
   RESERVED_SECTION_IDS,
   medPresetsFor,
@@ -189,5 +190,20 @@ describe("per-ward presets, examples and print spacing", () => {
     expect(openSpaceHeadings(PROGRESS_NOTE_CONFIGS.internal_medicine)).toEqual(["C/O", "CVS", "Chest", "P/Abdomen", "CNS", "Assessment"]);
     const note = buildProgressNote(patient, [], [], null, { noteConfig: PROGRESS_NOTE_CONFIGS.paediatrics });
     expect(note.openSpace).toEqual(openSpaceHeadings(PROGRESS_NOTE_CONFIGS.paediatrics));
+  });
+});
+
+describe("sectionsForPatient", () => {
+  const gs = progressNoteConfigFor("general_surgery");
+  const ids = (c: ReturnType<typeof progressNoteConfigFor>) => c.examSections.map((s) => s.id);
+  it("drops the wound card for an unoperated patient but keeps drains", () => {
+    const c = sectionsForPatient(gs, { surgery_date: null }, []);
+    expect(ids(c)).not.toContain("wound");
+    expect(ids(c)).toContain("drains");
+    expect(c.planPills.some((p) => /suture/i.test(p))).toBe(false);
+  });
+  it("keeps it once operated, or once a wound was said", () => {
+    expect(ids(sectionsForPatient(gs, { surgery_date: "2026-10-10" }, []))).toContain("wound");
+    expect(ids(sectionsForPatient(gs, { surgery_date: null }, [{ label: "Wound" }]))).toContain("wound");
   });
 });

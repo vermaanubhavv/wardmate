@@ -26,6 +26,13 @@ const SCHEDULES: { value: string; label: string }[] = [
   { value: "STAT", label: "STAT" },
 ];
 const UNITS = ["mg", "g", "U", "mcg", "ml"];
+const ROUTES = ["", "PO", "IV", "IM", "SC", "PR", "Inh", "Topical"];
+
+/** The editor's (label, value) as one drug-list line: "Inj Ceftriaxone 1 g IV BD". */
+export function medLine(label: string, value: string): string {
+  const m = value.match(/^(Tab|Inj)\b\s*(.*)$/);
+  return (m ? `${m[1]} ${label} ${m[2]}` : `${label} ${value}`).replace(/\s+/g, " ").trim();
+}
 const OTHER = "__other";
 
 /** Read a dictated medication back into the editor's fields — only what was said, so a field
@@ -86,8 +93,10 @@ export default function MedicationEditor({
   const [unit, setUnit] = useState("mg");
 
   const finalDose = dose === OTHER ? (amount.trim() ? `${amount.trim()} ${unit}` : "") : dose;
-  // Route and duration have no field here; whatever was dictated rides along unchanged.
-  const route = start.route && !(form === "Tab" && start.route === "PO") ? start.route : null;
+  // Duration has no field here; whatever was dictated rides along unchanged. A tablet's PO goes
+  // without saying.
+  const [routeSel, setRouteSel] = useState(start.route ?? "");
+  const route = routeSel && !(form === "Tab" && routeSel === "PO") ? routeSel : null;
   const text = [form, finalDose, route, schedule, start.duration && `for ${start.duration}`].filter(Boolean).join(" ");
 
   return (
@@ -129,6 +138,13 @@ export default function MedicationEditor({
           ))}
         </select>
       </div>
+      <select value={routeSel} onChange={(e) => setRouteSel(e.target.value)} className="field" aria-label="Route">
+        {(start.route && !ROUTES.includes(start.route) ? [...ROUTES, start.route] : ROUTES).map((r) => (
+          <option key={r} value={r}>
+            {r || "Route —"}
+          </option>
+        ))}
+      </select>
       {dose === OTHER && (
         <div className="grid grid-cols-[1fr_6rem] gap-2">
           <input

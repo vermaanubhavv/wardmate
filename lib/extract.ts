@@ -1,4 +1,5 @@
 import { judgeObservations, type PatientIdentifiers, type TaskCategoryJudgment } from "@/lib/jev-observations";
+import { tidyIsFaithful } from "@/lib/chart-shorthand";
 import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
 import { traced, recordAiUsage } from "@/lib/observability";
 import { isIdentifierLabel } from "@/lib/patients";
@@ -65,6 +66,7 @@ Absolute rules:
 2. Every observation must carry a source_quote that is copied VERBATIM from the transcript — an exact, contiguous span of the transcript's own characters. Not a paraphrase, not a tidied version, not a reconstruction. If you cannot copy an exact span that contains the value, do not emit the observation at all.
 
 3. Do not expand abbreviations inside value_text, and do not convert units. If the resident said "30 ml serous", value_text is "30 ml serous" — not "30 millilitres of serous fluid". Store what was said.
+   The one tidying allowed: an examination finding or a diagnosis is written the way a chart writes it, shorter, from the resident's own words. Drop a false start or a repeated phrase, and name an abdominal quadrant by its abbreviation when its side and level were both said. "upper abdomen is tender in the right upper abdomen" → "RUQ tenderness"; "right upper right liver lobe abscess" → "right liver lobe abscess". Never add a word of meaning, a number, a side, a site or a negation that was not said — source_quote keeps the words exactly as spoken.
 
 4. Set needs_confirmation to true for anything where a mis-hearing would be dangerous: any number, any drug name, any dose, any route or frequency, any bed number${ex.confirmProcedure}. These get surfaced to the resident for a one-tap check. Soft findings ("abdomen soft", "tolerating orals") do not need confirmation.
 
@@ -79,7 +81,7 @@ Absolute rules:
 Guidance on fields:
 - kind: the closest category. Use "note" only for clinical content that fits nothing else.
 - label: the short name of the thing measured or described, lowercase — ${ex.labels}. Never let the label and the value be the same word: a diagnosis of ${ex.diagnosis} is label "diagnosis", value "${ex.diagnosis}", not both.
-- value_text: always populated, exactly as said.
+- value_text: always populated, exactly as said (exam findings and diagnoses in chart shorthand — rule 3).
 - value_num and unit: populate ONLY when the resident actually stated a number and (where relevant) a unit. Otherwise null.
 - day_number: use when ${ex.dayNumber} is spoken, with value_num as the integer.${ex.procedureBlocks}
 - plan: unfinished future actions only — ${ex.planExamples}. Do NOT use plan for treatment updates: ${ex.notPlanExamples} are medication/exam/note updates, never jobs.
@@ -324,6 +326,12 @@ export async function extractObservations(
       // Enforced here rather than trusted for the same reason everything else on this list is:
       // a row that says the same word twice is exactly the noise this app exists to cut.
       if (obs.kind === "diagnosis") obs.label = "diagnosis";
+
+      // Rule 3's chart shorthand, checked: a tidied exam finding or diagnosis that brings in a
+      // word, number, side or negation the quote does not have goes back to the quote itself.
+      if ((obs.kind === "exam" || obs.kind === "diagnosis") && obs.value_text && !tidyIsFaithful(obs.value_text, obs.source_quote)) {
+        obs.value_text = obs.source_quote.trim();
+      }
 
       observations.push(obs);
     } else rejected.push(obs);

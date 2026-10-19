@@ -5,6 +5,7 @@ function formatList(items: string[]): string {
   if (items.length <= 1) return items.join("");
   return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 }
+import { shortFinding } from "@/lib/shorthand";
 import { summariseObjective, type WardRanges } from "@/lib/exam-summary";
 import type { EtiologyKey, ImagingSummary } from "@/lib/imaging-summary";
 import type { Observation } from "@/lib/patient-state";
@@ -147,7 +148,7 @@ export function ObjectiveSummaryView({
       {/* The abnormalities, which are the reason anyone reads this section. */}
       {summary.findings.map((f) => (
         <p key={f.id} className="mt-1">
-          <span className="text-muted">{displayLabel(f.label)}</span> <span className="font-medium">{f.value}</span>
+          <span className="text-muted">{displayLabel(f.label)}</span> <span className="font-medium">{shortFinding(f.value)}</span>
         </p>
       ))}
 
