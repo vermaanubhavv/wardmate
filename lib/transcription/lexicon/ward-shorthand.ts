@@ -12,7 +12,9 @@ import { PRIORITY, specialtyEntry } from "./types";
  * with and the shorthand a finding is displayed in come from the same rows and cannot drift.
  *
  * To add one: the phrase as said (each word starting with the next letter of the
- * abbreviation; "of", "and", "with" and the like may sit between), then the abbreviation.
+ * abbreviation; "of", "and", "with" and the like may sit between), then the abbreviation. A
+ * word that gives two letters ("intraocular" → IO) must be in COMPOUNDS in
+ * lib/shorthand-derive.ts, hand-checked.
  * A pair whose initials do not spell the abbreviation is not derived; shorthand.test.ts says so.
  * Priority is the lowest there is, so a pair never pushes a real clinical term out of a
  * unit's keyterm budget.
@@ -58,6 +60,10 @@ export const WARD_SHORTHAND: MedicalLexiconEntry[] = [
     ["dilated fundus evaluation", "DFE"],
     ["keratic precipitates", "KP"],
     ["laser peripheral iridotomy", "LPI"],
+    ["intraocular pressure", "IOP"],
+    ["intraocular lens", "IOL"],
+    ["posterior chamber intraocular lens", "PCIOL"],
+    ["intraocular foreign body", "IOFB"],
   ]),
   ...pairs("orthopaedics", [
     ["range of motion", "ROM"],
@@ -84,6 +90,8 @@ export const WARD_SHORTHAND: MedicalLexiconEntry[] = [
     ["congestive cardiac failure", "CCF"],
     ["myocardial infarction", "MI"],
     ["acute coronary syndrome", "ACS"],
+    ["diabetic ketoacidosis", "DKA"],
+    ["intravenous immunoglobulin", "IVIG"],
     ["respiratory system", "RS"],
     ["central nervous system", "CNS"],
   ]),
@@ -91,10 +99,12 @@ export const WARD_SHORTHAND: MedicalLexiconEntry[] = [
     ["per vaginum", "P/V"],
     ["per vaginal", "P/V"],
     ["per speculum", "P/S"],
-    ["post partum haemorrhage", "PPH"],
-    ["ante partum haemorrhage", "APH"],
     ["normal vaginal delivery", "NVD"],
     ["symphysis fundal height", "SFH"],
+    ["postpartum haemorrhage", "PPH"],
+    ["antepartum haemorrhage", "APH"],
+    ["intrauterine growth restriction", "IUGR"],
+    ["intrauterine fetal death", "IUFD"],
   ]),
   ...pairs("ent", [
     ["tympanic membrane", "TM"],
@@ -112,7 +122,14 @@ export const WARD_SHORTHAND: MedicalLexiconEntry[] = [
     ["obsessive compulsive disorder", "OCD"],
     ["generalised anxiety disorder", "GAD"],
     ["deliberate self harm", "DSH"],
-    ["electro convulsive therapy", "ECT"],
+    ["electroconvulsive therapy", "ECT"],
+    ["bipolar affective disorder", "BPAD"],
+    ["extrapyramidal symptoms", "EPS"],
+    ["neuroleptic malignant syndrome", "NMS"],
+    ["post traumatic stress disorder", "PTSD"],
+    ["attention deficit hyperactivity disorder", "ADHD"],
+    ["tardive dyskinesia", "TD"],
+    ["delirium tremens", "DT"],
   ]),
   ...pairs("dermatology", [
     ["body surface area", "BSA"],
@@ -122,6 +139,13 @@ export const WARD_SHORTHAND: MedicalLexiconEntry[] = [
     ["discoid lupus erythematosus", "DLE"],
     ["psoriasis area and severity index", "PASI"],
     ["drug reaction with eosinophilia and systemic symptoms", "DRESS"],
+    ["atopic dermatitis", "AD"],
+    ["allergic contact dermatitis", "ACD"],
+    ["seborrhoeic dermatitis", "SD"],
+    ["erythema nodosum leprosum", "ENL"],
+    ["herpes zoster", "HZ"],
+    ["systemic lupus erythematosus", "SLE"],
+    ["intravenous immunoglobulin", "IVIG"],
   ]),
   ...pairs("neurosurgery", [
     ["traumatic brain injury", "TBI"],
@@ -129,6 +153,17 @@ export const WARD_SHORTHAND: MedicalLexiconEntry[] = [
     ["lumbar puncture", "LP"],
     ["anterior cervical discectomy and fusion", "ACDF"],
     ["middle cerebral artery", "MCA"],
+    ["subdural haematoma", "SDH"],
+    ["extradural haematoma", "EDH"],
+    ["subarachnoid haemorrhage", "SAH"],
+    ["intracerebral haemorrhage", "ICH"],
+    ["intraventricular haemorrhage", "IVH"],
+    ["intracranial pressure", "ICP"],
+    ["cerebrospinal fluid", "CSF"],
+    ["ventriculoperitoneal", "VP"],
+    ["midline shift", "MLS"],
+    ["prolapsed intervertebral disc", "PIVD"],
+    ["decompressive craniectomy", "DC"],
   ]),
   ...pairs("paediatrics", [
     ["severe acute malnutrition", "SAM"],
@@ -141,6 +176,11 @@ export const WARD_SHORTHAND: MedicalLexiconEntry[] = [
     ["oral rehydration solution", "ORS"],
     ["mid upper arm circumference", "MUAC"],
     ["transient tachypnoea of the newborn", "TTN"],
+    ["neonatal intensive care unit", "NICU"],
+    ["paediatric intensive care unit", "PICU"],
+    ["acute gastroenteritis", "AGE"],
+    ["necrotising enterocolitis", "NEC"],
+    ["intrauterine growth restriction", "IUGR"],
   ]),
   ...pairs("emergency-medicine", [
     ["advanced cardiac life support", "ACLS"],
@@ -148,6 +188,14 @@ export const WARD_SHORTHAND: MedicalLexiconEntry[] = [
     ["rapid sequence intubation", "RSI"],
     ["capillary refill time", "CRT"],
     ["road traffic accident", "RTA"],
+    ["cardiopulmonary resuscitation", "CPR"],
+    ["pulseless electrical activity", "PEA"],
+    ["ventricular fibrillation", "VF"],
+    ["ventricular tachycardia", "VT"],
+    ["diabetic ketoacidosis", "DKA"],
+    ["acute coronary syndrome", "ACS"],
+    ["intraosseous", "IO"],
+    ["foreign body", "FB"],
   ]),
   ...pairs("urology", [
     ["benign prostatic hyperplasia", "BPH"],
@@ -156,6 +204,17 @@ export const WARD_SHORTHAND: MedicalLexiconEntry[] = [
     ["post void residual", "PVR"],
     ["international prostate symptom score", "IPSS"],
     ["urinary tract infection", "UTI"],
+    ["transurethral resection of prostate", "TURP"],
+    ["transurethral resection of bladder tumour", "TURBT"],
+    ["percutaneous nephrolithotomy", "PCNL"],
+    ["suprapubic catheter", "SPC"],
+    ["retrograde intrarenal surgery", "RIRS"],
+    ["extracorporeal shock wave lithotripsy", "ESWL"],
+    ["pelviureteric junction", "PUJ"],
+    ["vesicoureteric reflux", "VUR"],
+    ["chronic kidney disease", "CKD"],
+    ["acute kidney injury", "AKI"],
+    ["renal cell carcinoma", "RCC"],
   ]),
   ...pairs("burns_plastic_surgery", [
     ["total body surface area", "TBSA"],
@@ -163,5 +222,13 @@ export const WARD_SHORTHAND: MedicalLexiconEntry[] = [
     ["split skin graft", "SSG"],
     ["negative pressure wound therapy", "NPWT"],
     ["vacuum assisted closure", "VAC"],
+    ["anterolateral thigh", "ALT"],
+    ["latissimus dorsi", "LD"],
+    ["transverse rectus abdominis myocutaneous", "TRAM"],
+    ["deep inferior epigastric perforator", "DIEP"],
+    ["cleft lip and palate", "CLP"],
+    ["local anaesthesia", "LA"],
+    ["range of motion", "ROM"],
+    ["tetanus toxoid", "TT"],
   ]),
 ];

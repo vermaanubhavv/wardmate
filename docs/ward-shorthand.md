@@ -14,6 +14,9 @@ call — `lib/shorthand.ts`, rules only.
   and opposites never become rules. An abbreviation that would mean two things on one ward
   (AF = fibrillation / flutter, PR = pulse rate / partial response, POD = post-operative day /
   pouch of Douglas) is dropped there and the words show as said.
+- A word that gives an abbreviation two letters ("intraocular" → the IO of IOP, "transurethral" →
+  the TU of TURP) counts only if it is in the hand-checked `COMPOUNDS` list in
+  `lib/shorthand-derive.ts`. Withheld by hand: HR, GA, AL, IUD (device or death).
 - Department pairs the lexicon lacked live in `lib/transcription/lexicon/ward-shorthand.ts` — real
   lexicon entries, so speech keyterms and display are one source.
 

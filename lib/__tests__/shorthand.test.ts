@@ -34,6 +34,14 @@ describe("shortFinding", () => {
     expect(shortFinding("jugular venous pressure not raised", "internal_medicine")).toBe("JVP not raised");
     expect(shortFinding("history of presenting illness")).toBe("HPI");
     expect(shortFinding("known case of diabetes mellitus", "internal_medicine")).toBe("K/C/O DM");
+    // A word that gives two letters, from the hand-checked COMPOUNDS list.
+    expect(shortFinding("intraocular pressure raised in the left eye", "ophthalmology")).toBe("IOP raised in the LE");
+    expect(shortFinding("posted for transurethral resection of prostate", "urology")).toBe("posted for TURP");
+    expect(shortFinding("small subdural haematoma, no midline shift", "neurosurgery")).toBe("small SDH, no MLS");
+    expect(shortFinding("ventriculoperitoneal shunt in situ", "neurosurgery")).toBe("VP shunt in situ");
+    expect(shortFinding("on electroconvulsive therapy", "psychiatry")).toBe("on ECT");
+    expect(shortFinding("postpartum hemorrhage", "obstetrics_gynaecology")).toBe("PPH");
+    expect(shortFinding("intrauterine death", "obstetrics_gynaecology")).toBe("intrauterine death");
   });
   it("leaves an abbreviation that would mean two things on that ward as said", () => {
     expect(shortFinding("atrial flutter", "internal_medicine")).toBe("atrial flutter");

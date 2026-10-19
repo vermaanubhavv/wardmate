@@ -21,15 +21,63 @@ const ABBR = /^(?=(?:[^A-Z]*[A-Z]){2})[A-Z][A-Za-z]*(?:[/&-][A-Za-z]+)*$/;
 
 /** Initials that fit, but the ward means something else by the letters: HR is heart rate not
  *  "high risk", GA is general anaesthesia as often as gestational age, AL is not ward
- *  shorthand for an anastomotic leak. */
-const NOT_SHORTHAND = new Set(["HR", "GA", "AL"]);
+ *  shorthand for an anastomotic leak, IUD is the device as often as intrauterine death. */
+const NOT_SHORTHAND = new Set(["HR", "GA", "AL", "IUD"]);
+
+/**
+ * One word that gives an abbreviation two letters: "intraocular" is the IO of IOP,
+ * "transurethral" the TU of TURP. Hand-checked, one by one — a word joins this list only
+ * where the ward writes its parts as letters. Anything not here gives one letter.
+ */
+const COMPOUNDS: Record<string, string[]> = {
+  intraocular: ["intra", "ocular"],
+  subdural: ["sub", "dural"],
+  extradural: ["extra", "dural"],
+  subarachnoid: ["sub", "arachnoid"],
+  intracranial: ["intra", "cranial"],
+  intracerebral: ["intra", "cerebral"],
+  intraventricular: ["intra", "ventricular"],
+  cerebrospinal: ["cerebro", "spinal"],
+  ventriculoperitoneal: ["ventriculo", "peritoneal"],
+  intervertebral: ["inter", "vertebral"],
+  midline: ["mid", "line"],
+  cardiopulmonary: ["cardio", "pulmonary"],
+  ketoacidosis: ["keto", "acidosis"],
+  intraosseous: ["intra", "osseous"],
+  electroconvulsive: ["electro", "convulsive"],
+  bipolar: ["bi", "polar"],
+  extrapyramidal: ["extra", "pyramidal"],
+  hyperactivity: ["hyper", "activity"],
+  intravenous: ["intra", "venous"],
+  immunoglobulin: ["immuno", "globulin"],
+  transurethral: ["trans", "urethral"],
+  percutaneous: ["per", "cutaneous"],
+  nephrolithotomy: ["nephro", "lithotomy"],
+  suprapubic: ["supra", "pubic"],
+  intrarenal: ["intra", "renal"],
+  extracorporeal: ["extra", "corporeal"],
+  ureteroscopy: ["uretero", "scopy"],
+  pelviureteric: ["pelvi", "ureteric"],
+  vesicoureteric: ["vesico", "ureteric"],
+  anterolateral: ["antero", "lateral"],
+  intrauterine: ["intra", "uterine"],
+  gastroenteritis: ["gastro", "enteritis"],
+  enterocolitis: ["entero", "colitis"],
+  postpartum: ["post", "partum"],
+  antepartum: ["ante", "partum"],
+};
 
 export function spells(abbr: string, words: string[]): boolean {
   const letters = abbr.replace(/[/&-]/g, "").toLowerCase();
   const go = (i: number, j: number): boolean => {
     if (i === letters.length) return j === words.length;
     if (j === words.length) return false;
-    return (words[j][0] === letters[i] && go(i + 1, j + 1)) || (j > 0 && STOP.has(words[j]) && go(i, j + 1));
+    const parts = COMPOUNDS[words[j]];
+    return (
+      (words[j][0] === letters[i] && go(i + 1, j + 1)) ||
+      (!!parts && parts.every((w, k) => w[0] === letters[i + k]) && go(i + parts.length, j + 1)) ||
+      (j > 0 && STOP.has(words[j]) && go(i, j + 1))
+    );
   };
   return go(0, 0);
 }
@@ -38,7 +86,8 @@ export function spells(abbr: string, words: string[]): boolean {
  *  and "malaria parasite" agree; "atrial fibrillation" and "atrial flutter" do not. Spelled
  *  letters ("c and s") say nothing either way. */
 export const meaningKey = (phrase: string) =>
-  phrase.toLowerCase().split(/[\s-]+/).filter((w) => w.length > 2 && !STOP.has(w)).map((w) => w.slice(0, 3)).join(" ");
+  // British and American spellings are one word: haemorrhage / hemorrhage, oedema / edema.
+  phrase.toLowerCase().replace(/ae|oe/g, "e").split(/[\s-]+/).filter((w) => w.length > 2 && !STOP.has(w)).map((w) => w.slice(0, 3)).join(" ");
 
 type Pair = [string, string];
 
@@ -54,7 +103,7 @@ export function derivePairs(entries: readonly MedicalLexiconEntry[]): Pair[] {
     for (const abbr of abbrs) {
       for (const p of phrases) {
         const words = p.toLowerCase().replace(/[(),.;:]/g, " ").split(/[\s-]+/).filter(Boolean);
-        for (let t = 2; t <= words.length; t++) {
+        for (let t = 1; t <= words.length; t++) {
           const sub = words.slice(0, t);
           if (sub.includes(abbr.toLowerCase())) continue;
           if (spells(abbr, sub)) out.set(`${sub.join(" ")}|${abbr}`, [sub.join(" "), abbr]);
