@@ -23,6 +23,7 @@ import { UROLOGY } from "./urology";
 import { NEUROSURGERY } from "./neurosurgery";
 import { PAEDIATRICS } from "./paediatrics";
 import { EMERGENCY_MEDICINE } from "./emergency-medicine";
+import { WARD_SHORTHAND } from "./ward-shorthand";
 
 export * from "./types";
 
@@ -58,4 +59,5 @@ export const MASTER_LEXICON: readonly MedicalLexiconEntry[] = Object.freeze([
   ...NEUROSURGERY,
   ...PAEDIATRICS,
   ...EMERGENCY_MEDICINE,
+  ...WARD_SHORTHAND,
 ]);

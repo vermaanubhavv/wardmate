@@ -27,11 +27,11 @@ export function scoringPriorityToUrgency(priority: ScoringTask["priority"]): Urg
   return "green";
 }
 
-export function buildWardTodoPreview(tasks: WardTask[], limit = 3): TodoPreviewItem[] {
+export function buildWardTodoPreview(tasks: WardTask[], limit = 3, specialty?: string | null): TodoPreviewItem[] {
   return tasks
     .map((t) => ({
       id: t.id,
-      text: jobTitle(t.value_text ?? t.label, t.recorded_at),
+      text: jobTitle(t.value_text ?? t.label, t.recorded_at, undefined, specialty),
       urgency: t.effective,
       bed: t.patient.bed,
       patientId: t.patient_id,

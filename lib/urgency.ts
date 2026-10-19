@@ -119,9 +119,15 @@ export function describeWhen(text: string, recordedAtIso: string, now: string = 
  * taken out (describeWhen), and a capital first letter. Every list that shows a job uses this,
  * so none of them can show "drain to be removed tomorrow — 14 days overdue".
  */
-export function jobTitle(text: string, recordedAtIso: string, now: string = new Date().toISOString()): string {
+export function jobTitle(
+  text: string,
+  recordedAtIso: string,
+  now: string = new Date().toISOString(),
+  /** The ward's pack key — its department's shorthand on top of the core (lib/shorthand.ts). */
+  specialty?: string | null
+): string {
   // Ward shorthand by rule (lib/shorthand.ts): "we need to send complete blood count" reads "Send CBC".
-  return shortJob(describeWhen(text, recordedAtIso, now));
+  return shortJob(describeWhen(text, recordedAtIso, now), specialty);
 }
 
 // Jobs that only follow an operation. A drain put in on the ward (a pigtail, an intercostal

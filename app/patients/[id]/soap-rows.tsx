@@ -51,7 +51,10 @@ export default function SoapRows({
   writeKind,
   rows,
   extras,
+  specialty,
 }: {
+  /** The unit's pack key, for its department's ward shorthand (lib/shorthand.ts). */
+  specialty?: string | null;
   patientId: string;
   writeKind: "note" | "exam" | "vital" | "plan";
   rows: Row[];
@@ -148,7 +151,7 @@ export default function SoapRows({
       >
         {label && <span className="block text-footnote text-muted">{label}</span>}
         {g.value ? (
-          <span className="mt-0.5 block text-subhead leading-snug">{shortFinding(g.value)}</span>
+          <span className="mt-0.5 block text-subhead leading-snug">{shortFinding(g.value, specialty)}</span>
         ) : (
           <span className={"mt-0.5 block text-subhead " + (g.missing ? "text-warn-fg" : "text-muted/50")}>
             not recorded

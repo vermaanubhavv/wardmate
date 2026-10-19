@@ -8,7 +8,9 @@ function Section({
   lines,
   minHeight,
   openSpace,
+  specialty,
 }: {
+  specialty: string;
   label: string;
   lines: string[];
   minHeight: string;
@@ -22,7 +24,7 @@ function Section({
       </p>
       <div className={`px-3 py-3 text-subhead leading-relaxed ${minHeight}`}>
         {content.length > 0 ? (
-          content.map((line, i) => renderNoteLine(line, i, { compact: true, openSpace }))
+          content.map((line, i) => renderNoteLine(line, i, { compact: true, openSpace, specialty }))
         ) : (
           <p className="text-muted">Nothing recorded yet today.</p>
         )}
@@ -38,7 +40,7 @@ function Section({
  * instead of that sheet's own fixed 11-line column — see ProgressNote.subjective/objective/
  * assessment in lib/progress-note.ts for exactly how the split is made.
  */
-export default function SoapNote({ note }: { note: ProgressNote }) {
+export default function SoapNote({ note, specialty }: { note: ProgressNote; specialty: string }) {
   return (
     <div className="border border-black text-black">
       <p className="border-b border-black py-3 text-center text-title3 font-bold">
@@ -61,10 +63,10 @@ export default function SoapNote({ note }: { note: ProgressNote }) {
         </div>
       </div>
 
-      <Section label="Subjective" lines={note.subjective} openSpace={note.openSpace} minHeight="min-h-[110px]" />
-      <Section label="Objective" lines={note.objective} openSpace={note.openSpace} minHeight="min-h-[140px]" />
-      <Section label="Assessment" lines={note.assessment} openSpace={note.openSpace} minHeight="min-h-[110px]" />
-      <Section label="Plan" lines={note.plan} openSpace={note.openSpace} minHeight="min-h-[110px]" />
+      <Section label="Subjective" lines={note.subjective} openSpace={note.openSpace} specialty={specialty} minHeight="min-h-[110px]" />
+      <Section label="Objective" lines={note.objective} openSpace={note.openSpace} specialty={specialty} minHeight="min-h-[140px]" />
+      <Section label="Assessment" lines={note.assessment} openSpace={note.openSpace} specialty={specialty} minHeight="min-h-[110px]" />
+      <Section label="Plan" lines={note.plan} openSpace={note.openSpace} specialty={specialty} minHeight="min-h-[110px]" />
 
       <div className="px-3 py-2 text-subhead">
         <span className="font-semibold">Practitioner&rsquo;s name:</span>{" "}

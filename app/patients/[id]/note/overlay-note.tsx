@@ -20,7 +20,9 @@ export default function OverlayNote({
   note,
   formatUrl,
   zones,
+  specialty,
 }: {
+  specialty: string;
   note: ProgressNote;
   formatUrl: string;
   zones: FormZone[];
@@ -133,7 +135,7 @@ export default function OverlayNote({
                 failure here, not text silently clipped out of view. */}
             {isMultiLine ? (
               <div className="whitespace-normal">
-                {lines!.map((line, i) => renderNoteLine(line, i, { compact: true, openSpace: note.openSpace }))}
+                {lines!.map((line, i) => renderNoteLine(line, i, { compact: true, openSpace: note.openSpace, specialty }))}
               </div>
             ) : (
               <span className="whitespace-pre-line">{text}</span>

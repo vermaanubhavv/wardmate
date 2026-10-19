@@ -42,7 +42,10 @@ type View = "urgency" | "type";
 export default function TodoLists({
   tasks,
   scoringTasks,
+  specialty,
 }: {
+  /** The unit's pack key: its department's ward shorthand (lib/shorthand.ts). */
+  specialty: string;
   tasks: WardTask[];
   scoringTasks: WardScoringTask[];
 }) {
@@ -71,9 +74,9 @@ export default function TodoLists({
       )}
 
       {view === "urgency" ? (
-        <ByUrgency tasks={tasks} scoringTasks={scoringTasks} nothingOutstanding={nothingOutstanding} />
+        <ByUrgency tasks={tasks} scoringTasks={scoringTasks} nothingOutstanding={nothingOutstanding} specialty={specialty} />
       ) : (
-        <ByType tasks={tasks} scoringTasks={scoringTasks} />
+        <ByType tasks={tasks} scoringTasks={scoringTasks} specialty={specialty} />
       )}
     </>
   );
@@ -83,7 +86,9 @@ function ByUrgency({
   tasks,
   scoringTasks,
   nothingOutstanding,
+  specialty,
 }: {
+  specialty: string;
   tasks: WardTask[];
   scoringTasks: WardScoringTask[];
   nothingOutstanding: boolean;
@@ -138,7 +143,7 @@ function ByUrgency({
               </div>
               <p className="mb-2 text-footnote text-muted">{note}</p>
 
-              <ByPatient tasks={group} />
+              <ByPatient tasks={group} specialty={specialty} />
             </div>
           );
         })
@@ -172,7 +177,7 @@ const CATEGORY_LABELS: Record<TaskCategory | "other", string> = {
   other: "Other",
 } as Record<TaskCategory | "other", string>;
 
-function ByType({ tasks, scoringTasks }: { tasks: WardTask[]; scoringTasks: WardScoringTask[] }) {
+function ByType({ tasks, scoringTasks, specialty }: { tasks: WardTask[]; scoringTasks: WardScoringTask[]; specialty: string }) {
   const order: (TaskCategory | "other")[] = [...TASK_CATEGORY_ORDER, "other"];
 
   const wardByCategory = new Map<TaskCategory | "other", WardTask[]>();
@@ -223,7 +228,7 @@ function ByType({ tasks, scoringTasks }: { tasks: WardTask[]; scoringTasks: Ward
               ))}
             </ul>
           )}
-          {wardTasks.length > 0 && <ByPatient tasks={wardTasks} />}
+          {wardTasks.length > 0 && <ByPatient tasks={wardTasks} specialty={specialty} />}
         </div>
       ))}
     </>
@@ -235,7 +240,7 @@ function ByType({ tasks, scoringTasks }: { tasks: WardTask[]; scoringTasks: Ward
  * repeat the bed and name, so seven of one patient's jobs took a screen to say whose they were.
  * Patients are kept in bed order, so working down the list is still a walk.
  */
-function ByPatient({ tasks }: { tasks: WardTask[] }) {
+function ByPatient({ tasks, specialty }: { tasks: WardTask[]; specialty: string }) {
   const byPatient = new Map<string, WardTask[]>();
   for (const t of tasks) byPatient.set(t.patient_id, [...(byPatient.get(t.patient_id) ?? []), t]);
   return (
@@ -259,7 +264,7 @@ function ByPatient({ tasks }: { tasks: WardTask[] }) {
             </Link>
           </li>
           {jobs.map((t) => (
-            <TaskRow key={t.id} task={t} />
+            <TaskRow key={t.id} task={t} specialty={specialty} />
           ))}
         </ul>
       ))}
@@ -267,7 +272,7 @@ function ByPatient({ tasks }: { tasks: WardTask[] }) {
   );
 }
 
-function TaskRow({ task }: { task: WardTask }) {
+function TaskRow({ task, specialty }: { task: WardTask; specialty: string }) {
   return (
     <li className="flex items-start gap-3 py-3 pl-4 pr-4">
       <Tick
@@ -288,7 +293,7 @@ function TaskRow({ task }: { task: WardTask }) {
 
       <div className="min-w-0 flex-1">
         <p className="text-subhead">
-          {jobTitle(task.value_text ?? task.label, task.recorded_at)}
+          {jobTitle(task.value_text ?? task.label, task.recorded_at, undefined, specialty)}
           {/* Said again on a later round — the same badge the patient page uses. */}
           {task.repeats > 0 && (
             <span

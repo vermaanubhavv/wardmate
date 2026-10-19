@@ -181,13 +181,13 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
       <section className="px-4 pb-4 print:px-0">
         {canOverlay && notesFormat?.url ? (
           <div className="ios-group overflow-hidden print:rounded-none print:border-0 print:shadow-none">
-            <OverlayNote note={note} formatUrl={notesFormat.url} zones={overlayZones} />
+            <OverlayNote note={note} formatUrl={notesFormat.url} zones={overlayZones} specialty={pack.key} />
           </div>
         ) : !isEsicFaridabad ? (
           // Every ward that is not the ESIC Medical College Faridabad pilot prints the generic
           // SOAP layout instead of the sheet below — see lib/ward.ts getWardIsEsicFaridabad.
           <div className="ios-group overflow-hidden print:rounded-none print:border-0 print:shadow-none">
-            <SoapNote note={note} />
+            <SoapNote note={note} specialty={pack.key} />
           </div>
         ) : (
           <div className="ios-group px-5 py-5 text-callout leading-relaxed text-black print:rounded-none print:border-0 print:p-0 print:shadow-none">
@@ -231,9 +231,9 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
                       of this block (mt-auto) rather than sitting bunched right under Chest, so
                       the page's own free space spreads out instead of piling up unused below
                       everything. */}
-                  <div>{observationTop.map((line, i) => renderNoteLine(line, i, { openSpace: note.openSpace }))}</div>
+                  <div>{observationTop.map((line, i) => renderNoteLine(line, i, { openSpace: note.openSpace, specialty: pack.key }))}</div>
                   <div className="mt-auto">
-                    {observationTail.map((line, i) => renderNoteLine(line, `tail-${i}`, { openSpace: note.openSpace }))}
+                    {observationTail.map((line, i) => renderNoteLine(line, `tail-${i}`, { openSpace: note.openSpace, specialty: pack.key }))}
                   </div>
                 </>
               ) : (
@@ -246,7 +246,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
                 Investigation / Treatment / Management
               </p>
               {note.plan.length > 0 ? (
-                note.plan.map((line, i) => renderNoteLine(line, i, { openSpace: note.openSpace }))
+                note.plan.map((line, i) => renderNoteLine(line, i, { openSpace: note.openSpace, specialty: pack.key }))
               ) : (
                 <p className="text-muted">Nothing ordered yet today.</p>
               )}

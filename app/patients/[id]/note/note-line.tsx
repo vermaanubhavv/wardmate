@@ -1,4 +1,5 @@
 import { DEFAULT_PROGRESS_NOTE_CONFIG, openSpaceHeadings } from "@/lib/progress-note-config";
+import { shortFinding } from "@/lib/shorthand";
 
 /**
  * How one line of the generated note renders — shared between the plain-page layout and the
@@ -22,7 +23,13 @@ export function renderNoteLine(
   /** The overlay's boxes are a fixed size read off a photograph, not a free-flowing page — see
    *  app/patients/[id]/note/overlay-note.tsx. Compact trims the margins that give the plain
    *  layout room to breathe, since that room does not exist inside a detected box. */
-  opts: { compact?: boolean; openSpace?: string[] } = {}
+  opts: {
+    compact?: boolean;
+    openSpace?: string[];
+    /** The unit's pack key: the sheet reads in its department's ward shorthand
+     *  (lib/shorthand.ts) — display only, the note's stored words are unchanged. */
+    specialty?: string | null;
+  } = {}
 ) {
   // A blank string is reserved room to write more by hand — genuinely blank space, no drawn
   // line. Both surfaces already have their own lines to write on: the physical form is
@@ -41,10 +48,11 @@ export function renderNoteLine(
         {heading[1]}
         {heading[2]}
       </strong>
-      {heading[3]}
+      {/* The space after "OE-" is the sheet's, not the finding's — kept. */}
+      {heading[3].match(/^\s*/)![0] + shortFinding(heading[3], opts.specialty)}
     </>
   ) : (
-    line
+    shortFinding(line, opts.specialty)
   );
 
   // Open space under a bare heading, and real breathing room above a heading line — the plain
