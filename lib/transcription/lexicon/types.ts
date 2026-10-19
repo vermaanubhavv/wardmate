@@ -45,6 +45,8 @@ export type LexiconCategory =
  *  sub-specialty cores that predate them. The selector adds 30 points to any term tagged with
  *  the unit's own specialty, and tops a thin context up from it. */
 export type Specialty =
+  /** No department: no specialty core is boosted or topped up from. */
+  | "general"
   | "general-surgery"
   | "surgical-gastroenterology"
   | "vascular-surgery"

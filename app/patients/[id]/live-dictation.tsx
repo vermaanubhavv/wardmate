@@ -199,7 +199,7 @@ export default function LiveDictation({
   // ancestor would trap this "full-screen" panel inside the bar.
   return createPortal(
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
-      <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
+      <header className="flex items-center justify-between gap-3 border-b border-line px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
         <div className="min-w-0">
           <p className="truncate text-subhead font-semibold">{title}</p>
           <p className="text-caption text-muted">

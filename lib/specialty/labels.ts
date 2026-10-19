@@ -2,6 +2,7 @@ import type { SpecialtyKey, SpecialtyPack } from "./types";
 
 /** The department's name where space is tight — the ward header's subtitle. */
 export const SHORT_LABELS: Record<SpecialtyKey, string> = {
+  general: "General",
   general_surgery: "Gen. Surgery",
   medical_oncology: "Med. Oncology",
   internal_medicine: "Int. Medicine",

@@ -70,6 +70,7 @@ export const CORE_PAIRS: readonly Pair[] = [
 
 /** Each department's own, on top of the core. */
 export const DEPARTMENT_PAIRS: Record<SpecialtyKey, readonly Pair[]> = {
+  general: [],
   general_surgery: [
     ["arterial blood gas", "ABG"],
     ["acute intestinal obstruction", "AIO"],

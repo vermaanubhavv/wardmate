@@ -1,5 +1,5 @@
 import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
-import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { generalPack, type SpecialtyPack } from "@/lib/specialty";
 import { hasOperationClock } from "@/lib/specialty/intake";
 import { forWard } from "@/lib/specialty/prompt-words";
 import { judgeRegisterRows, type TaskCategoryJudgment } from "@/lib/jev-observations";
@@ -108,7 +108,7 @@ export function registerPrompt(pack: SpecialtyPack): string {
 export async function readRegister(
   base64Image: string,
   mediaType: "image/jpeg" | "image/png" | "image/webp",
-  pack: SpecialtyPack = generalSurgeryPack
+  pack: SpecialtyPack = generalPack
 ): Promise<RegisterResult> {
   const client = anthropic();
 

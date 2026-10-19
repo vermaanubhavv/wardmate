@@ -39,7 +39,9 @@ describe("extraction prompt per unit", () => {
     for (const [key, hash] of Object.entries(PINNED)) {
       expect(sha(buildSystemPrompt(getSpecialtyPack(key))), key).toBe(hash);
     }
-    expect(sha(buildSystemPrompt())).toBe(PINNED.general_surgery);
+    // No pack is the general (no-department) base: no operation clock, so no surgical blocks.
+    expect(buildSystemPrompt()).toBe(buildSystemPrompt(getSpecialtyPack("general")));
+    expect(buildSystemPrompt()).not.toMatch(/post-op day 2|PAC done/);
   });
 
   it("teaches no post-op flip, PAC or surgical examples to a unit without one", () => {
@@ -75,8 +77,9 @@ describe("speech corrections per unit", () => {
     expect(applyCorrections(said, generalSurgeryPack).text).toBe(
       "started on PAC and INH, lap chole patient next door, POD"
     );
-    // No pack is general surgery — every existing caller is unchanged.
-    expect(applyCorrections(said).text).toBe(applyCorrections(said, generalSurgeryPack).text);
+    // No pack is the general base: no surgical-only rule fires.
+    expect(applyCorrections(said).text).toBe(applyCorrections(said, getSpecialtyPack("general")).text);
+    expect(applyCorrections(said).text).toContain("PAS");
   });
 
   it("still runs the shared rules on every unit", () => {
@@ -97,10 +100,11 @@ describe("prompts that used to say surgical", () => {
   it("are unchanged for general surgery", () => {
     for (const text of Object.values(prompts)) expect(forWard(text, generalSurgeryPack)).toBe(text);
     expect(registerPrompt(generalSurgeryPack)).toBe(registerSource);
-    expect(categoryQuestion("x").instructions).toBe(
+    expect(categoryQuestion("x", generalSurgeryPack).instructions).toBe(
       "`x` is a job from a surgical ward-round plan. Which ward work-stream does the job itself belong to? Judge by the action to be done, not by a word mentioned in passing."
     );
-    expect(openQuestion("x").instructions).toMatch(/^A surgical resident dictated `x`/);
+    expect(openQuestion("x", generalSurgeryPack).instructions).toMatch(/^A surgical resident dictated `x`/);
+    expect(categoryQuestion("x").instructions).not.toMatch(/surgical/i);
     expect(planSystem()).toContain("positioning, consent/PAC, drains, referrals");
   });
 

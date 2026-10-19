@@ -170,7 +170,8 @@ describe("table-wide guard", () => {
   });
 
   it("covers every department pack", () => {
-    for (const k of SPECIALTY_KEYS) expect(DEPARTMENT_PAIRS[k].length, k).toBeGreaterThanOrEqual(5);
+    // "general" is the pack with no department (lib/specialty/general.ts): core rules only.
+    for (const k of SPECIALTY_KEYS.filter((k) => k !== "general")) expect(DEPARTMENT_PAIRS[k].length, k).toBeGreaterThanOrEqual(14);
   });
 
   it("every pair written in lexicon/ward-shorthand.ts makes it into a table", () => {

@@ -183,7 +183,7 @@ ${rows(core, "  ")}
 /** Each department's own, on top of the core. */
 export const DEPARTMENT_PAIRS: Record<SpecialtyKey, readonly Pair[]> = {
 ${Object.entries(departments)
-  .map(([k, pairs]) => `  ${k}: [\n${rows(pairs, "    ")}\n  ],`)
+  .map(([k, pairs]) => (pairs.length ? `  ${k}: [\n${rows(pairs, "    ")}\n  ],` : `  ${k}: [],`))
   .join("\n")}
 };
 `;
