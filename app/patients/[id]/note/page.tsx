@@ -152,6 +152,13 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col bg-background print:max-w-none print:bg-white">
+      {/* Every progress sheet prints on A4. Without a page size the printer driver picked its
+          own (Letter on some), and the sheet's width — not a fixed type size — set how large
+          the text came out. */}
+      <style>{`
+        @page { size: A4 portrait; margin: 10mm; }
+        @media print { html, body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+      `}</style>
       <header className="px-4 pb-3 pt-6 print:hidden">
         <Link href={`/patients/${id}`} className="text-body text-accent">
           ‹ Patient
