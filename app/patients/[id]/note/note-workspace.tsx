@@ -23,6 +23,7 @@ import {
   applyCompiledNote,
 } from "./actions";
 import MedicationEditor, { medLine } from "../medication-editor";
+import { antibioticDay, antibioticKey, isAntibiotic, startForDay } from "@/lib/antibiotics";
 import LiveDictation, { DictateButton, routeVia, type LiveLine, type LiveSection } from "../live-dictation";
 import { medPresetsFor, type NoteVitalField, type ProgressNoteConfig } from "@/lib/progress-note-config";
 
@@ -74,6 +75,7 @@ export default function NoteWorkspace({
   observations,
   yesterday = [],
   currentMeds,
+  antibioticStarts = {},
   suggestedAssessment = "",
   noteConfig,
   medPresets = medPresetsFor(null),
@@ -88,6 +90,8 @@ export default function NoteWorkspace({
    *  yesterday" shortcut, and the grey hint under each vital. */
   yesterday?: NoteObs[];
   currentMeds: string[];
+  /** Each antibiotic's course start, by antibioticKey — lib/antibiotic-starts.ts. */
+  antibioticStarts?: Record<string, string>;
   /** A pre-fill for the Assessment card on a routine round — "" when nothing should be
    *  suggested (no round yet today, or something on it reads as concerning). */
   suggestedAssessment?: string;
@@ -141,6 +145,8 @@ export default function NoteWorkspace({
   const [planItems, setPlanItems] = useState<string[]>(planSeed);
   const [meds, setMeds] = useState<string[]>(currentMeds);
   const [pickingDrug, setPickingDrug] = useState(false);
+  const [abxStarts, setAbxStarts] = useState<Record<string, string>>(antibioticStarts);
+  const todayIst = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
   const [compiled, setCompiled] = useState<{
     fields: Record<string, string>;
@@ -240,7 +246,7 @@ export default function NoteWorkspace({
       ]);
     else if (id === "assessment") res = await replaceTodayNoteSection(patientId, "assessment", "note", assessment ? [assessment] : [], c);
     else if (id === "plan") res = await replaceTodayNoteSection(patientId, "plan", "plan", planItems, c);
-    else if (id === "meds") res = await replaceActiveMedications(patientId, meds, [...dictatedMeds.current]);
+    else if (id === "meds") res = await replaceActiveMedications(patientId, meds, [...dictatedMeds.current], abxStarts);
 
     if (!res.ok) {
       setMessage(res.error ?? "Could not save — your edits are still here.");
@@ -499,6 +505,19 @@ export default function NoteWorkspace({
                   placeholder="Drug, dose, route, frequency"
                   className="h-11 flex-1 rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
                 />
+                {isAntibiotic(it) && (() => {
+                  // A course seen for the first time is Day 1 today; − / + says when it really began.
+                  const key = antibioticKey(it);
+                  const day = antibioticDay(abxStarts[key] ?? todayIst, todayIst) ?? 1;
+                  const setDay = (d: number) => { setAbxStarts({ ...abxStarts, [key]: startForDay(d, todayIst) }); mark("meds"); };
+                  return (
+                    <span className="flex shrink-0 items-center gap-1 text-footnote">
+                      <button type="button" aria-label="Earlier day" disabled={day <= 1} onClick={() => setDay(day - 1)} className="tap h-8 w-7 rounded-md bg-chip disabled:opacity-40">−</button>
+                      <span className="w-12 text-center font-semibold tabular-nums">Day {day}</span>
+                      <button type="button" aria-label="Later day" onClick={() => setDay(day + 1)} className="tap h-8 w-7 rounded-md bg-chip">+</button>
+                    </span>
+                  );
+                })()}
                 <button type="button" onClick={() => { setMeds(meds.filter((_, j) => j !== i)); mark("meds"); }} className="tap shrink-0 px-2 text-footnote text-muted">
                   Stop
                 </button>

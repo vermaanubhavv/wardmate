@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
@@ -19,6 +20,9 @@ import PrintButton from "./print-button";
 import OverlayNote from "./overlay-note";
 import SoapNote from "./soap-note";
 import { renderNoteLine } from "./note-line";
+import AntibioticDayToggle from "./antibiotic-day-toggle";
+import { ANTIBIOTIC_DAY_COOKIE, readDayPosition } from "@/lib/antibiotics";
+import { antibioticStarts } from "@/lib/antibiotic-starts";
 
 /**
  * Today's progress sheet, laid out the way the unit's own paper form is — see the ESIC form the
@@ -129,6 +133,9 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
 
   const scoreLines = await scoreLinesP;
 
+  const abxDay = readDayPosition((await cookies()).get(ANTIBIOTIC_DAY_COOKIE)?.value);
+  const abxStarts = await antibioticStarts(supabase, id);
+
   const note = buildProgressNote(patient, allObservations, todaysObservations, diagnosis, {
     wardName: wardRow?.name ?? null,
     department: profile?.department?.trim() || null,
@@ -138,6 +145,8 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
     scoreLines,
     practitionerName: profile?.display_name ?? null,
     noteConfig: progressNoteConfigFor(pack.key),
+    antibioticStarts: abxStarts,
+    antibioticDay: abxDay,
   });
   const noteText = formatProgressNoteText(note);
 
@@ -277,6 +286,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
       </section>
 
       <section className="flex flex-col gap-2 px-4 pb-10 print:hidden">
+        <AntibioticDayToggle value={abxDay} />
         <CopyNoteButton text={noteText} />
         <PrintButton />
       </section>

@@ -1,4 +1,8 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { ANTIBIOTIC_DAY_COOKIE, antibioticDay, antibioticKey, isAntibiotic, readDayPosition, withDay } from "@/lib/antibiotics";
+import { antibioticStarts } from "@/lib/antibiotic-starts";
+import { istDate } from "@/lib/urgency";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -370,6 +374,15 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // History check: started off the entries and the pack (historyCheckP, above), so its reads overlapped the
   // batch rather than adding a round trip here.
   const historyCheck = await historyCheckP;
+  // Antibiotics carry their course day, placed as chosen on the print page (Before / After / Off).
+  const [abxStarts, abxDay] = await Promise.all([
+    antibioticStarts(supabase, patient.id),
+    cookies().then((c) => readDayPosition(c.get(ANTIBIOTIC_DAY_COOKIE)?.value)),
+  ]);
+  const drugLine = (text: string) => {
+    const start = isAntibiotic(text) ? abxStarts[antibioticKey(text)] : undefined;
+    return start ? withDay(text, antibioticDay(start, istDate(new Date().toISOString())), abxDay) : text;
+  };
 
   // Latest of each drug recorded, for the discharge brief. Taken from the same observations
   // the rest of the screen uses, so it can hold nothing that was not said.
@@ -628,7 +641,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           <ul className="ios-group divide-y divide-line">
             {medications.map((m) => (
               <li key={m.id} className="px-4 py-2.5">
-                <p className="text-subhead">{m.value_text ?? m.label}</p>
+                <p className={"text-subhead" + (isAntibiotic(m.value_text ?? m.label) ? " font-semibold" : "")}>
+                  {drugLine(m.value_text ?? m.label)}
+                </p>
                 {!quoteAddsNothing(m.value_text ?? m.label, m.source_quote) && (
                   <p className="mt-0.5 truncate text-footnote italic text-muted">
                     “{m.source_quote}”

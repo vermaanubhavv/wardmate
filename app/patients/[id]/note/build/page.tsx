@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { antibioticStarts } from "@/lib/antibiotic-starts";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { stripPatientHonorific } from "@/lib/patients";
@@ -133,6 +134,7 @@ export default async function BuildNotePage({ params }: { params: Promise<{ id: 
         observations={observations}
         yesterday={yesterday}
         currentMeds={currentMeds}
+        antibioticStarts={await antibioticStarts(supabase, id)}
         suggestedAssessment={suggestedAssessment}
         noteConfig={sectionsForPatient(noteConfig, patient, roundEntries.flatMap((e) => e.observations))}
         medPresets={medPresetsFor(pack.key)}
