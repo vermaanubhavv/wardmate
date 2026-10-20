@@ -11,9 +11,19 @@ import { buildDeepgramParams } from "@/lib/transcription/buildDeepgramUrl";
  * have to land in the right section while the resident is still talking.
  *
  * Auth: the server mints a 30-second Deepgram token (/api/transcribe/live-token) and the
- * browser opens the socket with it as a WebSocket subprotocol — `new WebSocket(url, ["token",
- * <token>])` — because a browser cannot set an Authorization header on a WebSocket. The
- * long-lived DEEPGRAM_API_KEY never reaches the client.
+ * browser opens the socket with it as a WebSocket subprotocol, because a browser cannot set an
+ * Authorization header on a WebSocket. A /v1/auth/grant token is a bearer token, so the
+ * subprotocol is `["bearer", <token>]` — `["token", …]` is only for a raw API key, and with a
+ * grant token Deepgram refused every handshake (live dictation silently fell back, always).
+ * The long-lived DEEPGRAM_API_KEY never reaches the client.
+ *
+ * Audio: raw 16-bit PCM from an AudioContext, not MediaRecorder chunks. iOS Safari can only
+ * record audio/mp4, which does not stream; PCM is the same on every browser and web view.
+ *
+ * Rescue: when the caller passes `onRescued`, the phone also records locally until the socket
+ * is open, and again from the moment it drops. Whatever was said while live was not working
+ * is transcribed in one prerecorded pass (/api/transcribe) when the session stops, and handed
+ * back through onRescued — so a lost link costs a delay, never the words.
  *
  * Keyterms (the per-patient medical vocabulary) are fixed when the socket opens — Nova-3
  * cannot change them mid-session — so they are chosen server-side and passed in here.
@@ -36,11 +46,18 @@ export type LiveDictationHandlers = {
   /** Connection opened / closed, for the status line. */
   onOpen?: () => void;
   onClose?: () => void;
+  /** Opt in to the rescue recording: the text of whatever was said while live was not
+   *  connected, delivered once after stop(). With it, a dropped link calls onLinkLost instead
+   *  of onError and the microphone keeps recording. */
+  onRescued?: (text: string) => void;
+  /** Live link lost (or never made) but the rescue recording is running. */
+  onLinkLost?: (message: string) => void;
 };
 
 export type LiveDictationSession = {
-  /** Stop the microphone and close the socket. Idempotent. */
-  stop: () => void;
+  /** Stop the microphone and close the socket. Idempotent. Resolves once any rescue
+   *  recording has been transcribed and handed to onRescued. */
+  stop: () => Promise<void>;
   /** True between start and stop. */
   readonly active: boolean;
 };
@@ -57,6 +74,16 @@ const MIME_CANDIDATES = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
 function pickMime(): string | null {
   if (typeof MediaRecorder === "undefined") return null;
   return MIME_CANDIDATES.find((t) => MediaRecorder.isTypeSupported(t)) ?? null;
+}
+
+/** Float samples → little-endian 16-bit PCM, what `encoding=linear16` expects. */
+function toPcm16(input: Float32Array): ArrayBuffer {
+  const out = new DataView(new ArrayBuffer(input.length * 2));
+  for (let i = 0; i < input.length; i++) {
+    const v = Math.max(-1, Math.min(1, input[i]));
+    out.setInt16(i * 2, v < 0 ? v * 0x8000 : v * 0x7fff, true);
+  }
+  return out.buffer;
 }
 
 /**
@@ -88,11 +115,14 @@ export async function openLiveDictation(
     if (!given) stream.getTracks().forEach((t) => t.stop());
   };
 
-  const mime = pickMime();
-  if (!mime) {
+  const AudioCtx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AudioCtx) {
     releaseMic();
     throw new Error("This browser cannot stream audio. Use the Speak button on each card instead.");
   }
+  const ctx = new AudioCtx();
+  // iOS starts an AudioContext suspended; this runs inside the tap that opened the panel.
+  void ctx.resume().catch(() => {});
 
   const params = buildDeepgramParams(keyterms, {
     smart_format: true,
@@ -101,24 +131,84 @@ export async function openLiveDictation(
     // section as soon as the resident pauses.
     utterance_end_ms: 1000,
     vad_events: true,
+    encoding: "linear16",
+    sample_rate: ctx.sampleRate,
+    channels: 1,
   });
   const url = `${DEEPGRAM_WSS}?${params.toString()}`;
 
   let closed = false;
-  let recorder: MediaRecorder | null = null;
-  const ws = new WebSocket(url, ["token", token]);
+  let opened = false;
+  let ping: ReturnType<typeof setInterval> | undefined;
+  const ws = new WebSocket(url, ["bearer", token]);
   ws.binaryType = "arraybuffer";
 
-  const teardown = () => {
+  // ponytail: ScriptProcessorNode is deprecated but runs in every browser and iOS web view
+  // without a separate worklet file; move to an AudioWorklet if it is ever removed.
+  const source = ctx.createMediaStreamSource(stream);
+  const processor = ctx.createScriptProcessor(4096, 1, 1);
+  processor.onaudioprocess = (e) => {
+    if (ws.readyState === WebSocket.OPEN) ws.send(toPcm16(e.inputBuffer.getChannelData(0)));
+  };
+  source.connect(processor);
+  processor.connect(ctx.destination);
+
+  // --- rescue recording ------------------------------------------------------------------
+  const mime = pickMime();
+  let rescue: MediaRecorder | null = null;
+  let rescueChunks: Blob[] = [];
+  let rescued = false; // something was recorded that live never transcribed
+  const startRescue = () => {
+    if (!h.onRescued || !mime || rescue) return;
+    try {
+      // Each recorder fills its own array, so a late chunk from one dropped at connect time
+      // never leaks into a later rescue clip.
+      const chunks: Blob[] = [];
+      rescueChunks = chunks;
+      rescue = new MediaRecorder(stream, { mimeType: mime });
+      rescue.ondataavailable = (e) => e.data.size > 0 && chunks.push(e.data);
+      rescue.start(1000);
+    } catch {
+      rescue = null;
+    }
+  };
+  const stopRescue = (): Promise<Blob | null> =>
+    new Promise((resolve) => {
+      const r = rescue;
+      rescue = null;
+      if (!r || r.state === "inactive") return resolve(rescueChunks.length ? new Blob(rescueChunks, { type: mime ?? "" }) : null);
+      const chunks = rescueChunks;
+      r.onstop = () => resolve(chunks.length ? new Blob(chunks, { type: mime ?? "" }) : null);
+      r.stop();
+    });
+  startRescue();
+
+  /** The link failed: with a rescue running, keep the mic and say so; without, give up. */
+  const linkFailed = (message: string) => {
+    if (closed) return;
+    clearInterval(ping);
+    if (h.onRescued && mime) {
+      rescued = true;
+      startRescue();
+      h.onLinkLost?.("Live link lost — still recording. What you say is written up when you tap Done.");
+    } else {
+      h.onError?.(message);
+      void teardown();
+    }
+  };
+
+  const teardown = async () => {
     if (closed) return;
     closed = true;
     clearTimeout(openTimer);
+    clearInterval(ping);
     try {
-      if (recorder && recorder.state !== "inactive") recorder.stop();
+      processor.disconnect();
+      source.disconnect();
+      void ctx.close();
     } catch {
-      /* already stopped */
+      /* already closed */
     }
-    releaseMic();
     if (ws.readyState === WebSocket.OPEN) {
       try {
         ws.send(JSON.stringify({ type: "CloseStream" }));
@@ -131,28 +221,42 @@ export async function openLiveDictation(
     } catch {
       /* ignore */
     }
+    const blob = await stopRescue();
+    releaseMic();
     h.onClose?.();
+    if (blob && rescued && h.onRescued) {
+      try {
+        const form = new FormData();
+        form.set("audio", blob, `rescue.${mime?.includes("mp4") ? "mp4" : "webm"}`);
+        const res = await fetch("/api/transcribe", { method: "POST", body: form });
+        const data = (await res.json()) as { text?: string };
+        if (data.text?.trim()) h.onRescued(data.text.trim());
+      } catch {
+        /* no signal either — nothing more can be done */
+      }
+    }
   };
 
-  // On weak signal the socket can sit in CONNECTING with no error and no close, leaving the
-  // button on "Starting…" for good. Give it a few seconds, then hand over to the fallback.
+  // On weak signal the socket can sit in CONNECTING with no error and no close. Give it a few
+  // seconds, then hand over (to the rescue recording, or the caller's fallback).
   const openTimer = setTimeout(() => {
     if (closed || ws.readyState === WebSocket.OPEN) return;
-    h.onError?.("Live transcription could not connect. Falling back to the card buttons.");
-    teardown();
+    linkFailed("Live transcription could not connect. Falling back to the card buttons.");
   }, 5000);
 
   ws.onopen = () => {
     clearTimeout(openTimer);
     if (closed) return;
+    opened = true;
     h.onOpen?.();
-    recorder = new MediaRecorder(stream, { mimeType: mime });
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) ws.send(e.data);
-    };
-    recorder.start(250);
+    // Live is up: what the rescue heard while connecting is only the first second or two —
+    // drop it unless the link had already been given up on.
+    if (!rescued) {
+      void stopRescue();
+      rescueChunks = [];
+    }
     // Keep Deepgram's socket alive during long silences.
-    const ping = setInterval(() => {
+    ping = setInterval(() => {
       if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "KeepAlive" }));
       else clearInterval(ping);
     }, 8000);
@@ -181,11 +285,11 @@ export async function openLiveDictation(
     }
   };
 
-  ws.onerror = () => {
-    if (!closed) h.onError?.("Live transcription dropped. Falling back to the card buttons.");
-    teardown();
+  ws.onerror = () => linkFailed("Live transcription dropped. Falling back to the card buttons.");
+  // A close we did not ask for is a dropped link too.
+  ws.onclose = () => {
+    if (!closed) linkFailed(opened ? "Live transcription dropped." : "Live transcription could not connect.");
   };
-  ws.onclose = () => teardown();
 
   return {
     stop: teardown,
