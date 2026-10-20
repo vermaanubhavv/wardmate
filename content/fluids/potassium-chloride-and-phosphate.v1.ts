@@ -2,7 +2,7 @@ import type { FluidTopic } from "@/lib/fluids/types";
 import { PANDYA, caution, points, quote, steps, table } from "@/content/fluids/_helpers";
 
 /**
- * POTASSIUM CHLORIDE AND POTASSIUM PHOSPHATE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * POTASSIUM CHLORIDE AND POTASSIUM PHOSPHATE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Digest of chapter 13 of the full edition. Page numbers are the printed book pages. Every
  * number below is the book's; the quotes give the page it came from.
@@ -14,8 +14,8 @@ export const potassiumChlorideAndPhosphateV1: FluidTopic = {
   group: "fluids",
   summary: "Injection KCl and potassium phosphates: composition, indications, cautions, the book's peripheral and central rates and concentrations, phosphate dosing by severity, and monitoring.",
   setting: "Adult medical and surgical wards",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PANDYA],
   source: { chapters: ["13 Potassium Chloride and Potassium Phosphate"], pages: "144–150", pageKind: "book" },
   sections: [

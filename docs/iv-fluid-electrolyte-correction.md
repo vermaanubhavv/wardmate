@@ -84,7 +84,7 @@ the OCR text that came with them, which was too rough to quote), each page read 
 then right. Every quote was then checked programmatically against the transcription of its
 cited page. Where the book contradicts itself the topic keeps the printed figure and says so
 — notably calcium chloride printed as 0.136 mEq/mL on p116 against 1.36 in Tables 10.1 and
-10.2, and KCl "1.5 mg" per 10 mL ampoule on p144. These ship `pending_clinician_review`.
+10.2, and KCl "1.5 mg" per 10 mL ampoule on p144. Signed off "reviewed" by Dr Anubhav Verma.
 
 ## Data model
 
