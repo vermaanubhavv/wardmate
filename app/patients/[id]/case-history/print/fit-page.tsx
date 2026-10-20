@@ -6,9 +6,9 @@ import { useLayoutEffect, useRef, useState } from "react";
  *  wide (the binding gutter). A hair under, so rounding never pushes a side onto a second page. */
 const PAGE_H_MM = 271;
 const PAGE_W_MM = 178;
-/** Below this the text stops being readable on paper; a side that still does not fit overflows
- *  onto a second page rather than printing unreadably small. */
-const MIN_ZOOM = 0.6;
+/** Below this the text stops being readable on paper (0.6 printed the body at about 7pt); a
+ *  side that still does not fit overflows onto a second page rather than printing small. */
+const MIN_ZOOM = 0.85;
 
 /**
  * One side of the history sheet, as a fixed A4 frame.
