@@ -5,7 +5,7 @@ import { istDayKey } from "@/lib/patient-state";
 import NoteWorkspace, { type NoteObs } from "../note-workspace";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { getSpecialtyPack } from "@/lib/specialty";
-import { medPresetsFor, progressNoteConfigFor } from "@/lib/progress-note-config";
+import { medPresetsFor, progressNoteConfigFor, sectionsForPatient } from "@/lib/progress-note-config";
 import { matchDischargeTemplateFor } from "@/lib/specialty/discharge";
 import { shortDate } from "@/lib/format-date";
 import { BackBar } from "@/app/screen-header";
@@ -21,7 +21,7 @@ export default async function BuildNotePage({ params }: { params: Promise<{ id: 
 
   const { data: patient } = await supabase
     .from("current_patients")
-    .select("id, ward_id, display_name, bed, primary_diagnosis, procedure_text, template_family")
+    .select("id, ward_id, display_name, bed, primary_diagnosis, procedure_text, template_family, surgery_date")
     .eq("id", id)
     .maybeSingle();
   if (!patient) notFound();
@@ -123,12 +123,13 @@ export default async function BuildNotePage({ params }: { params: Promise<{ id: 
 
       <NoteWorkspace
         patientId={id}
+        wardId={patient.ward_id}
         dateLabel={dateLabel}
         observations={observations}
         yesterday={yesterday}
         currentMeds={currentMeds}
         suggestedAssessment={suggestedAssessment}
-        noteConfig={noteConfig}
+        noteConfig={sectionsForPatient(noteConfig, patient, roundEntries.flatMap((e) => e.observations))}
         medPresets={medPresetsFor(pack.key)}
         focus={focus}
       />

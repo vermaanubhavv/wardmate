@@ -17,7 +17,6 @@ import { ivFluidsOverviewV1 } from "@/content/fluids/iv-fluids-overview.v1";
 import { liverPancreasLungDkaV1 } from "@/content/fluids/liver-pancreas-lung-dka.v1";
 import { obstetricFluidsV1 } from "@/content/fluids/obstetric-fluids.v1";
 import { paediatricFluidsV1 } from "@/content/fluids/paediatric-fluids.v1";
-import { parenteralAdditivesV1 } from "@/content/fluids/parenteral-additives.v1";
 import { parenteralNutritionAdministrationV1 } from "@/content/fluids/parenteral-nutrition-administration.v1";
 import { parenteralNutritionDiseasesV1 } from "@/content/fluids/parenteral-nutrition-diseases.v1";
 import { parenteralNutritionPrinciplesV1 } from "@/content/fluids/parenteral-nutrition-principles.v1";
@@ -25,6 +24,11 @@ import { perioperativeAndNeuroV1 } from "@/content/fluids/perioperative-and-neur
 import { resuscitationFluidsV1 } from "@/content/fluids/resuscitation-fluids.v1";
 import { turpSyndromeV1 } from "@/content/fluids/turp-syndrome.v1";
 import { urinaryDiversionV1 } from "@/content/fluids/urinary-diversion.v1";
+import { calciumAndHypertonicDextroseV1 } from "@/content/fluids/calcium-and-hypertonic-dextrose.v1";
+import { hypertonicSalineV1 } from "@/content/fluids/hypertonic-saline.v1";
+import { magnesiumSulfateV1 } from "@/content/fluids/magnesium-sulfate.v1";
+import { potassiumChlorideAndPhosphateV1 } from "@/content/fluids/potassium-chloride-and-phosphate.v1";
+import { sodiumBicarbonateV1 } from "@/content/fluids/sodium-bicarbonate.v1";
 import { volumeAssessmentV1 } from "@/content/fluids/volume-assessment.v1";
 
 /** Every IV Fluid and Electrolyte Correction topic the Learn shelf can show. Add a file, add a line. */
@@ -47,7 +51,6 @@ export const FLUID_TOPICS: readonly FluidTopic[] = [
   liverPancreasLungDkaV1,
   obstetricFluidsV1,
   paediatricFluidsV1,
-  parenteralAdditivesV1,
   parenteralNutritionAdministrationV1,
   parenteralNutritionDiseasesV1,
   parenteralNutritionPrinciplesV1,
@@ -56,4 +59,10 @@ export const FLUID_TOPICS: readonly FluidTopic[] = [
   turpSyndromeV1,
   urinaryDiversionV1,
   volumeAssessmentV1,
+  // Chapters 10–14 from the full edition, replacing the opening-only parenteral-additives topic.
+  calciumAndHypertonicDextroseV1,
+  hypertonicSalineV1,
+  magnesiumSulfateV1,
+  potassiumChlorideAndPhosphateV1,
+  sodiumBicarbonateV1,
 ];

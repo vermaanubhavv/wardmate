@@ -22,6 +22,7 @@ import {
   replaceActiveMedications,
   applyCompiledNote,
 } from "./actions";
+import MedicationEditor, { medLine } from "../medication-editor";
 import LiveDictation, { DictateButton, routeVia, type LiveLine, type LiveSection } from "../live-dictation";
 import { medPresetsFor, type NoteVitalField, type ProgressNoteConfig } from "@/lib/progress-note-config";
 
@@ -68,6 +69,7 @@ function stepsFor(config: ProgressNoteConfig): { id: StepId; title: string }[] {
 
 export default function NoteWorkspace({
   patientId,
+  wardId,
   dateLabel,
   observations,
   yesterday = [],
@@ -78,6 +80,8 @@ export default function NoteWorkspace({
   focus = null,
 }: {
   patientId: string;
+  /** For the drug picker's ward-formulary strengths. */
+  wardId: string;
   dateLabel: string;
   observations: NoteObs[];
   /** Yesterday's round, newest value per label — the source for each card's "Same as
@@ -136,6 +140,7 @@ export default function NoteWorkspace({
   const [assessment, setAssessment] = useState(() => val(["assessment"]) || suggestedAssessment);
   const [planItems, setPlanItems] = useState<string[]>(planSeed);
   const [meds, setMeds] = useState<string[]>(currentMeds);
+  const [pickingDrug, setPickingDrug] = useState(false);
 
   const [compiled, setCompiled] = useState<{
     fields: Record<string, string>;
@@ -499,9 +504,24 @@ export default function NoteWorkspace({
                 </button>
               </div>
             ))}
-            <button type="button" onClick={() => { setMeds([...meds, ""]); mark("meds"); }} className="tap self-start text-footnote font-medium text-accent">
-              + Add a drug
-            </button>
+            {pickingDrug ? (
+              <MedicationEditor
+                wardId={wardId}
+                label=""
+                value={null}
+                onSave={(label, value) => { setMeds([...meds, medLine(label, value)]); setPickingDrug(false); mark("meds"); }}
+                onCancel={() => setPickingDrug(false)}
+              />
+            ) : (
+              <div className="flex gap-4">
+                <button type="button" onClick={() => setPickingDrug(true)} className="tap self-start text-footnote font-medium text-accent">
+                  + Add a drug
+                </button>
+                <button type="button" onClick={() => { setMeds([...meds, ""]); mark("meds"); }} className="tap self-start text-footnote text-muted">
+                  Type a line instead
+                </button>
+              </div>
+            )}
           </div>
         </>
       );

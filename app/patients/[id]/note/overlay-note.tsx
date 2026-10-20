@@ -20,7 +20,9 @@ export default function OverlayNote({
   note,
   formatUrl,
   zones,
+  specialty,
 }: {
+  specialty: string;
   note: ProgressNote;
   formatUrl: string;
   zones: FormZone[];
@@ -38,7 +40,11 @@ export default function OverlayNote({
   // that same strip's height so nothing overlaps.
   const BODY_ROLES = ["date_time", "observation", "plan"] as const;
   const bodyZones = BODY_ROLES.map((r) => byRole.get(r)).filter((z): z is FormZone => Boolean(z));
-  const bannerHeightPx = 15;
+  // Sizes are fractions of the sheet's own width (cqw), not screen pixels: the form photo
+  // stretches to the paper's width when printed, and a fixed 9px font that looked fine on a
+  // phone printed at about 7pt on A4 — too small to read. At A4 width (≈190mm) 1.9cqw is
+  // ≈10pt and 2.2cqw ≈12pt; the phone preview shows the same proportions, smaller.
+  const BANNER_H = "2.8cqw";
 
   // The banner's vertical position follows Date & Time specifically, not the topmost of the
   // three — observation and plan sometimes get detected a hair higher than the row they are
@@ -57,7 +63,7 @@ export default function OverlayNote({
       : null;
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full" style={{ containerType: "inline-size" }}>
       {/* eslint-disable-next-line @next/next/no-img-element -- a private, ward-scoped signed
           URL; next/image's remote-pattern config has no reason to know about it. */}
       <img src={formatUrl} alt="Unit's progress note form" className="block w-full" />
@@ -69,9 +75,9 @@ export default function OverlayNote({
             top: `${banner.top * 100}%`,
             left: `${banner.left * 100}%`,
             width: `${(banner.right - banner.left) * 100}%`,
-            height: `${bannerHeightPx}px`,
-            fontSize: "0.68rem",
-            lineHeight: `${bannerHeightPx}px`,
+            height: BANNER_H,
+            fontSize: "1.9cqw",
+            lineHeight: BANNER_H,
             WebkitTextSizeAdjust: "100%",
           }}
         >
@@ -96,7 +102,7 @@ export default function OverlayNote({
         // same fontSize here. WebkitTextSizeAdjust below stops that auto-boost; this explicit
         // smaller size on top of it brings Date & Time in line with the rest rather than just
         // matching them by accident.
-        const fontSize = isMultiLine ? "0.58rem" : role === "date_time" ? "0.68rem" : "0.78rem";
+        const fontSize = isMultiLine || role === "date_time" ? "1.9cqw" : "2.2cqw";
         return (
           <div
             key={role}
@@ -112,7 +118,7 @@ export default function OverlayNote({
               // pushed down from ITS OWN top rather than the banner's bottom could still land
               // under the banner instead of below it.
               top: pushedDown
-                ? `calc(${Math.max(z.y, banner!.top) * 100}% + ${bannerHeightPx + 2}px)`
+                ? `calc(${Math.max(z.y, banner!.top) * 100}% + ${BANNER_H} + 2px)`
                 : `calc(${z.y * 100}% + 1px)`,
               width: `calc(${z.width * 100}% - 4px)`,
               height: `${z.height * 100}%`,
@@ -133,7 +139,7 @@ export default function OverlayNote({
                 failure here, not text silently clipped out of view. */}
             {isMultiLine ? (
               <div className="whitespace-normal">
-                {lines!.map((line, i) => renderNoteLine(line, i, { compact: true, openSpace: note.openSpace }))}
+                {lines!.map((line, i) => renderNoteLine(line, i, { compact: true, openSpace: note.openSpace, specialty }))}
               </div>
             ) : (
               <span className="whitespace-pre-line">{text}</span>

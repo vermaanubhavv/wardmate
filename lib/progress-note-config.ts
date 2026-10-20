@@ -40,6 +40,9 @@ export type NoteExamSection = {
   /** false: an empty line prints without the open space below its heading (see
    *  openSpaceHeadings). Absent: it gets the space. */
   printOpenSpace?: false;
+  /** true: the card is offered only once the patient is operated (or a wound was already said)
+   *  — a liver abscess on a surgical ward has no wound to examine. See sectionsForPatient. */
+  onlyIfOperated?: true;
 };
 
 export type ProgressNoteConfig = {
@@ -220,7 +223,7 @@ const GENERAL_SURGERY: ProgressNoteConfig = {
   examSections: [
     ABDOMEN,
     // printOpenSpace: false on wound and drains keeps the sheet's spacing as it always printed.
-    { ...WOUND, pills: [...WOUND.pills, "Induration", "Staples intact", "Port sites healthy", "Serosanguinous discharge", "Haematoma", "Seroma"], printOpenSpace: false },
+    { ...WOUND, pills: [...WOUND.pills, "Induration", "Staples intact", "Port sites healthy", "Serosanguinous discharge", "Haematoma", "Seroma"], printOpenSpace: false, onlyIfOperated: true },
     {
       id: "drains",
       title: "Drains, tubes & output",
@@ -985,6 +988,7 @@ const UROLOGY: ProgressNoteConfig = {
     {
       ...WOUND,
       title: "Wound / external genitalia",
+      onlyIfOperated: true,
       printLabel: "Wound / genitalia",
       aliases: [...WOUND.aliases, "external genitalia", "scrotum", "meatus"],
       pills: [...WOUND.pills, "Scrotal swelling"],
@@ -1206,6 +1210,23 @@ export const DEFAULT_PROGRESS_NOTE_CONFIG = GENERAL;
 /** Same "degrade, don't crash" rule as getSpecialtyPack(): an unknown key is the general sheet. */
 export function progressNoteConfigFor(key: string | null | undefined): ProgressNoteConfig {
   return (key && PROGRESS_NOTE_CONFIGS[key as SpecialtyKey]) || DEFAULT_PROGRESS_NOTE_CONFIG;
+}
+
+/** The note workspace's cards for this patient: an operated-only card (the surgical wound) is
+ *  dropped until there is an operation on record or the wound was already dictated in the
+ *  last two days. Only the cards change — saving and printing keep the ward's full set, so a
+ *  wound said by voice is never lost. */
+export function sectionsForPatient(
+  config: ProgressNoteConfig,
+  patient: { surgery_date: string | null },
+  recent: { label: string }[]
+): ProgressNoteConfig {
+  if (patient.surgery_date) return config;
+  const said = (s: NoteExamSection) => recent.some((o) => s.aliases.includes(o.label.toLowerCase().trim()));
+  const examSections = config.examSections.filter((s) => !s.onlyIfOperated || said(s));
+  if (examSections.length === config.examSections.length) return config;
+  // No wound on the card → no suture removal in the plan either.
+  return { ...config, examSections, planPills: config.planPills.filter((p) => !/\b(sutures?|staples?)\b/i.test(p)) };
 }
 
 /** The chips this ward's Medications card offers. */
