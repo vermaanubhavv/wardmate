@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { getCurrentWard, getWardSpecialtyStored } from "@/lib/ward";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { dischargeProfileFor } from "@/lib/specialty/discharge";
 import { derivePatientState } from "@/lib/patient-state";
 import { buildOneOffDraft, NO_TEMPLATE, oneOffContext } from "@/lib/discharge-oneoff";
 import DischargeWorkspace from "../../patients/[id]/discharge/discharge-workspace";
+import { BackBar } from "@/app/screen-header";
 
 /**
  * A discharge summary for somebody who is not in WardMate — the patient's own discharge
@@ -24,12 +24,7 @@ export default async function OneOffPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col print:max-w-none">
-      <header className="flex items-baseline justify-between gap-3 px-4 pb-3 pt-6 print:hidden">
-        <Link href="/unit" className="text-body text-accent">
-          ‹ Unit
-        </Link>
-        <p className="truncate text-footnote text-muted">One-off summary · nothing stored</p>
-      </header>
+      <BackBar href="/unit" label="Unit" className="mb-3">One-off summary · nothing stored</BackBar>
 
       <DischargeWorkspace
         patientId=""

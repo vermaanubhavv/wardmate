@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackBar } from "@/app/screen-header";
 
 /**
  * The Clinician Data Agreement — what a doctor accepts on the onboarding screen (see
@@ -12,9 +12,7 @@ import Link from "next/link";
 export default function TermsPage() {
   return (
     <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full pb-24">
-      <Link href="/onboarding" className="text-body text-accent">
-        ‹ Back
-      </Link>
+      <BackBar href="/onboarding" label="Back" className="-mx-6 -mt-10" />
 
       <div className="mt-4 ios-group px-4 py-3 text-footnote leading-relaxed text-warn-fg">
         <b>Unreviewed draft (version: draft-1).</b> Not yet checked by a lawyer. Treat this as a

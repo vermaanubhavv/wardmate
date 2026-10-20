@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { historyCheckEnabled } from "@/lib/history-check/flag";
 import { getFluidTopic } from "@/lib/fluids/topics";
 import { FLUID_GROUP_LABEL, type FluidBlock } from "@/lib/fluids/types";
 import ReferenceList from "../../reference-list";
 import Calculator from "./calculator";
+import { BackBar } from "@/app/screen-header";
 
 /**
  * One IV Fluid and Electrolyte Correction topic as a reading page. Unlike the history and
@@ -20,10 +20,7 @@ export default async function LearnFluidTopicPage({ params }: { params: Promise<
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
-      <header className="flex items-baseline justify-between gap-3 px-4 pb-3 pt-6">
-        <Link href="/learn" className="text-[17px] text-accent">‹ Learn</Link>
-        <p className="truncate text-[13px] text-muted">{topic.title}</p>
-      </header>
+      <BackBar href="/learn" label="Learn" className="mb-3">{topic.title}</BackBar>
 
       <section className="px-4 pb-4">
         <div className="ios-group px-4 py-3">

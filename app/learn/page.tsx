@@ -9,6 +9,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { getSpecialtyPack, listSpecialties } from "@/lib/specialty";
 import { getCurrentWard, getWardSpecialtyStored } from "@/lib/ward";
 import LearnSearch from "./learn-search";
+import { BackBar } from "@/app/screen-header";
 
 function TreeList({ trees }: { trees: HistoryTree[] }) {
   return (
@@ -63,10 +64,7 @@ export default async function LearnIndexPage() {
   const fluids = listFluidTopics();
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
-      <header className="flex items-baseline justify-between gap-3 px-4 pb-3 pt-6">
-        <Link href="/" className="text-body text-accent">‹ Home</Link>
-        <p className="text-footnote text-muted">Learn</p>
-      </header>
+      <BackBar href="/" label="Home" className="mb-3">Learn</BackBar>
       <div id="learn">
       <div className="px-4 pb-2">
         <LearnSearch rootId="learn" />

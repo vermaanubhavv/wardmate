@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isIdentifierLabel, stripPatientHonorific } from "@/lib/patients";
@@ -17,6 +16,7 @@ import FitPage from "./fit-page";
 import { ExamDiagrams, hasExamDiagram } from "./diagrams";
 import { EXAM_CARD, alwaysShowsObstetricCard, examStepsFor } from "@/lib/specialty/clerking";
 import { specialtyCardsFor } from "@/lib/case-history-sections";
+import { BackBar } from "@/app/screen-header";
 
 /**
  * The printable patient history sheet — one A4 sheet, front and back, for every patient.
@@ -383,11 +383,9 @@ export default async function CaseHistoryPrintPage({
         @page :left { margin-right: 20mm; }
         @media print { html, body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
       `}</style>
-      <header className="px-4 pb-3 pt-6 print:hidden">
-        <Link href={`/patients/${id}/case-history`} className="text-body text-accent">
-          ‹ Case history
-        </Link>
-        <h1 className="mt-3 ios-large-title">Patient history sheet</h1>
+      <BackBar href={`/patients/${id}/case-history`} label="Case history" />
+      <header className="px-4 pb-3 pt-4 print:hidden">
+        <h1 className="ios-large-title">Patient history sheet</h1>
         <p className="mt-1 text-subhead text-muted">
           One A4 sheet: history on the front, examination to sign-off on the back. Choose
           two-sided in your browser&rsquo;s print dialog, or save as PDF.

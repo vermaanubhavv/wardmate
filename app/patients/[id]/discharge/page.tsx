@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDischargeContext } from "@/lib/discharge-data";
 import { mergeDischargeDraft } from "@/lib/discharge-store";
@@ -7,6 +6,7 @@ import { stripPatientHonorific } from "@/lib/patients";
 import type { FinalFix } from "@/lib/final-check";
 import { dischargeProfileFor } from "@/lib/specialty/discharge";
 import DischargeWorkspace from "./discharge-workspace";
+import { BackBar } from "@/app/screen-header";
 
 /**
  * The discharge workspace — the resident's review-and-approve surface for the structured
@@ -34,15 +34,10 @@ export default async function DischargeWorkspacePage({ params }: { params: Promi
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
       {/* Deliberately slim: the workspace card leads with the current section as its own
           headline, so a big "Discharge summary" title here would just compete with it. */}
-      <header className="flex items-baseline justify-between gap-3 px-4 pb-3 pt-6">
-        <Link href={`/patients/${id}`} className="text-body text-accent">
-          ‹ Patient
-        </Link>
-        <p className="truncate text-footnote text-muted">
-          Discharge · {stripPatientHonorific(context.patient.display_name)}
-          {context.patient.bed ? ` · bed ${context.patient.bed}` : ""}
-        </p>
-      </header>
+      <BackBar href={`/patients/${id}`} label="Patient" className="mb-3">
+        Discharge · {stripPatientHonorific(context.patient.display_name)}
+        {context.patient.bed ? ` · bed ${context.patient.bed}` : ""}
+      </BackBar>
 
       <DischargeWorkspace
         patientId={id}
