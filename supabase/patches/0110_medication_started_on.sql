@@ -9,4 +9,8 @@
 -- Null for anything that is not an antibiotic, and for every row written before this patch.
 -- Additive; safe to run more than once.
 
+begin;
+
 alter table public.observations add column if not exists started_on date;
+
+commit;
