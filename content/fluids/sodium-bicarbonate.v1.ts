@@ -2,7 +2,7 @@ import type { FluidTopic } from "@/lib/fluids/types";
 import { PANDYA, caution, formula, points, quote, steps, table } from "@/content/fluids/_helpers";
 
 /**
- * SODIUM BICARBONATE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * SODIUM BICARBONATE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Digest of chapter 14 of the full edition. Page numbers are the printed book pages. Every
  * number below is the book's; the quotes give the page it came from.
@@ -14,8 +14,8 @@ export const sodiumBicarbonateV1: FluidTopic = {
   group: "fluids",
   summary: "8.4%, 7.5% and 4.2% bicarbonate: composition, when the book uses it (acidosis, hyperkalaemia, cardiac arrest, TCA overdose, contrast AKI, urinary alkalinisation), the doses it prints, adverse effects and how to make an isotonic infusion.",
   setting: "Adult ward, emergency and ICU",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PANDYA],
   source: { chapters: ["14 Sodium Bicarbonate"], pages: "151–160", pageKind: "book" },
   sections: [

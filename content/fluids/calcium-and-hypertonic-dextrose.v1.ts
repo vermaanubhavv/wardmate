@@ -2,7 +2,7 @@ import type { FluidTopic } from "@/lib/fluids/types";
 import { PANDYA, caution, points, quote, steps, table } from "@/content/fluids/_helpers";
 
 /**
- * CALCIUM AND HYPERTONIC DEXTROSE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * CALCIUM AND HYPERTONIC DEXTROSE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Digest of chapter 10 of the full edition. Page numbers are the printed book pages. Every
  * number below is the book's; the quotes give the page it came from. Table 10.1, which opens
@@ -15,8 +15,8 @@ export const calciumAndHypertonicDextroseV1: FluidTopic = {
   group: "fluids",
   summary: "The special-solutions table, then calcium gluconate and chloride (composition, dilution, maximum rate, eight indications with doses, contraindications) and 25% and 50% dextrose.",
   setting: "Adult ward, emergency and ICU",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PANDYA],
   source: {
     chapters: ["10 Calcium Gluconate, Calcium Chloride, and Hypertonic Dextrose Solutions"],

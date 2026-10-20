@@ -2,7 +2,7 @@ import type { FluidTopic } from "@/lib/fluids/types";
 import { PANDYA, caution, points, quote, steps, table } from "@/content/fluids/_helpers";
 
 /**
- * HYPERTONIC SALINE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * HYPERTONIC SALINE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Digest of chapter 11 of the full edition. Page numbers are the printed book pages. Every
  * number below is the book's; the quotes give the page it came from.
@@ -14,8 +14,8 @@ export const hypertonicSalineV1: FluidTopic = {
   group: "fluids",
   summary: "3% and 5% saline: composition, why it works, and its uses in symptomatic hyponatraemia, cerebral oedema, volume expansion, heart failure and cystic fibrosis, with the book's boluses, rates and cautions.",
   setting: "Adult medical, surgical and critical care",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PANDYA],
   source: { chapters: ["11 Hypertonic Saline"], pages: "123–130", pageKind: "book" },
   sections: [

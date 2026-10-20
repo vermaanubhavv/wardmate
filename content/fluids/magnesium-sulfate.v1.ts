@@ -2,7 +2,7 @@ import type { FluidTopic } from "@/lib/fluids/types";
 import { PANDYA, caution, formula, points, quote, steps, table } from "@/content/fluids/_helpers";
 
 /**
- * MAGNESIUM SULFATE — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * MAGNESIUM SULFATE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Digest of chapter 12 of the full edition. Page numbers are the printed book pages. Every
  * number below is the book's; the quotes give the page it came from.
@@ -14,8 +14,8 @@ export const magnesiumSulfateV1: FluidTopic = {
   group: "fluids",
   summary: "Injection magnesium sulfate: strengths, the doses by indication (hypomagnesaemia, pre-eclampsia, fetal neuroprotection, asthma, tetanus and others), dilution, monitoring, contraindications and the antidote.",
   setting: "Adult wards, ICU and obstetric units",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PANDYA],
   source: { chapters: ["12 Magnesium Sulfate"], pages: "131–143", pageKind: "book" },
   sections: [
