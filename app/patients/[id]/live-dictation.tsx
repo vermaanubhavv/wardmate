@@ -161,6 +161,12 @@ export default function LiveDictation({
             }
           },
           onUtteranceEnd: () => void routeBuffered(),
+          // Live link lost: the phone keeps recording, and on Done that recording is
+          // transcribed in one pass and sorted like anything said live.
+          onLinkLost: (m) => !cancelled && setMessage(m),
+          onRescued: (t) => {
+            finalBufRef.current = `${finalBufRef.current} ${t}`.trim();
+          },
           onError: (m) => {
             if (cancelled) return;
             setState("error");
@@ -182,9 +188,10 @@ export default function LiveDictation({
   }, [patientId, routeBuffered]);
 
   async function finish() {
-    sessionRef.current?.stop();
-    sessionRef.current = null;
     setState("stopping");
+    // Resolves after any rescue recording is transcribed into finalBufRef.
+    await sessionRef.current?.stop();
+    sessionRef.current = null;
     // The last words may still be a partial — keep them rather than drop them.
     if (partial) finalBufRef.current = `${finalBufRef.current} ${partial}`.trim();
     for (let i = 0; i < 80 && routingRef.current; i++) await new Promise((r) => setTimeout(r, 100));
