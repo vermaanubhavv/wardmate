@@ -3,7 +3,6 @@ import { acidBaseAndGiLossesV1 } from "@/content/fluids/acid-base-and-gi-losses.
 import { bodyWaterAndUnitsV1 } from "@/content/fluids/body-water-and-units.v1";
 import { burnsV1 } from "@/content/fluids/burns.v1";
 import { colloidsPlanningMaintenanceV1 } from "@/content/fluids/colloids-planning-maintenance.v1";
-import { electrolyteDisordersOverviewV1 } from "@/content/fluids/electrolyte-disorders-overview.v1";
 import { fluidResponsivenessV1 } from "@/content/fluids/fluid-responsiveness.v1";
 import { fluidsInTheElderlyV1 } from "@/content/fluids/fluids-in-the-elderly.v1";
 import { hepatorenalSyndromeV1 } from "@/content/fluids/hepatorenal-syndrome.v1";
@@ -29,6 +28,10 @@ import { hypertonicSalineV1 } from "@/content/fluids/hypertonic-saline.v1";
 import { magnesiumSulfateV1 } from "@/content/fluids/magnesium-sulfate.v1";
 import { potassiumChlorideAndPhosphateV1 } from "@/content/fluids/potassium-chloride-and-phosphate.v1";
 import { sodiumBicarbonateV1 } from "@/content/fluids/sodium-bicarbonate.v1";
+import { hypophosphataemiaV1 } from "@/content/fluids/hypophosphataemia.v1";
+import { hyperphosphataemiaV1 } from "@/content/fluids/hyperphosphataemia.v1";
+import { hypomagnesaemiaV1 } from "@/content/fluids/hypomagnesaemia.v1";
+import { hypermagnesaemiaV1 } from "@/content/fluids/hypermagnesaemia.v1";
 import { volumeAssessmentV1 } from "@/content/fluids/volume-assessment.v1";
 
 /** Every IV Fluid and Electrolyte Correction topic the Learn shelf can show. Add a file, add a line. */
@@ -37,7 +40,6 @@ export const FLUID_TOPICS: readonly FluidTopic[] = [
   bodyWaterAndUnitsV1,
   burnsV1,
   colloidsPlanningMaintenanceV1,
-  electrolyteDisordersOverviewV1,
   fluidResponsivenessV1,
   fluidsInTheElderlyV1,
   hepatorenalSyndromeV1,
@@ -65,4 +67,9 @@ export const FLUID_TOPICS: readonly FluidTopic[] = [
   magnesiumSulfateV1,
   potassiumChlorideAndPhosphateV1,
   sodiumBicarbonateV1,
+  // Chapters 26–29 from the full edition, replacing the opening-only phosphate/magnesium overview.
+  hypophosphataemiaV1,
+  hyperphosphataemiaV1,
+  hypomagnesaemiaV1,
+  hypermagnesaemiaV1,
 ];
