@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
  * phone's own camera is faster, focuses better on small print, and is the one the resident
  * already knows how to use.
  */
-export default function PhotoButton({ patientId }: { patientId: string }) {
+export default function PhotoButton({ patientId, labelled = false }: { patientId: string; labelled?: boolean }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [busy, setBusy] = useState(false);
@@ -65,15 +65,20 @@ export default function PhotoButton({ patientId }: { patientId: string }) {
           e.target.value = "";
         }}
       />
-      {/* An icon in the bedside bar's one row; the words it used to carry are its label. */}
+      {/* An icon in the bedside bar's one row; the words it used to carry are its label. On the
+          Tests tab, where photographing a report is the job, the words come back. */}
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={busy}
-        aria-label={busy ? "Reading the photo…" : "Photograph a report or obs chart"}
-        className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-line bg-card text-accent active:opacity-70 disabled:opacity-50"
+        aria-label={labelled ? undefined : busy ? "Reading the photo…" : "Photograph a report or obs chart"}
+        className={
+          "flex h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-line bg-card text-accent active:opacity-70 disabled:opacity-50 " +
+          (labelled ? "px-4 text-subhead font-medium" : "w-11")
+        }
       >
         {busy ? <Mark className="h-5 w-5" spinning /> : <ImageIcon className="h-5 w-5" />}
+        {labelled && (busy ? "Reading…" : "Photograph a report")}
       </button>
       {/* Hung above the bar (BottomBar's inner row is the positioned parent) so a sentence does
           not stretch the row the icon sits in. */}

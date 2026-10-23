@@ -3,7 +3,7 @@ import type { ReadLabValue } from "@/lib/read-lab-photo";
 import type { RegisterRow } from "@/lib/read-register";
 import { askJev, chosenProbability, type JevAnswers } from "@/lib/jev";
 import { log } from "@/lib/observability";
-import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { generalPack, type SpecialtyPack } from "@/lib/specialty";
 import { forWard } from "@/lib/specialty/prompt-words";
 import { isActionableTask } from "@/lib/task-classification";
 import type { TaskCategory } from "@/lib/task-category";
@@ -68,7 +68,7 @@ export function supportedQuestion(row: string) {
 
 /** The "By type" question, about the plan text at `path`. Exported so
  *  scripts/eval-task-category.ts scores exactly what production asks. */
-export function categoryQuestion(path: string, pack: SpecialtyPack = generalSurgeryPack) {
+export function categoryQuestion(path: string, pack: SpecialtyPack = generalPack) {
   return {
     type: "choice",
     instructions: forWard(`\`${path}\` is a job from a surgical ward-round plan. Which ward work-stream does the job itself belong to? Judge by the action to be done, not by a word mentioned in passing.`, pack),
@@ -78,7 +78,7 @@ export function categoryQuestion(path: string, pack: SpecialtyPack = generalSurg
 
 /** The rescue question, about the plan text at `path` in the state. Exported so
  *  scripts/eval-task-open.ts scores exactly what production asks. */
-export function openQuestion(path: string, pack: SpecialtyPack = generalSurgeryPack) {
+export function openQuestion(path: string, pack: SpecialtyPack = generalPack) {
   return {
     type: "noul",
     instructions: forWard(`A surgical resident dictated \`${path}\` as part of a ward-round plan. Does it leave anything for the ward team to do, check or follow up?`, pack),

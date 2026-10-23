@@ -6,7 +6,7 @@ import { revalidatePatient } from "@/lib/revalidate";
 import { istDayKey } from "@/lib/patient-state";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { getSpecialtyPack } from "@/lib/specialty";
-import { MED_PRESETS, progressNoteConfigFor } from "@/lib/progress-note-config";
+import { progressNoteConfigFor } from "@/lib/progress-note-config";
 
 /**
  * Writes from the daily progress-note workspace.
@@ -77,8 +77,8 @@ async function rewriteToday(
   label: string,
   kind: string,
   lines: string[],
-  /** Filled by "Same as yesterday" — any number in it stays amber until confirmed. */
-  carried = false
+  /** Filled by live dictation — any number in it stays amber until confirmed. */
+  dictated = false
 ): Promise<string | null> {
   const clean = lines.map((l) => l.trim()).filter(Boolean);
   const ids = await todayEntryIds(supabase, patientId);
@@ -106,7 +106,7 @@ async function rewriteToday(
         label,
         value_text: text,
         source_quote: text,
-        ...confirmation(keep.has(text) || (carried && /\d/.test(text)), userId, now),
+        ...confirmation(keep.has(text) || (dictated && /\d/.test(text)), userId, now),
       }))
     );
     if (error) return error.message;
@@ -120,12 +120,12 @@ export async function replaceTodayNoteSection(
   label: string,
   kind: "note" | "exam" | "vital" | "plan",
   lines: string[],
-  carried = false
+  dictated = false
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient();
   const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  const err = await rewriteToday(supabase, patientId, user.id, label, kind, lines, carried);
+  const err = await rewriteToday(supabase, patientId, user.id, label, kind, lines, dictated);
   if (err) return { ok: false, error: err };
   revalidateEverywhere(patientId);
   return { ok: true };
@@ -134,13 +134,13 @@ export async function replaceTodayNoteSection(
 /** Rewrite several vitals / exam signs of today's sheet at once. */
 export async function replaceTodayNoteExam(
   patientId: string,
-  entries: { label: string; kind: "exam" | "vital"; value: string | null; carried?: boolean }[]
+  entries: { label: string; kind: "exam" | "vital"; value: string | null; dictated?: boolean }[]
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient();
   const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in." };
   for (const e of entries) {
-    const err = await rewriteToday(supabase, patientId, user.id, e.label, e.kind, e.value ? [e.value] : [], e.carried);
+    const err = await rewriteToday(supabase, patientId, user.id, e.label, e.kind, e.value ? [e.value] : [], e.dictated);
     if (err) return { ok: false, error: err };
   }
   revalidateEverywhere(patientId);
@@ -233,7 +233,8 @@ export async function replaceActiveMedications(
     .eq("kind", "medication")
     .select("value_text, needs_confirmation, confirmed_at");
   if (delErr) return { ok: false, error: delErr.message };
-  // A preset chip's dose is a default, not something the resident said — amber until confirmed.
+  // Only what was dictated stays amber: a tapped preset or a typed line is the resident's own
+  // entry. A line already awaiting confirmation keeps that state when saved back unchanged.
   const keep = stillPending(old);
 
   if (clean.length) {
@@ -249,7 +250,7 @@ export async function replaceActiveMedications(
         label: (text.split(/[,0-9]/)[0] || text).trim().slice(0, 60) || text.slice(0, 60),
         value_text: text,
         source_quote: text,
-        ...confirmation(keep.has(text) || MED_PRESETS.includes(text) || dictated.includes(text), user.id, now),
+        ...confirmation(keep.has(text) || dictated.includes(text), user.id, now),
       }))
     );
     if (error) return { ok: false, error: error.message };

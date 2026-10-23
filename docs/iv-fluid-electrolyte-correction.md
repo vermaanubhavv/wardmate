@@ -41,8 +41,7 @@ list. The chapters present in full are:
 | 51–54 Obstetrics (see the topic's own coverage note) | 292–325 |
 | 55–57 Parenteral Nutrition | 326–402 |
 
-Everything on **phosphate and magnesium correction** (chapters 26–29), **acid–base** (30–33), the
-**parenteral additive dosing** chapters (10–14), maintenance and colloids (5–7), the medical disorders other than HRS (34–36, 38–41), the perioperative chapters (42–44)
+Everything on **phosphate and magnesium correction** (chapters 26–29), **acid–base** (30–33), maintenance and colloids (5–7), the medical disorders other than HRS (34–36, 38–41), the perioperative chapters (42–44)
 and paediatrics (48–50) is opening-only. Those topics carry what the openings say — definitions,
 normal ranges, severity grades, compositions — and end with a **"Not in this edition"** section
 listing the printed headings whose text is absent. They do not fill the gap from memory: the
@@ -74,6 +73,18 @@ An interleave on a page the preview does not carry cannot be caught by a script,
 clinician sign-off for these topics should compare each dosing table against the book page.
 When transcribing further chapters, tell the transcriber the book is two-column and to finish
 the left column before the right.
+
+### Chapters 10–14 (the parenteral additives)
+
+Calcium gluconate, calcium chloride and hypertonic dextrose (10), hypertonic saline (11),
+magnesium sulfate (12), potassium chloride and potassium phosphate (13) and sodium bicarbonate
+(14), book pages 115–160, replace the old opening-only "Parenteral additives" topic with one
+topic per chapter. They were transcribed from the owner's page images of the full edition (not
+the OCR text that came with them, which was too rough to quote), each page read left column
+then right. Every quote was then checked programmatically against the transcription of its
+cited page. Where the book contradicts itself the topic keeps the printed figure and says so
+— notably calcium chloride printed as 0.136 mEq/mL on p116 against 1.36 in Tables 10.1 and
+10.2, and KCl "1.5 mg" per 10 mL ampoule on p144. Signed off "reviewed" by Dr Anubhav Verma.
 
 ## Data model
 

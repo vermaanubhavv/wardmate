@@ -1,7 +1,7 @@
 import type { DischargeContext } from "@/lib/discharge-data";
 import type { Observation, PatientState } from "@/lib/patient-state";
 import { consultantForWard } from "@/lib/unit-consultants";
-import { generalSurgeryPack, type SpecialtyPack } from "@/lib/specialty";
+import { generalPack, type SpecialtyPack } from "@/lib/specialty";
 import { getDischargeTemplateFor, matchDischargeTemplateFor } from "@/lib/specialty/discharge";
 import { compileDischargeDraft } from "@/lib/discharge-compile";
 import { buildCheckContext, type DischargeCheckContext } from "@/lib/discharge-checks";
@@ -35,7 +35,7 @@ export function oneOffContext(
   medications: Observation[],
   /** The unit's specialty pack. Defaults to general surgery, so an older caller behaves the
    *  way this function always did. */
-  pack: SpecialtyPack = generalSurgeryPack,
+  pack: SpecialtyPack = generalPack,
   /** See DischargeContext.isEsicFaridabad. Defaults true — the same fallback
    *  getWardIsEsicFaridabad uses when a ward's own value cannot be read — so an older caller
    *  keeps printing the letterhead it always has. */

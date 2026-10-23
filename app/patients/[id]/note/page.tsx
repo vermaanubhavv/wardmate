@@ -19,6 +19,7 @@ import PrintButton from "./print-button";
 import OverlayNote from "./overlay-note";
 import SoapNote from "./soap-note";
 import { renderNoteLine } from "./note-line";
+import { BackBar } from "@/app/screen-header";
 
 /**
  * Today's progress sheet, laid out the way the unit's own paper form is — see the ESIC form the
@@ -152,11 +153,16 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col bg-background print:max-w-none print:bg-white">
-      <header className="px-4 pb-3 pt-6 print:hidden">
-        <Link href={`/patients/${id}`} className="text-body text-accent">
-          ‹ Patient
-        </Link>
-        <h1 className="mt-3 ios-large-title">Print sheet</h1>
+      {/* Every progress sheet prints on A4. Without a page size the printer driver picked its
+          own (Letter on some), and the sheet's width — not a fixed type size — set how large
+          the text came out. */}
+      <style>{`
+        @page { size: A4 portrait; margin: 10mm; }
+        @media print { html, body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+      `}</style>
+      <BackBar href={`/patients/${id}`} label="Patient" />
+      <header className="px-4 pb-3 pt-4 print:hidden">
+        <h1 className="ios-large-title">Print sheet</h1>
         <p className="mt-1 text-subhead text-muted">
           Everything below is what was actually recorded today. Blank lines are for what
           wasn&rsquo;t.
@@ -181,13 +187,13 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
       <section className="px-4 pb-4 print:px-0">
         {canOverlay && notesFormat?.url ? (
           <div className="ios-group overflow-hidden print:rounded-none print:border-0 print:shadow-none">
-            <OverlayNote note={note} formatUrl={notesFormat.url} zones={overlayZones} />
+            <OverlayNote note={note} formatUrl={notesFormat.url} zones={overlayZones} specialty={pack.key} />
           </div>
         ) : !isEsicFaridabad ? (
           // Every ward that is not the ESIC Medical College Faridabad pilot prints the generic
           // SOAP layout instead of the sheet below — see lib/ward.ts getWardIsEsicFaridabad.
           <div className="ios-group overflow-hidden print:rounded-none print:border-0 print:shadow-none">
-            <SoapNote note={note} />
+            <SoapNote note={note} specialty={pack.key} />
           </div>
         ) : (
           <div className="ios-group px-5 py-5 text-callout leading-relaxed text-black print:rounded-none print:border-0 print:p-0 print:shadow-none">
@@ -231,9 +237,9 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
                       of this block (mt-auto) rather than sitting bunched right under Chest, so
                       the page's own free space spreads out instead of piling up unused below
                       everything. */}
-                  <div>{observationTop.map((line, i) => renderNoteLine(line, i, { openSpace: note.openSpace }))}</div>
+                  <div>{observationTop.map((line, i) => renderNoteLine(line, i, { openSpace: note.openSpace, specialty: pack.key }))}</div>
                   <div className="mt-auto">
-                    {observationTail.map((line, i) => renderNoteLine(line, `tail-${i}`, { openSpace: note.openSpace }))}
+                    {observationTail.map((line, i) => renderNoteLine(line, `tail-${i}`, { openSpace: note.openSpace, specialty: pack.key }))}
                   </div>
                 </>
               ) : (
@@ -246,7 +252,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
                 Investigation / Treatment / Management
               </p>
               {note.plan.length > 0 ? (
-                note.plan.map((line, i) => renderNoteLine(line, i, { openSpace: note.openSpace }))
+                note.plan.map((line, i) => renderNoteLine(line, i, { openSpace: note.openSpace, specialty: pack.key }))
               ) : (
                 <p className="text-muted">Nothing ordered yet today.</p>
               )}

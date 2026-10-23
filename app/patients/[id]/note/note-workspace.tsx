@@ -22,6 +22,7 @@ import {
   replaceActiveMedications,
   applyCompiledNote,
 } from "./actions";
+import MedicationEditor, { medLine } from "../medication-editor";
 import LiveDictation, { DictateButton, routeVia, type LiveLine, type LiveSection } from "../live-dictation";
 import { medPresetsFor, type NoteVitalField, type ProgressNoteConfig } from "@/lib/progress-note-config";
 
@@ -68,6 +69,7 @@ function stepsFor(config: ProgressNoteConfig): { id: StepId; title: string }[] {
 
 export default function NoteWorkspace({
   patientId,
+  wardId,
   dateLabel,
   observations,
   yesterday = [],
@@ -78,6 +80,8 @@ export default function NoteWorkspace({
   focus = null,
 }: {
   patientId: string;
+  /** For the drug picker's ward-formulary strengths. */
+  wardId: string;
   dateLabel: string;
   observations: NoteObs[];
   /** Yesterday's round, newest value per label — the source for each card's "Same as
@@ -136,6 +140,7 @@ export default function NoteWorkspace({
   const [assessment, setAssessment] = useState(() => val(["assessment"]) || suggestedAssessment);
   const [planItems, setPlanItems] = useState<string[]>(planSeed);
   const [meds, setMeds] = useState<string[]>(currentMeds);
+  const [pickingDrug, setPickingDrug] = useState(false);
 
   const [compiled, setCompiled] = useState<{
     fields: Record<string, string>;
@@ -143,10 +148,10 @@ export default function NoteWorkspace({
     uncertain: string[];
   } | null>(null);
 
-  // Cards filled by "Same as yesterday" since their last save — any number in them is saved
-  // amber, for the resident to confirm, rather than as today's confirmed finding.
-  const [carried, setCarried] = useState<Set<StepId>>(() => new Set());
-  const carry = (id: StepId) => setCarried((s) => new Set(s).add(id));
+  // Cards live dictation filled since their last save — any number in them is saved amber, for
+  // the resident to confirm. Only dictation: a tapped chip, a typed line or "Same as yesterday"
+  // is the resident's own entry and saves confirmed.
+  const [dictated, setDictated] = useState<Set<StepId>>(() => new Set());
 
   // Live dictation: the sections snapshot what each card held when it opened, so the panel
   // shows old text and this session's lines apart. Dictated lines land in the cards' own state
@@ -189,7 +194,7 @@ export default function NoteWorkspace({
       touched.add(vital ? "vitals" : k === "flatus" || k === "stool" ? "bowel" : k);
     }
     setDirty((s) => new Set([...s, ...touched]));
-    setCarried((s) => new Set([...s, ...touched]));
+    setDictated((s) => new Set([...s, ...touched]));
     touched.forEach((id) => toSave.current.add(id));
   }
   // Save every card dictation touched once the panel closes — they are not all the card on
@@ -215,9 +220,9 @@ export default function NoteWorkspace({
 
   async function persist(id: StepId): Promise<boolean> {
     let res: { ok: boolean; error?: string } = { ok: true };
-    const c = carried.has(id);
+    const c = dictated.has(id);
     if (id === "complaints") res = await replaceTodayNoteSection(patientId, "complaints", "note", complaints ? [complaints] : [], c);
-    else if (id === "sensorium") res = await replaceTodayNoteExam(patientId, [{ label: "sensorium", kind: "exam", value: sensorium || null, carried: c }]);
+    else if (id === "sensorium") res = await replaceTodayNoteExam(patientId, [{ label: "sensorium", kind: "exam", value: sensorium || null, dictated: c }]);
     else if (id === "vitals")
       res = await replaceTodayNoteVitals(
         patientId,
@@ -226,12 +231,12 @@ export default function NoteWorkspace({
       );
     else if (sectionById(id)) {
       const sec = sectionById(id)!;
-      res = await replaceTodayNoteExam(patientId, [{ label: sec.label, kind: "exam", value: exam[sec.id] || null, carried: c }]);
+      res = await replaceTodayNoteExam(patientId, [{ label: sec.label, kind: "exam", value: exam[sec.id] || null, dictated: c }]);
     }
     else if (id === "bowel")
       res = await replaceTodayNoteExam(patientId, [
-        { label: "flatus", kind: "exam", value: flatus || null, carried: c },
-        { label: "stool", kind: "exam", value: stool || null, carried: c },
+        { label: "flatus", kind: "exam", value: flatus || null, dictated: c },
+        { label: "stool", kind: "exam", value: stool || null, dictated: c },
       ]);
     else if (id === "assessment") res = await replaceTodayNoteSection(patientId, "assessment", "note", assessment ? [assessment] : [], c);
     else if (id === "plan") res = await replaceTodayNoteSection(patientId, "plan", "plan", planItems, c);
@@ -247,7 +252,7 @@ export default function NoteWorkspace({
       return n;
     };
     setDirty(drop);
-    setCarried(drop);
+    setDictated(drop);
     return true;
   }
 
@@ -342,7 +347,7 @@ export default function NoteWorkspace({
         <>
           <p className="text-caption leading-[1.45] text-muted">Overnight events and any fresh complaint. Tap what fits, add the rest.</p>
           <PillsAndText pills={noteConfig.complaintPills} value={complaints} onChange={(v) => { setComplaints(v); mark("complaints"); }} placeholder="Overnight in the patient's words" />
-          <YesterdayButton text={yVal(["complaints", "c/o", "complaint"])} onUse={(v) => { setComplaints(v); mark("complaints"); carry("complaints"); }} />
+          <YesterdayButton text={yVal(["complaints", "c/o", "complaint"])} onUse={(v) => { setComplaints(v); mark("complaints"); }} />
         </>
       );
     if (id === "sensorium")
@@ -354,7 +359,7 @@ export default function NoteWorkspace({
             </OptionRow>
           ))}
           <DictateArea value={sensorium} onChange={(v) => { setSensorium(v); mark("sensorium"); }} placeholder="Or describe it" rows={2} />
-          <YesterdayButton text={yVal(sensoriumAliases)} onUse={(v) => { setSensorium(v); mark("sensorium"); carry("sensorium"); }} />
+          <YesterdayButton text={yVal(sensoriumAliases)} onUse={(v) => { setSensorium(v); mark("sensorium"); }} />
         </div>
       );
     if (id === "vitals")
@@ -379,7 +384,7 @@ export default function NoteWorkspace({
       return (
         <>
           <PillsAndText pills={sec.pills} value={exam[sec.id] ?? ""} onChange={set} placeholder={sec.placeholder} />
-          <YesterdayButton text={yVal(sec.aliases)} onUse={(v) => { set(v); carry(sec.id); }} />
+          <YesterdayButton text={yVal(sec.aliases)} onUse={(v) => { set(v); }} />
         </>
       );
     }
@@ -408,7 +413,6 @@ export default function NoteWorkspace({
               if (f) setFlatus(f);
               if (s) setStool(s);
               mark("bowel");
-              carry("bowel");
             }}
           />
         </div>
@@ -499,9 +503,24 @@ export default function NoteWorkspace({
                 </button>
               </div>
             ))}
-            <button type="button" onClick={() => { setMeds([...meds, ""]); mark("meds"); }} className="tap self-start text-footnote font-medium text-accent">
-              + Add a drug
-            </button>
+            {pickingDrug ? (
+              <MedicationEditor
+                wardId={wardId}
+                label=""
+                value={null}
+                onSave={(label, value) => { setMeds([...meds, medLine(label, value)]); setPickingDrug(false); mark("meds"); }}
+                onCancel={() => setPickingDrug(false)}
+              />
+            ) : (
+              <div className="flex gap-4">
+                <button type="button" onClick={() => setPickingDrug(true)} className="tap self-start text-footnote font-medium text-accent">
+                  + Add a drug
+                </button>
+                <button type="button" onClick={() => { setMeds([...meds, ""]); mark("meds"); }} className="tap self-start text-footnote text-muted">
+                  Type a line instead
+                </button>
+              </div>
+            )}
           </div>
         </>
       );

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { applyCorrections, type Correction } from "@/lib/corrections";
 import type { SpecialtyPack } from "@/lib/specialty";
+import { numbersIn } from "@/lib/complaint-duration";
 
 type GlossaryTerm = {
   wrong_term: string;
@@ -63,7 +64,7 @@ function termPattern(wrong: string): RegExp {
 export async function correctTranscript(
   raw: string,
   /** The unit's pack, so a surgical-only rule ("PAS" to PAC) never fires on a medicine ward.
-   *  Omitted, it is general surgery — what every caller got before packs existed. */
+   *  Omitted, it is the general (no-department) pack: no surgical-only rule runs. */
   pack?: SpecialtyPack
 ): Promise<{ text: string; changes: Correction[] }> {
   const first = applyCorrections(raw, pack);
@@ -71,6 +72,9 @@ export async function correctTranscript(
   const changes = [...first.changes];
 
   for (const term of await getGlossary()) {
+    // A number is never "misheard" into another number by a learned rule: one resident
+    // correcting "10 days" to "30 days" on one patient must not rewrite every later "10 days".
+    if (numbersIn(term.wrong_term).size || numbersIn(term.correct_term).size) continue;
     text = text.replace(termPattern(term.wrong_term), (heard) => {
       if (heard === term.correct_term) return heard;
       if (!changes.some((c) => c.from === heard && c.to === term.correct_term)) {

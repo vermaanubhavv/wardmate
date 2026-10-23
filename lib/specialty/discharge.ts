@@ -7,6 +7,7 @@ import { BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES, BURNS_PLASTIC_SURGERY_GENERI
 import { DERMATOLOGY_DISCHARGE_TEMPLATES, DERMATOLOGY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-dermatology";
 import { EMERGENCY_DISCHARGE_TEMPLATES, EMERGENCY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-emergency";
 import { ENT_DISCHARGE_TEMPLATES, ENT_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-ent";
+import { GENERAL_DISCHARGE_TEMPLATES, GENERAL_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-general";
 import { MEDICINE_DISCHARGE_TEMPLATES, MEDICINE_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-medicine";
 import { ONCOLOGY_DISCHARGE_TEMPLATES, ONCOLOGY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-oncology";
 import { NEUROSURGERY_DISCHARGE_TEMPLATES, NEUROSURGERY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-neurosurgery";
@@ -39,6 +40,7 @@ type DischargeTemplateSet = {
 };
 
 const DISCHARGE_TEMPLATE_SETS: Record<SpecialtyKey, DischargeTemplateSet> = {
+  general: { templates: GENERAL_DISCHARGE_TEMPLATES, generic: GENERAL_GENERIC_DISCHARGE_TEMPLATE },
   general_surgery: { templates: DISCHARGE_TEMPLATES, generic: GENERIC_DISCHARGE_TEMPLATE },
   medical_oncology: { templates: ONCOLOGY_DISCHARGE_TEMPLATES, generic: ONCOLOGY_GENERIC_DISCHARGE_TEMPLATE },
   internal_medicine: { templates: MEDICINE_DISCHARGE_TEMPLATES, generic: MEDICINE_GENERIC_DISCHARGE_TEMPLATE },

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDischargeContext } from "@/lib/discharge-data";
 import { mergeDischargeDraft } from "@/lib/discharge-store";
@@ -11,6 +10,7 @@ import DownloadWordButton from "../download-word-button";
 import CopyForEsic from "../copy-for-esic";
 import DischargeSheet from "../sheet";
 import PrintSections from "../print-sections";
+import { BackBar } from "@/app/screen-header";
 
 /**
  * The printable discharge summary, in the protocol's section order and generic NABH/ABDM
@@ -35,11 +35,9 @@ export default async function DischargePrintPage({ params }: { params: Promise<{
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col bg-background print:max-w-none print:bg-white">
-      <header className="px-4 pb-3 pt-6 print:hidden">
-        <Link href={`/patients/${id}/discharge`} className="text-body text-accent">
-          ‹ Discharge workspace
-        </Link>
-        <h1 className="mt-3 ios-large-title">Discharge summary</h1>
+      <BackBar href={`/patients/${id}/discharge`} label="Discharge workspace" />
+      <header className="px-4 pb-3 pt-4 print:hidden">
+        <h1 className="ios-large-title">Discharge summary</h1>
         <p className="mt-1 text-subhead text-muted">
           {doc.status === "finalised"
             ? "Finalised. Tap any section heading to reopen it for editing."

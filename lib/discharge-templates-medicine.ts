@@ -24,7 +24,7 @@ import { adv, proc } from "@/lib/discharge-template-parts";
  */
 
 
-const STANDARD_RED_FLAGS = [
+export const STANDARD_RED_FLAGS = [
   "Fever that returns or does not settle, or chills and rigors",
   "Breathlessness, chest pain, or a fast or irregular heartbeat",
   "Confusion, drowsiness, fainting, or a fit",

@@ -26,6 +26,26 @@
 // so the first 8 are what that ward admits most.
 
 const COMPLAINT_CHIPS_BY_SPECIALTY: Record<string, string[]> = {
+  // A unit with no department: the presenting complaints any ward meets, commonest first.
+  general: [
+    "Fever",
+    "Pain abdomen",
+    "Breathlessness",
+    "Vomiting",
+    "Chest pain",
+    "Cough",
+    "Loose stools",
+    "Swelling",
+    "Injury",
+    "Headache",
+    "Giddiness",
+    "Altered sensorium",
+    "Weakness of limbs",
+    "Burning micturition",
+    "Bleeding",
+    "Loss of appetite",
+    "Loss of weight",
+  ],
   general_surgery: [
     // Acute abdomen, hernia, lumps and abscesses, biliary, diabetic foot — the surgical ward's bulk.
     "Pain abdomen",
@@ -366,6 +386,8 @@ const PAST_CHIPS_INTERNAL_MEDICINE = [
 ];
 
 const PAST_CHIPS_BY_SPECIALTY: Record<string, string[]> = {
+  // The comorbidities any admission is asked about.
+  general: ["DM", "HTN", "CAD / IHD", "Asthma / COPD", "TB (Koch's)", "Thyroid", "CKD", "Seizure disorder", "Stroke", "On blood thinners"],
   general_surgery: [
     "DM",
     "HTN",
@@ -527,12 +549,31 @@ const PAST_CHIPS_BY_SPECIALTY: Record<string, string[]> = {
   ],
 };
 
-/** Unknown or missing specialty (including "patch not run yet") degrades to the surgical set —
+/** Unknown or missing specialty degrades to the general (no-department) set —
  *  the same "degrade, don't crash" rule lib/specialty/index.ts's getSpecialtyPack() follows. */
 export function complaintChipsFor(specialty: string | null | undefined): string[] {
-  return COMPLAINT_CHIPS_BY_SPECIALTY[(specialty ?? "").trim()] ?? COMPLAINT_CHIPS_BY_SPECIALTY.general_surgery;
+  return COMPLAINT_CHIPS_BY_SPECIALTY[(specialty ?? "").trim()] ?? COMPLAINT_CHIPS_BY_SPECIALTY.general;
 }
 
 export function pastChipsFor(specialty: string | null | undefined): string[] {
-  return PAST_CHIPS_BY_SPECIALTY[(specialty ?? "").trim()] ?? PAST_CHIPS_BY_SPECIALTY.general_surgery;
+  return PAST_CHIPS_BY_SPECIALTY[(specialty ?? "").trim()] ?? PAST_CHIPS_BY_SPECIALTY.general;
+}
+
+// A chip is present only as a whole phrase: "Smoker" must not light up inside "Non-smoker".
+const chipRe = (c: string, prefix = "") =>
+  new RegExp(`(?<![\\w-])(?:${prefix.trim().replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")}\\s*)?${c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w-])`, "i");
+export const hasChip = (text: string, c: string) => chipRe(c).test(text);
+
+/** Tap a chip: on → appended; tapped again → removed; a rival in its exclusive group → removed. */
+export function toggleChip(text: string, c: string, prefix = "", exclusive: string[][] = []): string {
+  const drop = (t: string, x: string) =>
+    t
+      .split(/;\s*/)
+      .filter((part) => !chipRe(x, prefix).test(part) || part.replace(chipRe(x, prefix), "").trim() !== "")
+      .join("; ");
+  if (hasChip(text, c)) return drop(text, c);
+  let t = text;
+  for (const rival of exclusive.find((g) => g.includes(c)) ?? []) if (rival !== c) t = drop(t, rival);
+  t = t.replace(/[;\s]+$/, "");
+  return (t ? `${t}; ` : "") + `${prefix}${c}`;
 }

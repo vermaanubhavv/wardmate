@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { complaintChipsFor, pastChipsFor } from "@/lib/case-history-chips";
+import { complaintChipsFor, pastChipsFor, hasChip, toggleChip } from "@/lib/case-history-chips";
 import { SPECIALTY_KEYS } from "@/lib/specialty/types";
 import { TREATMENT_ADVICE } from "@/lib/history-check/schema";
 
@@ -56,10 +56,26 @@ describe("specialty-aware case-history chips", () => {
     expect(obgyn).not.toEqual(medicine);
   });
 
-  it("degrades to the surgical set for an unknown or missing specialty — same rule getSpecialtyPack() follows", () => {
-    expect(complaintChipsFor("something_new")).toEqual(complaintChipsFor("general_surgery"));
-    expect(complaintChipsFor(null)).toEqual(complaintChipsFor("general_surgery"));
-    expect(complaintChipsFor(undefined)).toEqual(complaintChipsFor("general_surgery"));
-    expect(pastChipsFor(undefined)).toEqual(pastChipsFor("general_surgery"));
+  it("degrades to the general (no-department) set for an unknown or missing specialty — same rule getSpecialtyPack() follows", () => {
+    expect(complaintChipsFor("something_new")).toEqual(complaintChipsFor("general"));
+    expect(complaintChipsFor(null)).toEqual(complaintChipsFor("general"));
+    expect(complaintChipsFor(undefined)).toEqual(complaintChipsFor("general"));
+    expect(pastChipsFor(undefined)).toEqual(pastChipsFor("general"));
+    expect(complaintChipsFor("general")).not.toEqual(complaintChipsFor("general_surgery"));
+  });
+});
+
+describe("personal-history chips", () => {
+  const groups = [["Non-smoker", "Smoker", "Ex-smoker"]];
+  it("does not light Smoker inside Non-smoker", () => {
+    expect(hasChip("Non-smoker", "Smoker")).toBe(false);
+    expect(hasChip("Non-smoker", "Non-smoker")).toBe(true);
+  });
+  it("swaps a rival in the same group and toggles off on a second tap", () => {
+    expect(toggleChip("Non-smoker; Vegetarian diet", "Smoker", "", groups)).toBe("Vegetarian diet; Smoker");
+    expect(toggleChip("Smoker", "Smoker", "", groups)).toBe("");
+  });
+  it("never deletes dictated detail around a chip", () => {
+    expect(toggleChip("Smoker, ten a day for 5 years", "Non-smoker", "", groups)).toBe("Smoker, ten a day for 5 years; Non-smoker");
   });
 });

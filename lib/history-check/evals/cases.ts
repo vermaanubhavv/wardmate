@@ -302,6 +302,28 @@ export const EVAL_CASES: EvalCase[] = [
     note: "The post-operative day and the operation carry half the history. 'No cough, no breathlessness' is a negative; the wound and the calf were never mentioned and must stay unasked.",
   },
   {
+    id: "post-op-bowels-working",
+    title: "Problem after an operation: bowels working, urine not passed",
+    treeId: "post_op_problem",
+    patient: { bed: "SW-12", age_years: 31, sex: "female" },
+    entries: [
+      voice(
+        "e1",
+        "Post operative day 3 of open appendicectomy. Passing flatus, bowels opened this morning. Tolerating soft diet. Has not passed urine since the catheter came out last night, lower abdomen feels full. No fever. Wound has mild pain, no discharge."
+      ),
+    ],
+    expect: {
+      which_operation: "positive",
+      urine_catheter: "positive",
+      urine_output_fall: "unasked",
+      fever: "negative",
+      flatus_stool: "unasked",
+      calf_leg: "unasked",
+      confusion_drowsiness: "unasked",
+    },
+    note: "flatus_stool is asked as the problem, so 'passing flatus, bowels opened' answers it no, but the quote carries no negation word and the validator drops the negative: it stays unasked by design. 'Has not passed urine since the catheter came out' with a full lower abdomen is retention (urine and catheter), not falling output, and must never become a denial of the urine-output red flag (Bailey & Love review, docs/surgical-history.md §13.1).",
+  },
+  {
     id: "burns-inhalation",
     title: "Flame burn in a closed room",
     treeId: "burns",

@@ -114,7 +114,26 @@ const PULMONARY_DIAGNOSES = [
   "Haemoptysis",
 ];
 
+// A unit with no department: the admissions any ward meets, medical and surgical alike.
+const GENERAL_DIAGNOSES = [
+  "Acute febrile illness",
+  "Sepsis",
+  "Pneumonia",
+  "Acute gastroenteritis",
+  "Urinary tract infection",
+  "Cellulitis",
+  "Acute abdomen",
+  "Acute kidney injury",
+  "Anaemia for evaluation",
+  "Uncontrolled diabetes mellitus",
+  "Hypertension",
+  "Chest pain for evaluation",
+  "Altered sensorium for evaluation",
+  "Trauma",
+];
+
 const DIAGNOSES: Partial<Record<SpecialtyKey, readonly string[]>> = {
+  general: GENERAL_DIAGNOSES,
   general_surgery: COMMON_DIAGNOSES,
   internal_medicine: MEDICINE_DIAGNOSES,
   pulmonary_medicine: PULMONARY_DIAGNOSES,

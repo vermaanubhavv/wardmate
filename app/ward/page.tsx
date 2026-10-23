@@ -6,6 +6,7 @@ import { dayLabel, patientName, stripPatientHonorific, type WardPatient } from "
 import type { SpecialtyPack } from "@/lib/specialty";
 import { shortLabel } from "@/lib/specialty/labels";
 import { procedureFor } from "@/lib/templates";
+import { shortFinding } from "@/lib/shorthand";
 import RegisterButton from "../register-button";
 import { ChevronIcon, PlusIcon } from "../icons";
 import RoundRecorder from "../round-recorder";
@@ -481,7 +482,7 @@ function PatientRow({
             <span className="tabular-nums">{dayLabel(patient, pack)}</span>
             {procedure && <span> · {procedure}</span>}
             {" · "}
-            {patient.primary_diagnosis || "No diagnosis recorded"}
+            {patient.primary_diagnosis ? shortFinding(patient.primary_diagnosis, pack.key) : "No diagnosis recorded"}
           </span>
           {sharedBed && (
             <span className="mt-0.5 block truncate text-footnote text-warn-fg">

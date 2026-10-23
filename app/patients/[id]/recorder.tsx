@@ -66,6 +66,7 @@ export default function Recorder({
   onBusyChange,
   idleActions,
   copy,
+  speakLabel = "Speak at the bedside",
 }: {
   patientId: string;
   /** Whose bed, for the sheet's title. */
@@ -76,6 +77,8 @@ export default function Recorder({
   onBusyChange?: (busy: boolean) => void;
   /** Sits in the same row as the mic while nothing is recording — the bar's other controls. */
   idleActions?: React.ReactNode;
+  /** Shorter where a wider control shares the row. */
+  speakLabel?: string;
 }) {
   const router = useRouter();
   const [status, setStatus] = useState<Status>("idle");
@@ -522,7 +525,7 @@ export default function Recorder({
             <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-line bg-card text-accent shadow-sm">
               <MicIcon className="h-6 w-6" />
             </span>
-            <span className="truncate text-body font-medium">Speak at the bedside</span>
+            <span className="truncate text-body font-medium">{speakLabel}</span>
           </button>
           {idleActions}
         </div>

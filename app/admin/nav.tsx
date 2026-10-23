@@ -17,6 +17,7 @@ const TABS: { href: string; label: string }[] = [
   { href: "/admin/activity", label: "Activity log" },
   { href: "/admin/events", label: "Events" },
   { href: "/admin/feedback", label: "Feedback" },
+  { href: "/admin/shorthand", label: "Shorthand" },
 ];
 
 export default function AdminNav() {

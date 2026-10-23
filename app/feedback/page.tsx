@@ -4,7 +4,7 @@ export const metadata = { title: "Share feedback · Wardmate" };
 
 export default function FeedbackPage() {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-1 px-4 py-10">
+    <main className="mx-auto flex w-full max-w-xl flex-1 px-4 py-10">
       <div className="w-full">
         <p className="text-subhead font-medium text-accent">Wardmate</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Help us make Wardmate better</h1>

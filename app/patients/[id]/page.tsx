@@ -61,6 +61,7 @@ import { getPatientScoringTasks, getScoreCards } from "@/lib/scoring/read";
 import { diagnosisFromProcedure } from "@/lib/diagnosis-from-procedure";
 import { reopenTask } from "./actions";
 import ConfirmDictation from "./confirm-dictation";
+import AddDrug from "./add-drug";
 import BottomBar from "../../bottom-bar";
 import { listedComorbidities } from "@/lib/comorbidities";
 import { summariseObjective, type WardRanges } from "@/lib/exam-summary";
@@ -338,7 +339,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // A post-op job with no operation on record — asked as a question under the header.
   const postOpTask = hasOperationClock(pack) && beforeSurgery ? postOpJob(openTasks) : null;
   // Worded as the To-Do list words it: "tomorrow" said 17 days ago is a date, not "tomorrow".
-  const orphanPostOpJob = postOpTask && jobTitle(postOpTask.value_text ?? postOpTask.label, postOpTask.recorded_at);
+  const orphanPostOpJob = postOpTask && jobTitle(postOpTask.value_text ?? postOpTask.label, postOpTask.recorded_at, undefined, pack.key);
 
   const procedure = procedureFor(patient, procedures);
   const caseHistoryDiagnosis = caseHistoryEntries
@@ -447,7 +448,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 // read, the same way effectiveUrgency below re-reads the colour — neither is
                 // stored, both are computed from the calendar as it stands right now. See
                 // lib/urgency.ts jobTitle / describeWhen.
-                const jobText = jobTitle(o.value_text ?? o.label, o.recorded_at);
+                const jobText = jobTitle(o.value_text ?? o.label, o.recorded_at, undefined, pack.key);
                 return (
                 <SwipeDelete
                   key={o.id}
@@ -584,6 +585,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 <SoapHeading section={section} label={label} />
                 {section === "objective" ? (
                   <ObjectiveBlock
+                    specialty={pack.key}
                     matchedItems={rows}
                     extraItems={extraItems}
                     negatives={negatives}
@@ -593,6 +595,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                   />
                 ) : (
                 <SoapRows
+                  specialty={pack.key}
                   patientId={patient.id}
                   writeKind="note"
                   rows={matchedItems.map((m) => ({
@@ -616,8 +619,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       {/* What is being done for the patient, in one place: the drugs on record (each keeping
           the words it came from, so it is never only the app's paraphrase), then today's plan,
           then the checks (consent, procedure, fitness), which are part of the management too. */}
-      {(medications.length > 0 || planGroups.length > 0) && (
-        <section className="px-4 pb-6">
+      {/* Always shown, even empty, so a drug can be added from here. */}
+      <section className="px-4 pb-6">
           <p className="ios-group-header mb-2 flex items-center gap-1.5 px-4">
             <Pill className="h-3.5 w-3.5 text-accent" strokeWidth={2.4} />
             Plan &amp; treatment
@@ -636,6 +639,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
             {planGroups.map(({ section, matchedItems, extraItems }) => (
               <li key={section} className="px-4 py-1.5">
                 <SoapRows
+                  specialty={pack.key}
                   patientId={patient.id}
                   writeKind={section === "plan" ? "plan" : "note"}
                   rows={matchedItems.map((m) => ({
@@ -649,9 +653,11 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                 />
               </li>
             ))}
+            <li>
+              <AddDrug patientId={patient.id} wardId={patient.ward_id} current={medications.map((m) => m.value_text ?? m.label)} />
+            </li>
           </ul>
         </section>
-      )}
 
       <Suspense fallback={null}>
         <ScoringCards scoring={scoringP} />
@@ -673,6 +679,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   const historyPanel = (
     <>
       <CaseHistorySection
+        specialty={pack.key}
         entries={caseHistoryEntries}
         patientId={patient.id}
         sex={patient.sex}
@@ -734,6 +741,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                     <div className="border-t border-line">
                       {/* The day read as a note. */}
                       <DaySoap
+                        specialty={pack.key}
                         observations={dayObservations}
                         sex={patient.sex}
                         wardRanges={wardRanges}
@@ -1012,7 +1020,9 @@ function CaseHistorySection({
   etiology,
   photoUrls,
   protocolTitles,
+  specialty,
 }: {
+  specialty: string;
   entries: Entry[];
   patientId: string;
   sex: string | null;
@@ -1059,6 +1069,7 @@ function CaseHistorySection({
               sex={sex}
               wardRanges={wardRanges}
               etiology={etiology}
+              specialty={specialty}
             />
           )}
 
@@ -1121,7 +1132,9 @@ function DaySoap({
   sex,
   wardRanges,
   etiology,
+  specialty,
 }: {
+  specialty: string;
   observations: Observation[];
   sex: string | null;
   wardRanges: WardRanges;
@@ -1145,6 +1158,7 @@ function DaySoap({
           <SoapHeading section={section} label={label} />
           {section === "objective" ? (
             <ObjectiveSummaryView
+              specialty={specialty}
               summary={summariseObjective(
                 items.map((o) => ({
                   id: o.id,
@@ -1459,7 +1473,9 @@ function ObjectiveBlock({
   sex,
   wardRanges,
   etiology,
+  specialty,
 }: {
+  specialty: string;
   matchedItems: MatchedItem[];
   extraItems: Observation[];
   /** Symptom checklist items nobody mentioned — written as "no complaints of …". */
@@ -1504,6 +1520,7 @@ function ObjectiveBlock({
   // Not bordered: this now renders inside the Today card, which draws the only surface here.
   return (
     <ObjectiveSummaryView
+      specialty={specialty}
       summary={summary}
       outstanding={outstanding}
       nadPhrases={nadPhrases}

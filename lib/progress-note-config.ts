@@ -40,6 +40,9 @@ export type NoteExamSection = {
   /** false: an empty line prints without the open space below its heading (see
    *  openSpaceHeadings). Absent: it gets the space. */
   printOpenSpace?: false;
+  /** true: the card is offered only once the patient is operated (or a wound was already said)
+   *  — a liver abscess on a surgical ward has no wound to examine. See sectionsForPatient. */
+  onlyIfOperated?: true;
 };
 
 export type ProgressNoteConfig = {
@@ -61,8 +64,8 @@ export type ProgressNoteConfig = {
   bedsideExample: string;
   /** The example shown while dictating (patient page mic, note workspace) — spoken, not typed. */
   dictationExample: string;
-  /** The Medications card's one-tap drugs. A preset dose is a default, not something the
-   *  resident said, so a line still reading exactly like any preset saves amber (MED_PRESETS).
+  /** The Medications card's one-tap drugs. Tapping one is the resident's own entry, so it saves
+   *  confirmed — only dictated lines wait for confirmation.
    *  [] where a fixed dose would be wrong (weight-based paediatrics) or unreviewed. Every
    *  department's list was reviewed and approved by the app owner in October 2026; a change
    *  to any list needs the same clinical sign-off. */
@@ -220,7 +223,7 @@ const GENERAL_SURGERY: ProgressNoteConfig = {
   examSections: [
     ABDOMEN,
     // printOpenSpace: false on wound and drains keeps the sheet's spacing as it always printed.
-    { ...WOUND, pills: [...WOUND.pills, "Induration", "Staples intact", "Port sites healthy", "Serosanguinous discharge", "Haematoma", "Seroma"], printOpenSpace: false },
+    { ...WOUND, pills: [...WOUND.pills, "Induration", "Staples intact", "Port sites healthy", "Serosanguinous discharge", "Haematoma", "Seroma"], printOpenSpace: false, onlyIfOperated: true },
     {
       id: "drains",
       title: "Drains, tubes & output",
@@ -275,6 +278,31 @@ const GENERAL_SURGERY: ProgressNoteConfig = {
     "Repeat CBC",
     "Repeat RFT / electrolytes",
     "PAC / consent",
+    "Plan for discharge",
+    "Refer",
+  ],
+};
+
+// A unit with no department: the systemic exam lines and the decisions any ward round makes.
+// No one-tap medicines: every preset list needs the app owner's clinical sign-off, and a ward
+// without a department has none yet.
+const GENERAL: ProgressNoteConfig = {
+  wardPhrase: "a hospital ward",
+  medPresets: [],
+  bedsideExample: "Day 3, afebrile, BP 120/80, plan repeat CBC…",
+  dictationExample: "no fresh complaints… BP 120 by 80, pulse 84… chest clear, abdomen soft… repeat CBC…",
+  registerHint: "S1 S2 +, NVBS, B/L air entry equal, P/A soft, NT, conscious and oriented",
+  complaintPills: MEDICINE_COMPLAINTS,
+  examSections: [CHEST, CVS, ABDOMEN, CNS],
+  bowelLine: false,
+  planPills: [
+    "Continue same treatment",
+    "Switch to oral medicines",
+    "Stop IV fluids",
+    "Repeat CBC",
+    "Repeat RFT / electrolytes",
+    "Monitor input / output",
+    "Cross-consult",
     "Plan for discharge",
     "Refer",
   ],
@@ -960,6 +988,7 @@ const UROLOGY: ProgressNoteConfig = {
     {
       ...WOUND,
       title: "Wound / external genitalia",
+      onlyIfOperated: true,
       printLabel: "Wound / genitalia",
       aliases: [...WOUND.aliases, "external genitalia", "scrotum", "meatus"],
       pills: [...WOUND.pills, "Scrotal swelling"],
@@ -1157,6 +1186,7 @@ const EMERGENCY_MEDICINE: ProgressNoteConfig = {
 };
 
 export const PROGRESS_NOTE_CONFIGS: Record<SpecialtyKey, ProgressNoteConfig> = {
+  general: GENERAL,
   general_surgery: GENERAL_SURGERY,
   medical_oncology: MEDICAL_ONCOLOGY,
   internal_medicine: INTERNAL_MEDICINE,
@@ -1174,12 +1204,29 @@ export const PROGRESS_NOTE_CONFIGS: Record<SpecialtyKey, ProgressNoteConfig> = {
   emergency_medicine: EMERGENCY_MEDICINE,
 };
 
-/** The general-surgery sheet — what every unit printed before per-department notes existed. */
-export const DEFAULT_PROGRESS_NOTE_CONFIG = GENERAL_SURGERY;
+/** The general (no-department) sheet — what a unit without a recognised department prints. */
+export const DEFAULT_PROGRESS_NOTE_CONFIG = GENERAL;
 
-/** Same "degrade, don't crash" rule as getSpecialtyPack(): an unknown key is general surgery. */
+/** Same "degrade, don't crash" rule as getSpecialtyPack(): an unknown key is the general sheet. */
 export function progressNoteConfigFor(key: string | null | undefined): ProgressNoteConfig {
   return (key && PROGRESS_NOTE_CONFIGS[key as SpecialtyKey]) || DEFAULT_PROGRESS_NOTE_CONFIG;
+}
+
+/** The note workspace's cards for this patient: an operated-only card (the surgical wound) is
+ *  dropped until there is an operation on record or the wound was already dictated in the
+ *  last two days. Only the cards change — saving and printing keep the ward's full set, so a
+ *  wound said by voice is never lost. */
+export function sectionsForPatient(
+  config: ProgressNoteConfig,
+  patient: { surgery_date: string | null },
+  recent: { label: string }[]
+): ProgressNoteConfig {
+  if (patient.surgery_date) return config;
+  const said = (s: NoteExamSection) => recent.some((o) => s.aliases.includes(o.label.toLowerCase().trim()));
+  const examSections = config.examSections.filter((s) => !s.onlyIfOperated || said(s));
+  if (examSections.length === config.examSections.length) return config;
+  // No wound on the card → no suture removal in the plan either.
+  return { ...config, examSections, planPills: config.planPills.filter((p) => !/\b(sutures?|staples?)\b/i.test(p)) };
 }
 
 /** The chips this ward's Medications card offers. */
