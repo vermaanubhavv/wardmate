@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IADVL, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * REDNESS AND SCALING OF THE WHOLE BODY — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * REDNESS AND SCALING OF THE WHOLE BODY — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Dermatology ward and OPD, north India. Once the whole skin is red the rash no longer shows its
  * cause, so the history carries the diagnosis: what skin disease was there before, what was
  * stopped (steroid tablets, injections or creams), what was started (a new medicine), and what
@@ -15,12 +15,12 @@ import { commonHpi, HUTCHISONS, IADVL, IMMUNOCOMPROMISE, MACLEODS, val, yn } fro
  */
 export const erythrodermaV1: HistoryTree = {
   id: "erythroderma",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Redness and scaling of the whole body",
   triggers: ["erythroderma", "exfoliative dermatitis", "exfoliation", "red all over", "whole body red", "redness of whole body", "redness all over", "scaling all over", "skin shedding", "scales falling", "flakes falling", "poore sharir pe laali", "chamdi utar rahi"],
   setting: "Dermatology ward and OPD, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [IADVL, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("redness and scaling"),
@@ -40,7 +40,7 @@ export const erythrodermaV1: HistoryTree = {
     // Red flags
     yn("red_flag", "chills_temperature", "Feeling cold / shivering / high fever", "Is the patient feeling cold, shivering, or running a high fever?", ["feeling cold", "shivering", "chills", "cold", "blanket", "high fever", "rigors", "low temperature"], { teach: "Red skin loses heat continuously, so shivering or a high fever is asked about because temperature control may be failing." }),
     yn("red_flag", "leg_swelling_breathless", "Swelling of feet / breathlessness", "Is there swelling of the feet or face, breathlessness on lying flat, or palpitations?", ["swelling of feet", "pedal oedema", "puffy", "breathless", "breathlessness", "cannot lie flat", "palpitations", "heart racing"], { teach: "Widespread red skin draws blood to the surface and leaks protein, which can strain the heart and cause swelling." }),
-    yn("red_flag", "fluid_loss", "Thirst / reduced urine / giddiness", "Is the patient very thirsty, passing less urine, or giddy on standing?", ["thirsty", "less urine", "reduced urine", "giddy", "dizziness", "dry mouth", "not drinking", "weak"], { teach: "Fluid lost through inflamed skin is invisible, so thirst, urine and giddiness are asked about early." }),
+    yn("red_flag", "fluid_loss", "Thirst / reduced urine / giddiness", "Is the patient very thirsty, passing less urine, or giddy on standing?", ["thirsty", "less urine", "reduced urine", "giddy", "dizziness", "dry mouth", "unable to drink", "poor intake", "weak"], { teach: "Fluid lost through inflamed skin is invisible, so thirst, urine and giddiness are asked about early." }),
     yn("red_flag", "jaundice_organ", "Yellow eyes / dark urine / reduced urine", "Are the eyes yellow, the urine dark, or is there pain in the upper abdomen?", ["yellow eyes", "jaundice", "dark urine", "abdominal pain", "right side pain", "vomiting", "liver"], { tier: "detailed", teach: "Yellow eyes or dark urine with a drug-associated rash raise involvement of the liver, which changes how closely the patient is watched." }),
     yn("red_flag", "infection_sepsis", "Pus / foul smell / rigors", "Are there pus-filled areas, foul-smelling weeping skin, or fever with rigors?", ["pus", "pustules", "foul smell", "weeping", "oozing", "rigors", "boils", "infected"], { teach: "Weeping, broken skin over the whole body is an open door for infection, and rigors raise spread into the blood." }),
     IMMUNOCOMPROMISE,

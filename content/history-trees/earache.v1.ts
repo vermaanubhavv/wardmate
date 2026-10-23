@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, DHINGRA, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * EARACHE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * EARACHE — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * ENT ward and casualty, north India. Most ear pain comes from the ear canal or the middle ear,
  * but a normal-looking ear with pain is often referred from the teeth, jaw joint, tonsils or a
  * growth in the throat. The history exists to separate the two, and to catch the diabetic with
@@ -14,12 +14,12 @@ import { commonHpi, DHINGRA, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } f
  */
 export const earacheV1: HistoryTree = {
   id: "earache",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Earache",
   triggers: ["earache", "pain in ear", "pain in the ear", "ear ache", "painful ear", "kaan dard", "kaan me dard", "kaan mein dard", "ear hurts", "ear is paining"],
   setting: "ENT ward and casualty, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DHINGRA, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("ear pain"),
@@ -36,7 +36,7 @@ export const earacheV1: HistoryTree = {
     yn("associated", "vesicles_rash", "Blisters on or around the ear", "Any blisters or rash on the ear, in the ear canal, or on the palate?", ["blisters", "vesicles", "rash", "shingles", "herpes", "zoster", "burning pain"], { teach: "Blisters on the ear with severe pain point to shingles of the facial nerve, which can weaken the face and hearing." }),
     val("exposure", "tobacco_alcohol", "Tobacco / alcohol", "Does the patient smoke, chew tobacco, gutka or paan, or drink alcohol?", ["smoking", "bidi", "cigarette", "tobacco", "gutka", "khaini", "paan", "alcohol", "drinking"], { tier: "detailed" }),
     // Red flags
-    yn("red_flag", "diabetes_severe_pain", "Diabetes with severe, persistent ear pain", "Is the patient diabetic, and is the ear pain severe, worse at night, or not settling after treatment?", ["diabetic", "diabetes", "sugar", "severe pain", "night pain", "not settling", "not relieved", "persistent", "elderly"], { teach: "Severe, persistent ear pain in an older diabetic raises infection spreading from the ear canal into the skull base." }),
+    yn("red_flag", "diabetes_severe_pain", "Diabetes with severe, persistent ear pain", "Is the patient diabetic, and is the ear pain severe, worse at night, or not settling after treatment?", ["diabetic", "diabetes", "sugar", "severe pain", "night pain", "persisting", "unrelieved", "persistent", "elderly"], { teach: "Severe, persistent ear pain in an older diabetic raises infection spreading from the ear canal into the skull base." }),
     yn("red_flag", "postaural_swelling", "Swelling behind the ear", "Any swelling, redness or tenderness behind the ear, or has the ear been pushed forward?", ["swelling behind ear", "postaural", "mastoid", "redness", "tender", "ear pushed forward", "fluctuant"], { teach: "Swelling behind the ear with the pinna pushed forward raises infection in the mastoid bone." }),
     yn("red_flag", "facial_weakness", "Weakness of the face", "Any drooping of the face, inability to close the eye, or deviation of the mouth?", ["facial weakness", "facial palsy", "drooping", "cannot close eye", "mouth deviation", "face twisted"], { teach: "Facial weakness with ear pain raises shingles of the facial nerve or spread of infection along it." }),
     yn("red_flag", "headache_fever_drowsy", "High fever / headache / drowsiness / neck stiffness", "Any high fever, severe headache, vomiting, neck stiffness, drowsiness or fits?", ["high fever", "severe headache", "vomiting", "neck stiffness", "drowsy", "altered", "fits", "seizure"], { teach: "Fever with headache or altered sensorium in an ear infection raises spread inside the skull." }),

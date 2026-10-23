@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * GENERALISED SWELLING (OEDEMA) — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * GENERALISED SWELLING (OEDEMA) — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Adult medicine ward, north India. Differentials: nephrotic syndrome, heart failure, chronic
  * liver disease, chronic kidney disease / acute glomerulonephritis, severe anaemia /
  * hypoalbuminaemia (malnutrition), hypothyroidism, drug-induced oedema, deep vein thrombosis
@@ -10,12 +10,12 @@ import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "
  */
 export const oedemaV1: HistoryTree = {
   id: "oedema",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Swelling of the body",
   triggers: ["swelling", "oedema", "edema", "anasarca", "pedal oedema", "pedal edema", "swelling of feet", "swelling of legs", "facial puffiness", "puffiness"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("Does this dyspneic patient in the emergency department have congestive heart failure?", 2005, "16234501"),
     rce("Does this patient with liver disease have cirrhosis?", 2012, "22357834"),
@@ -38,11 +38,11 @@ export const oedemaV1: HistoryTree = {
     yn("associated", "sore_throat_skin_infection", "Recent sore throat / skin infection", "Any sore throat or skin infection in the preceding weeks (post-infectious nephritis)?", ["sore throat", "throat infection", "skin infection", "boils", "impetigo", "pyoderma", "two weeks ago", "weeks before"], { tier: "detailed" }),
     yn("associated", "fatigue_pallor", "Fatigue / pallor", "Any easy fatiguability or pallor?", ["fatigue", "tiredness", "weakness", "pallor", "pale", "easy fatiguability"]),
     yn("associated", "cold_intolerance", "Cold intolerance / constipation / weight gain", "Any cold intolerance, constipation, hoarseness, or weight gain (hypothyroidism)?", ["cold intolerance", "constipation", "hoarseness", "weight gain", "lethargy", "hair loss", "thyroid"], { tier: "detailed" }),
-    yn("associated", "diet", "Diet / intake", "What is the diet like — any prolonged poor intake or protein deficiency?", ["diet", "intake", "poor intake", "malnourished", "not eating", "vegetarian", "protein"], { tier: "detailed" }),
+    yn("associated", "diet", "Diet / intake", "What is the diet like — any prolonged poor intake or protein deficiency?", ["diet", "intake", "poor intake", "malnourished", "vegetarian", "protein"], { tier: "detailed" }),
     yn("associated", "joint_pain_rash", "Joint pain / rash / oral ulcers", "Any joint pain, rash, oral ulcers or hair loss (connective tissue disease)?", ["joint pain", "arthralgia", "rash", "oral ulcers", "mouth ulcers", "hair loss", "photosensitivity", "lupus"], { tier: "detailed" }),
     yn("associated", "calf_pain", "Calf pain / unilateral swelling", "Is one calf painful or swollen more than the other?", ["calf pain", "calf tenderness", "one leg", "unilateral", "painful swelling"]),
     // Red flags
-    yn("red_flag", "urine_output", "Reduced urine output", "Has the urine output reduced markedly?", ["urine output", "decreased urine", "reduced urine", "less urine", "oliguria", "anuria", "not passing urine"], { teach: "Reduced or frothy urine with swelling points to the kidney; a normal output points elsewhere." }),
+    yn("red_flag", "urine_output", "Reduced urine output", "Has the urine output reduced markedly?", ["urine output", "decreased urine", "reduced urine", "less urine", "oliguria", "anuria"], { teach: "Reduced or frothy urine with swelling points to the kidney; a normal output points elsewhere." }),
     yn("red_flag", "rest_dyspnoea", "Breathless at rest", "Is the patient breathless at rest?", ["at rest", "unable to speak", "gasping", "severe breathlessness"], { teach: "Swelling with breathlessness at rest or when lying flat points to heart failure and fluid in the lungs." }),
     yn("red_flag", "altered_sensorium", "Drowsiness / confusion", "Any drowsiness or confusion?", ["drowsy", "drowsiness", "confused", "confusion", "altered sensorium", "disoriented"], { teach: "Confusion in an oedematous patient raises uraemia, hepatic encephalopathy and severe hyponatraemia." }),
     yn("red_flag", "chest_pain", "Chest pain", "Any chest pain?", ["chest pain", "pain in chest", "chest discomfort"], { teach: "Chest pain with new swelling of the legs raises a cardiac cause and pulmonary embolism from a leg clot." }),

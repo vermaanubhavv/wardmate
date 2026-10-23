@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, ebem, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LOW BACK PAIN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * LOW BACK PAIN — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Adult medicine / orthopaedic ward, north India. Most back pain is mechanical; the history
  * exists to find the minority that is not. Tuberculous spondylitis is a live differential here
  * in a way it is not in the Anglo-American textbooks. Differentials: mechanical or muscular,
@@ -12,12 +12,12 @@ import { commonHpi, ebem, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, val
  */
 export const lowBackPainV1: HistoryTree = {
   id: "low_back_pain",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Low back pain",
   triggers: ["low back pain", "back pain", "backache", "back ache", "lumbar pain", "pain in back", "kamar dard", "lumbago", "pain in lower back", "sciatica"],
   setting: "Adult medicine / orthopaedic ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     ebem("Clinical assessment of low back pain", 2006, "16498707"),
     MACLEODS,
@@ -43,8 +43,8 @@ export const lowBackPainV1: HistoryTree = {
     yn("red_flag", "trauma_osteoporosis", "Injury / fall / steroids / osteoporosis", "Any fall or injury, long-term steroids, or known thin bones, especially in an older patient?", ["fall", "injury", "trauma", "steroid", "steroids", "osteoporosis", "thin bones", "elderly", "minor fall", "fracture"], { teach: "In an older patient or one on steroids, even a small fall can break a vertebra, and the history is what raises that possibility." }),
     yn("red_flag", "fever_infection", "Fever with back pain / recent infection / injection", "Any fever with the back pain, a recent infection, injection, or procedure on the spine?", ["fever", "infection", "injection", "epidural", "spinal procedure", "abscess", "boil", "intravenous drug", "chills"], { teach: "Fever with focal spinal pain raises infection in the disc or the space around the cord, which spreads during any period of watchful waiting." }),
     yn("red_flag", "cancer_history", "Known cancer / past malignancy", "Any known cancer, or previous treatment for a malignancy?", ["cancer", "malignancy", "tumour", "chemotherapy", "radiotherapy", "breast", "prostate", "lung", "metastasis", "known case"], { teach: "In someone with a past cancer, new back pain is treated as a deposit in the spine until shown otherwise." }),
-    yn("red_flag", "night_pain_unrelieved", "Pain at rest, unrelieved by lying down", "Is the pain present at rest and unrelieved by lying down, or does it wake the patient from sleep?", ["at rest", "unrelieved", "lying down", "wakes from sleep", "night pain", "constant", "no relief", "worse at night"], { teach: "Mechanical pain eases with rest; pain that does not, and that wakes a patient, points away from a mechanical cause." }),
-    yn("red_flag", "age_onset", "First episode under 20 or over 50", "Is this a first episode of back pain in someone under twenty or over fifty?", ["first episode", "under 20", "over 50", "elderly", "young", "new onset", "age", "never before"], { tier: "detailed", teach: "A first back pain at the extremes of age carries a higher chance of a cause other than a strained muscle." }),
+    yn("red_flag", "night_pain_unrelieved", "Pain at rest, unrelieved by lying down", "Is the pain present at rest and unrelieved by lying down, or does it wake the patient from sleep?", ["at rest", "unrelieved", "lying down", "wakes from sleep", "night pain", "constant", "worse at night"], { teach: "Mechanical pain eases with rest; pain that does not, and that wakes a patient, points away from a mechanical cause." }),
+    yn("red_flag", "age_onset", "First episode under 20 or over 50", "Is this a first episode of back pain in someone under twenty or over fifty?", ["first episode", "under 20", "over 50", "elderly", "young", "new onset", "age", "first time"], { tier: "detailed", teach: "A first back pain at the extremes of age carries a higher chance of a cause other than a strained muscle." }),
     IMMUNOCOMPROMISE,
     PREGNANCY,
     yn("exposure", "tb_contact", "TB contact / past TB", "Any past tuberculosis or contact with tuberculosis?", ["tb", "tuberculosis", "koch", "att", "akt", "tb contact", "pott", "spine tb"]),

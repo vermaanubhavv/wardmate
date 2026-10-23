@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BLOOD IN THE URINE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * BLOOD IN THE URINE — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Urology ward, north India. Painless visible haematuria is a urothelial cancer until proven
  * otherwise, and that single rule organises the history. Where in the stream the blood appears
  * localises the source. Differentials: urinary tract infection, stone, bladder or renal
@@ -11,12 +11,12 @@ import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, val, yn } from "@/content/h
  */
 export const haematuriaV1: HistoryTree = {
   id: "haematuria",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Blood in the urine",
   triggers: ["haematuria", "hematuria", "blood in urine", "red urine", "bloody urine", "passing blood in urine", "clots in urine", "cola coloured urine", "peshab me khoon"],
   setting: "Urology ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("blood in the urine"),
@@ -33,7 +33,7 @@ export const haematuriaV1: HistoryTree = {
     yn("associated", "sore_throat_skin_haem", "Recent sore throat or skin infection", "Any sore throat or skin infection in the past few weeks?", ["sore throat", "tonsillitis", "skin infection", "pyoderma", "impetigo", "few weeks"], { tier: "detailed" }),
     yn("associated", "trauma_exercise", "Injury or heavy exertion", "Any injury to the loin or abdomen, or unusually heavy exercise before it started?", ["injury", "trauma", "fall", "blow", "loin", "exercise", "running", "marathon", "exertion"], { tier: "detailed" }),
     // Red flags
-    yn("red_flag", "painless_visible_haematuria", "Visible blood without pain", "Is there visible blood in the urine with no pain at all on passing it?", ["painless", "no pain", "visible", "frank", "bright red", "without burning", "no discomfort"], { teach: "Painless visible blood in the urine is a urothelial cancer until proven otherwise, and the absence of pain is exactly what makes it easy to dismiss." }),
+    yn("red_flag", "painless_visible_haematuria", "Visible blood without pain", "Is there visible blood in the urine with no pain at all on passing it?", ["painless", "visible", "frank", "bright red"], { teach: "Painless visible blood in the urine is a urothelial cancer until proven otherwise, and the absence of pain is exactly what makes it easy to dismiss." }),
     yn("red_flag", "age_smoking", "Age over forty, or a tobacco user", "Is the patient over forty, or a smoker or tobacco user, and for how many years?", ["over forty", "over fifty", "age", "smoker", "tobacco", "bidi", "years", "chewing"], { teach: "Age and tobacco are the strongest risks for bladder cancer, and together with painless bleeding they set the pre-test question." }),
     yn("red_flag", "clot_retention_red", "Unable to pass urine because of clots", "Is the patient unable to pass urine, with a painful full lower abdomen?", ["cannot pass", "retention", "clots", "full bladder", "painful", "lower abdomen", "blocked"], { teach: "Clots that block the outflow turn bleeding into retention, which needs relieving before anything else is considered." }),
     yn("red_flag", "ongoing_heavy_bleeding", "Heavy or continuing bleeding", "Is the urine heavily blood-stained every time, with giddiness, breathlessness or tiredness?", ["heavy", "every time", "continuous", "giddiness", "breathless", "tiredness", "pale", "clots"], { teach: "Continuous heavy urinary bleeding can drop the haemoglobin substantially, and the systemic symptoms tell how much has been lost." }),

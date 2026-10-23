@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * FEVER IN A PATIENT ON CHEMOTHERAPY — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * FEVER IN A PATIENT ON CHEMOTHERAPY — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Medical oncology ward, north India. Fever in the days after chemotherapy is treated as
  * neutropenic until the count says otherwise, because the usual signs of infection are absent
  * when there are no neutrophils to make them. The single most decision-changing number in this
@@ -12,12 +12,12 @@ import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, rce, val, yn } from 
  */
 export const febrileNeutropeniaV1: HistoryTree = {
   id: "febrile_neutropenia",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Fever on chemotherapy",
   triggers: ["fever on chemotherapy", "febrile neutropenia", "fever after chemo", "neutropenic fever", "fever post chemo", "fever after cycle", "low counts fever", "chemo fever"],
   setting: "Medical oncology ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("Does this patient have clubbing?", 2001, "11466101"),
     MACLEODS,
@@ -40,7 +40,7 @@ export const febrileNeutropeniaV1: HistoryTree = {
     // Red flags
     yn("red_flag", "neutropenic_window", "Fever within three weeks of chemotherapy", "Did the fever begin within three weeks of the last chemotherapy, particularly between day seven and day fourteen?", ["within three weeks", "day seven", "day ten", "day fourteen", "after chemo", "nadir", "recently given"], { teach: "Fever in the days after chemotherapy is treated as neutropenic until the count is known, because the counts fall lowest in that window." }),
     yn("red_flag", "hypotension_onc", "Giddiness, cold peripheries or low blood pressure", "Any giddiness, cold hands and feet, drowsiness, or a recorded low blood pressure?", ["giddiness", "cold", "peripheries", "drowsy", "low bp", "hypotension", "confused", "clammy", "fast pulse"], { teach: "With no neutrophils to make pus or redness, a falling blood pressure can be the first outward sign that infection has become overwhelming." }),
-    yn("red_flag", "no_localising_signs", "Fever with no obvious source", "Is there fever with no cough, no burning urine, no rash, and nothing obviously wrong anywhere?", ["no source", "nothing found", "no localising", "only fever", "no other symptom"], { teach: "The absence of any focus is itself the point: neutropenic patients cannot mount the inflammation that normally shows where an infection lies." }),
+    yn("red_flag", "no_localising_signs", "Fever with no obvious source", "Is there fever with no cough, no burning urine, no rash, and nothing obviously wrong anywhere?", ["unknown source", "source unclear", "nothing found", "unexplained fever", "only fever", "fever only"], { teach: "The absence of any focus is itself the point: neutropenic patients cannot mount the inflammation that normally shows where an infection lies." }),
     yn("red_flag", "line_signs", "Redness or pain over the line", "Is the line site red, tender, swollen or discharging, or does fever spike when the line is flushed?", ["line", "port", "red", "tender", "swollen", "discharge", "pus", "spikes when flushed", "tunnel"], { teach: "A line is both a route in and a place where organisms hide, and fever timed to flushing points straight at it." }),
     yn("red_flag", "severe_mucositis", "Unable to eat or drink because of mouth pain", "Is the mouth so sore that eating, drinking or swallowing saliva is not possible?", ["cannot eat", "cannot drink", "cannot swallow", "severe", "ulcers", "mucositis", "drooling", "pain"], { teach: "A broken mucosal lining is a common route for gut organisms into the blood, and it also stops the patient maintaining their own fluid intake." }),
     yn("red_flag", "perianal_pain", "Pain around the back passage", "Any pain, swelling or discomfort around the back passage, especially on sitting?", ["perianal", "back passage", "pain on sitting", "swelling", "tender", "discomfort", "fissure"], { teach: "A perianal focus is easily missed and is specifically looked for in neutropenia, where it can seed the blood without forming an abscess." }),

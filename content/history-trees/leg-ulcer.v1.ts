@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, ebem, HAMILTON_BAILEY, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LEG ULCER / NON-HEALING WOUND — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * LEG ULCER / NON-HEALING WOUND — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical ward, north India. Site, pain and the state of the circulation separate most of
  * this list: an ulcer above the medial malleolus in a heavy aching leg is venous, a painful
  * punched-out ulcer on the toes with rest pain is arterial, and a painless ulcer under the
@@ -12,12 +12,12 @@ import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, ebem, HAMILTON_BA
  */
 export const legUlcerV1: HistoryTree = {
   id: "leg_ulcer",
-  version: "1.4.0",
+  version: "1.5.0",
   complaint: "Leg ulcer / non-healing wound",
   triggers: ["leg ulcer", "ulcer", "non healing wound", "wound not healing", "foot ulcer", "diabetic foot", "sore on leg", "wound on foot", "chronic ulcer", "ghaav", "gangrene", "blackening of toes"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     DAS_CLINICAL_SURGERY,
     HAMILTON_BAILEY,
@@ -51,7 +51,7 @@ export const legUlcerV1: HistoryTree = {
     yn("red_flag", "critical_ischaemia", "Pain in the foot at rest, relieved by hanging the leg down", "Is there pain in the foot at rest, worse in bed at night and relieved by hanging the leg over the edge?", ["rest pain", "at night", "in bed", "hanging", "over the edge", "sits up", "relieved by dependency", "cannot sleep", "severe", "sleeps in a chair", "sleeps sitting up", "foot out of bed", "bedclothes"], { teach: "Foot pain at rest that eases when the leg hangs down marks a circulation that can no longer supply the foot even at rest." }),
     yn("red_flag", "probing_to_bone", "Ulcer deep enough to see or feel bone", "Is the ulcer deep enough that bone or tendon can be seen or felt at its base?", ["bone visible", "bone", "tendon", "deep", "probe", "touches bone", "exposed", "cavity"], { teach: "An ulcer that reaches bone strongly suggests the bone itself is infected, which changes both the treatment duration and the surgery." }),
     yn("exposure", "diabetes", "Diabetes", "Is the patient diabetic, for how many years, and how well controlled?", ["diabetes", "diabetic", "sugar", "years", "controlled", "uncontrolled", "insulin", "hba1c"], { teach: "In diabetes an ulcer can be painless, deep and infected while looking unremarkable, so the usual warning signs arrive late or not at all." }),
-    yn("red_flag", "sudden_cold_painful_limb", "Suddenly cold, pale, painful limb", "Did the limb suddenly become cold, pale, numb and painful?", ["suddenly", "cold", "pale", "numb", "painful", "cannot move", "no pulse", "white", "acute"], { teach: "A suddenly cold pale painful limb marks an arterial blockage, where the tissue tolerates only a few hours." }),
+    yn("red_flag", "sudden_cold_painful_limb", "Suddenly cold, pale, painful limb", "Did the limb suddenly become cold, pale, numb and painful?", ["suddenly", "cold", "pale", "numb", "painful", "cannot move", "pulseless", "white", "acute"], { teach: "A suddenly cold pale painful limb marks an arterial blockage, where the tissue tolerates only a few hours." }),
     yn("red_flag", "chronic_ulcer_change", "Long-standing ulcer or scar that has changed", "Has an ulcer or scar present for years recently changed — growing, bleeding, or developing raised rolled edges?", ["years", "long standing", "scar", "changed", "growing", "bleeding", "rolled", "everted", "raised", "burn scar", "marjolin"], { teach: "A long-standing ulcer or burn scar that starts to grow or bleed raises a cancer arising within it, which the chronicity itself disguises." }),
     IMMUNOCOMPROMISE,
     yn("exposure", "smoking", "Smoking", "Any smoking or tobacco use, and for how many years?", ["smoking", "smoker", "tobacco", "bidi", "cigarettes", "years", "packs", "chewing"]),
@@ -66,7 +66,7 @@ export const legUlcerV1: HistoryTree = {
     yn("exposure", "past_syphilis", "Past syphilis / genital sore", "Has the patient ever had syphilis or a genital sore?", ["syphilis", "genital sore", "chancre", "vdrl", "sexually transmitted", "std", "no genital sore"], { tier: "detailed", teach: "Das lists syphilis among the diseases behind an ulcer; a gummatous ulcer typically lies over a bone close to the skin such as the tibia." }),
     // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
     yn("hpi", "pain_before_ulcer", "Pain before the ulcer appeared", "Was the spot painful before the skin broke down into an ulcer?", ["pain before", "painful before", "pain first", "pain then ulcer", "tender spot", "ulcer came first", "no pain before"], { tier: "detailed", teach: "Hamilton Bailey notes that vasculitic ulcers can be very painful and that the pain may come before the ulcer, which helps separate them from the less painful venous and neuropathic ulcers." }),
-    yn("exposure", "foot_self_check", "Able to check own feet", "Can the patient see and reach their own feet to check them, or does someone else look at the feet regularly?", ["poor eyesight", "cannot see", "weak vision", "cannot reach feet", "checks feet daily", "family checks", "never checks", "no one checks"], { tier: "detailed", teach: "Hamilton Bailey points out that neuropathic ulcers are painless and often out of sight on the sole, and that poor vision in diabetes makes them easier to miss, so whether anyone looks at the feet explains a late presentation." }),
+    yn("exposure", "foot_self_check", "Able to check own feet", "Can the patient see and reach their own feet to check them, or does someone else look at the feet regularly?", ["poor eyesight", "cannot see", "weak vision", "cannot reach feet", "checks feet daily", "family checks"], { tier: "detailed", teach: "Hamilton Bailey points out that neuropathic ulcers are painless and often out of sight on the sole, and that poor vision in diabetes makes them easier to miss, so whether anyone looks at the feet explains a late presentation." }),
     yn("hpi", "bandage_plaster_pressure", "Bandage, plaster or splint over the spot", "Was a tight bandage, plaster cast or splint pressing on the place where the ulcer formed?", ["bandage", "tight bandage", "plaster", "cast", "splint", "pressed on", "no bandage"], { tier: "detailed", teach: "Hamilton Bailey describes a bandage over a tendon at the ankle stopping skin blood flow as readily as lying in bed, so a recent dressing or cast is asked about when an ulcer sits over a tendon or bony point." }),
     yn("exposure", "radiotherapy_site", "Radiotherapy to the area", "Has the area of the ulcer ever been treated with radiotherapy?", ["radiotherapy", "radiation", "radiation treatment", "cancer treatment", "no radiotherapy"], { tier: "detailed", teach: "Hamilton Bailey lists chronic radiation damage, alongside a chronic ulcer or scar, as ground in which a squamous carcinoma can arise, so earlier radiotherapy to the site matters when a leg ulcer will not heal." }),
     // Schwartz's Principles of Surgery, 11th ed. (docs/surgical-history.md §12)

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PARSONS_EYE, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * RED EYE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * RED EYE — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Eye ward / casualty, north India. Most red eyes are conjunctivitis; the history exists to
  * pull out the four that threaten sight — angle closure, keratitis, uveitis and penetrating
  * injury — and the one question that separates them is whether vision has dropped.
@@ -12,12 +12,12 @@ import { commonHpi, HUTCHISONS, MACLEODS, PARSONS_EYE, val, yn } from "@/content
  */
 export const redEyeV1: HistoryTree = {
   id: "red_eye",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Red eye",
   triggers: ["red eye", "redness of eye", "eye redness", "conjunctivitis", "pink eye", "watering eye", "eye pain", "eye discharge", "aankh lal", "sore eye", "irritation in eye"],
   setting: "Eye ward and casualty, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [PARSONS_EYE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("redness of the eye"),
@@ -37,7 +37,7 @@ export const redEyeV1: HistoryTree = {
     yn("red_flag", "vision_drop", "Vision dropped in the red eye", "Has vision in the red eye dropped, and can the patient count fingers with the other eye closed?", ["vision dropped", "decreased vision", "cannot count fingers", "blurred badly", "only light", "vision lost", "worse than before"], { teach: "Vision dropping in a red eye moves it out of the conjunctivitis group entirely." }),
     yn("red_flag", "white_spot_cornea", "White spot on the black of the eye", "Is there a white or grey spot on the black part of the eye?", ["white spot", "grey spot", "opacity", "on the black", "cornea", "ulcer", "patch", "spreading"], { teach: "A white spot on the cornea marks an ulcer, which scars the visual axis when missed." }),
     yn("red_flag", "penetrating_injury", "Injury with something sharp / fluid coming out", "Was the eye struck by something sharp or fast moving, and did any fluid or dark tissue come out?", ["sharp", "nail", "knife", "wire", "high speed", "hammering", "fluid came out", "dark tissue", "pupil distorted", "soft eye"], { teach: "A sharp or high-speed injury with fluid escaping raises an open globe, where pressing on the eye causes further loss." }),
-    yn("red_flag", "chemical_exposure", "Chemical or lime in the eye", "Did any chemical, lime, acid or alkali enter the eye, and was it washed with water?", ["chemical", "lime", "chuna", "acid", "alkali", "detergent", "washed", "not washed", "immediately", "burning"], { teach: "A chemical splash keeps damaging the surface until washed out, so the time of the splash matters more than any other history." }),
+    yn("red_flag", "chemical_exposure", "Chemical or lime in the eye", "Did any chemical, lime, acid or alkali enter the eye, and was it washed with water?", ["chemical", "lime", "chuna", "acid", "alkali", "detergent", "washed", "unwashed", "immediately", "burning"], { teach: "A chemical splash keeps damaging the surface until washed out, so the time of the splash matters more than any other history." }),
     yn("red_flag", "systemic_unwell_rash", "Fever, rash or facial blisters", "Any fever, rash, or painful blisters on the forehead, nose or around the eye?", ["fever", "rash", "blisters", "vesicles", "forehead", "tip of nose", "shingles", "herpes", "one side of face"], { teach: "Blisters on the forehead or the tip of the nose with a red eye raise involvement of the nerve that also supplies the cornea." }),
   ],
   differentials: [

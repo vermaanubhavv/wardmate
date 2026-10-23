@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, GHAI_PAEDIATRICS, HUTCHISONS, IMNCI, MACLEODS, paedBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ABDOMINAL PAIN IN A CHILD — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * ABDOMINAL PAIN IN A CHILD — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Paediatric ward, north India. Most abdominal pain in children is functional, constipation or
  * a passing infection; the history exists to find the few who need a surgeon or a drip today.
  * Where the pain started and where it is now, green vomiting, red-currant stool, a swollen
@@ -14,12 +14,12 @@ import { commonHpi, GHAI_PAEDIATRICS, HUTCHISONS, IMNCI, MACLEODS, paedBackgroun
  */
 export const paediatricAbdominalPainV1: HistoryTree = {
   id: "paediatric_abdominal_pain",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Abdominal pain in a child",
   triggers: ["abdominal pain in child", "child abdominal pain", "paediatric abdominal pain", "pain abdomen child", "child stomach pain", "tummy pain", "tummy ache", "pet dard", "pet me dard", "recurrent abdominal pain", "colic child"],
   setting: "Paediatric ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [GHAI_PAEDIATRICS, IMNCI, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("abdominal pain"),
@@ -39,12 +39,12 @@ export const paediatricAbdominalPainV1: HistoryTree = {
     // Red flags
     yn("red_flag", "bilious_vomiting", "Green vomiting", "Is the vomit green or yellow-green?", ["green vomit", "bilious", "yellow green vomit", "green", "bile"], { teach: "Green vomiting in a child raises bowel obstruction or twisting of the gut, and is treated as a surgical question until shown otherwise." }),
     yn("red_flag", "red_currant_stool", "Blood or jelly in the stool", "Has the child passed blood, or dark red jelly-like stool?", ["blood in stool", "jelly", "red currant", "red jelly", "blood and mucus", "bloody stool", "dark red"], { teach: "Bouts of screaming with pallor and a jelly-like bloody stool in an infant or toddler raise intussusception, where delay costs bowel." }),
-    yn("red_flag", "constant_pain_movement", "Constant pain worse on moving or coughing", "Is the pain constant and made worse by moving, coughing, walking or going over bumps?", ["worse on moving", "worse on coughing", "cannot walk", "limping", "walks bent", "bumps", "lies still", "does not want to move", "jumping hurts"], { teach: "Pain worse on movement suggests the lining of the abdomen is inflamed, which raises appendicitis and peritonitis over the benign causes." }),
+    yn("red_flag", "constant_pain_movement", "Constant pain worse on moving or coughing", "Is the pain constant and made worse by moving, coughing, walking or going over bumps?", ["worse on moving", "worse on coughing", "cannot walk", "limping", "walks bent", "bumps", "lies still", "refuses to move", "jumping hurts"], { teach: "Pain worse on movement suggests the lining of the abdomen is inflamed, which raises appendicitis and peritonitis over the benign causes." }),
     yn("red_flag", "testicular_pain", "Pain or swelling in the testis", "In a boy, is there pain, swelling or redness of the testis or scrotum?", ["testis", "testicle", "scrotum", "scrotal pain", "swollen testis", "balls", "groin pain", "andkosh"], { teach: "Testicular torsion often presents as lower abdominal pain in a boy who is shy to mention the scrotum, and the testis has only hours." }),
     yn("red_flag", "thirst_deep_breathing", "Thirst, weight loss or deep breathing", "Has the child been very thirsty, passing a lot of urine, losing weight, or breathing deeply and fast?", ["very thirsty", "drinks a lot", "passing a lot of urine", "bed wetting", "weight loss", "deep breathing", "sighing breathing", "fruity smell", "sugar"], { teach: "Abdominal pain with vomiting, thirst and deep breathing is a common first presentation of diabetic ketoacidosis in a child." }),
-    yn("red_flag", "distension_no_stool", "Swollen abdomen and no stool or wind", "Is the abdomen swollen or tight, with no stool or wind passed?", ["distended", "swollen abdomen", "tight abdomen", "not passing stool", "no wind", "no flatus", "pet phula"], { teach: "A distended abdomen with nothing passed raises obstruction, which is a surgical question rather than constipation." }),
-    yn("red_flag", "drowsy_pale", "Drowsy, pale or floppy", "Is the child unusually drowsy, pale, floppy, or not responding normally?", ["drowsy", "lethargic", "pale", "floppy", "not responding", "limp", "sleepy between bouts"], { teach: "Drowsiness and pallor with abdominal pain are IMNCI danger signs and raise shock, intussusception and ketoacidosis." }),
-    yn("red_flag", "organic_features", "Pain that wakes, or weight loss", "Does the pain wake the child from sleep, or is there weight loss, poor growth, or blood in the stool with recurrent pain?", ["wakes from sleep", "wakes at night", "weight loss", "poor growth", "not growing", "blood in stool"], { tier: "detailed", teach: "In recurrent pain, waking from sleep, weight loss or bleeding lowers the likelihood of a functional cause and widens the search." }),
+    yn("red_flag", "distension_no_stool", "Swollen abdomen and no stool or wind", "Is the abdomen swollen or tight, with no stool or wind passed?", ["distended", "swollen abdomen", "tight abdomen", "constipated", "obstipation", "absolute constipation", "pet phula"], { teach: "A distended abdomen with nothing passed raises obstruction, which is a surgical question rather than constipation." }),
+    yn("red_flag", "drowsy_pale", "Drowsy, pale or floppy", "Is the child unusually drowsy, pale, floppy, or not responding normally?", ["drowsy", "lethargic", "pale", "floppy", "unresponsive", "limp", "sleepy between bouts"], { teach: "Drowsiness and pallor with abdominal pain are IMNCI danger signs and raise shock, intussusception and ketoacidosis." }),
+    yn("red_flag", "organic_features", "Pain that wakes, or weight loss", "Does the pain wake the child from sleep, or is there weight loss, poor growth, or blood in the stool with recurrent pain?", ["wakes from sleep", "wakes at night", "weight loss", "poor growth", "faltering growth", "blood in stool"], { tier: "detailed", teach: "In recurrent pain, waking from sleep, weight loss or bleeding lowers the likelihood of a functional cause and widens the search." }),
     yn("red_flag", "abdominal_injury", "Injury to the abdomen", "Has there been a fall, a blow, or a bicycle handlebar injury to the abdomen?", ["fall", "injury", "blow", "hit", "handlebar", "cycle", "trauma", "chot"], { teach: "A handlebar or fall injury may be forgotten by the time the pain comes, and bleeding inside the abdomen can be slow to show." }),
     // Background and exposures
     yn("exposure", "previous_episodes_surgery", "Previous episodes or abdominal surgery", "Has the child had similar pain before that needed admission, or any operation on the abdomen?", ["previous episode", "admitted before", "operation", "surgery", "operated", "same pain before"], { tier: "detailed" }),

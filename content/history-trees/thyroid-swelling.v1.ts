@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, PREGNANCY, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * NECK SWELLING (THYROID) — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * NECK SWELLING (THYROID) — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical ward, north India. The generic `lump` tree also fires on a neck swelling and
  * the card is built to show both; this one adds what the texts ask only of a thyroid — whether
  * it moves on swallowing, what it presses on, and whether the gland is working too hard or too
@@ -11,12 +11,12 @@ import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, 
  */
 export const thyroidSwellingV1: HistoryTree = {
   id: "thyroid_swelling",
-  version: "1.3.0",
+  version: "1.4.0",
   complaint: "Neck swelling (thyroid)",
   triggers: ["thyroid", "thyroid swelling", "goitre", "goiter", "swelling in front of neck", "swelling in the neck", "neck swelling", "front of neck", "gale me sujan"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DAS_CLINICAL_SURGERY, BROWSE, BAILEY_LOVE, HAMILTON_BAILEY, SABISTON, MACLEODS],
   slots: [
     ...commonHpi("neck swelling"),
@@ -32,8 +32,8 @@ export const thyroidSwellingV1: HistoryTree = {
     yn("associated", "menstrual_change", "Change in the periods", "Has there been any change in the periods since the swelling appeared?", ["periods", "menstrual", "heavy periods", "scanty", "irregular", "stopped", "no change in periods"], { tier: "detailed" }),
     yn("associated", "other_neck_lumps", "Other lumps in the neck", "Are there any other lumps in the neck, above the collarbone, or in the armpit?", ["other lumps", "nodes", "lymph nodes", "above the collarbone", "supraclavicular", "axilla", "multiple swellings", "side of the neck"]),
     // Red flags
-    yn("red_flag", "rapid_growth_hard", "Rapid growth, hard or fixed", "Has the swelling grown quickly over weeks or a few months?", ["rapid growth", "grew quickly", "rapidly increasing", "hard", "stony hard", "fixed", "not moving", "irregular"], { teach: "Rapid growth, especially in an older patient or in a gland already affected by thyroiditis, asks about anaplastic cancer or lymphoma, which can threaten the airway within weeks." }),
-    yn("red_flag", "voice_change", "Change in the voice", "Has the voice changed or become hoarse since the swelling appeared?", ["hoarse", "hoarseness", "voice change", "voice became", "weak voice", "cannot shout", "no voice change", "weak cough", "bovine cough", "cough not effective"], { teach: "A voice that changes as a neck swelling grows asks about the nerve that runs beside the gland." }),
+    yn("red_flag", "rapid_growth_hard", "Rapid growth, hard or fixed", "Has the swelling grown quickly over weeks or a few months?", ["rapid growth", "grew quickly", "rapidly increasing", "hard", "stony hard", "fixed", "irregular"], { teach: "Rapid growth, especially in an older patient or in a gland already affected by thyroiditis, asks about anaplastic cancer or lymphoma, which can threaten the airway within weeks." }),
+    yn("red_flag", "voice_change", "Change in the voice", "Has the voice changed or become hoarse since the swelling appeared?", ["hoarse", "hoarseness", "voice change", "voice became", "weak voice", "cannot shout", "no voice change", "weak cough", "bovine cough"], { teach: "A voice that changes as a neck swelling grows asks about the nerve that runs beside the gland." }),
     yn("red_flag", "breathing_difficulty", "Difficulty breathing or noisy breathing", "Is there any difficulty breathing, noisy breathing, or a sense of the throat closing?", ["difficulty breathing", "noisy breathing", "stridor", "throat closing", "choking", "breathless at rest", "cannot breathe"], { teach: "Noisy or difficult breathing with a neck swelling is asked first because the airway is the one thing that cannot wait." }),
     yn("exposure", "neck_radiation", "Previous radiation to the neck", "Was there any radiation treatment to the neck or chest, especially in childhood?", ["radiation", "radiotherapy", "sikai", "treatment to the neck", "in childhood", "no radiation"], { teach: "Radiation to the neck, particularly early in life, changes what a thyroid swelling appearing years later can be." }),
     yn("exposure", "family_thyroid_cancer", "Family history of thyroid cancer or neck lumps", "Any thyroid cancer, or an operation on the thyroid, in a blood relative?", ["family history", "mother", "father", "sister", "brother", "thyroid cancer", "thyroid operation", "no family history"], { teach: "A thyroid cancer in a blood relative raises the pre-test question for a new nodule." }),

@@ -95,9 +95,8 @@ describe("history tree schema", () => {
 });
 
 describe("fever tree content", () => {
-  it("is clinician-reviewed, carries no doses, and names its setting", () => {
-    expect(feverV1.reviewStatus).toBe("reviewed");
-    expect(feverV1.reviewedBy).toBeTruthy();
+  // Review state is pinned for every tree in trees.test.ts.
+  it("carries no doses and names its setting", () => {
     expect(feverV1.setting).toMatch(/north India/);
     const text = JSON.stringify(feverV1);
     expect(text).not.toMatch(/\d+\s?(mg|ml|mcg)\b/i);

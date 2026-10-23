@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ABDOMINAL DISTENSION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * ABDOMINAL DISTENSION — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical / medicine ward, north India. The classical "five Fs": fluid, flatus, faeces,
  * fat, foetus (and a mass). Differentials: ascites (portal hypertension, tuberculous, malignant,
  * cardiac, nephrotic), intestinal obstruction, organomegaly or a mass, urinary retention,
@@ -10,12 +10,12 @@ import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISO
  */
 export const abdominalDistensionV1: HistoryTree = {
   id: "abdominal_distension",
-  version: "1.3.0",
+  version: "1.4.0",
   complaint: "Abdominal distension",
   triggers: ["abdominal distension", "distension of abdomen", "distended abdomen", "swelling of abdomen", "abdominal swelling", "bloating", "bloated", "increased abdominal girth", "swollen abdomen", "belly swelling"],
   setting: "Adult surgical / medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
   slots: [
     ...commonHpi("abdominal distension"),
@@ -31,22 +31,22 @@ export const abdominalDistensionV1: HistoryTree = {
     yn("associated", "menstrual_pregnancy", "Missed periods / menstrual change", "In a woman, any missed periods or change in periods?", ["missed periods", "amenorrhoea", "lmp", "pregnant", "menstrual", "heavy periods"], { tier: "detailed" }),
     yn("associated", "gas_belching", "Belching / passing gas / food-related", "Is it related to food, with belching, passing gas, or intolerance of milk or wheat?", ["belching", "gas", "flatulence", "milk", "wheat", "lactose", "after meals"], { tier: "detailed" }),
     // Red flags
-    yn("red_flag", "obstruction", "Absolute constipation with vomiting", "Has the patient stopped passing both stool and flatus?", ["no stool", "no flatus", "absolute constipation", "obstipation"], { teach: "A swollen abdomen with vomiting and no stool or flatus is the pattern of obstruction, where timing decides the outcome." }),
+    yn("red_flag", "obstruction", "Absolute constipation with vomiting", "Has the patient stopped passing both stool and flatus?", ["absolute constipation", "obstipation"], { teach: "A swollen abdomen with vomiting and no stool or flatus is the pattern of obstruction, where timing decides the outcome." }),
     yn("red_flag", "acute_pain_fever", "Severe pain with fever", "Is there severe abdominal pain with fever or a rigid abdomen?", ["severe pain", "peritonitis", "worst pain"], { teach: "Fever with sudden severe pain and a swollen abdomen asks about infection of the fluid or a hollow organ leak." }),
     yn("red_flag", "gi_bleed", "Vomiting blood / black stools", "Any vomiting of blood or black stools?", ["haematemesis", "vomiting blood", "melaena", "black stools", "hematemesis", "coffee ground"], { teach: "Vomiting blood with a swollen abdomen asks about portal hypertension and varices." }),
     yn("red_flag", "confusion", "Confusion / drowsiness", "Any confusion, day-night reversal, or drowsiness?", ["confusion", "drowsy", "day night reversal", "altered sensorium", "irrelevant talk", "sleep reversal"], { teach: "Confusion with a swollen abdomen in liver disease points to a brain effect of liver failure." }),
     yn("associated", "weight_loss_mass", "Lump felt / early fullness", "Has the patient felt a lump in the abdomen, or felt full after a few mouthfuls?", ["lump", "mass", "early satiety", "full after", "hard lump"], { teach: "Weight loss with progressive swelling raises a mass or a malignancy-related collection." }),
-    yn("red_flag", "urinary_retention", "Not passing urine", "Has the patient not passed urine for many hours, with lower abdominal fullness?", ["not passing urine", "retention", "no urine", "lower abdominal fullness", "full bladder"], { teach: "A tense lower swelling with no urine raises a bladder question before an abdominal one." }),
+    yn("red_flag", "urinary_retention", "Not passing urine", "Has the patient not passed urine for many hours, with lower abdominal fullness?", ["urinary retention", "retention", "lower abdominal fullness", "full bladder"], { teach: "A tense lower swelling with no urine raises a bladder question before an abdominal one." }),
     PREGNANCY,
     yn("exposure", "alcohol_liver", "Alcohol / hepatitis / liver disease", "Any alcohol, past hepatitis, or known liver disease?", ["alcohol", "hepatitis", "liver disease", "cirrhosis", "jaundice", "hbv", "hcv", "drinker"]),
     yn("exposure", "tb_contact", "TB contact / past TB", "Any past tuberculosis or contact with tuberculosis?", ["tb", "tuberculosis", "koch", "att", "akt", "tb contact"]),
     yn("exposure", "cardiac_renal", "Known heart or kidney disease", "Any known heart failure, kidney disease, or nephrotic syndrome?", ["heart failure", "cardiac", "kidney disease", "ckd", "nephrotic", "renal", "protein in urine"], { tier: "detailed" }),
     yn("exposure", "previous_surgery", "Previous abdominal surgery", "Any previous abdominal surgery or hernia?", ["surgery", "operation", "laparotomy", "hernia", "adhesions"], { tier: "detailed" }),
     // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
-    yn("red_flag", "pain_became_constant", "Colicky pain turned constant", "Has colicky pain changed to a constant, burning pain?", ["became constant", "now constant", "continuous pain", "burning pain", "was colicky", "no longer comes and goes"], { teach: "Das warns that colic of obstruction turning constant is the change seen when the blood supply of the gut is threatened." }),
+    yn("red_flag", "pain_became_constant", "Colicky pain turned constant", "Has colicky pain changed to a constant, burning pain?", ["became constant", "now constant", "continuous pain", "burning pain", "was colicky"], { teach: "Das warns that colic of obstruction turning constant is the change seen when the blood supply of the gut is threatened." }),
     yn("red_flag", "blood_mucus_stool", "Blood and mucus per rectum", "Any fresh blood or mucus passed per rectum with the distension?", ["blood per rectum", "blood and mucus", "mucus in stool", "red currant jelly", "jelly like stool", "bloody stool", "no blood in stool"], { teach: "Das reads blood and mucus with obstructive pain as a pointer to intussusception or a strangulated or thrombosed gut." }),
     val("hpi", "vomiting_timing", "When vomiting began", "Did vomiting start together with the pain, some hours later, or only after the belly swelled?", ["with the pain", "same time", "hours later", "later", "after distension", "late", "no vomiting"], { tier: "detailed", teach: "Das uses the timing of vomiting against pain to judge how high in the gut a blockage lies." }),
-    yn("hpi", "laxative_escalation", "Needing more and more laxatives", "Has the patient needed more and more laxative to open the bowels?", ["more laxatives", "increasing laxatives", "purgatives", "needs laxative daily", "laxative not working", "no laxatives"], { tier: "detailed", teach: "Das names constipation needing ever more purgatives as the presenting symptom of a narrowing growth in the left colon." }),
+    yn("hpi", "laxative_escalation", "Needing more and more laxatives", "Has the patient needed more and more laxative to open the bowels?", ["more laxatives", "increasing laxatives", "purgatives", "needs laxative daily", "laxatives failing", "no laxatives"], { tier: "detailed", teach: "Das names constipation needing ever more purgatives as the presenting symptom of a narrowing growth in the left colon." }),
     // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
     yn("exposure", "previous_cancer", "Earlier cancer", "Has the patient ever been treated for a cancer, and where?", ["cancer", "malignancy", "treated for cancer", "chemotherapy", "radiotherapy", "operated for cancer", "tumour", "no cancer"], { teach: "Hamilton Bailey asks about a known cancer because spread to the peritoneum explains new fluid or a blocked bowel in such a patient." }),
     yn("associated", "postmenopausal_bleeding", "Bleeding after menopause", "In a woman past menopause, has there been any bleeding per vaginum?", ["postmenopausal bleeding", "bleeding after menopause", "bleeding per vaginum", "spotting", "no bleeding after menopause"], { tier: "detailed", teach: "Hamilton Bailey pairs bleeding after menopause, a growing girth and weight loss as the history that points toward a pelvic cancer." }),

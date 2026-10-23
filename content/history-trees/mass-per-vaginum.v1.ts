@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, SHAW_GYNAECOLOGY, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SOMETHING COMING OUT PER VAGINUM — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * SOMETHING COMING OUT PER VAGINUM — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Obstetrics and gynaecology ward, north India. Whether the mass goes back, what brings it
  * down, and whether it followed a delivery split the differential early; bladder and bowel
  * symptoms and the obstetric history fill in the rest. Differentials: uterovaginal prolapse
@@ -12,12 +12,12 @@ import { commonHpi, HUTCHISONS, MACLEODS, SHAW_GYNAECOLOGY, val, yn } from "@/co
  */
 export const massPerVaginumV1: HistoryTree = {
   id: "mass_per_vaginum",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Something coming out per vaginum",
   triggers: ["something coming out per vaginum", "something coming out pv", "mass per vaginum", "mass coming out per vaginum", "mass pv", "something coming down", "uterine prolapse", "prolapse uterus", "utero vaginal prolapse", "procidentia", "bulge in vagina", "bachedani bahar aana", "bachedani nikalna"],
   setting: "Obstetrics and gynaecology ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [SHAW_GYNAECOLOGY, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("something coming out per vaginum"),
@@ -32,7 +32,7 @@ export const massPerVaginumV1: HistoryTree = {
     yn("associated", "discharge_mass", "Discharge from the mass", "Any discharge, bleeding, or an ulcer on the part that comes out?", ["discharge", "bleeding", "ulcer", "sore", "rubbing", "blood stained", "wet"]),
     yn("associated", "side_swelling_mass", "Swelling at the side of the opening", "Is the swelling at the side of the vaginal opening rather than coming down from inside?", ["side", "labia", "lip", "opening", "one side", "cyst", "bartholin"], { tier: "detailed" }),
     // Red flags
-    yn("red_flag", "urinary_retention_mass", "Unable to pass urine", "Is she unable to pass urine at all, or passing only small amounts with a full, painful lower abdomen?", ["unable to pass urine", "not passed urine", "retention", "full bladder", "painful lower abdomen", "dribbling"], { teach: "A large prolapse can kink the urethra and ureters, so retention and falling urine output are asked about, not assumed." }),
+    yn("red_flag", "urinary_retention_mass", "Unable to pass urine", "Is she unable to pass urine at all, or passing only small amounts with a full, painful lower abdomen?", ["unable to pass urine", "urinary retention", "retention", "full bladder", "painful lower abdomen", "dribbling"], { teach: "A large prolapse can kink the urethra and ureters, so retention and falling urine output are asked about, not assumed." }),
     yn("red_flag", "irreducible_painful", "Stuck out and painful", "Is the mass now stuck out, swollen, painful, or dark in colour?", ["stuck", "cannot push back", "swollen", "painful", "dark", "black", "blue", "congested"], { teach: "A prolapse that cannot be pushed back can become congested and ulcerated, and a dark painful mass raises concern for its blood supply." }),
     yn("red_flag", "after_delivery_mass", "Mass appearing after delivery", "Did the mass appear during or soon after a delivery, with heavy bleeding, severe pain, or fainting?", ["after delivery", "during delivery", "after placenta", "heavy bleeding", "severe pain", "fainted", "collapse", "home delivery", "dai"], { teach: "A mass appearing just after delivery with shock out of proportion to the bleeding raises acute uterine inversion, which is time critical." }),
     yn("red_flag", "postmenopausal_bleed_mass", "Bleeding after menopause or foul discharge", "Any bleeding after the menopause, bleeding after intercourse, or foul blood-stained discharge?", ["postmenopausal bleeding", "after menopause", "after intercourse", "post coital", "foul", "blood stained", "offensive"], { teach: "A growth rather than a prolapse is suggested by bleeding after the menopause or intercourse, and a cervix is looked at rather than assumed benign." }),

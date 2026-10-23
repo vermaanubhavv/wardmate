@@ -3,7 +3,7 @@ import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, 
 
 /**
  * SWELLING OF THE ABDOMINAL WALL (UMBILICAL / EPIGASTRIC / INCISIONAL HERNIA) — v1.0.0.
- * CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Built from S. Das, A Manual on Clinical Surgery, 13th ed., ch. 38 pp. 609–610: the varieties
  * are separated by site (at the navel, beside it, in the upper midline, in a scar), the
  * para-umbilical hernia of the obese middle-aged woman gives intermittent pain because its
@@ -18,12 +18,12 @@ import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, 
  */
 export const ventralHerniaV1: HistoryTree = {
   id: "ventral_hernia",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Swelling of the abdominal wall (umbilical / epigastric / incisional hernia)",
   triggers: ["umbilical hernia", "paraumbilical hernia", "para umbilical hernia", "para-umbilical hernia", "incisional hernia", "epigastric hernia", "ventral hernia", "swelling at the navel", "swelling near the navel", "swelling at umbilicus", "umbilical swelling", "bulge in scar", "swelling in scar", "swelling at the scar"],
   setting: "Adult surgical ward and OPD, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, BROWSE, BAILEY_LOVE],
   slots: [
     ...commonHpi("swelling"),
@@ -31,14 +31,14 @@ export const ventralHerniaV1: HistoryTree = {
     val("hpi", "size_and_growth", "Size and change over time", "How big is it, and has it grown since it was first noticed?", ["size", "small", "large", "grown", "increased", "same", "lemon", "orange", "gradually", "over years"], { numeric: true }),
     yn("hpi", "reducibility", "Whether it goes back", "Does the swelling go back on lying down or on pushing it, and has that changed recently?", ["goes back", "reduces", "disappears", "on lying down", "on pushing", "no longer goes back", "irreducible", "stays out", "changed recently"]),
     yn("hpi", "cough_impulse_strain", "Appears on coughing or straining", "Does it appear or get bigger on coughing, straining, lifting, or standing?", ["coughing", "straining", "lifting", "standing", "gets bigger", "appears", "bearing down"]),
-    yn("hpi", "previously_stuck", "Has been stuck before and gone back", "Has the swelling ever failed to go back for a while and then gone back on its own or with help?", ["stuck", "did not go back", "would not reduce", "went back later", "pushed back", "reduced with help", "never got stuck"]),
+    yn("hpi", "previously_stuck", "Has been stuck before and gone back", "Has the swelling ever failed to go back for a while and then gone back on its own or with help?", ["stuck", "went back later", "pushed back", "reduced with help", "never got stuck"]),
     yn("hpi", "intermittent_abdominal_pain", "Bouts of abdominal pain", "Does it bring on bouts of abdominal pain, even when the swelling itself is small or goes back?", ["bouts of pain", "colicky", "comes and goes", "pain abdomen", "intermittent pain", "discomfort", "no pain"], { teach: "Das notes a para-umbilical hernia gives intermittent pain because the defect in the midline is firm and does not widen as the hernia grows; a small one may be noticed only as pain." }),
     yn("associated", "pain_after_meals", "Pain over the swelling after eating", "Does pain over the swelling start after eating?", ["after meals", "after food", "after eating", "epigastric pain", "thought it was ulcer", "gastritis", "acidity", "no relation to food"], { tier: "detailed", teach: "Das describes epigastric hernia pain beginning after meals, which patients often take for an ulcer; the history is what sends the hand to the abdominal wall." }),
     yn("associated", "weight_gain", "Weight gain", "Has the patient put on a lot of weight over the years?", ["weight gain", "put on weight", "obese", "overweight", "heavy", "fat", "weight stable"], { tier: "detailed" }),
 
     // Red flags — the same three that decide timing in any hernia
-    yn("red_flag", "irreducible_painful", "No longer reducible, painful and tense", "Has a swelling that used to go back become painful, tense, and impossible to push back?", ["no longer goes back", "irreducible", "cannot push back", "painful", "tense", "hard", "suddenly", "stuck"], { teach: "A hernia that used to reduce and now will not, with pain, marks trapped contents, and the blood supply is the thing at risk." }),
-    yn("red_flag", "obstruction_features", "Vomiting with absolute constipation and distension", "Along with the swelling, has the patient stopped passing stool and flatus, with vomiting and a distended abdomen?", ["vomiting", "no stool", "no flatus", "absolute constipation", "distension", "obstipation", "colicky pain", "bilious", "faecal vomiting"], { teach: "An abdominal-wall swelling with vomiting and no stool or flatus describes bowel obstructed inside the sac, which is a theatre problem rather than a clinic one." }),
+    yn("red_flag", "irreducible_painful", "No longer reducible, painful and tense", "Has a swelling that used to go back become painful, tense, and impossible to push back?", ["irreducible", "cannot push back", "painful", "tense", "hard", "suddenly", "stuck"], { teach: "A hernia that used to reduce and now will not, with pain, marks trapped contents, and the blood supply is the thing at risk." }),
+    yn("red_flag", "obstruction_features", "Vomiting with absolute constipation and distension", "Along with the swelling, has the patient stopped passing stool and flatus, with vomiting and a distended abdomen?", ["vomiting", "absolute constipation", "distension", "obstipation", "colicky pain", "bilious", "faecal vomiting"], { teach: "An abdominal-wall swelling with vomiting and no stool or flatus describes bowel obstructed inside the sac, which is a theatre problem rather than a clinic one." }),
     yn("red_flag", "skin_changes_over_swelling", "Redness, warmth, blackening or thinning of the skin over it", "Is the skin over the swelling red, warm, blackened, very tender, or thin and shiny?", ["redness", "warm", "blackening", "black", "severe tenderness", "discolouration", "thin skin", "shiny", "ulcerated"], { teach: "Skin changes over an irreducible swelling suggest the contents have been compromised; Bailey & Love sees thin, ulcerated skin over large umbilical hernias but calls spontaneous rupture extremely rare." }),
 
     // What sits behind it (Das)

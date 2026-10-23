@@ -51,11 +51,11 @@ export function commonHpi(complaint: string): Slot[] {
  */
 export function paedBackground(): Slot[] {
   return [
-    val("hpi", "birth_history", "Birth history", "Was the child born at term or early, what was the birth weight, was the delivery normal, and did the baby cry immediately?", ["term", "preterm", "premature", "birth weight", "kg", "normal delivery", "caesarean", "lscs", "cried immediately", "did not cry", "nicu", "admitted after birth", "home delivery"], { numeric: true }),
-    val("hpi", "immunisation", "Immunisation", "Is immunisation up to date for the age, and is the card available to check?", ["immunisation", "immunization", "vaccination", "vaccinated", "up to date", "card", "bcg", "opv", "pentavalent", "measles", "not vaccinated", "incomplete", "due"]),
-    val("hpi", "development", "Development", "Is the child doing the things expected for the age — sitting, walking, speaking, school — and has any skill been lost?", ["milestones", "development", "sitting", "walking", "speaking", "school", "delayed", "normal for age", "lost skills", "regression", "not achieved"]),
-    val("hpi", "feeding_nutrition", "Feeding and nutrition", "What is the child eating and drinking, has that changed with this illness, and is breastfeeding still continuing?", ["breastfeeding", "breast milk", "top feed", "formula", "weaning", "eating", "refusing", "reduced feeds", "not feeding", "appetite", "diet"]),
-    val("hpi", "growth", "Growth", "Has the child been gaining weight, and is there a growth chart or previous weight to compare with?", ["weight gain", "gaining", "not gaining", "losing weight", "growth chart", "previous weight", "kg", "faltering", "thin"], { numeric: true, tier: "detailed" }),
+    val("hpi", "birth_history", "Birth history", "Was the child born at term or early, what was the birth weight, was the delivery normal, and did the baby cry immediately?", ["term", "preterm", "premature", "birth weight", "kg", "normal delivery", "caesarean", "lscs", "cried immediately", "delayed cry", "nicu", "admitted after birth", "home delivery"], { numeric: true }),
+    val("hpi", "immunisation", "Immunisation", "Is immunisation up to date for the age, and is the card available to check?", ["immunisation", "immunization", "vaccination", "vaccinated", "up to date", "card", "bcg", "opv", "pentavalent", "measles", "unvaccinated", "incomplete", "due"]),
+    val("hpi", "development", "Development", "Is the child doing the things expected for the age — sitting, walking, speaking, school — and has any skill been lost?", ["milestones", "development", "sitting", "walking", "speaking", "school", "delayed", "normal for age", "lost skills", "regression"]),
+    val("hpi", "feeding_nutrition", "Feeding and nutrition", "What is the child eating and drinking, has that changed with this illness, and is breastfeeding still continuing?", ["breastfeeding", "breast milk", "top feed", "formula", "weaning", "eating", "refusing", "reduced feeds", "poor feeding", "appetite", "diet"]),
+    val("hpi", "growth", "Growth", "Has the child been gaining weight, and is there a growth chart or previous weight to compare with?", ["weight gain", "gaining", "poor weight gain", "losing weight", "growth chart", "previous weight", "kg", "faltering", "thin"], { numeric: true, tier: "detailed" }),
   ];
 }
 

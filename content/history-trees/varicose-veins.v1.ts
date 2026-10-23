@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, SABISTON_VENOUS, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * VARICOSE VEINS / PROMINENT LEG VEINS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * VARICOSE VEINS / PROMINENT LEG VEINS — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical ward and OPD, north India. Built from Sabiston (20th ed.) ch. 64 "Venous
  * Disease": the symptom pattern of venous pooling (dull ache and heaviness, absent on waking,
  * worse by evening and after standing, relieved by raising the leg), the risk factors it lists
@@ -18,18 +18,18 @@ import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, 
  */
 export const varicoseVeinsV1: HistoryTree = {
   id: "varicose_veins",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Varicose veins / prominent leg veins",
   triggers: ["varicose veins", "varicose vein", "varicosity", "varicosities", "prominent veins", "dilated veins", "swollen veins", "veins on leg", "veins in leg", "tortuous veins", "spider veins", "heaviness of legs", "heaviness in legs"],
   setting: "Adult surgical ward and OPD, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, SABISTON_VENOUS, BROWSE, BAILEY_LOVE],
   slots: [
     ...commonHpi("prominent veins"),
     val("hpi", "side_extent", "Which leg, and where", "Which leg or legs, and where are the veins — inner thigh, calf, behind the knee, or around the ankle?", ["right leg", "left leg", "both legs", "bilateral", "thigh", "inner thigh", "calf", "behind the knee", "ankle", "whole leg"]),
     yn("hpi", "aching_heaviness", "Aching or heaviness", "Is there a dull ache, heaviness or tiredness in the leg?", ["aching", "ache", "heaviness", "heavy", "tired legs", "fatigue", "dull pain", "discomfort", "no pain", "painless", "throbbing"]),
-    yn("hpi", "worse_standing_evening", "Worse by evening, better with the leg raised", "Is the discomfort absent on waking, worse by evening or after long standing, and better on lying down or raising the leg?", ["worse in the evening", "evening", "after standing", "long standing", "better on lying", "relieved by raising", "raising the leg", "elevation", "absent in the morning", "better in the morning"], { teach: "Sabiston describes this daily pattern as the signature of venous pooling; pain that does not follow it sends the questions elsewhere." }),
+    yn("hpi", "worse_standing_evening", "Worse by evening, better with the leg raised", "Is the discomfort absent on waking, worse by evening or after long standing, and better on lying down or raising the leg?", ["worse in the evening", "evening", "after standing", "long standing", "better on lying", "relieved by raising", "raising the leg", "elevation", "better in the morning"], { teach: "Sabiston describes this daily pattern as the signature of venous pooling; pain that does not follow it sends the questions elsewhere." }),
     yn("associated", "swelling_ankle", "Ankle swelling", "Does the ankle or lower leg swell, and does the swelling go down overnight?", ["swelling", "swollen ankle", "ankle swelling", "pedal oedema", "puffy", "goes down overnight", "persists", "no swelling"]),
     yn("associated", "skin_change", "Itching or skin change near the ankle", "Is there itching, darkening, thickening, or an eczema-like rash on the skin above the ankle?", ["itching", "itchy", "darkening", "pigmentation", "black skin", "thickened skin", "hard skin", "eczema", "rash", "no skin change"], { teach: "Skin change above the ankle marks venous disease that has gone on long enough to injure the skin, which Sabiston grades separately from veins alone." }),
     yn("associated", "burning", "Burning in the leg", "Is there a burning feeling in the skin of the leg?", ["burning", "burns", "tingling", "pins and needles"], { tier: "detailed" }),

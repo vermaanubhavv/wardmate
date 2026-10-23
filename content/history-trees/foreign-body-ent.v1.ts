@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, DHINGRA, HUTCHISONS, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * FOREIGN BODY IN EAR, NOSE OR THROAT — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * FOREIGN BODY IN EAR, NOSE OR THROAT — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * ENT ward and casualty, north India. Most are beads, seeds, insects and fish bones that can wait
  * for a calm removal; the history exists to find the few that cannot — the button battery that
  * burns through tissue in hours, the object that has gone into the airway, the sharp bone or coin
@@ -14,12 +14,12 @@ import { commonHpi, DHINGRA, HUTCHISONS, MACLEODS, val, yn } from "@/content/his
  */
 export const foreignBodyEntV1: HistoryTree = {
   id: "foreign_body_ent",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Foreign body in ear, nose or throat",
   triggers: ["foreign body", "foreign body ear", "foreign body nose", "foreign body throat", "something in ear", "something in nose", "insect in ear", "keeda in ear", "kaan me keeda", "fish bone", "bone stuck", "stuck in throat", "swallowed coin", "coin swallowed", "button battery", "swallowed battery", "bead in nose", "seed in nose", "swallowed something", "aspiration"],
   setting: "ENT ward and casualty, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DHINGRA, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("foreign body"),
@@ -30,9 +30,9 @@ export const foreignBodyEntV1: HistoryTree = {
     yn("associated", "ear_symptoms", "Ear pain / buzzing / blocked ear", "Is there ear pain, a buzzing or moving sensation, a blocked ear, or discharge or bleeding from the ear?", ["ear pain", "buzzing", "moving", "crawling", "blocked ear", "hearing", "ear discharge", "bleeding from ear"]),
     yn("associated", "nasal_symptoms", "One-sided nasal discharge / smell", "Is there a one-sided nasal discharge, a foul smell from the nose or breath, or bleeding from one nostril?", ["one sided discharge", "unilateral discharge", "foul smell", "bad smell", "smelly", "nasal bleeding", "blocked nostril", "sneezing"], { teach: "A foul one-sided nasal discharge in a young child is a classic way an unnoticed nasal object presents." }),
     yn("associated", "swallow_pain_point", "Pain on swallowing / pricking sensation", "Is there pain or a pricking feeling on swallowing, and can the patient point to where it is stuck?", ["pain on swallowing", "odynophagia", "pricking", "pointing", "stuck here", "sensation", "scratching", "sharp pain"]),
-    yn("associated", "drooling_cannot_swallow", "Drooling / unable to swallow saliva", "Is the patient drooling, spitting out saliva, or unable to swallow even liquids?", ["drooling", "salivation", "spitting saliva", "cannot swallow liquids", "cannot swallow saliva", "regurgitation", "not taking feeds"], { teach: "Being unable to swallow saliva suggests the gullet is completely blocked." }),
+    yn("associated", "drooling_cannot_swallow", "Drooling / unable to swallow saliva", "Is the patient drooling, spitting out saliva, or unable to swallow even liquids?", ["drooling", "salivation", "spitting saliva", "cannot swallow liquids", "cannot swallow saliva", "regurgitation", "refusing feeds"], { teach: "Being unable to swallow saliva suggests the gullet is completely blocked." }),
     yn("associated", "choking_episode", "Choking at the time", "Was there a sudden bout of choking, gagging or coughing while eating or playing?", ["choking", "gagging", "sudden cough", "coughing fit", "while eating", "while playing", "turned blue", "went blue"], { teach: "A choking episode at the time of the event is the strongest clue that an object entered the airway, even when the child seems well afterwards." }),
-    yn("associated", "persistent_cough_wheeze", "Persistent cough / wheeze / recurrent chest infection", "Since the event, has there been a cough, wheeze, or a chest infection that keeps returning on one side?", ["persistent cough", "cough", "wheeze", "whistling", "recurrent pneumonia", "chest infection", "not settling", "one side chest"]),
+    yn("associated", "persistent_cough_wheeze", "Persistent cough / wheeze / recurrent chest infection", "Since the event, has there been a cough, wheeze, or a chest infection that keeps returning on one side?", ["persistent cough", "cough", "wheeze", "whistling", "recurrent pneumonia", "chest infection", "one side chest"]),
     // Red flags
     yn("red_flag", "breathing_difficulty", "Difficulty breathing / noisy breathing / blue colour", "Is there difficulty breathing, noisy breathing, change in voice or cry, or any blue colour of the lips?", ["difficulty breathing", "breathless", "stridor", "noisy breathing", "hoarse", "change in voice", "weak cry", "cyanosis", "blue lips", "gasping"], { teach: "Breathing difficulty, stridor or a changed voice raises an object in or pressing on the airway, where minutes matter." }),
     yn("red_flag", "button_battery_magnet", "Button battery or magnets", "Could the object be a button battery, or more than one magnet?", ["button battery", "battery", "cell", "watch battery", "remote battery", "magnet", "magnets", "toy battery"], { teach: "Button batteries burn through the lining of the nose or gullet within hours, and swallowed magnets can pinch bowel between them, so the timing matters more than the size." }),

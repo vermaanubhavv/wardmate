@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, GHAI_PAEDIATRICS, HUTCHISONS, MACLEODS, paedBackground, PARSONS_EYE, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SQUINT / EYES NOT ALIGNED — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * SQUINT / EYES NOT ALIGNED — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Eye ward and OPD, north India. Two different histories share one complaint. In a child,
  * usually told by a parent, the questions are when it was first seen, whether it comes and
  * goes, whether glasses straighten it, and whether the turned eye sees at all — and the white
@@ -17,12 +17,12 @@ import { commonHpi, GHAI_PAEDIATRICS, HUTCHISONS, MACLEODS, paedBackground, PARS
  */
 export const squintV1: HistoryTree = {
   id: "squint",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Squint / eyes not aligned",
   triggers: ["squint", "strabismus", "crossed eyes", "cross eyed", "eyes not aligned", "eyes not straight", "eye turning in", "eye turning out", "lazy eye", "amblyopia", "esotropia", "exotropia", "bhenga", "bhengapan", "tedhi aankh", "aankh tedhi", "tirchi aankh"],
   setting: "Eye ward and OPD, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [PARSONS_EYE, GHAI_PAEDIATRICS, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("squint"),
@@ -41,7 +41,7 @@ export const squintV1: HistoryTree = {
     yn("hpi", "double_vision", "Double vision", "Is there double vision, and are the images side by side or one above the other?", ["double vision", "diplopia", "seeing double", "two images", "side by side", "one above the other", "do dikhna"], { teach: "Adults with a new squint see double; young children usually switch off the image from the turned eye instead, so its absence in a child is expected." }),
     yn("hpi", "variability_fatigue", "Worse with fatigue, better with rest", "Does the squint or double vision vary through the day — worse in the evening or after reading, better after sleep?", ["evening", "end of day", "tired", "fatigue", "after reading", "better after rest", "better in morning", "varies", "fluctuating"], { teach: "A squint that varies with use and recovers with rest raises a problem at the nerve-muscle junction." }),
     yn("hpi", "ptosis", "Drooping eyelid", "Is either eyelid drooping?", ["drooping", "droop", "ptosis", "lid down", "eye looks small", "heavy lid", "palak"]),
-    yn("associated", "previous_patching_surgery", "Glasses, patching or squint surgery before", "Were glasses, patching or squint surgery used before, and was the advice followed?", ["patching", "patch", "occlusion", "glasses", "spectacles", "squint surgery", "operated", "exercises", "stopped wearing", "not followed"]),
+    yn("associated", "previous_patching_surgery", "Glasses, patching or squint surgery before", "Were glasses, patching or squint surgery used before, and was the advice followed?", ["patching", "patch", "occlusion", "glasses", "spectacles", "squint surgery", "operated", "exercises", "stopped wearing"]),
     yn("associated", "family_history", "Squint or thick glasses in the family", "Is there squint, lazy eye or thick glasses in parents or siblings?", ["family history", "mother", "father", "sibling", "brother", "sister", "runs in family", "thick glasses", "lazy eye"], { tier: "detailed" }),
     yn("associated", "childhood_squint", "Squint in childhood (adult patient)", "In an adult, was there a squint or lazy eye in childhood that has now become more noticeable?", ["since childhood", "childhood squint", "lazy eye", "as a child", "old squint", "worse now", "increased now"], { tier: "detailed", teach: "A long-standing squint that was held straight can break down in adult life and appear new, sometimes with double vision." }),
     yn("associated", "diabetes_hypertension", "Diabetes / hypertension", "Is the patient known to have diabetes or high blood pressure, and how well controlled is it?", ["diabetes", "diabetic", "sugar", "hypertension", "high bp", "blood pressure", "uncontrolled", "insulin"], { teach: "Diabetes and high blood pressure are a common background to an adult nerve palsy that recovers on its own, once other causes have been considered." }),

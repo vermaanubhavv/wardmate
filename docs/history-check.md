@@ -184,6 +184,31 @@ A slot has: `id`, `group` (informant | hpi | associated | red_flag | exposure), 
 `tier` (`core` default, `detailed` = academic only; red flags ignore tier), optional `teach`
 (why it is asked; must not state a diagnosis).
 
+**Terms and negation.** `quoteNegatesItem` accepts a stored negative when a negation word (the
+`NEGATION` pattern in `lib/history-check/validate.ts`) comes at or before one of the slot's
+terms. So a term carries a negation word only when it is a *denial form* — "no fever", "not on
+blood thinners", "never smoked" — which is how negatives get recorded. The rules:
+
+- **A term that names a present finding never contains no / not / never / did not.** Write the
+  plain present form: "anuria" not "not passing urine", "non blanching" not "does not fade",
+  "unable to feed" or "poor feeding" not "not feeding", "unable to recognise" not "not
+  recognising", "unresponsive" not "not responding", "painless" not "no pain" (when painless is
+  the red flag), "first ever" not "never before". Otherwise a quote that *affirms* the finding
+  ("not passing urine since morning") passes as its denial. If another term already covers
+  it, drop the negated one.
+- **A term is never a bare negation word** ("denies", "none", "never", "negative", "absent"):
+  it matches every denial in the quote, so "denies fever" would close a suicide red flag.
+- A slot whose label is itself an absence ("No movements at all", "Not able to feed") keeps
+  only plain forms ("stopped moving", "unable to feed"). A reassuring answer to it then stays
+  "not recorded" rather than becoming a negative — the safe direction.
+
+The validator is deliberately unchanged: a blanket rule tested against the trees would have
+dropped legitimate negatives (648 of 896 negation-bearing terms are denial forms with no plain
+fallback). The fix lives in the terms. The 2026-10-23 sweep applied this to every slot of every
+tree (red flags first), took 93 trees off the reviewed list at bumped minor versions, and left
+value-slot answers that describe an absence ("no one saw", "no fan", "not done") as they are.
+`validate.test.ts` holds affirming quotes for the reworded red flags.
+
 A differential has `pointers` (positive slots that raise it) and `discriminators` (slots that
 would separate it), and optionally `appliesWhen: "post_op"`. It orders the gap list and is
 worded as "questions that would help separate X / Y". It is never shown as a diagnosis.

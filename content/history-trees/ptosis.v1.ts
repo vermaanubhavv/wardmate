@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PARSONS_EYE, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * DROOPING OF THE EYELID — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * DROOPING OF THE EYELID — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Eye ward and OPD, north India. Most drooping lids are present from birth or come slowly
  * with age; the history exists to find the few that are nerve or junction problems. Whether
  * the droop varies with fatigue, whether the eye moves and the eyes stay together, and
@@ -16,12 +16,12 @@ import { commonHpi, HUTCHISONS, MACLEODS, PARSONS_EYE, val, yn } from "@/content
  */
 export const ptosisV1: HistoryTree = {
   id: "ptosis",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Drooping of the eyelid",
   triggers: ["ptosis", "drooping eyelid", "drooping of eyelid", "drooping of the eyelid", "drooping of lid", "eyelid drooping", "droopy eyelid", "droopy lid", "lid droop", "blepharoptosis", "palak girna", "palak jhukna", "palak latakna", "palak neeche"],
   setting: "Eye ward and OPD, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [PARSONS_EYE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("drooping of the eyelid"),
@@ -33,7 +33,7 @@ export const ptosisV1: HistoryTree = {
     yn("hpi", "variability_fatigue", "Worse with fatigue, better with rest", "Does the droop vary through the day — worse in the evening or after reading, better after sleep or rest?", ["evening", "end of day", "tired", "fatigue", "after reading", "better after rest", "better in morning", "varies", "fluctuating", "comes and goes"], { teach: "A droop that worsens with use and recovers with rest raises a problem at the nerve-muscle junction rather than in the lid or nerve." }),
     yn("hpi", "double_vision", "Double vision", "Is there double vision, and does it go away when one eye is covered?", ["double vision", "diplopia", "seeing double", "two images", "do dikhna", "goes away on covering"], { teach: "A droop with double vision points to the nerve or junction that also moves the eye, not to the lid alone." }),
     yn("hpi", "pupil_change", "One pupil larger or smaller", "Has anyone noticed one pupil larger or smaller than the other?", ["pupil", "large pupil", "dilated pupil", "small pupil", "unequal pupils", "pinpoint", "different size", "black part bigger"], { teach: "With a droop, a larger pupil on that side points to the third nerve and a smaller one to the sympathetic chain." }),
-    yn("hpi", "less_sweating_face", "Less sweating on one side of the face", "Is there less sweating, or a drier and warmer face, on the same side?", ["less sweating", "no sweating", "dry face", "one side dry", "sweats on one side", "flushing one side"], { tier: "detailed" }),
+    yn("hpi", "less_sweating_face", "Less sweating on one side of the face", "Is there less sweating, or a drier and warmer face, on the same side?", ["less sweating", "anhidrosis", "dry face", "one side dry", "sweats on one side", "flushing one side"], { tier: "detailed" }),
     yn("hpi", "lid_lump_swelling", "Lump or swelling of the lid", "Is there a lump, swelling or heaviness of the lid itself weighing it down?", ["lump", "swelling", "heavy lid", "chalazion", "stye", "gudheri", "anjani", "growth", "puffy lid", "mass"], { teach: "A lump or swelling in the lid can pull it down mechanically, and a growing one is worth a closer look for a growth." }),
     yn("hpi", "excess_skin_other_eye", "Excess lid skin / sunken or small eye / other eye prominent", "Is it folded extra skin hanging over the lid rather than the lid itself, or is the drooping eye small or sunken, or the other eye more prominent?", ["extra skin", "loose skin", "skin folds", "hanging skin", "sunken eye", "small eye", "other eye bulging", "other eye prominent", "artificial eye"], { teach: "Extra skin, a small or sunken eye, or a bulging fellow eye can look like a droop when the lid itself is working normally." }),
     yn("associated", "contact_lens_surgery_rubbing", "Past eye surgery, contact lenses or eye rubbing", "Has the patient had eye surgery, worn contact lenses for years, or rubbed the eyes a lot?", ["cataract surgery", "eye surgery", "operated", "contact lens", "hard lens", "rubbing", "rubs eyes", "old age", "gradually"], { teach: "Surgery, years of contact lenses and repeated rubbing stretch the tendon that lifts the lid, which is the commonest cause of a droop in older adults." }),

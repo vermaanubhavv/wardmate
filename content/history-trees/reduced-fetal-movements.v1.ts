@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, DUTTA_OBSTETRICS, HUTCHISONS, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * REDUCED FETAL MOVEMENTS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * REDUCED FETAL MOVEMENTS — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Obstetrics and gynaecology ward, north India. The period of gestation and whether movements
  * have reduced or stopped altogether come first, then the ANC card and scan reports. Differentials:
  * fetal growth restriction or fetal compromise, intrauterine fetal death, abruption,
@@ -12,27 +12,27 @@ import { commonHpi, DUTTA_OBSTETRICS, HUTCHISONS, MACLEODS, val, yn } from "@/co
  */
 export const reducedFetalMovementsV1: HistoryTree = {
   id: "reduced_fetal_movements",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Reduced fetal movements",
   triggers: ["reduced fetal movements", "decreased fetal movements", "less fetal movements", "fetal movements not felt", "no fetal movements", "absent fetal movements", "reduced fm", "decreased fm", "baby not moving", "baby moving less", "bachcha nahi hil raha"],
   setting: "Obstetrics and gynaecology ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DUTTA_OBSTETRICS, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("reduced fetal movements"),
     val("hpi", "gestational_age", "Period of gestation", "How many weeks pregnant is she, by the last menstrual period and by the earliest scan?", ["weeks", "months", "pog", "lmp", "edd", "scan", "dating", "term", "preterm", "overdue"], { numeric: true }),
-    val("hpi", "movement_change", "What has changed", "Have the movements become fewer, weaker, or stopped altogether, compared with her usual pattern?", ["fewer", "weaker", "stopped", "not felt", "usual pattern", "less than usual", "no movements", "slow", "changed"]),
+    val("hpi", "movement_change", "What has changed", "Have the movements become fewer, weaker, or stopped altogether, compared with her usual pattern?", ["fewer", "weaker", "stopped", "usual pattern", "less than usual", "slow", "changed"]),
     val("hpi", "last_felt", "Last felt", "When were the baby's movements last felt?", ["last felt", "since morning", "since yesterday", "since last night", "hours", "last moved"], { numeric: true }),
     val("hpi", "kick_count", "Kick count", "Has she counted the movements over a set time, and how many were felt?", ["kick count", "counted", "counts", "movements in", "times in", "daily fetal movement count", "dfmc"], { numeric: true }),
     yn("hpi", "previous_episodes_rfm", "Earlier episodes", "Have the movements reduced before in this pregnancy, and was anything found then?", ["before", "earlier", "previous episode", "again", "second time", "last week", "repeated"], { tier: "detailed" }),
     yn("associated", "abdominal_pain_rfm", "Abdominal pain or tightening", "Any abdominal pain, tightening pains, or a hard abdomen?", ["abdominal pain", "pain", "tightening", "contractions", "hard abdomen", "tense", "continuous pain"]),
     yn("associated", "leaking_rfm", "Leaking", "Any watery leaking per vaginum?", ["leaking", "watery", "water broke", "gush", "trickle", "wet"]),
-    yn("associated", "abdomen_size_rfm", "Size of the abdomen", "Has the abdomen seemed smaller than expected, or grown unusually large and tight?", ["small for dates", "not growing", "smaller", "too big", "large", "tight", "growing fast", "twins"], { tier: "detailed" }),
+    yn("associated", "abdomen_size_rfm", "Size of the abdomen", "Has the abdomen seemed smaller than expected, or grown unusually large and tight?", ["small for dates", "smaller", "too big", "large", "tight", "growing fast", "twins"], { tier: "detailed" }),
     yn("associated", "itching_rfm", "Itching", "Any itching, especially of the palms and soles, without a rash?", ["itching", "palms", "soles", "itchy", "khujli", "no rash"], { tier: "detailed" }),
     yn("associated", "fever_rfm", "Fever or burning urine", "Any fever, chills, or burning while passing urine?", ["fever", "chills", "burning urine", "burning micturition", "rigors", "bukhar"]),
     // Red flags
-    yn("red_flag", "no_movements", "No movements at all", "Have the movements stopped completely rather than just reduced?", ["no movements", "stopped completely", "not felt at all", "absent", "not moving at all", "since yesterday"], { teach: "Movements that have stopped altogether are assessed urgently, and the time since the last movement shapes how quickly." }),
+    yn("red_flag", "no_movements", "No movements at all", "Have the movements stopped completely rather than just reduced?", ["stopped moving", "stopped completely", "movements stopped", "since yesterday"], { teach: "Movements that have stopped altogether are assessed urgently, and the time since the last movement shapes how quickly." }),
     yn("red_flag", "bleeding_with_pain_rfm", "Bleeding with pain", "Is there any bleeding per vaginum, and is the abdomen tense or continuously painful?", ["bleeding", "blood", "tense", "hard abdomen", "continuous pain", "clots", "spotting"], { teach: "Bleeding with a tense painful abdomen and reduced movements raises abruption, where much of the blood loss can be concealed." }),
     yn("red_flag", "preeclampsia_rfm", "Headache, visual disturbance or upper abdominal pain", "Any headache, blurred vision, flashes of light, upper abdominal pain, or swelling of the face and hands?", ["headache", "blurred vision", "flashes", "epigastric", "upper abdominal pain", "swelling", "puffiness", "high bp"], { teach: "Pre-eclampsia affects the placenta as well as the mother, and a baby whose supply is failing may first show it as fewer movements." }),
     yn("red_flag", "previous_stillbirth", "Previous stillbirth or small baby", "Has she had a stillbirth, a baby that died soon after birth, or a very small baby before?", ["stillbirth", "still born", "died after birth", "neonatal death", "small baby", "low birth weight", "iugr", "iud"], { teach: "A previous stillbirth or growth-restricted baby raises the chance of the same problem, so reduced movements carry more weight." }),
