@@ -197,10 +197,18 @@ function UpdateCard({
         </ul>
       )}
 
-      {segment.observations.length === 0 && (
-        <p className="mt-3 text-footnote text-muted">
-          Nothing could be structured from this — the words above will be saved as they are.
+      {segment.extraction_failed ? (
+        <p className="mt-3 text-footnote text-warn-fg">
+          The values in this could not be read just now — the AI request failed, not your
+          dictation. Saving keeps the words on the patient, marked so you can re-read them from
+          the patient page. Nothing is lost.
         </p>
+      ) : (
+        segment.observations.length === 0 && (
+          <p className="mt-3 text-footnote text-muted">
+            No values were found in this — the words above will be saved as they are.
+          </p>
+        )
       )}
 
       {(match.note || segment.uncertain) && (
