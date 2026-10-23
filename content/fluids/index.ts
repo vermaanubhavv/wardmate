@@ -1,5 +1,4 @@
 import type { FluidTopic } from "@/lib/fluids/types";
-import { acidBaseAndGiLossesV1 } from "@/content/fluids/acid-base-and-gi-losses.v1";
 import { bodyWaterAndUnitsV1 } from "@/content/fluids/body-water-and-units.v1";
 import { burnsV1 } from "@/content/fluids/burns.v1";
 import { colloidsPlanningMaintenanceV1 } from "@/content/fluids/colloids-planning-maintenance.v1";
@@ -32,11 +31,15 @@ import { hypophosphataemiaV1 } from "@/content/fluids/hypophosphataemia.v1";
 import { hyperphosphataemiaV1 } from "@/content/fluids/hyperphosphataemia.v1";
 import { hypomagnesaemiaV1 } from "@/content/fluids/hypomagnesaemia.v1";
 import { hypermagnesaemiaV1 } from "@/content/fluids/hypermagnesaemia.v1";
+import { acidBaseBasicsV1 } from "@/content/fluids/acid-base-basics.v1";
+import { metabolicAcidosisV1 } from "@/content/fluids/metabolic-acidosis.v1";
+import { metabolicAlkalosisV1 } from "@/content/fluids/metabolic-alkalosis.v1";
+import { respiratoryAcidBaseV1 } from "@/content/fluids/respiratory-acid-base.v1";
+import { giLossesAndUpperGiBleedingV1 } from "@/content/fluids/gi-losses-and-upper-gi-bleeding.v1";
 import { volumeAssessmentV1 } from "@/content/fluids/volume-assessment.v1";
 
 /** Every IV Fluid and Electrolyte Correction topic the Learn shelf can show. Add a file, add a line. */
 export const FLUID_TOPICS: readonly FluidTopic[] = [
-  acidBaseAndGiLossesV1,
   bodyWaterAndUnitsV1,
   burnsV1,
   colloidsPlanningMaintenanceV1,
@@ -72,4 +75,10 @@ export const FLUID_TOPICS: readonly FluidTopic[] = [
   hyperphosphataemiaV1,
   hypomagnesaemiaV1,
   hypermagnesaemiaV1,
+  // Chapters 30–34 from the full edition (text transcription), replacing the opening-only acid–base topic.
+  acidBaseBasicsV1,
+  metabolicAcidosisV1,
+  metabolicAlkalosisV1,
+  respiratoryAcidBaseV1,
+  giLossesAndUpperGiBleedingV1,
 ];
