@@ -32,11 +32,25 @@ const DEFAULTS = {
 
 // --- normalisation --------------------------------------------------------------------
 
+/**
+ * Fold a charted string or a lexicon name to the form everything here matches on.
+ *
+ * Hyphens become spaces and apostrophes vanish, so that word-run matching (see `tokenIn` and
+ * `phraseContains`) sees the words a reader sees: "post-burn contracture" holds the word
+ * "burn", "chemotherapy-induced cytopenia" holds "chemotherapy", "fistula-in-ano" holds
+ * "fistula", "ryle's tube" holds "ryle" (as "ryles", which the plural rule covers) and "PT/INR"
+ * holds "PT". Without this a hyphen, slash or apostrophe hides a word from an exact match.
+ *
+ * Matching and dedupe keys only — never the output. `term: entry.term` is emitted raw, so what
+ * Deepgram receives keeps its real hyphens, apostrophes and capitals.
+ */
 function norm(s: string): string {
   return s
     .toLowerCase()
     .replace(/[‘’]/g, "'")
+    .replace(/'/g, "")
     .replace(/[.,;:()\[\]]/g, " ")
+    .replace(/[-\u2010-\u2015/]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -132,9 +146,34 @@ function exactFactMatch(entryNames: string[], ctxStrings: string[]): boolean {
   return entryNames.some((e) => e.length >= 2 && ctxStrings.some((c) => phraseContains(c, e)));
 }
 
-/** True when any family token appears as a substring of any context string. */
+/**
+ * True when any family token appears in any context string as a run of COMPLETE words,
+ * allowing the token's last word to be pluralised in the chart ("burn" matches "flame burns").
+ *
+ * Word runs, not substrings. "fever" matching "dengue fever" and "chest" matching "chest
+ * x ray" are real matches and still count — the token is a whole word in each. What does not
+ * count is a token landing inside an unrelated word, which is what a plain `includes` gave us:
+ * "dic" inside "appendicitis" pulled disseminated intravascular coagulation onto an
+ * appendicectomy, "abg" inside "cabg" pulled COPD vocabulary onto a bypass, "al" inside
+ * "inguinal" pulled an antimalarial onto a hernia, and "anc" inside "pancreatitis" pulled
+ * oncology terms onto a pancreatitis. Each specialty core had grown an `entry()` rule dropping
+ * auto-derived triggers below five characters to dodge that rather than fix it.
+ *
+ * Plurals are matched by trying the token with "s" and "es" appended, never by stripping
+ * letters: lengthening the needle can only ever make a match more specific, so it cannot
+ * reintroduce the mid-word matching this function exists to prevent. Triggers are authored
+ * singular ("burn", "ulcer", "wound") while a chart reads "flame burns", so without this the
+ * fix would silently drop grafting vocabulary from a burns patient.
+ *
+ * The per-specialty length rules and collision tests stay: they stop a short alias being sent
+ * to Deepgram as a keyterm in its own right, which is a separate concern from matching.
+ */
 function tokenIn(tokens: string[], ctxStrings: string[]): boolean {
-  return tokens.some((t) => ctxStrings.some((c) => c.includes(t)));
+  return tokens.some((t) =>
+    ctxStrings.some(
+      (c) => phraseContains(c, t) || phraseContains(c, `${t}s`) || phraseContains(c, `${t}es`)
+    )
+  );
 }
 
 type Scored = {
