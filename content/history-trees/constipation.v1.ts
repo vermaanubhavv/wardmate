@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * CONSTIPATION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * CONSTIPATION — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical / medicine ward, north India. Separates the constipation of a functional or
  * dietary cause from obstruction and from a colorectal lesion. Differentials: functional /
  * low-fibre, drug-induced, hypothyroidism and hypercalcaemia, colorectal cancer, large-bowel
@@ -10,12 +10,12 @@ import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISO
  */
 export const constipationV1: HistoryTree = {
   id: "constipation",
-  version: "1.3.0",
+  version: "1.4.0",
   complaint: "Constipation",
   triggers: ["constipation", "not passing stools", "hard stools", "difficulty passing stools", "unable to pass stools", "infrequent stools", "obstipation"],
   setting: "Adult surgical / medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
   slots: [
     ...commonHpi("constipation"),
@@ -30,7 +30,7 @@ export const constipationV1: HistoryTree = {
     yn("associated", "thyroid_features", "Cold intolerance / weight gain / dry skin", "Any cold intolerance, weight gain, dry skin, or hair loss?", ["cold intolerance", "weight gain", "dry skin", "hair loss", "hoarse", "puffiness"], { tier: "detailed" }),
     yn("associated", "hypercalcaemia", "Thirst / excess urine / bone pain", "Any excess thirst, passing urine often, or bone pain?", ["thirst", "polyuria", "bone pain", "stones", "excess urine"], { tier: "detailed" }),
     // Red flags
-    yn("red_flag", "obstruction", "Absolute constipation with vomiting and distension", "Has the patient stopped passing both stool and flatus?", ["no stool", "no flatus", "absolute constipation", "obstipation"], { teach: "Neither stool nor flatus, with vomiting and distension, is the pattern of a bowel blockage and changes how quickly the question needs answering." }),
+    yn("red_flag", "obstruction", "Absolute constipation with vomiting and distension", "Has the patient stopped passing both stool and flatus?", ["absolute constipation", "obstipation"], { teach: "Neither stool nor flatus, with vomiting and distension, is the pattern of a bowel blockage and changes how quickly the question needs answering." }),
     yn("red_flag", "rectal_bleeding", "Blood per rectum", "Any blood mixed with stool or passed per rectum?", ["bleeding per rectum", "blood mixed", "melaena", "maroon", "bright red blood", "blood in stool", "blood per rectum", "bleeding"], { teach: "New constipation with rectal bleeding asks about a lesion in the colon or rectum." }),
     yn("red_flag", "weight_loss", "Weight loss", "Any unintentional weight loss?", ["weight loss", "lost weight", "loss of weight", "clothes loose"], { teach: "New constipation with weight loss, especially past middle age, raises a slow-growing bowel lesion." }),
     yn("red_flag", "change_in_habit", "New change in bowel habit after 50", "Is this a recent, persistent change from the patient's usual bowel habit?", ["new change", "over 50", "recent change", "change in bowel habit", "first time", "age"], { teach: "A recent persistent change in bowel habit, above all after fifty, is a recognised reason to look for a colorectal lesion." }),
@@ -40,9 +40,9 @@ export const constipationV1: HistoryTree = {
     yn("exposure", "constipating_drugs", "Constipating drugs", "Any opioids, iron, calcium, antacids, anticholinergics, or antidepressants?", ["opioid", "tramadol", "iron", "calcium", "antacid", "anticholinergic", "antidepressant", "verapamil", "codeine", "morphine"]),
     yn("exposure", "neuro_immobility", "Immobility / neurological disease", "Any immobility, spinal problem, stroke, diabetes, or Parkinson's disease?", ["immobile", "bedridden", "spinal", "stroke", "diabetes", "parkinson", "neuropathy", "paraplegia"], { tier: "detailed" }),
     // S. Das, A Manual on Clinical Surgery, 13th ed. (docs/surgical-history.md §10)
-    yn("hpi", "laxative_escalation", "Needing more and more laxatives", "Has the patient needed more and more laxative to open the bowels?", ["more laxatives", "increasing laxatives", "purgatives", "needs laxative daily", "laxative not working", "no laxatives"], {  teach: "Das names constipation needing ever more purgatives as the presenting symptom of a narrowing growth in the left colon." }),
+    yn("hpi", "laxative_escalation", "Needing more and more laxatives", "Has the patient needed more and more laxative to open the bowels?", ["more laxatives", "increasing laxatives", "purgatives", "needs laxative daily", "laxatives failing", "no laxatives"], {  teach: "Das names constipation needing ever more purgatives as the presenting symptom of a narrowing growth in the left colon." }),
     val("hpi", "stool_colour", "Colour of the stool", "What colour are the stools — normal, black and tarry, or pale and clay-coloured?", ["black stools", "tarry", "pale stools", "clay coloured", "white stools", "offensive", "normal colour"], { tier: "detailed", teach: "Das asks stool colour because black, pale or bulky offensive stools each point to a different part of the gut." }),
-    yn("red_flag", "pain_became_constant", "Colicky pain turned constant", "Has colicky pain changed to a constant, burning pain?", ["became constant", "now constant", "continuous pain", "burning pain", "was colicky", "no longer comes and goes"], { teach: "Das warns that colic of obstruction turning constant is the change seen when the blood supply of the gut is threatened." }),
+    yn("red_flag", "pain_became_constant", "Colicky pain turned constant", "Has colicky pain changed to a constant, burning pain?", ["became constant", "now constant", "continuous pain", "burning pain", "was colicky"], { teach: "Das warns that colic of obstruction turning constant is the change seen when the blood supply of the gut is threatened." }),
     // Hamilton Bailey's Demonstrations of Physical Signs, 19th ed. (docs/surgical-history.md §11)
     yn("hpi", "previous_attacks", "Earlier attacks that settled", "Has there been an earlier attack of constipation with a swollen belly that settled on its own?", ["similar attacks", "happened before", "previous episodes", "settled on its own", "first time", "no previous attacks"], { tier: "detailed", teach: "Hamilton Bailey reads earlier attacks of pain, swelling and constipation that went away as earlier twists of the sigmoid colon that untwisted." }),
     // Schwartz's Principles of Surgery, 11th ed. (docs/surgical-history.md §12)

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * COUGHING BLOOD — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * COUGHING BLOOD — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Pulmonary medicine ward, north India, where tuberculosis — active, or healed and leaving a
  * cavity behind — accounts for most of this complaint. Two questions run underneath the whole
  * history: is the blood really coming from the chest rather than the nose or the stomach, and
@@ -14,12 +14,12 @@ import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, rce, val, yn } from 
  */
 export const haemoptysisV1: HistoryTree = {
   id: "haemoptysis",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Coughing blood",
   triggers: ["haemoptysis", "hemoptysis", "coughing blood", "blood in sputum", "blood in cough", "blood stained sputum", "spitting blood", "khansi mein khoon", "blood while coughing", "streaks of blood"],
   setting: "Pulmonary medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     { title: "National TB Elimination Programme: presumptive TB definition", source: "NTEP, Government of India", url: "https://journals.lww.com/ascp/fulltext/2022/10020/national_tb_elimination_program__ntep___at_a.1.aspx" },
     { title: "Hemoptysis: evaluation and management", source: "American Family Physician (PubMed)", pmid: "25955625" },
@@ -47,7 +47,7 @@ export const haemoptysisV1: HistoryTree = {
     yn("red_flag", "massive_bleed", "Large volume of blood at once", "Has a large amount of blood come at once — a cupful or more, or blood filling the mouth faster than it can be spat out?", ["cupful", "large amount", "filling the mouth", "gushing", "continuous", "bowl", "cannot spit", "soaked", "repeated large"], { teach: "A large volume coughed at once threatens the airway by drowning it, before any blood is lost from the circulation." }),
     yn("red_flag", "breathlessness_hypoxia", "Breathless, unable to lie flat, blue lips", "Any severe breathlessness, inability to lie flat, or blueness of the lips since the bleeding?", ["breathless", "severe", "cannot lie", "blue", "cyanosis", "gasping", "fast breathing", "restless", "drowsy"], { teach: "Breathlessness during or after coughing blood asks whether blood has entered the other parts of the lung." }),
     yn("red_flag", "haemodynamic_compromise", "Giddiness, sweating, fainting", "Any giddiness on standing, sweating, fainting, or a racing pulse with the bleeding?", ["giddy", "on standing", "sweating", "fainted", "collapsed", "racing pulse", "cold hands", "pallor", "weak"], { teach: "Faintness and a racing pulse after coughing blood mark blood loss that the circulation is no longer compensating for." }),
-    yn("red_flag", "weight_loss_smoker_persistent", "Long-term smoker with weight loss or a changed cough", "In a long-term smoker, has the cough changed in character, with weight loss, hoarseness, or a lump in the neck?", ["smoker", "years", "cough changed", "new cough", "weight loss", "hoarseness", "neck lump", "chest pain", "not improving", "clubbing"], { teach: "A changed cough with weight loss in a long-term smoker raises a growth in the airway rather than an infection." }),
+    yn("red_flag", "weight_loss_smoker_persistent", "Long-term smoker with weight loss or a changed cough", "In a long-term smoker, has the cough changed in character, with weight loss, hoarseness, or a lump in the neck?", ["smoker", "years", "cough changed", "new cough", "weight loss", "hoarseness", "neck lump", "chest pain", "persisting", "clubbing"], { teach: "A changed cough with weight loss in a long-term smoker raises a growth in the airway rather than an infection." }),
     yn("red_flag", "ongoing_bleeding_now", "Still bringing up blood now", "Is blood still coming up now, and when was the last episode?", ["still coming", "just now", "minutes ago", "continuous", "stopped", "last episode", "hours ago", "settled"], { teach: "Bleeding that is still going on is a different history from one that stopped yesterday, and the time of the last episode says which." }),
     IMMUNOCOMPROMISE,
   ],

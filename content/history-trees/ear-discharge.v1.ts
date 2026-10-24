@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, DHINGRA, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * EAR DISCHARGE / HEARING LOSS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * EAR DISCHARGE / HEARING LOSS — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * ENT ward, north India. A discharging ear is common and usually chronic; the history exists
  * to separate the safe chronic ear from the one eroding bone, and to catch the intracranial
  * spread and the malignant external otitis that arrive on a medical ward as headache or fever.
@@ -12,12 +12,12 @@ import { commonHpi, DHINGRA, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } f
  */
 export const earDischargeV1: HistoryTree = {
   id: "ear_discharge",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Ear discharge / hearing loss",
   triggers: ["ear discharge", "discharge from ear", "ear pain", "earache", "otalgia", "otorrhoea", "otorrhea", "hearing loss", "decreased hearing", "hard of hearing", "deafness", "kaan behna", "pus from ear", "blocked ear", "ear infection"],
   setting: "ENT ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DHINGRA, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("ear discharge"),
@@ -35,8 +35,8 @@ export const earDischargeV1: HistoryTree = {
     yn("red_flag", "headache_fever_neck", "Headache with fever / vomiting / neck stiffness", "Any headache with fever, vomiting, or neck stiffness since the ear started discharging?", ["headache", "fever", "vomiting", "neck stiffness", "drowsy", "altered", "seizure", "photophobia"], { teach: "Headache and fever in a chronically discharging ear raise spread of infection inside the skull." }),
     yn("red_flag", "facial_weakness", "Weakness of one side of the face", "Any drooping of the face, inability to close the eye, or slurred speech on that side?", ["facial weakness", "facial palsy", "drooping", "cannot close eye", "mouth deviation", "face twisted", "slurring"], { teach: "Facial weakness beside a discharging ear points to disease reaching the nerve as it runs through the middle ear." }),
     yn("red_flag", "postaural_swelling", "Swelling or tenderness behind the ear", "Any swelling, redness or tenderness behind the ear, or has the ear been pushed forward?", ["swelling behind ear", "postaural", "mastoid", "tender", "redness", "ear pushed forward", "fluctuant"], { teach: "Swelling behind the ear with the pinna pushed forward raises infection in the mastoid bone." }),
-    yn("red_flag", "foul_bloody_granulation", "Foul smelling or blood stained discharge", "Is the discharge foul smelling, blood stained, or scanty and persistent despite treatment?", ["foul smelling", "offensive", "blood stained", "bleeding", "scanty", "persistent", "not settling", "granulation", "flakes"], { teach: "A scanty, foul or blood stained discharge that will not settle raises bone erosion rather than a simple mucosal infection." }),
-    yn("red_flag", "diabetes_severe_pain", "Diabetes with severe ear pain", "Is the patient diabetic, and is the ear pain severe and out of proportion, especially at night?", ["diabetic", "diabetes", "sugar", "severe pain", "out of proportion", "night pain", "elderly", "not relieved"], { teach: "Severe ear pain in an older person with diabetes raises infection spreading into the skull base." }),
+    yn("red_flag", "foul_bloody_granulation", "Foul smelling or blood stained discharge", "Is the discharge foul smelling, blood stained, or scanty and persistent despite treatment?", ["foul smelling", "offensive", "blood stained", "bleeding", "scanty", "persistent", "persisting", "granulation", "flakes"], { teach: "A scanty, foul or blood stained discharge that will not settle raises bone erosion rather than a simple mucosal infection." }),
+    yn("red_flag", "diabetes_severe_pain", "Diabetes with severe ear pain", "Is the patient diabetic, and is the ear pain severe and out of proportion, especially at night?", ["diabetic", "diabetes", "sugar", "severe pain", "out of proportion", "night pain", "elderly", "unrelieved"], { teach: "Severe ear pain in an older person with diabetes raises infection spreading into the skull base." }),
     IMMUNOCOMPROMISE,
   ],
   differentials: [

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BURNING MICTURITION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * BURNING MICTURITION — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Adult medicine / surgical ward, north India. Separates a lower urinary tract infection from
  * an upper one and from an obstructive, sexually transmitted or non-infective cause.
  * Differentials: cystitis, pyelonephritis, prostatitis / epididymo-orchitis, urethritis (sexually
@@ -11,12 +11,12 @@ import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, val, yn }
  */
 export const burningMicturitionV1: HistoryTree = {
   id: "burning_micturition",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Burning micturition",
   triggers: ["burning micturition", "burning urine", "dysuria", "painful urination", "pain on passing urine", "burning while passing urine", "frequency of urine", "urgency", "urinary frequency"],
   setting: "Adult medicine / surgical ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("burning micturition"),
@@ -30,11 +30,11 @@ export const burningMicturitionV1: HistoryTree = {
     yn("associated", "stream", "Poor stream / retention", "Any poor stream, straining, dribbling, or sense of a full bladder?", ["poor stream", "straining", "dribbling", "hesitancy", "retention", "incomplete", "full bladder"]),
     yn("associated", "nausea_vomiting", "Nausea / vomiting", "Any nausea or vomiting?", ["nausea", "vomiting", "vomit"]),
     yn("associated", "genital_lesions", "Genital sores / testicular pain", "Any genital sores, testicular pain, or swelling?", ["sores", "ulcer", "testicular pain", "swelling of scrotum", "genital", "epididymitis", "warts"], { tier: "detailed" }),
-    yn("associated", "fluid_intake", "Fluid intake", "How much water is the patient drinking daily?", ["water", "fluid intake", "little water", "not drinking", "dehydrated", "litres"], { tier: "detailed" }),
+    yn("associated", "fluid_intake", "Fluid intake", "How much water is the patient drinking daily?", ["water", "fluid intake", "little water", "dehydrated", "litres"], { tier: "detailed" }),
     yn("associated", "recurrent", "Recurrent episodes", "Is this the first episode, or has it happened before?", ["recurrent", "recurring", "again", "previous episodes", "first episode", "several times", "repeat"], { tier: "detailed" }),
     // Red flags
     yn("red_flag", "systemic_upper", "High fever with loin pain / vomiting", "Any high fever with chills, loin pain, or vomiting?", ["high fever", "chills", "rigors", "loin pain", "vomiting", "flank pain"], { teach: "Fever, loin pain and vomiting with urinary symptoms asks whether the infection has climbed to the kidney." }),
-    yn("red_flag", "obstruction_retention", "Unable to pass urine", "Has the patient been unable to pass urine, or passed only drops for hours?", ["unable to pass", "retention", "drops", "no urine", "anuria", "cannot pass"], { teach: "Infection with a blocked outflow is the combination where timing matters most." }),
+    yn("red_flag", "obstruction_retention", "Unable to pass urine", "Has the patient been unable to pass urine, or passed only drops for hours?", ["unable to pass", "retention", "drops", "urinary retention", "anuria", "cannot pass"], { teach: "Infection with a blocked outflow is the combination where timing matters most." }),
     yn("red_flag", "sepsis_signs", "Giddiness / confusion / low BP", "Any giddiness, confusion, fainting, or low blood pressure with the fever?", ["giddiness", "confusion", "fainting", "low bp", "hypotension", "drowsy", "cold peripheries"], { teach: "Confusion or low pressure with a urinary infection is how sepsis first appears, especially in the elderly." }),
     yn("red_flag", "hematuria_persistent", "Blood in urine without infection features", "Is there blood in the urine without pain, especially with weight loss or in a smoker?", ["painless haematuria", "blood in urine", "smoker", "weight loss", "clots", "dark red"], { teach: "Painless blood in the urine asks about a bladder or kidney lesion rather than an infection." }),
     yn("red_flag", "diabetes_immuno", "Diabetes / catheter / immunosuppression", "Is the patient diabetic, catheterised, or immunosuppressed?", ["diabetes", "diabetic", "catheter", "immunosuppressed", "steroids", "hiv", "transplant"], { teach: "In diabetes or with a catheter, a urinary infection is more likely to spread and to be resistant." }),

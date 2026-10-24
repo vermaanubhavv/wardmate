@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SHOCK / UNDIFFERENTIATED HYPOTENSION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * SHOCK / UNDIFFERENTIATED HYPOTENSION — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Emergency ward, north India. A history taken in parallel with resuscitation rather than
  * before it, organised around the four mechanisms: loss of volume, failure of the pump,
  * obstruction to filling, and loss of vascular tone. Differentials: hypovolaemic shock from
@@ -12,12 +12,12 @@ import { BAILEY_LOVE, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, rce, va
  */
 export const shockV1: HistoryTree = {
   id: "shock",
-  version: "1.2.0",
+  version: "1.3.0",
   complaint: "Shock / low blood pressure",
   triggers: ["shock", "hypotension", "low bp", "low blood pressure", "collapse", "collapsed", "unrecordable bp", "cold peripheries", "pulse not felt", "fainting", "peripheries cold"],
   setting: "Emergency ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("The rational clinical examination. Is this patient hypovolemic?", 1999, "10086438"),
     rce("Does this patient with chest pain have acute coronary syndrome? The Rational Clinical Examination systematic review", 2015, "26547467"),
@@ -32,16 +32,16 @@ export const shockV1: HistoryTree = {
     val("hpi", "preceding_symptoms", "What came first", "What was the first thing the patient complained of before collapsing — fever, chest pain, breathlessness, bleeding, pain, or giddiness?", ["fever", "chest pain", "breathlessness", "bleeding", "pain", "giddiness", "vomiting", "loose stools", "abdominal pain", "rash", "first complained"]),
     yn("hpi", "posture_related", "Related to standing", "Did it happen on standing up or after prolonged standing?", ["on standing", "after standing", "got up", "postural", "prolonged standing", "sitting up"]),
     yn("associated", "bleeding_visible", "Visible bleeding", "Any bleeding seen — vomiting blood, black stools, bleeding per vaginum, from a wound, or from the nose?", ["vomiting blood", "haematemesis", "black stools", "melaena", "bleeding per vaginum", "wound", "nose", "visible blood", "trauma"]),
-    yn("associated", "fluid_losses", "Vomiting, loose stools or poor intake", "Any vomiting, loose stools, high fever with sweating, or inability to drink over the past days?", ["vomiting", "loose stools", "diarrhoea", "sweating", "not drinking", "poor intake", "dehydrated", "burns"]),
+    yn("associated", "fluid_losses", "Vomiting, loose stools or poor intake", "Any vomiting, loose stools, high fever with sweating, or inability to drink over the past days?", ["vomiting", "loose stools", "diarrhoea", "sweating", "unable to drink", "poor intake", "dehydrated", "burns"]),
     yn("associated", "fever_infection", "Fever or a source of infection", "Any fever, chills, cough, burning urine, a wound, or an abscess?", ["fever", "chills", "rigors", "cough", "burning urine", "wound", "abscess", "cellulitis", "infection", "pus"]),
     yn("associated", "chest_pain_breathless", "Chest pain or breathlessness", "Any chest pain, breathlessness, or palpitations before the collapse?", ["chest pain", "breathlessness", "breathless", "palpitations", "tightness", "radiating", "sweating with chest pain"]),
     yn("associated", "abdominal_pain", "Abdominal or back pain", "Any severe abdominal or back pain, and did it come on suddenly?", ["abdominal pain", "back pain", "severe", "sudden", "tearing", "colicky", "distension"]),
     yn("associated", "rash_swelling", "Rash, itching or swelling of the face", "Any rash, itching, swelling of the lips or face, or difficulty breathing soon after a drug, food or sting?", ["rash", "itching", "hives", "swelling of lips", "face", "throat", "wheeze", "after injection", "after food", "sting", "immediately"]),
-    yn("associated", "urine_output", "Urine passed", "How much urine has been passed since this began?", ["urine", "not passed", "reduced", "less urine", "catheter", "dark", "how much", "oliguria", "anuria", "decreased urine output"]),
+    yn("associated", "urine_output", "Urine passed", "How much urine has been passed since this began?", ["urine", "reduced", "less urine", "catheter", "dark", "how much", "oliguria", "anuria", "decreased urine output"]),
     yn("associated", "altered_sensorium", "Drowsiness or confusion", "Any drowsiness, confusion, or restlessness?", ["drowsy", "confusion", "restless", "agitated", "unresponsive", "irrelevant talk", "altered"]),
     yn("associated", "limb_weakness_trauma", "Injury or limb weakness", "Any injury, especially to the chest, abdomen or spine, or any weakness of the limbs?", ["injury", "trauma", "accident", "fall", "chest", "abdomen", "spine", "weakness", "cannot move legs"]),
     // Red flags
-    yn("red_flag", "ongoing_bleeding", "Bleeding that has not stopped", "Is there bleeding that is still going on, internally or externally?", ["still bleeding", "continuing", "not stopped", "large amount", "clots", "soaked", "internal", "ongoing"], { teach: "In a bleeding patient the pressure follows the bleeding, so whether it has stopped matters more than any single reading." }),
+    yn("red_flag", "ongoing_bleeding", "Bleeding that has not stopped", "Is there bleeding that is still going on, internally or externally?", ["still bleeding", "continuing", "ongoing bleeding", "large amount", "clots", "soaked", "internal", "ongoing"], { teach: "In a bleeding patient the pressure follows the bleeding, so whether it has stopped matters more than any single reading." }),
     yn("red_flag", "trauma_mechanism", "Significant injury", "Was there a road traffic collision, a fall from height, or a penetrating injury?", ["road traffic", "fall from height", "penetrating", "stab", "gunshot", "crush", "thrown", "high speed"], { teach: "After significant injury, bleeding into the chest, abdomen, pelvis or thighs can be large and completely hidden." }),
     yn("red_flag", "anaphylaxis_trigger", "Collapse within minutes of a drug, food or sting", "Did the collapse follow within minutes of an injection, a tablet, a food, or an insect sting?", ["within minutes", "after injection", "after tablet", "after food", "sting", "bee", "immediately after", "minutes later", "contrast"], { teach: "A collapse within minutes of an exposure, especially with rash or swelling, points to anaphylaxis, which is reversed by an action taken early." }),
     yn("red_flag", "chest_pain_ischaemic", "Chest pain with sweating", "Was there chest pain with sweating, or pain radiating to the arm, jaw or back?", ["chest pain", "sweating", "radiating", "arm", "jaw", "back", "crushing", "heaviness", "tearing"], { teach: "Chest pain with sweating alongside a low pressure raises a failing pump or a tearing aorta, two problems managed in opposite directions." }),

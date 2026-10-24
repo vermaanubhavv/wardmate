@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * FEVER WITH RASH — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * FEVER WITH RASH — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Adult medicine ward, north India. The single most useful question is whether the rash blanches
  * on pressure, because a non-blanching rash with fever is a different emergency from everything
  * else on this list. Seasonal and vector context matters here: dengue, chikungunya and scrub
@@ -12,18 +12,18 @@ import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, val, yn }
  */
 export const feverWithRashV1: HistoryTree = {
   id: "fever_with_rash",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Fever with rash",
   triggers: ["fever with rash", "rash", "skin rash", "spots on body", "red spots", "petechiae", "purpura", "eruption", "rash with fever", "daane", "blisters"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("fever with rash"),
     val("hpi", "rash_first_site", "Where the rash started", "Where did the rash start, and where did it spread to?", ["started on", "face", "trunk", "chest", "abdomen", "arms", "legs", "palms", "soles", "spread", "behind the ears", "hairline"]),
     val("hpi", "rash_appearance", "Appearance of the rash", "What does the rash look like — flat red spots, raised bumps, blisters, or pinpoint dots?", ["flat", "red spots", "macular", "raised", "papules", "blisters", "vesicles", "pinpoint", "pustules", "wheals", "hives", "target"]),
-    yn("hpi", "blanching", "Does the rash fade on pressure", "When a glass or finger is pressed on the rash, does it fade, or does it stay?", ["fades", "blanches", "does not fade", "stays", "non blanching", "glass test", "pressure", "remains"]),
+    yn("hpi", "blanching", "Does the rash fade on pressure", "When a glass or finger is pressed on the rash, does it fade, or does it stay?", ["fades", "blanches", "stays", "non blanching", "glass test", "pressure", "remains"]),
     yn("hpi", "itching_pain", "Itching or pain in the rash", "Is the rash itchy, painful, or burning?", ["itching", "itchy", "pruritus", "painful", "burning", "tender", "not itchy", "no itching"]),
     val("hpi", "fever_pattern", "Fever pattern", "How high is the fever, and does it come down fully between spikes?", ["high grade", "low grade", "continuous", "intermittent", "comes down", "spikes", "with chills", "evening rise", "saddle back", "biphasic"]),
     yn("hpi", "rash_timing", "When the rash appeared in relation to the fever", "Did the rash appear with the fever, or only after some days of fever?", ["with the fever", "after", "days of fever", "third day", "fifth day", "as fever settled", "before the fever", "same day"]),
@@ -36,7 +36,7 @@ export const feverWithRashV1: HistoryTree = {
     yn("associated", "urine_output_swelling", "Reduced urine / swelling / yellow eyes", "Any reduction in urine, swelling, or yellowness of the eyes?", ["reduced urine", "less urine", "swelling", "puffiness", "yellow eyes", "jaundice", "dark urine"], { tier: "detailed" }),
     yn("associated", "eschar", "A painless black scab", "Any small painless black scab or ulcer anywhere on the body, including the armpit, groin or waist?", ["eschar", "black scab", "scab", "painless ulcer", "armpit", "groin", "waist", "bite mark", "crusted"], { tier: "detailed" }),
     // Red flags
-    yn("red_flag", "non_blanching_rash", "Rash that does not fade on pressure", "Does the rash stay visible when pressed with a glass, with rapidly worsening fever?", ["does not fade", "non blanching", "stays", "purpura", "petechiae", "glass test", "spreading fast", "bruise like"], { teach: "A fever with a rash that will not blanch is treated as meningococcal sepsis until shown otherwise, because the interval to act is measured in hours." }),
+    yn("red_flag", "non_blanching_rash", "Rash that does not fade on pressure", "Does the rash stay visible when pressed with a glass, with rapidly worsening fever?", ["non-blanching", "non blanching", "stays", "purpura", "petechiae", "spreading fast", "bruise like"], { teach: "A fever with a rash that will not blanch is treated as meningococcal sepsis until shown otherwise, because the interval to act is measured in hours." }),
     yn("red_flag", "shock_features", "Giddiness / cold extremities / reduced urine", "Any giddiness on standing, cold hands and feet, restlessness, or a marked fall in urine?", ["giddiness", "cold hands", "cold extremities", "restless", "reduced urine", "low bp", "hypotension", "clammy", "fainting"], { teach: "Cold peripheries and falling urine with a febrile rash mark the leak of fluid out of the circulation seen in severe dengue and in sepsis." }),
     yn("red_flag", "mucosal_peeling", "Skin peeling / blistering / lips crusting", "Is the skin blistering or peeling in sheets, or are the lips crusted and raw?", ["peeling", "blistering", "sheets", "lips crusted", "raw", "denuded", "sloughing", "skin comes off", "burn like"], { teach: "Blistering with peeling skin and raw lips marks a severe drug reaction, where stopping the culprit early changes survival." }),
     yn("red_flag", "new_drug", "New medicine in the past weeks", "Any new medicine started in the past six weeks, including antibiotics, antiepileptics, or painkillers?", ["new medicine", "new drug", "antibiotic", "antiepileptic", "phenytoin", "carbamazepine", "painkillers", "sulfa", "allopurinol", "started recently", "six weeks"], { teach: "Almost every severe skin reaction traces back to a drug started in the preceding weeks, and only the history can find it." }),

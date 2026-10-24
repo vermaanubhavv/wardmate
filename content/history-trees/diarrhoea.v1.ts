@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ACUTE DIARRHOEA / VOMITING — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * ACUTE DIARRHOEA / VOMITING — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Adult medicine ward, north India. Differentials: acute gastroenteritis (viral / bacterial),
  * cholera, dysentery (bacillary / amoebic), food poisoning, enteric fever, antibiotic-
  * associated diarrhoea, inflammatory bowel disease flare, drug / toxin ingestion,
@@ -10,12 +10,12 @@ import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "
  */
 export const diarrhoeaV1: HistoryTree = {
   id: "diarrhoea",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Diarrhoea / vomiting",
   triggers: ["diarrhoea", "diarrhea", "loose stools", "loose motions", "loose motion", "watery stools", "vomiting", "vomitings", "gastroenteritis", "dysentery", "blood in stool", "frequent stools"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("Is this patient hypovolemic?", 1999, "10086438"),
     { title: "Infectious Diseases Society of America clinical practice guidelines for the diagnosis and management of infectious diarrhea", source: "Clin Infect Dis", year: 2017, pmid: "29053792" },
@@ -35,19 +35,19 @@ export const diarrhoeaV1: HistoryTree = {
     yn("hpi", "vomiting", "Vomiting", "Any vomiting — how many times, and what does it contain?", ["vomiting", "vomit", "vomited", "vomitings", "nausea", "retching", "bilious", "blood in vomit", "haematemesis", "hematemesis", "coffee ground"]),
     val("hpi", "vomit_diarrhoea_sequence", "Sequence of vomiting and diarrhoea", "Which started first — vomiting or diarrhoea, and how many hours after eating?", ["first", "then", "followed by", "after eating", "hours after", "within", "started with", "sequence"], { tier: "detailed" }),
     val("hpi", "abdominal_pain", "Abdominal pain", "Any abdominal pain — where, and is it cramping, continuous, or relieved by passing stool?", ["abdominal pain", "pain abdomen", "cramps", "cramping", "colicky", "colic", "continuous", "relieved by passing", "lower abdomen", "around the umbilicus", "right lower", "pain"]),
-    val("hpi", "oral_intake", "Oral intake", "Is the patient able to keep down fluids and food?", ["oral intake", "able to drink", "not able to drink", "keeping down", "unable to eat", "not eating", "taking orally", "ors", "fluids"]),
-    val("hpi", "urine_output", "Urine output", "When did the patient last pass urine, and how much?", ["urine", "passed urine", "urine output", "last passed", "not passed urine", "reduced urine", "less urine", "dark urine", "oliguria"]),
+    val("hpi", "oral_intake", "Oral intake", "Is the patient able to keep down fluids and food?", ["oral intake", "able to drink", "unable to drink", "keeping down", "unable to eat", "taking orally", "ors", "fluids"]),
+    val("hpi", "urine_output", "Urine output", "When did the patient last pass urine, and how much?", ["urine", "passed urine", "urine output", "last passed", "reduced urine", "less urine", "dark urine", "oliguria"]),
     // Associated
     yn("associated", "fever", "Fever", "Any fever, with or without chills?", ["fever", "febrile", "temperature", "chills", "rigors"]),
     yn("associated", "thirst_dryness", "Thirst / dry mouth / giddiness", "Any excessive thirst, dry mouth, giddiness on standing, or cramps in the legs?", ["thirst", "thirsty", "dry mouth", "giddiness", "giddy", "dizzy", "light headed", "on standing", "leg cramps", "cramps in legs", "weakness"]),
-    yn("associated", "abdominal_distension", "Abdominal distension", "Any abdominal distension, or has passing of flatus stopped?", ["distension", "distended", "bloating", "not passing flatus", "flatus", "no gas", "swelling of abdomen"]),
+    yn("associated", "abdominal_distension", "Abdominal distension", "Any abdominal distension, or has passing of flatus stopped?", ["distension", "distended", "bloating", "flatus stopped", "flatus", "swelling of abdomen"]),
     yn("associated", "jaundice", "Jaundice", "Any yellowness of eyes or urine?", ["jaundice", "yellow", "yellowish", "icterus"], { tier: "detailed" }),
     yn("associated", "weight_loss", "Weight loss", "Any weight loss over the preceding weeks (chronic diarrhoea)?", ["weight loss", "lost weight", "losing weight", "wasting", "thin"], { tier: "detailed" }),
     yn("associated", "joint_eye_skin", "Joint / eye / skin symptoms", "Any joint pains, red eyes, mouth ulcers, or rash (inflammatory bowel disease)?", ["joint pain", "arthritis", "red eyes", "mouth ulcers", "oral ulcers", "rash", "erythema nodosum"], { tier: "detailed" }),
     yn("associated", "headache_bodyache", "Headache / body ache", "Any headache or body ache with the fever?", ["headache", "body ache", "bodyache", "myalgia"], { tier: "detailed" }),
     yn("associated", "constipation_history", "Alternating constipation", "Any alternating constipation or long-standing change in bowel habit?", ["constipation", "alternating", "bowel habit", "change in bowel", "long standing", "chronic"], { tier: "detailed" }),
     // Red flags
-    yn("red_flag", "dehydration_signs", "Severe dehydration symptoms", "Is the patient very thirsty, drowsy, unable to drink, or not passing urine?", ["very thirsty", "drowsy", "lethargic", "unable to drink", "not passing urine", "no urine", "sunken", "cold hands", "collapse", "fainted", "unconscious"], { teach: "Thirst, drowsiness, inability to drink and no urine are the symptoms of severe dehydration; they decide the route of fluids before any examination." }),
+    yn("red_flag", "dehydration_signs", "Severe dehydration symptoms", "Is the patient very thirsty, drowsy, unable to drink, or not passing urine?", ["very thirsty", "drowsy", "lethargic", "unable to drink", "anuria", "sunken", "cold hands", "collapse", "fainted", "unconscious"], { teach: "Thirst, drowsiness, inability to drink and no urine are the symptoms of severe dehydration; they decide the route of fluids before any examination." }),
     yn("red_flag", "bloody_with_fever", "Bloody stools with high fever", "Are there bloody stools together with high fever?", ["bloody", "blood", "dysentery", "high fever", "fever"], { teach: "Blood in the stool with high fever points to invasive bacterial dysentery, and in the elderly to ischaemic colitis." }),
     yn("red_flag", "severe_pain_tenderness", "Severe abdominal pain / rigidity", "Is there severe continuous abdominal pain, or an abdomen that is hard to touch?", ["severe pain", "continuous pain", "rigid", "hard abdomen", "board like", "guarding", "tender", "cannot touch", "worsening pain"], { teach: "Severe continuous pain or a rigid abdomen in a patient with diarrhoea raises a surgical cause: perforation, ischaemia, toxic megacolon." }),
     yn("red_flag", "rice_water_profuse", "Profuse rice-water stools", "Are the stools profuse and rice-water like, with rapid weakness (cholera)?", ["rice water", "rice-water", "profuse", "copious", "painless watery", "large volume", "cholera"], { teach: "Profuse painless rice-water stools with rapid dehydration are the description of cholera, which is a public health event as well as a patient." }),

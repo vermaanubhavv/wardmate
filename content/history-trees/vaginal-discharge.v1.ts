@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, ebem, HUTCHISONS, MACLEODS, PREGNANCY, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * VAGINAL DISCHARGE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * VAGINAL DISCHARGE — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Obstetrics and gynaecology ward, north India. The history separates a discharge arising in
  * the vagina from one arising above the cervix, because the second can scar the tubes.
  * Differentials: bacterial vaginosis, candidiasis, trichomoniasis, cervicitis (chlamydia or
@@ -11,12 +11,12 @@ import { commonHpi, ebem, HUTCHISONS, MACLEODS, PREGNANCY, val, yn } from "@/con
  */
 export const vaginalDischargeV1: HistoryTree = {
   id: "vaginal_discharge",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Vaginal discharge",
   triggers: ["vaginal discharge", "discharge per vaginum", "white discharge", "foul discharge", "leucorrhoea", "safed pani", "itching private parts", "vaginal itching", "smelly discharge"],
   setting: "Obstetrics and gynaecology ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     ebem("Diagnostic utility of physical examination, history, and laboratory evaluation in emergency department patients with vaginal complaints", 2008, "18763318"),
     MACLEODS,
@@ -41,7 +41,7 @@ export const vaginalDischargeV1: HistoryTree = {
     yn("red_flag", "pregnancy_or_postpartum", "Pregnant, recently delivered, or after a procedure", "Is she pregnant, recently delivered, recently aborted, or has a device been inserted recently?", ["pregnant", "delivered", "abortion", "mtp", "iucd", "copper t", "inserted", "procedure", "recently"], { teach: "The same discharge carries different consequences in pregnancy and after a uterine procedure, including preterm labour and uterine infection." }),
     yn("red_flag", "foul_blood_stained", "Foul, blood-stained or watery discharge", "Is the discharge foul-smelling, blood-stained, or persistently watery?", ["foul", "offensive", "blood stained", "brown", "watery", "persistent", "continuous", "flooding"], { teach: "A persistently foul or blood-stained discharge, especially past middle age, asks about a cervical or endometrial growth rather than an infection." }),
     yn("red_flag", "postmenopausal_discharge", "Discharge after the menopause", "Has the discharge started after the periods stopped?", ["after menopause", "postmenopausal", "periods stopped", "years ago", "new"], { teach: "New discharge after the menopause loses the common infective explanations of the reproductive years and is investigated rather than treated blind." }),
-    yn("red_flag", "retained_object", "A forgotten tampon, pessary or device", "Could anything have been left inside — a tampon, cloth, pessary, or an intrauterine device inserted long ago?", ["tampon", "cloth", "pessary", "device", "iucd", "copper t", "forgotten", "left inside", "years ago", "string not felt"], { teach: "A retained object produces a foul discharge that no treatment clears until the object is found and removed." }),
+    yn("red_flag", "retained_object", "A forgotten tampon, pessary or device", "Could anything have been left inside — a tampon, cloth, pessary, or an intrauterine device inserted long ago?", ["tampon", "cloth", "pessary", "device", "iucd", "copper t", "forgotten", "left inside", "years ago", "lost tampon", "string missing"], { teach: "A retained object produces a foul discharge that no treatment clears until the object is found and removed." }),
     yn("red_flag", "sexual_violence", "Discharge after non-consensual or forced intercourse", "Did this follow any forced or non-consensual sexual contact?", ["forced", "non consensual", "assault", "against her will", "violence", "rape"], { teach: "Asking this directly and privately is part of the history, because it changes the examination, the tests offered, and the support and reporting the patient is entitled to." }),
     yn("red_flag", "immunosuppression_diabetes", "Diabetes or immunosuppression", "Is she diabetic, on steroids, immunosuppressed, or getting repeated infections?", ["diabetes", "diabetic", "sugar", "steroid", "immunosuppressed", "hiv", "repeated", "recurrent thrush"], { teach: "Repeated or stubborn discharge raises uncontrolled diabetes or immune suppression as the reason it keeps coming back." }),
     PREGNANCY,

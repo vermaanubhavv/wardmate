@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * TOOTHACHE / FACIAL SWELLING — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * TOOTHACHE / FACIAL SWELLING — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Dental and maxillofacial ward, north India. Most toothache is pulpal; the history exists to
  * find the dental infection that has left the tooth — spreading into the floor of the mouth,
  * the eye, or the neck — and the non-healing ulcer or loose tooth in a tobacco user that is
@@ -14,12 +14,12 @@ import { BAILEY_LOVE, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn
  */
 export const toothacheV1: HistoryTree = {
   id: "toothache",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Toothache / facial swelling",
   triggers: ["toothache", "tooth pain", "dental pain", "facial swelling", "swelling of face", "cheek swelling", "gum swelling", "gum bleeding", "loose tooth", "wisdom tooth", "jaw pain", "cannot open mouth", "daant dard", "mouth ulcer not healing"],
   setting: "Dental and maxillofacial ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("tooth pain"),
@@ -28,12 +28,12 @@ export const toothacheV1: HistoryTree = {
     yn("hpi", "trigger_hot_cold", "Pain with hot, cold or sweet things", "Does the pain come on with hot, cold or sweet things, and does it settle quickly or linger?", ["hot", "cold", "sweet", "settles quickly", "lingers", "minutes", "on drinking", "sensitive", "no trigger"], { teach: "Pain that lingers for minutes after a hot or cold stimulus, rather than settling at once, asks whether the pulp has passed the point of recovery." }),
     yn("hpi", "swelling", "Swelling of the gum or face", "Is there swelling of the gum or face, when did it start, and is it increasing?", ["gum swelling", "facial swelling", "cheek", "under the jaw", "eye", "increasing", "since yesterday", "hours", "firm", "soft"]),
     yn("hpi", "discharge_taste", "Pus or bad taste in the mouth", "Any pus, bad taste, or bad smell from the tooth or gum?", ["pus", "bad taste", "foul", "smell", "discharge", "drained", "burst", "salty", "bleeding gums"]),
-    yn("associated", "fever_unwell", "Fever or feeling unwell", "Any fever, chills, or feeling generally unwell since the pain or swelling started?", ["fever", "chills", "unwell", "weakness", "not eating", "malaise", "rigors"]),
+    yn("associated", "fever_unwell", "Fever or feeling unwell", "Any fever, chills, or feeling generally unwell since the pain or swelling started?", ["fever", "chills", "unwell", "weakness", "off food", "malaise", "rigors"]),
     yn("associated", "trauma_dental_work", "Injury or recent dental treatment", "Any injury to the face or tooth, or recent filling, root treatment, or extraction?", ["injury", "fall", "hit", "filling", "root canal", "extraction", "removed", "recent treatment", "cleaning", "days after"]),
     yn("associated", "nasal_symptoms", "Blocked nose, worse on bending forward", "Any blocked nose or nasal discharge, and is the upper tooth pain worse on bending forward?", ["blocked nose", "nasal discharge", "bending forward", "several upper teeth", "cold", "sinus", "pressure", "one side"], { tier: "detailed", teach: "Pain across several upper teeth that worsens on bending forward asks about the sinus above them rather than any one tooth." }),
     yn("associated", "jaw_joint_symptoms", "Clicking or pain in front of the ear on chewing", "Any clicking, pain in front of the ear, or difficulty chewing on that side?", ["clicking", "in front of ear", "joint", "chewing", "grinding", "clenching", "locking", "morning", "stress"], { tier: "detailed" }),
     yn("associated", "neuralgic_pattern", "Brief shock-like pains triggered by touch", "Are the pains brief, shock-like, set off by touching the face, washing, shaving or a cold breeze?", ["shock like", "brief", "seconds", "touching", "washing", "shaving", "breeze", "eating", "one side", "attacks"], { tier: "detailed" }),
-    yn("associated", "dental_history_hygiene", "Previous dental problems and care", "Any previous toothaches, extractions, or long-standing decay, and how are the teeth cleaned?", ["previous", "extractions", "decay", "cavities", "brushing", "once daily", "manjan", "never", "multiple teeth", "bleeding while brushing"], { tier: "detailed" }),
+    yn("associated", "dental_history_hygiene", "Previous dental problems and care", "Any previous toothaches, extractions, or long-standing decay, and how are the teeth cleaned?", ["previous", "extractions", "decay", "cavities", "brushing", "once daily", "manjan", "multiple teeth", "bleeding while brushing"], { tier: "detailed" }),
     yn("associated", "diabetes_comorbidity", "Diabetes or long-term illness", "Any diabetes, kidney or liver disease, or long-term medicines?", ["diabetes", "sugar", "uncontrolled", "kidney", "liver", "long term", "tablets", "elderly"]),
     yn("exposure", "tobacco_areca", "Tobacco, gutka, areca nut, alcohol", "Any tobacco, gutka, khaini, areca nut or alcohol, how much, and for how many years?", ["tobacco", "gutka", "khaini", "paan", "areca", "supari", "smoking", "bidi", "alcohol", "years", "placed in cheek"]),
     // Red flags
@@ -42,8 +42,8 @@ export const toothacheV1: HistoryTree = {
     yn("red_flag", "trismus", "Unable to open the mouth fully", "How wide can the mouth be opened, and has that reduced over the past days?", ["cannot open", "trismus", "two fingers", "one finger", "reduced", "since yesterday", "opening normally", "painful to open"], { teach: "A mouth that opens less each day marks infection spreading into the muscle spaces around the jaw." }),
     yn("red_flag", "eye_involvement", "Swelling around the eye / double vision", "Any swelling around the eye, double vision, or change in vision with an upper tooth infection?", ["around the eye", "eyelid", "closed eye", "double vision", "vision", "proptosis", "upper tooth", "spreading upwards"], { teach: "Swelling tracking to the eye from an upper tooth raises spread along veins that drain towards the skull." }),
     yn("red_flag", "neck_swelling_spread", "Swelling spreading down the neck or to the chest", "Is the swelling spreading down the neck or towards the chest, with pain on turning the head?", ["down the neck", "chest", "spreading", "turning head", "neck stiffness", "redness", "firm", "rapidly"], { teach: "Swelling tracking down the neck raises infection moving along the tissue planes towards the chest." }),
-    yn("red_flag", "numb_lip_loose_teeth", "Numb lip or chin / teeth loosening", "Any numbness of the lip or chin, or teeth becoming loose without injury?", ["numb lip", "numbness", "chin", "loose teeth", "without injury", "several teeth", "jaw pain", "bone exposed", "discharging sinus"], { teach: "A numb lower lip with loosening teeth raises disease within the jaw bone rather than around the tooth." }),
-    yn("red_flag", "non_healing_ulcer", "Ulcer or white patch not healing for weeks", "Any ulcer, white or red patch in the mouth that has not healed for three weeks, or a lump in the neck?", ["ulcer", "not healing", "three weeks", "white patch", "red patch", "growth", "neck lump", "weight loss", "difficulty opening", "bleeding"], { teach: "A mouth ulcer that has not healed in three weeks in a tobacco user asks about a growth, and such an ulcer is often first shown to a dentist." }),
+    yn("red_flag", "numb_lip_loose_teeth", "Numb lip or chin / teeth loosening", "Any numbness of the lip or chin, or teeth becoming loose without injury?", ["numb lip", "numbness", "chin", "loose teeth", "several teeth", "jaw pain", "bone exposed", "discharging sinus"], { teach: "A numb lower lip with loosening teeth raises disease within the jaw bone rather than around the tooth." }),
+    yn("red_flag", "non_healing_ulcer", "Ulcer or white patch not healing for weeks", "Any ulcer, white or red patch in the mouth that has not healed for three weeks, or a lump in the neck?", ["ulcer", "non healing", "three weeks", "white patch", "red patch", "growth", "neck lump", "weight loss", "difficulty opening", "bleeding"], { teach: "A mouth ulcer that has not healed in three weeks in a tobacco user asks about a growth, and such an ulcer is often first shown to a dentist." }),
     IMMUNOCOMPROMISE,
   ],
   differentials: [

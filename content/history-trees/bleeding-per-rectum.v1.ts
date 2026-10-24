@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BLEEDING PER RECTUM — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * BLEEDING PER RECTUM — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical ward, north India. Separates anorectal bleeding (bright red, on the paper or
  * pan, after stool) from colonic bleeding (mixed, dark) and from upper-gastrointestinal
  * bleeding (black, tarry). Differentials: haemorrhoids, anal fissure, rectal or colonic cancer,
@@ -10,17 +10,17 @@ import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISO
  */
 export const bleedingPerRectumV1: HistoryTree = {
   id: "bleeding_per_rectum",
-  version: "1.3.0",
+  version: "1.4.0",
   complaint: "Bleeding per rectum",
   triggers: ["bleeding per rectum", "bleeding pr", "rectal bleeding", "blood per rectum", "passing blood", "bloody stools", "hematochezia", "haematochezia", "melaena", "melena", "black stools", "bright red blood"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
   slots: [
     ...commonHpi("bleeding per rectum"),
     val("hpi", "colour", "Colour of blood", "Is the blood bright red, dark, maroon, or black and tarry?", ["bright red", "dark", "maroon", "black", "tarry", "melaena", "malena", "red", "fresh blood"], { teach: "Bailey & Love warns that the bleeding of rectal cancer is typically bright red and painless and can be indistinguishable from haemorrhoidal bleeding, so colour alone does not settle the source." }),
-    val("hpi", "relation_to_stool", "Relation to stool", "Is the blood on the paper, dripping in the pan, streaked on the stool, or mixed in?", ["on paper", "on the pan", "dripping", "streaked", "mixed", "coating", "after stool", "before stool", "with stool", "only blood", "blood and mucus only", "without stool", "separate from stool"]),
+    val("hpi", "relation_to_stool", "Relation to stool", "Is the blood on the paper, dripping in the pan, streaked on the stool, or mixed in?", ["on paper", "on the pan", "dripping", "streaked", "mixed", "coating", "after stool", "before stool", "with stool", "only blood", "blood and mucus only", "separate from stool"]),
     val("hpi", "amount", "Amount", "How much blood — streaks, a few drops, a cupful, or clots?", ["streaks", "drops", "cupful", "clots", "large amount", "small amount", "profuse", "amount"], { numeric: true }),
     val("hpi", "pattern", "Frequency", "Does it come every stool, now and then, or is it a single episode?", ["every stool", "now and then", "single episode", "intermittent", "daily", "on and off", "recurrent"]),
     yn("hpi", "pain", "Pain on passing stool", "Is there pain on passing stool, and how long does it last?", ["pain on passing", "painful defaecation", "pain during stool", "burning", "cutting", "tearing"]),

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * GIDDINESS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * GIDDINESS — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Adult medicine ward, north India. Giddiness means different things to different patients;
  * the first job is to separate a spinning sensation, a feeling of about to faint, and
  * unsteadiness. Differentials: benign positional vertigo, vestibular neuritis, posterior
@@ -10,12 +10,12 @@ import { commonHpi, HUTCHISONS, MACLEODS, PREGNANCY, rce, val, yn } from "@/cont
  */
 export const giddinessV1: HistoryTree = {
   id: "giddiness",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Giddiness",
   triggers: ["giddiness", "dizziness", "vertigo", "light headed", "lightheaded", "spinning", "presyncope", "syncope", "fainting", "blackout"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("The rational clinical examination. Is this patient having a stroke?", 2005, "15900010"),
     MACLEODS,
@@ -32,7 +32,7 @@ export const giddinessV1: HistoryTree = {
     yn("associated", "palpitations", "Palpitations / chest pain", "Any palpitations, chest pain or breathlessness with the episodes?", ["palpitations", "chest pain", "breathlessness", "racing heart", "irregular heartbeat"]),
     yn("associated", "headache", "Headache", "Any headache with it?", ["headache", "head ache", "neck pain"]),
     yn("associated", "vision", "Visual symptoms", "Any double vision, blurring, or darkening of vision?", ["double vision", "diplopia", "blurring", "darkening", "tunnel vision", "blurred vision"]),
-    yn("associated", "fluid_loss", "Fluid loss / poor intake", "Any recent vomiting, loose stools, or poor oral intake?", ["vomiting", "loose stools", "diarrhoea", "poor intake", "not eating", "dehydration", "sweating"]),
+    yn("associated", "fluid_loss", "Fluid loss / poor intake", "Any recent vomiting, loose stools, or poor oral intake?", ["vomiting", "loose stools", "diarrhoea", "poor intake", "dehydration", "sweating"]),
     yn("associated", "recent_illness", "Recent cold / ear infection", "Any recent viral illness, cold, or ear infection?", ["cold", "viral", "ear infection", "recent illness", "fever"], { tier: "detailed" }),
     yn("associated", "anxiety", "Anxiety / hyperventilation", "Any anxiety, tingling around the mouth, or fast breathing during the episodes?", ["anxiety", "panic", "tingling", "fast breathing", "hyperventilation", "stress"], { tier: "detailed" }),
     // Red flags

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LOSS OF WEIGHT / APPETITE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * LOSS OF WEIGHT / APPETITE — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Adult medicine / surgical / oncology ward, north India. First job: is the weight loss real
  * and unintentional, and is the appetite lost (anorexia) or is eating painful or impossible?
  * Differentials: malignancy, tuberculosis and other chronic infection, HIV, diabetes,
@@ -10,17 +10,17 @@ import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, val, yn }
  */
 export const lossOfWeightAppetiteV1: HistoryTree = {
   id: "loss_of_weight_appetite",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Loss of weight / appetite",
   triggers: ["loss of weight", "weight loss", "loss of appetite", "reduced appetite", "anorexia", "decreased appetite", "not eating", "poor appetite", "wasting", "emaciation", "cachexia"],
   setting: "Adult medicine / surgical / oncology ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("loss of weight or appetite"),
     val("hpi", "weight_change", "How much weight", "How much weight has been lost, over what period, and how was it measured?", ["kg", "kilos", "pounds", "weight", "over months", "clothes loose", "belt", "measured", "weighed"], { numeric: true }),
-    val("hpi", "appetite_pattern", "Appetite pattern", "Is the appetite reduced for everything, or only some foods, or is eating painful or difficult?", ["reduced appetite", "no appetite", "early satiety", "full after", "painful to eat", "difficulty swallowing", "specific foods", "food aversion"]),
+    val("hpi", "appetite_pattern", "Appetite pattern", "Is the appetite reduced for everything, or only some foods, or is eating painful or difficult?", ["reduced appetite", "anorexia", "early satiety", "full after", "painful to eat", "difficulty swallowing", "specific foods", "food aversion"]),
     yn("hpi", "intentional", "Intentional or unintentional", "Was the weight loss intentional, through dieting or exercise?", ["intentional", "unintentional", "dieting", "exercise", "trying to lose", "without trying", "not trying"]),
     yn("associated", "fever_sweats", "Fever / night sweats", "Any fever or drenching night sweats?", ["fever", "night sweats", "evening rise", "chills", "sweating"]),
     yn("associated", "cough_breathlessness", "Cough / breathlessness", "Any cough, breathlessness, or blood in the sputum?", ["cough", "breathlessness", "haemoptysis", "blood in sputum", "sputum", "chest pain"]),

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IADVL, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SKIN RASH / ITCHING — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * SKIN RASH / ITCHING — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Skin ward and OPD, north India. Separate from the fever-with-rash tree: this is the rash
  * brought for its own sake. The history exists to find scabies (which the whole family has),
  * the drug reaction that is about to peel, and the patch that has lost sensation.
@@ -12,12 +12,12 @@ import { commonHpi, HUTCHISONS, IADVL, IMMUNOCOMPROMISE, MACLEODS, val, yn } fro
  */
 export const skinLesionV1: HistoryTree = {
   id: "skin_lesion",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Skin rash / itching",
   triggers: ["rash", "skin rash", "itching", "itchy", "pruritus", "skin lesion", "skin patch", "eruption", "boils", "blisters", "scaling", "khujli", "daad", "white patch", "red patches", "dry skin"],
   setting: "Skin ward and outpatient, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [IADVL, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("rash"),
@@ -27,7 +27,7 @@ export const skinLesionV1: HistoryTree = {
     yn("hpi", "pain_burning", "Pain or burning in the lesions", "Are the lesions painful, burning, or tender to touch?", ["painful", "burning", "tender", "sore", "not painful", "stinging"], { tier: "detailed" }),
     yn("associated", "family_contacts", "Same complaint in family or hostel", "Does anyone else at home, in the hostel, or sharing the bed have the same itch or rash?", ["family", "children", "husband", "wife", "hostel", "same complaint", "same itch", "nobody else", "sharing bed", "contacts"], { teach: "An itch that several people in one house share, worst at night, is asked about because treating one person alone leaves the household reinfecting itself." }),
     yn("associated", "new_drugs", "New medicines before the rash", "Were any new medicines, injections, or traditional remedies taken in the weeks before the rash?", ["new medicine", "tablets", "injection", "antibiotic", "painkiller", "ayurvedic", "homeopathic", "started before", "weeks before", "fits medicine", "sulpha"], { teach: "A rash beginning days to weeks after a new medicine asks which medicine and when, since the timing is the only clue the history gives." }),
-    yn("associated", "sensation_loss", "Numbness in the patch", "Is there any numbness, loss of sensation, or reduced sweating over the patch?", ["numbness", "no sensation", "loss of sensation", "cannot feel", "reduced sweating", "no sweating", "burns unnoticed", "tingling"], { teach: "A skin patch that has lost sensation is asked about everywhere leprosy remains present, and the patch is missed unless the question is put directly." }),
+    yn("associated", "sensation_loss", "Numbness in the patch", "Is there any numbness, loss of sensation, or reduced sweating over the patch?", ["numbness", "numb", "loss of sensation", "cannot feel", "reduced sweating", "anhidrosis", "burns unnoticed", "tingling"], { teach: "A skin patch that has lost sensation is asked about everywhere leprosy remains present, and the patch is missed unless the question is put directly." }),
     yn("associated", "joint_nail_scalp", "Nail and scalp changes / joint pain", "Any pitting or thickening of the nails, scaling of the scalp, or joint pains?", ["nails", "pitting", "thick nails", "scalp", "dandruff", "scaling", "joint pain", "swollen joints", "back pain"], { tier: "detailed" }),
     yn("associated", "systemic_itch_causes", "Jaundice / kidney disease / thyroid / weight change", "Any yellowing of the eyes, kidney disease, thyroid problem, or unexplained weight change?", ["jaundice", "yellow eyes", "kidney", "dialysis", "thyroid", "weight loss", "weight gain", "dry skin", "night sweats"], { tier: "detailed" }),
     yn("associated", "atopy_history", "Asthma / allergic rhinitis / childhood eczema", "Any asthma, sneezing in the morning, or eczema since childhood, in the patient or the family?", ["asthma", "sneezing", "allergic rhinitis", "eczema", "childhood", "family", "atopy", "dust allergy"], { tier: "detailed" }),
@@ -38,7 +38,7 @@ export const skinLesionV1: HistoryTree = {
     yn("red_flag", "skin_peeling", "Skin peeling or slipping off", "Is the skin peeling, blistering in sheets, or slipping off when rubbed?", ["peeling", "sheets", "slipping", "denuded", "blistering", "raw", "burn like", "large areas", "tender skin"], { teach: "Skin that slips or peels in sheets marks a reaction that behaves like a burn, with the same losses of fluid and heat." }),
     yn("red_flag", "fever_systemic", "Fever, facial swelling or feeling very unwell with the rash", "Any fever, swelling of the face, or feeling very unwell since the rash began?", ["fever", "facial swelling", "puffy face", "unwell", "lethargic", "joint pains", "lymph nodes", "breathless"], { teach: "Fever and facial swelling with a widespread rash raise a drug reaction involving organs beyond the skin." }),
     yn("red_flag", "rapid_spread_pain", "Rapidly spreading painful red area", "Is there a red area spreading rapidly with severe pain, or a black or foul smelling patch?", ["spreading", "rapidly", "hours", "severe pain", "out of proportion", "black", "foul smell", "crepitus", "swollen limb", "fever"], { teach: "Pain out of proportion over a rapidly spreading red area raises infection deep to the skin rather than in it." }),
-    yn("red_flag", "non_healing_changing_lesion", "A lesion that is not healing or is changing", "Is there any single lesion that has not healed for weeks, or that has changed in size, colour or bleeding?", ["not healing", "weeks", "months", "changing", "growing", "colour change", "bleeding", "ulcer", "irregular", "raised edge"], { tier: "detailed", teach: "A single lesion that will not heal or is changing asks about a growth, which is missed while the surrounding rash is treated." }),
+    yn("red_flag", "non_healing_changing_lesion", "A lesion that is not healing or is changing", "Is there any single lesion that has not healed for weeks, or that has changed in size, colour or bleeding?", ["non healing", "weeks", "months", "changing", "growing", "colour change", "bleeding", "ulcer", "irregular", "raised edge"], { tier: "detailed", teach: "A single lesion that will not heal or is changing asks about a growth, which is missed while the surrounding rash is treated." }),
     IMMUNOCOMPROMISE,
   ],
   differentials: [

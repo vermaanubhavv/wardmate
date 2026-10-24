@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, GRABB_SMITH, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SCAR TIGHTENING AFTER A BURN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * SCAR TIGHTENING AFTER A BURN — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Burns and plastic surgery unit, north India, where many burns heal at home without grafting or
  * splinting and arrive months or years later as tight bands across the neck, armpit, elbow,
  * hand or face. The history is about the old burn, what the tightness now stops the patient
@@ -13,12 +13,12 @@ import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, GRABB_SMITH, HAMILTON_BAI
  */
 export const postBurnContractureV1: HistoryTree = {
   id: "post_burn_contracture",
-  version: "1.2.0",
+  version: "1.3.0",
   complaint: "Scar tightening after a burn",
   triggers: ["post burn contracture", "burn contracture", "contracture", "burn scar", "old burn", "scar tightening", "tight scar", "scar pulling", "hypertrophic scar", "keloid", "raised scar", "neck contracture", "cannot raise arm after burn", "cannot open mouth after burn", "jale ka nishan", "khinchav"],
   setting: "Burns and plastic surgery unit, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, GRABB_SMITH, BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("scar tightening").filter((s) => !["onset_mode", "progression"].includes(s.id)),
@@ -34,10 +34,10 @@ export const postBurnContractureV1: HistoryTree = {
     yn("hpi", "previous_release", "Previous release operations", "Has the scar been operated on or released before, how many times, and did it tighten again?", ["released", "operated", "surgery", "graft", "flap", "z plasty", "tightened again", "recurred", "first time", "twice"], { teach: "A contracture that has tightened again after release asks what happened after the last operation — splinting, garments, exercises — as much as about the scar." }),
     yn("hpi", "family_keloid", "Similar scars elsewhere or in the family", "Does the patient get raised scars from small cuts, ear piercing or vaccination, and does anyone in the family?", ["ear piercing", "vaccination scar", "small cut", "raised scars", "family", "mother", "father", "sibling", "runs in family"], { tier: "detailed", teach: "Raised scars after trivial injuries, or in relatives, raise a tendency that behaves differently from a scar confined to a burn." }),
     // Children
-    yn("associated", "child_growth_effect", "In a child: growth and development", "In a child, is the tight part growing less than the other side, is a joint or the jaw being pulled out of shape, or is schooling affected?", ["child", "shorter", "smaller", "growing less", "pulled", "jaw", "teeth", "spine bent", "school", "missed school", "not growing", "breast"], { teach: "A tight scar in a growing child pulls on the bone and joint beneath it, so the deformity can worsen with growth even when the scar itself does not change." }),
-    yn("associated", "psychosocial_impact", "Effect on confidence, school, work or marriage", "Has the scar affected the patient's confidence, schooling, work, marriage prospects, or how they go out in public?", ["confidence", "shy", "ashamed", "hides", "covers", "teased", "school", "job", "marriage", "rishta", "does not go out", "sad", "low mood"], { teach: "The effect on schooling, work and marriage is often the reason for coming now, and is rarely volunteered unless asked." }),
+    yn("associated", "child_growth_effect", "In a child: growth and development", "In a child, is the tight part growing less than the other side, is a joint or the jaw being pulled out of shape, or is schooling affected?", ["child", "shorter", "smaller", "growing less", "pulled", "jaw", "teeth", "spine bent", "school", "missed school", "breast"], { teach: "A tight scar in a growing child pulls on the bone and joint beneath it, so the deformity can worsen with growth even when the scar itself does not change." }),
+    yn("associated", "psychosocial_impact", "Effect on confidence, school, work or marriage", "Has the scar affected the patient's confidence, schooling, work, marriage prospects, or how they go out in public?", ["confidence", "shy", "ashamed", "hides", "covers", "teased", "school", "job", "marriage", "rishta", "sad", "low mood"], { teach: "The effect on schooling, work and marriage is often the reason for coming now, and is rarely volunteered unless asked." }),
     // Red flags
-    yn("red_flag", "scar_ulcer_change", "Non-healing ulcer or change in an old scar", "Is there an ulcer in the old scar that has not healed for weeks, or a part that has grown, bled easily, or developed heaped-up edges?", ["ulcer", "not healing", "non healing", "wound in scar", "growing", "bleeds", "heaped", "raised edges", "cauliflower", "smell", "marjolin"], { teach: "An ulcer that will not heal in an old burn scar raises a cancer arising in the scar, which can appear decades after the burn." }),
+    yn("red_flag", "scar_ulcer_change", "Non-healing ulcer or change in an old scar", "Is there an ulcer in the old scar that has not healed for weeks, or a part that has grown, bled easily, or developed heaped-up edges?", ["ulcer", "non healing", "wound in scar", "growing", "bleeds", "heaped", "raised edges", "cauliflower", "smell", "marjolin"], { teach: "An ulcer that will not heal in an old burn scar raises a cancer arising in the scar, which can appear decades after the burn." }),
     yn("red_flag", "lymph_node_lump", "Lump in the armpit or groin", "Is there any new lump in the armpit, groin or neck on the side of the scar?", ["lump", "gland", "armpit lump", "groin lump", "neck lump", "swelling", "node"], { teach: "A new lump in the draining glands alongside a changing scar asks whether a scar ulcer has spread." }),
     yn("red_flag", "eye_exposure", "Eye cannot close", "Does the eyelid fail to close fully, with a red, watering or painful eye?", ["cannot close eye", "eye stays open", "eyelid pulled", "ectropion", "red eye", "watering", "painful eye", "blurred vision", "sleeps with eye open"], { teach: "An eyelid pulled open by scar leaves the eye exposed, and the surface of the eye can be damaged before the scar itself is addressed." }),
     yn("red_flag", "mouth_airway_restriction", "Mouth or neck so tight it limits eating or breathing", "Is the mouth opening or neck so tight that eating, brushing, or lying flat is difficult, or has an anaesthetist mentioned difficulty with the airway?", ["cannot open mouth", "small mouth", "microstomia", "chin stuck to chest", "cannot lie flat", "difficult to eat", "difficult intubation", "airway", "drooling"], { teach: "A tight neck or small mouth decides how the airway can be secured for any operation, so the restriction is asked about well before the day of surgery." }),
@@ -46,7 +46,7 @@ export const postBurnContractureV1: HistoryTree = {
     yn("exposure", "smoking_contracture", "Smoking", "Does the patient smoke or use tobacco?", ["smoking", "smoker", "bidi", "cigarette", "tobacco", "non smoker"], { tier: "detailed" }),
     // Release is a planned operation; the pre-operative background is asked in the long case.
     // Schwartz's Principles of Surgery, 11th ed. (docs/surgical-history.md §12)
-    yn("associated", "joint_bony_swelling", "Hard swelling and pain over a joint", "Is there pain and a hard swelling over the elbow or another joint, with movement lost even where the skin is not tight?", ["hard swelling", "bony lump", "pain at elbow", "elbow stiff", "joint stiff", "skin not tight", "no joint swelling"], { tier: "detailed", teach: "Schwartz describes new bone forming around a joint after a large burn, especially of the arm or after a long ventilator stay, which stiffens the joint apart from the scar." }),
+    yn("associated", "joint_bony_swelling", "Hard swelling and pain over a joint", "Is there pain and a hard swelling over the elbow or another joint, with movement lost even where the skin is not tight?", ["hard swelling", "bony lump", "pain at elbow", "elbow stiff", "joint stiff", "no joint swelling"], { tier: "detailed", teach: "Schwartz describes new bone forming around a joint after a large burn, especially of the arm or after a long ventilator stay, which stiffens the joint apart from the scar." }),
     yn("associated", "burn_nightmares", "Nightmares or flashbacks of the burn", "Does the patient have nightmares or flashbacks of the burn, or avoid things that bring it back?", ["nightmares", "flashbacks", "bad dreams", "afraid of fire", "avoids kitchen", "startles", "no nightmares"], { tier: "detailed", teach: "Schwartz notes depression and post-traumatic stress in a large share of burn survivors, lasting long after discharge and rarely volunteered." }),
     ...surgicalBackground({ omit: ["surg_weight_loss"] }),
   ],

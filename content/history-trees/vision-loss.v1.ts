@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, PARSONS_EYE, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LOSS OF VISION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * LOSS OF VISION — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Eye ward / casualty, north India. Three questions carry most of this history: one eye or
  * both, sudden or gradual, painful or painless. The gradual painless losses are common and
  * treatable late; the sudden ones are counted in hours.
@@ -13,17 +13,17 @@ import { commonHpi, HUTCHISONS, MACLEODS, PARSONS_EYE, val, yn } from "@/content
  */
 export const visionLossV1: HistoryTree = {
   id: "vision_loss",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Loss of vision",
   triggers: ["loss of vision", "vision loss", "cannot see", "blurred vision", "blurring of vision", "decreased vision", "dimness of vision", "blindness", "sudden loss of vision", "black out", "floaters", "dikhai nahi deta", "curtain over eye"],
   setting: "Eye ward and casualty, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [PARSONS_EYE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("loss of vision"),
     val("hpi", "side", "Which eye", "Which eye is affected, or are both, and was each eye checked separately by covering the other?", ["right eye", "left eye", "both eyes", "one eye", "checked separately", "covered", "not checked", "unilateral", "bilateral"]),
-    val("hpi", "severity", "How much vision is left", "How much vision remains — reading, recognising faces, counting fingers, or only light?", ["reading", "faces", "counting fingers", "hand movements", "only light", "no light", "near normal", "cannot read"]),
+    val("hpi", "severity", "How much vision is left", "How much vision remains — reading, recognising faces, counting fingers, or only light?", ["reading", "faces", "counting fingers", "hand movements", "only light", "npl", "near normal", "cannot read"]),
     val("hpi", "field_pattern", "Which part of the vision is lost", "Which part of the vision has gone — the centre, one side, a curtain from above or below, or all of it?", ["centre", "central", "one side", "half", "curtain", "from above", "from below", "whole", "patchy", "peripheral"], { teach: "Which part of the field is lost points to how far back along the visual pathway the problem sits." }),
     yn("hpi", "pain", "Pain with the loss", "Is the loss painful, and is there pain on moving the eye?", ["painful", "painless", "pain on moving", "deep ache", "no pain", "headache", "eye pain"]),
     yn("hpi", "transient_episodes", "Earlier brief episodes", "Were there earlier episodes where vision went and came back within minutes?", ["transient", "came back", "few minutes", "brief", "curtain", "amaurosis", "episodes", "recovered", "first episode"], { teach: "Brief episodes of vision going and returning before a lasting loss raise emboli travelling to the eye." }),

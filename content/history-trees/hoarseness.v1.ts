@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, DHINGRA, HUTCHISONS, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * HOARSENESS OF VOICE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * HOARSENESS OF VOICE — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * ENT ward, north India, where tobacco and gutka are common and a change of voice is brought
  * late. The history exists to find the airway that is narrowing, and the hoarseness lasting
  * beyond three weeks in a tobacco user that must be looked at rather than treated as laryngitis.
@@ -12,16 +12,16 @@ import { commonHpi, DHINGRA, HUTCHISONS, MACLEODS, val, yn } from "@/content/his
  */
 export const hoarsenessV1: HistoryTree = {
   id: "hoarseness",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Hoarseness of voice",
   triggers: ["hoarseness", "hoarse voice", "change in voice", "voice change", "husky voice", "loss of voice", "aphonia", "dysphonia", "awaz baithna", "cannot speak loudly"],
   setting: "ENT ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DHINGRA, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("change in voice"),
-    val("hpi", "voice_character", "How the voice has changed", "How has the voice changed — husky, breathy, weak, or lost altogether?", ["husky", "hoarse", "breathy", "weak", "rough", "whisper", "no voice", "aphonia", "strained", "fluctuating"]),
+    val("hpi", "voice_character", "How the voice has changed", "How has the voice changed — husky, breathy, weak, or lost altogether?", ["husky", "hoarse", "breathy", "weak", "rough", "whisper", "lost voice", "aphonia", "strained", "fluctuating"]),
     yn("hpi", "variability", "Better or worse at times", "Is the voice worse at the end of the day, better after rest, or the same throughout?", ["worse in evening", "better after rest", "same throughout", "fluctuating", "varies", "constant", "improving", "worsening"], { tier: "detailed" }),
     yn("hpi", "voice_use", "Voice use / shouting / smoking", "Is the voice used heavily at work — teaching, calling out, singing — and was there recent shouting?", ["teacher", "shouting", "singer", "hawker", "calling out", "voice use", "marriage", "loud", "vendor"]),
     yn("associated", "sore_throat_cold", "Recent cold or throat infection", "Was there a cold, cough or throat infection just before the voice changed?", ["cold", "coryza", "throat infection", "sore throat", "cough", "fever", "viral", "recent illness"]),
@@ -34,7 +34,7 @@ export const hoarsenessV1: HistoryTree = {
     yn("exposure", "tb_contact", "Contact with tuberculosis / chronic cough", "Any cough lasting weeks, evening fever, or contact with someone with tuberculosis?", ["cough for weeks", "evening fever", "night sweats", "tuberculosis", "tb", "contact", "sputum", "weight loss"]),
     // Red flags
     yn("red_flag", "stridor_breathing", "Noisy or difficult breathing", "Any noisy breathing, difficulty breathing, or breathlessness on lying flat?", ["noisy breathing", "stridor", "difficulty breathing", "breathless", "on lying", "sitting up", "whistling", "gasping"], { teach: "Noisy breathing with a changed voice marks a narrowing airway, which can close over hours." }),
-    yn("red_flag", "persistent_three_weeks", "Voice changed for more than three weeks", "Has the voice been changed for more than three weeks without improving?", ["three weeks", "more than three weeks", "months", "not improving", "persistent", "continuous", "getting worse"], { teach: "Hoarseness beyond three weeks in a tobacco user asks for the voice box to be looked at rather than treated again." }),
+    yn("red_flag", "persistent_three_weeks", "Voice changed for more than three weeks", "Has the voice been changed for more than three weeks without improving?", ["three weeks", "more than three weeks", "months", "persisting", "persistent", "continuous", "getting worse"], { teach: "Hoarseness beyond three weeks in a tobacco user asks for the voice box to be looked at rather than treated again." }),
     yn("red_flag", "weight_loss_neck_node", "Weight loss / neck lump / referred ear pain", "Any weight loss, a hard lump in the neck, or pain in the ear on the same side?", ["weight loss", "loss of appetite", "hard lump", "neck node", "ear pain", "referred", "growing", "fixed"], { teach: "Weight loss, a hard neck node or ear pain with hoarseness raise a growth rather than inflammation." }),
     yn("red_flag", "haemoptysis_aspiration", "Blood in the spit / coughing on swallowing", "Any blood in the spit, or coughing and choking each time food or water is swallowed?", ["blood in spit", "haemoptysis", "blood stained sputum", "coughing on swallowing", "choking", "aspirating", "water goes wrong way"], { teach: "Coughing on every swallow with a changed voice raises a cord that is not closing, leaving the airway unprotected." }),
   ],

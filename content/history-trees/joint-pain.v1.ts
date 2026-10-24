@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, ebem, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * JOINT PAIN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * JOINT PAIN — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Adult medicine / orthopaedic ward, north India. The three questions that organise the whole
  * history: how many joints, which joints, and how long. A single hot joint is a different
  * problem from a symmetrical small-joint polyarthritis. Differentials: septic arthritis,
@@ -12,12 +12,12 @@ import { commonHpi, ebem, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce
  */
 export const jointPainV1: HistoryTree = {
   id: "joint_pain",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Joint pain",
   triggers: ["joint pain", "joint pains", "arthritis", "arthralgia", "pain in joints", "swollen joint", "joint swelling", "knee pain", "painful joints", "polyarthritis", "jodon me dard"],
   setting: "Adult medicine / orthopaedic ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     ebem("Septic arthritis in emergency department patients with joint pain: searching for the optimal diagnostic tool", 2008, "18294730"),
     rce("Does this patient with shoulder pain have rotator cuff disease? The Rational Clinical Examination systematic review", 2013, "23982370"),
@@ -48,7 +48,7 @@ export const jointPainV1: HistoryTree = {
     yn("red_flag", "prosthetic_joint", "Artificial joint / previous joint surgery", "Any artificial joint or previous surgery on that joint?", ["artificial joint", "prosthesis", "replacement", "joint surgery", "implant", "plate", "screw"], { teach: "An artificial joint becomes infected with fewer signs and at lower fever than a natural one, so the threshold to ask stays low." }),
     yn("red_flag", "trauma", "Injury", "Any injury, fall, or twist of the joint before the pain?", ["injury", "trauma", "fall", "twist", "sprain", "accident", "hit", "sports"], { teach: "An injury before the pain changes the question from inflammation to fracture, ligament or bleeding into the joint." }),
     yn("red_flag", "neuro_deficit", "Weakness / numbness / bladder change", "Any limb weakness, numbness, or change in passing urine with back or neck pain?", ["weakness", "numbness", "tingling", "bladder", "bowel", "retention", "saddle", "cannot walk"], { teach: "Weakness or bladder change with spinal pain moves this from a joint question to a cord or nerve-root one." }),
-    yn("red_flag", "night_pain_weight_loss", "Night pain with weight loss", "Is the pain worse at night and waking the patient, with weight loss?", ["night pain", "wakes at night", "weight loss", "constant pain", "not relieved by rest", "worse at night"], { teach: "Bone pain that wakes a patient, together with weight loss, raises infection or a deposit in the bone rather than a joint problem." }),
+    yn("red_flag", "night_pain_weight_loss", "Night pain with weight loss", "Is the pain worse at night and waking the patient, with weight loss?", ["night pain", "wakes at night", "weight loss", "constant pain", "unrelieved by rest", "worse at night"], { teach: "Bone pain that wakes a patient, together with weight loss, raises infection or a deposit in the bone rather than a joint problem." }),
     yn("red_flag", "bleeding_disorder", "Bleeding tendency / blood thinners", "Any bleeding disorder, haemophilia, or blood thinners?", ["haemophilia", "bleeding disorder", "blood thinner", "warfarin", "anticoagulant", "easy bruising", "factor"], { tier: "detailed", teach: "A joint that fills with blood rather than inflammatory fluid is managed differently from the start." }),
     IMMUNOCOMPROMISE,
     PREGNANCY,

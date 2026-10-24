@@ -2,19 +2,19 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LUMP / SWELLING (a localised lump) — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * LUMP / SWELLING (a localised lump) — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical ward, north India. Generic lump history to be read alongside the site-specific
  * one (breast, neck, groin, abdominal wall). Differentials: lipoma or cyst, abscess, hernia,
  * lymph node (reactive, tuberculous, malignant), soft-tissue tumour, thyroid swelling, vascular.
  */
 export const lumpV1: HistoryTree = {
   id: "lump",
-  version: "1.3.0",
+  version: "1.4.0",
   complaint: "Lump",
   triggers: ["lump", "swelling in", "mass", "growth", "nodule", "lump in", "lump neck", "lump breast", "lump groin", "swelling neck", "inguinal swelling"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BROWSE, SABISTON, BAILEY_LOVE],
   slots: [
     ...commonHpi("lump"),
@@ -33,7 +33,7 @@ export const lumpV1: HistoryTree = {
     // Red flags
     yn("red_flag", "rapid_growth_hard", "Rapid growth / hard / fixed", "Has the lump grown quickly over weeks?", ["rapid growth", "rapidly increasing", "hard", "fixed", "stony hard", "irregular", "enlarging fast"], { teach: "A lump that is growing fast, hard and fixed is asked about first because it changes the urgency of assessment." }),
     yn("associated", "weight_loss", "Weight loss / night sweats / appetite", "Any unintentional weight loss, night sweats, or loss of appetite?", ["weight loss", "night sweats", "loss of appetite", "lost weight", "anorexia"], { teach: "General symptoms with a lump raise the question of a systemic cause rather than a purely local one." }),
-    yn("red_flag", "irreducible_painful", "Painful, tense, irreducible swelling with vomiting", "Is a groin or abdominal lump suddenly painful, tense, and no longer going back, with vomiting?", ["irreducible", "tense", "painful", "vomiting", "not going back", "sudden pain", "obstructed", "strangulated"], { teach: "A swelling that used to reduce and no longer does, with pain and vomiting, asks about a trapped bowel loop." }),
+    yn("red_flag", "irreducible_painful", "Painful, tense, irreducible swelling with vomiting", "Is a groin or abdominal lump suddenly painful, tense, and no longer going back, with vomiting?", ["irreducible", "tense", "painful", "vomiting", "stuck", "sudden pain", "obstructed", "strangulated"], { teach: "A swelling that used to reduce and no longer does, with pain and vomiting, asks about a trapped bowel loop." }),
     yn("exposure", "family_cancer", "Family history of cancer", "Any family history of breast, ovarian, bowel or thyroid cancer?", ["family history", "breast cancer", "ovarian cancer", "bowel cancer", "thyroid cancer", "cancer in family", "mother", "sister"], { tier: "detailed", teach: "A family history of related cancers raises the pre-test question for a malignant lump." }),
     yn("exposure", "radiation_hiv", "Previous radiation / immunosuppression", "Any previous radiotherapy, HIV, or long-term immunosuppression?", ["radiotherapy", "radiation", "hiv", "immunosuppression", "steroids", "cancer treatment"], { tier: "detailed", teach: "Past radiation or immune suppression changes what a new lump can be." }),
     yn("exposure", "tb_contact", "TB contact / past TB", "Any past tuberculosis or contact with tuberculosis?", ["tb", "tuberculosis", "koch", "att", "akt", "tb contact"], { tier: "detailed" }),

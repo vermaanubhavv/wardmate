@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, NPCCHH_HEAT, PREGNANCY, TINTINALLI, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * HEAT ILLNESS / COLLAPSE IN THE HEAT — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * HEAT ILLNESS / COLLAPSE IN THE HEAT — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Emergency department, north India. Summer heat waves bring two groups: people working hard
  * outdoors (construction, farming, traffic duty, daily-wage labour) who collapse at work, and
  * older or unwell people alone indoors without cooling who are found confused at home. The
@@ -15,12 +15,12 @@ import { commonHpi, HUTCHISONS, MACLEODS, NPCCHH_HEAT, PREGNANCY, TINTINALLI, va
  */
 export const heatIllnessV1: HistoryTree = {
   id: "heat_illness",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Heat illness / collapse in the heat",
   triggers: ["heat stroke", "heatstroke", "sunstroke", "sun stroke", "heat exhaustion", "heat illness", "heat cramps", "heat syncope", "hyperthermia", "hyperpyrexia", "collapse in heat", "collapsed in sun", "heat wave", "loo lagna", "loo lag gayi", "loo lagi", "garmi lag gayi"],
   setting: "Emergency department, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [NPCCHH_HEAT, TINTINALLI, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("illness"),
@@ -31,7 +31,7 @@ export const heatIllnessV1: HistoryTree = {
     val("hpi", "time_in_heat", "Time spent in the heat", "How many hours was the patient in the heat, and over how many days has the heat been this bad?", ["hours", "whole day", "since morning", "afternoon", "days", "heat wave", "noon"], { numeric: true }),
     val("hpi", "collapse_pattern", "How the collapse happened", "Did the patient collapse during effort, on standing up, or become gradually confused at rest, and was the recovery quick on lying down?", ["collapsed", "fell", "during work", "on standing", "stood up", "gradually", "confused", "recovered", "lying down", "woke up quickly"]),
     val("hpi", "fluid_salt_intake", "Water and salt taken", "How much water was taken that day, was any salt or ORS taken with it, or was a large amount of plain water drunk?", ["water", "litres", "glasses", "bottles", "ors", "salt", "nimbu pani", "lassi", "plain water", "very little water", "no water", "a lot of water"], { numeric: true }),
-    yn("hpi", "sweating_state", "Sweating or dry skin", "Was the patient sweating heavily, or was the skin hot and dry?", ["sweating", "drenched", "wet", "hot and dry", "dry skin", "not sweating", "stopped sweating"]),
+    yn("hpi", "sweating_state", "Sweating or dry skin", "Was the patient sweating heavily, or was the skin hot and dry?", ["sweating", "drenched", "wet", "hot and dry", "dry skin", "stopped sweating"]),
     val("hpi", "temperature_recorded", "Temperature recorded", "Was a temperature recorded before or on arrival, where on the body, and how long after the collapse?", ["temperature", "degrees", "fahrenheit", "celsius", "rectal", "axillary", "oral", "thermometer", "not measured", "very hot to touch"], { numeric: true }),
     val("hpi", "cooling_before", "Cooling before arrival", "Was any cooling done before arrival — shade, wet cloth, fanning, water poured over, or ice — and how soon?", ["shade", "wet cloth", "fan", "fanning", "water poured", "ice", "cool water", "sponging", "no cooling"]),
     // Associated
@@ -39,13 +39,13 @@ export const heatIllnessV1: HistoryTree = {
     yn("associated", "vomiting_loose_stools", "Vomiting or loose stools", "Any vomiting or loose stools, and how many times?", ["vomiting", "ulti", "loose stools", "loose motions", "diarrhoea", "times"]),
     yn("associated", "muscle_cramps", "Muscle cramps", "Any painful cramps in the legs, arms or abdomen during or after the work?", ["cramps", "cramp", "muscle spasm", "painful muscles", "khinchav", "calf pain"]),
     yn("associated", "thirst_giddiness", "Thirst and giddiness on standing", "Any marked thirst, dry mouth, or giddiness on standing up?", ["thirst", "thirsty", "dry mouth", "giddiness on standing", "blackout on standing", "weak"]),
-    yn("associated", "urine_colour_heat", "Urine colour and amount", "When was urine last passed, and was it dark, cola-coloured or reduced in amount?", ["urine", "dark urine", "cola coloured", "brown urine", "reduced urine", "not passed urine", "last passed"]),
+    yn("associated", "urine_colour_heat", "Urine colour and amount", "When was urine last passed, and was it dark, cola-coloured or reduced in amount?", ["urine", "dark urine", "cola coloured", "brown urine", "reduced urine", "last passed"]),
     yn("associated", "illness_before", "Illness in the days before", "Was there fever, chills, cough, burning urine or any illness in the days before the heat exposure?", ["fever before", "chills", "rigors", "cough", "burning urine", "unwell before", "ill for days", "fever since"]),
     // Red flags
-    yn("red_flag", "altered_mentation", "Confusion or unconsciousness", "Is there any confusion, irrelevant talk, agitation, drowsiness or unconsciousness?", ["confusion", "confused", "irrelevant talk", "agitated", "drowsy", "unconscious", "not responding", "abnormal behaviour", "altered sensorium"], { teach: "Any change in the brain's function after heat exposure separates heat stroke from milder heat illness, and the damage grows with every minute the body stays hot." }),
+    yn("red_flag", "altered_mentation", "Confusion or unconsciousness", "Is there any confusion, irrelevant talk, agitation, drowsiness or unconsciousness?", ["confusion", "confused", "irrelevant talk", "agitated", "drowsy", "unconscious", "unresponsive", "abnormal behaviour", "altered sensorium"], { teach: "Any change in the brain's function after heat exposure separates heat stroke from milder heat illness, and the damage grows with every minute the body stays hot." }),
     yn("red_flag", "seizure_heat", "Seizure", "Any fit or seizure during or after the collapse?", ["seizure", "fit", "fits", "convulsion", "jerking", "daura"], { teach: "A seizure after heat exposure marks the brain as involved, and also keeps infection of the brain and drug toxicity in view." }),
     yn("red_flag", "very_high_temperature", "Very high temperature", "Was the patient extremely hot to touch, or was a very high temperature recorded?", ["very hot", "burning hot", "high temperature", "hyperpyrexia"], { teach: "A very high core temperature with confusion carries a high mortality, and a temperature taken late or after cooling may read falsely low." }),
-    yn("red_flag", "dark_scanty_urine", "Dark or scanty urine", "Has urine become very dark, cola-coloured or stopped?", ["cola coloured", "dark urine", "brown urine", "no urine", "stopped passing urine", "scanty urine"], { teach: "Dark or absent urine after heavy exertion in the heat raises muscle breakdown and kidney injury, which may declare themselves only after the collapse." }),
+    yn("red_flag", "dark_scanty_urine", "Dark or scanty urine", "Has urine become very dark, cola-coloured or stopped?", ["cola coloured", "dark urine", "brown urine", "anuria", "stopped passing urine", "scanty urine"], { teach: "Dark or absent urine after heavy exertion in the heat raises muscle breakdown and kidney injury, which may declare themselves only after the collapse." }),
     yn("red_flag", "bleeding_heat", "Bleeding", "Any bleeding from the gums or nose, blood in vomit or stools, or easy bruising?", ["bleeding", "gums", "nose bleed", "blood in vomit", "black stools", "blood in stool", "bruising", "red spots"], { teach: "Bleeding after heat stroke suggests the clotting system is failing, and the same picture can come from severe infection or malaria." }),
     yn("red_flag", "neck_stiffness_rash", "Neck stiffness or rash", "Any neck stiffness, a rash, or sensitivity to light?", ["neck stiffness", "stiff neck", "rash", "spots", "photophobia", "light hurts"], { teach: "Neck stiffness or a rash with fever and confusion keeps meningitis and meningococcal infection in the differential even in a heat wave." }),
     yn("red_flag", "one_sided_weakness", "Weakness of one side or slurred speech", "Any weakness of one side, deviation of the face, or slurred speech?", ["one side weakness", "weakness of one side", "facial deviation", "slurred speech", "cannot speak", "hemiparesis", "lakwa"], { teach: "A one-sided deficit in an older person found at home in the heat raises a stroke, which may have caused the patient to lie there in the first place." }),
@@ -53,7 +53,7 @@ export const heatIllnessV1: HistoryTree = {
     PREGNANCY,
     // Exposure and background
     yn("exposure", "outdoor_occupation", "Outdoor or heavy work", "Does the patient work outdoors or in hot conditions — construction, farming, traffic duty, daily-wage labour, a kitchen or a factory?", ["construction", "labourer", "labour", "farmer", "farming", "traffic police", "traffic duty", "daily wage", "mazdoor", "kitchen", "factory", "brick kiln", "delivery", "rickshaw"]),
-    yn("exposure", "lives_alone_vulnerable", "Older, living alone or dependent", "Is the patient elderly, living alone, bedbound or dependent on others for water, without a fan or cooler at home?", ["elderly", "old", "lives alone", "alone", "bedbound", "dependent", "no fan", "no cooler", "no electricity", "power cut", "top floor"], { teach: "Older people living alone, bedbound or without cooling are the ones found with classic heat stroke after days of a heat wave rather than hours of effort." }),
+    yn("exposure", "lives_alone_vulnerable", "Older, living alone or dependent", "Is the patient elderly, living alone, bedbound or dependent on others for water, without a fan or cooler at home?", ["elderly", "old", "lives alone", "alone", "bedbound", "dependent", "power cut", "top floor"], { teach: "Older people living alone, bedbound or without cooling are the ones found with classic heat stroke after days of a heat wave rather than hours of effort." }),
     yn("exposure", "heat_risk_medicines", "Medicines that impair heat loss", "Is the patient taking water tablets, medicines for allergy, bladder, sleep or mood, psychiatric medicines, or blood pressure medicines?", ["water tablet", "diuretic", "furosemide", "anticholinergic", "antihistamine", "allergy medicine", "bladder medicine", "sleeping pill", "antidepressant", "antipsychotic", "bp medicine", "beta blocker"], { teach: "Water tablets, anticholinergic and psychiatric medicines each reduce the body's ability to shed heat or hold fluid, and some cause a toxic picture of their own." }),
     yn("exposure", "stimulant_use", "Stimulant or other drug use", "Any use of stimulants, recreational drugs, or large amounts of energy drinks or pre-workout supplements?", ["stimulant", "amphetamine", "cocaine", "ecstasy", "party drugs", "energy drink", "pre workout", "supplement", "smack", "ganja"], { teach: "Stimulant drugs generate heat themselves, so a hot, agitated patient may be showing a drug effect as much as the weather." }),
     yn("exposure", "thyroid_symptoms", "Thyroid disease or symptoms", "Is there known thyroid disease, or recent weight loss, tremor, palpitations or heat intolerance before this?", ["thyroid", "hyperthyroid", "weight loss", "tremor", "palpitations", "heat intolerance", "goitre", "neck swelling"], { tier: "detailed", teach: "Fever, agitation and a racing heart in someone with an overactive thyroid raise thyroid storm, which heat or infection can set off." }),

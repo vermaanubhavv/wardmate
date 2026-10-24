@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, CAMPBELL_UROLOGY, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * PAIN IN THE LOIN / RENAL COLIC — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * PAIN IN THE LOIN / RENAL COLIC — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Urology ward and casualty, north India. The history reads the pain first (colicky and
  * restless, or constant and still), then asks the two questions that change the timing: is
  * there fever with the pain, and is there only one working kidney. The mimics that kill are
@@ -13,12 +13,12 @@ import { BAILEY_LOVE, CAMPBELL_UROLOGY, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE,
  */
 export const loinPainV1: HistoryTree = {
   id: "loin_pain",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Pain in the loin / renal colic",
   triggers: ["loin pain", "pain in loin", "pain in the loin", "flank pain", "pain in flank", "renal colic", "ureteric colic", "kidney pain", "pain in kidney", "stone pain", "kidney stone pain", "pain in the side", "gurde me dard", "pathri ka dard"],
   setting: "Urology ward and casualty, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [CAMPBELL_UROLOGY, BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("loin pain"),
@@ -40,7 +40,7 @@ export const loinPainV1: HistoryTree = {
     yn("associated", "movement_rash", "Pain on movement / rash", "Is the pain worse on bending or twisting, or is there a burning band of pain or a blistering rash on the skin?", ["bending", "twisting", "movement", "lifting", "muscle", "rash", "blisters", "band like", "skin burning"]),
     // Red flags
     yn("red_flag", "fever_with_colic", "Fever or rigors with the pain", "Is there fever, rigors or chills along with the loin pain?", ["fever", "rigors", "chills", "shivering", "temperature"], { teach: "Fever in a kidney that may be blocked asks whether infected urine is trapped above an obstruction, which cannot wait." }),
-    yn("red_flag", "single_kidney_anuria", "Single kidney / no urine", "Does the patient have only one working kidney, or has almost no urine been passed?", ["single kidney", "one kidney", "kidney removed", "transplant", "no urine", "anuria", "not passed urine"], { teach: "Obstruction of a solitary kidney, or of both sides, stops all urine and makes the pain an emergency." }),
+    yn("red_flag", "single_kidney_anuria", "Single kidney / no urine", "Does the patient have only one working kidney, or has almost no urine been passed?", ["single kidney", "one kidney", "kidney removed", "transplant", "anuria"], { teach: "Obstruction of a solitary kidney, or of both sides, stops all urine and makes the pain an emergency." }),
     yn("red_flag", "aneurysm_features", "Sudden severe back pain with collapse", "Did the pain come suddenly, tearing into the back, with fainting or collapse, especially in an older patient or a smoker?", ["sudden", "tearing", "fainted", "collapse", "pulsatile", "aneurysm", "smoker", "older"], { teach: "A leaking aortic aneurysm can be mistaken for left-sided colic in an older patient, and that error is often fatal." }),
     yn("red_flag", "missed_period_bleeding", "Missed period / vaginal bleeding", "In a woman, is a period late or missed, or is there vaginal bleeding or fainting?", ["missed period", "late period", "lmp", "pregnant", "vaginal bleeding", "spotting", "fainting"], { teach: "A ruptured ectopic pregnancy can present as one-sided lower loin pain, so the menstrual history is asked in every woman of reproductive age." }),
     yn("red_flag", "shock_symptoms", "Giddiness / cold sweat", "Any giddiness on standing, cold sweat, or confusion?", ["giddiness", "cold sweat", "clammy", "confusion", "low bp", "drowsy"], { teach: "Signs of shock turn a painful complaint into a haemodynamic one and change what is asked next." }),

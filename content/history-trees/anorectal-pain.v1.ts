@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ANORECTAL PAIN AND PERIANAL COMPLAINT — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * ANORECTAL PAIN AND PERIANAL COMPLAINT — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical ward, north India. The relationship of the pain to passing stool separates most
  * of this list: pain during and after defaecation with bright bleeding is a fissure, constant
  * throbbing pain with fever is a collection. Differentials: anal fissure, perianal or
@@ -11,12 +11,12 @@ import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISO
  */
 export const anorectalPainV1: HistoryTree = {
   id: "anorectal_pain",
-  version: "1.3.0",
+  version: "1.4.0",
   complaint: "Anal pain / perianal swelling",
   triggers: ["anal pain", "pain in anus", "perianal swelling", "perianal pain", "painful defaecation", "pain while passing stool", "perianal abscess", "fissure", "fistula", "piles", "haemorrhoids", "pilonidal", "swelling near anus", "discharge near anus"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
   slots: [
     ...commonHpi("anal pain"),
@@ -37,8 +37,8 @@ export const anorectalPainV1: HistoryTree = {
     yn("red_flag", "abscess_features", "Constant throbbing pain with fever and swelling", "Is the pain constant and throbbing, with fever and a tender swelling, rather than related to passing stool?", ["throbbing", "tender swelling", "cannot sit", "sleepless"], { teach: "Constant throbbing perianal pain with fever, unrelated to passing stool, is the pattern of a collection of pus rather than a fissure or a pile." }),
     yn("red_flag", "spreading_necrosis", "Spreading redness, blackening or severe illness", "Any rapidly spreading redness, blackening of the skin, crackling under the skin, foul discharge, or severe illness?", ["spreading", "rapidly", "blackening", "black", "crackling", "crepitus", "severe illness", "toxic", "gangrene", "necrosis"], { teach: "Rapidly spreading redness or blackening in the perineum marks a necrotising infection, where hours of delay change the extent of surgery needed." }),
     yn("red_flag", "diabetes_immunosuppression", "Diabetes or immunosuppression", "Is the patient diabetic, on steroids, on chemotherapy, or otherwise immunosuppressed?", ["diabetes", "diabetic", "sugar", "steroid", "chemotherapy", "immunosuppressed", "hiv", "transplant"], { teach: "Perianal infection in a diabetic or immunosuppressed patient spreads further and faster with fewer outward signs." }),
-    yn("red_flag", "urinary_retention", "Unable to pass urine", "Has the patient become unable to pass urine?", ["cannot pass urine", "retention", "not passed urine", "full bladder", "dribbling"], { teach: "Retention of urine alongside perineal pain marks either severe pain or spread of infection, and either way it changes the urgency." }),
-    yn("associated", "mass_weight_loss", "Hard lump or non-healing sore at the anus", "Is there a hard lump or a sore at the anus that has not healed?", ["hard lump", "ulcer", "growth", "weight loss", "not settled", "persistent bleeding", "irregular", "indurated"], { teach: "A hard lump or a sore at the anus that will not heal raises a carcinoma, which is regularly treated as piles for months first." }),
+    yn("red_flag", "urinary_retention", "Unable to pass urine", "Has the patient become unable to pass urine?", ["cannot pass urine", "retention", "urinary retention", "full bladder", "dribbling"], { teach: "Retention of urine alongside perineal pain marks either severe pain or spread of infection, and either way it changes the urgency." }),
+    yn("associated", "mass_weight_loss", "Hard lump or non-healing sore at the anus", "Is there a hard lump or a sore at the anus that has not healed?", ["hard lump", "ulcer", "growth", "weight loss", "non healing", "persistent bleeding", "irregular", "indurated"], { teach: "A hard lump or a sore at the anus that will not heal raises a carcinoma, which is regularly treated as piles for months first." }),
     yn("associated", "recurrent_fistula_tb_crohn", "Repeated abscesses or multiple openings", "Have there been repeated abscesses, multiple discharging openings, or a history of tuberculosis or chronic bowel disease?", ["repeated", "recurrent", "multiple openings", "several", "crohn", "chronic diarrhoea", "again and again"], { teach: "Repeated or multiple perianal openings point away from a simple abscess and towards tuberculosis or inflammatory bowel disease." }),
     yn("red_flag", "severe_pain_thrombosis", "Sudden severe pain with a tense blue lump", "Did a tense, blue, exquisitely painful lump appear suddenly at the anal margin?", ["tense", "blue", "purple", "exquisitely painful", "appeared suddenly", "at the margin"], { teach: "A sudden tense blue lump at the anal margin is the picture of a clotted external pile; how many days ago it appeared matters, because relief from evacuation is greatest early." }),
     yn("exposure", "occupation_sitting", "Prolonged sitting / driving / heavy work", "Does the work involve prolonged sitting, driving, or heavy lifting?", ["sitting", "driving", "heavy lifting", "labourer", "long hours", "occupation", "desk"], { tier: "detailed" }),

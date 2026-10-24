@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * JAUNDICE — v1.1.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * JAUNDICE — v1.1.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult medicine ward, north India. Differentials: acute viral hepatitis (A/E, B), alcoholic
  * hepatitis, drug-induced liver injury (including anti-tubercular drugs), obstructive jaundice
  * (stone, malignancy), decompensated cirrhosis, haemolysis (including malaria), leptospirosis,
@@ -10,12 +10,12 @@ import { BAILEY_LOVE, commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val
  */
 export const jaundiceV1: HistoryTree = {
   id: "jaundice",
-  version: "1.4.0",
+  version: "1.5.0",
   complaint: "Jaundice",
   triggers: ["jaundice", "yellowish discolouration", "yellow discoloration", "yellowness of eyes", "yellow eyes", "icterus", "yellow urine"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("Does this patient with liver disease have cirrhosis?", 2012, "22357834"),
     rce("The rational clinical examination. Physical examination of the liver", 1994, "8196144"),
@@ -37,7 +37,7 @@ export const jaundiceV1: HistoryTree = {
     yn("associated", "fever", "Fever / chills", "Any fever, chills or rigors?", ["fever", "febrile", "temperature", "chills", "rigors"]),
     yn("associated", "abdominal_pain", "Abdominal pain", "Any abdominal pain, and where?", ["abdominal pain", "pain abdomen", "right hypochondrium", "right upper", "epigastric", "pain in abdomen"]),
     yn("associated", "nausea_vomiting", "Nausea / vomiting", "Any nausea or vomiting?", ["nausea", "vomiting", "vomit", "vomited"]),
-    yn("associated", "appetite", "Loss of appetite / aversion to food", "Any loss of appetite or aversion to food or smoking?", ["loss of appetite", "appetite", "anorexia", "distaste", "aversion", "not eating"]),
+    yn("associated", "appetite", "Loss of appetite / aversion to food", "Any loss of appetite or aversion to food or smoking?", ["loss of appetite", "appetite", "anorexia", "distaste", "aversion", "eating less"]),
     yn("associated", "weight_loss", "Weight loss", "Any weight loss?", ["weight loss", "lost weight", "losing weight"]),
     yn("associated", "abdominal_distension", "Abdominal distension / leg swelling", "Any abdominal distension or swelling of the legs?", ["distension", "distended", "ascites", "leg swelling", "pedal oedema", "pedal edema", "swelling of feet", "oedema", "edema"]),
     yn("associated", "gi_bleed", "Blood in vomit / black stools", "Any blood in vomit or black tarry stools?", ["blood in vomit", "haematemesis", "hematemesis", "black stools", "malena", "melena", "melaena", "tarry"]),
@@ -47,7 +47,7 @@ export const jaundiceV1: HistoryTree = {
     // Red flags
     yn("red_flag", "altered_sensorium", "Drowsiness / confusion / sleep reversal", "Any drowsiness, confusion, irrelevant talk, or day-night sleep reversal (encephalopathy)?", ["drowsy", "drowsiness", "confused", "confusion", "altered sensorium", "irrelevant talk", "sleep reversal", "irritable", "disoriented", "unconscious", "behaviour change", "inverted sleep", "sleep inversion"], { teach: "Drowsiness, sleep reversal or confusion with jaundice asks whether the liver is failing to clear toxins from the blood, which changes where and how urgently the patient is managed." }),
     yn("red_flag", "bleeding_manifestations", "Bleeding manifestations", "Any bleeding from any site?", ["bleeding", "haematemesis", "hematemesis", "malena", "melena", "epistaxis", "gum bleeding", "petechiae"], { teach: "Bleeding with jaundice means the liver is no longer making clotting factors, or the platelets are low from a large spleen; both are urgent." }),
-    yn("red_flag", "urine_output", "Reduced urine output", "Has the urine output reduced?", ["urine output", "decreased urine", "reduced urine", "less urine", "oliguria", "not passing urine"], { teach: "Reduced urine output with jaundice raises hepatorenal syndrome, leptospirosis and severe malaria." }),
+    yn("red_flag", "urine_output", "Reduced urine output", "Has the urine output reduced?", ["urine output", "decreased urine", "reduced urine", "less urine", "oliguria", "anuria"], { teach: "Reduced urine output with jaundice raises hepatorenal syndrome, leptospirosis and severe malaria." }),
     yn("red_flag", "fever_with_rigors_pain", "Fever with rigors and right upper pain", "Is there fever with rigors together with right upper abdominal pain (cholangitis)?", ["rigors", "chills", "fever with", "right hypochondrium", "right upper", "charcot"], { teach: "Fever with rigors and right upper abdominal pain alongside jaundice is Charcot's triad, which asks about an infected, obstructed bile duct — a question of hours rather than days." }),
     yn("exposure", "alcohol", "Alcohol", "How much alcohol, for how long, and when was the last drink?", ["alcohol", "drinks", "drinker", "alcoholic", "daily drinking", "binge", "last drink", "country liquor", "desi"], { teach: "The amount and duration of alcohol, and when the last drink was, separate alcoholic hepatitis and withdrawal from the other causes." }),
     yn("red_flag", "hepatotoxic_drugs", "Hepatotoxic drugs / ATT / herbal", "Any anti-tubercular drugs, paracetamol excess, herbal or ayurvedic preparations, or other new drugs recently?", ["att", "akt", "anti tubercular", "isoniazid", "rifampicin", "paracetamol", "herbal", "ayurvedic", "desi dawai", "bhasma", "supplements", "anabolic"], { teach: "Anti-tuberculosis drugs, paracetamol, herbal and traditional medicines, and many others cause jaundice; the list is only found by asking about every tablet taken." }),

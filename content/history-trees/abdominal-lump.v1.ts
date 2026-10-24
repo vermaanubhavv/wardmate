@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, PREGNANCY, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LUMP IN THE ABDOMEN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * LUMP IN THE ABDOMEN — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult general surgery ward, north India. Built from S. Das, A Manual on Clinical Surgery,
  * 13th ed., ch. 35 "Examination of an abdominal lump", whose history section points back to the
  * swelling (ch. 3), chronic abdominal (ch. 34) and urinary (ch. 37) chapters. `lump` is the
@@ -14,12 +14,12 @@ import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, PREGNANC
  */
 export const abdominalLumpV1: HistoryTree = {
   id: "abdominal_lump",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Lump in the abdomen",
   triggers: ["abdominal lump", "lump in abdomen", "lump abdomen", "lump in the abdomen", "abdominal mass", "mass abdomen", "mass in abdomen", "lump in stomach", "lump in right iliac fossa", "lump in left iliac fossa", "epigastric lump"],
   setting: "Adult general surgery ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, BAILEY_LOVE],
   slots: [
     ...commonHpi("lump in the abdomen"),
@@ -29,7 +29,7 @@ export const abdominalLumpV1: HistoryTree = {
     val("hpi", "pain_sequence", "Pain before or after the lump", "Did pain come before the lump appeared, or did the lump come first?", ["pain first", "pain before", "lump first", "pain came later", "painless", "no pain"], { teach: "Das stresses that in inflammation pain precedes the swelling, while most growths are painless to begin with." }),
     yn("hpi", "pain", "Pain in the lump", "Is the lump painful?", ["pain", "painful", "tender", "dull ache", "dragging", "colicky", "throbbing"]),
     yn("hpi", "reducible", "Comes out on standing or coughing", "Does the lump come out on standing or coughing and go back on lying down?", ["comes out on coughing", "on standing", "goes back", "disappears on lying down", "reducible", "cough impulse", "does not go back"], { teach: "Das lists hernias through the abdominal wall, including through an old scar, among lumps that come and go." }),
-    yn("associated", "appetite", "Appetite", "Any loss of appetite?", ["loss of appetite", "anorexia", "not eating", "eats less", "no loss of appetite"]),
+    yn("associated", "appetite", "Appetite", "Any loss of appetite?", ["loss of appetite", "anorexia", "eating less", "eats less", "no loss of appetite"]),
     yn("associated", "fever_evening", "Fever / evening rise", "Any fever, especially in the evening?", ["fever", "evening rise", "evening fever", "night sweats", "temperature", "no fever"], { teach: "Das links evening fever with a lump to tuberculous glands or bowel, and fever generally to an inflammatory mass." }),
     yn("associated", "stale_food_vomiting", "Vomiting of food eaten long before", "Any vomiting, and does it contain food eaten many hours earlier?", ["vomiting", "undigested food", "food eaten yesterday", "copious vomiting", "projectile", "no vomiting"], { teach: "Das reads stale-food vomiting as an outlet blocked at the pylorus, where an upper abdominal lump may sit." }),
     yn("associated", "bowel_change", "Change in bowel habit", "Any change in bowel habit — increasing constipation, or constipation alternating with loose stools?", ["constipation", "increasing constipation", "loose stools", "diarrhoea", "alternating", "change in bowel habit", "no change in bowel habit"], { teach: "Das names alternating constipation and diarrhoea, or rising constipation, as the bowel change that goes with a colonic growth." }),
@@ -41,7 +41,7 @@ export const abdominalLumpV1: HistoryTree = {
     yn("associated", "other_lumps", "Other lumps", "Any other lump — above the collarbone, in the groin, or a swelling of the testis?", ["neck lump", "above collarbone", "supraclavicular", "groin lump", "testis swelling", "scrotal swelling", "other swellings", "no other lumps"], { tier: "detailed", teach: "Das asks about other lumps and looks at the left supraclavicular fossa and scrotum, because spread or a testicular primary can present as an abdominal lump." }),
     // Red flags
     yn("associated", "weight_loss", "Weight loss", "Has the patient lost weight without trying?", ["weight loss", "lost weight", "clothes loose", "thin", "no weight loss"], { teach: "Das notes marked, progressive weight loss with gut carcinoma, which raises the urgency of the lump's assessment." }),
-    yn("red_flag", "obstruction", "Stool and flatus stopped", "Has the patient stopped passing both stool and flatus?", ["not passing stool", "no flatus", "absolute constipation", "obstipation"], { teach: "Das lists obstruction as a presentation of intussusception, mesenteric cysts and retroperitoneal growths." }),
+    yn("red_flag", "obstruction", "Stool and flatus stopped", "Has the patient stopped passing both stool and flatus?", ["absolute constipation", "obstipation"], { teach: "Das lists obstruction as a presentation of intussusception, mesenteric cysts and retroperitoneal growths." }),
     yn("red_flag", "fever_rigor", "High fever with rigors", "Any high fever with chills and rigors?", ["rigors", "chills", "shivering", "high fever", "spiking fever"], { teach: "Das links rigors with a liver lump or jaundice to pus — liver abscess, cholangitis or portal pyaemia." }),
     yn("red_flag", "gi_bleed", "Vomiting blood / black stools", "Any vomiting of blood or black tarry stools?", ["vomiting blood", "haematemesis", "hematemesis", "coffee ground", "melaena", "malena", "black stools", "tarry"], { teach: "Das links coffee-ground vomiting with an epigastric lump to slow bleeding from a gastric growth or ulcer." }),
     yn("red_flag", "fainting", "Fainting or giddiness", "Any sudden fainting or giddiness?", ["fainting", "fainted", "giddiness", "collapse", "light headed", "cold sweat"], { teach: "Das notes that a lump beside the uterus after a missed period can follow a slow tubal leak, and fainting marks blood loss." }),

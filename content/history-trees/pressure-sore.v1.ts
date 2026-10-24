@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, GRABB_SMITH, HAMILTON_BAILEY, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BED SORE / PRESSURE SORE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * BED SORE / PRESSURE SORE — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Burns and plastic surgery unit, north India, where most sores arrive from home after a spinal
  * injury, a stroke or a long illness, cared for by family with no air mattress and little help
  * with turning. The sore is the end of a story about immobility, lost sensation, wet skin and
@@ -14,22 +14,22 @@ import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, GRABB_SMITH, HAMILTON_BAI
  */
 export const pressureSoreV1: HistoryTree = {
   id: "pressure_sore",
-  version: "1.3.0",
+  version: "1.4.0",
   complaint: "Bed sore / pressure sore",
   triggers: ["bed sore", "bedsore", "bed sores", "pressure sore", "pressure ulcer", "pressure injury", "decubitus", "sacral sore", "sore on back", "sore on buttock", "heel sore", "sore over hip", "trochanteric sore", "ischial sore", "kamar par ghaav", "lete lete ghaav"],
   setting: "Burns and plastic surgery unit, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, GRABB_SMITH, BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("sore"),
     val("hpi", "sore_sites", "Where the sores are", "Where are the sores — over the tailbone, the hips, the buttocks, the heels, the back of the head, or elsewhere — and how many are there?", ["sacrum", "tailbone", "lower back", "hip", "trochanter", "buttock", "ischium", "sitting bone", "heel", "ankle", "back of head", "occiput", "shoulder blade", "elbow", "multiple", "one"]),
     val("hpi", "cause_of_immobility", "Why the patient is immobile", "What has kept the patient in bed or in a chair — a spinal injury, a stroke, a fracture, old age, a long illness, or unconsciousness?", ["spinal injury", "paraplegia", "paralysed", "stroke", "fracture", "hip fracture", "old age", "long illness", "unconscious", "coma", "icu stay", "bedridden since", "after surgery", "long operation"], { teach: "The reason for the immobility decides whether it will recover, and so whether the pressure that made the sore will continue." }),
-    val("hpi", "how_sore_began", "How the sore began", "Did it start as a red patch that did not fade, a blister, or a dark patch, and during a hospital stay or at home?", ["red patch", "redness", "did not fade", "blister", "dark patch", "black patch", "skin broke", "in hospital", "at home", "after admission"], { tier: "detailed" }),
+    val("hpi", "how_sore_began", "How the sore began", "Did it start as a red patch that did not fade, a blister, or a dark patch, and during a hospital stay or at home?", ["red patch", "redness", "blister", "dark patch", "black patch", "skin broke", "in hospital", "at home", "after admission"], { tier: "detailed" }),
     val("hpi", "sore_depth_appearance", "Depth and appearance", "How deep is the sore — red skin only, a shallow break, a deep crater, or bone or tendon visible — and is there black or yellow dead tissue?", ["red skin", "shallow", "blister", "deep", "crater", "cavity", "bone visible", "tendon", "black", "eschar", "yellow", "slough", "tunnel", "pocket", "undermined", "purple", "maroon", "deep red", "blood blister", "stage", "grade", "category"], { teach: "The depth of the sore, and whether bone can be seen, changes what the sore is expected to need and how long it will take." }),
     val("hpi", "discharge_smell_sore", "Discharge and smell", "What comes out of it — clear fluid, pus, or blood — and is there a foul smell?", ["clear", "watery", "pus", "blood", "foul", "smell", "badboo", "soaking", "scanty", "copious"]),
-    val("hpi", "turning_positioning", "Turning and positioning", "How often is the patient turned or repositioned, by whom, and on what kind of mattress or bed?", ["turned", "turning", "every two hours", "not turned", "position change", "air mattress", "water bed", "foam", "ordinary mattress", "cot", "charpai", "wheelchair", "sits all day"], { teach: "How often the patient is turned, and on what surface, is the history of the pressure that made the sore." }),
-    yn("hpi", "sensation_loss", "Loss of feeling over the area", "Can the patient feel the area of the sore and the skin around it, or is the lower body numb?", ["no feeling", "numb", "cannot feel", "loss of sensation", "lower body numb", "feels pain", "painful", "painless"], { teach: "A patient who cannot feel the area does not shift away from the pressure, so the sore gives no warning as it forms." }),
+    val("hpi", "turning_positioning", "Turning and positioning", "How often is the patient turned or repositioned, by whom, and on what kind of mattress or bed?", ["turned", "turning", "every two hours", "position change", "air mattress", "water bed", "foam", "ordinary mattress", "cot", "charpai", "wheelchair", "sits all day"], { teach: "How often the patient is turned, and on what surface, is the history of the pressure that made the sore." }),
+    yn("hpi", "sensation_loss", "Loss of feeling over the area", "Can the patient feel the area of the sore and the skin around it, or is the lower body numb?", ["numb", "cannot feel", "loss of sensation", "lower body numb", "feels pain", "painful", "painless"], { teach: "A patient who cannot feel the area does not shift away from the pressure, so the sore gives no warning as it forms." }),
     val("hpi", "continence", "Control of urine and stool", "Is the patient able to control urine and stool, and is there a catheter, diaper or pad in use?", ["incontinent", "urine leak", "wet", "soiled", "stool", "catheter", "diaper", "pad", "continent", "bowel control", "bladder control"], { teach: "Skin kept wet by urine or stool breaks down faster and is contaminated repeatedly, particularly over the sacrum." }),
     val("hpi", "nutrition_intake", "Eating and weight", "What is the patient eating each day, has there been weight loss, and is feeding by mouth or by tube?", ["eating", "appetite", "poor intake", "weight loss", "thin", "wasting", "ryles tube", "feeding tube", "peg", "liquid diet", "one meal", "protein", "dal", "egg"], { teach: "A sore does not close in a patient who is losing weight, so intake is asked as carefully as the wound itself." }),
     val("hpi", "home_care", "Who cares for the patient at home", "Who looks after the patient at home, can they turn and clean the patient, and have they been shown how?", ["wife", "husband", "son", "daughter in law", "family", "attendant", "nurse at home", "alone", "no one", "shown how", "trained", "cannot lift", "tired"], { teach: "The conditions at home will be the conditions after discharge, so the carer's ability is part of the history of the sore." }),
