@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { antibioticDay, isAntibiotic, startForDay, withDay } from "@/lib/antibiotics";
+import { antibioticDay, courseLength, isAntibiotic, isCourse, startForDay, withDay } from "@/lib/antibiotics";
 
 describe("isAntibiotic", () => {
   it("knows generics, stems and ward brand names", () => {
@@ -24,5 +24,26 @@ describe("antibiotic day", () => {
     expect(withDay("Inj Ceftriaxone 1 g IV BD", 3, "after")).toBe("Inj Ceftriaxone 1 g IV BD (Day 3)");
     expect(withDay("Inj Ceftriaxone 1 g IV BD", 3, "before")).toBe("Day 3 – Inj Ceftriaxone 1 g IV BD");
     expect(withDay("Inj Ceftriaxone 1 g IV BD", 3, "off")).toBe("Inj Ceftriaxone 1 g IV BD");
+  });
+});
+
+describe("timed drugs", () => {
+  it("reads the course length written on the line, never guesses one", () => {
+    expect(courseLength("Inj Vitamin K 10 mg IM OD for 5 days")).toBe(5);
+    expect(courseLength("Tab Pantoprazole 40 mg OD x 14 days")).toBe(14);
+    expect(courseLength("Tab Doxycycline 100 mg BD × 7 days")).toBe(7);
+    expect(courseLength("Tab Fluconazole 150 mg OD 5/7")).toBe(5);
+    expect(courseLength("Tab Iron 1 tab OD for 2 weeks")).toBe(14);
+    expect(courseLength("Syp Lactulose 15 ml HS for five days")).toBe(5);
+    expect(courseLength("Inj Pantoprazole 40 mg IV OD")).toBeNull();
+  });
+  it("counts any timed drug, and writes D2/5", () => {
+    const vitK = "Inj Vitamin K 10 mg IM OD for 5 days";
+    expect(isCourse(vitK)).toBe(true);
+    expect(isAntibiotic(vitK)).toBe(false);
+    expect(withDay(vitK, 1, "before")).toBe("D1/5 – Inj Vitamin K 10 mg IM OD for 5 days");
+    expect(withDay(vitK, 2, "after")).toBe("Inj Vitamin K 10 mg IM OD for 5 days (D2/5)");
+    expect(withDay("Inj Ceftriaxone 1 g IV BD for 7 days", 3, "after")).toBe("Inj Ceftriaxone 1 g IV BD for 7 days (D3/7)");
+    expect(isCourse("Inj Pantoprazole 40 mg IV OD")).toBe(false);
   });
 });

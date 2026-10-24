@@ -2,7 +2,8 @@ import { drugKey } from "@/lib/drug-key";
 
 /**
  * Which drug lines are antibiotics — so the treatment chart can print them in bold and carry
- * their day ("Inj Ceftriaxone 1 g IV BD (Day 3)").
+ * their day ("Inj Ceftriaxone 1 g IV BD (Day 3)") — and which drugs run for a set number of
+ * days, which carry theirs as "D2/5".
  *
  * By name, no model call: generics by their class stems (-cillin, cef-, -penem, -mycin,
  * -floxacin, -cycline) plus the ones that have no stem, and the Indian brand names wards
@@ -53,10 +54,38 @@ export function antibioticDay(startedOn: string, todayIso: string): number | nul
   return Math.round((today - start) / 86_400_000) + 1;
 }
 
-/** "Inj Ceftriaxone 1 g IV BD" + Day 3 → "Inj Ceftriaxone 1 g IV BD (Day 3)" / "Day 3 – Inj…". */
+const WORD_NUM: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, fourteen: 14 };
+
+/** A course length written on the drug line, in days: "for 5 days", "x 5 days", "× 5 days",
+ *  "5/7", "for 2 weeks", "for five days". Null when the line gives none — never guessed. */
+export function courseLength(line: string): number | null {
+  const m =
+    line.match(/(?:\bfor|\bx|×)\s*(\d+|[a-z]+)\s*(days?|weeks?|wks?)\b/i) ??
+    line.match(/(?:^|\s)(?:x|×|for)?\s*(\d+)\s*\/\s*(7)\b/i);
+  if (!m) return null;
+  const n = /^\d+$/.test(m[1]) ? parseInt(m[1], 10) : WORD_NUM[m[1].toLowerCase()];
+  if (!n) return null;
+  return /^w/i.test(m[2]) ? n * 7 : n;
+}
+
+/** A drug whose day is counted: every antibiotic, and any drug given for a set number of days
+ *  ("Inj Vitamin K 10 mg IM OD for 5 days"). */
+export function isCourse(line: string): boolean {
+  return isAntibiotic(line) || courseLength(line) !== null;
+}
+
+/** The day label: "D2/5" for a set course, "Day 3" for an antibiotic with no set length. */
+export function dayLabel(line: string, day: number): string {
+  const total = courseLength(line);
+  return total ? `D${day}/${total}` : `Day ${day}`;
+}
+
+/** "Inj Vitamin K 10 mg IM OD for 5 days" + day 2 → "… for 5 days (D2/5)" / "D2/5 – Inj…";
+ *  "Inj Ceftriaxone 1 g IV BD" + day 3 → "… (Day 3)" / "Day 3 – Inj…". */
 export function withDay(line: string, day: number | null, position: AntibioticDayPosition): string {
   if (day === null || position === "off") return line;
-  return position === "before" ? `Day ${day} – ${line}` : `${line} (Day ${day})`;
+  const label = dayLabel(line, day);
+  return position === "before" ? `${label} – ${line}` : `${line} (${label})`;
 }
 
 /** The YYYY-MM-DD a course would have started on for it to be Day `day` today. */

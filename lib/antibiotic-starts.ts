@@ -1,5 +1,5 @@
 import type { Supa } from "@/lib/supabase/server";
-import { antibioticKey, isAntibiotic } from "@/lib/antibiotics";
+import { antibioticKey, isCourse } from "@/lib/antibiotics";
 import { istDate } from "@/lib/urgency";
 
 /**
@@ -22,7 +22,7 @@ export async function antibioticStarts(supabase: Supa, patientId: string): Promi
   const set = new Set<string>();
   for (const r of rows ?? []) {
     const text = r.value_text ?? r.label;
-    if (!isAntibiotic(text)) continue;
+    if (!isCourse(text)) continue;
     const key = antibioticKey(text);
     if (r.started_on && !set.has(key)) {
       out[key] = r.started_on;

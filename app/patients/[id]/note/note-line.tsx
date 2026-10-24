@@ -71,7 +71,7 @@ export function renderNoteLine(
 
   // The treatment chart's antibiotics in bold: a numbered drug line ("2. Inj Ceftriaxone…",
   // with or without its "Day 3 – " in front) that names one.
-  const drug = line.match(/^\d+\.\s+(?:Day \d+ – )?(.*)$/)?.[1];
+  const drug = line.match(/^\d+\.\s+(?:(?:Day \d+|D\d+\/\d+) – )?(.*)$/)?.[1];
   return (
     <p key={key} className={className}>
       {drug && isAntibiotic(drug) ? <strong>{content}</strong> : content}

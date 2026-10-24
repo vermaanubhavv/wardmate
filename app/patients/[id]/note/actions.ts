@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { ANTIBIOTIC_DAY_COOKIE, antibioticKey, isAntibiotic, readDayPosition, type AntibioticDayPosition } from "@/lib/antibiotics";
+import { ANTIBIOTIC_DAY_COOKIE, antibioticKey, isCourse, readDayPosition, type AntibioticDayPosition } from "@/lib/antibiotics";
 import { istDate } from "@/lib/urgency";
 import { createClient, type Supa } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
@@ -254,7 +254,7 @@ export async function replaceActiveMedications(
   const keep = stillPending(old);
   const today = istDate(new Date().toISOString());
   const startOf = (text: string) =>
-    isAntibiotic(text) ? (startedOn[antibioticKey(text)] ?? carried.get(antibioticKey(text)) ?? today) : null;
+    isCourse(text) ? (startedOn[antibioticKey(text)] ?? carried.get(antibioticKey(text)) ?? today) : null;
 
   if (clean.length) {
     const entryId = await todayManualEntryId(supabase, patientId, user.id);

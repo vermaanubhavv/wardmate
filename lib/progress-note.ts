@@ -4,7 +4,7 @@ import { dedupeTasks } from "@/lib/dedupe-tasks";
 import { classifyLab, canonicalLabName, type SuppliedRange } from "@/lib/lab-ranges";
 import { flagRadiology } from "@/lib/radiology-flags";
 import type { WardRanges } from "@/lib/exam-summary";
-import { antibioticDay, antibioticKey, isAntibiotic, withDay, type AntibioticDayPosition } from "@/lib/antibiotics";
+import { antibioticDay, antibioticKey, isCourse, withDay, type AntibioticDayPosition } from "@/lib/antibiotics";
 import type { Observation } from "@/lib/patient-state";
 import { istDate } from "@/lib/urgency";
 import { DEFAULT_PROGRESS_NOTE_CONFIG, openSpaceHeadings, type ProgressNoteConfig } from "@/lib/progress-note-config";
@@ -345,7 +345,7 @@ export function buildProgressNote(
   const today = new Date().toISOString();
   const medLines = currentMeds.map((m) => {
     const text = m.value_text ?? m.label;
-    const start = isAntibiotic(text) ? options?.antibioticStarts?.[antibioticKey(text)] : undefined;
+    const start = isCourse(text) ? options?.antibioticStarts?.[antibioticKey(text)] : undefined;
     return start ? withDay(text, antibioticDay(start, istDate(today)), options?.antibioticDay ?? "off") : text;
   });
 

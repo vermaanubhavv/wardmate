@@ -23,7 +23,7 @@ import {
   applyCompiledNote,
 } from "./actions";
 import MedicationEditor, { medLine } from "../medication-editor";
-import { antibioticDay, antibioticKey, isAntibiotic, startForDay } from "@/lib/antibiotics";
+import { antibioticDay, antibioticKey, dayLabel, isCourse, startForDay } from "@/lib/antibiotics";
 import LiveDictation, { DictateButton, routeVia, type LiveLine, type LiveSection } from "../live-dictation";
 import { medPresetsFor, type NoteVitalField, type ProgressNoteConfig } from "@/lib/progress-note-config";
 
@@ -504,7 +504,7 @@ export default function NoteWorkspace({
                   placeholder="Drug, dose, route, frequency"
                   className="h-11 flex-1 rounded-[10px] border border-line bg-card px-3 text-subhead outline-none focus:border-accent"
                 />
-                {isAntibiotic(it) && (() => {
+                {isCourse(it) && (() => {
                   // A course seen for the first time is Day 1 today; − / + says when it really began.
                   const key = antibioticKey(it);
                   const day = antibioticDay(abxStarts[key] ?? todayIst, todayIst) ?? 1;
@@ -512,7 +512,7 @@ export default function NoteWorkspace({
                   return (
                     <span className="flex shrink-0 items-center gap-1 text-footnote">
                       <button type="button" aria-label="Earlier day" disabled={day <= 1} onClick={() => setDay(day - 1)} className="tap h-8 w-7 rounded-md bg-chip disabled:opacity-40">−</button>
-                      <span className="w-12 text-center font-semibold tabular-nums">Day {day}</span>
+                      <span className="w-12 text-center font-semibold tabular-nums">{dayLabel(it, day)}</span>
                       <button type="button" aria-label="Later day" onClick={() => setDay(day + 1)} className="tap h-8 w-7 rounded-md bg-chip">+</button>
                     </span>
                   );

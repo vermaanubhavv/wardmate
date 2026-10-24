@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { ANTIBIOTIC_DAY_COOKIE, antibioticDay, antibioticKey, isAntibiotic, readDayPosition, withDay } from "@/lib/antibiotics";
+import { ANTIBIOTIC_DAY_COOKIE, antibioticDay, antibioticKey, isAntibiotic, isCourse, readDayPosition, withDay } from "@/lib/antibiotics";
 import { antibioticStarts } from "@/lib/antibiotic-starts";
 import { istDate } from "@/lib/urgency";
 import { Suspense } from "react";
@@ -380,7 +380,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     cookies().then((c) => readDayPosition(c.get(ANTIBIOTIC_DAY_COOKIE)?.value)),
   ]);
   const drugLine = (text: string) => {
-    const start = isAntibiotic(text) ? abxStarts[antibioticKey(text)] : undefined;
+    const start = isCourse(text) ? abxStarts[antibioticKey(text)] : undefined;
     return start ? withDay(text, antibioticDay(start, istDate(new Date().toISOString())), abxDay) : text;
   };
 
