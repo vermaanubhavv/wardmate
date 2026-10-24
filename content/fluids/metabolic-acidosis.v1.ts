@@ -2,7 +2,7 @@ import type { FluidTopic } from "@/lib/fluids/types";
 import { PANDYA, caution, formula, points, quote, steps, table } from "@/content/fluids/_helpers";
 
 /**
- * METABOLIC ACIDOSIS — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * METABOLIC ACIDOSIS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Digest of chapter 31 of the full edition, from a text transcription (no page images). Page
  * numbers are the printed book pages. Every number below is the book's; the quotes give the
@@ -15,8 +15,8 @@ export const metabolicAcidosisV1: FluidTopic = {
   group: "acid_base",
   summary: "Anion gap classification and causes, the diagnostic gaps and Winter's formula, when bicarbonate helps and when it harms, the book's dose formula and goals, chronic alkali agents, and treatment by cause.",
   setting: "Adult ward, emergency and critical care",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PANDYA],
   source: { chapters: ["31 Metabolic Acidosis"], pages: "361–379", pageKind: "book" },
   sections: [
