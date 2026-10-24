@@ -31,7 +31,7 @@ Absolute rules:
 
 2. Every positive and negative must carry a "quote": a contiguous span copied VERBATIM from ONE source, and "source": that source's number. Not a paraphrase, not a tidied version, not two fragments joined. If you cannot copy an exact span that establishes the state, the answer is "unasked". For a negative, the quote must itself contain the denial and the item ("no vomiting"), not just the item.
 
-3. For slots of kind "value" (onset, duration, pattern and the like), a positive also carries "value": the resident's own phrase for it, copied verbatim from the same source ("since 5 days", "high grade", "comes and goes"). Do not normalise it, convert units, or expand it. If no phrase can be copied, the slot is "unasked".
+3. For slots of kind "value" (onset, duration, pattern and the like), a positive also carries "value": the resident's own phrase for it, copied verbatim from the same source ("since 5 days", "high grade", "comes and goes"). Do not normalise it, convert units, or expand it. If no phrase can be copied, the slot is "unasked". A "since …" phrase ("since last night", "since 5 days") answers both onset and duration: copy it into each.
 
 4. Contradictions. If one statement says present and another says absent — an attendant and the patient disagreeing, or two dictations disagreeing — answer with the FIRST statement's state and quote, and put the contradicting statement's quote and source in "conflict". Do not choose which is true.
 

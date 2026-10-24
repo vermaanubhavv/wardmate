@@ -725,7 +725,7 @@ did not match the singular. "loc" and "ent bleed" were added as the standard ED 
   day-case templates (benign breast, lump excision, hernia, hydrocele, perianal, varicose veins)
   print "If any warning sign appears, day or night, call [ ward / emergency phone number ] or come
   to the hospital emergency."
-- **Matching overlaps** (2026-10-19, pending review): a mastectomy for phyllodes no longer lands on
+- **Matching overlaps** (2026-10-19, signed off by Dr Anubhav Verma on 2026-10-21): a mastectomy for phyllodes no longer lands on
   the lump-excision plan, or on the breast-cancer plan; burns and pressure-sore debridement no longer
   land on the abscess template; Graves eye disease no longer lands on thyroidectomy. Each now gets
   the generic template, and each is pinned in the matching test.
