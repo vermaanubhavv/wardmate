@@ -1,5 +1,8 @@
 "use server";
 
+import { cookies } from "next/headers";
+import { ANTIBIOTIC_DAY_COOKIE, antibioticKey, isCourse, readDayPosition, type AntibioticDayPosition } from "@/lib/antibiotics";
+import { istDate } from "@/lib/urgency";
 import { createClient, type Supa } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 import { revalidatePatient } from "@/lib/revalidate";
@@ -218,13 +221,26 @@ export async function replaceActiveMedications(
   patientId: string,
   lines: string[],
   /** Lines that came from live dictation — amber until confirmed, like a preset's dose. */
-  dictated: string[] = []
+  dictated: string[] = [],
+  /** Antibiotic course starts set on the card (Day − / +), by antibioticKey. */
+  startedOn: Record<string, string> = {}
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient();
   const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in." };
 
   const clean = lines.map((l) => l.trim()).filter(Boolean);
+
+  // Read the starts before the rows go: the rewrite below would otherwise reset every course to
+  // Day 1. Tolerates a database without 0110 (no started_on column yet).
+  const { data: prior } = await supabase
+    .from("observations")
+    .select("label, value_text, started_on")
+    .eq("patient_id", patientId)
+    .eq("kind", "medication");
+  const carried = new Map<string, string>();
+  for (const r of (prior ?? []) as { label: string; value_text: string | null; started_on: string | null }[])
+    if (r.started_on) carried.set(antibioticKey(r.value_text ?? r.label), r.started_on);
 
   const { data: old, error: delErr } = await supabase
     .from("observations")
@@ -236,23 +252,29 @@ export async function replaceActiveMedications(
   // Only what was dictated stays amber: a tapped preset or a typed line is the resident's own
   // entry. A line already awaiting confirmation keeps that state when saved back unchanged.
   const keep = stillPending(old);
+  const today = istDate(new Date().toISOString());
+  const startOf = (text: string) =>
+    isCourse(text) ? (startedOn[antibioticKey(text)] ?? carried.get(antibioticKey(text)) ?? today) : null;
 
   if (clean.length) {
     const entryId = await todayManualEntryId(supabase, patientId, user.id);
     if (!entryId) return { ok: false, error: "Could not open today's note." };
     const now = new Date().toISOString();
-    const { error } = await supabase.from("observations").insert(
-      clean.map((text) => ({
-        entry_id: entryId,
-        patient_id: patientId,
-        kind: "medication",
-        // The drug name up to the first digit / comma is enough for the note's per-drug dedup.
-        label: (text.split(/[,0-9]/)[0] || text).trim().slice(0, 60) || text.slice(0, 60),
-        value_text: text,
-        source_quote: text,
-        ...confirmation(keep.has(text) || dictated.includes(text), user.id, now),
-      }))
-    );
+    const rows = clean.map((text) => ({
+      entry_id: entryId,
+      patient_id: patientId,
+      kind: "medication",
+      // The drug name up to the first digit / comma is enough for the note's per-drug dedup.
+      label: (text.split(/[,0-9]/)[0] || text).trim().slice(0, 60) || text.slice(0, 60),
+      value_text: text,
+      source_quote: text,
+      started_on: startOf(text),
+      ...confirmation(keep.has(text) || dictated.includes(text), user.id, now),
+    }));
+    let { error } = await supabase.from("observations").insert(rows);
+    // A database without 0110: the list still saves, only without course days.
+    if (error && /started_on/.test(error.message))
+      ({ error } = await supabase.from("observations").insert(rows.map((r) => ({ ...r, started_on: undefined }))));
     if (error) return { ok: false, error: error.message };
   }
 
@@ -296,4 +318,9 @@ export async function applyCompiledNote(
 
   revalidateEverywhere(patientId);
   return { ok: true };
+}
+
+/** Where an antibiotic's "Day N" goes on the drug list — remembered on this device for a year. */
+export async function setAntibioticDayPosition(v: AntibioticDayPosition): Promise<void> {
+  (await cookies()).set(ANTIBIOTIC_DAY_COOKIE, readDayPosition(v), { path: "/", maxAge: 31_536_000, sameSite: "lax" });
 }
