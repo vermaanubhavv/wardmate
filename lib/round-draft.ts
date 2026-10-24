@@ -4,12 +4,17 @@ import { getTemplateForPatient } from "@/lib/templates";
 import { matchBed } from "@/lib/match-bed";
 import { createClient } from "@/lib/supabase/server";
 import { generalPack, type SpecialtyPack } from "@/lib/specialty";
+import { log } from "@/lib/observability";
 
 export type DraftSegment = RoundSegment & {
   /** What would be written for this bed. Empty for an admission, or when nothing clinical
    *  was said. Produced by the same extraction the bedside button uses, quote-checks and
    *  all — so a value here is one that survived being checked against the words. */
   observations: ExtractedObservation[];
+  /** Extraction threw twice — the AI request failed, not "nothing clinical was said". The
+   *  review card says so, and the saved entry carries an extraction_error so the patient page
+   *  flags it and offers "Save and re-read". */
+  extraction_failed?: boolean;
 };
 
 export type RoundDraft = {
@@ -67,20 +72,33 @@ export async function buildRoundDraft(
       }
     }
 
-    try {
-      // The bed's own patient (when matched) is kept out of what Jev is sent, and so is the
-      // bed as spoken.
-      const who = patients.find((p) => p.id === match.patientId);
-      const extraction = await extractObservations(segment.text, expectedLabels, [], pack.key, {
-        name: who?.display_name,
-        bed: who?.bed ?? segment.bed,
-      });
-      segments.push({ ...segment, observations: extraction.observations });
-    } catch {
-      // The words survive even when structuring fails — they are the evidence, and the
-      // resident can still approve the segment and see the sentence on the patient.
-      segments.push({ ...segment, observations: [] });
+    // The bed's own patient (when matched) is kept out of what Jev is sent, and so is the
+    // bed as spoken.
+    const who = patients.find((p) => p.id === match.patientId);
+    let observations: ExtractedObservation[] | null = null;
+    // One retry, then an honest failure. This used to be a bare catch that showed an empty
+    // card as "nothing could be structured" — which hid a rejected request on every
+    // no-template patient for weeks (fixed in #150) while residents discarded the rounds.
+    for (let attempt = 1; attempt <= 2 && observations === null; attempt++) {
+      try {
+        const extraction = await extractObservations(segment.text, expectedLabels, [], pack.key, {
+          name: who?.display_name,
+          bed: who?.bed ?? segment.bed,
+        });
+        observations = extraction.observations;
+      } catch (e) {
+        if (attempt === 2)
+          log.error("round segment extraction failed", {
+            error: e instanceof Error ? e.message.slice(0, 200) : "unknown",
+            specialty: pack.key,
+          });
+      }
     }
+    segments.push(
+      observations === null
+        ? { ...segment, observations: [], extraction_failed: true }
+        : { ...segment, observations }
+    );
   }
 
   return { segments, model: read.model, raw: { segments } };

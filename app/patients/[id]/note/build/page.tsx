@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { antibioticStarts } from "@/lib/antibiotic-starts";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -10,6 +9,7 @@ import { getSpecialtyPack } from "@/lib/specialty";
 import { medPresetsFor, progressNoteConfigFor, sectionsForPatient } from "@/lib/progress-note-config";
 import { matchDischargeTemplateFor } from "@/lib/specialty/discharge";
 import { shortDate } from "@/lib/format-date";
+import { BackBar } from "@/app/screen-header";
 
 /**
  * Build today's progress note as a card stack — one pass through the sheet's own lines, mostly
@@ -117,15 +117,10 @@ export default async function BuildNotePage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
-      <header className="flex items-baseline justify-between gap-3 px-4 pb-3 pt-6">
-        <Link href={`/patients/${id}`} className="text-body text-accent">
-          ‹ Patient
-        </Link>
-        <p className="truncate text-footnote text-muted">
-          Today&rsquo;s note · {stripPatientHonorific(patient.display_name)}
-          {patient.bed ? ` · bed ${patient.bed}` : ""}
-        </p>
-      </header>
+      <BackBar href={`/patients/${id}`} label="Patient" className="mb-3">
+        Today&rsquo;s note · {stripPatientHonorific(patient.display_name)}
+        {patient.bed ? ` · bed ${patient.bed}` : ""}
+      </BackBar>
 
       <NoteWorkspace
         patientId={id}

@@ -11,6 +11,7 @@ import { applyRound, discardRound } from "./actions";
 import { ConfirmSubmit } from "../../action-sheet";
 import BottomBar from "../../bottom-bar";
 import SaveButton from "./save-button";
+import OnePatientTip from "./one-patient-tip";
 
 type WardPatient = {
   id: string;
@@ -116,7 +117,13 @@ export default async function RoundReviewPage({
               segment.intent === "new_patient" ? (
                 <AdmitCard key={i} segment={segment} index={i} patients={patients} />
               ) : (
-                <UpdateCard key={i} segment={segment} index={i} patients={patients} />
+                <UpdateCard
+                  key={i}
+                  segment={segment}
+                  index={i}
+                  patients={patients}
+                  tipFor={segments.length === 1 ? dictation.id : null}
+                />
               )
             )
           )}
@@ -151,10 +158,13 @@ function UpdateCard({
   segment,
   index,
   patients,
+  tipFor,
 }: {
   segment: DraftSegment;
   index: number;
   patients: WardPatient[];
+  /** The dictation id when this is its only card — the one-patient tip may show. */
+  tipFor: string | null;
 }) {
   // Re-matched against the ward as it stands now, not as it stood when the recording was
   // made, so a bed that changed in between cannot silently send this to the wrong person.
@@ -183,6 +193,11 @@ function UpdateCard({
       {/* The words, always. Every value below came out of this sentence. */}
       <p className="mt-2 text-subhead italic text-muted">“{segment.text}”</p>
 
+      {/* Only when the bed points at a real patient — the link has somewhere to go. */}
+      {tipFor && match.status === "matched" && match.patientId && (
+        <OnePatientTip dictationId={tipFor} patientId={match.patientId} />
+      )}
+
       {segment.observations.length > 0 && (
         <ul className="mt-3 flex flex-col gap-1">
           {segment.observations.map((o, k) => (
@@ -197,10 +212,18 @@ function UpdateCard({
         </ul>
       )}
 
-      {segment.observations.length === 0 && (
-        <p className="mt-3 text-footnote text-muted">
-          Nothing could be structured from this — the words above will be saved as they are.
+      {segment.extraction_failed ? (
+        <p className="mt-3 text-footnote text-warn-fg">
+          The values in this could not be read just now — the AI request failed, not your
+          dictation. Saving keeps the words on the patient, marked so you can re-read them from
+          the patient page. Nothing is lost.
         </p>
+      ) : (
+        segment.observations.length === 0 && (
+          <p className="mt-3 text-footnote text-muted">
+            No values were found in this — the words above will be saved as they are.
+          </p>
+        )
       )}
 
       {(match.note || segment.uncertain) && (

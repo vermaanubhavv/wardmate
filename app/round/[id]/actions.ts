@@ -58,6 +58,10 @@ export async function applyRound(formData: FormData) {
         // was said about this patient, never the sentences about the bed next door.
         transcript: segment.text,
         audio_path: dictation.audio_path,
+        // Flags the entry on the patient page, where "Save and re-read" runs extraction again.
+        extraction_error: segment.extraction_failed
+          ? "Values could not be read when this round was dictated. Re-read to try again."
+          : null,
       })
       .select("id")
       .single();

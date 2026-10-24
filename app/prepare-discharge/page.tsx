@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getCurrentWard, getActivePatients } from "@/lib/ward";
 import { compareBeds } from "@/lib/patients";
+import { BackBar } from "@/app/screen-header";
 
 /**
  * "Prepare discharge" from the ward screen: which patient?
@@ -17,10 +18,8 @@ export default async function PrepareDischargeChooser() {
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-6 pb-16 pt-8">
-      <Link href="/ward" className="text-body text-accent">
-        ‹ Ward
-      </Link>
-      <h1 className="mt-3 ios-large-title text-title1 leading-tight">Prepare discharge</h1>
+      <BackBar href="/ward" label="Ward" className="-mx-6 -mt-8" />
+      <h1 className="mt-4 ios-large-title text-title1 leading-tight">Prepare discharge</h1>
       <p className="mt-1 text-subhead text-muted">
         Photograph the papers and let them fill the summary.
       </p>

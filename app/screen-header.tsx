@@ -30,15 +30,7 @@ export default function ScreenHeader({
 }) {
   return (
     <>
-      <div className="sticky top-0 z-10 flex min-h-11 items-center justify-between gap-2 border-b border-line/60 bg-background/80 px-2 pb-1.5 top-bar backdrop-blur-xl">
-        <Link
-          href={back}
-          className="flex min-h-11 items-center pr-2 text-body text-accent active:opacity-60"
-        >
-          <ChevronIcon className="h-[18px] w-[18px] rotate-180" />
-          {backLabel}
-        </Link>
-      </div>
+      <BackBar href={back} label={backLabel} />
 
       <header className="px-4 pb-3 pt-4">
         <h1 className="ios-large-title break-words">{title}</h1>
@@ -46,5 +38,38 @@ export default function ScreenHeader({
         {children}
       </header>
     </>
+  );
+}
+
+/**
+ * The way back, pinned under the status bar while the page scrolls. Every screen has one — a
+ * back link written into a page's own header scrolled away with it, and on a long sheet the
+ * only way out was all the way back up. `children` is the quiet line on the right ("Case
+ * history · Shikha · bed 7"); `className` lets a padded page pull the bar to its edges.
+ */
+export function BackBar({
+  href,
+  label,
+  children,
+  className = "",
+}: {
+  href: string;
+  label: string;
+  children?: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={
+        "sticky top-0 z-10 flex min-h-11 items-center justify-between gap-2 border-b border-line/60 bg-background/80 px-2 pb-1.5 top-bar backdrop-blur-xl print:hidden " +
+        className
+      }
+    >
+      <Link href={href} className="flex min-h-11 shrink-0 items-center pr-2 text-body text-accent active:opacity-60">
+        <ChevronIcon className="h-[18px] w-[18px] rotate-180" />
+        {label}
+      </Link>
+      {children && <p className="min-w-0 truncate pr-2 text-footnote text-muted">{children}</p>}
+    </div>
   );
 }

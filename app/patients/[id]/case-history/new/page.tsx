@@ -5,6 +5,7 @@ import { stripPatientHonorific } from "@/lib/patients";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { getSpecialtyPack } from "@/lib/specialty";
 import CaseHistoryCapture from "../../case-history-capture";
+import { BackBar } from "@/app/screen-header";
 
 /**
  * The clerking screen a just-admitted patient lands on.
@@ -51,15 +52,10 @@ export default async function NewCaseHistoryPage({
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
-      <header className="flex items-baseline justify-between gap-3 px-4 pb-3 pt-6">
-        <Link href="/ward" className="text-body text-accent">
-          ‹ Ward
-        </Link>
-        <p className="truncate text-footnote text-muted">
-          {name}
-          {patient.bed ? ` · bed ${patient.bed}` : ""}
-        </p>
-      </header>
+      <BackBar href="/ward" label="Ward" className="mb-3">
+        {name}
+        {patient.bed ? ` · bed ${patient.bed}` : ""}
+      </BackBar>
 
       <main className="flex-1 px-4 pb-10 pt-2">
         <h1 className="ios-large-title">Case history</h1>

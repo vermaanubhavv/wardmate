@@ -41,7 +41,7 @@ list. The chapters present in full are:
 | 51–54 Obstetrics (see the topic's own coverage note) | 292–325 |
 | 55–57 Parenteral Nutrition | 326–402 |
 
-Everything on **phosphate and magnesium correction** (chapters 26–29), **acid–base** (30–33), maintenance and colloids (5–7), the medical disorders other than HRS (34–36, 38–41), the perioperative chapters (42–44)
+Everything on maintenance and colloids (5–7), the medical disorders other than HRS and GI losses (35–36, 38–41), the perioperative chapters (42–44)
 and paediatrics (48–50) is opening-only. Those topics carry what the openings say — definitions,
 normal ranges, severity grades, compositions — and end with a **"Not in this edition"** section
 listing the printed headings whose text is absent. They do not fill the gap from memory: the
@@ -85,6 +85,29 @@ then right. Every quote was then checked programmatically against the transcript
 cited page. Where the book contradicts itself the topic keeps the printed figure and says so
 — notably calcium chloride printed as 0.136 mEq/mL on p116 against 1.36 in Tables 10.1 and
 10.2, and KCl "1.5 mg" per 10 mL ampoule on p144. Signed off "reviewed" by Dr Anubhav Verma.
+
+### Chapters 26–29 (phosphate and magnesium)
+
+Hypophosphataemia (26), hyperphosphataemia (27), hypomagnesaemia (28) and hypermagnesaemia (29),
+book pages 313–338, replace the opening-only "Phosphate and magnesium disorders" overview with
+one topic per chapter, made the same way as chapters 10–14 (page images, left column then right,
+every quote checked against its page). Book page 312 — chapter 26's contents list and the start
+of its physiology section — was not among the scans; the hypophosphataemia topic says so. The
+definition and severity grades are on p313 and are present. Printed contradictions (severe
+hypomagnesaemia <0.5 vs <0.4 mmol/L; calciphylaxis Ca × P >70 vs >66) are kept as printed and
+noted. These ship `pending_clinician_review`.
+
+### Chapters 30–34 (acid–base, GI losses and upper GI bleeding)
+
+Acid–base basics (30), metabolic acidosis (31), metabolic alkalosis (32), respiratory acid–base
+disorders (33) and GI losses and upper GI bleeding (34), book pages 341–418, replace the
+opening-only "Acid–base and GI losses" topic with one topic per chapter. **These came as a text
+transcription only — no page images** — so the quotes are checked against the transcription, not
+the printed page. The transcription interleaves the two columns in a few places (p399
+respiratory treatment bullets, p413 IV access, p417 urgent endoscopy) and garbles Figure 32.1;
+the topics flag each, and sign-off should compare those pages, and every dosing and formula
+table, against the book. Pages 360, 380–381 (references) and 402 were not transcribed. The
+anion-gap calculator moved to the acid–base basics topic; the book prints AG = Na − (Cl + HCO3).
 
 ## Data model
 
