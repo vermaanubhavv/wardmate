@@ -68,10 +68,14 @@ export function courseLength(line: string): number | null {
   return /^w/i.test(m[2]) ? n * 7 : n;
 }
 
-/** A drug whose day is counted: every antibiotic, and any drug given for a set number of days
- *  ("Inj Vitamin K 10 mg IM OD for 5 days"). */
+// Not antibiotics, but given only for a stretch, so they count their day even with no length
+// written. Not bold — bold is for antibiotics.
+const COUNTED = /\b(albumin)\b/i;
+
+/** A drug whose day is counted: every antibiotic, IV albumin, and any drug given for a set
+ *  number of days ("Inj Albumin for 5 days", "Inj Vitamin K 10 mg IM OD for 5 days"). */
 export function isCourse(line: string): boolean {
-  return isAntibiotic(line) || courseLength(line) !== null;
+  return isAntibiotic(line) || COUNTED.test(antibioticKey(line)) || courseLength(line) !== null;
 }
 
 /** The day label: "D2/5" for a set course, "Day 3" for an antibiotic with no set length. */

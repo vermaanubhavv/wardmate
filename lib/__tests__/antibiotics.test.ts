@@ -47,3 +47,12 @@ describe("timed drugs", () => {
     expect(isCourse("Inj Pantoprazole 40 mg IV OD")).toBe(false);
   });
 });
+
+describe("albumin", () => {
+  it("reads 'inj albumin for 5 days' as D1/5, and counts albumin with no length as Day N", () => {
+    expect(withDay("inj albumin for 5 days", 1, "after")).toBe("inj albumin for 5 days (D1/5)");
+    expect(isCourse("Inj Albumin 20% 100 ml IV OD")).toBe(true);
+    expect(isAntibiotic("Inj Albumin 20% 100 ml IV OD")).toBe(false);
+    expect(withDay("Inj Albumin 20% 100 ml IV OD", 2, "after")).toBe("Inj Albumin 20% 100 ml IV OD (Day 2)");
+  });
+});
