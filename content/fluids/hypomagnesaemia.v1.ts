@@ -2,7 +2,7 @@ import type { FluidTopic } from "@/lib/fluids/types";
 import { PANDYA, caution, formula, points, quote, steps, table } from "@/content/fluids/_helpers";
 
 /**
- * HYPOMAGNESAEMIA — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * HYPOMAGNESAEMIA — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Digest of chapter 28 of the full edition. Page numbers are the printed book pages. Every
  * number below is the book's; the quotes give the page it came from.
@@ -14,8 +14,8 @@ export const hypomagnesaemiaV1: FluidTopic = {
   group: "electrolytes",
   summary: "Low magnesium: the serum bands, causes, features, urinary magnesium work-up, and oral, IM and IV replacement by severity with the book's doses, dilution, monitoring and stopping rules.",
   setting: "Adult medical, surgical and critical care",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PANDYA],
   source: { chapters: ["28 Hypomagnesemia"], pages: "326–335", pageKind: "book" },
   sections: [

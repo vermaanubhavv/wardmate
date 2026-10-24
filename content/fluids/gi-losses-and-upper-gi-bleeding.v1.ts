@@ -2,7 +2,7 @@ import type { FluidTopic } from "@/lib/fluids/types";
 import { PANDYA, caution, points, quote, steps, table } from "@/content/fluids/_helpers";
 
 /**
- * GASTROINTESTINAL LOSSES AND UPPER GI BLEEDING — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * GASTROINTESTINAL LOSSES AND UPPER GI BLEEDING — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Digest of chapter 34 of the full edition, from a text transcription (no page images).
  * Page numbers are the printed book pages. Every number below is the book's; the quotes give
@@ -15,8 +15,8 @@ export const giLossesAndUpperGiBleedingV1: FluidTopic = {
   group: "settings",
   summary: "What vomiting and diarrhoea take away and which fluid replaces it, and upper GI bleeding: assessment, resuscitation, transfusion thresholds, medications, endoscopy timing and monitoring.",
   setting: "Adult ward, emergency and critical care",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PANDYA],
   source: { chapters: ["34 Gastrointestinal Losses and Upper GI Bleeding"], pages: "403–418", pageKind: "book" },
   sections: [

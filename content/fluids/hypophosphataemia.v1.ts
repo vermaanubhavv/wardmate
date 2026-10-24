@@ -2,7 +2,7 @@ import type { FluidTopic } from "@/lib/fluids/types";
 import { PANDYA, caution, points, quote, steps, table } from "@/content/fluids/_helpers";
 
 /**
- * HYPOPHOSPHATAEMIA — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * HYPOPHOSPHATAEMIA — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Digest of chapter 26 of the full edition. Page numbers are the printed book pages. Every
  * number below is the book's; the quotes give the page it came from.
@@ -14,8 +14,8 @@ export const hypophosphataemiaV1: FluidTopic = {
   group: "electrolytes",
   summary: "Low phosphate: severity grades, causes, the urinary phosphate work-up, and oral and IV replacement with the book's doses, rates, preparations and precautions.",
   setting: "Adult medical and surgical wards and ICU",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PANDYA],
   source: { chapters: ["26 Hypophosphatemia"], pages: "313–320", pageKind: "book" },
   sections: [
