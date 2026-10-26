@@ -1,3 +1,4 @@
+import { objectiveComplaint } from "@/lib/complaint-duration";
 import { CORE_PAIRS, DEPARTMENT_PAIRS } from "@/lib/shorthand-table";
 
 /**
@@ -136,7 +137,12 @@ function dropRestarts(text: string): string {
 }
 
 function shorten(text: string, specialty?: string | null): string {
-  let t = dropRestarts(text.trim().replace(/\s+/g, " "));
+  // A complaint statement, segment by segment, in its objective form first — "pain in the
+  // right upper abdomen since 10 days" → "Pain – RUQ × 10 days" (lib/complaint-duration.ts).
+  let t = dropRestarts(text.trim().replace(/\s+/g, " "))
+    .split(/(;\s*)/)
+    .map((seg) => (/^;/.test(seg) ? seg : (objectiveComplaint(seg) ?? seg)))
+    .join("");
   for (const { re, to } of shorthandRules(specialty)) t = t.replace(re, to);
   t = t.replace(TENDER_AT, "$1 tenderness");
   return t.replace(/\s+([,.;])/g, "$1").replace(/\s+/g, " ").trim();

@@ -98,3 +98,41 @@ export function numbersIn(text: string): Set<string> {
   }
   return out;
 }
+
+// Words that only say where in the abdomen — dropped from the symptom once the site says it.
+const WHERE_WORDS = /\b(right|left|upper|lower|central|abdominal|abdomen|quadrant|iliac|fossa|epigastri\w*|umbilic\w*|periumbilical|suprapubic|hypogastri\w*|hypochondri\w*|region|side|part|of|the|in|over|at|on|around|loin|flank|whole|all|generali[sz]ed|diffuse)\b/gi;
+
+/**
+ * A complaint in its objective form, the way a case sheet writes it: "pain in the right upper
+ * abdomen since the last 10 days" → "Pain – RUQ × 10 days"; "fever since 3 days" → "Fever × 3
+ * days"; "pain in the right knee for 2 weeks" → "Pain – Rt knee × 2 weeks". Display only.
+ *
+ * Fires only on a short statement that ends in a duration — a symptom of at most four words,
+ * where, and how long. A narrative sentence ("she developed pain…, which was colicky") is not
+ * one and comes back null, to be shown as said. Nothing is added: the site and the duration
+ * are the speaker's own, only reordered and abbreviated.
+ */
+export function objectiveComplaint(text: string): string | null {
+  const raw = text.trim().replace(/[.;]+$/, "");
+  const { name, duration, site } = splitComplaint(raw);
+  if (!duration || !name) return null;
+  // A drug line ("Inj Albumin for 5 days") or a job is not a complaint.
+  if (/^(inj|tab|cap|syp|syrup|t\.|c\.|ivf|iv|neb|oint|repeat|send|do|give|start|continue|stop|plan)\b/i.test(name) || /\d/.test(name)) return null;
+  let symptom = name;
+  let where = site;
+  if (site) {
+    // "Right upper abdominal pain" / "Pain abdomen" with the site said → "Pain".
+    const bare = symptom.replace(WHERE_WORDS, " ").replace(/\s+/g, " ").trim();
+    if (bare) symptom = bare;
+  } else {
+    // A site outside the abdomen, kept in its own words: "in the right knee" → "Rt knee".
+    const loc = symptom.match(/^(.+?)\s+(?:in|over|at|on|around)\s+(?:the\s+)?([a-z ]+)$/i);
+    if (loc && loc[2].trim().split(/\s+/).length <= 3) {
+      symptom = loc[1].trim();
+      where = loc[2].trim().replace(/\bright\b/i, "Rt").replace(/\bleft\b/i, "Lt");
+    }
+  }
+  if (symptom.split(/\s+/).length > 4) return null;
+  symptom = symptom[0].toUpperCase() + symptom.slice(1);
+  return `${symptom}${where ? ` – ${where}` : ""} × ${duration}`;
+}

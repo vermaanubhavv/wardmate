@@ -5,6 +5,7 @@ function formatList(items: string[]): string {
   if (items.length <= 1) return items.join("");
   return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 }
+import { objectiveComplaint } from "@/lib/complaint-duration";
 import { shortFinding } from "@/lib/shorthand";
 import { summariseObjective, type WardRanges } from "@/lib/exam-summary";
 import type { EtiologyKey, ImagingSummary } from "@/lib/imaging-summary";
@@ -63,7 +64,7 @@ export function CaseHistoryCard({
             {section.lines.length > 0 ? (
               section.lines.map((line) => (
                 <p key={line.id} className="mt-0.5">
-                  {line.text}
+                  {objectiveComplaint(line.text) ?? line.text}
                 </p>
               ))
             ) : (
