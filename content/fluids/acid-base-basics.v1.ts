@@ -2,7 +2,7 @@ import type { FluidTopic } from "@/lib/fluids/types";
 import { PANDYA, caution, formula, points, quote, steps, table } from "@/content/fluids/_helpers";
 
 /**
- * BASIC UNDERSTANDING AND APPROACH TO ACID–BASE DISORDERS — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * BASIC UNDERSTANDING AND APPROACH TO ACID–BASE DISORDERS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Digest of chapter 30 of the full edition, from a text transcription (no page images). Page
  * numbers are the printed book pages. Every number below is the book's; the quotes give the
@@ -15,8 +15,8 @@ export const acidBaseBasicsV1: FluidTopic = {
   group: "acid_base",
   summary: "Normal values, the four primary disorders, the compensation formulas, mixed disorders, taking and reading a blood gas, the anion gap and its relatives, and the book's step-by-step approach with its ten worked cases.",
   setting: "Adult ward, emergency and critical care",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PANDYA],
   source: { chapters: ["30 Basic Understanding and Approach to Acid-Base Disorders"], pages: "341–359", pageKind: "book" },
   sections: [

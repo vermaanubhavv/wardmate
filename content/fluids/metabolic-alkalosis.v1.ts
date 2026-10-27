@@ -2,7 +2,7 @@ import type { FluidTopic } from "@/lib/fluids/types";
 import { PANDYA, caution, formula, points, quote, steps, table } from "@/content/fluids/_helpers";
 
 /**
- * METABOLIC ALKALOSIS — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * METABOLIC ALKALOSIS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Digest of chapter 32 of the full edition, from a text transcription (no page images).
  * Page numbers are the printed book pages. Every number below is the book's; the quotes give
@@ -15,8 +15,8 @@ export const metabolicAlkalosisV1: FluidTopic = {
   group: "acid_base",
   summary: "Raised HCO3 with high pH: how it is generated and maintained, urinary chloride and blood pressure to find the cause, the compensation and anion-gap checks, and saline-responsive and saline-resistant treatment, including the book's HCl and acetazolamide figures.",
   setting: "Adult medical and surgical wards and critical care",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PANDYA],
   source: { chapters: ["32 Metabolic Alkalosis"], pages: "382–390", pageKind: "book" },
   sections: [

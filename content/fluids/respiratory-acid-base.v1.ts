@@ -2,7 +2,7 @@ import type { FluidTopic } from "@/lib/fluids/types";
 import { PANDYA, caution, points, quote, steps, table } from "@/content/fluids/_helpers";
 
 /**
- * RESPIRATORY ACID–BASE DISORDERS — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * RESPIRATORY ACID–BASE DISORDERS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Digest of chapter 33 of the full edition, from a text transcription (no page images).
  * Page numbers are the printed book pages. Every number below is the book's; the quotes give
@@ -15,8 +15,8 @@ export const respiratoryAcidBaseV1: FluidTopic = {
   group: "acid_base",
   summary: "Primary hypercapnia and hypocapnia: definitions, the compensation rules, causes, features, the ABG work-up, controlled oxygen, ventilatory support and why alkali is avoided.",
   setting: "Adult wards, emergency and ICU",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PANDYA],
   source: { chapters: ["33 Respiratory Acid-Base Disorders"], pages: "391–400", pageKind: "book" },
   sections: [

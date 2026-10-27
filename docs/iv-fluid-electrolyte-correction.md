@@ -95,7 +95,7 @@ every quote checked against its page). Book page 312 — chapter 26's contents l
 of its physiology section — was not among the scans; the hypophosphataemia topic says so. The
 definition and severity grades are on p313 and are present. Printed contradictions (severe
 hypomagnesaemia <0.5 vs <0.4 mmol/L; calciphylaxis Ca × P >70 vs >66) are kept as printed and
-noted. These ship `pending_clinician_review`.
+noted. Signed off "reviewed" by Dr Anubhav Verma.
 
 ### Chapters 30–34 (acid–base, GI losses and upper GI bleeding)
 
@@ -108,6 +108,7 @@ respiratory treatment bullets, p413 IV access, p417 urgent endoscopy) and garble
 the topics flag each, and sign-off should compare those pages, and every dosing and formula
 table, against the book. Pages 360, 380–381 (references) and 402 were not transcribed. The
 anion-gap calculator moved to the acid–base basics topic; the book prints AG = Na − (Cl + HCO3).
+Signed off "reviewed" by Dr Anubhav Verma.
 
 ## Data model
 

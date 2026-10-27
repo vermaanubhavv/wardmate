@@ -2,7 +2,7 @@ import type { FluidTopic } from "@/lib/fluids/types";
 import { PANDYA, caution, points, quote, steps, table } from "@/content/fluids/_helpers";
 
 /**
- * HYPERMAGNESAEMIA — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * HYPERMAGNESAEMIA — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Digest of chapter 29 of the full edition. Page numbers are the printed book pages. Every
  * number below is the book's; the quotes give the page it came from.
@@ -14,8 +14,8 @@ export const hypermagnesaemiaV1: FluidTopic = {
   group: "electrolytes",
   summary: "High magnesium: the definition, causes, clinical features by magnesium level, the work-up, and management from stopping magnesium to calcium gluconate, saline diuresis and haemodialysis.",
   setting: "Adult medical and surgical wards",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PANDYA],
   source: { chapters: ["29 Hypermagnesemia"], pages: "336–338", pageKind: "book" },
   sections: [
