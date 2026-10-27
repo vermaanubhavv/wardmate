@@ -21,8 +21,9 @@ const ABBR = /^(?=(?:[^A-Z]*[A-Z]){2})[A-Z][A-Za-z]*(?:[/&-][A-Za-z]+)*$/;
 
 /** Initials that fit, but the ward means something else by the letters: HR is heart rate not
  *  "high risk", GA is general anaesthesia as often as gestational age, AL is not ward
- *  shorthand for an anastomotic leak, IUD is the device as often as intrauterine death. */
-const NOT_SHORTHAND = new Set(["HR", "GA", "AL", "IUD"]);
+ *  shorthand for an anastomotic leak, IUD is the device as often as intrauterine death, and IH
+ *  for an inguinal hernia reads as a cipher on the ward list — the words are short already. */
+const NOT_SHORTHAND = new Set(["HR", "GA", "AL", "IUD", "IH"]);
 
 /**
  * One word that gives an abbreviation two letters: "intraocular" is the IO of IOP,

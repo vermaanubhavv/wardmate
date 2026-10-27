@@ -184,3 +184,19 @@ export function shorthandPair(before: string, after: string, specialty?: string 
   if (shortFinding(long, specialty) === short) return null;
   return { long, short };
 }
+
+const labelWords = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+
+/**
+ * True when a row's label says nothing the value does not: the value (as stored, or in its
+ * shorthand) begins or ends with the label's words. "Tenderness" over "RIF tenderness",
+ * "cholelithiasis" over "cholelithiasis". The value alone is shown.
+ */
+export function labelRepeats(label: string, value: string, specialty?: string | null): boolean {
+  const l = labelWords(label);
+  if (!l) return false;
+  return [value, shortFinding(value, specialty)].some((v) => {
+    const w = ` ${labelWords(v)} `;
+    return w.startsWith(` ${l} `) || w.endsWith(` ${l} `);
+  });
+}

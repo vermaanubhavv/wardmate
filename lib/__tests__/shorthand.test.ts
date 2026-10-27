@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HAND_RULES, shortFinding, shortJob, shorthandPair, shorthandRules, type ShorthandRule } from "@/lib/shorthand";
+import { HAND_RULES, labelRepeats, shortFinding, shortJob, shorthandPair, shorthandRules, type ShorthandRule } from "@/lib/shorthand";
 import { CORE_PAIRS, DEPARTMENT_PAIRS } from "@/lib/shorthand-table";
 import { conflicting, meaningKey, spells } from "@/lib/shorthand-derive";
 import { WARD_SHORTHAND } from "@/lib/transcription/lexicon/ward-shorthand";
@@ -54,6 +54,19 @@ describe("shortFinding", () => {
   it("never shortens a synonym or an opposite", () => {
     expect(shortFinding("afebrile")).toBe("afebrile");
     expect(shortFinding("not passing flatus")).toBe("not passing flatus");
+  });
+});
+
+describe("labelRepeats", () => {
+  it("hides a label the value already starts or ends with, as stored or shortened", () => {
+    expect(labelRepeats("Tenderness", "tenderness present over the right iliac fossa")).toBe(true);
+    expect(labelRepeats("Tenderness", "present over the right iliac fossa, tenderness")).toBe(true);
+    expect(labelRepeats("Diagnosis", "cholelithiasis")).toBe(false);
+    expect(labelRepeats("P/A", "per abdomen soft")).toBe(true);
+    expect(labelRepeats("Pain", "painless")).toBe(false);
+  });
+  it("leaves inguinal hernia in words", () => {
+    expect(shortFinding("right inguinal hernia", "general_surgery")).toBe("right inguinal hernia");
   });
 });
 
