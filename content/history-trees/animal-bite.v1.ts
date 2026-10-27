@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, NRCP_RABIES, TINTINALLI, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * ANIMAL BITE (DOG, CAT, MONKEY) — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * ANIMAL BITE (DOG, CAT, MONKEY) — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Emergency department, north India. Stray dogs, pet dogs and cats, and urban monkeys account
  * for most bites; children are bitten on the face and head more often than adults. The history
  * decides the rabies exposure category under the national guidelines (I: touching or feeding,
@@ -16,12 +16,12 @@ import { commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, NRCP_RABIES, TINTINA
  */
 export const animalBiteV1: HistoryTree = {
   id: "animal_bite",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Animal bite (dog, cat, monkey)",
   triggers: ["animal bite", "dog bite", "dog bitten", "bitten by dog", "stray dog bite", "cat bite", "cat scratch", "bitten by cat", "monkey bite", "bitten by monkey", "monkey scratch", "bat bite", "rabies exposure", "anti rabies", "kutte ne kata", "kutta kaat liya", "bandar ne kata", "billi ne kata"],
   setting: "Emergency department, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [NRCP_RABIES, TINTINALLI, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("bite"),
@@ -33,7 +33,7 @@ export const animalBiteV1: HistoryTree = {
     val("hpi", "contact_type", "Type of contact", "Was it a lick on intact skin, a nibble, a scratch without bleeding, a scratch that bled, a bite through the skin, or a lick on broken skin, the lips, mouth or eyes?", ["lick", "licked", "intact skin", "nibble", "nibbled", "scratch", "scratched", "bleeding", "bled", "bite", "teeth marks", "puncture", "broken skin", "mucosa", "lips", "eyes", "saliva"]),
     val("hpi", "wound_count_depth", "Number and depth of wounds", "How many wounds are there, and are they superficial, deep punctures, or tears with loss of tissue?", ["single", "multiple", "wounds", "superficial", "deep", "puncture", "tear", "lacerated", "flap", "tissue loss", "avulsion"], { numeric: true }),
     val("hpi", "wound_washing", "What was done to the wound", "Was the wound washed with soap and running water, for how long and how soon, and was anything applied — chilli, turmeric, lime, oil, ash or a tight dressing?", ["washed", "soap", "running water", "minutes", "not washed", "chilli", "mirchi", "turmeric", "haldi", "lime", "chuna", "oil", "ash", "dressing", "stitched"]),
-    val("hpi", "provocation", "Provoked or unprovoked", "Was the bite provoked — teasing, feeding, handling, separating a fight — or did the animal attack without reason?", ["provoked", "unprovoked", "teasing", "feeding", "handling", "petting", "stepped on", "fight", "attacked without reason", "chased", "sudden attack"]),
+    val("hpi", "provocation", "Provoked or unprovoked", "Was the bite provoked — teasing, feeding, handling, separating a fight — or did the animal attack without reason?", ["provoked", "unprovoked", "teasing", "feeding", "handling", "petting", "stepped on", "fight", "chased", "sudden attack"]),
     val("hpi", "animal_ownership", "Owned or stray", "Is the animal a pet, a community or stray animal, or a wild one?", ["pet", "own dog", "neighbour's dog", "stray", "street dog", "community dog", "wild", "unknown animal", "owned"]),
     yn("hpi", "animal_vaccinated", "Animal vaccinated", "Is the animal known to be vaccinated against rabies, and is there a record of it?", ["vaccinated", "not vaccinated", "vaccination record", "certificate", "unknown", "vet", "rabies vaccine for dog"]),
     val("hpi", "animal_observable", "Can the animal be watched", "Is the animal alive and available to be observed over the next ten days, or has it been killed, died, or gone missing?", ["alive", "observed", "ten days", "10 days", "under observation", "killed", "died", "dead", "missing", "ran away", "cannot be traced", "healthy"]),
@@ -51,12 +51,12 @@ export const animalBiteV1: HistoryTree = {
     yn("red_flag", "animal_abnormal_or_died", "Animal ill, abnormal or died", "Was the animal behaving abnormally — aggressive, biting objects, drooling, unable to swallow, paralysed — or has it since died or disappeared?", ["abnormal behaviour", "aggressive", "biting objects", "drooling", "frothing", "paralysed", "died", "dead", "disappeared", "mad dog", "pagal kutta", "bit others"], { teach: "An animal that behaves abnormally, dies or cannot be traced cannot provide the reassurance of observation, which changes how the exposure is judged." }),
     yn("red_flag", "rabies_like_symptoms", "Fear of water, tingling at the bite site", "Any fear of water or of air blowing on the face, difficulty swallowing, agitation, or tingling or pain at an old bite site?", ["fear of water", "hydrophobia", "fear of air", "aerophobia", "cannot drink", "difficulty swallowing", "agitation", "tingling at bite", "pain at old bite", "spasms", "excessive saliva"], { teach: "Fear of water or of a breeze, and tingling at a healed bite site, are the earliest recognised features of clinical rabies and change everything that follows." }),
     yn("red_flag", "spreading_infection", "Spreading infection", "Is redness spreading up the limb, are there red streaks or painful lumps in the armpit or groin, or is a joint near the bite swollen?", ["spreading redness", "red streaks", "lymphangitis", "lumps in armpit", "lumps in groin", "swollen joint", "abscess", "pus"], { teach: "Spreading redness, red streaks or a swollen joint after a bite, particularly a cat bite to the hand, can progress within hours." }),
-    yn("red_flag", "late_presentation", "Delay before first care", "How many days passed between the bite and the first visit to any health facility?", ["days later", "delay", "came late", "did not come", "first visit", "traditional healer", "jhaad phoonk", "local treatment"], { teach: "A delay before care is common, and the interval since the bite matters both for the wound and for how prophylaxis is approached." }),
+    yn("red_flag", "late_presentation", "Delay before first care", "How many days passed between the bite and the first visit to any health facility?", ["days later", "delay", "came late", "delayed", "first visit", "traditional healer", "jhaad phoonk", "local treatment"], { teach: "A delay before care is common, and the interval since the bite matters both for the wound and for how prophylaxis is approached." }),
     IMMUNOCOMPROMISE,
     // Background
     yn("exposure", "previous_rabies_vaccination", "Previous rabies vaccination", "Has the patient ever had a course of rabies vaccine before, for an earlier bite or before exposure at work, and is the record available?", ["previous vaccination", "vaccinated before", "earlier bite", "full course", "incomplete course", "pre exposure", "record", "card", "never vaccinated"], { teach: "Whether an earlier course was completed, and when, is asked because the guidelines treat a previously vaccinated person differently." }),
     yn("exposure", "previous_immunoglobulin", "Previous rabies immunoglobulin", "Has the patient ever received rabies immunoglobulin before, and was there any reaction?", ["immunoglobulin", "rig", "erig", "hrig", "serum", "reaction", "never received"], { tier: "detailed" }),
-    yn("exposure", "tetanus_immunisation", "Tetanus immunisation", "When was the last tetanus immunisation, and is it known at all?", ["tetanus", "tt", "tetanus injection", "last tetanus", "not known", "never"]),
+    yn("exposure", "tetanus_immunisation", "Tetanus immunisation", "When was the last tetanus immunisation, and is it known at all?", ["tetanus", "tt", "tetanus injection", "last tetanus", "not known"]),
     yn("exposure", "others_bitten", "Others bitten by the same animal", "Were other people or animals bitten by the same animal?", ["others bitten", "bit others", "other children", "bit other dogs", "many people", "same dog"], { tier: "detailed" }),
     yn("exposure", "animal_work", "Work with animals", "Does the patient work with animals — veterinary work, animal shelters, dog catching, or handling monkeys or bats?", ["veterinary", "vet", "shelter", "dog catcher", "animal handler", "zoo", "lab animals", "caves"], { tier: "detailed" }),
   ],

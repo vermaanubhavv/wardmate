@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { feverV1 } from "@/content/history-trees/fever.v1";
+import { getTree } from "@/lib/history-check/trees";
 import { validateExtraction, quoteNegatesItem, type RawExtraction } from "../validate";
 import { buildSources } from "../sources";
 
@@ -231,5 +232,30 @@ describe("quoteNegatesItem — a negation phrase that contains an affirming word
     ["Has not passed urine since the burn", ["passed urine"], false], // "since" ends a denial, by design
   ])("%s → %s", (quote, terms, expected) => {
     expect(quoteNegatesItem(quote, terms as string[])).toBe(expected);
+  });
+});
+
+describe("quoteNegatesItem — a quote that affirms a red flag never closes it", () => {
+  // Terms naming a present finding carry no negation word (docs/history-check.md, "Terms and
+  // negation"), so a quote that affirms the finding cannot be read as its denial.
+  const slot = (tree: string, id: string) => getTree(tree)!.slots.find((s) => s.id === id)!.terms;
+  it.each([
+    ["fever", "urine_output", "Not passing urine since morning"],
+    ["fever", "altered_sensorium", "Not responding to voice since 2 hours"],
+    ["fever_with_rash", "non_blanching_rash", "Rash does not fade on glass test"],
+    ["paediatric_fever", "lethargy_not_feeding", "Child not feeding since yesterday"],
+    ["sick_newborn", "bleeding", "Vitamin K not given at birth"],
+    ["thyroid_swelling", "voice_change", "Hoarse, cough not effective"],
+    ["burns", "electrical_high_voltage", "Could not let go of the wire"],
+    ["head_injury", "account_fits_head_injury", "Account does not fit the injury"],
+    ["low_mood", "suicidal_thoughts", "Feels life is not worth living"],
+    ["low_mood", "suicidal_thoughts", "Denies fever"],
+  ])("%s.%s: %s", (tree, id, quote) => {
+    expect(quoteNegatesItem(quote, slot(tree, id))).toBe(false);
+  });
+
+  it("still records the ordinary denial", () => {
+    expect(quoteNegatesItem("No anuria", slot("fever", "urine_output"))).toBe(true);
+    expect(quoteNegatesItem("No suicidal thoughts", slot("low_mood", "suicidal_thoughts"))).toBe(true);
   });
 });

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { ATLS, BAILEY_LOVE, commonHpi, HUTCHISONS, MACLEODS, rce, surgicalBackground, TRAUMA_BG, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LIMB INJURY — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * LIMB INJURY — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Orthopaedic / emergency ward, north India. The mechanism predicts the injury, and the
  * questions that matter most afterwards are about the circulation, the nerves and the skin
  * over the fracture. Differentials: fracture, dislocation, ligament or tendon injury, soft
@@ -11,12 +11,12 @@ import { ATLS, BAILEY_LOVE, commonHpi, HUTCHISONS, MACLEODS, rce, surgicalBackgr
  */
 export const limbInjuryV1: HistoryTree = {
   id: "limb_injury",
-  version: "1.2.0",
+  version: "1.3.0",
   complaint: "Limb injury",
   triggers: ["limb injury", "fracture", "broken bone", "injury to leg", "injury to arm", "dislocation", "twisted ankle", "fall on hand", "hadi toot", "deformity after fall", "cannot bear weight"],
   setting: "Orthopaedic / emergency ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("Does this patient with shoulder pain have rotator cuff disease? The Rational Clinical Examination systematic review", 2013, "23982370"),
     MACLEODS,
@@ -38,8 +38,8 @@ export const limbInjuryV1: HistoryTree = {
     yn("associated", "previous_problem_limb", "Previous problem with that limb", "Any previous injury, surgery, or long-standing pain in the same limb?", ["previous injury", "surgery", "implant", "plate", "long standing pain", "same limb", "operated"], { tier: "detailed" }),
     // Red flags
     yn("red_flag", "open_fracture", "Wound over a suspected fracture", "Is there a wound, however small, over the site of a suspected fracture, and how long ago and how dirty was it?", ["wound over", "open fracture", "bone visible", "bleeding", "small puncture", "dirty", "soil", "hours ago", "field"], { teach: "Any wound over a fracture makes it an open injury, and the time since and the contamination drive how urgently it must reach theatre." }),
-    yn("red_flag", "neurovascular_compromise", "Cold, pale or pulseless limb", "Is the limb beyond the injury cold, pale, blue, numb, or without a pulse?", ["cold", "pale", "blue", "numb", "no pulse", "pulseless", "cannot move", "white", "dusky"], { teach: "A limb without circulation tolerates only a few hours, so this question is asked before imaging and repeated after any manipulation." }),
-    yn("red_flag", "compartment_features", "Pain far out of proportion, worse on stretching", "Is the pain far greater than the injury suggests, increasing, tight, and much worse when the fingers or toes are stretched?", ["out of proportion", "increasing", "tight", "tense", "on stretching", "unbearable", "not relieved", "swollen hard", "pins and needles"], { teach: "Pain out of proportion that worsens on passive stretching is the earliest sign of a compartment under pressure, and it appears long before the pulse disappears." }),
+    yn("red_flag", "neurovascular_compromise", "Cold, pale or pulseless limb", "Is the limb beyond the injury cold, pale, blue, numb, or without a pulse?", ["cold", "pale", "blue", "numb", "pulseless", "cannot move", "white", "dusky"], { teach: "A limb without circulation tolerates only a few hours, so this question is asked before imaging and repeated after any manipulation." }),
+    yn("red_flag", "compartment_features", "Pain far out of proportion, worse on stretching", "Is the pain far greater than the injury suggests, increasing, tight, and much worse when the fingers or toes are stretched?", ["out of proportion", "increasing", "tight", "tense", "on stretching", "unbearable", "unrelieved", "swollen hard", "pins and needles"], { teach: "Pain out of proportion that worsens on passive stretching is the earliest sign of a compartment under pressure, and it appears long before the pulse disappears." }),
     yn("red_flag", "deformity_dislocation", "Obvious deformity or a joint locked out of position", "Is the limb obviously deformed, shortened or rotated, or is a joint fixed and unable to move?", ["deformity", "shortened", "rotated", "locked", "fixed", "cannot move joint", "out of position", "dislocated"], { teach: "A dislocated joint left in position damages the cartilage and the vessels around it, so recognising it early matters as much as the fracture." }),
     yn("red_flag", "hip_fracture_elderly", "Elderly patient unable to bear weight after a fall", "Is an older patient unable to stand or bear weight after a fall, with the leg short or turned outwards?", ["elderly", "older", "cannot stand", "cannot bear weight", "after a fall", "short", "turned out", "externally rotated", "groin pain"], { teach: "In an older person a hip fracture may follow a trivial fall, and the delay to surgery is a strong determinant of the outcome." }),
     yn("red_flag", "pathological_fracture", "Fracture after a trivial injury", "Did the bone break after very little force, or was there pain in that bone before the injury?", ["trivial", "little force", "minor fall", "pain before", "night pain", "cancer", "known malignancy", "weak bone", "steroid"], { teach: "A break after minimal force, or bone pain preceding it, raises a lesion weakening the bone rather than a simple injury." }),

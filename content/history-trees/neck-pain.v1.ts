@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { APLEY, ATLS, BAILEY_LOVE, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * NECK PAIN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * NECK PAIN — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Orthopaedics ward and casualty, north India. Most neck pain is degenerative or postural; the
  * history exists to find the root, the cord, the fracture and the infection hiding among them.
  * Tuberculosis of the cervical spine is a live differential here. Differentials: cervical
@@ -13,12 +13,12 @@ import { APLEY, ATLS, BAILEY_LOVE, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACL
  */
 export const neckPainV1: HistoryTree = {
   id: "neck_pain",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Neck pain",
   triggers: ["neck pain", "pain in neck", "pain in the neck", "neck ache", "cervical pain", "cervicalgia", "cervical spondylosis", "whiplash", "gardan dard", "gardan me dard", "pain radiating to arm"],
   setting: "Orthopaedics ward and casualty, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [APLEY, BAILEY_LOVE, MACLEODS, HUTCHISONS, ATLS],
   slots: [
     ...commonHpi("neck pain"),
@@ -29,7 +29,7 @@ export const neckPainV1: HistoryTree = {
     val("hpi", "neck_timing", "Timing and stiffness", "Is it worse in the morning with stiffness, at the end of the day, or at night?", ["morning", "stiffness", "end of day", "evening", "night", "wakes", "constant", "throughout", "stiff neck"]),
     val("hpi", "injury_mechanism", "How the injury happened", "If there was an injury, how did it happen — a fall, a road collision, a rear-end impact, a dive into shallow water, or a load falling on the head — and has the neck been moved since?", ["fall", "road traffic", "rear end", "jerk", "diving", "shallow water", "load on head", "hit on head", "motorcycle", "collar", "moved since"], { tier: "detailed" }),
     yn("associated", "arm_symptoms", "Arm numbness / tingling / weakness", "Any numbness, tingling or weakness in the arm or hand?", ["numbness", "tingling", "pins and needles", "weakness", "weak grip", "arm weakness", "hand weakness", "loss of sensation"]),
-    yn("associated", "hand_clumsiness", "Clumsy hands", "Have the hands become clumsy — dropping things, difficulty with buttons, writing or picking up coins?", ["clumsy", "dropping things", "buttons", "writing", "picking up", "coins", "fine work", "hands not working", "clumsiness"], { teach: "Clumsiness of both hands without a clear root pattern is often the first sign of pressure on the cord in the neck, well before the legs are affected." }),
+    yn("associated", "hand_clumsiness", "Clumsy hands", "Have the hands become clumsy — dropping things, difficulty with buttons, writing or picking up coins?", ["clumsy", "dropping things", "buttons", "writing", "picking up", "coins", "fine work", "clumsiness"], { teach: "Clumsiness of both hands without a clear root pattern is often the first sign of pressure on the cord in the neck, well before the legs are affected." }),
     yn("associated", "occipital_headache", "Headache from the back of the head", "Does a headache start at the back of the head and spread forwards?", ["headache", "back of head", "occipital", "spreads forward", "head pain", "temple"], { tier: "detailed" }),
     yn("associated", "dizziness_on_turning", "Dizziness or blackout on turning the neck", "Any dizziness, blurring or blackout when turning or extending the neck?", ["dizziness", "giddiness", "blackout", "blurring", "on turning", "looking up", "vertigo", "drop attack"], { tier: "detailed" }),
     yn("associated", "neck_constitutional", "Fever / weight loss / night sweats", "Any fever, weight loss, loss of appetite or night sweats?", ["fever", "weight loss", "lost weight", "loss of appetite", "night sweats", "evening rise"]),
@@ -42,7 +42,7 @@ export const neckPainV1: HistoryTree = {
     yn("red_flag", "neck_infection", "Fever with neck pain / recent infection or injection", "Any fever with the neck pain, a recent infection, boil, injection, or procedure?", ["fever", "infection", "boil", "injection", "procedure", "chills", "rigors", "abscess", "intravenous drug"], { teach: "Fever with focal spinal pain raises infection of the disc or the space around the cord, which progresses during any period of watchful waiting." }),
     yn("red_flag", "meningism", "Fever with headache / sudden severe headache", "Any fever with headache, vomiting, dislike of light or drowsiness, or a sudden severe headache at the onset?", ["headache", "vomiting", "photophobia", "dislike of light", "drowsy", "confused", "sudden severe headache", "worst headache", "thunderclap"], { teach: "A stiff painful neck with headache and fever or a sudden severe headache belongs to the brain and its coverings, and the orthopaedic label can delay that thought." }),
     yn("red_flag", "cancer_myeloma", "Known cancer / bone pains / anaemia", "Any known cancer, previous cancer treatment, pain in other bones, or unexplained anaemia or kidney trouble?", ["cancer", "malignancy", "tumour", "chemotherapy", "radiotherapy", "breast", "prostate", "lung", "myeloma", "bone pains", "anaemia", "kidney"], { teach: "In someone with a past cancer, or with pains in several bones, new neck pain raises a deposit in a vertebra." }),
-    yn("red_flag", "rest_night_pain", "Pain at rest / waking from sleep", "Is the pain present at rest, unrelieved by lying down, or waking the patient from sleep?", ["at rest", "unrelieved", "lying down", "wakes from sleep", "night pain", "constant", "no relief", "worse at night"], { teach: "Mechanical pain eases with rest; pain that does not, and that wakes a patient, points away from a strained neck." }),
+    yn("red_flag", "rest_night_pain", "Pain at rest / waking from sleep", "Is the pain present at rest, unrelieved by lying down, or waking the patient from sleep?", ["at rest", "unrelieved", "lying down", "wakes from sleep", "night pain", "constant", "worse at night"], { teach: "Mechanical pain eases with rest; pain that does not, and that wakes a patient, points away from a strained neck." }),
     yn("red_flag", "cardiac_features", "Pain with exertion / jaw or left arm / sweating", "Does the pain come on with exertion, spread to the jaw or left arm, or come with sweating or breathlessness?", ["exertion", "walking", "climbing stairs", "jaw", "left arm", "sweating", "breathless", "chest tightness", "heart"], { teach: "Heart pain can be felt mainly in the neck or jaw, and exertional timing is the question that separates it from a musculoskeletal ache." }),
     yn("red_flag", "ra_upper_neck", "Rheumatoid arthritis with pain high in the neck", "In a patient with rheumatoid arthritis, any pain high in the neck or at the back of the head, or new weakness or tingling?", ["rheumatoid", "ra", "pain at back of head", "high in neck", "occipital pain", "weakness", "tingling", "instability"], { teach: "Rheumatoid disease can loosen the joint between the first two vertebrae, and neck handling during anaesthesia or intubation becomes a hazard." }),
     IMMUNOCOMPROMISE,

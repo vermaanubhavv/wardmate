@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, PREGNANCY, SABISTON, SABISTON_GERIATRIC, SCHWARTZ, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BEFORE AN OPERATION (PRE-OPERATIVE ASSESSMENT) — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * BEFORE AN OPERATION (PRE-OPERATIVE ASSESSMENT) — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical ward, north India. Built from Sabiston (20th ed.) ch. 10 "Principles of
  * Preoperative and Operative Surgery", ch. 13 "Surgery in the Geriatric Patient" and ch. 14
  * "Anesthesiology Principles" — the systems review the text says every patient gets before
@@ -20,12 +20,12 @@ import { BAILEY_LOVE, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, PREGNANCY, SABISTON
  */
 export const preopAssessmentV1: HistoryTree = {
   id: "preop_assessment",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Before an operation (pre-operative assessment)",
   triggers: ["pre op", "pre-op", "preop", "preoperative", "pre operative", "pre-operative", "pre anaesthetic", "pre-anaesthetic", "pre anesthetic", "pac clearance", "fitness for surgery", "fitness for anaesthesia", "posted for surgery", "planned for surgery", "scheduled for surgery", "elective surgery", "admitted for surgery"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, SABISTON, SABISTON_GERIATRIC, SCHWARTZ, BAILEY_LOVE],
   slots: [
     val("informant", "informant", "Informant", "Who gave the history — the patient or an attendant?", ["attendant", "informant", "history given by", "relative", "wife", "husband", "son", "daughter", "mother", "father", "patient himself", "patient herself"], { tier: "detailed" }),
@@ -60,7 +60,7 @@ export const preopAssessmentV1: HistoryTree = {
     yn("associated", "memory_cognition", "Memory and confusion", "Has the patient or the family noticed forgetfulness, confusion, or any decline in managing affairs?", ["forgetful", "forgetfulness", "memory", "confused", "confusion", "dementia", "decline", "repeats", "memory normal"], { tier: "detailed", teach: "Sabiston asks for the starting level of memory and thinking to be recorded, because confusion after an operation is common and cannot be judged without it; the family is often the better informant." }),
     yn("associated", "previous_delirium", "Confusion after a past operation or illness", "Did the patient become confused after a previous operation or a hospital admission?", ["confused after surgery", "delirium", "disoriented after", "agitated in hospital", "no confusion before"], { tier: "detailed" }),
     yn("associated", "vision_hearing", "Vision and hearing", "Is there any difficulty with seeing or hearing, and are glasses or a hearing aid used?", ["poor vision", "glasses", "spectacles", "cataract", "hard of hearing", "deaf", "hearing aid"], { tier: "detailed" }),
-    yn("associated", "low_mood", "Low mood", "In the past year, has there been a spell of two weeks or more of feeling low, or of losing interest in things usually enjoyed?", ["low mood", "sad", "depressed", "lost interest", "no interest", "crying", "mood normal"], { tier: "detailed", teach: "Sabiston's checklist screens mood with these two questions before an operation in an older patient." }),
+    yn("associated", "low_mood", "Low mood", "In the past year, has there been a spell of two weeks or more of feeling low, or of losing interest in things usually enjoyed?", ["low mood", "sad", "depressed", "lost interest", "loss of interest", "crying", "mood normal"], { tier: "detailed", teach: "Sabiston's checklist screens mood with these two questions before an operation in an older patient." }),
 
     // Habits and home
     val("exposure", "smoking", "Smoking or tobacco", "Does the patient smoke or use tobacco, how much and for how long, and when was the last one?", ["smoker", "smokes", "bidi", "cigarette", "pack years", "tobacco", "gutka", "hookah", "quit", "ex smoker", "non smoker", "never smoked"]),

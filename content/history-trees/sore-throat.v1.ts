@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, ebem, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SORE THROAT — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * SORE THROAT — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Adult medicine / ENT ward, north India. Most sore throats are viral; the history exists to
  * find the airway emergency and the streptococcal infection that matters for its sequelae.
  * Diphtheria remains a real differential in an under-immunised north-Indian population.
@@ -12,12 +12,12 @@ import { commonHpi, ebem, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce
  */
 export const soreThroatV1: HistoryTree = {
   id: "sore_throat",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Sore throat",
   triggers: ["sore throat", "throat pain", "pain in throat", "painful swallowing", "odynophagia", "pharyngitis", "tonsillitis", "gala kharab", "throat infection", "scratchy throat"],
   setting: "Adult medicine / ENT ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("The rational clinical examination. Does this patient have strep throat?", 2000, "11147989"),
     rce("Does this patient have infectious mononucleosis? The Rational Clinical Examination systematic review", 2016, "27115266"),
@@ -46,7 +46,7 @@ export const soreThroatV1: HistoryTree = {
     yn("red_flag", "membrane_bleeding", "Grey membrane in the throat", "Any greyish white membrane in the throat that bleeds when touched?", ["membrane", "grey", "greyish", "white membrane", "bleeds", "adherent", "diphtheria", "pseudomembrane"], { teach: "An adherent membrane that bleeds on touching raises diphtheria, which remains present where immunisation coverage is incomplete." }),
     yn("red_flag", "immunisation_status", "Childhood immunisation", "Was the childhood immunisation schedule completed, including tetanus and diphtheria boosters?", ["immunisation", "immunization", "vaccination", "vaccinated", "dpt", "booster", "not vaccinated", "incomplete", "schedule"], { teach: "Immunisation status changes which throat infections remain possible, and few adults volunteer that history unless asked." }),
     yn("red_flag", "drug_induced_agranulocytosis", "New drugs / cancer treatment / mouth ulcers with fever", "Any new drugs such as antithyroid tablets, or chemotherapy, with fever and mouth ulcers?", ["antithyroid", "carbimazole", "methimazole", "chemotherapy", "new drug", "mouth ulcers", "fever", "low counts", "neutropenia"], { teach: "A sore throat with fever in someone on marrow-suppressing drugs can be the first sign that the white cells have gone." }),
-    yn("red_flag", "persistent_unilateral", "Sore throat lasting weeks / weight loss / neck lump", "Has the sore throat lasted more than three weeks, with weight loss, hoarseness, or a neck lump?", ["three weeks", "weeks", "persistent", "weight loss", "hoarseness", "neck lump", "smoker", "not improving"], { tier: "detailed", teach: "A sore throat that persists for weeks, especially with a neck lump or hoarseness in a tobacco user, asks about a growth rather than an infection." }),
+    yn("red_flag", "persistent_unilateral", "Sore throat lasting weeks / weight loss / neck lump", "Has the sore throat lasted more than three weeks, with weight loss, hoarseness, or a neck lump?", ["three weeks", "weeks", "persistent", "weight loss", "hoarseness", "neck lump", "smoker", "persisting"], { tier: "detailed", teach: "A sore throat that persists for weeks, especially with a neck lump or hoarseness in a tobacco user, asks about a growth rather than an infection." }),
     IMMUNOCOMPROMISE,
     PREGNANCY,
     yn("exposure", "tobacco_alcohol", "Tobacco / gutka / alcohol", "Any smoking, tobacco or gutka chewing, or alcohol?", ["smoking", "tobacco", "gutka", "paan", "alcohol", "chewing", "bidi"]),

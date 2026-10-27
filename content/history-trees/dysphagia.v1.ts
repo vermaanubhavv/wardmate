@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * DYSPHAGIA — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * DYSPHAGIA — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical / medicine ward, north India. Three questions carry most of the weight: solids
  * or liquids, progressive or intermittent, and at what level food sticks. Solids-then-liquids
  * progressing over weeks with weight loss is a mechanical narrowing until shown otherwise.
@@ -12,12 +12,12 @@ import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISO
  */
 export const dysphagiaV1: HistoryTree = {
   id: "dysphagia",
-  version: "1.4.0",
+  version: "1.5.0",
   complaint: "Difficulty swallowing",
   triggers: ["dysphagia", "difficulty swallowing", "difficulty in swallowing", "food sticking", "food gets stuck", "cannot swallow", "unable to swallow", "trouble swallowing", "nigalne me dikkat", "odynophagia"],
   setting: "Adult surgical / medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BAILEY_LOVE, SABISTON],
   slots: [
     ...commonHpi("difficulty swallowing"),
@@ -57,7 +57,7 @@ export const dysphagiaV1: HistoryTree = {
     yn("associated", "early_satiety_fullness", "Early fullness and ache after meals", "Does the patient feel full early or bloated after meals, with a dull chest ache that eases on belching or bringing food up?", ["full early", "fullness after meals", "bloated", "chest ache after food", "relieved by belching", "no fullness"], { tier: "detailed", teach: "Hamilton Bailey describes hiatus hernia as reflux and dysphagia with early satiety, post-meal fullness and a dull chest ache relieved by vomiting, belching or regurgitation." }),
     // Schwartz's Principles of Surgery, 11th ed. (docs/surgical-history.md §12)
     yn("hpi", "meal_adaptation", "How meals have changed", "Does the patient need water to wash food down, finish meals last, or avoid eating with others because of the swallowing?", ["water to wash down", "drinks with every bite", "last to finish", "eats slowly", "avoids eating out", "only soft food", "eats normally"], { teach: "Schwartz judges the severity of dysphagia by the changes made to eating, because patients adapt and under-report the symptom." }),
-    yn("exposure", "pill_injury", "Tablets that may lodge in the food pipe", "Does the patient take painkillers, doxycycline, iron, potassium or bone-strengthening tablets, often with little water or just before lying down?", ["painkiller", "doxycycline", "iron tablet", "potassium", "alendronate", "tablet stuck", "without water", "before sleeping", "no such tablets"], { tier: "detailed", teach: "Schwartz notes most patients with a lower oesophageal ring but no reflux have taken drugs that damage the lining, which then narrows." }),
+    yn("exposure", "pill_injury", "Tablets that may lodge in the food pipe", "Does the patient take painkillers, doxycycline, iron, potassium or bone-strengthening tablets, often with little water or just before lying down?", ["painkiller", "doxycycline", "iron tablet", "potassium", "alendronate", "tablet stuck", "little water", "before sleeping", "no such tablets"], { tier: "detailed", teach: "Schwartz notes most patients with a lower oesophageal ring but no reflux have taken drugs that damage the lining, which then narrows." }),
     yn("associated", "scleroderma_features", "Fingers whitening in the cold or tight skin", "Have the fingers turned white or blue in the cold, or has the skin of the hands or face become tight?", ["fingers turn white", "blue fingers in cold", "raynaud", "tight skin", "skin hardening", "scleroderma", "no such change"], { tier: "detailed", teach: "Schwartz lists scleroderma and other connective-tissue diseases among the systemic causes of a weak oesophagus, which often brings reflux and dysphagia together." }),
     // Bailey & Love, 28th ed. (docs/surgical-history.md §13)
     yn("exposure", "atopy", "Asthma, hay fever, eczema or food allergy", "Has the patient asthma, hay fever, eczema or a food allergy?", ["asthma", "hay fever", "allergic rhinitis", "eczema", "food allergy", "atopic", "no asthma"], { tier: "detailed", teach: "Bailey & Love describes eosinophilic oesophagitis in adults in their twenties and thirties as dysphagia with food sticking, clearly linked to asthma, allergic rhinitis, eczema and food allergy." }),

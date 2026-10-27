@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * HEADACHE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * HEADACHE — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Adult medicine ward, north India. Differentials: migraine, tension-type headache,
  * meningitis / encephalitis (including tuberculous), subarachnoid haemorrhage, raised
  * intracranial pressure (mass, hydrocephalus, venous sinus thrombosis), hypertensive
@@ -10,12 +10,12 @@ import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, PREGNANCY, rce, val, yn } from "
  */
 export const headacheV1: HistoryTree = {
   id: "headache",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Headache",
   triggers: ["headache", "head ache", "head pain", "pain in head", "migraine"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("Does this patient with headache have a migraine or need neuroimaging?", 2006, "16968852"),
     rce("The rational clinical examination. Does this adult patient have acute meningitis?", 1999, "10411200"),
@@ -50,7 +50,7 @@ export const headacheV1: HistoryTree = {
     yn("red_flag", "altered_sensorium", "Altered sensorium / behaviour change", "Any drowsiness, confusion, irritability or behaviour change?", ["drowsy", "drowsiness", "confused", "confusion", "altered sensorium", "irritable", "behaviour change", "irrelevant talk", "disoriented", "unconscious"], { teach: "Drowsiness or confusion with headache means the brain is involved, not just the head." }),
     yn("red_flag", "seizure", "Seizure", "Any seizure or fit?", ["seizure", "seizures", "fit", "fits", "convulsion", "convulsions"], { teach: "A seizure with headache points to a structural or infective cause rather than migraine." }),
     yn("red_flag", "focal_deficit", "Focal weakness / speech / gait", "Any weakness of a limb, facial deviation, slurred speech, or unsteadiness?", ["weakness", "paralysis", "hemiparesis", "facial deviation", "slurred speech", "slurring", "unsteady", "imbalance", "ataxia", "numbness", "difficulty walking"], { teach: "Weakness, speech disturbance or unsteadiness with headache points to a stroke, a mass or venous sinus thrombosis." }),
-    yn("red_flag", "new_or_changed", "New pattern / changed headache", "Is this a new type of headache, or a change from the usual pattern?", ["new", "first time", "never before", "different from usual", "changed", "change in pattern", "new headache"], { teach: "A new type of headache, or a change in a familiar pattern, is what separates the chronic headache patient who needs imaging from the one who does not." }),
+    yn("red_flag", "new_or_changed", "New pattern / changed headache", "Is this a new type of headache, or a change from the usual pattern?", ["new", "first time", "first ever", "different from usual", "changed", "change in pattern", "new headache"], { teach: "A new type of headache, or a change in a familiar pattern, is what separates the chronic headache patient who needs imaging from the one who does not." }),
     yn("red_flag", "positional_pressure", "Postural / raised-pressure features", "Is it worse lying down, on coughing or straining, or does it wake the patient from sleep?", ["worse lying down", "lying down", "coughing", "straining", "wakes from sleep", "wakes up", "early morning", "projectile"], { teach: "Worse lying down, on coughing or straining, or waking the patient from sleep are the features of raised intracranial pressure." }),
     yn("red_flag", "head_injury", "Recent head injury / anticoagulants", "Any head injury recently, or is the patient on blood thinners?", ["head injury", "trauma", "fall", "hit", "blood thinner", "anticoagulant", "warfarin", "aspirin", "clopidogrel"], { teach: "A fall or blow in the past weeks, especially on blood thinners, raises a subdural haematoma." }),
     yn("red_flag", "hypertension", "Hypertension", "Is the patient hypertensive, and was a high reading recorded?", ["hypertension", "hypertensive", "blood pressure", "bp", "high bp", "raised bp"], { teach: "A very high blood pressure with headache and visual symptoms is hypertensive emergency territory." }),

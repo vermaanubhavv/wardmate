@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, CAMPBELL_UROLOGY, commonHpi, HUTCHISONS, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LEAKING OF URINE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * LEAKING OF URINE — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Urology ward and casualty, north India. The history turns on when the urine leaks — with a
  * cough, with a rush of urgency, continuously day and night, or without the patient knowing —
  * and then on what came before: childbirth, a pelvic operation, a nerve or spinal illness.
@@ -13,23 +13,23 @@ import { BAILEY_LOVE, CAMPBELL_UROLOGY, commonHpi, HUTCHISONS, MACLEODS, val, yn
  */
 export const urinaryIncontinenceV1: HistoryTree = {
   id: "urinary_incontinence",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Leaking of urine",
   triggers: ["urinary incontinence", "incontinence of urine", "leaking urine", "leaking of urine", "leakage of urine", "urine leakage", "involuntary passage of urine", "cannot control urine", "cannot hold urine", "wetting clothes", "urine leaks on coughing", "continuous dribbling of urine", "vesicovaginal fistula", "vvf", "peshab nikal jata hai", "peshab tapakta hai"],
   setting: "Urology ward and casualty, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [CAMPBELL_UROLOGY, BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("leaking of urine"),
     yn("hpi", "stress_leak", "Leak on coughing / sneezing / lifting", "Does urine leak on coughing, sneezing, laughing, lifting or standing up?", ["coughing", "sneezing", "laughing", "lifting", "standing up", "exertion", "stress"]),
     yn("hpi", "urge_leak", "Leak with urgency", "Does a sudden strong urge come, with leakage before reaching the toilet?", ["urgency", "urge", "cannot reach toilet", "before reaching", "sudden need", "rush"]),
-    yn("hpi", "continuous_leak", "Continuous leak day and night", "Is the patient wet all the time, day and night, even without any urge or effort?", ["all the time", "continuous", "day and night", "always wet", "constant leak", "never dry"], { teach: "Wetness that never stops, day and night, asks whether urine is bypassing the sphincter through an abnormal opening." }),
+    yn("hpi", "continuous_leak", "Continuous leak day and night", "Is the patient wet all the time, day and night, even without any urge or effort?", ["all the time", "continuous", "day and night", "always wet", "constant leak"], { teach: "Wetness that never stops, day and night, asks whether urine is bypassing the sphincter through an abnormal opening." }),
     yn("hpi", "normal_voiding_too", "Also passes urine normally", "Along with the leak, does the patient still pass urine normally at times?", ["passes normally", "also voids", "normal urination", "still passes urine", "empties bladder"], { tier: "detailed", teach: "Normal voiding alongside a constant leak suggests one ureter is draining outside the bladder while the other still fills it." }),
-    yn("hpi", "unaware_leak", "Leak without awareness", "Does urine leak without the patient being aware of it, or during sleep?", ["without knowing", "unaware", "not aware", "bedwetting", "during sleep", "wet bed"]),
+    yn("hpi", "unaware_leak", "Leak without awareness", "Does urine leak without the patient being aware of it, or during sleep?", ["unaware", "bedwetting", "during sleep", "wet bed"]),
     val("hpi", "leak_amount", "Amount and pads", "How much leaks — drops or a full wetting — and how many pads or cloths are changed in a day?", ["drops", "few drops", "soaked", "full wetting", "pads", "cloth", "per day", "diaper"], { numeric: true }),
     val("hpi", "frequency_nocturia_inc", "Frequency and night-time passing", "How often is urine passed by day, and how many times at night?", ["times a day", "every hour", "frequency", "at night", "nocturia", "times at night"], { numeric: true }),
-    yn("hpi", "voiding_difficulty_inc", "Poor stream / incomplete emptying", "Is there a weak stream, straining, or a feeling that the bladder does not empty?", ["weak stream", "straining", "not emptying", "incomplete emptying", "hesitancy", "poor flow"], { teach: "Leaking with a poor stream asks whether the bladder is overfull and spilling over rather than failing to hold." }),
+    yn("hpi", "voiding_difficulty_inc", "Poor stream / incomplete emptying", "Is there a weak stream, straining, or a feeling that the bladder does not empty?", ["weak stream", "straining", "incomplete emptying", "hesitancy", "poor flow"], { teach: "Leaking with a poor stream asks whether the bladder is overfull and spilling over rather than failing to hold." }),
     val("hpi", "fluid_caffeine", "Fluid, tea and coffee intake", "How much fluid, tea, coffee or alcohol is taken in a day, and in the evening?", ["tea", "coffee", "chai", "alcohol", "litres", "glasses", "evening drinks", "fluid intake"], { tier: "detailed" }),
     // Associated
     yn("associated", "dysuria_inc", "Burning / cloudy urine", "Any burning, cloudy or foul-smelling urine, or fever?", ["burning", "dysuria", "cloudy", "foul smelling", "fever", "smelly urine"]),

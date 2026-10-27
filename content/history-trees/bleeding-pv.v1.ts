@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, MACLEODS, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BLEEDING PER VAGINUM — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * BLEEDING PER VAGINUM — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Obstetrics and gynaecology ward, north India. The first question is always whether the
  * patient could be pregnant, because that single fact splits the differential in two and puts
  * a ruptured ectopic at the top of one half. Differentials: ectopic pregnancy, miscarriage,
@@ -12,12 +12,12 @@ import { commonHpi, HUTCHISONS, MACLEODS, rce, val, yn } from "@/content/history
  */
 export const bleedingPvV1: HistoryTree = {
   id: "bleeding_pv",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Bleeding per vaginum",
   triggers: ["bleeding per vaginum", "bleeding pv", "vaginal bleeding", "per vaginal bleeding", "spotting", "heavy periods", "menorrhagia", "postmenopausal bleeding", "bleeding after delivery", "postpartum haemorrhage", "khoon aana"],
   setting: "Obstetrics and gynaecology ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     rce("Does this woman have an ectopic pregnancy? The Rational Clinical Examination systematic review", 2013, "23613077"),
     rce("The rational clinical examination. Is this patient hypovolemic?", 1999, "10086438"),
@@ -34,7 +34,7 @@ export const bleedingPvV1: HistoryTree = {
     yn("associated", "giddiness_fainting", "Giddiness or fainting", "Any giddiness, fainting, or sweating, especially on standing?", ["giddiness", "fainting", "fainted", "sweating", "on standing", "collapsed", "weakness", "palpitations"]),
     yn("associated", "shoulder_tip_pain", "Shoulder tip pain or pain on passing stool", "Any pain at the tip of the shoulder, or pain and pressure on passing stool?", ["shoulder tip", "shoulder pain", "pain passing stool", "pressure", "rectal pressure", "urge to defaecate"]),
     yn("associated", "discharge_fever", "Discharge or fever", "Any foul-smelling discharge, fever, or chills?", ["discharge", "foul", "smelly", "fever", "chills", "offensive", "pus"]),
-    yn("associated", "fetal_movements", "Fetal movements", "In a pregnancy beyond twenty weeks, are the baby's movements felt as usual?", ["fetal movements", "baby moving", "reduced", "not felt", "less", "same as before", "quickening"]),
+    yn("associated", "fetal_movements", "Fetal movements", "In a pregnancy beyond twenty weeks, are the baby's movements felt as usual?", ["fetal movements", "baby moving", "reduced", "stopped moving", "less", "same as before", "quickening"]),
     yn("associated", "contractions_leaking", "Pains or leaking", "Any tightening pains coming and going, or watery leaking per vaginum?", ["pains", "tightening", "contractions", "leaking", "watery", "water broke", "gush", "intervals"]),
     yn("associated", "bladder_bowel_pressure", "Pressure symptoms", "Any increasing abdominal swelling, pressure on the bladder, or difficulty passing urine?", ["swelling", "mass", "pressure", "bladder", "frequency", "difficulty passing urine", "constipation", "heaviness"], { tier: "detailed" }),
     yn("associated", "weight_loss_appetite", "Weight loss or appetite", "Any weight loss or loss of appetite?", ["weight loss", "lost weight", "appetite", "loss of appetite"], { tier: "detailed" }),
@@ -48,7 +48,7 @@ export const bleedingPvV1: HistoryTree = {
     yn("red_flag", "fever_with_bleeding", "Fever with foul discharge after a pregnancy event", "Any fever with foul-smelling discharge following a delivery, abortion or procedure?", ["fever", "foul", "offensive", "after abortion", "after delivery", "procedure", "chills", "unsafe", "outside"], { teach: "Fever with offensive discharge after a pregnancy event raises infection of the uterus, which in an unsafe abortion can progress very quickly." }),
     yn("red_flag", "bleeding_disorder_pv", "Bleeding elsewhere or blood thinners", "Any bruising, bleeding gums, nose bleeds, or blood thinners?", ["bruising", "gums", "nose bleed", "blood thinner", "warfarin", "aspirin", "platelets", "bleeding disorder"], { tier: "detailed", teach: "Heavy periods can be the first presentation of a clotting disorder, particularly when bleeding has been heavy since the very first period." }),
     yn("exposure", "obstetric_history", "Obstetric history", "How many pregnancies and deliveries, any caesarean sections, and any previous miscarriage or ectopic?", ["gravida", "para", "deliveries", "caesarean", "lscs", "miscarriage", "abortion", "ectopic", "previous", "g2p1"]),
-    yn("exposure", "contraception_hormones", "Contraception and hormones", "What contraception is being used, including an intrauterine device, pills or injections?", ["contraception", "iucd", "copper t", "pills", "ocp", "injection", "implant", "sterilisation", "none"]),
+    yn("exposure", "contraception_hormones", "Contraception and hormones", "What contraception is being used, including an intrauterine device, pills or injections?", ["contraception", "iucd", "copper t", "pills", "ocp", "injection", "implant", "sterilisation"]),
     yn("exposure", "recent_procedure_pv", "Recent procedure", "Any recent dilatation and curettage, insertion of a device, or termination of pregnancy?", ["d and c", "curettage", "insertion", "copper t", "termination", "mtp", "procedure", "recently"]),
     yn("exposure", "cervical_screening", "Cervical screening", "Has a cervical smear ever been done, and what did it show?", ["smear", "pap", "screening", "hpv", "never done", "normal", "abnormal"], { tier: "detailed" }),
   ],

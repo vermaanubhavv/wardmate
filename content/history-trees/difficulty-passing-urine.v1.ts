@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, CAMPBELL_UROLOGY, commonHpi, HUTCHISONS, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * DIFFICULTY PASSING URINE / RETENTION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * DIFFICULTY PASSING URINE / RETENTION — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Urology ward and casualty, north India. The history first separates complete retention from
  * a poor stream, then walks the IPSS storage and voiding items one by one, then asks what set
  * the episode off (a drug, an operation, constipation, a clot). Differentials: benign
@@ -13,23 +13,23 @@ import { BAILEY_LOVE, CAMPBELL_UROLOGY, commonHpi, HUTCHISONS, MACLEODS, val, yn
  */
 export const difficultyPassingUrineV1: HistoryTree = {
   id: "difficulty_passing_urine",
-  version: "1.0.0",
+  version: "1.1.0",
   complaint: "Difficulty passing urine / retention",
   triggers: ["difficulty passing urine", "difficulty in passing urine", "urinary retention", "retention of urine", "acute retention", "unable to pass urine", "cannot pass urine", "poor urinary stream", "weak urinary stream", "straining to pass urine", "hesitancy of urine", "luts", "lower urinary tract symptoms", "enlarged prostate", "prostate enlargement", "bph", "peshab ruk gaya", "peshab nahi utarta", "peshab ruk ruk ke"],
   setting: "Urology ward and casualty, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [CAMPBELL_UROLOGY, BAILEY_LOVE, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("difficulty passing urine"),
-    val("hpi", "retention_state", "Complete retention or poor flow", "Is the patient unable to pass any urine now, or passing it with difficulty, and since when was urine last passed?", ["unable to pass", "not passed since", "complete retention", "passing with difficulty", "passing drops", "last passed", "poor flow", "hours"]),
-    val("hpi", "catheter_now", "Catheter already passed", "Has a catheter been passed for this episode — was it difficult, and how much urine drained?", ["catheter", "catheterised", "foley", "drained", "difficult catheterisation", "could not pass catheter", "suprapubic", "ml", "litre"], { numeric: true }),
+    val("hpi", "retention_state", "Complete retention or poor flow", "Is the patient unable to pass any urine now, or passing it with difficulty, and since when was urine last passed?", ["unable to pass", "complete retention", "passing with difficulty", "passing drops", "last passed", "poor flow", "hours"]),
+    val("hpi", "catheter_now", "Catheter already passed", "Has a catheter been passed for this episode — was it difficult, and how much urine drained?", ["catheter", "catheterised", "foley", "drained", "difficult catheterisation", "failed catheterisation", "suprapubic", "ml", "litre"], { numeric: true }),
     val("hpi", "precipitant", "What set it off", "Did anything come just before it — a cold remedy or new medicine, alcohol, an operation, constipation, a long journey, or holding urine for long?", ["cold medicine", "new medicine", "alcohol", "after surgery", "constipation", "journey", "held urine", "cold weather", "after spinal"]),
     // IPSS items: voiding
     yn("hpi", "weak_stream", "Weak stream", "Is the urine stream weaker or slower than before?", ["weak stream", "poor stream", "slow stream", "thin stream", "poor flow", "dhaar kam"]),
     yn("hpi", "straining_hesitancy", "Hesitancy / straining", "Is there a delay before urine starts, or a need to push or strain to pass it?", ["hesitancy", "delay in starting", "straining", "push", "strain", "takes time to start"]),
     yn("hpi", "intermittency", "Intermittency", "Does the stream stop and start several times while passing urine?", ["intermittency", "stops and starts", "interrupted stream", "ruk ruk ke", "breaks"]),
-    yn("hpi", "incomplete_emptying", "Incomplete emptying", "Is there a feeling that the bladder has not emptied fully after passing urine?", ["incomplete emptying", "not emptied", "feeling of residual", "unsatisfied", "urine left behind"]),
+    yn("hpi", "incomplete_emptying", "Incomplete emptying", "Is there a feeling that the bladder has not emptied fully after passing urine?", ["incomplete emptying", "feeling of residual", "unsatisfied", "urine left behind"]),
     yn("hpi", "terminal_dribble", "Dribbling at the end", "Does urine keep dribbling at the end of passing it or after dressing?", ["terminal dribbling", "post void dribbling", "dribbling after", "dribbles at the end", "wets clothes after"], { tier: "detailed" }),
     yn("hpi", "spraying_stream", "Thin, spraying or forked stream", "Is the stream thin, spraying, forked or twisted?", ["spraying", "forked", "split stream", "twisted", "very thin", "thread like"], { teach: "A thin or spraying stream in a younger man points the history towards the urethra itself rather than the prostate." }),
     // IPSS items: storage
@@ -40,7 +40,7 @@ export const difficultyPassingUrineV1: HistoryTree = {
     yn("associated", "dysuria_uti", "Burning / cloudy urine", "Any burning, cloudy or foul-smelling urine?", ["burning", "dysuria", "cloudy", "foul smelling", "pus", "smelly urine"]),
     yn("associated", "haematuria_luts", "Blood in the urine", "Has any blood or clots been seen in the urine?", ["blood", "red urine", "clots", "haematuria", "hematuria"]),
     yn("associated", "stone_symptoms", "Stream stopping suddenly / stone passed", "Does the stream stop suddenly mid-flow with pain at the tip of the penis, or has a stone ever been passed?", ["stops suddenly", "pain at tip", "stone passed", "gravel", "stone", "pathri"]),
-    yn("associated", "constipation_luts", "Constipation", "Is the patient constipated, and when were the bowels last opened?", ["constipation", "constipated", "hard stools", "bowels not opened", "last stool", "no motion"]),
+    yn("associated", "constipation_luts", "Constipation", "Is the patient constipated, and when were the bowels last opened?", ["constipation", "constipated", "hard stools", "last stool"]),
     yn("associated", "foreskin_meatus", "Tight foreskin / narrow opening", "Can the foreskin be pulled back, and is there any ballooning, scarring or narrowing at the tip of the penis?", ["phimosis", "tight foreskin", "cannot retract", "ballooning", "narrow opening", "meatal", "white patch", "scarring"]),
     // Red flags
     yn("red_flag", "painful_distended_bladder", "Painful swollen lower abdomen", "Is there a painful, swollen lower abdomen with no urine passed?", ["painful lower abdomen", "swollen lower abdomen", "bladder full", "distended", "suprapubic pain", "cannot pass"], { teach: "A painful full bladder needs relief before the cause is worked out, so this question sets the pace of the whole history." }),

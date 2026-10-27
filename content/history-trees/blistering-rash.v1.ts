@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, HUTCHISONS, IADVL, IMMUNOCOMPROMISE, MACLEODS, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BLISTERS ON THE SKIN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * BLISTERS ON THE SKIN — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Dermatology ward and OPD, north India. The history exists first to find the drug reaction
  * that is about to peel (a new medicine in the last eight weeks, sore mouth and eyes, skin
  * slipping off), then to separate the blister that is fragile and breaks (pemphigus) from the
@@ -13,12 +13,12 @@ import { commonHpi, HUTCHISONS, IADVL, IMMUNOCOMPROMISE, MACLEODS, val, yn } fro
  */
 export const blisteringRashV1: HistoryTree = {
   id: "blistering_rash",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Blisters on the skin",
   triggers: ["blister", "blistering", "bullae", "bulla", "bullous", "vesicles", "fluid filled lesions", "water filled boils", "chhale", "phaphole", "skin coming off", "sjs", "stevens johnson", "pemphigus", "pemphigoid", "shingles", "herpes zoster", "fixed drug eruption"],
   setting: "Dermatology ward and OPD, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [IADVL, MACLEODS, HUTCHISONS],
   slots: [
     ...commonHpi("blisters"),
@@ -40,8 +40,8 @@ export const blisteringRashV1: HistoryTree = {
     yn("red_flag", "mucosal_sites", "Sores in the mouth, eyes or genitals", "Are there sores or raw areas in the mouth, lips, eyes or genitals?", ["mouth ulcers", "mouth sores", "lips", "crusted lips", "bleeding lips", "genital", "raw", "cannot eat", "eyes", "mucosa"], { teach: "Raw areas at two or more mucosal sites alongside blisters raise a severe drug reaction or pemphigus rather than a local blistering cause." }),
     yn("red_flag", "skin_detachment", "Skin peeling in sheets", "Is the skin peeling off in sheets or slipping when rubbed, and roughly how much of the body is raw?", ["peeling", "sheets", "slipping", "skin comes off", "denuded", "raw", "large areas", "burn like", "percent", "wet sheets"], { teach: "Skin that detaches in sheets behaves like a burn, with the same losses of fluid, heat and protein, so the extent is asked early." }),
     yn("red_flag", "eye_symptoms", "Red painful eyes / cannot open eyes", "Are the eyes red, painful, sticky, sensitive to light, or stuck shut, or are there blisters on the tip of the nose?", ["red eyes", "painful eyes", "sticky eyes", "discharge", "light", "photophobia", "cannot open", "stuck", "tip of nose", "blurred vision"], { teach: "Eye involvement with blistering is asked about directly because scarring of the eye surface can follow within days and is often not volunteered." }),
-    yn("red_flag", "swallow_fluid_loss", "Cannot eat or drink / less urine", "Is the patient unable to eat or drink because of mouth sores, and has the urine reduced?", ["cannot eat", "cannot drink", "not eating", "not drinking", "painful swallowing", "less urine", "reduced urine", "thirsty", "dry mouth", "giddy"], { teach: "Mouth sores and weeping skin together can drain fluid faster than intake replaces it, so intake and urine are asked early." }),
-    yn("red_flag", "fever_toxicity", "High fever / drowsiness / rigors", "Is there high fever, rigors, drowsiness or confusion since the blisters appeared?", ["high fever", "rigors", "chills", "drowsy", "confused", "altered", "very unwell", "lethargic", "not responding"], { teach: "Fever with rigors or drowsiness on open blistered skin raises infection spreading into the blood, which the skin findings alone do not show." }),
+    yn("red_flag", "swallow_fluid_loss", "Cannot eat or drink / less urine", "Is the patient unable to eat or drink because of mouth sores, and has the urine reduced?", ["cannot eat", "cannot drink", "unable to eat", "unable to drink", "painful swallowing", "less urine", "reduced urine", "thirsty", "dry mouth", "giddy"], { teach: "Mouth sores and weeping skin together can drain fluid faster than intake replaces it, so intake and urine are asked early." }),
+    yn("red_flag", "fever_toxicity", "High fever / drowsiness / rigors", "Is there high fever, rigors, drowsiness or confusion since the blisters appeared?", ["high fever", "rigors", "chills", "drowsy", "confused", "altered", "very unwell", "lethargic", "unresponsive"], { teach: "Fever with rigors or drowsiness on open blistered skin raises infection spreading into the blood, which the skin findings alone do not show." }),
     IMMUNOCOMPROMISE,
   ],
   differentials: [

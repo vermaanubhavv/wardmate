@@ -2,19 +2,19 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { commonHpi, IMMUNOCOMPROMISE, MACLEODS, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * COUGH / HAEMOPTYSIS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
+ * COUGH / HAEMOPTYSIS — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma).
  * Adult medicine ward, north India. Differentials: pulmonary tuberculosis, pneumonia,
  * COPD / asthma, bronchiectasis, lung malignancy, post-nasal drip / reflux / ACE-inhibitor
  * cough, heart failure, interstitial lung disease, pulmonary embolism (haemoptysis).
  */
 export const coughV1: HistoryTree = {
   id: "cough",
-  version: "1.1.0",
+  version: "1.2.0",
   complaint: "Cough",
   triggers: ["cough", "coughing", "expectoration", "haemoptysis", "hemoptysis", "blood in sputum"],
   setting: "Adult medicine ward, north India",
-  reviewStatus: "reviewed",
-  reviewedBy: "Dr Anubhav Verma",
+  reviewStatus: "pending_clinician_review",
+  reviewedBy: null,
   references: [
     { title: "National TB Elimination Programme: presumptive TB definition (cough > 2 weeks, fever, weight loss, night sweats, contact)", source: "NTEP, Government of India", url: "https://journals.lww.com/ascp/fulltext/2022/10020/national_tb_elimination_program__ntep___at_a.1.aspx" },
     rce("Does this patient have community-acquired pneumonia? Diagnosing pneumonia by history and physical examination", 1997),
@@ -33,7 +33,7 @@ export const coughV1: HistoryTree = {
     yn("associated", "fever", "Fever / evening rise", "Any fever, and is there an evening rise?", ["fever", "febrile", "temperature", "evening rise", "chills", "rigors"]),
     yn("associated", "night_sweats", "Night sweats", "Any night sweats?", ["night sweats", "night sweat", "sweating at night"]),
     yn("associated", "weight_loss", "Weight loss", "Any weight loss?", ["weight loss", "lost weight", "losing weight"]),
-    yn("associated", "appetite", "Loss of appetite", "Any loss of appetite?", ["loss of appetite", "appetite", "anorexia", "not eating"]),
+    yn("associated", "appetite", "Loss of appetite", "Any loss of appetite?", ["loss of appetite", "appetite", "anorexia", "eating less"]),
     yn("associated", "breathlessness", "Breathlessness", "Any breathlessness, and on how much exertion?", ["breathlessness", "breathless", "shortness of breath", "dyspnoea", "dyspnea", "sob"]),
     yn("associated", "wheeze", "Wheeze", "Any wheeze?", ["wheeze", "wheezing", "whistling"]),
     yn("associated", "chest_pain", "Chest pain", "Any chest pain, especially on breathing?", ["chest pain", "pleuritic", "pain in chest", "chest discomfort"]),
