@@ -1,4 +1,5 @@
 import { DEFAULT_PROGRESS_NOTE_CONFIG, openSpaceHeadings } from "@/lib/progress-note-config";
+import { isAntibiotic } from "@/lib/antibiotics";
 import { shortFinding } from "@/lib/shorthand";
 
 /**
@@ -68,9 +69,12 @@ export function renderNoteLine(
       .filter(Boolean)
       .join(" ") || undefined;
 
+  // The treatment chart's antibiotics in bold: a numbered drug line ("2. Inj Ceftriaxone…",
+  // with or without its "Day 3 – " in front) that names one.
+  const drug = line.match(/^\d+\.\s+(?:(?:Day \d+|D\d+\/\d+) – )?(.*)$/)?.[1];
   return (
     <p key={key} className={className}>
-      {content}
+      {drug && isAntibiotic(drug) ? <strong>{content}</strong> : content}
     </p>
   );
 }

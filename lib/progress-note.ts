@@ -4,7 +4,9 @@ import { dedupeTasks } from "@/lib/dedupe-tasks";
 import { classifyLab, canonicalLabName, type SuppliedRange } from "@/lib/lab-ranges";
 import { flagRadiology } from "@/lib/radiology-flags";
 import type { WardRanges } from "@/lib/exam-summary";
+import { antibioticDay, antibioticKey, isCourse, withDay, type AntibioticDayPosition } from "@/lib/antibiotics";
 import type { Observation } from "@/lib/patient-state";
+import { istDate } from "@/lib/urgency";
 import { DEFAULT_PROGRESS_NOTE_CONFIG, openSpaceHeadings, type ProgressNoteConfig } from "@/lib/progress-note-config";
 
 /** What the app cannot know and must not invent: a label and a blank to write on — the same
@@ -145,6 +147,10 @@ export function buildProgressNote(
     /** This department's exam lines — see lib/progress-note-config.ts. Absent is the
      *  general-surgery sheet (P/Abdomen, Chest, Flatus / Stool), exactly as before. */
     noteConfig?: ProgressNoteConfig;
+    /** Each antibiotic's course start (lib/antibiotic-starts.ts), and where its "Day N" goes on
+     *  the drug line — the resident's choice on the print page. Absent: no days. */
+    antibioticStarts?: Record<string, string>;
+    antibioticDay?: AntibioticDayPosition;
   }
 ): ProgressNote {
   const noteConfig = options?.noteConfig ?? DEFAULT_PROGRESS_NOTE_CONFIG;
@@ -336,7 +342,12 @@ export function buildProgressNote(
     seenDrugs.add(key);
     return true;
   });
-  const medLines = currentMeds.map((m) => m.value_text ?? m.label);
+  const today = new Date().toISOString();
+  const medLines = currentMeds.map((m) => {
+    const text = m.value_text ?? m.label;
+    const start = isCourse(text) ? options?.antibioticStarts?.[antibioticKey(text)] : undefined;
+    return start ? withDay(text, antibioticDay(start, istDate(today)), options?.antibioticDay ?? "off") : text;
+  });
 
   // 12. Plan — today's jobs and orders, one each. Investigations to send, medication changes,
   // and an interdepartmental referral are all just "plan" observations the same way any other
