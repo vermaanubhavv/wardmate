@@ -43,8 +43,12 @@ const DEFAULTS = {
  *
  * Matching and dedupe keys only — never the output. `term: entry.term` is emitted raw, so what
  * Deepgram receives keeps its real hyphens, apostrophes and capitals.
+ *
+ * Exported for `scripts/audit-keyterm-matching.ts` alone, so that audit measures the rule that
+ * actually ships rather than a copy of it that drifts. Nothing else outside this file should
+ * normalise on its own.
  */
-function norm(s: string): string {
+export function norm(s: string): string {
   return s
     .toLowerCase()
     .replace(/[‘’]/g, "'")
@@ -168,7 +172,7 @@ function exactFactMatch(entryNames: string[], ctxStrings: string[]): boolean {
  * The per-specialty length rules and collision tests stay: they stop a short alias being sent
  * to Deepgram as a keyterm in its own right, which is a separate concern from matching.
  */
-function tokenIn(tokens: string[], ctxStrings: string[]): boolean {
+export function tokenIn(tokens: string[], ctxStrings: string[]): boolean {
   return tokens.some((t) =>
     ctxStrings.some(
       (c) => phraseContains(c, t) || phraseContains(c, `${t}s`) || phraseContains(c, `${t}es`)
