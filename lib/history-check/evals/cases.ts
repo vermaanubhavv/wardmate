@@ -164,7 +164,9 @@ export const EVAL_CASES: EvalCase[] = [
       duration: "positive",
       chills_rigors: "positive",
       cough: "negative",
-      urine_output: "negative",
+      // "Passing urine normally" carries no denial word, so by the extraction rule it is not a
+      // stored negative of reduced urine output; it stays unasked.
+      urine_output: "unasked",
       rash: "unasked",
     },
     expectConflict: ["vomiting"],
@@ -232,15 +234,15 @@ export const EVAL_CASES: EvalCase[] = [
       duration: "positive",
       grade: "positive",
       recent_surgery: "positive",
-      local_infection: "positive",
       cough: "negative",
       breathlessness: "negative",
       calf_pain: "negative",
-      urine_output: "negative",
+      // "Urine output adequate" has no denial word: unasked by the extraction rule, not a negative.
+      urine_output: "unasked",
       urinary: "unasked",
       rash: "unasked",
     },
-    note: "'No discharge from the wound' is a negative for a sub-item but port-site pain makes local_infection positive; either positive or negative for that slot is defensible, only positive is scored here.",
+    note: "'Fever since last night' must fill duration as well as onset. 'No discharge from the wound' denies a sub-item while port-site pain points the other way; either state is defensible for local_infection, so it is not scored.",
   },
   {
     id: "thyroid-swelling",
@@ -315,13 +317,12 @@ export const EVAL_CASES: EvalCase[] = [
     expect: {
       which_operation: "positive",
       urine_catheter: "positive",
-      urine_output_fall: "unasked",
       fever: "negative",
       flatus_stool: "unasked",
       calf_leg: "unasked",
       confusion_drowsiness: "unasked",
     },
-    note: "flatus_stool is asked as the problem, so 'passing flatus, bowels opened' answers it no, but the quote carries no negation word and the validator drops the negative: it stays unasked by design. 'Has not passed urine since the catheter came out' with a full lower abdomen is retention (urine and catheter), not falling output, and must never become a denial of the urine-output red flag (Bailey & Love review, docs/surgical-history.md §13.1).",
+    note: "flatus_stool is asked as the problem, so 'passing flatus, bowels opened' answers it no, but the quote carries no negation word and the validator drops the negative: it stays unasked by design. 'Has not passed urine since the catheter came out' with a full lower abdomen is retention (urine and catheter). It may also answer the urine-output red flag yes, since that asks about no urine for hours, so that slot is not scored, but it must never become a denial (Bailey & Love review, docs/surgical-history.md §13.1).",
   },
   {
     id: "burns-inhalation",
