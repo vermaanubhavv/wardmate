@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { objectiveComplaint } from "@/lib/complaint-duration";
 import { createClient } from "@/lib/supabase/server";
 import { isIdentifierLabel, stripPatientHonorific } from "@/lib/patients";
 import { getWardLabRanges } from "@/lib/ward-lab-ranges";
@@ -142,7 +143,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 const NR = () => <span className="text-black/60">NR</span>;
 
 function SectionLines({ section }: { section: HistorySection }) {
-  return section.lines.length > 0 ? section.lines.map((l) => <p key={l.id}>{l.text}</p>) : <p>{section.note ?? "NR"}</p>;
+  return section.lines.length > 0 ? section.lines.map((l) => <p key={l.id}>{objectiveComplaint(l.text) ?? l.text}</p>) : <p>{section.note ?? "NR"}</p>;
 }
 
 /** A history card in its own box, as recorded or NR / NAD. */
@@ -558,7 +559,7 @@ export default async function CaseHistoryPrintPage({
 
             <Box heading="Summary" grow={0.8} min={22}>
               <Row label="Presenting with">
-                {chief.lines.length > 0 ? chief.lines.map((l) => l.text).join("; ") : <NR />}
+                {chief.lines.length > 0 ? chief.lines.map((l) => objectiveComplaint(l.text) ?? l.text).join("; ") : <NR />}
               </Row>
               <Row label="Past history">{past.lines.length > 0 ? past.lines.map((l) => l.text).join("; ") : past.note}</Row>
               <Row label="Provisional diagnosis">{patient.primary_diagnosis ?? <NR />}</Row>
