@@ -44,14 +44,32 @@ slow (`app/connection-bar.tsx`).
 
 ## Sign-in inside the app
 
-**Use the six-digit email code. "Continue with Google" will not work.** Google refuses OAuth
-inside an embedded web view (`disallowed_useragent`), so `allowNavigation` deliberately does not
-list Google and that button leaves the app for Safari — where signing in does the app no good,
-because the two keep separate cookies. Making Google work in here means adding a native OAuth
-plugin; it has not been done. So the app hides that button, along with the "Put WardMate on
-your home screen" banner: the web view's user agent ends in `WardMateApp`
+**Both sign-ins work: the six-digit email code, and "Continue with Google".** Google refuses
+OAuth inside an embedded web view (`disallowed_useragent`), so the app does not load Google in
+the web view. The login page asks Supabase for the Google URL without going to it
+(`skipBrowserRedirect`) and posts it to the native `googleSignIn` handler
+(`ios/App/App/SceneDelegate.swift`), which opens it in Apple's sign-in sheet
+(`ASWebAuthenticationSession`) — the system browser, which Google accepts. Google returns to
+`in.wardmate.app://auth/callback?code=…`; the sheet closes and the web view loads the site's own
+`/auth/callback?code=…`, which exchanges the code exactly as on the web (the PKCE verifier was
+set in the web view's cookies when the URL was asked for). A closed sheet comes back as
+`error=cancelled`.
+
+**`in.wardmate.app://auth/callback` must be in Supabase → Authentication → URL Configuration →
+Redirect URLs.** Without it Supabase sends the sheet to the Site URL instead and it never
+returns to the app.
+
+An app build from before the handler has no way to open the sheet, so there the button stays
+hidden (`googleSignInSheet()` in `app/login/page.tsx`). The "Put WardMate on your home screen"
+banner is hidden in the app too: the web view's user agent ends in `WardMateApp`
 (`appendUserAgent` in `capacitor.config.ts`), and `isNativeApp()` in `app/install-hint.tsx`
 checks for it.
+
+## Going back
+
+A swipe in from the left edge goes back a screen (`allowsBackForwardNavigationGestures`), as in
+Safari. Every screen also has a back bar pinned under the status bar (`BackBar`,
+`app/screen-header.tsx`).
 
 ## Building it
 

@@ -53,9 +53,11 @@ export default function LoginPage() {
   // /auth/callback sends the doctor back here with a reason when Google did not work out.
   const failed = useSearchParams().get("failed");
 
-  // Google refuses OAuth inside an embedded web view (disallowed_useragent), so in the iOS app
-  // the button could only fail. The email code is the sign-in that works there.
+  // Google refuses OAuth inside an embedded web view (disallowed_useragent). The iOS app opens it
+  // in Apple's sign-in sheet instead (googleSignInSheet); an app build from before that has
+  // no way to, so there the button is hidden and the email code is the sign-in.
   const nativeApp = useSyncExternalStore(subscribeNever, isNativeApp, () => false);
+  const hasSheet = useSyncExternalStore(subscribeNever, () => googleSignInSheet() !== null, () => false);
 
   /**
    * Hand off to Google, and come back at /auth/callback with a code to exchange.
@@ -70,6 +72,23 @@ export default function LoginPage() {
     setError(null);
 
     const supabase = createClient();
+    const sheet = googleSignInSheet();
+    if (sheet) {
+      // In the app: ask for the URL without going to it, and let the native sheet open it. It
+      // comes back to the app's own scheme, and the app hands the code to /auth/callback here.
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: "in.wardmate.app://auth/callback", skipBrowserRedirect: true },
+      });
+      if (error || !data.url) {
+        setGoogleBusy(false);
+        setError(error?.message ?? "Could not open Google.");
+        return;
+      }
+      sheet.postMessage(data.url);
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback` },
@@ -141,7 +160,7 @@ export default function LoginPage() {
         </div>
       </header>
 
-      {step === "email" && !nativeApp && (
+      {step === "email" && (!nativeApp || hasSheet) && (
         <div className="flex flex-col gap-4">
           <button
             type="button"
@@ -284,4 +303,11 @@ function GoogleMark() {
       />
     </svg>
   );
+}
+
+/** The iOS app's Google sign-in sheet (ios/App/App/SceneDelegate.swift), or null in a browser
+ *  and in an app build from before it existed. */
+function googleSignInSheet(): { postMessage(url: string): void } | null {
+  const w = window as unknown as { webkit?: { messageHandlers?: { googleSignIn?: { postMessage(url: string): void } } } };
+  return w.webkit?.messageHandlers?.googleSignIn ?? null;
 }
