@@ -45,7 +45,7 @@ function entry(
     aliases,
     categories,
     specialties: [MED],
-    triggers: [term.toLowerCase(), ...aliases.map((a) => a.toLowerCase()), ...triggers],
+    triggers: [term, ...aliases, ...triggers],
     priority,
   };
 }
