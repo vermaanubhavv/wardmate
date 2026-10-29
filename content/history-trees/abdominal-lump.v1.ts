@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, PREGNANCY, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LUMP IN THE ABDOMEN — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * LUMP IN THE ABDOMEN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-30, re-signed after the negation-term rewording, docs/history-check.md). Earlier sign-off (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult general surgery ward, north India. Built from S. Das, A Manual on Clinical Surgery,
  * 13th ed., ch. 35 "Examination of an abdominal lump", whose history section points back to the
  * swelling (ch. 3), chronic abdominal (ch. 34) and urinary (ch. 37) chapters. `lump` is the
@@ -18,8 +18,8 @@ export const abdominalLumpV1: HistoryTree = {
   complaint: "Lump in the abdomen",
   triggers: ["abdominal lump", "lump in abdomen", "lump abdomen", "lump in the abdomen", "abdominal mass", "mass abdomen", "mass in abdomen", "lump in stomach", "lump in right iliac fossa", "lump in left iliac fossa", "epigastric lump"],
   setting: "Adult general surgery ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, BAILEY_LOVE],
   slots: [
     ...commonHpi("lump in the abdomen"),

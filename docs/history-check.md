@@ -205,7 +205,7 @@ blood thinners", "never smoked" — which is how negatives get recorded. The rul
 The validator is deliberately unchanged: a blanket rule tested against the trees would have
 dropped legitimate negatives (648 of 896 negation-bearing terms are denial forms with no plain
 fallback). The fix lives in the terms. The 2026-10-23 sweep applied this to every slot of every
-tree (red flags first), took 93 trees off the reviewed list at bumped minor versions, and left
+tree (red flags first), bumped 93 trees a minor version (re-signed by Dr Anubhav Verma on 2026-10-30), and left
 value-slot answers that describe an absence ("no one saw", "no fan", "not done") as they are.
 `validate.test.ts` holds affirming quotes for the reworded red flags.
 

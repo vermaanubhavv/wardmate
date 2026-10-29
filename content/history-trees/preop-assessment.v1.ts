@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, PREGNANCY, SABISTON, SABISTON_GERIATRIC, SCHWARTZ, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BEFORE AN OPERATION (PRE-OPERATIVE ASSESSMENT) — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * BEFORE AN OPERATION (PRE-OPERATIVE ASSESSMENT) — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-30, re-signed after the negation-term rewording, docs/history-check.md). Earlier sign-off (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical ward, north India. Built from Sabiston (20th ed.) ch. 10 "Principles of
  * Preoperative and Operative Surgery", ch. 13 "Surgery in the Geriatric Patient" and ch. 14
  * "Anesthesiology Principles" — the systems review the text says every patient gets before
@@ -24,8 +24,8 @@ export const preopAssessmentV1: HistoryTree = {
   complaint: "Before an operation (pre-operative assessment)",
   triggers: ["pre op", "pre-op", "preop", "preoperative", "pre operative", "pre-operative", "pre anaesthetic", "pre-anaesthetic", "pre anesthetic", "pac clearance", "fitness for surgery", "fitness for anaesthesia", "posted for surgery", "planned for surgery", "scheduled for surgery", "elective surgery", "admitted for surgery"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, SABISTON, SABISTON_GERIATRIC, SCHWARTZ, BAILEY_LOVE],
   slots: [
     val("informant", "informant", "Informant", "Who gave the history — the patient or an attendant?", ["attendant", "informant", "history given by", "relative", "wife", "husband", "son", "daughter", "mother", "father", "patient himself", "patient herself"], { tier: "detailed" }),
