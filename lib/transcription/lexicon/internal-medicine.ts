@@ -96,9 +96,11 @@ export const INTERNAL_MEDICINE: MedicalLexiconEntry[] = [
   // substring of ordinary ward words ("drain", "abdominal"…) and pulls this in on anything.
   // See the "RT" precedent above. "RA flare" is long enough to be safe.
   dx("rheumatoid arthritis", ["RA flare", "seropositive arthritis"], ["anti-ccp"]),
-  dx("ANCA-associated vasculitis", ["vasculitis", "granulomatosis with polyangiitis", "GPA", "microscopic polyangiitis", "MPA"], ["anca", "renal"]),
+  // "renal" and "pt" are deliberately absent as triggers: a routine renal function test or
+  // PT/INR is on nearly every surgical chart, and pulled vasculitis and DIC onto all of them.
+  dx("ANCA-associated vasculitis", ["vasculitis", "granulomatosis with polyangiitis", "GPA", "microscopic polyangiitis", "MPA"], ["anca"]),
   dx("multiple myeloma", ["myeloma", "plasma cell dyscrasia", "MM for workup"], ["m band", "spep"]),
-  dx("disseminated intravascular coagulation", ["DIC", "consumptive coagulopathy"], ["pt", "fibrinogen", "d dimer"]),
+  dx("disseminated intravascular coagulation", ["DIC", "consumptive coagulopathy"], ["fibrinogen", "d dimer"]),
   dx("antiphospholipid syndrome", ["APLA syndrome", "APS"], ["lupus anticoagulant", "anticardiolipin"]),
 
   // --- Uncontrolled hypertension and diabetes ------------------------------------------
