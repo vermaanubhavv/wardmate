@@ -10,6 +10,7 @@ import { extractObservations } from "@/lib/extract";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { shorthandPair } from "@/lib/shorthand";
+import { editedObservationPatch } from "@/lib/observation-edit";
 import { getTemplateForPatient, matchTemplate } from "@/lib/templates";
 
 const CONCERNING_RE =
@@ -154,7 +155,9 @@ export async function editEntry(formData: FormData) {
 
 /**
  * It should not have been recorded at all — the wrong patient, a false start, a conversation
- * caught by an open microphone. Takes the entry's observations with it.
+ * caught by an open microphone. Takes the entry's observations with it. Since patch 0111 the
+ * DELETE is turned into a soft delete at the database (deleted_at), so the rows stay for the
+ * trail and merely stop being readable.
  */
 export async function deleteEntry(formData: FormData) {
   const entryId = String(formData.get("entry_id") ?? "");
@@ -180,8 +183,10 @@ const revalidateEverywhere = (patientId: string) => revalidatePatient(patientId)
  * sits beside the original words, and the (i) panel shows both. A quote rewritten to match
  * would destroy the only evidence that the two ever differed.
  *
- * Editing also confirms: the resident has just typed this value while looking at it, which is
- * a stronger check than the tap that confirming asks for.
+ * Editing does NOT confirm. A number, drug or dose typed by hand is still a number typed by
+ * hand, so it goes back to amber and is confirmed in a separate act — see
+ * lib/observation-edit.ts. The old value is kept by the observation_history trigger (patch
+ * 0111), and the (i) panel shows it.
  */
 export async function updateObservation(formData: FormData) {
   const id = String(formData.get("observation_id") ?? "");
@@ -204,17 +209,16 @@ export async function updateObservation(formData: FormData) {
     // Read before the write: an edit into a shorter form ("pain in the right iliac fossa" →
     // "pain RIF") is ward shorthand the display table may not have yet.
     const [{ data: before }, { data: owner }] = await Promise.all([
-      supabase.from("observations").select("value_text").eq("id", id).maybeSingle(),
+      supabase.from("observations").select("value_text, value_num, needs_confirmation").eq("id", id).maybeSingle(),
       supabase.from("patients").select("ward_id").eq("id", patientId).maybeSingle(),
     ]);
+    if (!before) return;
     await supabase
       .from("observations")
       .update({
         value_text: value || null,
         ...(label ? { label } : {}),
-        needs_confirmation: false,
-        confirmed_at: new Date().toISOString(),
-        confirmed_by: user.id,
+        ...editedObservationPatch(before, value),
       })
       .eq("id", id)
       .eq("patient_id", patientId);
