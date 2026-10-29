@@ -327,3 +327,31 @@ describe("a short acronym matches only when the chart writes it in capitals", ()
     expect(terms({ diagnoses: ["ACUTE PANCREATITIS"] })).toContain("ranson's criteria");
   });
 });
+
+/**
+ * Two triggers were whole words but far too common: "pt" put DIC on every chart with a PT/INR,
+ * and "renal" put ANCA vasculitis on every chart with a renal function test. On Unit Alpha that
+ * was three gallstone patients carrying DIC. The specific markers still pull them in.
+ */
+describe("a routine test does not pull in a rare diagnosis", () => {
+  it("a PT/INR does not bring in DIC", () => {
+    expect(terms({ diagnoses: ["Cholelithiasis"], investigations: ["PT/INR"] })).not.toContain(
+      "disseminated intravascular coagulation"
+    );
+  });
+
+  it("a renal function test does not bring in ANCA vasculitis", () => {
+    expect(
+      terms({ diagnoses: ["Cholelithiasis"], investigations: ["renal function and urine tests"] })
+    ).not.toContain("anca-associated vasculitis");
+  });
+
+  it("the specific markers still do", () => {
+    expect(terms({ diagnoses: ["Sepsis"], investigations: ["Fibrinogen", "D-dimer"] })).toContain(
+      "disseminated intravascular coagulation"
+    );
+    expect(terms({ diagnoses: ["Vasculitis"], freeTextContext: ["ANCA sent"] })).toContain(
+      "anca-associated vasculitis"
+    );
+  });
+});
