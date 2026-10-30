@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { ATLS, BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, PREGNANCY, surgicalBackground, TRAUMA_BG, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * BURNS — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * BURNS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-30, re-signed after the negation-term rewording, docs/history-check.md). Earlier sign-off (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Burns and plastic surgery unit, north India, where kitchen flame burns, kerosene stoves and
  * electrical injuries dominate. The history is short and specific: what burned, for how long,
  * in what space, what was poured on it afterwards, and the exact time it happened — that time
@@ -17,8 +17,8 @@ export const burnsV1: HistoryTree = {
   complaint: "Burns",
   triggers: ["burn", "burns", "burnt", "scald", "flame burn", "fire", "electric burn", "electrocution", "chemical burn", "acid", "jal gaya", "stove burst", "kerosene", "boiling water"],
   setting: "Burns and plastic surgery unit, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, BAILEY_LOVE, MACLEODS, HUTCHISONS, ATLS],
   slots: [
     ...commonHpi("burn").filter((s) => !["onset", "duration", "onset_mode", "progression", "prior_treatment"].includes(s.id)),

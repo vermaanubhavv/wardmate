@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, ebem, HAMILTON_BAILEY, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LEG ULCER / NON-HEALING WOUND — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * LEG ULCER / NON-HEALING WOUND — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-30, re-signed after the negation-term rewording, docs/history-check.md). Earlier sign-off (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical ward, north India. Site, pain and the state of the circulation separate most of
  * this list: an ulcer above the medial malleolus in a heavy aching leg is venous, a painful
  * punched-out ulcer on the toes with rest pain is arterial, and a painless ulcer under the
@@ -16,8 +16,8 @@ export const legUlcerV1: HistoryTree = {
   complaint: "Leg ulcer / non-healing wound",
   triggers: ["leg ulcer", "ulcer", "non healing wound", "wound not healing", "foot ulcer", "diabetic foot", "sore on leg", "wound on foot", "chronic ulcer", "ghaav", "gangrene", "blackening of toes"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     DAS_CLINICAL_SURGERY,
     HAMILTON_BAILEY,
