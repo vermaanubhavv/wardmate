@@ -51,7 +51,7 @@ import { quoteAddsNothing } from "@/lib/dedupe-tasks";
 import Tick from "./tick";
 import SwipeDelete from "./swipe-delete";
 import PacSelect from "./pac-select";
-import EntryCard from "./entry-card";
+import EntryCard, { type EntryChange } from "./entry-card";
 import CaseHistoryCapture from "./case-history-capture";
 import { CaseHistoryCard, ObjectiveSummaryView } from "./case-history-card";
 import RoutineRoundButton from "./routine-round";
@@ -99,6 +99,54 @@ type Entry = {
   matched_protocol_ids: string[] | null;
   observations: Observation[];
 };
+
+/** One line of the trail written by the observation_history trigger (patch 0111). */
+type HistoryRow = {
+  entry_id: string;
+  action: string;
+  changed_at: string;
+  changed_by: string | null;
+  old: { label: string; value_text: string | null };
+  new: { label: string; value_text: string | null };
+};
+
+/**
+ * Who changed what on each entry, newest first, as the entry card shows it. Only edits and
+ * deletes: a confirm or a done-tick is visible on the value itself and would only be noise.
+ */
+async function entryChanges(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  patientId: string,
+): Promise<Map<string, EntryChange[]>> {
+  const { data } = await supabase
+    .from("observation_history")
+    .select("entry_id, action, changed_at, changed_by, old, new")
+    .eq("patient_id", patientId)
+    .in("action", ["edit", "delete"])
+    .order("changed_at", { ascending: false })
+    .limit(200);
+  const rows = (data ?? []) as HistoryRow[];
+  const who = Array.from(new Set(rows.map((r) => r.changed_by).filter((u): u is string => Boolean(u))));
+  const names = new Map<string, string>();
+  if (who.length > 0) {
+    const { data: profiles } = await supabase.from("profiles").select("id, display_name").in("id", who);
+    for (const p of profiles ?? []) if (p.display_name) names.set(p.id, p.display_name);
+  }
+  const byEntry = new Map<string, EntryChange[]>();
+  for (const r of rows) {
+    const list = byEntry.get(r.entry_id) ?? [];
+    list.push({
+      action: r.action === "delete" ? "deleted" : "edited",
+      label: r.old.label,
+      from: r.old.value_text,
+      to: r.action === "delete" ? null : r.new.value_text,
+      who: (r.changed_by && names.get(r.changed_by)) || null,
+      when: dateTime(r.changed_at),
+    });
+    byEntry.set(r.entry_id, list);
+  }
+  return byEntry;
+}
 
 export default async function PatientPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -223,6 +271,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     { data: dischargeRow },
     wardRanges,
     { data: dischargeWork },
+    changesByEntry,
   ] = await Promise.all([
       packP,
       burnsP,
@@ -252,6 +301,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       // If this read fails the tab behaves exactly as before — the status above is untouched,
       // so it can never look empty and re-run the AI over a resident's edits.
       supabase.from("discharge_summaries").select("discharge_worked_on").eq("patient_id", id).maybeSingle(),
+      // Who corrected or removed what, for the entry cards' (i) panel.
+      entryChanges(supabase, id),
     ]);
   const patientWithBurn = { ...patient, ...(burns ?? {}) };
   const ward = (wardBeds ?? []).sort((a, b) => compareBeds(a.bed, b.bed));
@@ -702,6 +753,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         etiology={etiology}
         photoUrls={photoUrls}
         protocolTitles={protocolTitles}
+        changesByEntry={changesByEntry}
       />
 
       {historyCheck && (
@@ -790,6 +842,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                                 }
                                 accepted={Boolean(entry.accepted_at)}
                                 edited={Boolean(entry.edited_at)}
+                                changes={changesByEntry.get(entry.id)}
                                 extractionError={entry.extraction_error}
                                 values={entry.observations.map((o) => ({
                                   id: o.id,
@@ -1035,6 +1088,7 @@ function CaseHistorySection({
   etiology,
   photoUrls,
   protocolTitles,
+  changesByEntry,
   specialty,
 }: {
   specialty: string;
@@ -1045,6 +1099,7 @@ function CaseHistorySection({
   etiology: EtiologyKey | null;
   photoUrls: Map<string, string>;
   protocolTitles: Map<string, string>;
+  changesByEntry: Map<string, EntryChange[]>;
 }) {
   return (
     <section className="px-4 pb-6">
@@ -1114,6 +1169,7 @@ function CaseHistorySection({
                   photoUrl={entry.photo_path ? (photoUrls.get(entry.photo_path) ?? null) : null}
                   accepted={Boolean(entry.accepted_at)}
                   edited={Boolean(entry.edited_at)}
+                  changes={changesByEntry.get(entry.id)}
                   extractionError={entry.extraction_error}
                   values={entry.observations.map((o) => ({
                     id: o.id,
