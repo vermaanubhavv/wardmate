@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, MACLEODS, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SCROTAL SWELLING OR PAIN — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * SCROTAL SWELLING OR PAIN — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-30, re-signed after the negation-term rewording, docs/history-check.md). Earlier sign-off (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical / urology ward, north India. One question dominates: how suddenly did the pain
  * start, and in whom. Sudden severe pain in an adolescent or young adult is torsion until
  * excluded, and the testis is salvageable only for a few hours. Differentials: testicular
@@ -15,8 +15,8 @@ export const scrotalSwellingV1: HistoryTree = {
   complaint: "Scrotal swelling or pain",
   triggers: ["scrotal swelling", "scrotum swelling", "swelling of scrotum", "testicular pain", "testis pain", "pain in testis", "scrotal pain", "swollen testicle", "testicular swelling", "hydrocele", "varicocele"],
   setting: "Adult surgical / urology ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, HUTCHISONS, BROWSE, SABISTON, BAILEY_LOVE],
   slots: [
     ...commonHpi("scrotal swelling"),
