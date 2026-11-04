@@ -25,6 +25,7 @@ import type { DischargeCheck } from "@/lib/discharge-checks";
 import FormularyLink from "./formulary-link";
 import LiveDictation, { DictateButton, routeVia, type LiveLine, type LiveSection } from "../live-dictation";
 import type { DischargeProfile } from "@/lib/specialty/discharge-profile";
+import type { DischargeTemplateIndex } from "@/lib/discharge-template-match";
 import type { FinalFix } from "@/lib/final-check";
 import { Field, Area, StringList, SuggestField, SelectField, SegmentedField } from "./discharge-fields";
 import { DEFAULT_UNIT_CONSULTANTS } from "@/lib/unit-consultants";
@@ -151,6 +152,7 @@ export default function DischargeWorkspace({
   finalCheck,
   profile,
   oneOff = false,
+  templateIndex = { templates: [], generic: { key: "", label: "" } },
 }: {
   /** "" in one-off mode. */
   patientId: string;
@@ -170,6 +172,8 @@ export default function DischargeWorkspace({
    * print. Every guard below is `if (oneOff)`, so the patient path is untouched.
    */
   oneOff?: boolean;
+  /** One-off mode only: the unit's templates, slim, for the Start card. */
+  templateIndex?: DischargeTemplateIndex;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -732,6 +736,7 @@ export default function DischargeWorkspace({
             state={start}
             setState={setStart}
             specialty={profile.specialty}
+            templateIndex={templateIndex}
             onBuilt={(built, ctx, label) => {
               setDraft(built);
               if (built.histopathology.length > 0) setOneOffHistopathology(true);

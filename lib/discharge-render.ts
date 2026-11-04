@@ -7,7 +7,9 @@ import type {
   Procedure,
 } from "@/lib/discharge-entities";
 import { ALL_CONDITION_VARIABLES, NO_PROCEDURE_NAME } from "@/lib/discharge-entities";
-import { dischargeProfileFor } from "@/lib/specialty/discharge";
+// The profile module, not lib/specialty/discharge.ts: that one carries every template, and this
+// file is drawn in the browser by the discharge sheet.
+import { dischargeProfileFor } from "@/lib/specialty/discharge-profile";
 import { stripPatientHonorific } from "@/lib/patients";
 
 /**

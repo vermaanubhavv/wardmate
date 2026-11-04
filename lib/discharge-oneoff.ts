@@ -84,7 +84,8 @@ export function oneOffContext(
 }
 
 /** The template picker's "No template — start blank". */
-export const NO_TEMPLATE = "__none__";
+import { NO_TEMPLATE } from "@/lib/discharge-template-match";
+export { NO_TEMPLATE };
 
 /**
  * A one-off draft, compiled by the same compileDischargeDraft and checked by the same

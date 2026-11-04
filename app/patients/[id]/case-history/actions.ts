@@ -4,6 +4,17 @@ import { createClient, type Supa } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 import { revalidatePatient } from "@/lib/revalidate";
 import { HISTORY_SECTION_LABEL, EXAM_SECTION_LABEL } from "@/lib/case-history-sections";
+import { negativeSlotsFor } from "@/lib/history-check/trees";
+import type { NegativeSlot } from "@/lib/relevant-negatives";
+
+/**
+ * The Relevant-negatives candidates for these complaints. Shipped content, not patient data,
+ * so no sign-in check: it exists as an action only so the history trees (1.6 MB) stay out of
+ * the clerking screen's JavaScript.
+ */
+export async function relevantNegativeSlots(complaints: string[]): Promise<NegativeSlot[]> {
+  return negativeSlotsFor(complaints.map(String).slice(0, 20));
+}
 
 /**
  * Writes from the case-history review workspace.

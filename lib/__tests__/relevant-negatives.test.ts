@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { answerOf, negativeChecklist, setAnswer } from "@/lib/relevant-negatives";
+import { negativeSlotsFor } from "@/lib/history-check/trees";
 
 describe("relevant negatives checklist", () => {
   it("offers the complaint tree's associated symptoms the HOPI has not covered", () => {
-    const items = negativeChecklist(["Pain abdomen"], "RUQ, dull ache, fever with chills");
+    const items = negativeChecklist(negativeSlotsFor(["Pain abdomen"]), ["Pain abdomen"], "RUQ, dull ache, fever with chills");
     expect(items).toContain("Jaundice / dark urine / pale stools");
     expect(items).toContain("Blood in vomit / black stools");
     expect(items).not.toContain("Fever");

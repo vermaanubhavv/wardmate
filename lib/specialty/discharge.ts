@@ -19,6 +19,7 @@ import { PSYCHIATRY_DISCHARGE_TEMPLATES, PSYCHIATRY_GENERIC_DISCHARGE_TEMPLATE }
 import { PULMONARY_DISCHARGE_TEMPLATES, PULMONARY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-pulmonary";
 import { UROLOGY_DISCHARGE_TEMPLATES, UROLOGY_GENERIC_DISCHARGE_TEMPLATE } from "@/lib/discharge-templates-urology";
 import type { SpecialtyKey, SpecialtyPack } from "./types";
+import { matchTemplateIndex, type DischargeTemplateIndex } from "@/lib/discharge-template-match";
 
 /**
  * Template selection, per specialty.
@@ -81,24 +82,25 @@ export function getDischargeTemplateFor(
   return templates.find((t) => t.key === key) ?? null;
 }
 
-/**
- * The template the typed procedure / diagnosis / care-template family points at, or null.
- *
- * Same rule as the surgical version it generalises: the diagnosis wording is the most specific
- * signal and is tried first; the care-template family is only a fallback. First match wins, so
- * each pack's array is ordered specific-before-general.
- *
- * The diagnosis HEAD is tried before the rest. A resident's diagnosis line names the condition
- * first and hangs history and incidental findings off it: "Deep organ space SSI ? bile leak with
- * s/p lap cholecystectomy with post exp. laparotomy ivo pyoperitoneum and SAIO". Matched whole,
- * the trailing "SAIO" picked the intestinal-obstruction template — its diet and bowel advice
- * printed on a bile-leak summary. So: the head (before the first "with", "s/p", "post", "in view
- * of", "k/c/o", comma or semicolon), then the procedure actually done, then everything together
- * as before. A cause ("due to", "secondary to") stays in the head: the cause is often the point.
- */
-const DIAGNOSIS_TAIL =
-  /\s+(?:with|w\/|s\/p|status post|post|ivo|i\/v\/o|in view of|k\/c\/o|known case of|h\/o|and)\s+|[,;]/i;
+/** The slim, client-safe index the one-off Start card lists and matches against. */
+export function dischargeTemplateIndexFor(pack: SpecialtyPack): DischargeTemplateIndex {
+  const { templates, generic } = dischargeTemplatesFor(pack);
+  return {
+    templates: templates.map((t) => ({
+      key: t.key,
+      label: t.label,
+      match: { source: t.match.source, flags: t.match.flags },
+      families: t.families,
+    })),
+    generic: { key: generic.key, label: generic.label },
+  };
+}
 
+/**
+ * The template the typed procedure / diagnosis / care-template family points at, or null. The
+ * rule lives in lib/discharge-template-match.ts so the browser can apply it to the index
+ * without the templates.
+ */
 export function matchDischargeTemplateFor(
   pack: SpecialtyPack,
   input: {
@@ -107,22 +109,8 @@ export function matchDischargeTemplateFor(
     templateFamily?: string | null;
   }
 ): DischargeTemplate | null {
-  const diagnosis = input.diagnosisText?.trim() ?? "";
-  const procedure = input.procedureText?.trim() ?? "";
-  const head = diagnosis.split(DIAGNOSIS_TAIL)[0].trim();
-  const { templates } = dischargeTemplatesFor(pack);
-  for (const text of [head, procedure, `${procedure} ${diagnosis}`.trim()]) {
-    if (!text) continue;
-    const byText = templates.find((t) => t.match.test(text));
-    if (byText) return byText;
-  }
-  if (input.templateFamily) {
-    const byFamily = templates.find((t) =>
-      t.families?.includes(input.templateFamily!)
-    );
-    if (byFamily) return byFamily;
-  }
-  return null;
+  const hit = matchTemplateIndex(dischargeTemplateIndexFor(pack).templates, input);
+  return hit ? getDischargeTemplateFor(pack, hit.key) : null;
 }
 
 export * from "./discharge-profile";
