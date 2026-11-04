@@ -20,6 +20,17 @@ opposite — they carry doses, rates and targets — so the rules differ:
   shown amber, never stored. Only formulas whose arithmetic the book actually prints are wired
   (`lib/fluids/calc.ts`).
 
+## Worksheets
+
+A worksheet chains several of a chapter's printed formulas for one set of typed numbers. The
+first is sodium correction (`/learn/fluids/sodium-correction`, `lib/fluids/sodium-correction.ts`):
+body water (Table 1.1), the 24-hour limit for onset and ODS risk (book p234, upper end of a
+printed range, capped at the goal of 130), the conventional formula as mEq and mL of 3% NaCl
+(513 mEq/L), the 1 mL/kg rule beside it, and Adrogué–Madias for a litre of a Table 20.9 fluid.
+Same rules as "Work it": amber, nothing stored, nothing worded as an order. Every constant
+carries a quote, and the test fails unless that quote is word for word in a topic on the cited
+page and each table value matches the topic's table. No quote, no number.
+
 ## The source is a preview edition — read this before adding content
 
 The PDF the shelf was built from (402 pages, two book pages per PDF page) is the publisher's
