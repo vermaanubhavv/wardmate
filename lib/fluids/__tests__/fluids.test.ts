@@ -3,6 +3,7 @@ import { CALCULATORS, runCalculator } from "@/lib/fluids/calc";
 import { validateFluidTopic } from "@/lib/fluids/schema";
 import { getFluidTopic, listFluidTopics } from "@/lib/fluids/topics";
 import { turpSyndromeV1 } from "@/content/fluids/turp-syndrome.v1";
+import { BODY_WATER, BODY_WATER_CITE, CITES, INFUSATES, INFUSATE_CITE, SODIUM_LIMITS, workSodiumCorrection } from "@/lib/fluids/sodium-correction";
 
 const clone = () => JSON.parse(JSON.stringify(turpSyndromeV1)) as typeof turpSyndromeV1;
 
@@ -85,5 +86,50 @@ describe("calculators", () => {
       const inputs = Object.fromEntries(c.inputs.map((i) => [i.key, i.min]));
       expect(runCalculator(k as keyof typeof CALCULATORS, inputs), k).not.toBeNull();
     }
+  });
+});
+
+describe("sodium correction worksheet", () => {
+  const cites = [BODY_WATER_CITE, INFUSATE_CITE, ...SODIUM_LIMITS.map((s) => s.cite), ...Object.values(CITES)];
+  const blocks = (id: string) => getFluidTopic(id)!.sections.flatMap((s) => s.blocks);
+  const rows = (id: string, title: string) =>
+    blocks(id).find((b): b is Extract<typeof b, { kind: "table" }> => b.kind === "table" && b.title === title)!.rows;
+
+  it("quotes every constant word for word from a topic, on the page that topic cites", () => {
+    // No quote, no number: a worksheet value must trace to a line already on the Learn shelf.
+    for (const c of cites) {
+      const topic = getFluidTopic(c.topic);
+      expect(topic, c.topic).not.toBeNull();
+      expect(topic!.source.pageKind ?? "pdf", c.text).toBe(c.pageKind);
+      expect(blocks(c.topic).some((b) => b.kind === "quote" && b.text === c.text && b.page === c.page), c.text).toBe(true);
+    }
+    for (const s of SODIUM_LIMITS) {
+      expect(s.cite.text, s.id).toContain(s.printed);
+      expect(s.printed, s.id).toContain(String(s.limit));
+    }
+  });
+
+  it("matches the topics' own tables for body water and infusate sodium", () => {
+    const water = rows("body_water_and_units", "Table 1.1 Average total body water as a percentage of body weight");
+    for (const b of BODY_WATER) expect(water, b.id).toContainEqual([b.label, `${b.percent}%`]);
+    const fluids = rows("hyponatraemia", "Table 20.9 Sodium concentration of IV fluids").flatMap((r) => [[r[0], r[1]], [r[2], r[3]]]);
+    for (const f of INFUSATES) expect(fluids, f.id).toContainEqual([f.label, String(f.na)]);
+  });
+
+  it("works a chronic case and caps an acute one at the goal of 130", () => {
+    // 60 kg man, sodium 110, chronic low risk: TBW 36 L, limit 8 → 118; 8 × 36 = 288 mEq = 561 mL of 3%;
+    // the 1 mL/kg rule gives 480 mL; a litre of 3% is (513 − 110) / 37 = +10.9, over the 8 allowed.
+    const w = workSodiumCorrection({ weight: 60, na: 110, bodyWater: "male", situation: "chronic", infusate: "ns3" })!;
+    expect(w).toMatchObject({ tbw: 36, target: 118, cappedAtGoal: false, mEq: 288, ml3pcByFormula: 561, ml3pcByRule: 480, risePerLitre: 10.9 });
+    const acute = workSodiumCorrection({ weight: 50, na: 125, bodyWater: "female", situation: "acute", infusate: "d5" })!;
+    expect(acute).toMatchObject({ target: 130, cappedAtGoal: true, risePerLitre: -4.8 });
+  });
+
+  it("refuses a child's weight, a sodium at goal, or a missing choice", () => {
+    const base = { weight: 60, na: 110, bodyWater: "male", situation: "chronic", infusate: "ns3" };
+    expect(workSodiumCorrection({ ...base, weight: 12 })).toBeNull();
+    expect(workSodiumCorrection({ ...base, na: 130 })).toBeNull();
+    expect(workSodiumCorrection({ ...base, situation: "" })).toBeNull();
+    expect(workSodiumCorrection({ ...base, na: NaN })).toBeNull();
   });
 });
