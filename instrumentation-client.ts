@@ -15,6 +15,7 @@
 // Next's own redirect "errors".
 import { init, type ErrorEvent, type EventHint } from "@sentry/browser";
 import { scrubEvent, scrubLog } from "@/lib/sentry-scrub";
+import { sentryTunnelPath } from "@/lib/sentry-tunnel";
 
 // withSentryConfig (next.config.ts) sets the release it uploaded source maps under through
 // Next's `env` block, so it is inlined here at build time as process.env._sentryRelease. The
@@ -39,8 +40,14 @@ init({
   release,
 
   // Route reports through wardmate.in/monitoring (next.config.ts tunnelRoute) instead of
-  // sentry.io, so an ad blocker or a hospital firewall can't quietly swallow every error.
-  tunnel: "/monitoring",
+  // sentry.io, so an ad blocker or a hospital firewall can't quietly swallow every error. The
+  // org and project ride on the query string: the rewrite matches nothing without them, and
+  // a bare "/monitoring" was answered 404 — see lib/sentry-tunnel.ts.
+  tunnel:
+    sentryTunnelPath(
+      process.env.NEXT_PUBLIC_SENTRY_DSN,
+      process.env._sentryRewritesTunnelPath || "/monitoring"
+    ) ?? undefined,
 
   // Do NOT attach IP address, cookies, or request bodies. WardMate never wants to know which
   // person hit an error, only that one did.
