@@ -65,6 +65,9 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   // signal — the service worker gives the network three seconds, then shows the saved copy.
   // `navigator.onLine` is true on one bar, so without this the bar would say nothing at all.
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  // The live screen arrived after the saved copy was shown (public/sw.js posts it). Offered,
+  // not swapped in: a screen that redraws itself under a thumb mid-tap is worse than a stale one.
+  const [fresh, setFresh] = useState(false);
 
   const refresh = useCallback(async () => {
     setWaiting(await listWaiting());
@@ -131,7 +134,9 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
     const told = (e: MessageEvent) => {
+      if (e.data?.type === "screen-fresh") return setFresh(true);
       if (e.data?.type !== "screen") return;
+      setFresh(false);
       setSavedAt(e.data.fromCache ? (e.data.date ?? renderedAt) : null);
     };
     navigator.serviceWorker.addEventListener("message", told);
@@ -197,12 +202,28 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
         </p>
       )}
 
-      {online && savedAt && (
+      {online && savedAt && !fresh && (
         <p>
           <span className="font-semibold">Weak signal.</span> This screen is as it was at{" "}
           {fetched} — it may be out of date.{" "}
           <button onClick={() => router.refresh()} className="tap font-semibold underline">
             Try again
+          </button>
+        </p>
+      )}
+
+      {online && savedAt && fresh && (
+        <p>
+          <span className="font-semibold">A newer copy has arrived.</span> This screen is as it
+          was at {fetched}.{" "}
+          <button
+            onClick={() => {
+              setFresh(false);
+              router.refresh();
+            }}
+            className="tap font-semibold underline"
+          >
+            Show it
           </button>
         </p>
       )}

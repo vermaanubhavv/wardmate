@@ -38,7 +38,10 @@ lists, Info.plist's and `allowNavigation`; `localhost` stays, because the "canno
 (`errorPath`) is served from it.
 
 A screen gets three seconds of network (`PATIENCE_MS` in `sw.js`) before the saved copy is
-shown, because one bar of signal stalls a fetch rather than failing it. A saved copy always
+shown, because one bar of signal stalls a fetch rather than failing it. Once a fetch has run
+past that or failed, the signal is known to be weak and the next minute's taps wait 0.8 s
+instead (`SLOW_PATIENCE_MS`); a fast fetch ends the window early. When the live screen lands
+after the saved copy went out, the bar says a newer copy has arrived and offers to show it. A saved copy always
 carries the orange bar naming the time it was fetched, whether the phone is offline or just
 slow (`app/connection-bar.tsx`).
 
