@@ -241,6 +241,17 @@ export async function queueItem(item: Omit<Pending, "id" | "queuedAt" | "attempt
   return full;
 }
 
+/** Throw away everything waiting — the deliberate sign-out, so a shared phone does not keep
+ *  the last doctor's unsent recordings. */
+export function clearOutbox() {
+  try {
+    indexedDB.deleteDatabase(DB_NAME);
+  } catch {
+    // No IndexedDB: nothing was kept.
+  }
+  window.dispatchEvent(new Event("outbox-changed"));
+}
+
 /** Drop a recording once the server has it — the counterpart to saveRecording(). Silent if
  *  it was already sent and removed.
  *
