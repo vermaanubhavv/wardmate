@@ -37,7 +37,7 @@ export async function saveReceipt(
   supabase: Supa,
   clientUuid: string | null,
   userId: string,
-  route: "voice" | "round" | "case-history",
+  route: "voice" | "round" | "case-history" | "late-dictation" | "new-patient",
   response: unknown
 ): Promise<void> {
   if (!clientUuid) return;
