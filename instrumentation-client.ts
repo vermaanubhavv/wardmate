@@ -16,8 +16,11 @@
 import { init, type ErrorEvent, type EventHint } from "@sentry/browser";
 import { scrubEvent, scrubLog } from "@/lib/sentry-scrub";
 
-// withSentryConfig (next.config.ts) injects the release it uploaded source maps under.
+// withSentryConfig (next.config.ts) sets the release it uploaded source maps under through
+// Next's `env` block, so it is inlined here at build time as process.env._sentryRelease. The
+// global is the older injection route, kept as the fallback the Next wrapper also keeps.
 const injected = globalThis as { _sentryRelease?: string };
+const release = process.env._sentryRelease || injected._sentryRelease;
 
 /** A redirect() or notFound() in Next is thrown, not returned. Not a crash. */
 function isNextNavigation(event: ErrorEvent, hint: EventHint): boolean {
@@ -33,7 +36,7 @@ function isNextNavigation(event: ErrorEvent, hint: EventHint): boolean {
 init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
   environment: process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV,
-  release: injected._sentryRelease,
+  release,
 
   // Route reports through wardmate.in/monitoring (next.config.ts tunnelRoute) instead of
   // sentry.io, so an ad blocker or a hospital firewall can't quietly swallow every error.
