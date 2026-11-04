@@ -21,7 +21,7 @@ import { detectTriggers, isWorkingDiagnosis } from "./triggers";
 import { evaluateCard, hashResult, type EvaluateContext } from "./engine";
 import { toEngineInputs, type ObservationRow, type PatientFacts } from "./observations-adapter";
 import { planPathwayTasks, type ExistingWorld } from "./tasks";
-import { checkpointDueInstant, dueCheckpoints } from "./checkpoints";
+import { checkpointDueInstant, dueCheckpoints, needsRecompute } from "./checkpoints";
 import type {
   CardDefinition,
   CardResult,
@@ -36,7 +36,19 @@ const nowIso = (): Instant => new Date().toISOString();
 // Public entrypoints
 // ---------------------------------------------------------------------------
 
-export async function syncPatientPathways(patientId: string): Promise<void> {
+/**
+ * Bring a patient's pathways in step with their record.
+ *
+ * A page view calls this lazily: pathways are recomputed only when an observation has changed
+ * since the last compute (patients.observations_changed_at, stamped by the database — patch
+ * 0111) or a checkpoint has fallen due. Otherwise a view costs the two reads above the gate
+ * and nothing more. `force` is for a clinician's own scoring edit (an assessment, an override),
+ * which changes the answer without touching an observation.
+ */
+export async function syncPatientPathways(
+  patientId: string,
+  { force = false }: { force?: boolean } = {}
+): Promise<void> {
   // The global kill-switch is a pure env read. Checking it before touching the database
   // means a patient page with the engine off (every ward, today) does not pay for a
   // `patients` round trip on every open just to discover there is nothing to do.
@@ -44,11 +56,21 @@ export async function syncPatientPathways(patientId: string): Promise<void> {
 
   const supabase = await createClient();
 
-  const { data: patient } = await supabase
+  const columns = "id, ward_id, age_years, sex, admitted_on, primary_diagnosis, status";
+  // The marker column is asked for separately and guarded: naming a column a not-yet-migrated
+  // database does not have rejects the whole select. Without it, every view recomputes as
+  // before — slower, never wrong.
+  let changedAt: Instant | null | undefined;
+  let { data: patient } = await supabase
     .from("patients")
-    .select("id, ward_id, age_years, sex, admitted_on, primary_diagnosis, status")
+    .select(`${columns}, observations_changed_at`)
     .eq("id", patientId)
     .maybeSingle();
+  if (patient) {
+    changedAt = (patient as { observations_changed_at?: Instant | null }).observations_changed_at ?? null;
+  } else {
+    ({ data: patient } = await supabase.from("patients").select(columns).eq("id", patientId).maybeSingle());
+  }
   if (!patient) return;
   if (!(await isScoringEngineEnabled(patient.ward_id))) return;
 
@@ -59,24 +81,28 @@ export async function syncPatientPathways(patientId: string): Promise<void> {
   const defs = definitionsForSpecialty(pack.scoringKeys);
   const matches = detectTriggers({ text: diagnosisText }, defs);
 
+  let triggered = false;
   for (const m of matches) {
-    await upsertInstance(supabase, {
-      patientId,
-      wardId: patient.ward_id,
-      pathwayId: m.pathwayId,
-      pathwayVersion: m.pathwayVersion,
-      triggerSource: m.source,
-      triggerDiagnosis: m.diagnosisText,
-      working: isWorkingDiagnosis(m.diagnosisText),
-    });
+    triggered =
+      (await upsertInstance(supabase, {
+        patientId,
+        wardId: patient.ward_id,
+        pathwayId: m.pathwayId,
+        pathwayVersion: m.pathwayVersion,
+        triggerSource: m.source,
+        triggerDiagnosis: m.diagnosisText,
+        working: isWorkingDiagnosis(m.diagnosisText),
+      })) || triggered;
   }
 
-  // Recompute every open instance for this patient (also picks up resolved data changes).
   const { data: instances } = await supabase
     .from("pathway_instances")
     .select("*")
     .eq("patient_id", patientId)
     .in("status", ["suggested", "active"]);
+
+  // A pathway that just triggered has never been computed, so it always is.
+  if (!triggered && !needsRecompute({ force, changedAt, instances: instances ?? [], now: nowIso() })) return;
 
   for (const inst of instances ?? []) {
     await recomputeInstanceRow(supabase, inst, "new_observation");
@@ -113,7 +139,7 @@ async function upsertInstance(
     triggerDiagnosis: string;
     working: boolean;
   }
-): Promise<void> {
+): Promise<boolean> {
   const { data: existing } = await supabase
     .from("pathway_instances")
     .select("id, status")
@@ -122,7 +148,7 @@ async function upsertInstance(
     .eq("pathway_version", a.pathwayVersion)
     .maybeSingle();
 
-  if (existing) return; // never re-trigger; a dismissed instance stays dismissed.
+  if (existing) return false; // never re-trigger; a dismissed instance stays dismissed.
 
   const status = a.working ? "suggested" : "active";
   const { data: created } = await supabase
@@ -150,6 +176,7 @@ async function upsertInstance(
     });
     await ensureCheckpoints(supabase, created.id, a.patientId, a.wardId, a.pathwayId, a.pathwayVersion);
   }
+  return Boolean(created);
 }
 
 // ---------------------------------------------------------------------------
@@ -174,6 +201,10 @@ async function recomputeInstanceRow(
 ): Promise<void> {
   const def = getDefinition(inst.pathway_id, inst.pathway_version);
   if (!def) return;
+
+  // The instance is stamped with when this compute STARTED, not finished: an observation
+  // written while it ran is then newer than the stamp, and the next view recomputes.
+  const startedAt = nowIso();
 
   const { data: patient } = await supabase
     .from("patients")
@@ -295,7 +326,7 @@ async function recomputeInstanceRow(
 
   await supabase
     .from("pathway_instances")
-    .update({ next_checkpoint_at: nextPendingCheckpoint(checkpointDueAt), updated_at: nowIso() })
+    .update({ next_checkpoint_at: nextPendingCheckpoint(checkpointDueAt), updated_at: startedAt })
     .eq("id", inst.id);
 }
 

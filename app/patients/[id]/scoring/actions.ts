@@ -99,7 +99,7 @@ export async function setScoreFinding(
   await writeAssessments(a.supabase, a.user.id, patientId, inst, [
     { componentId, recordLabel: comp.assess!.recordLabel, opt },
   ]);
-  await syncPatientPathways(patientId);
+  await syncPatientPathways(patientId, { force: true });
   revalidatePath(`/patients/${patientId}`);
   revalidatePath(`/patients/${patientId}/note`);
   return OK;
@@ -130,7 +130,7 @@ export async function confirmScoreNormal(
   if (writes.length === 0) return OK;
 
   await writeAssessments(a.supabase, a.user.id, patientId, inst, writes);
-  await syncPatientPathways(patientId);
+  await syncPatientPathways(patientId, { force: true });
   revalidatePath(`/patients/${patientId}`);
   revalidatePath(`/patients/${patientId}/note`);
   return OK;
