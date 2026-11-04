@@ -20,6 +20,14 @@ const PAGES = "wardmate-pages-v4";
 
 // How long a screen's network fetch may take before the saved copy is shown instead.
 const PATIENCE_MS = 3000;
+// Once a fetch has run past PATIENCE_MS or failed, the signal is known to be weak, and every
+// tap waiting the full three seconds before the saved copy appears is the slowness residents
+// report. For the next minute the saved copy is shown after this much instead; a fetch that
+// comes back fast ends the window early. Held in memory: the worker forgetting it on restart
+// only means one more patient wait.
+const SLOW_PATIENCE_MS = 800;
+const SLOW_WINDOW_MS = 60_000;
+let slowUntil = 0;
 
 const ASSETS = ["/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/manifest.webmanifest"];
 
@@ -113,7 +121,12 @@ self.addEventListener("fetch", (event) => {
     : request;
 
   if (isDocument || isPayload) {
+    const patience = Date.now() < slowUntil ? SLOW_PATIENCE_MS : PATIENCE_MS;
+    const startedAt = Date.now();
     const network = fetch(request).then((res) => {
+      const took = Date.now() - startedAt;
+      if (took > patience) slowUntil = Date.now() + SLOW_WINDOW_MS;
+      else if (took < SLOW_PATIENCE_MS) slowUntil = 0;
       // A redirect to /login means the session is gone; caching that would strand the app
       // on a sign-in page it serves to itself from disk.
       if (res.ok && res.type !== "opaqueredirect") {
@@ -122,9 +135,25 @@ self.addEventListener("fetch", (event) => {
       }
       return res;
     });
+    network.catch(() => {
+      slowUntil = Date.now() + SLOW_WINDOW_MS;
+    });
     // A slow answer still lands in the cache after the saved copy has been shown, so the
     // next open of this screen is fresher. The worker must stay alive long enough to write it.
     event.waitUntil(network.catch(() => {}));
+    // The tab this answers: a tapped-to screen is the same client, a typed URL or a reopen
+    // from the home screen is the one about to be created.
+    const clientId = event.clientId || event.resultingClientId;
+    // When the saved copy went out first and the live one lands later, the screen is told, so
+    // the bar can offer it rather than leave the resident reading a copy marked out of date.
+    const tellFresh = () =>
+      network.then(
+        (res) => {
+          if (res.ok && clientId)
+            self.clients.get(clientId).then((client) => client?.postMessage({ type: "screen-fresh" }));
+        },
+        () => {}
+      );
 
     // ignoreVary is load-bearing for payloads: Next.js sends `Vary: RSC` on them, so the cache
     // would only return one to a request carrying the identical RSC header. Without it the
@@ -139,8 +168,8 @@ self.addEventListener("fetch", (event) => {
     // per-request data, /login among them, are rendered once at build time.)
     const report = async (res, fromCache) => {
       const date = res.headers.get("date");
-      if (isPayload && event.clientId) {
-        self.clients.get(event.clientId).then((client) =>
+      if (isPayload && clientId) {
+        self.clients.get(clientId).then((client) =>
           client?.postMessage({ type: "screen", fromCache, date })
         );
       }
@@ -160,11 +189,13 @@ self.addEventListener("fetch", (event) => {
       // One bar of signal does not fail a fetch, it stalls it — for as long as a minute, at
       // the bedside. So the network gets PATIENCE_MS to answer and then the saved copy is
       // shown, marked as such. No saved copy: keep waiting, there is nothing better to offer.
-      Promise.race([network, new Promise((r) => setTimeout(r, PATIENCE_MS))])
+      Promise.race([network, new Promise((r) => setTimeout(r, patience))])
         .then(async (res) => {
           if (res) return report(res, false);
           const hit = await saved();
-          return hit ? report(hit, true) : network.then((r) => report(r, false));
+          if (!hit) return network.then((r) => report(r, false));
+          tellFresh();
+          return report(hit, true);
         })
         .catch(async () => {
           const hit = await saved();
