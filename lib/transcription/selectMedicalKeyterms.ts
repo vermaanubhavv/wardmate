@@ -46,8 +46,12 @@ const DEFAULTS = {
  *
  * `keepCase` is for charted strings, which keep their capitals so an acronym needle can tell
  * "ALL" from "all" (see `needle`).
+ *
+ * This, `needle` and `tokenIn` are exported for `scripts/audit-keyterm-matching.ts` alone, so
+ * that audit measures the rule that actually ships rather than a copy of it that drifts.
+ * Nothing else outside this file should normalise or match on its own.
  */
-function norm(s: string, keepCase = false): string {
+export function norm(s: string, keepCase = false): string {
   return (keepCase ? s : s.toLowerCase())
     .replace(/[‘’]/g, "'")
     .replace(/'/g, "")
@@ -84,7 +88,7 @@ export { dedupeCaseInsensitive } from "./buildDeepgramUrl";
  * leukaemia, hyper-CVAD and Philadelphia chromosome onto a gallstone patient. "TOD" and "BE"
  * are the same trap. Everything else matches without regard to case.
  */
-function needle(s: string): string {
+export function needle(s: string): string {
   return /^[A-Z]{2,4}$/.test(s.trim()) ? norm(s, true) : norm(s);
 }
 
@@ -185,7 +189,7 @@ function exactFactMatch(entryNames: string[], ctxStrings: string[]): boolean {
  * The per-specialty length rules and collision tests stay: they stop a short alias being sent
  * to Deepgram as a keyterm in its own right, which is a separate concern from matching.
  */
-function tokenIn(tokens: string[], ctxStrings: string[]): boolean {
+export function tokenIn(tokens: string[], ctxStrings: string[]): boolean {
   return tokens.some((t) =>
     ctxStrings.some(
       (c) => phraseContains(c, t) || phraseContains(c, `${t}s`) || phraseContains(c, `${t}es`)
