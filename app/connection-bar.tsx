@@ -10,6 +10,7 @@ import {
   recoverInterruptedChunks,
   type Pending,
 } from "@/lib/outbox";
+import { OFFLINE_ACTIONS } from "@/lib/offline-actions";
 import { usePublishedHeight } from "@/lib/use-published-height";
 
 /**
@@ -94,7 +95,7 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
 
     sendingRef.current = true;
     setSending(true);
-    const result = await flush({ retryRefused: asked });
+    const result = await flush({ retryRefused: asked, actions: OFFLINE_ACTIONS });
     sendingRef.current = false;
     setSending(false);
     await refresh();
@@ -213,7 +214,7 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
         </p>
       )}
 
-      {sending && <p>Sending {pending === 1 ? "1 recording" : `${pending} recordings`}…</p>}
+      {sending && <p>Sending {pending === 1 ? "1 item" : `${pending} items`}…</p>}
 
       {!sending && pending > 0 && (
         <ul className="mt-1 flex flex-col gap-1.5">
@@ -221,7 +222,7 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
             confirmingDelete === item.id ? (
               <li key={item.id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="flex-1">
-                  Delete this {item.label.toLowerCase() || "recording"}? It has not been sent and
+                  Delete this {item.label.toLowerCase() || "item"}? It has not been sent and
                   cannot be recovered.
                 </span>
                 <button onClick={() => void discard(item.id)} className="tap font-semibold underline">
@@ -233,12 +234,12 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
               </li>
             ) : item.sending ? (
               <li key={item.id}>
-                {item.label || "Recording"}, {timeOf(item.queuedAt)} — sending…
+                {item.label || "Item"}, {timeOf(item.queuedAt)} — sending…
               </li>
             ) : (
               <li key={item.id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="flex-1">
-                  {item.label || "Recording"}, {timeOf(item.queuedAt)} —{" "}
+                  {item.label || "Item"}, {timeOf(item.queuedAt)} —{" "}
                   {item.attempts > 0
                     ? "not sent: the server turned it down."
                     : online

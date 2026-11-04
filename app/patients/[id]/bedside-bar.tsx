@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Recorder, { type DictationCopy } from "./recorder";
 import PhotoButton from "./photo-button";
+import { queueItem } from "@/lib/outbox";
 
 type MissingItem = { item: { label: string; hint: string | null } };
 
@@ -53,6 +54,17 @@ export default function BedsideBar({
     setMessage(null);
     setFailed(false);
 
+    // No signal: the note is queued on this phone beside the recordings and sent by the
+    // connection bar. It leaves the box, because it is saved — just not sent yet.
+    const queueNote = async () => {
+      await queueItem({ kind: "text", url: "/api/entries/text", patientId, text: note, label: "Typed note" });
+      setBusy(false);
+      setText("");
+      setTyping(false);
+      setMessage("No signal — saved on this phone, sends when you are back online.");
+    };
+    if (!navigator.onLine) return queueNote();
+
     try {
       const res = await fetch("/api/entries/text", {
         method: "POST",
@@ -78,11 +90,7 @@ export default function BedsideBar({
       );
       router.refresh();
     } catch {
-      setBusy(false);
-      // Typed words have no audio for lib/outbox.ts to queue — so they stay in the box, and the
-      // same button sends them again once there is signal.
-      setFailed(true);
-      setMessage("No connection — not saved yet. Your note is still in the box.");
+      await queueNote();
     }
   }
 

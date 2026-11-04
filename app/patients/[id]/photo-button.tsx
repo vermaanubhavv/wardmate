@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { ImageIcon } from "@/app/icons";
 import Mark from "@/app/mark";
 import { useRouter } from "next/navigation";
+import { queueItem } from "@/lib/outbox";
 
 /**
  * Opens the phone camera directly at a lab report or a bedside observation chart / monitor.
@@ -20,6 +21,15 @@ export default function PhotoButton({ patientId, labelled = false }: { patientId
   async function upload(file: File) {
     setBusy(true);
     setMessage(null);
+
+    // No signal: the photo waits on this phone beside the recordings and is read when the
+    // connection bar sends it. Its values then land on the To check list as usual.
+    const queuePhoto = async () => {
+      await queueItem({ kind: "photo", url: "/api/entries/photo", patientId, photo: file, label: "Photo of a report" });
+      setBusy(false);
+      setMessage("No signal — the photo is saved on this phone and will be read when you are back online.");
+    };
+    if (!navigator.onLine) return queuePhoto();
 
     const form = new FormData();
     form.append("patient_id", patientId);
@@ -46,8 +56,7 @@ export default function PhotoButton({ patientId, labelled = false }: { patientId
       );
       router.refresh();
     } catch {
-      setBusy(false);
-      setMessage("No connection. Nothing was saved.");
+      await queuePhoto();
     }
   }
 
