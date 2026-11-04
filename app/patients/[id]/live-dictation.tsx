@@ -4,7 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MicIcon, StopIcon } from "@/app/icons";
 import { statusChip } from "./card-kit";
-import { openLiveDictation, type LiveDictationSession } from "@/lib/stt/live";
+import { openLiveDictation, pickMime, type LiveDictationSession } from "@/lib/stt/live";
+import { clearChunks, putChunk, saveRecording } from "@/lib/outbox";
+import { LATE_LABEL, offered, type LateScreen } from "@/lib/late-dictation";
 
 /**
  * Live dictation, laid out as the form itself. The resident talks; the words stream in at the
@@ -15,6 +17,11 @@ import { openLiveDictation, type LiveDictationSession } from "@/lib/stt/live";
  *
  * Every line that carries a number, or sits in a drug section, is marked "check" — amber until
  * the resident confirms it on the card.
+ *
+ * No signal — at the start, or the link drops mid-take — and the take is recorded onto the
+ * phone instead (lib/outbox.ts, a second at a time), tagged with the screen and the time. When
+ * the signal returns the connection bar sends it and the server fills the same cards
+ * (lib/late-dictation.ts), so the words are late, never lost.
  */
 
 export type LiveSection = {
@@ -30,21 +37,23 @@ export type LiveSection = {
 /** `check` overrides the panel's own number/drug rule when the server already decided it. */
 export type LiveLine = { section: string; text: string; check?: boolean };
 
-type SessionState = "connecting" | "listening" | "sorting" | "stopping" | "error";
+type SessionState = "connecting" | "listening" | "sorting" | "offline" | "stopping" | "error";
 
 export const needsCheck = (line: string, drug?: boolean) => !!drug || /\d/.test(line);
 
 export default function LiveDictation({
   patientId,
+  screen,
   title,
   example,
   sections,
   route,
   onLines,
   onClose,
-  onUnavailable,
 }: {
   patientId: string;
+  /** Which screen this is — a take recorded with no signal is filed onto it later. */
+  screen: LateScreen;
   title: string;
   example: string;
   sections: LiveSection[];
@@ -54,11 +63,6 @@ export default function LiveDictation({
   /** Drop the sorted lines into the screen's own cards. */
   onLines?: (lines: LiveLine[]) => void;
   onClose: () => void;
-  /** Live could not start (no token, no signal) — the caller falls back instead of showing an
-   *  error here. */
-  /** Live could not start; the caller records instead. Gets the reason so it can say why —
-   *  a silent fallback looks exactly like live dictation being broken. */
-  onUnavailable?: (reason: string) => void;
 }) {
   const [state, setState] = useState<SessionState>("connecting");
   const [message, setMessage] = useState<string | null>(null);
@@ -75,12 +79,55 @@ export default function LiveDictation({
   const tableRefs = useRef<Record<string, HTMLElement | null>>({});
   const routeRef = useRef(route);
   const onLinesRef = useRef(onLines);
-  const onUnavailableRef = useRef(onUnavailable);
   useEffect(() => {
     routeRef.current = route;
     onLinesRef.current = onLines;
-    onUnavailableRef.current = onUnavailable;
   });
+
+  // The take as it is kept on the phone when there is no signal: one id for its chunks and its
+  // queued row, and the moment the unsent words began.
+  const recIdRef = useRef<string>("");
+  const seqRef = useRef(0);
+  const recordedAtRef = useRef("");
+  const queuedRef = useRef(false);
+  const offlineRef = useRef<{ rec: MediaRecorder; stream: MediaStream; chunks: Blob[]; mime: string } | null>(null);
+  const meta = useCallback(
+    (mimeType: string) => ({
+      kind: "dictation" as const,
+      url: "/api/entries/late-dictation",
+      patientId,
+      label: LATE_LABEL[screen],
+      mimeType,
+      screen,
+      recordedAt: recordedAtRef.current,
+    }),
+    [patientId, screen]
+  );
+  const beginUnsent = useCallback(() => {
+    if (recIdRef.current) return;
+    recIdRef.current = crypto.randomUUID();
+    recordedAtRef.current = new Date().toISOString();
+  }, []);
+  const keepChunk = useCallback(
+    (chunk: Blob, mimeType: string) => {
+      beginUnsent();
+      void putChunk(recIdRef.current, seqRef.current++, chunk, meta(mimeType));
+    },
+    [beginUnsent, meta]
+  );
+  /** The whole unsent take, queued; the connection bar sends it the moment it can. */
+  const queueUnsent = useCallback(
+    async (audio: Blob, mimeType: string) => {
+      beginUnsent();
+      queuedRef.current = true;
+      const id = recIdRef.current;
+      await saveRecording(id, { ...meta(mimeType), audio });
+      await clearChunks(id);
+      window.dispatchEvent(new Event("outbox-changed"));
+      window.dispatchEvent(new Event("outbox-send"));
+    },
+    [beginUnsent, meta]
+  );
 
   const routeBuffered = useCallback(async () => {
     // One fragment at a time; whatever is said meanwhile waits in the buffer and goes next.
@@ -138,12 +185,35 @@ export default function LiveDictation({
       } catch (e) {
         clearTimeout(timer);
         if (cancelled) return;
-        if (onUnavailableRef.current) {
-          const reason = abort.signal.aborted ? "no answer from the server in 6 s" : e instanceof Error ? e.message : "no connection";
-          return onUnavailableRef.current(reason);
+        // No signal (or no answer from the server): record onto the phone instead. A refusal
+        // the server did answer — not signed in, no key — is an error, said as one.
+        const noSignal = abort.signal.aborted || !navigator.onLine || e instanceof TypeError;
+        if (!noSignal) {
+          setState("error");
+          setMessage(e instanceof Error ? e.message : "Could not start live dictation.");
+          return;
         }
-        setState("error");
-        setMessage(e instanceof Error && e.name !== "AbortError" ? e.message : "Could not start live dictation.");
+        const mime = pickMime();
+        try {
+          if (!mime) throw new Error("This phone cannot record here — type on the cards instead.");
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          if (cancelled) return stream.getTracks().forEach((t) => t.stop());
+          const rec = new MediaRecorder(stream, { mimeType: mime });
+          const chunks: Blob[] = [];
+          rec.ondataavailable = (ev) => {
+            if (ev.data.size === 0) return;
+            chunks.push(ev.data);
+            keepChunk(ev.data, mime);
+          };
+          beginUnsent();
+          rec.start(1000);
+          offlineRef.current = { rec, stream, chunks, mime };
+          setState("offline");
+          setMessage("No signal — recording on this phone. It is written up and filled into the cards when the signal returns.");
+        } catch (err) {
+          setState("error");
+          setMessage(err instanceof Error && err.name !== "NotAllowedError" ? err.message : "Microphone blocked — allow it for this site in your browser settings.");
+        }
         return;
       }
       if (cancelled) return;
@@ -166,6 +236,12 @@ export default function LiveDictation({
           onLinkLost: (m) => !cancelled && setMessage(m),
           onRescued: (t) => {
             finalBufRef.current = `${finalBufRef.current} ${t}`.trim();
+            if (recIdRef.current) void clearChunks(recIdRef.current);
+          },
+          onRescueChunk: keepChunk,
+          onRescueUnsent: (audio, mimeType) => {
+            void queueUnsent(audio, mimeType);
+            if (!cancelled) setMessage("No signal — what you said after the link dropped is saved on this phone and filled in when the signal returns.");
           },
           onError: (m) => {
             if (cancelled) return;
@@ -184,14 +260,42 @@ export default function LiveDictation({
       cancelled = true;
       sessionRef.current?.stop();
       sessionRef.current = null;
+      // Leaving without Done (the screen closed under it): what was recorded offline is queued
+      // all the same. Its chunks are already on the phone if even this does not get to run.
+      const off = offlineRef.current;
+      offlineRef.current = null;
+      if (off) {
+        off.rec.onstop = () => {
+          const audio = new Blob(off.chunks, { type: off.mime });
+          if (audio.size >= 1000) void queueUnsent(audio, off.mime);
+        };
+        if (off.rec.state !== "inactive") off.rec.stop();
+        off.stream.getTracks().forEach((t) => t.stop());
+      }
     };
-  }, [patientId, routeBuffered]);
+  }, [patientId, routeBuffered, beginUnsent, keepChunk, queueUnsent]);
 
   async function finish() {
     setState("stopping");
-    // Resolves after any rescue recording is transcribed into finalBufRef.
+    const off = offlineRef.current;
+    if (off) {
+      offlineRef.current = null;
+      await new Promise<void>((resolve) => {
+        if (off.rec.state === "inactive") return resolve();
+        off.rec.onstop = () => resolve();
+        off.rec.stop();
+      });
+      off.stream.getTracks().forEach((t) => t.stop());
+      const audio = new Blob(off.chunks, { type: off.mime });
+      if (audio.size >= 1000) await queueUnsent(audio, off.mime);
+      else await clearChunks(recIdRef.current);
+      return onClose();
+    }
+    // Resolves after any rescue recording is transcribed into finalBufRef (or queued).
     await sessionRef.current?.stop();
     sessionRef.current = null;
+    // A rescue the server heard nothing in: its chunks would otherwise be "recovered" later.
+    if (recIdRef.current && !queuedRef.current) void clearChunks(recIdRef.current);
     // The last words may still be a partial — keep them rather than drop them.
     if (partial) finalBufRef.current = `${finalBufRef.current} ${partial}`.trim();
     for (let i = 0; i < 80 && routingRef.current; i++) await new Promise((r) => setTimeout(r, 100));
@@ -199,7 +303,7 @@ export default function LiveDictation({
     onClose();
   }
 
-  const listening = state === "listening" || state === "sorting";
+  const listening = state === "listening" || state === "sorting" || state === "offline";
   const filledCount = sections.filter((s) => s.existing?.trim() || lines.some((l) => l.section === s.key)).length;
 
   // Portalled to <body>: the bedside mic lives in a blurred fixed bar, and a backdrop-filter
@@ -213,9 +317,10 @@ export default function LiveDictation({
             {state === "connecting" && "Starting the microphone…"}
             {state === "listening" && "Listening — speak in any order, pause between thoughts"}
             {state === "sorting" && "Listening — placing the last thought…"}
+            {state === "offline" && "No signal — recording on this phone"}
             {state === "stopping" && "Placing the last words…"}
             {state === "error" && "Live dictation unavailable"}
-            {state !== "connecting" && state !== "error" && ` · ${filledCount} of ${sections.length} filled`}
+            {state !== "connecting" && state !== "error" && state !== "offline" && ` · ${filledCount} of ${sections.length} filled`}
           </p>
         </div>
         <button
@@ -305,7 +410,7 @@ export default function LiveDictation({
           className="mx-auto flex w-full max-w-3xl items-center justify-center gap-2 rounded-[10px] border border-line py-3 text-subhead font-medium text-accent disabled:opacity-60"
         >
           <StopIcon className="h-4 w-4" />
-          Stop and review the cards
+          {state === "offline" ? "Stop — keep it on this phone" : "Stop and review the cards"}
         </button>
       </footer>
     </div>,
@@ -335,43 +440,14 @@ export function DictateButton({ title, sub, onClick, disabled }: { title: string
 
 /** The router for a screen that keeps its own state — sort only, store nothing. */
 export function routeVia(patientId: string, sections: LiveSection[]) {
-  const offered = sections.map(({ key, label }) => ({
-    key,
-    label,
-    hint: HINTS[key] ?? (key.startsWith("vital:") ? "the value only" : undefined),
-  }));
+  const sent = offered(sections);
   return async (text: string): Promise<{ lines: LiveLine[]; error?: string }> => {
     const r = await fetch(`/api/patients/${patientId}/route-dictation`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, sections: offered }),
+      body: JSON.stringify({ text, sections: sent }),
     });
     const data = (await r.json()) as { lines?: LiveLine[]; error?: string };
     return { lines: data.lines ?? [], error: data.error };
   };
 }
-
-/** What goes where, for the sections whose label alone is ambiguous to the sorter. */
-const HINTS: Record<string, string> = {
-  complaints: "fresh complaints and overnight events, in the patient's or doctor's words",
-  sensorium: "conscious, oriented, drowsy, GCS",
-  "vital:BP": "blood pressure — the value only",
-  "vital:PR": "pulse rate — the value only",
-  "vital:RR": "respiratory rate — the value only",
-  "vital:Temp": "temperature, or afebrile — the value only",
-  "vital:SpO2": "oxygen saturation and on what support — the value only",
-  "vital:GRBS": "capillary blood sugar — the value only",
-  "vital:ICU": "ICU / HDU support: vasopressor, ventilator, HFNC",
-  flatus: 'exactly "Passed" or "Not passed"',
-  stool: 'exactly "Passed" or "Not passed"',
-  assessment: "the doctor's overall impression today: stable, improving, deteriorating",
-  plan: "each job, investigation, referral or management step for today — one line each",
-  indication: "why the patient was admitted",
-  clinicalCourse: "what happened during the stay: surgery, recovery, events",
-  condition: "the patient's condition at discharge",
-  primaryCareActions: "what the local doctor should do or check after discharge",
-  patientActions: "follow-up visits and what the patient must do",
-  meds: "each drug the patient is on, with dose, route and frequency — one line each",
-  medications: "discharge drugs with dose and frequency — one line each",
-  other: "anything else worth recording that fits no other section",
-};
