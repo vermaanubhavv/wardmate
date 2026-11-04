@@ -16,6 +16,8 @@
  * flush runs while the app is open, and its progress is on screen.
  */
 
+import type { NewPatientResult } from "@/lib/new-patient-voice";
+
 // Deliberately still the old name. A phone may be holding recordings that were made offline
 // and never sent; renaming the database would orphan them somewhere nobody would ever look.
 // A rebrand is not worth losing a round.
@@ -29,7 +31,7 @@ const CHUNKS = "chunks";
 const VERSION = 2;
 
 /** Audio kinds. Text, photo and action items are the same queue, one row each — see below. */
-export type PendingKind = "round" | "bedside" | "case-history" | "dictation" | "text" | "photo" | "action";
+export type PendingKind = "round" | "bedside" | "case-history" | "dictation" | "new-patient" | "text" | "photo" | "action";
 
 export type Pending = {
   id: string;
@@ -57,6 +59,8 @@ export type Pending = {
    *  ("note" | "discharge" | "clerking") and when it was said — the server files it at that time. */
   screen?: string;
   recordedAt?: string;
+  /** A new patient spoken with no signal (kind "new-patient"): the unit they join. */
+  wardId?: string;
   queuedAt: string;
   attempts: number;
 };
@@ -332,6 +336,8 @@ export type FlushResult = {
   reviews: string[];
   /** Live-panel takes that went through: what they filled, and when said vs processed. */
   late: LateResult[];
+  /** New patients spoken with no signal: added, already there, or not addable. */
+  patients: NewPatientResult[];
 };
 
 export type LateResult = {
@@ -357,12 +363,12 @@ export async function flush({
   retryRefused = false,
   actions = {},
 }: { retryRefused?: boolean; actions?: Record<string, OfflineAction> } = {}): Promise<FlushResult> {
-  const result: FlushResult = { sent: 0, failed: 0, reviews: [], late: [] };
+  const result: FlushResult = { sent: 0, failed: 0, reviews: [], late: [], patients: [] };
   const items = toSend(await listPending(), inFlight, retryRefused);
 
   for (const item of items) {
     let ok: boolean;
-    let data: ({ dictation_id?: string } & Partial<LateResult>) | null = null;
+    let data: ({ dictation_id?: string; status?: string } & Partial<LateResult>) | null = null;
     try {
       if (item.kind === "action") {
         const fn = actions[item.action ?? ""];
@@ -385,6 +391,7 @@ export async function flush({
 
     if (ok) {
       if (item.kind === "round" && data?.dictation_id) result.reviews.push(data.dictation_id);
+      if (item.kind === "new-patient" && data?.status) result.patients.push(data as unknown as NewPatientResult);
       if (item.kind === "dictation" && data?.processed_at)
         result.late.push({
           label: item.label,
@@ -432,5 +439,6 @@ export function body(item: Pending): { body: BodyInit; headers?: Record<string, 
   form.append("client_uuid", item.id);
   if (item.screen) form.append("screen", item.screen);
   if (item.recordedAt) form.append("recorded_at", item.recordedAt);
+  if (item.wardId) form.append("ward_id", item.wardId);
   return { body: form };
 }
