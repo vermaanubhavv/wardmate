@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 /**
@@ -32,15 +32,23 @@ export function ActionSheet({
   onCancel: () => void;
 }) {
   const ref = useRef<HTMLDialogElement | null>(null);
+  // The sheet is a portal into <body>, and React cannot hydrate a portal: rendering it on the
+  // first client pass made every page with a sheet log a hydration mismatch and re-render.
+  // So the server and the first client render agree on nothing, and the portal mounts after.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
     if (open && !d.open) d.showModal();
     if (!open && d.open) d.close();
-  }, [open]);
+  }, [open, mounted]);
 
-  if (typeof document === "undefined") return null;
+  if (!mounted) return null;
 
   return createPortal(
     <dialog
