@@ -21,3 +21,27 @@ export function dueCheckpoints(rows: CheckpointRow[], now: Instant): CheckpointR
   const t = Date.parse(now);
   return rows.filter((r) => r.executedAt == null && Date.parse(r.dueAt) <= t);
 }
+
+/**
+ * Whether a patient's pathways need recomputing on this open of the page.
+ *
+ * Recomputing is the expensive part of a sync (several queries per open pathway), so it runs
+ * only when something could have changed its answer: an observation was written, edited or
+ * removed since the last compute (`changedAt`, stamped by the database — patch 0111), a
+ * checkpoint has fallen due, or the caller knows better (`force`, after a clinician's own
+ * scoring edit). Without the marker (a database before 0111) it always recomputes, as before.
+ */
+export function needsRecompute(a: {
+  force: boolean;
+  changedAt: Instant | null | undefined;
+  instances: { updated_at: Instant; next_checkpoint_at: Instant | null }[];
+  now: Instant;
+}): boolean {
+  if (a.force || a.changedAt === undefined) return true;
+  const t = Date.parse(a.now);
+  return a.instances.some(
+    (i) =>
+      (a.changedAt != null && Date.parse(a.changedAt) > Date.parse(i.updated_at)) ||
+      (i.next_checkpoint_at != null && Date.parse(i.next_checkpoint_at) <= t)
+  );
+}
