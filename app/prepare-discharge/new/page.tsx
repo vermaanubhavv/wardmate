@@ -1,6 +1,6 @@
 import { getCurrentWard, getWardSpecialtyStored } from "@/lib/ward";
 import { getSpecialtyPack } from "@/lib/specialty";
-import { dischargeProfileFor } from "@/lib/specialty/discharge";
+import { dischargeProfileFor, dischargeTemplateIndexFor } from "@/lib/specialty/discharge";
 import { derivePatientState } from "@/lib/patient-state";
 import { buildOneOffDraft, NO_TEMPLATE, oneOffContext } from "@/lib/discharge-oneoff";
 import DischargeWorkspace from "../../patients/[id]/discharge/discharge-workspace";
@@ -35,6 +35,7 @@ export default async function OneOffPage() {
         aiReady={false}
         finalCheck={null}
         profile={dischargeProfileFor(pack)}
+        templateIndex={dischargeTemplateIndexFor(pack)}
         oneOff
       />
     </div>

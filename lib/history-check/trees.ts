@@ -1,6 +1,7 @@
 import { HISTORY_TREES } from "@/content/history-trees";
 import { validateHistoryTree, validatedOnce } from "@/lib/history-check/schema";
 import type { HistoryTree } from "@/lib/history-check/types";
+import type { NegativeSlot } from "@/lib/relevant-negatives";
 
 /** The tree registry, validated on first use. Old versions stay registered so a stored run
  *  still renders against the tree it was answered on. */
@@ -35,6 +36,15 @@ export function getTree(id: string, version?: string | null): HistoryTree | null
  * immediately after a negation ("no fever") does not count. Returns each matching tree, in
  * registry order.
  */
+/** The yes/no slots of the trees these complaints suggest, slim, for the Relevant-negatives
+ *  card (lib/relevant-negatives.ts). Server-side: the trees never reach the browser. */
+export function negativeSlotsFor(chiefComplaintTexts: string[]): NegativeSlot[] {
+  return suggestTrees(chiefComplaintTexts)
+    .flatMap((t) => t.slots)
+    .filter((s) => s.kind === "yes_no")
+    .map((s) => ({ label: s.label, terms: s.terms, group: s.group, tier: s.tier }));
+}
+
 export function suggestTrees(chiefComplaintTexts: string[]): HistoryTree[] {
   const text = chiefComplaintTexts.join(" \n ").toLowerCase();
   if (!text.trim()) return [];

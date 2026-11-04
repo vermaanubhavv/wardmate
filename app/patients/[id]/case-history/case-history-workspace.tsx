@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { caseHistorySectionOf, seedHopi } from "@/lib/case-history";
 import { durationToDays, splitComplaint } from "@/lib/complaint-duration";
-import { answerOf, negativeChecklist, setAnswer } from "@/lib/relevant-negatives";
+import { answerOf, negativeChecklist, setAnswer, type NegativeSlot } from "@/lib/relevant-negatives";
 import { complaintChipsFor, hasChip, pastChipsFor, toggleChip } from "@/lib/case-history-chips";
 import { leadsFor, readField, writeField } from "@/lib/case-history-departments";
 import {
@@ -50,6 +50,7 @@ import {
   applyRelevantNegatives,
   approveCaseHistoryDiagnosis,
   approveCaseHistoryPlan,
+  relevantNegativeSlots,
 } from "./actions";
 
 
@@ -489,6 +490,21 @@ export default function CaseHistoryWorkspace({
   // --- steps -------------------------------------------------------------------------
 
   const complaintList = complaints.length > 0 ? complaints : ["Presenting illness"];
+
+  // The Relevant-negatives candidates, fetched whenever the complaints change: the history
+  // trees they come from stay on the server (see relevantNegativeSlots). HOPI edits filter the
+  // list here, with no round trip.
+  const [negSlots, setNegSlots] = useState<NegativeSlot[]>([]);
+  const complaintKey = complaintList.join("\n");
+  useEffect(() => {
+    let live = true;
+    relevantNegativeSlots(complaintKey.split("\n"))
+      .then((s) => live && setNegSlots(s))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [complaintKey]);
   // The pertinent-negatives card appears the moment a provisional diagnosis exists — the one
   // the "add patient" card sets, or one generated later in this workspace.
   const hasDiagnosisForNegatives = (primaryDiagnosis ?? "").trim().length > 0 || diagnosis.text.trim().length > 0;
@@ -1518,7 +1534,7 @@ export default function CaseHistoryWorkspace({
       );
 
     if (id === "negatives") {
-      const items = negativeChecklist(complaintList, complaintList.map((c) => hopi[c] ?? "").join(" "));
+      const items = negativeChecklist(negSlots, complaintList, complaintList.map((c) => hopi[c] ?? "").join(" "));
       const setNeg = (text: string) => { setNegatives({ ...negatives, text }); mark("negatives"); };
       return (
         <>
