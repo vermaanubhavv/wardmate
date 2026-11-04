@@ -12,6 +12,7 @@ import {
   type Pending,
 } from "@/lib/outbox";
 import { wardTime } from "@/lib/late-dictation";
+import type { NewPatientResult } from "@/lib/new-patient-voice";
 import { OFFLINE_ACTIONS } from "@/lib/offline-actions";
 import { usePublishedHeight } from "@/lib/use-published-height";
 
@@ -63,6 +64,7 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   const [sending, setSending] = useState(false);
   const [reviews, setReviews] = useState<string[]>([]);
   const [late, setLate] = useState<LateResult[]>([]);
+  const [added, setAdded] = useState<NewPatientResult[]>([]);
   const [recovered, setRecovered] = useState(0);
   // When the screen on show came out of the offline cache while the phone still had some
   // signal — the service worker gives the network three seconds, then shows the saved copy.
@@ -108,6 +110,7 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
 
     if (result.reviews.length > 0) setReviews((r) => [...r, ...result.reviews]);
     if (result.late.length > 0) setLate((l) => [...l, ...result.late]);
+    if (result.patients.length > 0) setAdded((a) => [...a, ...result.patients]);
     // Anything that landed changed a patient, so the screen behind this is now out of date.
     if (result.sent > 0) router.refresh();
   }, [refresh, router]);
@@ -183,7 +186,7 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   const barRef = usePublishedHeight("--top-inset");
 
   // Nothing to say: online, nothing queued, nothing to review, nothing recovered.
-  if (online && !savedAt && pending === 0 && reviews.length === 0 && late.length === 0 && !sending && recovered === 0)
+  if (online && !savedAt && pending === 0 && reviews.length === 0 && late.length === 0 && added.length === 0 && !sending && recovered === 0)
     return null;
 
   const fetched = new Date(savedAt ?? renderedAt).toLocaleTimeString("en-IN", {
@@ -301,6 +304,39 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
           )}
           .{" "}
           <button onClick={() => setLate((l) => l.filter((_, j) => j !== i))} className="tap font-semibold underline">
+            OK
+          </button>
+        </p>
+      ))}
+
+      {added.map((p, i) => (
+        <p key={`${p.processed_at}-${i}`} className="mt-1">
+          New patient recorded {wardTime(p.recorded_at)}:{" "}
+          {p.status === "created" && (
+            <>
+              <Link href={`/patients/${p.patient_id}`} className="font-semibold underline">
+                {p.name}, bed {p.bed}
+              </Link>{" "}
+              added.
+            </>
+          )}
+          {p.status === "exists" && (
+            <>
+              <Link href={`/patients/${p.patient_id}`} className="font-semibold underline">
+                {p.name}, bed {p.bed}
+              </Link>{" "}
+              is already on the unit — not added again.
+            </>
+          )}
+          {(p.status === "incomplete" || p.status === "failed") && (
+            <>
+              not added ({p.status === "incomplete" ? "no name or bed was heard" : p.error}). Heard: “{p.transcript}”.{" "}
+              <Link href="/patients/new" className="font-semibold underline">
+                Add by hand
+              </Link>
+            </>
+          )}{" "}
+          <button onClick={() => setAdded((a) => a.filter((_, j) => j !== i))} className="tap font-semibold underline">
             OK
           </button>
         </p>
