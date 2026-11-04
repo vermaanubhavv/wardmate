@@ -145,6 +145,8 @@ export function extFor(mime: string): string {
 
 /** A textarea with a tap-to-record button that appends a transcript from /api/transcribe.
  *  Tap to start, tap to stop — a press-and-hold cannot host getUserMedia's permission prompt. */
+const NO_SIGNAL = "No signal — type, or use the bedside mic.";
+
 export function DictateArea({
   value,
   onChange,
@@ -167,6 +169,9 @@ export function DictateArea({
 
   async function start() {
     if (status !== "idle") return;
+    // This mic only types into the box, so it does not queue: with no signal there is nothing
+    // to type, and the bedside mic is the one that keeps a recording for later.
+    if (!navigator.onLine) return setError(NO_SIGNAL);
     setError(null);
     let stream: MediaStream;
     try {
@@ -200,7 +205,7 @@ export function DictateArea({
           onChange(prev ? `${prev} ${data.text}` : data.text);
         }
       } catch {
-        setError("No connection — the audio was not sent.");
+        setError(NO_SIGNAL);
       }
       setStatus("idle");
     };
