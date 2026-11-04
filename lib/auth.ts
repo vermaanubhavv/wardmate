@@ -1,21 +1,36 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
+/** What every caller reads of the signed-in doctor: id always, email and metadata sometimes. */
+export type SignedIn = { id: string; email?: string; user_metadata: Record<string, unknown> };
+
 /**
- * The signed-in doctor, fetched once per request however many times it is asked for.
+ * The signed-in doctor, verified once per request however many times it is asked for.
  *
- * getUser() is not a local cookie read — it is a network call to Supabase to verify the
- * token, which is the point of using it rather than trusting the cookie. But a single ward
- * render was making that call two or three times over, and on a phone in a hospital each one
- * is a real fraction of a second. React's cache() collapses them to one for the duration of
- * the request, without weakening the check.
+ * This used to be supabase.auth.getUser(): a network round trip to Supabase on every page and
+ * every server action, sequenced before the profile read that needs the id — about 220 ms at
+ * the front of nearly every request. getClaims() verifies the token's signature and expiry
+ * here instead, against the project's public signing key (fetched once per server instance
+ * and cached; the project is on asymmetric ES256 keys, which is what makes this local). The
+ * check is the same one Postgres makes before any row security rule runs, so nothing this
+ * trusts is anything the database would not.
+ *
+ * What is given up: a session revoked elsewhere (sign-out on another phone, a banned account)
+ * is honoured when its token expires rather than at once. The middleware already lets such a
+ * token through, and row security judges every query regardless.
+ *
+ * React's cache() collapses the many calls in one render to one.
  */
-export const getUser = cache(async () => {
+export const getUser = cache(async (): Promise<SignedIn | null> => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  if (!claims?.sub) return null;
+  return {
+    id: claims.sub,
+    email: typeof claims.email === "string" ? claims.email : undefined,
+    user_metadata: (claims.user_metadata as Record<string, unknown> | undefined) ?? {},
+  };
 });
 
 /**
