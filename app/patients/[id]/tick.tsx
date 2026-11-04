@@ -1,7 +1,7 @@
 "use client";
 
-import { useOptimistic, useTransition } from "react";
-import { completeTask } from "./actions";
+import { useOptimistic, useState, useTransition } from "react";
+import { runOrQueue } from "@/lib/offline-actions";
 
 /**
  * The circle you tap to tick a job off.
@@ -25,14 +25,19 @@ export default function Tick({
   label: string;
 }) {
   const [, startTransition] = useTransition();
-  const [done, setDone] = useOptimistic(false);
+  const [optimistic, setDone] = useOptimistic(false);
+  // Queued on the phone with no signal: stays ticked after the transition ends, until the
+  // queue sends it and the refresh takes the row off the list.
+  const [queued, setQueued] = useState(false);
+  const done = optimistic || queued;
 
   return (
     <form
-      action={(formData: FormData) => {
+      action={() => {
         startTransition(async () => {
           setDone(true);
-          await completeTask(formData);
+          const r = await runOrQueue("tick", `Tick: ${label}`, observationId, patientId);
+          if (r.ok && r.queued) setQueued(true);
         });
       }}
       className="-my-2 shrink-0"

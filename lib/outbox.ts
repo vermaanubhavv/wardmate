@@ -28,20 +28,31 @@ const STORE = "pending";
 const CHUNKS = "chunks";
 const VERSION = 2;
 
-export type PendingKind = "round" | "bedside" | "case-history";
+/** Audio kinds. Text, photo and action items are the same queue, one row each — see below. */
+export type PendingKind = "round" | "bedside" | "case-history" | "text" | "photo" | "action";
 
 export type Pending = {
   id: string;
   kind: PendingKind;
   /** Where it was going. Kept with the item so a future endpoint change cannot misroute old
-   *  queued audio into the wrong handler. */
+   *  queued audio into the wrong handler. Empty for an action: it has no URL, it has a name. */
   url: string;
-  /** For a bedside recording: whose bed it was. */
+  /** For a bedside recording, note or photo: whose bed it was. */
   patientId?: string;
   /** Shown in the queue so it is obvious what is waiting, without playing it back. */
   label: string;
-  audio: Blob;
-  mimeType: string;
+  /** A recording (round, bedside, case-history). */
+  audio?: Blob;
+  mimeType?: string;
+  /** A typed note (kind "text"), posted as JSON to `url`. */
+  text?: string;
+  /** A photographed report (kind "photo"), posted as a form to `url`. */
+  photo?: Blob;
+  /** A tap that calls a server action (kind "action") — tick, urgency, confirm. The name is
+   *  looked up in the map flush() is given (lib/offline-actions.ts), never imported here, so
+   *  this module stays free of server code and testable. */
+  action?: string;
+  args?: unknown[];
   queuedAt: string;
   attempts: number;
 };
@@ -206,6 +217,22 @@ export async function saveRecording(
   return full;
 }
 
+/**
+ * Queue anything that is not a recording: a typed note, a photo, or a tapped action. Same
+ * row shape, same bar, same flush. Announces itself so the bar shows the count at once.
+ */
+export async function queueItem(item: Omit<Pending, "id" | "queuedAt" | "attempts">) {
+  const full: Pending = {
+    ...item,
+    id: crypto.randomUUID(),
+    queuedAt: new Date().toISOString(),
+    attempts: 0,
+  };
+  await tx("readwrite", (s) => s.put(full));
+  window.dispatchEvent(new Event("outbox-changed"));
+  return full;
+}
+
 /** Drop a recording once the server has it — the counterpart to saveRecording(). Silent if
  *  it was already sent and removed.
  *
@@ -309,40 +336,40 @@ export type FlushResult = {
  * partially send a large blob. A failure that is NOT the network — a rejected file, an expired
  * session — is counted and left in place for the next try.
  */
-export async function flush({ retryRefused = false } = {}): Promise<FlushResult> {
+/** A server action the queue may call back, by name. Void or {ok,error}-returning. */
+export type OfflineAction = (...args: never[]) => Promise<void | { ok: boolean; error?: string }>;
+
+export async function flush({
+  retryRefused = false,
+  actions = {},
+}: { retryRefused?: boolean; actions?: Record<string, OfflineAction> } = {}): Promise<FlushResult> {
   const result: FlushResult = { sent: 0, failed: 0, reviews: [] };
   const items = toSend(await listPending(), inFlight, retryRefused);
 
   for (const item of items) {
-    // The transcriber picks its decoder from the file extension, so a queued recording has to
-    // carry one — an extensionless "audio" is how a webm gets fed to an mp4 decoder and comes
-    // back blank.
-    const ext = item.mimeType.includes("mp4")
-      ? "m4a"
-      : item.mimeType.includes("mpeg")
-        ? "mp3"
-        : item.mimeType.includes("ogg")
-          ? "ogg"
-          : "webm";
-    const form = new FormData();
-    form.append("audio", new File([item.audio], `audio.${ext}`, { type: item.mimeType }));
-    if (item.patientId) form.append("patient_id", item.patientId);
-    // The item id is the recording's id, chosen when it was recorded. Sent so the server can
-    // recognise a recording it already processed — the queue and a recorder's own upload can
-    // both reach it, and a kill between "server has it" and "row deleted" sends it again.
-    form.append("client_uuid", item.id);
-
-    let res: Response;
+    let ok: boolean;
+    let data: { dictation_id?: string } | null = null;
     try {
-      res = await fetch(item.url, { method: "POST", body: form });
+      if (item.kind === "action") {
+        const fn = actions[item.action ?? ""];
+        // An action this build no longer knows: keep the row, mark it refused, never crash.
+        if (!fn) ok = false;
+        else {
+          const r = await fn(...((item.args ?? []) as never[]));
+          ok = !r || r.ok;
+        }
+      } else {
+        const res = await fetch(item.url, { method: "POST", ...body(item) });
+        ok = res.ok;
+        data = await res.json().catch(() => null);
+      }
     } catch {
       // No connection. Leave this and everything after it for the next attempt.
       result.failed += items.length - result.sent;
       return result;
     }
 
-    if (res.ok) {
-      const data = await res.json().catch(() => null);
+    if (ok) {
       if (item.kind === "round" && data?.dictation_id) result.reviews.push(data.dictation_id);
       await remove(item.id);
       result.sent += 1;
@@ -355,4 +382,31 @@ export async function flush({ retryRefused = false } = {}): Promise<FlushResult>
   }
 
   return result;
+}
+
+/** The request body for a queued recording, note or photo. Exported for its test only. */
+export function body(item: Pending): { body: BodyInit; headers?: Record<string, string> } {
+  if (item.kind === "text") {
+    return {
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ patient_id: item.patientId, text: item.text }),
+    };
+  }
+  const form = new FormData();
+  if (item.patientId) form.append("patient_id", item.patientId);
+  if (item.kind === "photo") {
+    form.append("photo", new File([item.photo ?? new Blob()], "photo.jpg", { type: item.photo?.type }));
+    return { body: form };
+  }
+  // The transcriber picks its decoder from the file extension, so a queued recording has to
+  // carry one — an extensionless "audio" is how a webm gets fed to an mp4 decoder and comes
+  // back blank.
+  const mime = item.mimeType ?? "";
+  const ext = mime.includes("mp4") ? "m4a" : mime.includes("mpeg") ? "mp3" : mime.includes("ogg") ? "ogg" : "webm";
+  form.append("audio", new File([item.audio ?? new Blob()], `audio.${ext}`, { type: mime }));
+  // The item id is the recording's id, chosen when it was recorded. Sent so the server can
+  // recognise a recording it already processed — the queue and a recorder's own upload can
+  // both reach it, and a kill between "server has it" and "row deleted" sends it again.
+  form.append("client_uuid", item.id);
+  return { body: form };
 }

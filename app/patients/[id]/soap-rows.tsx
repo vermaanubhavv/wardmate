@@ -3,7 +3,7 @@
 import { labelRepeats, shortFinding } from "@/lib/shorthand";
 import { useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { replaceTodayNoteSection } from "./note/actions";
+import { runOrQueue } from "@/lib/offline-actions";
 import { displayLabel } from "@/lib/display-value";
 
 type Row = {
@@ -75,8 +75,14 @@ export default function SoapRows({
   // The row shows the new wording the moment Save is tapped; the write to the Mumbai database
   // happens behind it. React drops the optimistic value once the refresh below brings the
   // real one back — or, if the write failed, snaps the row back and shows the error.
+  // Lines saved with no signal: queued on the phone, kept on screen until the queue sends
+  // them. The optimistic patch alone would snap back when the transition ends.
+  const [queuedPatches, setQueuedPatches] = useState<Record<string, string>>({});
+  const shownWithQueued = shown.map((g) =>
+    g.key in queuedPatches ? { ...g, value: queuedPatches[g.key] || null, missing: false } : g
+  );
   const [optimisticShown, patchShown] = useOptimistic(
-    shown,
+    shownWithQueued,
     (groups: Group[], patch: { key: string; value: string }) =>
       groups.map((g) =>
         g.key === patch.key ? { ...g, value: patch.value || null, missing: false } : g
@@ -100,12 +106,16 @@ export default function SoapRows({
       if (key) patchShown({ key, value });
       const results = await Promise.all(
         labels.map((label) =>
-          replaceTodayNoteSection(patientId, label.toLowerCase().trim(), writeKind, value ? [value] : [])
+          runOrQueue("noteSection", `Note: ${label}`, patientId, label.toLowerCase().trim(), writeKind, value ? [value] : [])
         )
       );
       const failed = results.find((r) => !r.ok);
       if (failed) {
         setError(failed.error ?? "Could not save.");
+        return;
+      }
+      if (results.some((r) => r.ok && r.queued)) {
+        if (key) setQueuedPatches((q) => ({ ...q, [key]: value }));
         return;
       }
       router.refresh();
