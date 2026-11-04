@@ -5,7 +5,9 @@
 //
 // It does two jobs: report the crash to Sentry (this is the only error boundary that catches
 // a failure this high up), and give the resident a way back rather than a blank white page.
-import * as Sentry from "@sentry/nextjs";
+// @sentry/browser, the same package instrumentation-client.ts initialises: importing the Next
+// wrapper here would bundle a second, larger copy of the SDK for this one screen.
+import * as Sentry from "@sentry/browser";
 import { useEffect } from "react";
 
 export default function GlobalError({

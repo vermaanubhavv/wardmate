@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ErrorEvent } from "@sentry/nextjs";
+import type { ErrorEvent } from "@sentry/browser";
 import { scrubEvent } from "@/lib/sentry-scrub";
 
 const run = (event: Partial<ErrorEvent>) =>
