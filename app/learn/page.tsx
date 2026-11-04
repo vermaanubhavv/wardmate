@@ -107,6 +107,20 @@ export default async function LearnIndexPage() {
         <p className="mb-3 px-4 text-[12px] text-muted">
           A digest of Pandya&apos;s <span className="italic">Practical Guidelines on Fluid Therapy</span>, 3rd edition. Unlike the lists above these pages carry the book&apos;s doses, rates and targets, each quoted with its page; every topic stays pending until a clinician signs it off.
         </p>
+        <div className="mb-4" data-learn-group>
+          <p className="mb-1 px-4 text-[12px] font-semibold text-muted">Worksheets</p>
+          <ul className="ios-group">
+            <li data-search="sodium correction worksheet hyponatraemia">
+              <Link href="/learn/fluids/sodium-correction" className="flex items-center justify-between gap-3 px-4 py-3 active:bg-chip">
+                <span className="min-w-0">
+                  <span className="block text-[15px]">Sodium correction worksheet</span>
+                  <span className="block truncate text-[12px] text-muted">Hyponatraemia: body water, the 24-hour limit, 3% saline and a litre of any fluid, worked from the book.</span>
+                </span>
+                <span className="text-xl text-muted">›</span>
+              </Link>
+            </li>
+          </ul>
+        </div>
         {FLUID_GROUPS.map((g) => {
           const topics = fluids.filter((t) => t.group === g);
           if (topics.length === 0) return null;

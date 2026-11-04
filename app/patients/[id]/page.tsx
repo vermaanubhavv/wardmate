@@ -1062,7 +1062,12 @@ function CaseHistorySection({
         <div className="border-t border-line">
           <Link
             href={`/patients/${patientId}/case-history`}
-            className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 text-subhead font-semibold text-accent active:bg-chip"
+            className={
+              // The Speak / Add photo row below draws its own top line; with nothing between
+              // them, a line here too stacked into a double one.
+              "flex items-center justify-between gap-3 px-4 py-3 text-subhead font-semibold text-accent active:bg-chip " +
+              (entries.length > 0 ? "border-b border-line" : "")
+            }
           >
             <span>{entries.length > 0 ? "Review case history" : "Build case history"}</span>
             <ChevronIcon className="h-4 w-4" />
@@ -1126,10 +1131,8 @@ function CaseHistorySection({
                 />
               ))}
             </details>
-          ) : (
-            <p className="px-4 py-3 text-subhead text-muted">No case history recorded yet.</p>
-          )}
-          <CaseHistoryCapture patientId={patientId} hasExisting={entries.length > 0} />
+          ) : null}
+          <CaseHistoryCapture patientId={patientId} />
         </div>
       </details>
     </section>

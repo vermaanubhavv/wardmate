@@ -42,17 +42,27 @@
  * the cases in lib/transcription/__tests__/selectMedicalKeyterms.test.ts, which are written as
  * real charted contexts; run both.
  *
- * TO TEST A CANDIDATE. Add it to CANDIDATES below. A candidate is a `match` plus the `norm` it
- * implies, because normalisation is half of the matching rule — fold a hyphen there and a
- * whole-word `match` sees a word that was hidden before. Give it the shipped `norm` unless you
- * are changing normalisation itself. The two worked examples below are the states this rule
- * has actually been in, so running with no arguments reproduces both findings in the docblock.
+ * TO TEST A CANDIDATE. Add it to CANDIDATES below. A candidate is three things, because all
+ * three are part of the rule: how a charted string is prepared (`ctx`), how a lexicon token is
+ * prepared (`token`), and how the two are compared (`match`). Preparation is not a detail —
+ * fold a hyphen in it and a whole-word `match` suddenly sees a word that was hidden, and lower
+ * a token's case and the acronym "ALL" becomes the word "all". Borrow the shipped `norm` and
+ * `needle` for any side you are not changing. The candidates below are the states this rule has
+ * really been in, so a bare run reproduces its history.
  */
 import { MASTER_LEXICON } from "../lib/transcription/lexicon/index.ts";
-import { norm, tokenIn } from "../lib/transcription/selectMedicalKeyterms.ts";
+import { needle, norm, tokenIn } from "../lib/transcription/selectMedicalKeyterms.ts";
 
-/** The rule that ships, imported rather than copied, so this cannot measure a stale rule. */
-const LIVE = { norm, match: (c: string, t: string) => tokenIn([t], [c]) };
+/**
+ * The rule that ships, imported rather than copied, so this cannot measure a stale rule.
+ * A charted string keeps its case; a token goes through `needle`, which keeps the capitals of a
+ * short acronym so "ALL" does not match the word "all".
+ */
+const LIVE = {
+  ctx: (s: string) => norm(s, true),
+  token: needle,
+  match: (c: string, t: string) => tokenIn([t], [c]),
+};
 
 /** The normalisation as it stood before the hyphen, slash and apostrophe folding. */
 const normWithoutPunctuationFolding = (s: string) =>
@@ -63,34 +73,55 @@ const normWithoutPunctuationFolding = (s: string) =>
     .replace(/\s+/g, " ")
     .trim();
 
-type Candidate = { norm: (s: string) => string; match: (ctxString: string, token: string) => boolean };
+type Candidate = {
+  ctx: (s: string) => string;
+  token: (s: string) => string;
+  match: (ctxString: string, token: string) => boolean;
+};
 
 /** Candidate rules, keyed by the name you pass to --only. */
 const CANDIDATES: Record<string, Candidate> = {
   /**
-   * The rule before the fix: a plain substring, on the old normalisation. LOST is empty and
-   * GAINED is every mid-word match the fix removed — "dic" reaching into "appendicitis" and
-   * its three thousand siblings.
+   * The oldest rule: a plain substring on the old normalisation, everything lower-cased. LOST
+   * is the punctuation and acronym matches it could not make; GAINED is every mid-word match
+   * it did — "dic" reaching into "appendicitis" and its three thousand siblings.
    */
   substring: {
-    norm: normWithoutPunctuationFolding,
+    ctx: normWithoutPunctuationFolding,
+    token: normWithoutPunctuationFolding,
     match: (c, t) => c.includes(t),
   },
 
   /**
-   * Whole words on the old normalisation: the intermediate state, correct about mid-word
-   * matching and wrong about punctuation. Its LOST list is the 62 real matches that a hyphen
-   * or an apostrophe was hiding, which is what this script was written to find.
+   * Whole words on the old normalisation: correct about mid-word matching and wrong about
+   * punctuation. Its LOST list is the real matches a hyphen or an apostrophe was hiding, which
+   * is what this script was written to find.
    */
   "strict-words-old-norm": {
-    norm: normWithoutPunctuationFolding,
+    ctx: normWithoutPunctuationFolding,
+    token: normWithoutPunctuationFolding,
     match: (c, t) => c === t || ` ${c} `.includes(` ${t} `),
   },
 
-  /** Whole words on the shipped normalisation, with no plural handling. */
+  /** The shipped rule with no plural handling. See the limitation above before trusting a 0. */
   "no-plurals": {
-    norm,
-    match: (c, t) => c === t || ` ${c} `.includes(` ${t} `),
+    ctx: (s) => norm(s, true),
+    token: needle,
+    match: (c, t) => {
+      const h = t === t.toLowerCase() ? c.toLowerCase() : c;
+      return h === t || ` ${h} `.includes(` ${t} `);
+    },
+  },
+
+  /**
+   * The shipped rule with every token lower-cased, dropping the acronym rule. Its GAINED list
+   * is the trap that rule exists for: "ALL" as the word "all" pulling leukaemia onto an
+   * obstetric history of "All NVD", and the same for "TOD" and "BE".
+   */
+  "no-acronym-case": {
+    ctx: (s) => norm(s, true),
+    token: (s) => norm(s),
+    match: (c, t) => tokenIn([t], [c]),
   },
 };
 
@@ -115,13 +146,17 @@ for (const e of MASTER_LEXICON) {
 /**
  * Was the shipped rule's match a whole-word one? Only a whole-word match is worth reporting as
  * a loss — a token that only matched inside a word was never a real match to begin with.
+ *
+ * Case-insensitive on both the search and the boundary test: charted strings keep their
+ * capitals now (`norm(s, true)`), so a case-sensitive test would miss the match entirely and
+ * quietly report every capitalised loss as no loss at all.
  */
 function matchedWholeWord(ctxString: string, token: string): boolean {
-  const i = ctxString.indexOf(token);
+  const i = ctxString.toLowerCase().indexOf(token.toLowerCase());
   if (i < 0) return false;
   const before = i === 0 ? " " : ctxString[i - 1];
   const after = i + token.length >= ctxString.length ? " " : ctxString[i + token.length];
-  return !/[a-z0-9]/.test(before) && !/[a-z0-9]/.test(after);
+  return !/[a-z0-9]/i.test(before) && !/[a-z0-9]/i.test(after);
 }
 
 // --- run ------------------------------------------------------------------------------
@@ -146,14 +181,16 @@ for (const [name, candidate] of chosen) {
   const gained: string[] = [];
 
   for (const rawToken of tokens) {
-    // Each side normalises with its own rule: normalisation is half of the matching rule, so
-    // comparing them through one `norm` would hide every punctuation difference.
-    const shippedToken = LIVE.norm(rawToken);
-    const candidateToken = candidate.norm(rawToken);
+    // Each rule prepares both sides its own way: preparation is part of the rule, so running
+    // both through one normaliser would hide every punctuation and case difference between
+    // them — which is exactly how an early version of this script reported a clean run on a
+    // candidate that dropped a hundred matches.
+    const shippedToken = LIVE.token(rawToken);
+    const candidateToken = candidate.token(rawToken);
     if (!shippedToken && !candidateToken) continue;
     for (const rawName of names) {
-      const shippedCtx = LIVE.norm(rawName);
-      const candidateCtx = candidate.norm(rawName);
+      const shippedCtx = LIVE.ctx(rawName);
+      const candidateCtx = candidate.ctx(rawName);
       const shipped = LIVE.match(shippedCtx, shippedToken);
       const proposed = candidate.match(candidateCtx, candidateToken);
       if (shipped && !proposed && matchedWholeWord(shippedCtx, shippedToken))

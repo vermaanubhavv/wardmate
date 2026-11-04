@@ -290,3 +290,68 @@ describe("a family token still matches a whole word, however it is spelled", () 
     expect(terms({ investigations: ["Chest X-ray"], diagnoses: ["Pulmonary tuberculosis"] }).length).toBeGreaterThan(0);
   });
 });
+
+/**
+ * Matching folds case, so a short all-caps acronym in the lexicon used to match the ordinary
+ * English word it spells. "ALL" (acute lymphoblastic leukaemia) matched "All NVD" in an
+ * obstetric history and put leukaemia vocabulary on a gallstone patient on Unit Alpha. A 2–4
+ * letter all-caps alias or trigger now matches only when the chart writes it in capitals.
+ */
+describe("a short acronym matches only when the chart writes it in capitals", () => {
+  const LEUKAEMIA = ["acute leukaemia", "hyper-cvad", "philadelphia chromosome"];
+
+  it("does not read the word 'all' as ALL", () => {
+    const list = terms({ diagnoses: ["Cholelithiasis"], freeTextContext: ["G3P3L3, All NVD"] });
+    for (const f of LEUKAEMIA) expect(list).not.toContain(f);
+  });
+
+  it("does not map a charted 'All NVD' onto acute leukaemia", () => {
+    const list = terms({ diagnoses: ["All NVD"] });
+    for (const f of LEUKAEMIA) expect(list).not.toContain(f);
+    expect(list).toContain("all nvd");
+  });
+
+  it("does not read 'tod' as target organ damage", () => {
+    expect(terms({ diagnoses: ["Cholelithiasis"], freeTextContext: ["review tod"] })).not.toContain(
+      "hypertensive emergency"
+    );
+  });
+
+  it("still matches the acronym written in capitals", () => {
+    const list = terms({ diagnoses: ["ALL"], specialty: "medical-oncology" });
+    expect(list).toContain("acute leukaemia");
+    expect(list).toContain("hyper-cvad");
+  });
+
+  it("still matches a longer name regardless of case", () => {
+    expect(terms({ diagnoses: ["ACUTE PANCREATITIS"] })).toContain("ranson's criteria");
+  });
+});
+
+/**
+ * Two triggers were whole words but far too common: "pt" put DIC on every chart with a PT/INR,
+ * and "renal" put ANCA vasculitis on every chart with a renal function test. On Unit Alpha that
+ * was three gallstone patients carrying DIC. The specific markers still pull them in.
+ */
+describe("a routine test does not pull in a rare diagnosis", () => {
+  it("a PT/INR does not bring in DIC", () => {
+    expect(terms({ diagnoses: ["Cholelithiasis"], investigations: ["PT/INR"] })).not.toContain(
+      "disseminated intravascular coagulation"
+    );
+  });
+
+  it("a renal function test does not bring in ANCA vasculitis", () => {
+    expect(
+      terms({ diagnoses: ["Cholelithiasis"], investigations: ["renal function and urine tests"] })
+    ).not.toContain("anca-associated vasculitis");
+  });
+
+  it("the specific markers still do", () => {
+    expect(terms({ diagnoses: ["Sepsis"], investigations: ["Fibrinogen", "D-dimer"] })).toContain(
+      "disseminated intravascular coagulation"
+    );
+    expect(terms({ diagnoses: ["Vasculitis"], freeTextContext: ["ANCA sent"] })).toContain(
+      "anca-associated vasculitis"
+    );
+  });
+});

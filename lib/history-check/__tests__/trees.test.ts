@@ -31,11 +31,10 @@ describe("tree registry", () => {
     // A tree must not drift into "reviewed" as a side effect of an edit — the chip on the card
     // is the only thing telling a resident whether the content was read by a clinician.
     //
-    // Fourteen are signed off (Dr Anubhav Verma). Ninety-three were taken off on 2026-10-23 when
-    // their terms were reworded so that no term naming a PRESENT finding carries a negation
-    // word ("not passing urine" -> "anuria", "does not fade" -> "non blanching"); see
-    // docs/history-check.md, "Terms and negation". They come back one by one as the reviewer
-    // re-reads them at their bumped versions.
+    // All hundred and seven are signed off (Dr Anubhav Verma). The ninety-three trees reworded
+    // on 2026-10-23 so that no term naming a present finding carries a negation word
+    // (docs/history-check.md, "Terms and negation") were re-signed on 2026-10-30 at their
+    // bumped versions.
     // Previously: all hundred and seven, with the thirty-one surgical trees changed by the
     // Bailey & Love 28e review (docs/surgical-history.md §13) re-signed on 2026-10-18.
     // `burns` was re-read as the shipped file (the earlier
@@ -46,10 +45,29 @@ describe("tree registry", () => {
     // Adding an id here is a claim that a named clinician read that tree. Nothing else is.
     const reviewed = listTrees().filter((t) => t.reviewStatus === "reviewed").map((t) => t.id).sort();
     expect(reviewed).toEqual([
-      "bone_swelling", "breathlessness", "chest_pain", "double_vision", "eyelid_swelling",
-      "flashes_floaters", "generalised_weakness", "haematemesis", "limb_weakness",
-      "nasal_obstruction", "palpitations", "progressive_breathlessness", "proptosis",
-      "sinus_fistula",
+      "abdominal_distension", "abdominal_lump", "abdominal_pain", "altered_behaviour",
+      "altered_sensorium", "animal_bite", "anorectal_pain", "anxiety", "bleeding_per_rectum",
+      "bleeding_pv", "blistering_rash", "bone_swelling", "breast_lump", "breathlessness",
+      "burning_micturition", "burns", "chest_pain", "constipation", "cough",
+      "decreased_urine_output", "diarrhoea", "difficulty_passing_urine", "double_vision",
+      "dysphagia", "ear_discharge", "earache", "epistaxis", "erythroderma", "eye_injury",
+      "eyelid_swelling", "febrile_neutropenia", "fever", "fever_with_rash", "flashes_floaters",
+      "foreign_body_ent", "generalised_weakness", "giddiness", "groin_swelling", "haematemesis",
+      "haematuria", "haemoptysis", "hand_injury", "head_injury", "headache", "heat_illness",
+      "hoarseness", "hypopigmented_patch", "jaundice", "joint_pain", "labour_pains", "leg_ulcer",
+      "limb_injury", "limb_ischaemia", "limb_weakness", "limp", "loin_pain",
+      "loss_of_weight_appetite", "low_back_pain", "low_mood", "lump", "mass_per_vaginum",
+      "memory_loss", "nasal_obstruction", "neck_pain", "neural_tube_swelling", "oedema",
+      "paediatric_abdominal_pain", "paediatric_breathing", "paediatric_diarrhoea",
+      "paediatric_fever", "paediatric_seizure", "palpitations", "poisoning_snakebite", "polyuria",
+      "poor_weight_gain", "post_burn_contracture", "post_op_problem", "preop_assessment",
+      "pressure_sore", "progressive_breathlessness", "proptosis", "ptosis", "red_eye",
+      "reduced_fetal_movements", "road_traffic_accident", "scrotal_swelling", "shock",
+      "shunt_problem", "sick_newborn", "sinus_fistula", "skin_lesion", "snoring_sleepiness",
+      "sore_throat", "spinal_injury", "squint", "substance_use", "tb_treatment_problem",
+      "thyroid_swelling", "toothache", "urinary_incontinence", "vaginal_discharge",
+      "varicose_veins", "ventral_hernia", "vision_loss", "vomiting_in_pregnancy", "watering_eye",
+      "wheeze",
     ]);
   });
 });

@@ -96,7 +96,6 @@ export const DEPARTMENT_PAIRS: Record<SpecialtyKey, readonly Pair[]> = {
     ["fasting blood sugar", "FBS"],
     ["gamma glutamyl transferase", "GGT"],
     ["general random blood sugar", "GRBS"],
-    ["inguinal hernia", "IH"],
     ["kidney function test", "KFT"],
     ["low anterior resection", "LAR"],
     ["large bowel obstruction", "LBO"],

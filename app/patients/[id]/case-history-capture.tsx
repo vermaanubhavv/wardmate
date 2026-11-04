@@ -16,13 +16,11 @@ const MAX_SECONDS = 900;
  * Getting the admission clerking note into the app, the one time it is needed per patient.
  *
  * Two ways in, both landing on /api/entries/case-history: photograph the sheet, or dictate it.
- * Skippable — a bare "Add later" beneath both, because a patient can and does get created
- * before the clerking is finished, and the app should never block on paperwork that has not
- * been written yet.
+ * Nothing forces it — a patient can and does get created before the clerking is finished, and
+ * the card simply stays "Not recorded" until it is.
  */
 export default function CaseHistoryCapture({
   patientId,
-  hasExisting = false,
   savedHref,
   variant = "menu",
   specialty,
@@ -38,9 +36,6 @@ export default function CaseHistoryCapture({
    *  "speak" — a dedicated dictation panel: the clerking format checklist beside one big
    *  Speak button, no photo option, no collapsing. Used on the new-clerking screen. */
   variant?: "menu" | "speak";
-  /** Once a case history exists, this becomes "add an addendum" rather than the first prompt —
-   *  no reason to re-explain what it is, or offer to skip something already done. */
-  hasExisting?: boolean;
   /** Where to go once something has been saved. On the patient page this is unset — it just
    *  refreshes in place; on the clerking screen it carries the resident on to the patient. */
   savedHref?: string;
@@ -51,7 +46,6 @@ export default function CaseHistoryCapture({
 
   const [showPhotoChoices, setShowPhotoChoices] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
-  const detailsRef = useRef<HTMLDetailsElement | null>(null);
 
   const { status, recording, message, setMessage, start: startRecording, stop: stopRecording } =
     useDictation({
@@ -176,24 +170,12 @@ export default function CaseHistoryCapture({
     );
   }
 
+  // On the patient page: one row, two ways in, under the Build link. The fold-out it used to
+  // sit in ("Add case history ›", a sentence explaining it, then "Add later") was a third
+  // layer saying what the card's own "Not recorded" already said.
   return (
-    <details
-      ref={detailsRef}
-      className="mt-2 border-t border-line [&[open]_.add-chev]:rotate-90"
-    >
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-subhead font-semibold active:bg-chip [&::-webkit-details-marker]:hidden">
-        <span>{hasExisting ? "Add to case history" : "Add case history"}</span>
-        <span className="add-chev text-title3 font-normal text-muted transition-transform">›</span>
-      </summary>
-
-      <div className="border-t border-line px-4 pb-4 pt-3">
-        <p className="text-footnote leading-relaxed text-muted">
-          {hasExisting
-            ? "Add a further page or dictate an addendum."
-            : "Photograph, upload, or dictate the case sheet."}
-        </p>
-
-      <div className="mt-3 grid grid-cols-2 gap-2.5">
+    <div className="border-t border-line px-4 py-3">
+      <div className="grid grid-cols-2 gap-2.5">
         <button
           type="button"
           onClick={recording ? stopRecording : startRecording}
@@ -281,20 +263,6 @@ export default function CaseHistoryCapture({
 
       {message && <p className="mt-3 text-footnote text-muted">{message}</p>}
 
-      {/* Only offered before anything is saved and before one exists — once a case history is
-          on record there is nothing left to skip. */}
-      {!message && !hasExisting && !busy && (
-        <button
-          type="button"
-          onClick={() => {
-            if (detailsRef.current) detailsRef.current.open = false;
-          }}
-          className="mt-3 text-footnote text-muted underline underline-offset-4"
-        >
-          Add later
-        </button>
-      )}
-      </div>
-    </details>
+    </div>
   );
 }

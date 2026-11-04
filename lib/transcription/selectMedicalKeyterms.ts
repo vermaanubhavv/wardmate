@@ -44,13 +44,15 @@ const DEFAULTS = {
  * Matching and dedupe keys only — never the output. `term: entry.term` is emitted raw, so what
  * Deepgram receives keeps its real hyphens, apostrophes and capitals.
  *
- * Exported for `scripts/audit-keyterm-matching.ts` alone, so that audit measures the rule that
- * actually ships rather than a copy of it that drifts. Nothing else outside this file should
- * normalise on its own.
+ * `keepCase` is for charted strings, which keep their capitals so an acronym needle can tell
+ * "ALL" from "all" (see `needle`).
+ *
+ * This, `needle` and `tokenIn` are exported for `scripts/audit-keyterm-matching.ts` alone, so
+ * that audit measures the rule that actually ships rather than a copy of it that drifts.
+ * Nothing else outside this file should normalise or match on its own.
  */
-export function norm(s: string): string {
-  return s
-    .toLowerCase()
+export function norm(s: string, keepCase = false): string {
+  return (keepCase ? s : s.toLowerCase())
     .replace(/[‘’]/g, "'")
     .replace(/'/g, "")
     .replace(/[.,;:()\[\]]/g, " ")
@@ -79,6 +81,17 @@ export function estimateTotalTokens(terms: readonly string[]): number {
 // pulling the whole master lexicon (this file's import) into every page's bundle.
 export { dedupeCaseInsensitive } from "./buildDeepgramUrl";
 
+/**
+ * A lexicon name or family token in the form it is matched as. A short all-caps acronym keeps
+ * its capitals and only matches a chart that writes it in capitals: lower-cased, "ALL" (acute
+ * lymphoblastic leukaemia) is the word "all", so an obstetric history of "All NVD" pulled
+ * leukaemia, hyper-CVAD and Philadelphia chromosome onto a gallstone patient. "TOD" and "BE"
+ * are the same trap. Everything else matches without regard to case.
+ */
+export function needle(s: string): string {
+  return /^[A-Z]{2,4}$/.test(s.trim()) ? norm(s, true) : norm(s);
+}
+
 // --- context shaping ------------------------------------------------------------------
 
 type ShapedContext = {
@@ -95,13 +108,15 @@ type ShapedContext = {
 };
 
 function shape(context: DictationContext): ShapedContext {
-  const dx = (context.diagnoses ?? []).map(norm).filter(Boolean);
-  const sdx = (context.suspectedDiagnoses ?? []).map(norm).filter(Boolean);
-  const procedures = (context.procedures ?? []).map(norm).filter(Boolean);
-  const planned = (context.plannedProcedures ?? []).map(norm).filter(Boolean);
-  const meds = (context.medications ?? []).map(norm).filter(Boolean);
-  const devices = [...(context.devices ?? []), ...(context.drains ?? [])].map(norm).filter(Boolean);
-  const investigations = (context.investigations ?? []).map(norm).filter(Boolean);
+  // Charted strings keep their case; `phraseContains` folds it unless the needle is an acronym.
+  const cased = (list: string[] | undefined) => (list ?? []).map((s) => norm(s, true)).filter(Boolean);
+  const dx = cased(context.diagnoses);
+  const sdx = cased(context.suspectedDiagnoses);
+  const procedures = cased(context.procedures);
+  const planned = cased(context.plannedProcedures);
+  const meds = cased(context.medications);
+  const devices = cased([...(context.devices ?? []), ...(context.drains ?? [])]);
+  const investigations = cased(context.investigations);
 
   const freeText = [
     ...dx,
@@ -110,8 +125,8 @@ function shape(context: DictationContext): ShapedContext {
     ...planned,
     ...devices,
     ...investigations,
-    ...(context.freeTextContext ?? []).map(norm),
-  ].filter(Boolean);
+    ...cased(context.freeTextContext),
+  ];
 
   if (context.postOpDay != null) {
     freeText.push("post operative day", "post-op", "pod");
@@ -134,10 +149,12 @@ function shape(context: DictationContext): ShapedContext {
 // --- matching -------------------------------------------------------------------------
 
 /** Whole-phrase containment: is `needle` present in `haystack` as a run of complete words?
- *  " right inguinal hernia " contains " inguinal hernia " but not " hernia repair ". */
+ *  " right inguinal hernia " contains " inguinal hernia " but not " hernia repair ".
+ *  Case is ignored unless the needle carries capitals — an acronym from `needle()`. */
 function phraseContains(haystack: string, needle: string): boolean {
-  if (haystack === needle) return true;
-  return (` ${haystack} `).includes(` ${needle} `);
+  const h = needle === needle.toLowerCase() ? haystack.toLowerCase() : haystack;
+  if (h === needle) return true;
+  return (` ${h} `).includes(` ${needle} `);
 }
 
 /**
@@ -190,7 +207,7 @@ type Scored = {
 };
 
 function scoreEntry(entry: MedicalLexiconEntry, ctx: ShapedContext): Scored {
-  const names = [entry.term, ...(entry.aliases ?? [])].map(norm);
+  const names = [entry.term, ...(entry.aliases ?? [])].map(needle);
   const reason: string[] = [];
   let score = 0;
   const add = (n: number, r: string) => {
@@ -206,7 +223,7 @@ function scoreEntry(entry: MedicalLexiconEntry, ctx: ShapedContext): Scored {
   if (exactFactMatch(names, ctx.exactDx)) add(100, "exact diagnosis");
 
   // Clinically associated vocabulary, pulled in by family tokens.
-  const dxTokens = (entry.diagnoses ?? []).map(norm);
+  const dxTokens = (entry.diagnoses ?? []).map(needle);
   if (dxTokens.length && tokenIn(dxTokens, ctx.familyDx)) {
     if (entry.categories.includes("score")) add(80, "scoring system for diagnosis");
     else if (
@@ -218,16 +235,16 @@ function scoreEntry(entry: MedicalLexiconEntry, ctx: ShapedContext): Scored {
     else add(70, "diagnosis-associated term");
   }
 
-  const procTokens = (entry.procedures ?? []).map(norm);
+  const procTokens = (entry.procedures ?? []).map(needle);
   if (procTokens.length && tokenIn(procTokens, [...ctx.procedures, ...ctx.planned])) {
     if (entry.categories.includes("anatomy")) add(70, "operative anatomy");
     else add(60, "related procedure");
   }
 
-  const devTokens = (entry.devices ?? []).map(norm);
+  const devTokens = (entry.devices ?? []).map(needle);
   if (devTokens.length && tokenIn(devTokens, ctx.devices)) add(100, "device-specific term");
 
-  if ((entry.triggers ?? []).length && tokenIn((entry.triggers ?? []).map(norm), ctx.freeText))
+  if ((entry.triggers ?? []).length && tokenIn((entry.triggers ?? []).map(needle), ctx.freeText))
     add(60, "context trigger");
 
   // A patient's resulted investigations lightly boost the matching lexicon term.
@@ -273,9 +290,12 @@ function syntheticTerm(
   const cleaned = raw.trim().replace(/\s+/g, " ");
   if (!cleaned || cleaned.length < 2) return null;
   const value = norm(cleaned);
+  const cased = norm(cleaned, true);
 
+  // A charted value maps onto an entry that it contains, or (for a lower-case name) one that
+  // contains it. An acronym name only counts the first way, and only in capitals.
   const hit = lexIndex.find((e) =>
-    e.names.some((n) => n === value || phraseContains(value, n) || phraseContains(n, value))
+    e.names.some((n) => phraseContains(cased, n) || (n === n.toLowerCase() && phraseContains(n, value)))
   );
 
   if (hit && value === norm(hit.term)) {
@@ -356,7 +376,7 @@ export function selectMedicalKeyterms(context: DictationContext): SelectedKeyter
   const lexicon = MASTER_LEXICON.filter((e) => !(nonOperative && e.operativeOnly));
 
   const lexIndex: LexIndexEntry[] = lexicon.map((e) => ({
-    names: [e.term, ...(e.aliases ?? [])].map(norm),
+    names: [e.term, ...(e.aliases ?? [])].map(needle),
     term: e.term,
     dedupeGroup: e.dedupeGroup,
   }));
