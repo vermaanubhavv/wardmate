@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 import { getDischargeContext, type DischargeContext, type DischargeRow } from "@/lib/discharge-data";
 import { compileDischargeDraft } from "@/lib/discharge-compile";
 import { runDischargeChecks, buildCheckContext, type DischargeCheck } from "@/lib/discharge-checks";
@@ -73,9 +74,7 @@ export async function writeDischargeSection(
   value: unknown
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in." };
 
   const { column } = SECTION_COLUMN[sectionId];
@@ -122,10 +121,7 @@ export async function approveDischargeSection(
   patientId: string,
   sectionId: "clinicalCourse" | "indication" | "relevantInvestigations"
 ): Promise<{ ok: boolean; error?: string }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in." };
 
   const context = await getDischargeContext(patientId);
@@ -161,9 +157,7 @@ export async function finaliseDischargeSummary(
   patientId: string
 ): Promise<{ ok: boolean; blocking?: DischargeCheck[]; error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return { ok: false, error: "Not signed in." };
 
   const context = await getDischargeContext(patientId);
@@ -220,9 +214,7 @@ export async function finaliseDischargeSummary(
  */
 export async function proofreadDischarge(patientId: string): Promise<{ changed: boolean }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   const context = await getDischargeContext(patientId);
   if (!user || !context) return { changed: false };
 
