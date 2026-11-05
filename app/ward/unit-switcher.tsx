@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Check, ChevronDown } from "lucide-react";
@@ -22,6 +22,14 @@ export default function UnitSwitcher({
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDialogElement | null>(null);
+  // The sheet is a portal into <body>, and React cannot hydrate a portal: rendered on the
+  // first client pass it made the ward screen log a hydration mismatch and re-render from the
+  // root. Same fix as ActionSheet — the portal mounts after hydration.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   useEffect(() => {
     const d = ref.current;
@@ -33,7 +41,7 @@ export default function UnitSwitcher({
       d.focus();
     }
     if (!open && d.open) d.close();
-  }, [open]);
+  }, [open, mounted]);
 
   const title = <h1 className="ios-large-title truncate text-title1">{current.name}</h1>;
   if (units.length < 2) return title;
@@ -51,7 +59,7 @@ export default function UnitSwitcher({
         <ChevronDown className="mt-1 h-5 w-5 shrink-0 text-accent" strokeWidth={2.6} aria-hidden />
       </button>
 
-      {typeof document !== "undefined" &&
+      {mounted &&
         createPortal(
           <dialog
             ref={ref}
