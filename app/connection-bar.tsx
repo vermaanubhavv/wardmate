@@ -62,7 +62,8 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   const [reviews, setReviews] = useState<string[]>([]);
   const [recovered, setRecovered] = useState(0);
   // When the screen on show came out of the offline cache while the phone still had some
-  // signal — the service worker gives the network three seconds, then shows the saved copy.
+  // signal — the service worker gives the network three seconds, then shows the saved copy, or
+  // shows a copy under five minutes old straight away on a full page load.
   // `navigator.onLine` is true on one bar, so without this the bar would say nothing at all.
   const [savedAt, setSavedAt] = useState<string | null>(null);
   // The live screen arrived after the saved copy was shown (public/sw.js posts it). Offered,
@@ -204,7 +205,7 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
 
       {online && savedAt && !fresh && (
         <p>
-          <span className="font-semibold">Weak signal.</span> This screen is as it was at{" "}
+          <span className="font-semibold">Saved copy.</span> This screen is as it was at{" "}
           {fetched} — it may be out of date.{" "}
           <button onClick={() => router.refresh()} className="tap font-semibold underline">
             Try again
