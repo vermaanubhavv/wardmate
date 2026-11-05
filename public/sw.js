@@ -141,9 +141,11 @@ self.addEventListener("fetch", (event) => {
     // A slow answer still lands in the cache after the saved copy has been shown, so the
     // next open of this screen is fresher. The worker must stay alive long enough to write it.
     event.waitUntil(network.catch(() => {}));
-    // The tab this answers: a tapped-to screen is the same client, a typed URL or a reopen
-    // from the home screen is the one about to be created.
-    const clientId = event.clientId || event.resultingClientId;
+    // The tab this answers. A payload goes back to the page that asked for it. A document is
+    // the page about to be created: for a navigation out of an existing tab, event.clientId
+    // names the page being LEFT, and a message sent there after the live screen lands is
+    // dropped — the "newer copy" offer never showed on a reload.
+    const clientId = isDocument ? event.resultingClientId || event.clientId : event.clientId;
     // When the saved copy went out first and the live one lands later, the screen is told, so
     // the bar can offer it rather than leave the resident reading a copy marked out of date.
     const tellFresh = () =>
