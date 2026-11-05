@@ -28,6 +28,13 @@ const PATIENCE_MS = 3000;
 const SLOW_PATIENCE_MS = 800;
 const SLOW_WINDOW_MS = 60_000;
 let slowUntil = 0;
+// A full page load (opened from the home screen, reloaded, or the back button) whose saved
+// copy is this young is answered from the cache at once, marked as saved, while the network
+// fetches the live one behind it and the bar then offers it. Opening the app was the one place
+// a resident still sat through a cold Vercel instance — three seconds, on the first open of
+// the morning. Only documents: in-app taps and router.refresh fetch payloads, and a refresh
+// after a tick must never be answered with the copy from before it.
+const RECENT_MS = 5 * 60_000;
 
 const ASSETS = ["/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/manifest.webmanifest"];
 
@@ -185,7 +192,16 @@ self.addEventListener("fetch", (event) => {
       return res;
     };
 
-    event.respondWith(
+    // A document whose saved copy is under RECENT_MS old goes out now; the network answer
+    // lands in the cache behind it and the screen is told it is there.
+    const recent = async () => {
+      if (!isDocument) return null;
+      const hit = await saved();
+      const at = Date.parse(hit?.headers.get("date") || "");
+      return hit && Date.now() - at < RECENT_MS ? hit : null;
+    };
+
+    const fromNetwork = () =>
       // One bar of signal does not fail a fetch, it stalls it — for as long as a minute, at
       // the bedside. So the network gets PATIENCE_MS to answer and then the saved copy is
       // shown, marked as such. No saved copy: keep waiting, there is nothing better to offer.
@@ -219,7 +235,14 @@ self.addEventListener("fetch", (event) => {
              <p><a href="/">Go to the ward</a></p>`,
             { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } }
           );
-        })
+        });
+
+    event.respondWith(
+      recent().then((hit) => {
+        if (!hit) return fromNetwork();
+        tellFresh();
+        return report(hit, true);
+      })
     );
   }
 });
