@@ -43,7 +43,8 @@ past that or failed, the signal is known to be weak and the next minute's taps w
 instead (`SLOW_PATIENCE_MS`); a fast fetch ends the window early. When the live screen lands
 after the saved copy went out, the bar says a newer copy has arrived and offers to show it. A
 full page load — the app opened from the home screen, a reload, the back button — whose saved
-copy is under five minutes old (`RECENT_MS`) is shown from the cache at once, and the live
+copy is under five minutes old (`RECENT_MS`) and newer than this phone's last write is shown
+from the cache at once, and the live
 screen is offered the same way when it lands; in-app taps and refreshes stay network-first, so a
 refresh after a tick is never answered with the copy from before it. A saved copy always
 carries the orange bar naming the time it was fetched, whether the phone is offline or just
