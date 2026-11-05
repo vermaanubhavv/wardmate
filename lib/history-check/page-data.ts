@@ -2,6 +2,7 @@ import type { Supa } from "@/lib/supabase/server";
 import { historyCheckEnabled } from "@/lib/history-check/flag";
 import { getTree, listTrees, suggestTrees } from "@/lib/history-check/trees";
 import { loadSources, type HistoryCheckRun } from "@/lib/history-check/store";
+import type { HistorySource } from "@/lib/history-check/sources";
 import { buildRunView, type RunView } from "@/lib/history-check/view";
 import type { TreeChoice } from "@/app/patients/[id]/history-check-card";
 
@@ -33,7 +34,9 @@ export async function loadHistoryCheckCard(
    * than a list that is too long. Empty — an unrecognised specialty, or the packs flag off —
    * restores the pre-pack behaviour exactly: no department band, every chip shown at once.
    */
-  departmentTreeIds: string[] = []
+  departmentTreeIds: string[] = [],
+  /** The case-history entries as sources when the caller already holds them, so they are not read twice. */
+  sources?: HistorySource[]
 ): Promise<HistoryCheckCardData | null> {
   if (!historyCheckEnabled()) return null;
 
@@ -58,8 +61,8 @@ export async function loadHistoryCheckCard(
     return 0;
   });
 
-  const [sources, { data: rows }] = await Promise.all([
-    loadSources(supabase, patient.id),
+  const [sourceList, { data: rows }] = await Promise.all([
+    sources ?? loadSources(supabase, patient.id),
     supabase.from("history_checks").select(RUN_COLUMNS).eq("patient_id", patient.id).order("created_at", { ascending: false }),
   ]);
 
@@ -77,11 +80,11 @@ export async function loadHistoryCheckCard(
     // changed, source indices may point elsewhere; the quote text itself is still the quote,
     // so the card shows it with the run's own entry list where it can.
     const runSources = row.source_entry_ids
-      .map((id) => sources.find((s) => s.entryId === id))
+      .map((id) => sourceList.find((s) => s.entryId === id))
       .filter((s): s is NonNullable<typeof s> => Boolean(s))
       .map((s, index) => ({ ...s, index }));
     runs[row.tree_id] = buildRunView(tree, row, runSources, { postOp, header });
   }
 
-  return { trees, runs, hasSources: sources.length > 0 };
+  return { trees, runs, hasSources: sourceList.length > 0 };
 }
