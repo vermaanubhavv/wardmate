@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Chip } from "@/app/admin/ui";
 
 /**
  * The sub-nav across the top of every admin screen. A plain scrollable row of links — the
@@ -28,17 +28,9 @@ export default function AdminNav() {
         {TABS.map((t) => {
           const active = t.href === "/admin" ? pathname === "/admin" : pathname.startsWith(t.href);
           return (
-            <Link
-              key={t.href}
-              href={t.href}
-              className={`rounded-full px-3 py-1 text-footnote ${
-                active
-                  ? "bg-accent text-white"
-                  : "bg-chip text-foreground/70 active:opacity-60"
-              }`}
-            >
+            <Chip key={t.href} href={t.href} active={active}>
               {t.label}
-            </Link>
+            </Chip>
           );
         })}
       </div>

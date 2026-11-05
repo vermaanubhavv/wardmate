@@ -73,20 +73,10 @@ export async function readSpokenPatient(
 
   const parsed = replyJson(response, {});
 
-  // Age is the one field where a wrong value is silently plausible, so anything outside a
-  // human lifespan is dropped rather than typed into the form.
-  const age =
-    typeof parsed.age_years === "number" &&
-    Number.isInteger(parsed.age_years) &&
-    parsed.age_years >= 0 &&
-    parsed.age_years <= 120
-      ? parsed.age_years
-      : null;
-
   return {
     patient: {
       name: parsed.name ?? null,
-      age_years: age,
+      age_years: plausibleAge(parsed.age_years),
       sex: ["M", "F", "other"].includes(parsed.sex) ? parsed.sex : null,
       bed: parsed.bed ?? null,
       diagnosis: parsed.diagnosis ?? null,
@@ -95,4 +85,10 @@ export async function readSpokenPatient(
     transcript,
     model: AI_MODEL,
   };
+}
+
+/** Age is the one field where a wrong value is silently plausible, so anything that is not a
+ *  whole number within a human lifespan is dropped rather than typed into the form. */
+export function plausibleAge(v: unknown): number | null {
+  return typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 120 ? v : null;
 }

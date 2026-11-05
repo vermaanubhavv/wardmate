@@ -19,7 +19,8 @@ export type VitalComponent = {
 };
 
 
-function firstNumber(s: string): number | null {
+export function firstNumber(s: string | null | undefined): number | null {
+  if (!s) return null;
   const m = s.match(/-?\d+(?:\.\d+)?/);
   if (!m) return null;
   const n = Number(m[0]);
@@ -145,9 +146,4 @@ export function classifyVital(label: string, value: string | null): VitalCompone
       range: `${def.low}–${def.high}${def.unit ?? ""}`,
     },
   ];
-}
-
-/** True when this label is a vital this file can classify at all — BP included. */
-export function isKnownVital(label: string): boolean {
-  return matchVitalLabel(label) !== null;
 }

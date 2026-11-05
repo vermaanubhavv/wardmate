@@ -49,8 +49,6 @@ export const EMPTY_ONE_OFF_START: OneOffStartState = {
   templateKey: "auto",
 };
 
-const uid = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `r-${Date.now()}`);
-
 /**
  * The first card of a one-off discharge — for somebody who is not in WardMate. The resident
  * types who it is for, optionally reads the paper pages in, and picks the DIAGNOSIS template;
@@ -87,7 +85,7 @@ export default function OneOffStart({
   async function addFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
     const fresh: Page[] = Array.from(files).map((file) => ({
-      id: uid(),
+      id: crypto.randomUUID(),
       fileName: file.name,
       status: "reading",
       error: null,

@@ -53,9 +53,6 @@ export async function getOverview(): Promise<Row<Overview>> {
   return { row: rows[0] ?? null, error };
 }
 
-export type SignupWeek = { week: string; signups: number };
-export const getSignupsWeekly = () => callRows<SignupWeek>("admin_signups_weekly");
-
 export type AdminUser = {
   user_id: string;
   name: string | null;
@@ -182,9 +179,9 @@ export type FeedRow = {
   kind: FeedKind;
   summary: string;
 };
-export const getActivityFeed = (f: { kind?: string | null; actor?: string | null; ward?: string | null; views?: boolean; limit?: number }) =>
+export const getActivityFeed = (f: { kind?: string | null; actor?: string | null; ward?: string | null; views?: boolean }) =>
   callRows<FeedRow>("admin_activity_feed", {
-    p_limit: f.limit ?? 200,
+    p_limit: 200,
     p_kind: f.kind || null,
     p_actor: f.actor || null,
     p_ward: f.ward || null,

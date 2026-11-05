@@ -5,7 +5,7 @@ import { checkpointDueInstant, dueCheckpoints } from "../checkpoints";
 import { getDefinition, triggerableDefinitions } from "../definitions/registry";
 import { detectTriggers } from "../triggers";
 import { validatePathwayDefinition } from "../schema";
-import { planPathwayTasks, eventDedupKey } from "../tasks";
+import { planPathwayTasks } from "../tasks";
 
 const comp = (r: ReturnType<typeof evaluateCard>, id: string) => {
   const c = r.components.find((x) => x.componentId === id);
@@ -284,9 +284,8 @@ describe("mCTSI does not drive a CT order", () => {
     const decisions = planPathwayTasks(
       acutePancreatitisV1,
       [bisapResult],
-      [input("bun", 10, "mg/dL", 4)],
       clock(12),
-      { resolvedInputKeys: new Set(), activeOrders: new Set(), openTaskKeys: new Set(), disabledToggles: new Set() }
+      { resolvedInputKeys: new Set(), openTaskKeys: new Set(), disabledToggles: new Set() }
     );
     for (const d of decisions) {
       expect(d.task.action.toLowerCase()).not.toMatch(/\bct\b|contrast ct|mctsi/);
@@ -295,9 +294,8 @@ describe("mCTSI does not drive a CT order", () => {
   });
   it("pleural-effusion component never generates a task (noAutoTask)", () => {
     const r = evaluateCard(card("bisap"), ctx([input("bun", 10, "mg/dL", 4)]));
-    const decisions = planPathwayTasks(acutePancreatitisV1, [r], [], clock(12), {
+    const decisions = planPathwayTasks(acutePancreatitisV1, [r], clock(12), {
       resolvedInputKeys: new Set(),
-      activeOrders: new Set(),
       openTaskKeys: new Set(),
       disabledToggles: new Set(),
     });
@@ -305,7 +303,7 @@ describe("mCTSI does not drive a CT order", () => {
   });
 });
 
-// ── 6 & 7. Existing result / order suppresses a duplicate task ──────────────
+// ── 6 & 7. Existing result / open task suppresses a duplicate task ──────────────
 describe("task deduplication against the world", () => {
   const bisapMissing = () => evaluateCard(card("bisap"), ctx([input("age_years", 70, "years", 0)]));
 
@@ -313,29 +311,17 @@ describe("task deduplication against the world", () => {
     decisions.find((d) => d.task.dedupKey === "acute_pancreatitis:task:bisap_investigations");
 
   it("an existing in-window result links instead of creating", () => {
-    const decisions = planPathwayTasks(acutePancreatitisV1, [bisapMissing()], [], clock(12), {
+    const decisions = planPathwayTasks(acutePancreatitisV1, [bisapMissing()], clock(12), {
       resolvedInputKeys: new Set(["bun"]),
-      activeOrders: new Set(),
       openTaskKeys: new Set(),
       disabledToggles: new Set(),
     });
     expect(invTask(decisions)?.outcome).toBe("link_existing_result");
   });
 
-  it("an active matching order suppresses the duplicate", () => {
-    const decisions = planPathwayTasks(acutePancreatitisV1, [bisapMissing()], [], clock(12), {
-      resolvedInputKeys: new Set(),
-      activeOrders: new Set(["bun"]),
-      openTaskKeys: new Set(),
-      disabledToggles: new Set(),
-    });
-    expect(invTask(decisions)?.outcome).toBe("link_existing_order");
-  });
-
   it("an already-present task key is not recreated", () => {
-    const decisions = planPathwayTasks(acutePancreatitisV1, [bisapMissing()], [], clock(12), {
+    const decisions = planPathwayTasks(acutePancreatitisV1, [bisapMissing()], clock(12), {
       resolvedInputKeys: new Set(),
-      activeOrders: new Set(),
       openTaskKeys: new Set(["acute_pancreatitis:task:bisap_investigations"]),
       disabledToggles: new Set(),
     });
@@ -355,9 +341,8 @@ describe("task deduplication against the world", () => {
       responsibleRole: "resident",
       institutionalToggle: "abg",
     });
-    const decisions = planPathwayTasks(def, [], [], clock(12), {
+    const decisions = planPathwayTasks(def, [], clock(12), {
       resolvedInputKeys: new Set(),
-      activeOrders: new Set(),
       openTaskKeys: new Set(),
       disabledToggles: new Set(["abg"]),
     });
@@ -365,19 +350,12 @@ describe("task deduplication against the world", () => {
   });
 });
 
-// ── 5 & 19. Event dedup key is deterministic (idempotent replay) ────────────
+// ── 5 & 19. Task planning is deterministic (idempotent replay) ────────────
 describe("event idempotency", () => {
-  it("eventDedupKey is stable for the same event", () => {
-    const a = eventDedupKey({ encounterId: "p1", pathwayId: "acute_pancreatitis", pathwayVersion: "1.0.0", eventType: "new_lab", sourceId: "obs-9", checkpoint: null });
-    const b = eventDedupKey({ encounterId: "p1", pathwayId: "acute_pancreatitis", pathwayVersion: "1.0.0", eventType: "new_lab", sourceId: "obs-9", checkpoint: null });
-    expect(a).toBe(b);
-    expect(a).toBe("p1:acute_pancreatitis:1.0.0:new_lab:obs-9:-");
-  });
   it("the shipped pancreatitis pathway proposes exactly ONE investigations to-do", () => {
     const r = evaluateCard(card("bisap"), ctx([input("age_years", 70, "years", 0)]));
-    const decisions = planPathwayTasks(acutePancreatitisV1, [r], [], clock(12), {
+    const decisions = planPathwayTasks(acutePancreatitisV1, [r], clock(12), {
       resolvedInputKeys: new Set(),
-      activeOrders: new Set(),
       openTaskKeys: new Set(),
       disabledToggles: new Set(),
     });
@@ -390,9 +368,8 @@ describe("event idempotency", () => {
 
   it("the investigations to-do clears once the kidney panel is back", () => {
     const r = evaluateCard(card("bisap"), ctx([input("age_years", 70, "years", 0)]));
-    const decisions = planPathwayTasks(acutePancreatitisV1, [r], [], clock(12), {
+    const decisions = planPathwayTasks(acutePancreatitisV1, [r], clock(12), {
       resolvedInputKeys: new Set(["bun", "wbc"]),
-      activeOrders: new Set(),
       openTaskKeys: new Set(),
       disabledToggles: new Set(),
     });
@@ -401,9 +378,8 @@ describe("event idempotency", () => {
 
   it("planPathwayTasks never returns two decisions with the same dedup key", () => {
     const r = evaluateCard(card("bisap"), ctx([input("age_years", 70, "years", 0)]));
-    const decisions = planPathwayTasks(acutePancreatitisV1, [r, r], [], clock(12), {
+    const decisions = planPathwayTasks(acutePancreatitisV1, [r, r], clock(12), {
       resolvedInputKeys: new Set(),
-      activeOrders: new Set(),
       openTaskKeys: new Set(),
       disabledToggles: new Set(),
     });

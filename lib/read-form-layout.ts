@@ -47,7 +47,6 @@ export type FormZone = {
 export type FormLayout = {
   zones: FormZone[];
   model: string;
-  raw: unknown;
 };
 
 const SYSTEM_PROMPT = `You read the LAYOUT of a blank (or near-blank) medical form photograph — where fields and regions are positioned on the page. You are not reading or reporting any patient data, because there should be none on a blank form; if the photo has handwritten patient information on it, ignore the handwriting and locate the printed field/box it sits in or beside.
@@ -138,7 +137,7 @@ export async function readFormLayout(
       height: clamp01(z.height, 1 - clamp01(z.y)),
     }));
 
-  return { zones, model: AI_MODEL, raw: parsed };
+  return { zones, model: AI_MODEL };
 }
 
 function clamp01(n: number, max = 1): number {

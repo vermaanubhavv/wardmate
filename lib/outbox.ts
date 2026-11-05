@@ -222,13 +222,7 @@ export async function saveRecording(
  * row shape, same bar, same flush. Announces itself so the bar shows the count at once.
  */
 export async function queueItem(item: Omit<Pending, "id" | "queuedAt" | "attempts">) {
-  const full: Pending = {
-    ...item,
-    id: crypto.randomUUID(),
-    queuedAt: new Date().toISOString(),
-    attempts: 0,
-  };
-  await tx("readwrite", (s) => s.put(full));
+  const full = await saveRecording(crypto.randomUUID(), item);
   window.dispatchEvent(new Event("outbox-changed"));
   return full;
 }
@@ -269,14 +263,6 @@ async function listPending(): Promise<Pending[]> {
   const all = await tx<Pending[]>("readonly", (s) => s.getAll() as IDBRequest<Pending[]>);
   // Oldest first: a round is dictated in bed order, and it should arrive in that order.
   return all.sort((a, b) => a.queuedAt.localeCompare(b.queuedAt));
-}
-
-export async function countPending(): Promise<number> {
-  try {
-    return await tx<number>("readonly", (s) => s.count());
-  } catch {
-    return 0;
-  }
 }
 
 async function remove(id: string) {

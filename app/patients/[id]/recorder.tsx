@@ -592,11 +592,7 @@ function normaliseFindings(raw: unknown): Finding[] {
 /** Appends a newly-heard span onto what's already been said, without doubling the space
  *  Deepgram already puts at the start of most continuations. */
 function joinSpoken(base: string, addition: string): string {
-  const a = base.trim();
-  const b = addition.trim();
-  if (!a) return b;
-  if (!b) return a;
-  return `${a} ${b}`;
+  return [base, addition].map((s) => s.trim()).filter(Boolean).join(" ");
 }
 
 /** The transcript with every phrase a finding was drawn from marked in it — so you can see at

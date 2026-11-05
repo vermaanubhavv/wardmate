@@ -30,23 +30,35 @@
  *   --with A,B        also replay answers stored by those runs, e.g. to score A's r0-r1 here.
  */
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { parseArgs } from "node:util";
 import Anthropic from "@anthropic-ai/sdk";
 import { captured, loadAnswers, productionModel, realCreate, runOnce, idFor, type Config, type Stored } from "./intercept.ts";
 
-const arg = (n: string) => {
-  const i = process.argv.indexOf(`--${n}`);
-  return i >= 0 ? process.argv[i + 1] : undefined;
-};
-const RUN = arg("run") ?? "A";
-const REPEATS = Number(arg("repeats") ?? 2);
-const BUDGET = Number(arg("budget") ?? 100);
-const DRY = process.argv.includes("--dry");
-const ONLY = arg("only")?.split(",");
-const SETS = (arg("set") ?? "A").split(",");
-const LIVE = process.argv.includes("--live");
-const FROM_REP = Number(arg("from-rep") ?? 0);
-const WITH = arg("with")?.split(",") ?? [];
-const SHOW = arg("show")?.split(",") ?? [];
+const { values: arg } = parseArgs({
+  options: {
+    run: { type: "string", default: "A" },
+    repeats: { type: "string", default: "2" },
+    budget: { type: "string", default: "100" },
+    dry: { type: "boolean", default: false },
+    only: { type: "string" },
+    set: { type: "string", default: "A" },
+    live: { type: "boolean", default: false },
+    "from-rep": { type: "string", default: "0" },
+    with: { type: "string" },
+    show: { type: "string" },
+    configs: { type: "string" },
+  },
+});
+const RUN = arg.run;
+const REPEATS = Number(arg.repeats);
+const BUDGET = Number(arg.budget);
+const DRY = arg.dry;
+const ONLY = arg.only?.split(",");
+const SETS = arg.set.split(",");
+const LIVE = arg.live;
+const FROM_REP = Number(arg["from-rep"]);
+const WITH = arg.with?.split(",") ?? [];
+const SHOW = arg.show?.split(",") ?? [];
 const RATE = LIVE ? 1 : 0.5; // batches are half price
 
 const isSonnetRoute = (m: string) => m.startsWith("claude-sonnet");
@@ -56,7 +68,7 @@ const CONFIGS: Config[] = [
   { id: "haiku-5-5", model: "claude-haiku-5-5" },
   { id: "haiku-5-5-low", model: "claude-haiku-5-5", effort: "low" },
 ];
-const configs = arg("configs") ? CONFIGS.filter((c) => arg("configs")!.split(",").includes(c.id)) : CONFIGS;
+const configs = arg.configs ? CONFIGS.filter((c) => arg.configs!.split(",").includes(c.id)) : CONFIGS;
 
 // $ per million tokens, from the claude-api skill's table (cached 2026-10-06). Batch = half.
 const PRICE: Record<string, [number, number]> = {

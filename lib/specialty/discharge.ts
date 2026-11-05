@@ -64,14 +64,6 @@ export function dischargeTemplatesFor(pack: SpecialtyPack): DischargeTemplateSet
   return DISCHARGE_TEMPLATE_SETS[pack.key];
 }
 
-export function listDischargeTemplatesFor(pack: SpecialtyPack): { key: string; label: string }[] {
-  const { templates, generic } = dischargeTemplatesFor(pack);
-  return [...templates, generic].map((t) => ({
-    key: t.key,
-    label: t.label,
-  }));
-}
-
 export function getDischargeTemplateFor(
   pack: SpecialtyPack,
   key: string | null | undefined

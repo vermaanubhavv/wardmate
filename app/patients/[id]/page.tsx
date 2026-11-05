@@ -1327,7 +1327,7 @@ function VitalsPanel({ observations }: { observations: Observation[] }) {
     <section className="px-4 pb-6">
       <div className="mb-2 flex items-baseline gap-2 px-4">
         <p className="ios-group-header">Vitals</p>
-        <p className="text-footnote text-muted">{vitalsWhen(latestTime)}</p>
+        <p className="text-footnote text-muted">{dateTime(latestTime)}</p>
         {/* Not this morning's numbers — said out loud, because the tiles look just as fresh. */}
         {daysOld > 0 && (
           <span className="rounded-full bg-warn-bg px-2 py-0.5 text-caption2 font-medium text-warn-fg">
@@ -1367,7 +1367,7 @@ function VitalsPanel({ observations }: { observations: Observation[] }) {
               {/* The range rides along with the flag rather than the flag standing alone — a
                   colour with no stated reason is exactly the "trust me" this app refuses. */}
               {t.flag && <span className="text-caption2 font-medium text-critical-fg">({t.range})</span>}
-              {t.takenAt && <span className="truncate text-caption2 text-muted">{vitalsWhen(t.takenAt)}</span>}
+              {t.takenAt && <span className="truncate text-caption2 text-muted">{dateTime(t.takenAt)}</span>}
             </div>
           ))}
       </div>
@@ -1381,7 +1381,7 @@ function VitalsPanel({ observations }: { observations: Observation[] }) {
           <ul className="mt-1.5 ios-group divide-y divide-line">
             {earlier.map(([time, obs]) => (
               <li key={time} className="px-4 py-2.5 text-subhead">
-                <span className="text-muted">{vitalsWhen(time)}</span>
+                <span className="text-muted">{dateTime(time)}</span>
                 {"  ·  "}
                 {obs.map((o) => `${o.label} ${o.value_text}`).join("  ·  ")}
               </li>
@@ -1391,10 +1391,6 @@ function VitalsPanel({ observations }: { observations: Observation[] }) {
       )}
     </section>
   );
-}
-
-function vitalsWhen(iso: string): string {
-  return dateTime(iso);
 }
 
 /**
@@ -1431,7 +1427,7 @@ function PacSection({ pac, patientId }: { pac: Observation[]; patientId: string 
               {/* The dropdown above is the app's reading of the sentence. This is the sentence,
                   kept beside it and never replaced by it. */}
               <p className="text-subhead leading-snug">{latest.value_text ?? latest.label}</p>
-              <p className="mt-0.5 text-footnote text-muted">{pacWhen(latest.recorded_at)}</p>
+              <p className="mt-0.5 text-footnote text-muted">{shortDate(latest.recorded_at)}</p>
 
               {!quoteAddsNothing(latest.value_text ?? latest.label, latest.source_quote) && (
                 <p className="mt-1 text-footnote italic text-muted">
@@ -1456,7 +1452,7 @@ function PacSection({ pac, patientId }: { pac: Observation[]; patientId: string 
                         {o.pac_verdict ? PAC_META[o.pac_verdict].word : "Recorded"}
                       </span>
                       {" \u00b7 "}
-                      {pacWhen(o.recorded_at)}
+                      {shortDate(o.recorded_at)}
                       {" \u2014 "}
                       {o.value_text ?? o.label}
                     </li>
@@ -1468,10 +1464,6 @@ function PacSection({ pac, patientId }: { pac: Observation[]; patientId: string 
       </div>
     </section>
   );
-}
-
-function pacWhen(iso: string): string {
-  return shortDate(iso);
 }
 
 /**

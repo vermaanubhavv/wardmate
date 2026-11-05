@@ -41,7 +41,7 @@ const SECTION_COLUMN: Record<DischargeSectionId, { column: ColumnKey; key: keyof
 const AI_COLUMNS = new Set<ColumnKey>(["clinical_course", "indication_for_admission", "relevant_investigations"]);
 
 export function mergeDischargeDraft(context: DischargeContext): DischargeDraft {
-  const compiled = compileDischargeDraft(context, { pack: context.pack });
+  const compiled = compileDischargeDraft(context);
   const row = context.row;
   if (!row) return compiled;
 
@@ -177,12 +177,6 @@ export async function finaliseDischargeSummary(
     dischargedAt: draft.admission.dischargedAt ?? now,
   };
 
-  const { data: existing } = await supabase
-    .from("discharge_summaries")
-    .select("id")
-    .eq("patient_id", patientId)
-    .maybeSingle();
-
   const patch = {
     status: "finalised" as const,
     finalised_at: now,
@@ -192,7 +186,7 @@ export async function finaliseDischargeSummary(
     updated_at: now,
   };
 
-  const { error } = existing
+  const { error } = context.row
     ? await supabase.from("discharge_summaries").update(patch).eq("patient_id", patientId)
     : await supabase
         .from("discharge_summaries")

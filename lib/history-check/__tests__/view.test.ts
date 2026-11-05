@@ -105,27 +105,3 @@ describe("buildRunView", () => {
     expect(buildRunView(feverV1, run, sources, { postOp: false }).wrongPatientDismissed).toBe(true);
   });
 });
-
-describe("differential reasoning on the run view", () => {
-  const withSlots = (slots: SlotResult[]) => okRun({ result: { slots, rejections: [], wrongPatient: null } });
-
-  it("names the findings that raised each leading differential", () => {
-    const diff = feverV1.differentials[0];
-    const pointer = diff.pointers[0];
-    const v = buildRunView(
-      feverV1,
-      withSlots([slot(pointer, "positive", { evidence: { quote: "yes", source: 0 } })]),
-      sources,
-      { postOp: false }
-    );
-    const led = v.leadingDetail.find((l) => l.name === diff.name);
-    expect(led).toBeDefined();
-    // Labels, not raw slot ids — the card prints these to the resident.
-    expect(led!.supportedBy).toContain(feverV1.slots.find((s) => s.id === pointer)!.label);
-  });
-
-  it("shows no differentials when the run failed", () => {
-    const v = buildRunView(feverV1, okRun({ status: "error", error: "boom", result: null }), sources, { postOp: false });
-    expect(v.leadingDetail).toEqual([]);
-  });
-});

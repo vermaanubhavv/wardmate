@@ -6,41 +6,17 @@
  * Pure functions over `EngineInput[]`. No database, no clock except the `now` passed in.
  */
 
-import type {
-  EngineInput,
-  InstanceClock,
-  Instant,
-  TimeWindow,
-  WindowAnchor,
-} from "./types";
+import type { EngineInput, InstanceClock, Instant, TimeWindow } from "./types";
 import { round } from "./units";
 
 const HOUR_MS = 3_600_000;
 
-function anchorInstant(anchor: WindowAnchor, clock: InstanceClock, checkpointAt: Instant | null): Instant | null {
-  switch (anchor) {
-    case "admission":
-      return clock.admission;
-    case "symptom_onset":
-      return clock.symptomOnset;
-    case "activation":
-      return clock.activation;
-    case "checkpoint":
-      return checkpointAt;
-  }
-}
-
 export type ResolvedWindow = { startMs: number | null; endMs: number | null; window: TimeWindow };
 
-/** Resolve a definition window to absolute epoch-ms bounds for this instance. */
-export function resolveWindow(
-  window: TimeWindow,
-  clock: InstanceClock,
-  checkpointAt: Instant | null = null
-): ResolvedWindow {
-  const anchor = anchorInstant(window.anchor, clock, checkpointAt);
-  if (anchor === null) return { startMs: null, endMs: null, window };
-  const base = Date.parse(anchor);
+/** Resolve a definition window to absolute epoch-ms bounds for this instance. Every window is
+ *  anchored at admission (the only anchor any definition uses). */
+export function resolveWindow(window: TimeWindow, clock: InstanceClock): ResolvedWindow {
+  const base = Date.parse(clock.admission);
   const startMs = window.startHours != null ? base + window.startHours * HOUR_MS : base;
   const endMs = window.endHours != null ? base + window.endHours * HOUR_MS : null;
   return { startMs, endMs, window };
@@ -105,18 +81,6 @@ export function worstValue(
   direction: "high" | "low"
 ): EngineInput | null {
   return direction === "high" ? highestValue(inputs, key, rw) : lowestValue(inputs, key, rw);
-}
-
-/** Value at (nearest to, and not after) the checkpoint instant, within the window. */
-export function valueAtCheckpoint(
-  inputs: EngineInput[],
-  key: string,
-  rw: ResolvedWindow,
-  checkpointAt: Instant
-): EngineInput | null {
-  const t = Date.parse(checkpointAt);
-  const vs = valuesInWindow(inputs, key, rw).filter((v) => Date.parse(v.at) <= t);
-  return vs.length ? vs[vs.length - 1] : null;
 }
 
 /**

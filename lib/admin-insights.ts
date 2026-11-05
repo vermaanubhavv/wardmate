@@ -31,7 +31,6 @@ export const SCREENS: Record<string, string> = {
   "/patients/:id/discharge": "Discharge summary",
   "/patients/:id/discharge/print": "Discharge print",
   "/patients/:id/prepare-discharge": "Prepare discharge",
-  "/prepare-discharge": "Prepare discharge (unit)",
   "/prepare-discharge/new": "Prepare discharge (new)",
   "/round/:id": "Ward round",
   "/register/:id": "Paper register",

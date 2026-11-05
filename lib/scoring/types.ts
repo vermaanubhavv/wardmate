@@ -18,12 +18,8 @@
 /** An ISO-8601 instant, stored UTC. Day arithmetic is done in Asia/Kolkata elsewhere. */
 export type Instant = string;
 
-/**
- * A named anchor a time window is measured from. `admission` and `symptom_onset` are the two
- * the pancreatitis pathway needs kept apart (DOCX §1: store symptom onset separately from
- * admission). `checkpoint` is resolved to the checkpoint's own due time at evaluation.
- */
-export type WindowAnchor = "admission" | "symptom_onset" | "activation" | "checkpoint";
+/** The anchor a time window is measured from. Every definition measures from admission. */
+export type WindowAnchor = "admission";
 
 /**
  * An explicit time window. Every time-window helper REQUIRES one — there is no "just use the
@@ -227,7 +223,6 @@ export type ComparisonOperator =
   | "lte"
   | "eq"
   | "present"
-  | "absent"
   | "in_range";
 
 /** A single allow-listed, deterministic condition. No expression evaluator, no eval. */
@@ -252,7 +247,7 @@ export type ComponentInput = {
    * `admission` = closest to window start; `first` = earliest; `worst` = engine picks the
    * value that maximises the score contribution; `highest`/`lowest` = numeric extremes;
    * `change_from_baseline` = (value in window) − (baseline value), baseline window in
-   * `baselineWindow`; `at_checkpoint` = value at the checkpoint instant.
+   * `baselineWindow`.
    */
   selector:
     | "admission"
@@ -260,8 +255,7 @@ export type ComponentInput = {
     | "worst"
     | "highest"
     | "lowest"
-    | "change_from_baseline"
-    | "at_checkpoint";
+    | "change_from_baseline";
   baselineWindow?: TimeWindow;
   /** The point(s) this component scores. Ignored when `bands` is set. */
   points: number;
@@ -315,7 +309,6 @@ type CardCalculation =
    *  is the worst of the creatinine, urine-output and RRT criteria, never their total. */
   | { kind: "max_points" }
   | { kind: "sirs" }
-  | { kind: "modified_marshall" }
   | { kind: "revised_atlanta" }
   | { kind: "structured_extraction" }
   /**
@@ -428,7 +421,5 @@ export type TriggerSource =
 /** Anchor instants an instance is evaluated against. */
 export type InstanceClock = {
   admission: Instant;
-  symptomOnset: Instant | null;
-  activation: Instant | null;
   now: Instant;
 };

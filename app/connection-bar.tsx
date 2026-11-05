@@ -178,11 +178,7 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   if (online && !savedAt && pending === 0 && reviews.length === 0 && !sending && recovered === 0)
     return null;
 
-  const fetched = new Date(savedAt ?? renderedAt).toLocaleTimeString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  const fetched = timeOf(savedAt ?? renderedAt);
 
   return (
     <div

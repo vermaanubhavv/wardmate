@@ -42,8 +42,6 @@ export default function Tick({
       }}
       className="-my-2 shrink-0"
     >
-      <input type="hidden" name="observation_id" value={observationId} />
-      <input type="hidden" name="patient_id" value={patientId} />
       <button
         aria-label={`Mark done: ${label}`}
         // The circle stays 26px; the button around it is 44pt, so a thumb lands on it without the

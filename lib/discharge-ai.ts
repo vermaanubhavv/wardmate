@@ -139,7 +139,7 @@ function buildAdmissionDigest(context: DischargeContext, draft: DischargeDraft):
  * wording. Its facts are the usual case, not this patient's; the prompts say so.
  */
 const templateOf = (context: DischargeContext, draft: DischargeDraft) =>
-  templateForDischarge(context, draft.diagnoses.find((d) => d.category === "primary")?.text, context.pack);
+  templateForDischarge(context, draft.diagnoses.find((d) => d.category === "primary")?.text);
 
 function templateGuide(template: DischargeTemplate | null, part: "clinicalCourse" | "indication"): string {
   const text = template?.scaffold[part]?.trim();

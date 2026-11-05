@@ -14,20 +14,24 @@
  * The validator itself is covered by unit tests that make no calls — this script is for
  * seeing how the MODEL behaves on the traps, not for CI.
  */
+import { parseArgs } from "node:util";
 import { EVAL_CASES } from "../lib/history-check/evals/cases.ts";
 import { getTree } from "../lib/history-check/trees.ts";
 import { buildSources } from "../lib/history-check/sources.ts";
 import { estimateCostUsd, extractHistoryCheck, type ExtractionUsage } from "../lib/history-check/extract.ts";
 import { validateExtraction } from "../lib/history-check/validate.ts";
 
-function arg(name: string): string | undefined {
-  const i = process.argv.indexOf(`--${name}`);
-  return i >= 0 ? process.argv[i + 1] : undefined;
-}
+const { values: arg } = parseArgs({
+  options: {
+    model: { type: "string", default: "claude-haiku-4-5" },
+    "max-calls": { type: "string", default: "12" },
+    only: { type: "string" },
+  },
+});
 
-const model = arg("model") ?? "claude-haiku-4-5";
-const maxCalls = Number(arg("max-calls") ?? 12);
-const only = arg("only")?.split(",").map((s) => s.trim()).filter(Boolean);
+const model = arg.model;
+const maxCalls = Number(arg["max-calls"]);
+const only = arg.only?.split(",").map((s) => s.trim()).filter(Boolean);
 
 const cases = only ? EVAL_CASES.filter((c) => only.includes(c.id)) : EVAL_CASES;
 if (cases.length > maxCalls) {

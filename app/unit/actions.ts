@@ -5,6 +5,13 @@ import { isSpecialtyKey, specialtyPacksEnabled } from "@/lib/specialty";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
+import { DESIGNATION_CHOICES } from "@/lib/patients";
+
+/** Everything a unit change can alter shows on these two screens. */
+function revalidateUnit() {
+  revalidatePath("/ward");
+  revalidatePath("/unit");
+}
 
 export type JoinState = { error: string | null; joined?: string };
 export type CreateWardState = { error: string | null };
@@ -47,9 +54,7 @@ export async function createWard(
     if (legacyError) return { error: error.message };
   }
 
-  revalidatePath("/");
-  revalidatePath("/ward");
-  revalidatePath("/unit");
+  revalidateUnit();
   redirect("/ward");
 }
 
@@ -74,9 +79,7 @@ export async function joinWard(_prev: JoinState, formData: FormData): Promise<Jo
   if (error) return { error: error.message };
   if (!data) return { error: "No unit has that code. Check it and try again." };
 
-  revalidatePath("/");
-  revalidatePath("/ward");
-  revalidatePath("/unit");
+  revalidateUnit();
 
   // A joiner with no name yet goes to the Unit page, where the unit's roster is waiting to be
   // tapped; everybody else goes straight to the ward as before. One extra query, and only on
@@ -111,9 +114,7 @@ export async function renameWard(formData: FormData) {
   const supabase = await createClient();
   await supabase.from("wards").update({ name: name.slice(0, 60) }).eq("id", wardId);
 
-  revalidatePath("/");
-  revalidatePath("/ward");
-  revalidatePath("/unit");
+  revalidateUnit();
 }
 
 /**
@@ -124,20 +125,7 @@ export async function renameWard(formData: FormData) {
  * be wrong for the next unit. Owner only, like renaming: the wards policy permits nobody else.
  */
 export async function saveLetterhead(formData: FormData) {
-  const wardId = String(formData.get("ward_id") ?? "");
-  if (!wardId) return;
-
-  const letterhead = String(formData.get("letterhead") ?? "").trim();
-
-  const supabase = await createClient();
-  await supabase
-    .from("wards")
-    .update({ letterhead: letterhead ? letterhead.slice(0, 2000) : null })
-    .eq("id", wardId);
-
-  revalidatePath("/unit");
-  revalidatePath("/");
-  revalidatePath("/ward");
+  await updateWardText("letterhead", 2000, formData);
 }
 
 /**
@@ -149,20 +137,23 @@ export async function saveLetterhead(formData: FormData) {
  * surgical units; this is how any other unit sets it, or how a name is corrected.
  */
 export async function saveConsultant(formData: FormData) {
+  await updateWardText("consultant_in_charge", 120, formData);
+}
+
+/** One free-text column on the unit, read from the form field of the same name; blank clears it. */
+async function updateWardText(column: "letterhead" | "consultant_in_charge", max: number, formData: FormData) {
   const wardId = String(formData.get("ward_id") ?? "");
   if (!wardId) return;
 
-  const consultant = String(formData.get("consultant_in_charge") ?? "").trim();
+  const value = String(formData.get(column) ?? "").trim();
 
   const supabase = await createClient();
   await supabase
     .from("wards")
-    .update({ consultant_in_charge: consultant ? consultant.slice(0, 120) : null })
+    .update({ [column]: value ? value.slice(0, max) : null })
     .eq("id", wardId);
 
-  revalidatePath("/unit");
-  revalidatePath("/");
-  revalidatePath("/ward");
+  revalidateUnit();
 }
 
 /**
@@ -177,9 +168,7 @@ export async function setProgressNoteTemplate(wardId: string, isEsicFaridabad: b
   const supabase = await createClient();
   await supabase.from("wards").update({ is_esic_faridabad: isEsicFaridabad }).eq("id", wardId);
 
-  revalidatePath("/unit");
-  revalidatePath("/");
-  revalidatePath("/ward");
+  revalidateUnit();
 }
 
 /** Switch which unit the app is showing. */
@@ -195,9 +184,7 @@ export async function switchWard(formData: FormData) {
   // cannot grant access to one they are not a member of.
   await supabase.from("profiles").update({ current_ward_id: wardId }).eq("id", user.id);
 
-  revalidatePath("/");
-  revalidatePath("/ward");
-  revalidatePath("/unit");
+  revalidateUnit();
   redirect("/ward");
 }
 
@@ -226,7 +213,6 @@ export async function leaveWard(formData: FormData) {
   await supabase.from("ward_members").delete().eq("ward_id", wardId).eq("user_id", user.id);
   await supabase.from("profiles").update({ current_ward_id: null }).eq("id", user.id);
 
-  revalidatePath("/");
   revalidatePath("/ward");
   redirect("/ward");
 }
@@ -250,7 +236,7 @@ export async function saveProfile(formData: FormData) {
 
   // Anything not on the ladder is stored as nothing rather than as itself: the column has a
   // check constraint, and an insert it refuses would surface as a database error at a bedside.
-  const designation = ["Intern", "JR-1", "JR-2", "JR-3", "SR", "AP", "Medical Officer", "Consultant"].includes(designationRaw)
+  const designation = (DESIGNATION_CHOICES as readonly string[]).includes(designationRaw)
     ? designationRaw
     : null;
 
@@ -263,7 +249,6 @@ export async function saveProfile(formData: FormData) {
     })
     .eq("id", user.id);
 
-  revalidatePath("/");
   revalidatePath("/unit");
 }
 
@@ -378,9 +363,7 @@ export async function claimExpectedMember(
   const { error } = await supabase.rpc("claim_expected_member", { member_id: id });
   if (error) return { error: expectedHint(error.message) };
 
-  revalidatePath("/");
-  revalidatePath("/ward");
-  revalidatePath("/unit");
+  revalidateUnit();
   return { error: null };
 }
 
@@ -512,22 +495,27 @@ export async function copySetupFromWard(
   }
   if (copiedKinds.length > 0) done.push(`${copiedKinds.length} formats`);
 
-  // 3. The hospital's drug list. Same hospital, same stock; a unit importing it separately is
-  // the same capture done again. Replaced rather than merged, for the reason 0047 gives.
   // Read in pages of 1000. PostgREST caps a single response at 1000 rows and says nothing about
   // it, so a straight select of a 1057-drug formulary silently copies 1000 and looks like it
   // worked — which is exactly what happened the first time this ran.
-  const items: { item_text: string }[] = [];
-  for (let from = 0; ; from += 1000) {
-    const { data: page } = await supabase
-      .from("ward_formulary_items")
-      .select("item_text")
-      .eq("ward_id", sourceId)
-      .range(from, from + 999);
-    if (!page || page.length === 0) break;
-    items.push(...page);
-    if (page.length < 1000) break;
-  }
+  const readAll = async <T,>(table: string, cols: string): Promise<T[]> => {
+    const rows: T[] = [];
+    for (let from = 0; ; from += 1000) {
+      const { data: page } = await supabase
+        .from(table)
+        .select(cols)
+        .eq("ward_id", sourceId)
+        .range(from, from + 999);
+      if (!page || page.length === 0) break;
+      rows.push(...(page as T[]));
+      if (page.length < 1000) break;
+    }
+    return rows;
+  };
+
+  // 3. The hospital's drug list. Same hospital, same stock; a unit importing it separately is
+  // the same capture done again. Replaced rather than merged, for the reason 0047 gives.
+  const items = await readAll<{ item_text: string }>("ward_formulary_items", "item_text");
 
   if (items && items.length > 0) {
     await supabase.from("ward_formulary_items").delete().eq("ward_id", targetId);
@@ -543,17 +531,7 @@ export async function copySetupFromWard(
   }
 
   // 4. The confirmed drug mappings that sit on top of that list.
-  const mappings: { drug_key: string; item_text: string }[] = [];
-  for (let from = 0; ; from += 1000) {
-    const { data: page } = await supabase
-      .from("medication_formulary_map")
-      .select("drug_key, item_text")
-      .eq("ward_id", sourceId)
-      .range(from, from + 999);
-    if (!page || page.length === 0) break;
-    mappings.push(...page);
-    if (page.length < 1000) break;
-  }
+  const mappings = await readAll<{ drug_key: string; item_text: string }>("medication_formulary_map", "drug_key, item_text");
 
   if (mappings.length > 0) {
     let mapped = 0;
@@ -578,7 +556,6 @@ export async function copySetupFromWard(
 
   revalidatePath("/unit");
   revalidatePath("/formats");
-  revalidatePath("/");
 
   if (done.length === 0) return { ok: false, message: "That unit has nothing set up to copy." };
   return { ok: true, message: `Copied from ${source.name}: ${done.join(", ")}.` };

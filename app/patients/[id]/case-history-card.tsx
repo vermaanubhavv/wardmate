@@ -1,10 +1,7 @@
 import { summariseCaseHistory } from "@/lib/case-history";
 
 /** "a" · "a and b" · "a, b and c" — a plain-English list for a sentence, no Oxford comma. */
-function formatList(items: string[]): string {
-  if (items.length <= 1) return items.join("");
-  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
-}
+const LIST = new Intl.ListFormat("en-GB", { type: "conjunction" });
 import { objectiveComplaint } from "@/lib/complaint-duration";
 import { labelRepeats, shortFinding } from "@/lib/shorthand";
 import { summariseObjective, type WardRanges } from "@/lib/exam-summary";
@@ -220,7 +217,7 @@ export function ObjectiveSummaryView({
 
       {pertinentNegatives.length > 0 && (
         <p className="mt-1.5 text-footnote text-muted">
-          No complaints of {formatList(pertinentNegatives)}.
+          No complaints of {LIST.format(pertinentNegatives)}.
         </p>
       )}
 

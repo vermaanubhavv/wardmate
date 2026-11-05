@@ -7,7 +7,6 @@ export type CaseSheetResult = {
    *  transcript — see the API route for why that reuse matters. */
   transcript: string;
   model: string;
-  raw: unknown;
 };
 
 export const SYSTEM_PROMPT = `You transcribe a photograph of a surgical admission case sheet — history, examination findings, provisional diagnosis, plan of management, whatever the page holds.
@@ -82,5 +81,5 @@ export async function readCaseSheet(
 
   const parsed = replyJson(response, { transcript: "" });
 
-  return { transcript: String(parsed.transcript ?? ""), model: AI_MODEL, raw: parsed };
+  return { transcript: String(parsed.transcript ?? ""), model: AI_MODEL };
 }

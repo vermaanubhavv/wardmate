@@ -95,8 +95,7 @@ export function needle(s: string): string {
 // --- context shaping ------------------------------------------------------------------
 
 type ShapedContext = {
-  exactDx: string[];
-  familyDx: string[];
+  dx: string[];
   procedures: string[];
   planned: string[];
   meds: string[];
@@ -111,7 +110,6 @@ function shape(context: DictationContext): ShapedContext {
   // Charted strings keep their case; `phraseContains` folds it unless the needle is an acronym.
   const cased = (list: string[] | undefined) => (list ?? []).map((s) => norm(s, true)).filter(Boolean);
   const dx = cased(context.diagnoses);
-  const sdx = cased(context.suspectedDiagnoses);
   const procedures = cased(context.procedures);
   const planned = cased(context.plannedProcedures);
   const meds = cased(context.medications);
@@ -120,7 +118,6 @@ function shape(context: DictationContext): ShapedContext {
 
   const freeText = [
     ...dx,
-    ...sdx,
     ...procedures,
     ...planned,
     ...devices,
@@ -133,8 +130,7 @@ function shape(context: DictationContext): ShapedContext {
   }
 
   return {
-    exactDx: [...dx, ...sdx],
-    familyDx: [...dx, ...sdx],
+    dx,
     procedures,
     planned,
     meds,
@@ -220,11 +216,11 @@ function scoreEntry(entry: MedicalLexiconEntry, ctx: ShapedContext): Scored {
   else if (exactFactMatch(names, ctx.planned)) add(95, "planned procedure");
   if (exactFactMatch(names, ctx.devices)) add(100, "current device / drain");
   if (exactFactMatch(names, ctx.meds)) add(100, "current medication");
-  if (exactFactMatch(names, ctx.exactDx)) add(100, "exact diagnosis");
+  if (exactFactMatch(names, ctx.dx)) add(100, "exact diagnosis");
 
   // Clinically associated vocabulary, pulled in by family tokens.
   const dxTokens = (entry.diagnoses ?? []).map(needle);
-  if (dxTokens.length && tokenIn(dxTokens, ctx.familyDx)) {
+  if (dxTokens.length && tokenIn(dxTokens, ctx.dx)) {
     if (entry.categories.includes("score")) add(80, "scoring system for diagnosis");
     else if (
       entry.categories.some(
@@ -319,7 +315,6 @@ function syntheticPatientTerms(context: DictationContext, lexIndex: LexIndexEntr
     }
   };
   push(context.diagnoses, 100, "charted diagnosis");
-  push(context.suspectedDiagnoses, 88, "working diagnosis");
   push(context.procedures, 100, "charted procedure");
   push(context.plannedProcedures, 95, "planned procedure");
   push(context.medications, 100, "charted medication");
