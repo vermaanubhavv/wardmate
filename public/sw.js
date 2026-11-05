@@ -35,6 +35,11 @@ let slowUntil = 0;
 // the morning. Only documents: in-app taps and router.refresh fetch payloads, and a refresh
 // after a tick must never be answered with the copy from before it.
 const RECENT_MS = 5 * 60_000;
+// When this phone last sent a write (a server action, an upload, a queued card going out):
+// a saved copy older than that is from before the write and must not be the first thing
+// shown, or a resident sees a card they just saved come up empty. In memory — a restarted
+// worker forgets it and falls back to the network-first path, which is never wrong.
+let lastWriteAt = 0;
 
 const ASSETS = ["/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/manifest.webmanifest"];
 
@@ -67,7 +72,10 @@ self.addEventListener("message", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-  if (request.method !== "GET") return;
+  if (request.method !== "GET") {
+    lastWriteAt = Date.now();
+    return;
+  }
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
@@ -200,7 +208,7 @@ self.addEventListener("fetch", (event) => {
       if (!isDocument) return null;
       const hit = await saved();
       const at = Date.parse(hit?.headers.get("date") || "");
-      return hit && Date.now() - at < RECENT_MS ? hit : null;
+      return hit && Date.now() - at < RECENT_MS && at > lastWriteAt ? hit : null;
     };
 
     const fromNetwork = () =>
