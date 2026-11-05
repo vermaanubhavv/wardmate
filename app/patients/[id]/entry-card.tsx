@@ -21,6 +21,16 @@ type Value = {
   task_open?: boolean | null;
 };
 
+/** A hand correction or removal on this entry, from the observation_history trail. */
+export type EntryChange = {
+  action: "edited" | "deleted";
+  label: string;
+  from: string | null;
+  to: string | null;
+  who: string | null;
+  when: string;
+};
+
 /** What operation and which day — the note's heading, not a finding from it. */
 const CONTEXT_KINDS = ["day_number", "diagnosis", "planned_procedure"];
 
@@ -110,6 +120,7 @@ export default function EntryCard({
   photoUrl,
   accepted,
   edited,
+  changes = [],
   extractionError,
   values,
   matchedProtocols,
@@ -125,6 +136,8 @@ export default function EntryCard({
   photoUrl?: string | null;
   accepted: boolean;
   edited: boolean;
+  /** Who corrected or removed which value, newest first. */
+  changes?: EntryChange[];
   extractionError: string | null;
   values: Value[];
   /** Published protocols this entry's words looked related to — a suggestion, never applied. */
@@ -409,6 +422,25 @@ export default function EntryCard({
 
           {!transcript && !photoUrl && (
             <p className="mt-1.5 text-subhead text-muted">Nothing was kept for this entry.</p>
+          )}
+
+          {/* The struck-through figure on paper: a correction is shown with what it replaced,
+              who made it and when. A removed value is listed the same way. */}
+          {changes.length > 0 && (
+            <ul className="mt-2 flex flex-col gap-1 text-footnote text-muted">
+              {changes.map((c, i) => (
+                <li key={i}>
+                  <span className="font-medium">{c.label}</span>
+                  {c.action === "deleted" ? (
+                    <> removed{c.from && <> (was <s>{c.from}</s>)</>}</>
+                  ) : (
+                    <>: <s>{c.from ?? "—"}</s> → {c.to ?? "—"}</>
+                  )}
+                  {" · "}
+                  {c.who ?? "unknown"} · {c.when}
+                </li>
+              ))}
+            </ul>
           )}
         </div>
       )}
