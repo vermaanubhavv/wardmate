@@ -62,13 +62,11 @@ export type UseDictationOptions = {
   patientId?: string;
   /** A forgotten recording otherwise runs until the tab dies and bills a long transcription. */
   maxSeconds: number;
-  /** Extra FormData fields beyond `audio`, `client_uuid` and `patient_id`. */
-  fields?: () => Record<string, string>;
   /**
    * Handed the parsed 2xx body. Return a string to show it as the status line, or nothing.
    * This is where a caller navigates, refreshes, or renders findings.
    */
-  onResult: (data: ResultBody, ctx: { autoStopped: boolean }) => string | null | void;
+  onResult: (data: ResultBody) => string | null | void;
   /** Optional override for the "server refused it" (non-5xx) line. */
   rejectionMessage?: (data: ResultBody) => string;
 };
@@ -97,7 +95,6 @@ export function useDictation(opts: UseDictationOptions) {
   const streamRef = useRef<MediaStream | null>(null);
   const recIdRef = useRef<string>("");
   const seqRef = useRef(0);
-  const autoStoppedRef = useRef(false);
   const discardRef = useRef(false);
   const statusRef = useRef<DictationStatus>(status);
   useEffect(() => {
@@ -146,10 +143,7 @@ export function useDictation(opts: UseDictationOptions) {
   // A recording always starts from 0:00, so the cap is a timer from the moment it starts.
   useEffect(() => {
     if (status !== "recording") return;
-    const id = setTimeout(() => {
-      autoStoppedRef.current = true;
-      stop();
-    }, maxSeconds * 1000);
+    const id = setTimeout(stop, maxSeconds * 1000);
     return () => clearTimeout(id);
   }, [status, maxSeconds, stop]);
 
@@ -211,7 +205,6 @@ export function useDictation(opts: UseDictationOptions) {
       form.append("audio", blob, `${kind}.${ext}`);
       form.append("client_uuid", id);
       if (patientId) form.append("patient_id", patientId);
-      for (const [k, v] of Object.entries(optsRef.current.fields?.() ?? {})) form.append(k, v);
 
       try {
         await saveRecording(id, { ...meta(), audio: blob, mimeType });
@@ -251,7 +244,7 @@ export function useDictation(opts: UseDictationOptions) {
         void dropRecording(id);
         void clearChunks(id);
         window.dispatchEvent(new Event("outbox-changed"));
-        const line = optsRef.current.onResult(data, { autoStopped: autoStoppedRef.current });
+        const line = optsRef.current.onResult(data);
         if (typeof line === "string") setMessage(line);
       } catch {
         setStatus("idle");
@@ -269,7 +262,6 @@ export function useDictation(opts: UseDictationOptions) {
     setStatus("starting");
     setMessage(null);
     setSeconds(0);
-    autoStoppedRef.current = false;
     discardRef.current = false;
     recIdRef.current = crypto.randomUUID();
     seqRef.current = 0;

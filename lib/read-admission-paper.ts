@@ -1,5 +1,6 @@
 import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
 import { getSpecialtyPack } from "@/lib/specialty";
+import { plausibleAge } from "@/lib/read-new-patient";
 
 /** Details printed on an OPD paper or admission sheet that can safely prefill a new record. */
 export type AdmissionPaperPatient = {
@@ -139,13 +140,6 @@ export async function readAdmissionPaper(
   });
 
   const parsed = replyJson(response, {});
-  const age =
-    typeof parsed.age_years === "number" &&
-    Number.isInteger(parsed.age_years) &&
-    parsed.age_years >= 0 &&
-    parsed.age_years <= 120
-      ? parsed.age_years
-      : null;
 
   // A cycle number outside the range a real course of chemotherapy runs to is a misread of
   // something else on the paper — a day, a dose, a bed — so it is dropped rather than stored.
@@ -160,7 +154,7 @@ export async function readAdmissionPaper(
   return {
     patient: {
       name: textOrNull(parsed.name),
-      age_years: age,
+      age_years: plausibleAge(parsed.age_years),
       sex: ["M", "F", "other"].includes(parsed.sex) ? parsed.sex : null,
       uhid_ip_no: textOrNull(parsed.uhid_ip_no),
       mrd_no: textOrNull(parsed.mrd_no),

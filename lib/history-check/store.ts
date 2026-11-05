@@ -40,7 +40,7 @@ export type Resolutions = {
  *  never reach the insert. */
 export const HOURLY_CAP = 30;
 
-const RUN_COLUMNS =
+export const RUN_COLUMNS =
   "id, patient_id, tree_id, tree_version, prompt_version, model, input_hash, source_entry_ids, status, result, usage, cost_usd, error, resolutions, created_at";
 
 /**
@@ -96,7 +96,6 @@ export async function runHistoryCheck(args: {
   userId: string;
   patientId: string;
   treeId: string;
-  model?: string;
 }): Promise<RunOutcome> {
   const { supabase, userId, patientId, treeId } = args;
   if (!historyCheckEnabled()) return { ok: false, status: 404, error: "History check is not enabled." };
@@ -116,7 +115,7 @@ export async function runHistoryCheck(args: {
     return { ok: false, status: 422, error: "Nothing in the case history yet — record or build it first." };
   }
 
-  const model = args.model ?? AI_MODEL;
+  const model = AI_MODEL;
   const hash = inputHash(tree.id, tree.version, model, sources);
 
   const { data: existing } = await supabase

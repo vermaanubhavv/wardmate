@@ -44,16 +44,12 @@ const DEVICE_WORDS =
 function plannedProcedureFromTemplate(row: PatientRow): string | null {
   if (row.surgery_date || row.post_op_day != null) return null;
   if (row.procedure_text) return row.procedure_text;
-  if (!row.template_family) return null;
-  const variant = row.template_variant ? ` ${row.template_variant}` : "";
-  return `${row.template_family}${variant}`.trim();
+  return templateLabel(row) || null;
 }
 
 export function deriveDictationContext(input: {
-  patientId?: string;
   patient: PatientRow;
   observations?: ObservationRow[];
-  ward?: string;
   noteType?: NoteType;
   specialty?: Specialty;
 }): DictationContext {
@@ -109,9 +105,7 @@ export function deriveDictationContext(input: {
     .filter(Boolean);
 
   return {
-    patientId: input.patientId,
     specialty: input.specialty ?? DEFAULT_SPECIALTY,
-    ward: input.ward,
     noteType: input.noteType ?? (operated ? "post-op" : "ward-round"),
     diagnoses,
     procedures,
@@ -133,7 +127,6 @@ export function deriveDictationContext(input: {
  */
 export function deriveWardDictationContext(
   patients: PatientRow[],
-  ward?: string,
   specialty: Specialty = DEFAULT_SPECIALTY
 ): DictationContext {
   const diagnoses: string[] = [];
@@ -149,7 +142,6 @@ export function deriveWardDictationContext(
 
   return {
     specialty,
-    ward,
     noteType: "ward-round",
     diagnoses: dedupe(diagnoses),
     procedures: dedupe(procedures),
@@ -197,7 +189,7 @@ function cleanDrug(s: string): string {
 export async function getPatientDictationKeyterms(
   supabase: SupabaseClient,
   patientId: string,
-  opts: { noteType?: NoteType; ward?: string; specialty?: Specialty } = {}
+  opts: { noteType?: NoteType; specialty?: Specialty } = {}
 ): Promise<string[]> {
   try {
     const { data: patient } = await supabase
@@ -239,11 +231,9 @@ export async function getPatientDictationKeyterms(
       .limit(200);
 
     const context = deriveDictationContext({
-      patientId,
       patient: patient as PatientRow,
       observations: (observations ?? []) as ObservationRow[],
       noteType: opts.noteType,
-      ward: opts.ward,
       specialty,
     });
 

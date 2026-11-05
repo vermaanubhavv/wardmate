@@ -32,8 +32,6 @@ import { buildDeepgramParams } from "@/lib/transcription/buildDeepgramUrl";
 const DEEPGRAM_WSS = "wss://api.deepgram.com/v1/listen";
 
 export type LiveDictationHandlers = {
-  /** Speech detected — for the "listening" animation. */
-  onSpeechStart?: () => void;
   /** An interim, still-changing transcript for the current utterance. */
   onPartial?: (text: string) => void;
   /** A finalised span of transcript. Accumulate these until onUtteranceEnd. */
@@ -43,9 +41,8 @@ export type LiveDictationHandlers = {
   onUtteranceEnd?: () => void;
   /** Fatal — the caller should fall back to the per-card record-then-transcribe buttons. */
   onError?: (message: string) => void;
-  /** Connection opened / closed, for the status line. */
+  /** Connection opened, for the status line. */
   onOpen?: () => void;
-  onClose?: () => void;
   /** Opt in to the rescue recording: the text of whatever was said while live was not
    *  connected, delivered once after stop(). With it, a dropped link calls onLinkLost instead
    *  of onError and the microphone keeps recording. */
@@ -58,8 +55,6 @@ export type LiveDictationSession = {
   /** Stop the microphone and close the socket. Idempotent. Resolves once any rescue
    *  recording has been transcribed and handed to onRescued. */
   stop: () => Promise<void>;
-  /** True between start and stop. */
-  readonly active: boolean;
 };
 
 type DeepgramMessage = {
@@ -223,7 +218,6 @@ export async function openLiveDictation(
     }
     const blob = await stopRescue();
     releaseMic();
-    h.onClose?.();
     if (blob && rescued && h.onRescued) {
       try {
         const form = new FormData();
@@ -269,10 +263,6 @@ export async function openLiveDictation(
     } catch {
       return;
     }
-    if (msg.type === "SpeechStarted") {
-      h.onSpeechStart?.();
-      return;
-    }
     if (msg.type === "UtteranceEnd") {
       h.onUtteranceEnd?.();
       return;
@@ -291,10 +281,5 @@ export async function openLiveDictation(
     if (!closed) linkFailed(opened ? "Live transcription dropped." : "Live transcription could not connect.");
   };
 
-  return {
-    stop: teardown,
-    get active() {
-      return !closed;
-    },
-  };
+  return { stop: teardown };
 }

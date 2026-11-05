@@ -13,8 +13,6 @@ export const H = (n: number) => new Date(Date.parse(ADMISSION) + n * 3_600_000).
 export function clock(nowHours = 12, opts: Partial<InstanceClock> = {}): InstanceClock {
   return {
     admission: ADMISSION,
-    symptomOnset: null,
-    activation: ADMISSION,
     now: H(nowHours),
     ...opts,
   };

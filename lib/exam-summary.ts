@@ -238,7 +238,6 @@ export function summariseObjective(
   values: ExamValue[],
   opts: {
     sex?: string | null;
-    now?: Date;
     wardRanges?: WardRanges;
     /** The patient's disease family, derived from their recorded diagnosis. Drives which
      *  radiology-report lines and which in-range bloods stay on the face of the card. */
@@ -246,7 +245,7 @@ export function summariseObjective(
   } = {}
 ): ObjectiveSummary {
   const recorded = values.filter((v) => v.value !== null && v.value.trim() !== "");
-  const now = opts.now ?? new Date();
+  const now = new Date();
   const keyLabNames = opts.etiology
     ? new Set(ETIOLOGY_KEY_LABS[opts.etiology].map((n) => n.toLowerCase()))
     : null;

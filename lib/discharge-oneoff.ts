@@ -1,12 +1,13 @@
 import type { DischargeContext } from "@/lib/discharge-data";
 import type { Observation, PatientState } from "@/lib/patient-state";
 import { consultantForWard } from "@/lib/unit-consultants";
-import { generalPack, type SpecialtyPack } from "@/lib/specialty";
+import type { SpecialtyPack } from "@/lib/specialty";
 import { getDischargeTemplateFor, matchDischargeTemplateFor } from "@/lib/specialty/discharge";
 import { compileDischargeDraft } from "@/lib/discharge-compile";
 import { buildCheckContext, type DischargeCheckContext } from "@/lib/discharge-checks";
 import type { DischargeDraft } from "@/lib/discharge-entities";
 import type { DischargeTemplate } from "@/lib/discharge-templates";
+import { NO_TEMPLATE } from "@/lib/discharge-template-match";
 
 /**
  * The in-memory DischargeContext a one-off discharge summary is compiled and rendered from —
@@ -33,9 +34,8 @@ export function oneOffContext(
   observations: Observation[],
   patientState: PatientState,
   medications: Observation[],
-  /** The unit's specialty pack. Defaults to general surgery, so an older caller behaves the
-   *  way this function always did. */
-  pack: SpecialtyPack = generalPack,
+  /** The unit's specialty pack. */
+  pack: SpecialtyPack,
   /** See DischargeContext.isEsicFaridabad. Defaults true — the same fallback
    *  getWardIsEsicFaridabad uses when a ward's own value cannot be read — so an older caller
    *  keeps printing the letterhead it always has. */
@@ -83,10 +83,6 @@ export function oneOffContext(
   };
 }
 
-/** The template picker's "No template — start blank". */
-import { NO_TEMPLATE } from "@/lib/discharge-template-match";
-export { NO_TEMPLATE };
-
 /**
  * A one-off draft, compiled by the same compileDischargeDraft and checked by the same
  * buildCheckContext a ward patient's discharge uses, along the diagnosis template the resident
@@ -108,7 +104,7 @@ export function buildOneOffDraft(
           diagnosisText: identity.diagnosis,
         }));
   return {
-    draft: compileDischargeDraft(context, { template, seedAll: true, pack: context.pack }),
+    draft: compileDischargeDraft(context, { template, seedAll: true }),
     checkContext: buildCheckContext(context),
     template,
   };

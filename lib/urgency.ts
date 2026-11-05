@@ -1,34 +1,26 @@
 import { shortJob } from "@/lib/shorthand";
+import type { ScoringTask } from "@/lib/scoring/read";
 
 export type Urgency = "red" | "yellow" | "green" | null;
 
 export const URGENCY_META: Record<
   "red" | "yellow" | "green",
-  { label: string; meaning: string; dot: string; chip: string; border: string; edge: string }
+  { label: string; meaning: string; dot: string }
 > = {
   red: {
     label: "Now",
     meaning: "Within hours, or today",
     dot: "bg-critical-dot",
-    chip: "bg-critical-bg text-critical-fg",
-    border: "border-critical-fg/30",
-    edge: "border-l-critical-dot",
   },
   yellow: {
     label: "Soon",
     meaning: "Today or tomorrow",
     dot: "bg-warn-dot",
-    chip: "bg-warn-bg text-warn-fg",
-    border: "border-warn-fg/30",
-    edge: "border-l-warn-dot",
   },
   green: {
     label: "Has time",
     meaning: "No hurry",
     dot: "bg-good-dot",
-    chip: "bg-good-bg text-good-fg",
-    border: "border-good-fg/30",
-    edge: "border-l-good-dot",
   },
 };
 
@@ -225,4 +217,13 @@ export function urgencyRank(u: Urgency): number {
   if (u === "yellow") return 1;
   if (u === null) return 2;
   return 3;
+}
+
+/** The scoring engine's own priority scale, mapped onto the same red/yellow/green a
+ *  plan-task's urgency uses, so the two sources can be ranked together — for the /todo page's
+ *  "By type" view (app/todo/todo-lists.tsx). */
+export function scoringPriorityToUrgency(priority: ScoringTask["priority"]): Urgency {
+  if (priority === "urgent") return "red";
+  if (priority === "soon") return "yellow";
+  return "green";
 }

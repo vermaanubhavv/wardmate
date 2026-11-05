@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useSyncExternalStore, useTransition } from "react";
+import { useActionState, useState, useSyncExternalStore } from "react";
 import { useCopy } from "../../use-copy";
 import { useOnline } from "../../connection-bar";
 import { approveBtn, SelChip, statusChip } from "./card-kit";
@@ -266,21 +266,13 @@ function ModeSwitch({ mode, onChange }: { mode: CheckMode; onChange: (m: CheckMo
   );
 }
 
-function useAction() {
-  const [pending, start] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  function submit(action: (fd: FormData) => Promise<{ error?: string }>, fd: FormData) {
-    if (!navigator.onLine) {
-      setError("No connection. Nothing was saved.");
-      return;
-    }
-    setError(null);
-    start(async () => {
-      const r = await action(fd);
-      if (r.error) setError(r.error);
-    });
-  }
-  return { pending, error, submit };
+/** A form action that refuses offline and keeps the server's error, cleared while a retry runs. */
+function useAction(action: (fd: FormData) => Promise<{ error?: string }>) {
+  const [error, formAction, pending] = useActionState(async (_prev: string | null, fd: FormData) => {
+    if (!navigator.onLine) return "No connection. Nothing was saved.";
+    return (await action(fd)).error ?? null;
+  }, null);
+  return { pending, error: pending ? null : error, formAction };
 }
 
 function Quote({ quote, source }: { quote: string; source: string }) {
@@ -292,7 +284,7 @@ function Quote({ quote, source }: { quote: string; source: string }) {
 }
 
 function WrongPatientBox({ patientId, runId, quote, source }: { patientId: string; runId: string; quote: string; source: string }) {
-  const { pending, error, submit } = useAction();
+  const { pending, error, formAction } = useAction(dismissWrongPatient);
   return (
     <div className="border-t border-line bg-warn-bg px-4 py-3">
       <p className="text-subhead font-semibold text-warn-fg">This dictation may be about another patient</p>
@@ -300,39 +292,23 @@ function WrongPatientBox({ patientId, runId, quote, source }: { patientId: strin
         <Quote quote={quote} source={source} />
       </div>
       <p className="mt-2 text-caption text-muted">Only the name, age, sex and bed identify a patient. Check the entry before using this history.</p>
-      <div className="mt-2 flex flex-wrap gap-2">
-        <button
-          type="button"
-          disabled={pending}
-          className={approveBtn}
-          onClick={() => {
-            const fd = new FormData();
-            fd.set("run_id", runId);
-            fd.set("patient_id", patientId);
-            submit(dismissWrongPatient, fd);
-          }}
-        >
+      <form action={formAction} className="mt-2 flex flex-wrap gap-2">
+        <input type="hidden" name="run_id" value={runId} />
+        <input type="hidden" name="patient_id" value={patientId} />
+        <button disabled={pending} className={approveBtn}>
           It is this patient
         </button>
         <Link href={`/patients/${patientId}/case-history`} className="rounded-[10px] border border-line px-3 py-1.5 text-footnote font-medium text-accent">
           Review entries ›
         </Link>
-      </div>
+      </form>
       {error && <p className="mt-2 text-footnote text-warn-fg">{error}</p>}
     </div>
   );
 }
 
 function ConflictBox({ patientId, runId, conflict }: { patientId: string; runId: string; conflict: ConflictView }) {
-  const { pending, error, submit } = useAction();
-  const pick = (state: "positive" | "negative" | "unasked" | "dismiss") => {
-    const fd = new FormData();
-    fd.set("run_id", runId);
-    fd.set("patient_id", patientId);
-    fd.set("slot_id", conflict.slotId);
-    fd.set("state", state);
-    submit(resolveHistorySlot, fd);
-  };
+  const { pending, error, formAction } = useAction(resolveHistorySlot);
   const btn = "rounded-[10px] border border-line bg-card px-3 py-1.5 text-footnote font-medium disabled:opacity-50";
   return (
     <div className="border-t border-line bg-warn-bg px-4 py-3">
@@ -343,14 +319,17 @@ function ConflictBox({ patientId, runId, conflict }: { patientId: string; runId:
         <Quote quote={conflict.second.quote} source={conflict.second.source} />
       </div>
       <p className="mt-2 text-caption text-muted">Which is right? Your answer is recorded as yours, beside the quotes.</p>
-      <div className="mt-2 flex flex-wrap gap-2">
-        <button type="button" disabled={pending} className={btn} onClick={() => pick("positive")}>Present</button>
-        <button type="button" disabled={pending} className={btn} onClick={() => pick("negative")}>Explicitly absent</button>
-        <button type="button" disabled={pending} className={btn} onClick={() => pick("unasked")}>Not asked</button>
-        <button type="button" disabled={pending} className="px-2 text-footnote text-muted" onClick={() => pick("dismiss")}>
+      <form action={formAction} className="mt-2 flex flex-wrap gap-2">
+        <input type="hidden" name="run_id" value={runId} />
+        <input type="hidden" name="patient_id" value={patientId} />
+        <input type="hidden" name="slot_id" value={conflict.slotId} />
+        <button name="state" value="positive" disabled={pending} className={btn}>Present</button>
+        <button name="state" value="negative" disabled={pending} className={btn}>Explicitly absent</button>
+        <button name="state" value="unasked" disabled={pending} className={btn}>Not asked</button>
+        <button name="state" value="dismiss" disabled={pending} className="px-2 text-footnote text-muted">
           Leave as is
         </button>
-      </div>
+      </form>
       {error && <p className="mt-2 text-footnote text-warn-fg">{error}</p>}
     </div>
   );

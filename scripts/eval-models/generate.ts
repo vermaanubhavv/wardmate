@@ -10,13 +10,9 @@
  * rests on the writer's word alone. Spend is booked in the shared ledger (.eval-models/).
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { parseArgs } from "node:util";
 import Anthropic from "@anthropic-ai/sdk";
 
-const arg = (n: string) => {
-  const i = process.argv.indexOf(`--${n}`);
-  return i >= 0 ? process.argv[i + 1] : undefined;
-};
-const CALLS = Number(arg("batches") ?? 30);
 const PER_CALL = 10;
 const OUT = new URL("./library/extract.json", import.meta.url);
 const LEDGER = ".eval-models/ledger.json";
@@ -106,6 +102,7 @@ export function rejectReason(c: Omit<LibraryCase, "id">): string | null {
 }
 
 if (import.meta.url.endsWith(process.argv[1]?.split("/").pop() ?? "")) {
+  const CALLS = Number(parseArgs({ options: { batches: { type: "string", default: "30" } } }).values.batches);
   const key = process.env.EVAL_ANTHROPIC_API_KEY;
   if (!key) throw new Error("EVAL_ANTHROPIC_API_KEY is not set");
   const api = new Anthropic({ apiKey: key });

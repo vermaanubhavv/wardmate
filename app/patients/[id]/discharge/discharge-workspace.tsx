@@ -44,8 +44,6 @@ import DischargeSheet from "./sheet";
 import PrintButton from "../note/print-button";
 import type { DischargeDocument } from "@/lib/discharge-render";
 
-const uid = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `r-${Math.round(Math.random() * 1e9)}`);
-
 // The Admission Details card's option lists — real ones, kept short. Department/Specialty/Unit are
 // suggestions only; typing anything else is still fine. Consultant is a closed set on purpose —
 // which unit a discharge is written on already says who the consultant is (compiled in from the
@@ -307,30 +305,20 @@ export default function DischargeWorkspace({
   // record; each section is written but stays unapproved, so nothing reaches a finalised
   // summary without the resident's sign-off. If the AI is unavailable, the manual "Generate"
   // buttons are still there.
-  const autoGenNeeds = useMemo(() => {
-    if (finalised || !aiReady) return { course: false, indication: false, investigations: false, any: false };
-    const course = !initialDraft.clinicalCourse.text.trim() && !initialDraft.clinicalCourse.generatedAt;
-    const indication = !initialDraft.indicationForAdmission.text.trim() && !initialDraft.indicationForAdmission.generatedAt;
-    const investigations =
-      initialDraft.relevantInvestigations.items.length === 0 && !initialDraft.relevantInvestigations.generatedAt;
-    return { course, indication, investigations, any: course || indication || investigations };
-  }, [finalised, aiReady, initialDraft]);
-
+  //
   // One request per missing section, in parallel, so each card fills the moment its own draft
   // lands — the short Indication no longer waits on the long Clinical Course.
   type AutoSection = "clinical_course" | "indication" | "investigations";
-  const [autoGen, setAutoGen] = useState<Set<AutoSection>>(
-    () =>
-      new Set(
-        (
-          [
-            autoGenNeeds.course && "clinical_course",
-            autoGenNeeds.indication && "indication",
-            autoGenNeeds.investigations && "investigations",
-          ] as const
-        ).filter((x): x is AutoSection => !!x)
-      )
-  );
+  const [autoGen, setAutoGen] = useState<Set<AutoSection>>(() => {
+    const needs = new Set<AutoSection>();
+    if (finalised || !aiReady) return needs;
+    if (!initialDraft.clinicalCourse.text.trim() && !initialDraft.clinicalCourse.generatedAt) needs.add("clinical_course");
+    if (!initialDraft.indicationForAdmission.text.trim() && !initialDraft.indicationForAdmission.generatedAt) needs.add("indication");
+    if (initialDraft.relevantInvestigations.items.length === 0 && !initialDraft.relevantInvestigations.generatedAt) {
+      needs.add("investigations");
+    }
+    return needs;
+  });
   const autoGenStarted = useRef(false);
   useEffect(() => {
     if (autoGenStarted.current) return;
@@ -508,7 +496,7 @@ export default function DischargeWorkspace({
       } else {
         const proposed = (Array.isArray(data.items) ? data.items : []).map(
           (it: { group: string; text: string; interpretation: string | null; sourceObservationIds: string[] }) => ({
-            id: uid(),
+            id: crypto.randomUUID(),
             group: it.group,
             text: it.text,
             interpretation: it.interpretation ?? null,
@@ -823,7 +811,7 @@ export default function DischargeWorkspace({
               onClick={() =>
                 patch("diagnoses", "diagnoses", [
                   ...draft.diagnoses,
-                  { id: uid(), category: "secondary", text: "", source: "resident" } as Diagnosis,
+                  { id: crypto.randomUUID(), category: "secondary", text: "", source: "resident" } as Diagnosis,
                 ])
               }
             >
@@ -880,7 +868,7 @@ export default function DischargeWorkspace({
               onClick={() =>
                 patch("procedures", "procedures", [
                   ...draft.procedures,
-                  { id: uid(), name: "", date: null, indication: null, anaesthesia: null, findings: null, drains: null, complications: null, outcome: null, source: "resident" as const },
+                  { id: crypto.randomUUID(), name: "", date: null, indication: null, anaesthesia: null, findings: null, drains: null, complications: null, outcome: null, source: "resident" as const },
                 ])
               }
             >
@@ -991,7 +979,7 @@ export default function DischargeWorkspace({
                   ...draft.relevantInvestigations,
                   items: [
                     ...draft.relevantInvestigations.items,
-                    { id: uid(), group: "", text: "", interpretation: null, accepted: true, source: "resident" as const, sourceObservationIds: [] },
+                    { id: crypto.randomUUID(), group: "", text: "", interpretation: null, accepted: true, source: "resident" as const, sourceObservationIds: [] },
                   ],
                 })
               }
@@ -1040,7 +1028,7 @@ export default function DischargeWorkspace({
               onClick={() =>
                 patch("histopathology", "histopathology", [
                   ...draft.histopathology,
-                  { id: uid(), specimen: "", dateSent: null, status: "pending" as const, result: null, reviewPlan: null, source: "resident" as const },
+                  { id: crypto.randomUUID(), specimen: "", dateSent: null, status: "pending" as const, result: null, reviewPlan: null, source: "resident" as const },
                 ])
               }
             >
@@ -1135,7 +1123,7 @@ export default function DischargeWorkspace({
             <OptionRow
               dashed
               onClick={() => {
-                const id = uid();
+                const id = crypto.randomUUID();
                 patch("medications", "medications", [
                   ...draft.medications,
                   { id, generic: "", strength: null, dose: null, route: null, frequency: null, duration: null, indication: null, status: "new" as const, reason: null, drugKey: "", source: "resident" as const },
@@ -1152,7 +1140,7 @@ export default function DischargeWorkspace({
                 patch("medications", "medications", [
                   ...draft.medications,
                   ...profile.usualMedicationSet.map((m) => ({
-                    id: uid(),
+                    id: crypto.randomUUID(),
                     ...m,
                     duration: null,
                     indication: m.indication ?? null,
@@ -1273,7 +1261,7 @@ export default function DischargeWorkspace({
                     </button>
                   </div>
                 ))}
-                <OptionRow dashed onClick={() => patch("advice", "advice", { ...draft.advice, items: [...draft.advice.items, { id: uid(), module: "", text: "" }] })}>
+                <OptionRow dashed onClick={() => patch("advice", "advice", { ...draft.advice, items: [...draft.advice.items, { id: crypto.randomUUID(), module: "", text: "" }] })}>
                   ＋ Add advice
                 </OptionRow>
               </>

@@ -28,7 +28,7 @@ export type ValidationResult = { ok: boolean; issues: ValidationIssue[] };
 
 const VALID_CARD_TYPES = ["calculator", "structured_classification", "documentation_only"];
 const VALID_STATUSES = ["active", "draft", "unavailable", "retired"];
-const VALID_ANCHORS = ["admission", "symptom_onset", "activation", "checkpoint"];
+const VALID_ANCHORS = ["admission"];
 const VALID_SELECTORS = [
   "admission",
   "first",
@@ -36,13 +36,11 @@ const VALID_SELECTORS = [
   "highest",
   "lowest",
   "change_from_baseline",
-  "at_checkpoint",
 ];
 const VALID_CALC_KINDS = [
   "sum_points",
   "max_points",
   "sirs",
-  "modified_marshall",
   "revised_atlanta",
   "structured_extraction",
   "tiered_classification",

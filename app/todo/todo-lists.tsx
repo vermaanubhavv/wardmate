@@ -16,7 +16,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { WardTask } from "@/lib/todo";
 import { Row as ScoringRow, type WardScoringTask } from "./scoring-section";
-import { jobTitle, URGENCY_META, urgencyRank, type Urgency } from "@/lib/urgency";
+import { jobTitle, scoringPriorityToUrgency, URGENCY_META, urgencyRank, type Urgency } from "@/lib/urgency";
 import UrgencyDot from "../patients/[id]/urgency-dot";
 import Tick from "../patients/[id]/tick";
 import { quoteAddsNothing } from "@/lib/dedupe-tasks";
@@ -27,7 +27,6 @@ import {
   TASK_CATEGORY_ORDER,
   type TaskCategory,
 } from "@/lib/task-category";
-import { scoringPriorityToUrgency } from "@/lib/ward-todo-preview";
 
 /** The four groups, in the order they are worked through. */
 const GROUPS: { key: Urgency; title: string; note: string }[] = [

@@ -24,7 +24,6 @@ export type RoundSegment = {
 export type RoundResult = {
   segments: RoundSegment[];
   model: string;
-  raw: unknown;
 };
 
 export const SYSTEM_PROMPT = `You split a surgical resident's dictation of a whole ward round into one segment per bed.
@@ -154,7 +153,7 @@ export async function readRoundDictation(
     return span.length > 0 && haystack.includes(span);
   });
 
-  return { segments, model: AI_MODEL, raw: parsed };
+  return { segments, model: AI_MODEL };
 }
 
 function normalise(s: string): string {

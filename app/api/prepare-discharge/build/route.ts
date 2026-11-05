@@ -5,9 +5,7 @@ import { getFormularyMappings } from "@/lib/formulary";
 import { correctTranscript } from "@/lib/glossary";
 import { extractObservations } from "@/lib/extract";
 import { derivePatientState, type Observation } from "@/lib/patient-state";
-import { buildDischargeDocument } from "@/lib/discharge-render";
 import { getSpecialtyPack } from "@/lib/specialty";
-import { listDischargeTemplatesFor } from "@/lib/specialty/discharge";
 import { buildOneOffDraft, oneOffContext, type OneOffIdentity } from "@/lib/discharge-oneoff";
 import { getUser } from "@/lib/auth";
 import type { ReadLabValue } from "@/lib/read-lab-photo";
@@ -18,9 +16,10 @@ import type { PaperKind } from "@/lib/read-paper";
  * Assemble a one-off discharge summary from pages that belong to nobody in WardMate.
  *
  * Everything here happens in memory and nothing is written: the transcripts are structured by
- * the same extractor, run through the same state derivation, compiled by the same
- * compileDischargeDraft, and rendered by the same buildDischargeDocument the ward's own
- * patients use — so the document is the document. What it does NOT get is a record, and — for
+ * the same extractor, run through the same state derivation and compiled by the same
+ * compileDischargeDraft the ward's own patients use (the printout is then rendered by
+ * /api/prepare-discharge/render with the same buildDischargeDocument) — so the document is the
+ * document. What it does NOT get is a record, and — for
  * the same reason there is no resident approval step here — the AI sections (Clinical Course,
  * Relevant Investigations) are left blank for the resident to write by hand on the printout.
  * The heading, logo and formulary come from the doctor's OWN current unit.
@@ -140,14 +139,10 @@ export async function POST(request: Request) {
   );
 
   const { draft, checkContext, template } = buildOneOffDraft(context, body.templateKey, identity);
-  const doc = buildDischargeDocument(draft, context);
 
   return NextResponse.json({
-    doc,
     draft,
     checkContext,
-    observations: observations.length,
     template: template ? { key: template.key, label: template.label } : null,
-    templates: listDischargeTemplatesFor(pack),
   });
 }

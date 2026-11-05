@@ -156,14 +156,10 @@ export type SelectedKeyterm = {
  * existing patient data (see lib/transcription/patient-context.ts) — no schema migration.
  */
 export type DictationContext = {
-  patientId?: string;
   specialty?: Specialty;
-  ward?: string;
   noteType?: NoteType;
   /** Confirmed / recorded diagnoses, most specific first. */
   diagnoses?: string[];
-  /** Working or differential diagnoses. */
-  suspectedDiagnoses?: string[];
   /** Operations already performed. */
   procedures?: string[];
   /** Operations planned but not yet done. */

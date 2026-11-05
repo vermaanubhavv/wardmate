@@ -33,10 +33,8 @@ export type DischargePromptWords = {
   requiring: string;
   /** Investigations: a normal result that is itself meaningful. */
   normalRelevantExample: string;
-  /** Rules of the department's own, added after the shared ones. */
+  /** Clinical Course rules of the department's own, added after the shared ones. */
   courseRules?: string[];
-  indicationRules?: string[];
-  investigationRules?: string[];
 };
 
 const GENERAL_SURGERY: DischargePromptWords = {
@@ -90,8 +88,7 @@ const BY_DEPARTMENT: Partial<Record<SpecialtyKey, DischargePromptWords>> = {
   },
 };
 
-export function dischargePromptWordsFor(pack: SpecialtyPack | null | undefined): DischargePromptWords {
-  if (!pack) return GENERAL_SURGERY;
+export function dischargePromptWordsFor(pack: SpecialtyPack): DischargePromptWords {
   return BY_DEPARTMENT[pack.key] ?? (hasOperationClock(pack) ? OPERATIVE : NON_OPERATIVE);
 }
 
@@ -135,7 +132,7 @@ Rules:
 2. When the digest gives a duration for the presenting complaint, lead with it ("a 3-day history of..."). Omit the duration only when the digest does not state one.
 3. One or two sentences. No abbreviations that are not expanded. Write only about the patient, never about the digest or the record — no "not recorded", "not stated in the digest". Where a detail is missing, the visible blank "[ … ]" stands alone, or the point is left out.
 4. If the digest holds nothing about the presentation (only a bare diagnosis), say so by returning an empty string rather than padding it.
-5. ${TEMPLATE_RULE}${more(6, w.indicationRules)}
+5. ${TEMPLATE_RULE}
 
 Return JSON: { "indication": string }.`;
 }
@@ -156,7 +153,7 @@ Absolute rules:
 1. Every proposed line MUST be built only from the observations given. Put the id(s) of the observation(s) each line is based on in source_observation_ids. A line you cannot ground in a given observation must not be produced.
 2. Never invent a value, a date or a trend. If two readings of the same test are given, you may describe the trend between them; if only one is given, you may not.
 3. Do not expand unexplained abbreviations unsafely; keep the report's own wording where unsure.
-4. interpretation is optional and cautious — a short reading of the result, not a diagnosis.${more(5, w.investigationRules)}
+4. interpretation is optional and cautious — a short reading of the result, not a diagnosis.
 
 Return JSON: { "items": [ { "group": string, "text": string, "interpretation": string|null, "significance": string, "source_observation_ids": string[] } ] }.
 group is the test family ("CBC", "LFT", "Ultrasound Abdomen", "Blood Culture"). significance is one of "diagnostic", "abnormal", "trend", "management", "normal-relevant".`;

@@ -101,8 +101,8 @@ definition throws in dev/test, never ships.
 
 ### Operators (the whole allow-list)
 
-`gt · gte · lt · lte · eq · present · absent · in_range`. Composite criteria (`sirs`,
-`modified_marshall`, `revised_atlanta`, `structured_extraction`) are named `CardCalculation`
+`gt · gte · lt · lte · eq · present · in_range`. Composite criteria (`sirs`,
+`revised_atlanta`, `structured_extraction`) are named `CardCalculation`
 kinds handled by dedicated tested functions — they are **not** expressible as data rules.
 
 ## 3. Event lifecycle & idempotency
@@ -117,24 +117,21 @@ It is **idempotent**: trigger detection never re-creates an instance that alread
 (a dismissed instance stays dismissed); every recompute is deterministic from current
 `observations`; cards/tasks/checkpoints all have unique keys.
 
-`recordEvent()` writes a row to `pathway_events` keyed by the canonical dedup key
-
-```
-encounter_id : pathway_id : pathway_version : event_type : source_id : checkpoint
-```
-
-A unique constraint makes a replayed event a no-op (returns `false`).
+The `pathway_events` table (patch 0053) and its canonical dedup key
+`encounter_id : pathway_id : pathway_version : event_type : source_id : checkpoint` exist in the
+schema, but nothing writes to it today: replay safety comes from the unique keys above.
 
 ## 4. Task deduplication
 
 `planPathwayTasks()` (`lib/scoring/tasks.ts`) produces a `TaskDecision` per candidate. Before
 creating an investigation task it checks, in order:
 
-1. an acceptable existing **result** for the input key → `link_existing_result`
-2. an active matching **order** → `link_existing_order` (this product has no order entry yet,
-   so `activeOrders` is always empty today)
-3. an existing unresolved **task** with the same dedup key → `already_present`
-4. a **disabled institutional toggle** → `suppressed_toggle` (audited)
+1. a **disabled institutional toggle** → `suppressed_toggle` (audited)
+2. an existing unresolved **task** with the same dedup key → `already_present`
+3. an acceptable existing **result** for the input key → `link_existing_result`
+
+(There is no order entry in this product, so there is no order to link.) The schema rejects
+duplicate task keys, so each definition task yields exactly one decision.
 
 Only `create` inserts a new row. A component flagged `noAutoTask` (pleural effusion for BISAP,
 every mCTSI component) never produces a task — Wardmate does not order a CT to complete a score.
@@ -142,12 +139,12 @@ every mCTSI component) never produces a task — Wardmate does not order a CT to
 ## 5. Time-window behaviour
 
 `lib/scoring/time-windows.ts` — every helper **requires** an explicit `TimeWindow`
-`{ anchor, startHours?, endHours?, label }`. Anchors: `admission`, `symptom_onset`
-(stored separately per DOCX §1), `activation`, `checkpoint`.
+`{ anchor, startHours?, endHours?, label }`. The only anchor is `admission` — every shipped
+definition measures from it. Add another anchor only when a definition needs one.
 
 Selectors: `admission` (nearest window start) · `first` · `highest` · `lowest` · `worst`
 (extreme that favours the criterion) · `change_from_baseline` (needs `baselineWindow`, and
-**both** endpoints, or returns nothing) · `at_checkpoint`.
+**both** endpoints, or returns nothing).
 
 A value that exists but falls outside the window → component `unknown` with
 `missingReason: "outside_time_window"`, **never** counted. A checkpoint-locked card
@@ -279,7 +276,7 @@ third-party calculator text/logo (§8 "Unbuilt pathways", rows marked **licensin
 
 `lib/scoring/__tests__/` covers the DOCX acceptance list: every BISAP/Ranson threshold incl.
 equality boundaries, both Ranson variants, admission-vs-48h isolation, missing-stays-unknown,
-event/task dedup, existing-result/-order suppression, unsupported-unit → incomplete, no CT task
+task dedup, existing-result suppression, unsupported-unit → incomplete, no CT task
 for mCTSI, pleural effusion unknown without imaging, checkpoint fires once, organ failure < 48 h
 not persistent, persistence → severe only at ≥ 48 h, no autonomous treatment action, override
 keeps original + replacement, flag-off unchanged, verification requires completeness, timezone

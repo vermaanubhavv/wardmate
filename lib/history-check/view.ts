@@ -1,7 +1,7 @@
 import type { HistoryTree, Slot, SlotState } from "@/lib/history-check/types";
 import type { Evidence, HistorySource, SlotResult } from "@/lib/history-check/sources";
 import { buildGapList, type CheckMode, type GapList } from "@/lib/history-check/gaps";
-import { renderHistoryText, type BackgroundSection } from "@/lib/history-check/render";
+import { renderHistoryText } from "@/lib/history-check/render";
 import { applyResolutions, type HistoryCheckRun, type Resolutions } from "@/lib/history-check/store";
 
 /**
@@ -58,16 +58,11 @@ export type ModeView = {
   unasked: number;
 };
 
-/** A leading differential with the findings that raised it. The card words this as
- *  "raised by", never as a diagnosis — see the product rules in AGENTS.md. */
-export type LeadingView = { name: string; supportedBy: string[] };
-
 export type RunView = {
   runId: string;
   treeId: string;
   treeVersion: string;
   complaint: string;
-  reviewStatus: HistoryTree["reviewStatus"];
   status: "ok" | "error";
   error: string | null;
   createdAt: string;
@@ -83,9 +78,6 @@ export type RunView = {
   rejected: number;
   /** Leading differentials as "questions that would separate", never as a diagnosis. */
   leading: string[];
-  /** The same differentials with the positive findings that raised each one (wireframe XXI).
-   *  Labels of findings already recorded — the card shows them as supporting findings. */
-  leadingDetail: LeadingView[];
 };
 
 const KIND_LABEL: Record<HistorySource["kind"], string> = { voice: "Voice", photo: "Photo", manual: "Typed" };
@@ -105,21 +97,20 @@ export function buildRunView(
   tree: HistoryTree,
   run: HistoryCheckRun,
   sources: HistorySource[],
-  opts: { postOp: boolean; header?: string | null; background?: BackgroundSection[] }
+  opts: { postOp: boolean; header?: string | null }
 ): RunView {
   const base = {
     runId: run.id,
     treeId: tree.id,
     treeVersion: tree.version,
     complaint: tree.complaint,
-    reviewStatus: tree.reviewStatus,
     status: run.status,
     error: run.error,
     createdAt: run.created_at,
   };
   const empty: ModeView = { bands: [], text: "", unasked: tree.slots.length };
   if (run.status !== "ok" || !run.result) {
-    return { ...base, wrongPatient: null, wrongPatientDismissed: false, conflicts: [], answered: [], answeredCount: 0, ward: empty, academic: empty, rejected: 0, leading: [], leadingDetail: [] };
+    return { ...base, wrongPatient: null, wrongPatientDismissed: false, conflicts: [], answered: [], answeredCount: 0, ward: empty, academic: empty, rejected: 0, leading: [] };
   }
 
   const resolutions: Resolutions = run.resolutions ?? {};
@@ -178,18 +169,13 @@ export function buildRunView(
           redFlag: x.slot.group === "red_flag",
         })),
       })),
-      text: renderHistoryText({ tree, results: forGaps, mode: m, header: opts.header, background: opts.background }),
+      text: renderHistoryText({ tree, results: forGaps, mode: m, header: opts.header }),
     };
   };
 
   const ward = mode("ward");
   const academic = mode("academic");
-  const leadingRaw = buildGapList(tree, forGaps, { postOp: opts.postOp, mode: "ward" }).leading;
-  const leading = leadingRaw.map((l) => l.name);
-  const leadingDetail: LeadingView[] = leadingRaw.map((l) => ({
-    name: l.name,
-    supportedBy: l.supportedBy.map((id) => byId.get(id)?.label ?? id),
-  }));
+  const leading = buildGapList(tree, forGaps, { postOp: opts.postOp, mode: "ward" }).leading.map((l) => l.name);
   const wp = resolutions.wrong_patient;
 
   return {
@@ -203,6 +189,5 @@ export function buildRunView(
     academic,
     rejected: run.result.rejections.length,
     leading,
-    leadingDetail,
   };
 }

@@ -14,7 +14,6 @@ export const ALLOWED_OPERATORS: readonly ComparisonOperator[] = [
   "lte",
   "eq",
   "present",
-  "absent",
   "in_range",
 ];
 
@@ -36,9 +35,6 @@ export function evaluateRule(
     case "present":
       if (text == null && numeric == null) return "not_evaluable";
       return isTruthyPresence(text) ? "met" : "not_met";
-    case "absent":
-      if (text == null && numeric == null) return "not_evaluable";
-      return isTruthyPresence(text) ? "not_met" : "met";
     case "eq": {
       if (rule.value == null) return "not_evaluable";
       if (typeof rule.value === "string") {

@@ -19,7 +19,6 @@ import {
   RED_FLAG_SUGGESTIONS,
 } from "@/lib/discharge-entities";
 import { type DischargeTemplate } from "@/lib/discharge-templates";
-import { generalPack, type SpecialtyPack } from "@/lib/specialty";
 import { matchDischargeTemplateFor } from "@/lib/specialty/discharge";
 import { hasOperationClock } from "@/lib/specialty/intake";
 import { displayValue } from "@/lib/display-value";
@@ -263,8 +262,8 @@ function compileMedications(context: DischargeContext): DischargeMedication[] {
       generic: fields.drug,
       strength: strengthMatch ? `${strengthMatch[1]} ${strengthMatch[2].toLowerCase()}` : null,
       dose: fields.dose,
-      route: fields.route,
-      frequency: fields.frequency,
+      route: fields.routeCode,
+      frequency: fields.frequencyCode,
       duration: fields.duration,
       indication: null,
       status: "new",
@@ -452,10 +451,9 @@ export function applyDischargeTemplate(
  *  and the AI drafts so both follow the same one. */
 export function templateForDischarge(
   context: DischargeContext,
-  primaryDiagnosis: string | null | undefined,
-  pack: SpecialtyPack = generalPack
+  primaryDiagnosis: string | null | undefined
 ): DischargeTemplate | null {
-  return matchDischargeTemplateFor(pack, {
+  return matchDischargeTemplateFor(context.pack, {
     procedureText: context.procedure ?? context.patient.procedure_text,
     diagnosisText: primaryDiagnosis,
     templateFamily: context.patient.template_family,
@@ -467,10 +465,6 @@ export function compileDischargeDraft(
   options?: {
     template?: DischargeTemplate | null;
     seedAll?: boolean;
-    /** The unit's specialty pack, which decides WHICH set of templates a vague diagnosis is
-     *  matched against. Defaults to general surgery, so a caller that has not been given one
-     *  behaves exactly as this function always did. */
-    pack?: SpecialtyPack;
   }
 ): DischargeDraft {
   const { patient, doctor, wardName, wardConsultant } = context;
@@ -522,7 +516,7 @@ export function compileDischargeDraft(
   const template =
     options?.template !== undefined
       ? options.template
-      : templateForDischarge(context, base.diagnoses.find((d) => d.category === "primary")?.text, options?.pack ?? context.pack);
+      : templateForDischarge(context, base.diagnoses.find((d) => d.category === "primary")?.text);
 
   const drafted = template ? applyDischargeTemplate(base, template, options?.seedAll ?? false) : base;
 
@@ -532,7 +526,7 @@ export function compileDischargeDraft(
   // Only reaches a draft whose red-flag section was never saved — a stored choice still wins.
   // Only where the unit operates: an older medicine patient may carry an operation date from a
   // bedside procedure (before #133), and that is not a post-op discharge.
-  if (patient.surgery_date && hasOperationClock(options?.pack ?? context.pack ?? generalPack)) {
+  if (patient.surgery_date && hasOperationClock(context.pack)) {
     const items = drafted.redFlags.items.length > 0 ? drafted.redFlags.items : [...RED_FLAG_SUGGESTIONS];
     return { ...drafted, redFlags: { items, included: true } };
   }
