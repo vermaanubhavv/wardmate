@@ -2,7 +2,17 @@
 
 import { completeTask, setPacVerdict, setUrgency } from "@/app/patients/[id]/actions";
 import { confirmMany, discardPending, editAndConfirm } from "@/app/confirm/actions";
-import { replaceTodayNoteSection } from "@/app/patients/[id]/note/actions";
+import {
+  replaceActiveMedications,
+  replaceTodayNoteExam,
+  replaceTodayNoteSection,
+  replaceTodayNoteVitals,
+} from "@/app/patients/[id]/note/actions";
+import {
+  applyRelevantNegatives,
+  replaceCaseHistoryExam,
+  replaceCaseHistorySection,
+} from "@/app/patients/[id]/case-history/actions";
 import { queueItem, type OfflineAction } from "@/lib/outbox";
 
 /**
@@ -31,6 +41,15 @@ export const OFFLINE_ACTIONS = {
   editConfirm: editAndConfirm,
   discard: discardPending,
   noteSection: replaceTodayNoteSection,
+  // The card workspaces. Each write replaces one section of today's note or of the case
+  // history, so replaying it later lands the same text once: a card typed in a corridor is
+  // saved on the phone, not thrown away with the screen.
+  noteExam: replaceTodayNoteExam,
+  noteVitals: replaceTodayNoteVitals,
+  noteMeds: replaceActiveMedications,
+  caseSection: replaceCaseHistorySection,
+  caseExam: replaceCaseHistoryExam,
+  caseNegatives: applyRelevantNegatives,
 } satisfies Record<string, OfflineAction>;
 
 type Actions = typeof OFFLINE_ACTIONS;

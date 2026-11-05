@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { runOrQueue, type RunResult } from "@/lib/offline-actions";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Field } from "../discharge/discharge-fields";
@@ -16,10 +17,6 @@ import {
   StepShell,
 } from "../card-kit";
 import {
-  replaceTodayNoteSection,
-  replaceTodayNoteVitals,
-  replaceTodayNoteExam,
-  replaceActiveMedications,
   applyCompiledNote,
 } from "./actions";
 import MedicationEditor, { medLine } from "../medication-editor";
@@ -225,33 +222,34 @@ export default function NoteWorkspace({
   };
 
   async function persist(id: StepId): Promise<boolean> {
-    let res: { ok: boolean; error?: string } = { ok: true };
+    let res: RunResult = { ok: true, queued: false };
     const c = dictated.has(id);
-    if (id === "complaints") res = await replaceTodayNoteSection(patientId, "complaints", "note", complaints ? [complaints] : [], c);
-    else if (id === "sensorium") res = await replaceTodayNoteExam(patientId, [{ label: "sensorium", kind: "exam", value: sensorium || null, dictated: c }]);
+    if (id === "complaints") res = await runOrQueue("noteSection", "Daily note card", patientId, "complaints", "note", complaints ? [complaints] : [], c);
+    else if (id === "sensorium") res = await runOrQueue("noteExam", "Daily note examination", patientId, [{ label: "sensorium", kind: "exam", value: sensorium || null, dictated: c }]);
     else if (id === "vitals")
-      res = await replaceTodayNoteVitals(
+      res = await runOrQueue("noteVitals", "Daily note vitals", 
         patientId,
         VITALS.map((v) => ({ label: v.key, value: vitals[v.key]?.trim() || null })),
         c
       );
     else if (sectionById(id)) {
       const sec = sectionById(id)!;
-      res = await replaceTodayNoteExam(patientId, [{ label: sec.label, kind: "exam", value: exam[sec.id] || null, dictated: c }]);
+      res = await runOrQueue("noteExam", "Daily note examination", patientId, [{ label: sec.label, kind: "exam", value: exam[sec.id] || null, dictated: c }]);
     }
     else if (id === "bowel")
-      res = await replaceTodayNoteExam(patientId, [
+      res = await runOrQueue("noteExam", "Daily note examination", patientId, [
         { label: "flatus", kind: "exam", value: flatus || null, dictated: c },
         { label: "stool", kind: "exam", value: stool || null, dictated: c },
       ]);
-    else if (id === "assessment") res = await replaceTodayNoteSection(patientId, "assessment", "note", assessment ? [assessment] : [], c);
-    else if (id === "plan") res = await replaceTodayNoteSection(patientId, "plan", "plan", planItems, c);
-    else if (id === "meds") res = await replaceActiveMedications(patientId, meds, [...dictatedMeds.current], abxStarts);
+    else if (id === "assessment") res = await runOrQueue("noteSection", "Daily note card", patientId, "assessment", "note", assessment ? [assessment] : [], c);
+    else if (id === "plan") res = await runOrQueue("noteSection", "Daily note card", patientId, "plan", "plan", planItems, c);
+    else if (id === "meds") res = await runOrQueue("noteMeds", "Daily note medications", patientId, meds, [...dictatedMeds.current], abxStarts);
 
     if (!res.ok) {
       setMessage(res.error ?? "Could not save — your edits are still here.");
       return false;
     }
+    if (res.queued) setMessage("No signal — this card is saved on the phone and will be sent when the signal returns.");
     const drop = (s: Set<StepId>) => {
       const n = new Set(s);
       n.delete(id);
@@ -261,6 +259,27 @@ export default function NoteWorkspace({
     setDictated(drop);
     return true;
   }
+
+  // The app going to the background — a call, the lab app, the phone locking — saves every
+  // changed card first, so what was typed is not lost when the phone drops the page. Through
+  // refs: the handler is registered once, and must save what is on the cards now, not what was
+  // there when the card was first marked.
+  // ponytail: sent over the network when online, so a kill mid-request still loses that one card;
+  // queue-only on hide if that bites.
+  const persistRef = useRef(persist);
+  const dirtyRef = useRef(dirty);
+  useEffect(() => {
+    persistRef.current = persist;
+    dirtyRef.current = dirty;
+  });
+  useEffect(() => {
+    const hide = () => {
+      if (document.visibilityState !== "hidden") return;
+      for (const id of dirtyRef.current) if (id !== "review") void persistRef.current(id);
+    };
+    document.addEventListener("visibilitychange", hide);
+    return () => document.removeEventListener("visibilitychange", hide);
+  }, []);
 
   /** Leaving a changed card saves it first; a failed save keeps the resident on the card with
    *  the error in the bottom bar, rather than moving on as if it had landed. */
