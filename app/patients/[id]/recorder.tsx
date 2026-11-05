@@ -10,6 +10,7 @@ import {
   dropRecording,
   markInFlight,
   putChunk,
+  queueItem,
   saveRecording,
 } from "@/lib/outbox";
 import { useLiveWords } from "@/lib/stt/use-live-words";
@@ -250,8 +251,16 @@ export default function Recorder({
         router.refresh();
       }
     } catch {
-      keepUnsaved(text);
+      void queueWords(text);
     }
+  }
+
+  /** Words with no signal to send them: queued on the phone beside the recordings, sent by the
+   *  connection bar. Shown as filed, because they are kept — just not sent yet. */
+  async function queueWords(text: string) {
+    await queueItem({ kind: "text", url: "/api/entries/text", patientId, text, label: "Spoken words" });
+    setUnsaved((u) => (u === text ? null : u));
+    setMessage("No signal — the words are saved on this phone and send when you are back online.");
   }
 
   function startBatch(mic: MediaStream) {
@@ -357,11 +366,8 @@ export default function Recorder({
       );
       router.refresh();
     } catch {
-      // Unlike a blob, finished words have nowhere to queue (lib/outbox.ts holds audio only) —
-      // but they are on screen, word for word, and held here for the retry button.
       setStatus("idle");
-      keepUnsaved(text);
-      setMessage("No signal to save that. The words are shown above — not saved yet.");
+      await queueWords(text);
     }
   }
 

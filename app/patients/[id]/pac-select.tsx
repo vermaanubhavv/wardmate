@@ -1,7 +1,7 @@
 "use client";
 
-import { useOptimistic, useTransition } from "react";
-import { setPacVerdict } from "./actions";
+import { useOptimistic, useState, useTransition } from "react";
+import { runOrQueue } from "@/lib/offline-actions";
 import type { PacVerdict } from "@/lib/patient-state";
 
 type Choice = "fit" | "unfit" | "not_done";
@@ -22,7 +22,9 @@ const TONE: Record<Choice | "", string> = {
 /** The PAC verdict as a dropdown. Changes the instant it is picked; the write follows. */
 export default function PacSelect({ patientId, verdict }: { patientId: string; verdict: PacVerdict }) {
   const [, startTransition] = useTransition();
-  const [value, setValue] = useOptimistic<Choice | "">((verdict && FROM_VERDICT[verdict]) || "");
+  const [optimistic, setValue] = useOptimistic<Choice | "">((verdict && FROM_VERDICT[verdict]) || "");
+  const [queued, setQueued] = useState<Choice | null>(null);
+  const value = queued ?? optimistic;
 
   return (
     <select
@@ -32,7 +34,8 @@ export default function PacSelect({ patientId, verdict }: { patientId: string; v
         const next = e.target.value as Choice;
         startTransition(async () => {
           setValue(next);
-          await setPacVerdict(patientId, next);
+          const r = await runOrQueue("pac", `PAC: ${next.replace("_", " ")}`, patientId, next);
+          if (r.ok && r.queued) setQueued(next);
         });
       }}
       className={"min-h-9 rounded-full px-3 text-footnote font-semibold " + TONE[value]}

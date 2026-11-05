@@ -78,6 +78,7 @@ import { usesBurnClock } from "@/lib/specialty/clocks";
 import { getWardSpecialtyStored } from "@/lib/ward";
 import { getUser } from "@/lib/auth";
 import HistoryCheckCard from "./history-check-card";
+import { buildSources } from "@/lib/history-check/sources";
 import { loadHistoryCheckCard } from "@/lib/history-check/page-data";
 import { getExamChecklist } from "@/lib/history-check/exams";
 import { shortDate, dateTime } from "@/lib/format-date";
@@ -183,19 +184,21 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // complaints of the case history as dictated (identifier labels dropped, exactly as
   // allEntries does below); the card itself is rendered from stored runs, never live. Needs
   // only the entries and the pack, so it starts as soon as both land; awaited further down.
-  const historyCheckP = Promise.all([entriesP, packP]).then(([{ data }, p]) =>
-    loadHistoryCheckCard(
+  const historyCheckP = Promise.all([entriesP, packP]).then(([{ data }, p]) => {
+    const caseHistory = ((data ?? []) as unknown as Entry[]).filter((e) => e.is_case_history);
+    return loadHistoryCheckCard(
       supabase,
       patient,
-      ((data ?? []) as unknown as Entry[])
-        .filter((e) => e.is_case_history)
+      caseHistory
         .flatMap((e) => e.observations)
         .filter((o) => !isIdentifierLabel(o.label))
         .filter((o) => /chief complaint|presenting complaint/i.test(o.label))
         .map((o) => o.value_text ?? o.label),
-      p.historyTreeIds
-    )
-  );
+      p.historyTreeIds,
+      // The same rows loadSources would read again, already in hand.
+      buildSources(caseHistory)
+    );
+  });
   historyCheckP.catch(() => {});
 
   // Clinical scoring & auto-trigger engine: bring pathways in step with the latest observations,
@@ -205,6 +208,13 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // recomputed one query at a time. So it starts here and nothing above the scoring section
   // waits for it: ScoringTodo and ScoringCards stream in behind Suspense once it lands, still
   // reading a freshly recomputed set.
+  // Antibiotic course starts and the chosen day position depend on nothing above, so they run
+  // beside the batch instead of as a round trip of their own after the history check.
+  const abxP = Promise.all([
+    antibioticStarts(supabase, patient.id),
+    cookies().then((c) => readDayPosition(c.get(ANTIBIOTIC_DAY_COOKIE)?.value)),
+  ]);
+
   const scoringP = syncPatientPathways(id).then(() =>
     Promise.all([getPatientScoringTasks(id), getScoreCards(id)])
   );
@@ -375,10 +385,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // batch rather than adding a round trip here.
   const historyCheck = await historyCheckP;
   // Antibiotics carry their course day, placed as chosen on the print page (Before / After / Off).
-  const [abxStarts, abxDay] = await Promise.all([
-    antibioticStarts(supabase, patient.id),
-    cookies().then((c) => readDayPosition(c.get(ANTIBIOTIC_DAY_COOKIE)?.value)),
-  ]);
+  const [abxStarts, abxDay] = await abxP;
   const drugLine = (text: string) => {
     const start = isCourse(text) ? abxStarts[antibioticKey(text)] : undefined;
     return start ? withDay(text, antibioticDay(start, istDate(new Date().toISOString())), abxDay) : text;
@@ -1062,7 +1069,12 @@ function CaseHistorySection({
         <div className="border-t border-line">
           <Link
             href={`/patients/${patientId}/case-history`}
-            className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 text-subhead font-semibold text-accent active:bg-chip"
+            className={
+              // The Speak / Add photo row below draws its own top line; with nothing between
+              // them, a line here too stacked into a double one.
+              "flex items-center justify-between gap-3 px-4 py-3 text-subhead font-semibold text-accent active:bg-chip " +
+              (entries.length > 0 ? "border-b border-line" : "")
+            }
           >
             <span>{entries.length > 0 ? "Review case history" : "Build case history"}</span>
             <ChevronIcon className="h-4 w-4" />
@@ -1126,10 +1138,8 @@ function CaseHistorySection({
                 />
               ))}
             </details>
-          ) : (
-            <p className="px-4 py-3 text-subhead text-muted">No case history recorded yet.</p>
-          )}
-          <CaseHistoryCapture patientId={patientId} hasExisting={entries.length > 0} />
+          ) : null}
+          <CaseHistoryCapture patientId={patientId} />
         </div>
       </details>
     </section>

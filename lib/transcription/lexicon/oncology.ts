@@ -31,7 +31,7 @@ function regimen(term: string, aliases: string[], diagnoses: string[]): MedicalL
     categories: [CHEMO],
     specialties: ["medical-oncology"],
     diagnoses,
-    triggers: [term.toLowerCase(), ...aliases.map((a) => a.toLowerCase())],
+    triggers: [term, ...aliases],
     priority: PRIORITY.EXACT_PATIENT,
   };
 }
@@ -42,7 +42,7 @@ function drug(term: string, aliases: string[] = [], triggers: string[] = []): Me
     aliases,
     categories: [CHEMO, "medication"],
     specialties: ["medical-oncology"],
-    triggers: [term.toLowerCase(), ...aliases.map((a) => a.toLowerCase()), ...triggers],
+    triggers: [term, ...aliases, ...triggers],
     priority: PRIORITY.RELATED,
   };
 }
@@ -58,7 +58,7 @@ function onc(
     aliases,
     categories: [ONC],
     specialties: ["medical-oncology"],
-    triggers: [term.toLowerCase(), ...aliases.map((a) => a.toLowerCase()), ...triggers],
+    triggers: [term, ...aliases, ...triggers],
     priority,
   };
 }

@@ -1,4 +1,4 @@
-import type { ErrorEvent } from "@sentry/nextjs";
+import type { ErrorEvent } from "@sentry/browser";
 
 /**
  * Everything Sentry is about to send leaves this machine and lands on Sentry's servers.

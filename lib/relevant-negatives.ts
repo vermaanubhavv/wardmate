@@ -1,5 +1,3 @@
-import { suggestTrees } from "@/lib/history-check/trees";
-
 /**
  * The Relevant-negatives card's Yes / No list, straight after HOPI: the associated symptoms and
  * red flags of each complaint's history tree (content/history-trees/) that the complaints and
@@ -13,10 +11,15 @@ import { suggestTrees } from "@/lib/history-check/trees";
 
 const MAX_ITEMS = 16;
 
-export function negativeChecklist(complaints: string[], hopiText: string): string[] {
+/** A yes/no slot of a complaint's tree, slim: what the workspace needs and nothing more. The
+ *  trees themselves (content/history-trees, 1.6 MB) stay on the server — see
+ *  negativeSlotsFor in lib/history-check/trees.ts, reached through a server action. */
+export type NegativeSlot = { label: string; terms: string[]; group: string; tier?: string };
+
+export function negativeChecklist(candidates: NegativeSlot[], complaints: string[], hopiText: string): string[] {
   const said = ` ${[...complaints, hopiText].join(" ").toLowerCase()} `;
   const mentioned = (t: string) => new RegExp(`[^a-z]${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[^a-z]`).test(said);
-  const slots = suggestTrees(complaints).flatMap((t) => t.slots).filter((s) => s.kind === "yes_no" && !s.terms.some(mentioned));
+  const slots = candidates.filter((s) => !s.terms.some(mentioned));
   // Associated symptoms first, every tier (haematemesis and melena are "detailed" on the
   // abdominal-pain tree yet belong on any surgical HOPI), then the core red flags.
   const labels = [

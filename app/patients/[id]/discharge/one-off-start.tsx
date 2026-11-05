@@ -5,9 +5,8 @@ import { PAPER_KINDS, type PaperKind } from "@/lib/read-paper";
 import type { DischargeDraft } from "@/lib/discharge-entities";
 import type { DischargeCheckContext } from "@/lib/discharge-checks";
 import type { OneOffIdentity } from "@/lib/discharge-oneoff";
-import { NO_TEMPLATE } from "@/lib/discharge-oneoff";
 import { getSpecialtyPack, type SpecialtyKey } from "@/lib/specialty";
-import { listDischargeTemplatesFor, matchDischargeTemplateFor } from "@/lib/specialty/discharge";
+import { matchTemplateIndex, NO_TEMPLATE, type DischargeTemplateIndex } from "@/lib/discharge-template-match";
 import { commonDiagnosesFor, hasOperationClock } from "@/lib/specialty/intake";
 
 type LabValue = {
@@ -63,11 +62,14 @@ export default function OneOffStart({
   setState,
   specialty,
   onBuilt,
+  templateIndex,
 }: {
   state: OneOffStartState;
   setState: Dispatch<SetStateAction<OneOffStartState>>;
   specialty: SpecialtyKey;
   onBuilt: (draft: DischargeDraft, checkContext: DischargeCheckContext, templateLabel: string | null) => void;
+  /** This unit's templates, slim — built on the server by dischargeTemplateIndexFor. */
+  templateIndex: DischargeTemplateIndex;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [building, setBuilding] = useState(false);
@@ -77,7 +79,9 @@ export default function OneOffStart({
   // A unit that does not operate has no surgery date and no OT note to name a procedure from.
   const operative = hasOperationClock(pack);
   const exampleDiagnosis = operative ? "Acute calculous cholecystitis" : commonDiagnosesFor(pack.key)[0];
-  const templates = listDischargeTemplatesFor(pack);
+  // Listed and matched from the server-built index: the templates themselves never reach the
+  // browser (lib/discharge-template-match.ts).
+  const templates = [...templateIndex.templates, templateIndex.generic];
   const setPages = (f: (p: Page[]) => Page[]) => setState((s) => ({ ...s, pages: f(s.pages) }));
 
   async function addFiles(files: FileList | null) {
@@ -142,7 +146,7 @@ export default function OneOffStart({
   const ready = pages.filter((p) => p.status === "read" && p.include);
   const reading = pages.some((p) => p.status === "reading");
   const haveSubject = !!(identity.procedure.trim() || identity.diagnosis.trim());
-  const autoMatch = matchDischargeTemplateFor(pack, { procedureText: identity.procedure, diagnosisText: identity.diagnosis });
+  const autoMatch = matchTemplateIndex(templateIndex.templates, { procedureText: identity.procedure, diagnosisText: identity.diagnosis });
   const chosenLabel =
     templateKey === NO_TEMPLATE
       ? null

@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { APLEY, ATLS, BAILEY_LOVE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, surgicalBackground, TRAUMA_BG, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * LIMP / DIFFICULTY WALKING FROM HIP OR KNEE — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * LIMP / DIFFICULTY WALKING FROM HIP OR KNEE — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-30, re-signed after the negation-term rewording, docs/history-check.md). Earlier sign-off (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Orthopaedics ward and casualty, north India, all ages. The causes change with age, but age
  * comes from the patient record, not from a slot; the questions are written so each one reads
  * sensibly for a toddler, an adolescent and an older adult. A child's hip often hurts at the
@@ -18,8 +18,8 @@ export const limpV1: HistoryTree = {
   complaint: "Limp / difficulty walking from hip or knee",
   triggers: ["limp", "limping", "limps", "hip pain", "pain in hip", "pain in the hip", "refuses to walk", "not bearing weight", "abnormal gait", "waddling gait", "langdana", "langda kar chalna"],
   setting: "Orthopaedics ward and casualty, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, APLEY, BAILEY_LOVE, MACLEODS, HUTCHISONS, ATLS],
   slots: [
     ...commonHpi("limp"),

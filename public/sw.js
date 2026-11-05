@@ -20,6 +20,26 @@ const PAGES = "wardmate-pages-v4";
 
 // How long a screen's network fetch may take before the saved copy is shown instead.
 const PATIENCE_MS = 3000;
+// Once a fetch has run past PATIENCE_MS or failed, the signal is known to be weak, and every
+// tap waiting the full three seconds before the saved copy appears is the slowness residents
+// report. For the next minute the saved copy is shown after this much instead; a fetch that
+// comes back fast ends the window early. Held in memory: the worker forgetting it on restart
+// only means one more patient wait.
+const SLOW_PATIENCE_MS = 800;
+const SLOW_WINDOW_MS = 60_000;
+let slowUntil = 0;
+// A full page load (opened from the home screen, reloaded, or the back button) whose saved
+// copy is this young is answered from the cache at once, marked as saved, while the network
+// fetches the live one behind it and the bar then offers it. Opening the app was the one place
+// a resident still sat through a cold Vercel instance — three seconds, on the first open of
+// the morning. Only documents: in-app taps and router.refresh fetch payloads, and a refresh
+// after a tick must never be answered with the copy from before it.
+const RECENT_MS = 5 * 60_000;
+// When this phone last sent a write (a server action, an upload, a queued card going out):
+// a saved copy older than that is from before the write and must not be the first thing
+// shown, or a resident sees a card they just saved come up empty. In memory — a restarted
+// worker forgets it and falls back to the network-first path, which is never wrong.
+let lastWriteAt = 0;
 
 const ASSETS = ["/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/manifest.webmanifest"];
 
@@ -52,7 +72,10 @@ self.addEventListener("message", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-  if (request.method !== "GET") return;
+  if (request.method !== "GET") {
+    lastWriteAt = Date.now();
+    return;
+  }
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
@@ -113,7 +136,12 @@ self.addEventListener("fetch", (event) => {
     : request;
 
   if (isDocument || isPayload) {
+    const patience = Date.now() < slowUntil ? SLOW_PATIENCE_MS : PATIENCE_MS;
+    const startedAt = Date.now();
     const network = fetch(request).then((res) => {
+      const took = Date.now() - startedAt;
+      if (took > patience) slowUntil = Date.now() + SLOW_WINDOW_MS;
+      else if (took < SLOW_PATIENCE_MS) slowUntil = 0;
       // A redirect to /login means the session is gone; caching that would strand the app
       // on a sign-in page it serves to itself from disk.
       if (res.ok && res.type !== "opaqueredirect") {
@@ -122,9 +150,27 @@ self.addEventListener("fetch", (event) => {
       }
       return res;
     });
+    network.catch(() => {
+      slowUntil = Date.now() + SLOW_WINDOW_MS;
+    });
     // A slow answer still lands in the cache after the saved copy has been shown, so the
     // next open of this screen is fresher. The worker must stay alive long enough to write it.
     event.waitUntil(network.catch(() => {}));
+    // The tab this answers. A payload goes back to the page that asked for it. A document is
+    // the page about to be created: for a navigation out of an existing tab, event.clientId
+    // names the page being LEFT, and a message sent there after the live screen lands is
+    // dropped — the "newer copy" offer never showed on a reload.
+    const clientId = isDocument ? event.resultingClientId || event.clientId : event.clientId;
+    // When the saved copy went out first and the live one lands later, the screen is told, so
+    // the bar can offer it rather than leave the resident reading a copy marked out of date.
+    const tellFresh = () =>
+      network.then(
+        (res) => {
+          if (res.ok && clientId)
+            self.clients.get(clientId).then((client) => client?.postMessage({ type: "screen-fresh" }));
+        },
+        () => {}
+      );
 
     // ignoreVary is load-bearing for payloads: Next.js sends `Vary: RSC` on them, so the cache
     // would only return one to a request carrying the identical RSC header. Without it the
@@ -139,8 +185,8 @@ self.addEventListener("fetch", (event) => {
     // per-request data, /login among them, are rendered once at build time.)
     const report = async (res, fromCache) => {
       const date = res.headers.get("date");
-      if (isPayload && event.clientId) {
-        self.clients.get(event.clientId).then((client) =>
+      if (isPayload && clientId) {
+        self.clients.get(clientId).then((client) =>
           client?.postMessage({ type: "screen", fromCache, date })
         );
       }
@@ -156,15 +202,26 @@ self.addEventListener("fetch", (event) => {
       return res;
     };
 
-    event.respondWith(
+    // A document whose saved copy is under RECENT_MS old goes out now; the network answer
+    // lands in the cache behind it and the screen is told it is there.
+    const recent = async () => {
+      if (!isDocument) return null;
+      const hit = await saved();
+      const at = Date.parse(hit?.headers.get("date") || "");
+      return hit && Date.now() - at < RECENT_MS && at > lastWriteAt ? hit : null;
+    };
+
+    const fromNetwork = () =>
       // One bar of signal does not fail a fetch, it stalls it — for as long as a minute, at
       // the bedside. So the network gets PATIENCE_MS to answer and then the saved copy is
       // shown, marked as such. No saved copy: keep waiting, there is nothing better to offer.
-      Promise.race([network, new Promise((r) => setTimeout(r, PATIENCE_MS))])
+      Promise.race([network, new Promise((r) => setTimeout(r, patience))])
         .then(async (res) => {
           if (res) return report(res, false);
           const hit = await saved();
-          return hit ? report(hit, true) : network.then((r) => report(r, false));
+          if (!hit) return network.then((r) => report(r, false));
+          tellFresh();
+          return report(hit, true);
         })
         .catch(async () => {
           const hit = await saved();
@@ -188,7 +245,14 @@ self.addEventListener("fetch", (event) => {
              <p><a href="/">Go to the ward</a></p>`,
             { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } }
           );
-        })
+        });
+
+    event.respondWith(
+      recent().then((hit) => {
+        if (!hit) return fromNetwork();
+        tellFresh();
+        return report(hit, true);
+      })
     );
   }
 });

@@ -138,7 +138,7 @@ async function savePatient(
   // If a diagnosis was typed at admission and it triggers a scoring pathway, open the cards
   // now — the resident should see them the moment the patient exists, not only after the
   // first visit to the patient page. Inert unless the scoring engine is enabled for the ward.
-  await syncPatientPathways(created.id);
+  await syncPatientPathways(created.id, { force: true });
 
   await logEvent("patient_added", { path: "/patients/new", wardId, props: { via: String(formData.get("filled_by") ?? "typed") } });
 
@@ -472,7 +472,7 @@ export async function updatePatientIdentity(
 
   // A changed diagnosis may newly trigger (or no longer fit) a scoring pathway. Inert unless
   // the scoring engine is enabled for the ward.
-  await syncPatientPathways(id);
+  await syncPatientPathways(id, { force: true });
 
   revalidatePath("/");
   revalidatePath("/ward");

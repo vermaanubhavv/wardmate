@@ -1,6 +1,7 @@
 import "server-only";
 import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth";
 
 /**
  * Write one row to `app_events` (patch 0068) as the signed-in doctor.
@@ -20,9 +21,7 @@ export async function logEvent(
   const write = async () => {
     try {
       const supabase = await createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getUser();
       if (!user) return;
 
       await supabase.from("app_events").insert({

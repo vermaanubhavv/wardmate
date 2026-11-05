@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { runOrQueue, type RunResult } from "@/lib/offline-actions";
 import { startWait } from "@/lib/track";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { caseHistorySectionOf, seedHopi } from "@/lib/case-history";
 import { durationToDays, splitComplaint } from "@/lib/complaint-duration";
-import { answerOf, negativeChecklist, setAnswer } from "@/lib/relevant-negatives";
+import { answerOf, negativeChecklist, setAnswer, type NegativeSlot } from "@/lib/relevant-negatives";
 import { complaintChipsFor, hasChip, pastChipsFor, toggleChip } from "@/lib/case-history-chips";
 import { leadsFor, readField, writeField } from "@/lib/case-history-departments";
 import {
@@ -44,12 +45,10 @@ import {
   StepShell,
 } from "../card-kit";
 import {
-  replaceCaseHistorySection,
-  replaceCaseHistoryExam,
   applyCompiledCaseHistory,
-  applyRelevantNegatives,
   approveCaseHistoryDiagnosis,
   approveCaseHistoryPlan,
+  relevantNegativeSlots,
 } from "./actions";
 
 
@@ -489,6 +488,21 @@ export default function CaseHistoryWorkspace({
   // --- steps -------------------------------------------------------------------------
 
   const complaintList = complaints.length > 0 ? complaints : ["Presenting illness"];
+
+  // The Relevant-negatives candidates, fetched whenever the complaints change: the history
+  // trees they come from stay on the server (see relevantNegativeSlots). HOPI edits filter the
+  // list here, with no round trip.
+  const [negSlots, setNegSlots] = useState<NegativeSlot[]>([]);
+  const complaintKey = complaintList.join("\n");
+  useEffect(() => {
+    let live = true;
+    relevantNegativeSlots(complaintKey.split("\n"))
+      .then((s) => live && setNegSlots(s))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [complaintKey]);
   // The pertinent-negatives card appears the moment a provisional diagnosis exists — the one
   // the "add patient" card sets, or one generated later in this workspace.
   const hasDiagnosisForNegatives = (primaryDiagnosis ?? "").trim().length > 0 || diagnosis.text.trim().length > 0;
@@ -584,10 +598,10 @@ export default function CaseHistoryWorkspace({
   async function persist(id: StepId): Promise<boolean> {
     const stop = startWait("case_history_save");
     const L = "history of presenting illness";
-    let res: { ok: boolean; error?: string } = { ok: true };
-    if (id === "complaints") res = await replaceCaseHistorySection(patientId, "chief complaints", "note", orderedComplaints());
+    let res: RunResult = { ok: true, queued: false };
+    if (id === "complaints") res = await runOrQueue("caseSection", "Case history card", patientId, "chief complaints", "note", orderedComplaints());
     else if (id === "hopi")
-      res = await replaceCaseHistorySection(
+      res = await runOrQueue("caseSection", "Case history card", 
         patientId,
         L,
         "note",
@@ -595,40 +609,40 @@ export default function CaseHistoryWorkspace({
           .filter((c) => (hopi[c] ?? "").trim() || (complaintDur[c] ?? "").trim())
           .map((c) => `${c}: ${(complaintDur[c] ?? "").trim() ? `(${complaintDur[c].trim()}) ` : ""}${(hopi[c] ?? "").trim()}`.trim())
       );
-    else if (id === "negatives") res = await applyRelevantNegatives(patientId, negatives.text);
-    else if (id === "past") res = await replaceCaseHistorySection(patientId, "past history", "note", composeHistory(past));
-    else if (id === "personal") res = await replaceCaseHistorySection(patientId, "personal history", "note", composeHistory(personal));
-    else if (id === "family") res = await replaceCaseHistorySection(patientId, "family history", "note", composeHistory(family));
-    else if (id === "surgical") res = await replaceCaseHistorySection(patientId, "surgical history", "note", composeHistory(surgical));
+    else if (id === "negatives") res = await runOrQueue("caseNegatives", "Case history negatives", patientId, negatives.text);
+    else if (id === "past") res = await runOrQueue("caseSection", "Case history card", patientId, "past history", "note", composeHistory(past));
+    else if (id === "personal") res = await runOrQueue("caseSection", "Case history card", patientId, "personal history", "note", composeHistory(personal));
+    else if (id === "family") res = await runOrQueue("caseSection", "Case history card", patientId, "family history", "note", composeHistory(family));
+    else if (id === "surgical") res = await runOrQueue("caseSection", "Case history card", patientId, "surgical history", "note", composeHistory(surgical));
     else if (id === "medication")
-      res = await replaceCaseHistorySection(
+      res = await runOrQueue("caseSection", "Case history card", 
         patientId,
         "medication history",
         "note",
         medication.none ? ["None"] : medication.text.split("\n").map((s) => s.trim()).filter(Boolean)
       );
     else if (id === "dietary")
-      res = await replaceCaseHistorySection(patientId, "dietary history", "note", dietary.trim() ? [dietary.trim()] : []);
+      res = await runOrQueue("caseSection", "Case history card", patientId, "dietary history", "note", dietary.trim() ? [dietary.trim()] : []);
     else if (id === "environmental")
-      res = await replaceCaseHistorySection(patientId, "environmental history", "note", environmental.trim() ? [environmental.trim()] : []);
+      res = await runOrQueue("caseSection", "Case history card", patientId, "environmental history", "note", environmental.trim() ? [environmental.trim()] : []);
     else if (id === "obstetric")
-      res = await replaceCaseHistorySection(patientId, "menstrual and obstetric history", "note", obstetric.trim() ? [obstetric.trim()] : []);
+      res = await runOrQueue("caseSection", "Case history card", patientId, "menstrual and obstetric history", "note", obstetric.trim() ? [obstetric.trim()] : []);
     else if (id === "onco_disease")
-      res = await replaceCaseHistorySection(patientId, "oncological history", "note", oneLine(oncoDisease));
+      res = await runOrQueue("caseSection", "Case history card", patientId, "oncological history", "note", oneLine(oncoDisease));
     else if (id === "onco_treatment")
-      res = await replaceCaseHistorySection(patientId, "treatment received", "note", oneLine(oncoTreatment));
+      res = await runOrQueue("caseSection", "Case history card", patientId, "treatment received", "note", oneLine(oncoTreatment));
     else if (id === "onco_cycle")
-      res = await replaceCaseHistorySection(patientId, "current cycle", "note", oneLine(oncoCycle));
+      res = await runOrQueue("caseSection", "Case history card", patientId, "current cycle", "note", oneLine(oncoCycle));
     else if (id === "onco_toxicity")
-      res = await replaceCaseHistorySection(patientId, "toxicity since last cycle", "note", oneLine(oncoToxicity));
+      res = await runOrQueue("caseSection", "Case history card", patientId, "toxicity since last cycle", "note", oneLine(oncoToxicity));
     else if (id === "performance")
-      res = await replaceCaseHistorySection(patientId, "performance status", "note", oneLine(performance));
+      res = await runOrQueue("caseSection", "Case history card", patientId, "performance status", "note", oneLine(performance));
     else if (id === "onco_nodes")
-      res = await replaceCaseHistoryExam(patientId, [{ label: "lymph node survey", kind: "exam", value: oncoNodes.trim() || null }]);
+      res = await runOrQueue("caseExam", "Case history examination", patientId, [{ label: "lymph node survey", kind: "exam", value: oncoNodes.trim() || null }]);
     else if (id === "onco_mucosa_line")
-      res = await replaceCaseHistoryExam(patientId, [{ label: "mucosa, skin and vascular access", kind: "exam", value: oncoMucosaLine.trim() || null }]);
+      res = await runOrQueue("caseExam", "Case history examination", patientId, [{ label: "mucosa, skin and vascular access", kind: "exam", value: oncoMucosaLine.trim() || null }]);
     else if (id === "piccle")
-      res = await replaceCaseHistoryExam(
+      res = await runOrQueue("caseExam", "Case history examination", 
         patientId,
         PICCLE_SIGNS.map((s) => ({
           label: s.label,
@@ -644,30 +658,31 @@ export default function CaseHistoryWorkspace({
         }))
       );
     else if (id === "vitals")
-      res = await replaceCaseHistoryExam(
+      res = await runOrQueue("caseExam", "Case history examination", 
         patientId,
         VITALS.map((v) => ({ label: v.key, kind: "vital" as const, value: vitals[v.key]?.trim() || null }))
       );
     else if (id === "abdomen")
-      res = await replaceCaseHistoryExam(patientId, [{ label: "per abdomen", kind: "exam", value: abdomen.trim() || null }]);
+      res = await runOrQueue("caseExam", "Case history examination", patientId, [{ label: "per abdomen", kind: "exam", value: abdomen.trim() || null }]);
     else if (id === "chest")
-      res = await replaceCaseHistoryExam(patientId, [{ label: "chest", kind: "exam", value: chest.trim() || null }]);
+      res = await runOrQueue("caseExam", "Case history examination", patientId, [{ label: "chest", kind: "exam", value: chest.trim() || null }]);
     else if (id === "cvs")
-      res = await replaceCaseHistoryExam(patientId, [{ label: EXAM_CARD.cvs.label, kind: "exam", value: cvs.trim() || null }]);
+      res = await runOrQueue("caseExam", "Case history examination", patientId, [{ label: EXAM_CARD.cvs.label, kind: "exam", value: cvs.trim() || null }]);
     else if (id === "cns")
-      res = await replaceCaseHistoryExam(patientId, [{ label: EXAM_CARD.cns.label, kind: "exam", value: cns.trim() || null }]);
+      res = await runOrQueue("caseExam", "Case history examination", patientId, [{ label: EXAM_CARD.cns.label, kind: "exam", value: cns.trim() || null }]);
     else if (id === "mse")
-      res = await replaceCaseHistoryExam(patientId, [{ label: EXAM_CARD.mse.label, kind: "exam", value: mse.trim() || null }]);
+      res = await runOrQueue("caseExam", "Case history examination", patientId, [{ label: EXAM_CARD.mse.label, kind: "exam", value: mse.trim() || null }]);
     else if (id === "skin")
-      res = await replaceCaseHistoryExam(patientId, [{ label: EXAM_CARD.skin.label, kind: "exam", value: skin.trim() || null }]);
+      res = await runOrQueue("caseExam", "Case history examination", patientId, [{ label: EXAM_CARD.skin.label, kind: "exam", value: skin.trim() || null }]);
     else if (id === "local")
-      res = await replaceCaseHistoryExam(patientId, [{ label: "local examination", kind: "exam", value: local.trim() || null }]);
+      res = await runOrQueue("caseExam", "Case history examination", patientId, [{ label: "local examination", kind: "exam", value: local.trim() || null }]);
 
     stop(res.ok);
     if (!res.ok) {
       setMessage(res.error ?? "Could not save — your edits are still here.");
       return false;
     }
+    if (res.queued) setMessage("No signal — this card is saved on the phone and will be sent when the signal returns.");
     setDirty((s) => {
       const n = new Set(s);
       n.delete(id);
@@ -675,6 +690,27 @@ export default function CaseHistoryWorkspace({
     });
     return true;
   }
+
+  // The app going to the background — a call, the lab app, the phone locking — saves every
+  // changed card first, so what was typed is not lost when the phone drops the page. Through
+  // refs: the handler is registered once, and must save what is on the cards now, not what was
+  // there when the card was first marked.
+  // ponytail: sent over the network when online, so a kill mid-request still loses that one card;
+  // queue-only on hide if that bites.
+  const persistRef = useRef(persist);
+  const dirtyRef = useRef(dirty);
+  useEffect(() => {
+    persistRef.current = persist;
+    dirtyRef.current = dirty;
+  });
+  useEffect(() => {
+    const hide = () => {
+      if (document.visibilityState !== "hidden") return;
+      for (const id of dirtyRef.current) if (id !== "review" && id !== "diagnosis" && id !== "plan") void persistRef.current(id);
+    };
+    document.addEventListener("visibilitychange", hide);
+    return () => document.removeEventListener("visibilitychange", hide);
+  }, []);
 
   function goTo(index: number) {
     if (index < 0 || index >= STEPS.length) return;
@@ -1518,7 +1554,7 @@ export default function CaseHistoryWorkspace({
       );
 
     if (id === "negatives") {
-      const items = negativeChecklist(complaintList, complaintList.map((c) => hopi[c] ?? "").join(" "));
+      const items = negativeChecklist(negSlots, complaintList, complaintList.map((c) => hopi[c] ?? "").join(" "));
       const setNeg = (text: string) => { setNegatives({ ...negatives, text }); mark("negatives"); };
       return (
         <>

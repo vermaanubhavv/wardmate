@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, commonHpi, HUTCHISONS, IMMUNOCOMPROMISE, MACLEODS, rce, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * SHOCK / UNDIFFERENTIATED HYPOTENSION — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * SHOCK / UNDIFFERENTIATED HYPOTENSION — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-30, re-signed after the negation-term rewording, docs/history-check.md). Earlier sign-off (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Emergency ward, north India. A history taken in parallel with resuscitation rather than
  * before it, organised around the four mechanisms: loss of volume, failure of the pump,
  * obstruction to filling, and loss of vascular tone. Differentials: hypovolaemic shock from
@@ -16,8 +16,8 @@ export const shockV1: HistoryTree = {
   complaint: "Shock / low blood pressure",
   triggers: ["shock", "hypotension", "low bp", "low blood pressure", "collapse", "collapsed", "unrecordable bp", "cold peripheries", "pulse not felt", "fainting", "peripheries cold"],
   setting: "Emergency ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [
     rce("The rational clinical examination. Is this patient hypovolemic?", 1999, "10086438"),
     rce("Does this patient with chest pain have acute coronary syndrome? The Rational Clinical Examination systematic review", 2015, "26547467"),

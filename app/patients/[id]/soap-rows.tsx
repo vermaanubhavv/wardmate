@@ -1,9 +1,9 @@
 "use client";
 
-import { shortFinding } from "@/lib/shorthand";
+import { labelRepeats, shortFinding } from "@/lib/shorthand";
 import { useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { replaceTodayNoteSection } from "./note/actions";
+import { runOrQueue } from "@/lib/offline-actions";
 import { displayLabel } from "@/lib/display-value";
 
 type Row = {
@@ -75,8 +75,14 @@ export default function SoapRows({
   // The row shows the new wording the moment Save is tapped; the write to the Mumbai database
   // happens behind it. React drops the optimistic value once the refresh below brings the
   // real one back — or, if the write failed, snaps the row back and shows the error.
+  // Lines saved with no signal: queued on the phone, kept on screen until the queue sends
+  // them. The optimistic patch alone would snap back when the transition ends.
+  const [queuedPatches, setQueuedPatches] = useState<Record<string, string>>({});
+  const shownWithQueued = shown.map((g) =>
+    g.key in queuedPatches ? { ...g, value: queuedPatches[g.key] || null, missing: false } : g
+  );
   const [optimisticShown, patchShown] = useOptimistic(
-    shown,
+    shownWithQueued,
     (groups: Group[], patch: { key: string; value: string }) =>
       groups.map((g) =>
         g.key === patch.key ? { ...g, value: patch.value || null, missing: false } : g
@@ -100,12 +106,16 @@ export default function SoapRows({
       if (key) patchShown({ key, value });
       const results = await Promise.all(
         labels.map((label) =>
-          replaceTodayNoteSection(patientId, label.toLowerCase().trim(), writeKind, value ? [value] : [])
+          runOrQueue("noteSection", `Note: ${label}`, patientId, label.toLowerCase().trim(), writeKind, value ? [value] : [])
         )
       );
       const failed = results.find((r) => !r.ok);
       if (failed) {
         setError(failed.error ?? "Could not save.");
+        return;
+      }
+      if (results.some((r) => r.ok && r.queued)) {
+        if (key) setQueuedPatches((q) => ({ ...q, [key]: value }));
         return;
       }
       router.refresh();
@@ -133,13 +143,13 @@ export default function SoapRows({
   }
 
   function line(g: Group) {
-    // A label the value already starts with says nothing twice: "review pas" over "review PAs to
-    // be done", "cholelithiasis" over "cholelithiasis". The value alone carries it.
+    // A label the value already starts or ends with says nothing twice: "review pas" over
+    // "review PAs to be done", "Tenderness" over "RIF tenderness". The value alone carries it.
     // So does a label that only names the section it sits under: "Plan" under PLAN.
     const repeats =
       !!g.value &&
       g.labels.length === 1 &&
-      (startsWithLabel(g.value, g.labels[0]) || g.labels[0].trim().toLowerCase() === writeKind);
+      (labelRepeats(g.labels[0], g.value, specialty) || g.labels[0].trim().toLowerCase() === writeKind);
     const label = repeats ? null : g.labels.map(displayLabel).join(" · ");
     if (editing === g.key) return <div key={g.key}>{editor(g.labels, "Leave blank to clear", g.key)}</div>;
     return (
@@ -190,9 +200,3 @@ export default function SoapRows({
   );
 }
 
-/** True when the value begins with the label's words, ignoring case and punctuation. */
-function startsWithLabel(value: string, label: string): boolean {
-  const norm = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
-  const l = norm(label);
-  return l.length > 0 && (norm(value) + " ").startsWith(l + " ");
-}

@@ -10,6 +10,7 @@ import {
   recoverInterruptedChunks,
   type Pending,
 } from "@/lib/outbox";
+import { OFFLINE_ACTIONS } from "@/lib/offline-actions";
 import { usePublishedHeight } from "@/lib/use-published-height";
 
 /**
@@ -61,9 +62,13 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   const [reviews, setReviews] = useState<string[]>([]);
   const [recovered, setRecovered] = useState(0);
   // When the screen on show came out of the offline cache while the phone still had some
-  // signal — the service worker gives the network three seconds, then shows the saved copy.
+  // signal — the service worker gives the network three seconds, then shows the saved copy, or
+  // shows a copy under five minutes old straight away on a full page load.
   // `navigator.onLine` is true on one bar, so without this the bar would say nothing at all.
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  // The live screen arrived after the saved copy was shown (public/sw.js posts it). Offered,
+  // not swapped in: a screen that redraws itself under a thumb mid-tap is worse than a stale one.
+  const [fresh, setFresh] = useState(false);
 
   const refresh = useCallback(async () => {
     setWaiting(await listWaiting());
@@ -94,7 +99,7 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
 
     sendingRef.current = true;
     setSending(true);
-    const result = await flush({ retryRefused: asked });
+    const result = await flush({ retryRefused: asked, actions: OFFLINE_ACTIONS });
     sendingRef.current = false;
     setSending(false);
     await refresh();
@@ -123,14 +128,20 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const stamp = document.querySelector('meta[name="wm-saved-at"]');
-    if (stamp) setSavedAt(stamp.getAttribute("content") || renderedAt);
+    if (!stamp) return;
+    setSavedAt(stamp.getAttribute("content") || renderedAt);
+    // Read once. The worker wrote it into the HTML, so React never removes it, and this effect
+    // re-runs with every refresh: left in place it re-marked a freshly refreshed screen as saved.
+    stamp.remove();
   }, [renderedAt]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
     const told = (e: MessageEvent) => {
+      if (e.data?.type === "screen-fresh") return setFresh(true);
       if (e.data?.type !== "screen") return;
+      setFresh(false);
       setSavedAt(e.data.fromCache ? (e.data.date ?? renderedAt) : null);
     };
     navigator.serviceWorker.addEventListener("message", told);
@@ -196,12 +207,28 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
         </p>
       )}
 
-      {online && savedAt && (
+      {online && savedAt && !fresh && (
         <p>
-          <span className="font-semibold">Weak signal.</span> This screen is as it was at{" "}
+          <span className="font-semibold">Saved copy.</span> This screen is as it was at{" "}
           {fetched} — it may be out of date.{" "}
           <button onClick={() => router.refresh()} className="tap font-semibold underline">
             Try again
+          </button>
+        </p>
+      )}
+
+      {online && savedAt && fresh && (
+        <p>
+          <span className="font-semibold">A newer copy has arrived.</span> This screen is as it
+          was at {fetched}.{" "}
+          <button
+            onClick={() => {
+              setFresh(false);
+              router.refresh();
+            }}
+            className="tap font-semibold underline"
+          >
+            Show it
           </button>
         </p>
       )}
@@ -213,7 +240,7 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
         </p>
       )}
 
-      {sending && <p>Sending {pending === 1 ? "1 recording" : `${pending} recordings`}…</p>}
+      {sending && <p>Sending {pending === 1 ? "1 item" : `${pending} items`}…</p>}
 
       {!sending && pending > 0 && (
         <ul className="mt-1 flex flex-col gap-1.5">
@@ -221,7 +248,7 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
             confirmingDelete === item.id ? (
               <li key={item.id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="flex-1">
-                  Delete this {item.label.toLowerCase() || "recording"}? It has not been sent and
+                  Delete this {item.label.toLowerCase() || "item"}? It has not been sent and
                   cannot be recovered.
                 </span>
                 <button onClick={() => void discard(item.id)} className="tap font-semibold underline">
@@ -233,12 +260,12 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
               </li>
             ) : item.sending ? (
               <li key={item.id}>
-                {item.label || "Recording"}, {timeOf(item.queuedAt)} — sending…
+                {item.label || "Item"}, {timeOf(item.queuedAt)} — sending…
               </li>
             ) : (
               <li key={item.id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="flex-1">
-                  {item.label || "Recording"}, {timeOf(item.queuedAt)} —{" "}
+                  {item.label || "Item"}, {timeOf(item.queuedAt)} —{" "}
                   {item.attempts > 0
                     ? "not sent: the server turned it down."
                     : online

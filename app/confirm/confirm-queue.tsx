@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { flagMisheard } from "../patients/[id]/flag-misheard";
-import { confirmMany, editAndConfirm, discardPending } from "./actions";
+import { runOrQueue, type RunResult } from "@/lib/offline-actions";
 import type { PendingConfirm } from "@/lib/confirm-queue";
 import { ActionSheet } from "../action-sheet";
 import BottomBar from "../bottom-bar";
@@ -23,7 +23,7 @@ const SWIPE_COMMIT = 96; // px past which a release fires the action
 const NUMERIC_KINDS = new Set(["vital", "lab", "day_number", "drain", "intake_output"]);
 
 export default function ConfirmQueue({
-  items,
+  items: allItems,
   photos,
 }: {
   items: PendingConfirm[];
@@ -38,6 +38,10 @@ export default function ConfirmQueue({
   const [discardId, setDiscardId] = useState<string | null>(null);
   const [askAll, setAskAll] = useState(false);
   const [viewing, setViewing] = useState<string | null>(null);
+  // Cleared with no signal: the tap is queued on the phone, and the card leaves the screen
+  // now rather than when the refresh after the send takes it away.
+  const [queuedIds, setQueuedIds] = useState<Set<string>>(() => new Set());
+  const items = allItems.filter((i) => !queuedIds.has(i.id));
 
   // The queue only ever shrinks within a sitting (a refresh drops what was just cleared), so
   // the high-water mark is the honest denominator for "3 of 11". Adjusting state during render
@@ -59,12 +63,17 @@ export default function ConfirmQueue({
   const readableIds = useMemo(() => items.filter((i) => !isUnreadable(i.value_text)).map((i) => i.id), [items]);
   const unreadable = items.length - readableIds.length;
 
-  function run(fn: () => Promise<{ ok: boolean; error?: string }>, after?: () => void) {
+  function run(ids: string[], fn: () => Promise<RunResult>, after?: () => void) {
     setMessage(null);
     startTransition(async () => {
       const res = await fn();
       if (!res.ok) return setMessage(res.error ?? "Could not save.");
       after?.();
+      if (res.queued) {
+        setQueuedIds((s) => new Set([...s, ...ids]));
+        setMessage("No signal — saved on this phone, sends when you are back online.");
+        return;
+      }
       router.refresh();
     });
   }
@@ -142,11 +151,12 @@ export default function ConfirmQueue({
                     setDraft(isUnreadable(o.value_text) ? "" : (o.value_text ?? ""));
                   }}
                   onCancelEdit={() => setEditingId(null)}
-                  onConfirm={() => run(() => confirmMany([o.id]))}
+                  onConfirm={() => run([o.id], () => runOrQueue("confirm", `Confirm: ${o.label}`, [o.id]))}
                   onDiscard={() => setDiscardId(o.id)}
                   onSave={() =>
                     run(
-                      () => editAndConfirm(o.id, draft),
+                      [o.id],
+                      () => runOrQueue("editConfirm", `Confirm: ${o.label}`, o.id, draft),
                       () => {
                         const next = draft.trim();
                         if (next && next !== (o.value_text ?? "")) {
@@ -193,7 +203,7 @@ export default function ConfirmQueue({
         onCancel={() => setAskAll(false)}
         onConfirm={() => {
           setAskAll(false);
-          run(() => confirmMany(readableIds));
+          run(readableIds, () => runOrQueue("confirm", `Confirm ${readableIds.length} values`, readableIds));
         }}
       />
 
@@ -206,7 +216,7 @@ export default function ConfirmQueue({
         onConfirm={() => {
           const id = discardId;
           setDiscardId(null);
-          if (id) run(() => discardPending(id), () => setEditingId(null));
+          if (id) run([id], () => runOrQueue("discard", "Discard a value", id), () => setEditingId(null));
         }}
       />
 

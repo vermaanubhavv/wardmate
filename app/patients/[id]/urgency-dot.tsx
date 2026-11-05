@@ -3,7 +3,7 @@
 import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { Check } from "lucide-react";
-import { setUrgency } from "./actions";
+import { runOrQueue } from "@/lib/offline-actions";
 import { effectiveUrgency, URGENCY_META, type Urgency } from "@/lib/urgency";
 
 /**
@@ -38,7 +38,10 @@ export default function UrgencyDot({
   // anything having been written back to it.
   const effective = effectiveUrgency({ urgency, graded_at: gradedAt, recorded_at: recordedAt });
 
-  const [shown, setShown] = useOptimistic<Urgency>(effective.urgency);
+  const [optimistic, setShown] = useOptimistic<Urgency>(effective.urgency);
+  // A choice queued with no signal, kept on screen until the queue sends it.
+  const [queued, setQueued] = useState<Urgency | undefined>(undefined);
+  const shown = queued === undefined ? optimistic : queued;
   const [, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const [at, setAt] = useState<{ top: number; left: number } | null>(null);
@@ -67,7 +70,8 @@ export default function UrgencyDot({
     if (value === shown) return;
     startTransition(async () => {
       setShown(value);
-      await setUrgency(observationId, patientId, value);
+      const r = await runOrQueue("urgency", `Urgency: ${URGENCY_META[value ?? "green"]?.label ?? "not graded"}`, observationId, patientId, value);
+      if (r.ok && r.queued) setQueued(value);
     });
   }
 

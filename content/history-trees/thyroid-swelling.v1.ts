@@ -2,7 +2,7 @@ import type { HistoryTree } from "@/lib/history-check/types";
 import { BAILEY_LOVE, BROWSE, commonHpi, DAS_CLINICAL_SURGERY, HAMILTON_BAILEY, MACLEODS, PREGNANCY, SABISTON, surgicalBackground, val, yn } from "@/content/history-trees/_helpers";
 
 /**
- * NECK SWELLING (THYROID) — v1.0.0. CLINICAL CONTENT: AWAITING RE-REVIEW after the negation-term rewording (docs/history-check.md). Previously REVIEWED (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
+ * NECK SWELLING (THYROID) — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma, 2026-10-30, re-signed after the negation-term rewording, docs/history-check.md). Earlier sign-off (Dr Anubhav Verma, 2026-10-18, after the Bailey & Love 28e review, docs/surgical-history.md §13).
  * Adult surgical ward, north India. The generic `lump` tree also fires on a neck swelling and
  * the card is built to show both; this one adds what the texts ask only of a thyroid — whether
  * it moves on swallowing, what it presses on, and whether the gland is working too hard or too
@@ -15,8 +15,8 @@ export const thyroidSwellingV1: HistoryTree = {
   complaint: "Neck swelling (thyroid)",
   triggers: ["thyroid", "thyroid swelling", "goitre", "goiter", "swelling in front of neck", "swelling in the neck", "neck swelling", "front of neck", "gale me sujan"],
   setting: "Adult surgical ward, north India",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [DAS_CLINICAL_SURGERY, BROWSE, BAILEY_LOVE, HAMILTON_BAILEY, SABISTON, MACLEODS],
   slots: [
     ...commonHpi("neck swelling"),
