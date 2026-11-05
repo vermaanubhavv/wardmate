@@ -127,7 +127,11 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const stamp = document.querySelector('meta[name="wm-saved-at"]');
-    if (stamp) setSavedAt(stamp.getAttribute("content") || renderedAt);
+    if (!stamp) return;
+    setSavedAt(stamp.getAttribute("content") || renderedAt);
+    // Read once. The worker wrote it into the HTML, so React never removes it, and this effect
+    // re-runs with every refresh: left in place it re-marked a freshly refreshed screen as saved.
+    stamp.remove();
   }, [renderedAt]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
