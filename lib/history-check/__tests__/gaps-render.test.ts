@@ -89,7 +89,6 @@ describe("renderHistoryText", () => {
       results,
       mode: "ward",
       header: "SW-12 · Test · 40/M",
-      background: [{ label: "Past history", lines: ["K/C/O diabetes"] }, { label: "Family history", lines: [] }],
     });
     const lines = t.split("\n");
     expect(lines[0]).toBe("SW-12 · Test · 40/M");
@@ -98,11 +97,9 @@ describe("renderHistoryText", () => {
     expect(lines[3]).toMatch(/^HPI — Onset: not recorded; Mode of onset: sudden onset; Grade: not recorded; .*Chills and rigors: present/);
     expect(t).toContain("Pertinent positives: headache");
     expect(t).toContain("Pertinent negatives: no vomiting");
-    expect(t).toContain("Past history: K/C/O diabetes");
-    expect(t).not.toContain("Family history");
-    // Long-case order: HPI before positives before negatives before background.
+    // Long-case order: HPI before positives before negatives.
     expect(t.indexOf("HPI")).toBeLessThan(t.indexOf("Pertinent positives"));
-    expect(t.indexOf("Pertinent negatives")).toBeLessThan(t.indexOf("Past history"));
+    expect(t.indexOf("Pertinent positives")).toBeLessThan(t.indexOf("Pertinent negatives"));
   });
 
   it("flags conflicts instead of picking a side", () => {

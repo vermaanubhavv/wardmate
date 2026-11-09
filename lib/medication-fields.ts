@@ -106,29 +106,14 @@ export type MedicationFields = {
   duration: string | null;
   durationValue: number | null;
   durationUnitCode: string | null;
-  frequency: string | null;
   frequencyCode: string | null;
   /** Total to dispense. Needs a dose count, a per-day frequency and a duration in days — see
    *  quantityFor below. */
   quantity: string | null;
-  /** True when the duration was not dictated and the ward's standard discharge course was
-   *  used instead. Lets a screen mark it as a default a doctor should look at, rather than
-   *  passing it off as something that was said. */
-  durationIsDefault: boolean;
-  route: string | null;
   routeCode: string | null;
 };
 
-export function medicationFields(
-  label: string,
-  valueText: string | null,
-  options?: {
-    /** The ward's standard discharge course, used ONLY where the resident stated no duration.
-     *  A duration they did state always wins — printing 7 days over a dictated "for 14 days"
-     *  would be this file overruling a doctor on the length of a course. */
-    defaultDurationDays?: number;
-  }
-): MedicationFields {
+export function medicationFields(label: string, valueText: string | null): MedicationFields {
   const said = [valueText ?? "", label].filter(Boolean).join(" ");
 
   const freq = FREQUENCIES.find((f) => f.pattern.test(said)) ?? null;
@@ -151,15 +136,8 @@ export function medicationFields(
       : null;
 
   const durationMatch = said.match(DURATION);
-  const fallbackDays = options?.defaultDurationDays ?? null;
-  const durationIsDefault = !durationMatch && fallbackDays !== null;
-
-  const durationValue = durationMatch ? Number(durationMatch[1]) : fallbackDays;
-  const durationUnitCode = durationMatch
-    ? durationMatch[2].toLowerCase().replace(/s$/, "")
-    : durationIsDefault
-      ? "day"
-      : null;
+  const durationValue = durationMatch ? Number(durationMatch[1]) : null;
+  const durationUnitCode = durationMatch ? durationMatch[2].toLowerCase().replace(/s$/, "") : null;
 
   return {
     // The drug's own name, not the whole dictated phrase — everything else the phrase carried
@@ -174,11 +152,8 @@ export function medicationFields(
         : null,
     durationValue,
     durationUnitCode,
-    durationIsDefault,
-    frequency: freq?.code ?? null,
     frequencyCode: freq?.code ?? null,
     quantity: quantityFor(countMatch, countUnit, freq?.perDay ?? null, durationValue, durationUnitCode),
-    route: route?.code ?? null,
     routeCode: route?.code ?? null,
   };
 }

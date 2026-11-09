@@ -1,6 +1,6 @@
 /**
  * Scores Jev's to-do rescue (lib/jev-observations.ts, `open_i`) on the synthetic plans in
- * lib/evals/task-open-cases.ts, for the live wording and the candidates below.
+ * lib/evals/task-open-cases.ts, for the live wording and any candidates below.
  *
  *   node --env-file=.env.local node_modules/.bin/vite-node --config vitest.config.ts scripts/eval-task-open.ts [--held-out]
  *
@@ -16,23 +16,9 @@ import { askJev } from "../lib/jev.ts";
 import { isActionableTask } from "../lib/task-classification.ts";
 
 const CANDIDATES: Record<string, (path: string) => unknown> = {
-  // Chosen 2026-10-02 over the first wording (13/16 rescued) and `examples` below.
+  // Chosen 2026-10-02 over the first wording (13/16 rescued) and a variant with contrasting
+  // open/closed examples in the question. Add a candidate beside it to compare a new wording.
   live: openQuestion,
-
-  // Same idea with contrasting examples in the question, as TypeSafe's docs suggest when
-  // options are easy to confuse.
-  examples: (path) => ({
-    type: "noul",
-    instructions: {
-      question: `Does \`${path}\` leave a task open for the ward team?`,
-      open_examples: ["continue drain output charting", "CT done, report awaited", "remove catheter tomorrow"],
-      closed_examples: ["continue IV antibiotics", "dressing done", "one unit PRBC given"],
-    },
-    criteria: {
-      true: "Like `open_examples`: something still to do, chase or keep watching",
-      false: "Like `closed_examples`: only a record of treatment given, done or continued",
-    },
-  }),
 };
 
 // --held-out scores the cases that were never used to choose the wording.

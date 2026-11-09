@@ -1,4 +1,4 @@
-import { classifyVital, matchVitalLabel } from "@/lib/vital-ranges";
+import { classifyVital, firstNumber, matchVitalLabel } from "@/lib/vital-ranges";
 import { canonicalLabName } from "@/lib/lab-ranges";
 import type { WardPatient } from "@/lib/patients";
 import { criticalThresholds, type CriticalThresholds } from "@/lib/specialty/critical-values";
@@ -31,19 +31,11 @@ export type WardFlag = { label: string; value: string; reason: string };
  * range; it just does not raise the ward alarm. The value carried in the chip is exactly the
  * value recorded — never a diagnosis about it.
  *
- * Checked worst-first; criticalFlags() returns every hit, criticalFlag() the first.
+ * Checked worst-first; criticalFlags() returns every hit.
  */
 
 const VASOPRESSOR =
   /\b(nor-?ad(renaline)?|norepinephrine|adrenaline|epinephrine|vasopressin|dopamine|dobutamine|phenylephrine|metaraminol|milrinone|(vaso|iono|ino)trop\w*|vasopressor\w*)\b/i;
-
-function num(s: string | null | undefined): number | null {
-  if (!s) return null;
-  const m = s.match(/-?\d+(?:\.\d+)?/);
-  if (!m) return null;
-  const n = Number(m[0]);
-  return Number.isFinite(n) ? n : null;
-}
 
 const AFFIRMATIVE = /^(y|yes|on|true|✓|✔|present)$/i;
 
@@ -57,7 +49,7 @@ function gcsScore(text: string): number | null {
   const evm = text.match(/E\s*(\d)\s*V\s*(\d)\s*M\s*(\d)/i);
   if (evm) return Number(evm[1]) + Number(evm[2]) + Number(evm[3]);
   if (/E\s*\d/i.test(text)) return null;
-  const n = num(text);
+  const n = firstNumber(text);
   return n !== null && n >= 3 && n <= 15 ? n : null;
 }
 
@@ -107,13 +99,13 @@ export function criticalFlags(patient: WardPatient, specialty?: string | null): 
       continue;
     }
     if (GLUCOSE.test(label)) {
-      const n = num(text);
+      const n = firstNumber(text);
       const hit = n === null ? null : glucoseHit(label, text, n, t);
       if (hit) hits.push(hit);
       continue;
     }
     for (const c of classifyVital(v.label, v.value_text)) {
-      const n = num(c.value);
+      const n = firstNumber(c.value);
       if (n === null) continue;
       if (c.label === "SpO₂" && t.spo2Below !== undefined && n < t.spo2Below) {
         hits.push({ label: "SpO₂", value: String(n), reason: "hypoxia" });
@@ -153,7 +145,7 @@ export function criticalFlags(patient: WardPatient, specialty?: string | null): 
   // report and "16.2" on the next; platelets as "45000", "45" or "0.45").
   for (const l of patient.labs ?? []) {
     const name = canonicalLabName(l.label);
-    const n = num(l.value_text);
+    const n = firstNumber(l.value_text);
     if (n === null) continue;
     const value = (l.value_text ?? "").trim();
 
@@ -226,7 +218,7 @@ export function abnormalTemp(
   for (const v of currentVitals(patient)) {
     for (const c of classifyVital(v.label, v.value_text)) {
       if (c.label !== "Temp") continue;
-      const n = num(c.value);
+      const n = firstNumber(c.value);
       if (n === null) continue;
       const t = toCelsius(n);
       const off = child ? t >= 38 || t < 36 : t <= 36.0 || t >= 38.1;
@@ -266,7 +258,7 @@ function creatinineUmol(n: number): number {
  */
 export function risingCreatinine(results: { value_text: string | null; recorded_at: string }[]): WardFlag | null {
   const read = results
-    .map((r) => ({ text: (r.value_text ?? "").trim(), n: num(r.value_text), at: Date.parse(r.recorded_at) }))
+    .map((r) => ({ text: (r.value_text ?? "").trim(), n: firstNumber(r.value_text), at: Date.parse(r.recorded_at) }))
     .filter((r): r is { text: string; n: number; at: number } => r.n !== null && r.n > 0 && Number.isFinite(r.at))
     .sort((a, b) => b.at - a.at);
   const [latest, ...earlier] = read;
@@ -282,23 +274,4 @@ export function risingCreatinine(results: { value_text: string | null; recorded_
   if (within7d.length === 0) return null;
   const lowest = within7d.reduce((a, b) => (creatinineUmol(b.n) < creatinineUmol(a.n) ? b : a));
   return now >= 1.5 * creatinineUmol(lowest.n) ? shown(lowest) : null;
-}
-
-/** The most pressing critical finding, or null — the first of criticalFlags(). */
-export function criticalFlag(patient: WardPatient, specialty?: string | null): WardFlag | null {
-  return criticalFlags(patient, specialty)[0] ?? null;
-}
-
-/**
- * Nothing critical, nothing outstanding — the ward page's "Dischargeable" stat/filter
- * (app/ward/page.tsx). A fair, transparent proxy for "worth considering for discharge
- * today," not a clinical certification: `flag` is this same file's own criticalFlag(),
- * and `unconfirmed_count`/`open_task_count` already ride along in the one ward_screen()
- * round trip (lib/ward-screen.ts), so this costs nothing extra to compute.
- */
-export function isDischargeable(
-  patient: Pick<WardPatient, "unconfirmed_count" | "open_task_count">,
-  flag: WardFlag | null
-): boolean {
-  return !flag && patient.unconfirmed_count === 0 && patient.open_task_count === 0;
 }

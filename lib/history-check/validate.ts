@@ -65,7 +65,7 @@ function containsTerm(haystack: string, term: string): number {
   return m ? m.index + m[1].length : -1;
 }
 
-function escape(s: string): string {
+export function escape(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 

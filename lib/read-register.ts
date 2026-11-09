@@ -25,7 +25,6 @@ export type RegisterRow = {
 export type RegisterResult = {
   rows: RegisterRow[];
   model: string;
-  raw: unknown;
 };
 
 export const SYSTEM_PROMPT = `You read a photograph of a hospital ward round register and transcribe what is written in it, one entry per patient.
@@ -145,5 +144,5 @@ export async function readRegister(
   const rows: RegisterRow[] = parsed.rows ?? [];
   // Second look before anything is shown: see judgeRegisterRows. No key or an error: unchanged.
   await judgeRegisterRows(rows, pack);
-  return { rows, model: AI_MODEL, raw: parsed };
+  return { rows, model: AI_MODEL };
 }

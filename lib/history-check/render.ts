@@ -12,11 +12,8 @@ import type { CheckMode } from "@/lib/history-check/gaps";
  * the Stage 0 discussion: prose the app cannot check word by word is prose it must not print.
  *
  * Indian long-case order: chief complaint with duration → HPI in tree order → pertinent
- * positives → pertinent negatives → not-recorded line → past / family / medication / surgical
- * history ONLY if dictated (those come from the existing case-history sections, passed in).
+ * positives → pertinent negatives → not-recorded line.
  */
-
-export type BackgroundSection = { label: string; lines: string[] };
 
 export type RenderInput = {
   tree: HistoryTree;
@@ -24,8 +21,6 @@ export type RenderInput = {
   mode: CheckMode;
   /** "SW-12 · Sharma · 62/M" or similar. Name/age/sex/bed only — the four allowed identifiers. */
   header?: string | null;
-  /** Already-filtered: only sections with something dictated. Empty sections are not passed. */
-  background?: BackgroundSection[];
 };
 
 const UNCONFIRMED = " (unconfirmed)";
@@ -95,11 +90,6 @@ export function renderHistoryText(input: RenderInput): string {
     lines.push(
       `Not recorded${mode === "ward" ? " (red flags)" : ""}: ${notAsked.map((s) => s.label.toLowerCase()).join(", ")}`
     );
-  }
-
-  for (const b of input.background ?? []) {
-    if (b.lines.length === 0) continue;
-    lines.push(`${b.label}: ${b.lines.join("; ")}`);
   }
 
   return lines.join("\n");

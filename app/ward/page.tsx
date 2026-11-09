@@ -18,7 +18,7 @@ import Wordmark from "../wordmark";
 import Mark from "../mark";
 import { createClient } from "@/lib/supabase/server";
 import { countWardPendingConfirmations } from "@/lib/confirm-queue";
-import { abnormalTemp, criticalFlags, isDischargeable, type WardFlag } from "@/lib/ward-flags";
+import { abnormalTemp, criticalFlags, type WardFlag } from "@/lib/ward-flags";
 import { getWardTasks } from "@/lib/todo";
 import { TriangleAlert, CircleCheckBig, Settings } from "lucide-react";
 import { getMyWards } from "@/lib/ward";
@@ -117,13 +117,7 @@ export default async function Home({
     [...allFlags].map(([id, f]) => [id, f[0] ?? null])
   );
   const criticalCount = [...flags.values()].filter(Boolean).length;
-  const visiblePatients = (
-    filter === "critical"
-      ? patients.filter((p) => flags.get(p.id))
-      : filter === "dischargeable"
-        ? patients.filter((p) => isDischargeable(p, flags.get(p.id) ?? null))
-        : patients
-  )
+  const visiblePatients = (filter === "critical" ? patients.filter((p) => flags.get(p.id)) : patients)
     // Critical beds first, then walking order. A stable sort keeps bed order inside each half,
     // so a flagged BP in bed 24 is seen before the round reaches it rather than found by
     // scanning twenty rows.
@@ -290,7 +284,7 @@ export default async function Home({
           </div>
         ) : visiblePatients.length === 0 ? (
           <p className="ios-group px-4 py-6 text-center text-subhead text-muted">
-            {filter === "critical" ? "Nobody is flagged critical." : "Every patient has something pending."}
+            Nobody is flagged critical.
           </p>
         ) : (
           <ul id="ward-list" className="ios-group">
@@ -338,7 +332,7 @@ export default async function Home({
   );
 }
 
-/** One of the All / Critical / Nothing pending chips — the count and the filter in one. */
+/** One of the All / Critical chips — the count and the filter in one. */
 function FilterChip({
   href,
   label,

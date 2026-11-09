@@ -53,10 +53,9 @@ init({
   // person hit an error, only that one did.
   sendDefaultPii: false,
 
-  // Session Replay is deliberately OFF: it screenshots the DOM, which on a ward screen is
-  // patient names, beds and results. Errors + stack traces are plenty.
-  replaysSessionSampleRate: 0,
-  replaysOnErrorSampleRate: 0,
+  // Session Replay is deliberately OFF (no replayIntegration is loaded): it screenshots the
+  // DOM, which on a ward screen is patient names, beds and results. Errors + stack traces are
+  // plenty.
 
   // Structured logs, same as the server. No console forwarding.
   enableLogs: true,

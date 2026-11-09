@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { compareBeds, type WardPatient } from "@/lib/patients";
-import { getCurrentWard, getActivePatients, getRemovedCount, getWardSpecialtyStored } from "@/lib/ward";
+import { getCurrentWard, getActivePatients, getWardSpecialtyStored } from "@/lib/ward";
 import { getProcedureLabels, listTemplateChoices, type TemplateChoice } from "@/lib/templates";
 import { getSpecialtyPack, offersChecklistFamily, type SpecialtyPack } from "@/lib/specialty";
 import { readsChemoColumns, usesBurnClock } from "@/lib/specialty/clocks";
@@ -21,18 +21,14 @@ export type WardScreen = {
   /** The unit's specialty pack, resolved once here so every screen reads the same one. */
   pack: SpecialtyPack;
   patients: WardPatient[];
-  removedCount: number;
   templateChoices: TemplateChoice[];
   procedures: Map<string, string>;
-  /** True when this came from the six separate queries rather than the one. */
-  fellBack: boolean;
   error: { message: string } | null;
 };
 
 type RpcShape = {
   ward: Ward | null;
   patients: (WardPatient & Record<string, unknown>)[];
-  removed_count: number;
   procedures: { family: string; variant: string | null; name: string; phase?: string }[];
 };
 
@@ -76,10 +72,9 @@ function toChoices(rows: RpcShape["procedures"], pack: SpecialtyPack): TemplateC
  * entry belonging to the ward across the wire, to count them in JavaScript — a payload that
  * grows with every round ever recorded. Two integers per patient come back instead.
  *
- * Falls back to the old queries if the function is missing or errors, and says so. A speed
- * change is not worth a screen that cannot load: a unit whose database has not been migrated
- * yet gets the slow version rather than nothing, and the flag makes that visible rather than
- * leaving a mystery where the fast path should be.
+ * Falls back to the old queries if the function is missing or errors. A speed change is not
+ * worth a screen that cannot load: a unit whose database has not been migrated yet gets the
+ * slow version rather than nothing.
  */
 export async function getWardScreen(): Promise<WardScreen> {
   const supabase = await createClient();
@@ -95,10 +90,8 @@ export async function getWardScreen(): Promise<WardScreen> {
       pack,
       // Sorted here, not in SQL: beds run SW-2, SW-10, and Postgres would order them as text.
       patients: (payload.patients ?? []).slice().sort((a, b) => compareBeds(a.bed, b.bed)),
-      removedCount: payload.removed_count ?? 0,
       templateChoices: choices,
       procedures: new Map(choices.map((c) => [`${c.family}|${c.variant ?? ""}`, c.label])),
-      fellBack: false,
       error: null,
     };
   }
@@ -110,10 +103,8 @@ export async function getWardScreen(): Promise<WardScreen> {
       ward: null,
       pack: getSpecialtyPack(null),
       patients: [],
-      removedCount: 0,
       templateChoices: [],
       procedures: new Map(),
-      fellBack: true,
       error: wardError ?? error ?? null,
     };
   }
@@ -124,21 +115,18 @@ export async function getWardScreen(): Promise<WardScreen> {
   const specialty = await getWardSpecialtyStored(ward.id);
   const pack = getSpecialtyPack(specialty);
 
-  const [{ patients }, procedures, templateChoices, removedCount] = await Promise.all([
+  const [{ patients }, procedures, templateChoices] = await Promise.all([
     getActivePatients(ward.id, readsChemoColumns(pack), usesBurnClock(pack)),
     getProcedureLabels(pack.key),
     listTemplateChoices(pack.key),
-    getRemovedCount(ward.id),
   ]);
 
   return {
     ward: { ...(ward as Ward), specialty },
     pack,
     patients,
-    removedCount,
     templateChoices,
     procedures,
-    fellBack: true,
     error: null,
   };
 }

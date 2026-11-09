@@ -30,7 +30,7 @@ department adds a number, side, site or negation, or swaps a finding).
 | --- | --- |
 | Handover (screen and WhatsApp text) | `app/handover/page.tsx`, `lib/handover.ts` — diagnosis, done today, jobs |
 | Ward list | `app/ward/page.tsx` — diagnosis line |
-| To do | `app/todo/todo-lists.tsx`, `lib/ward-todo-preview.ts` |
+| To do | `app/todo/todo-lists.tsx` |
 | Patient page | jobs, SOAP rows, objective summary, case-history card (`app/patients/[id]/page.tsx`) |
 | Case-history read-back | `case-history-card.tsx` (patient page and the case-history workspace) |
 | Progress-note print sheet | `app/patients/[id]/note/note-line.tsx` (SOAP, overlay and ESIC layouts) |

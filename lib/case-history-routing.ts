@@ -12,14 +12,6 @@ import {
   type RoutedSegment,
 } from "@/lib/case-history-sections";
 
-export {
-  ROUTABLE_SECTIONS,
-  HISTORY_SECTION_LABEL,
-  EXAM_SECTION_LABEL,
-  HELD_SECTIONS,
-} from "@/lib/case-history-sections";
-export type { RoutableSection, RoutedSegment } from "@/lib/case-history-sections";
-
 /**
  * Live routing for the "dictate the whole clerking" flow.
  *

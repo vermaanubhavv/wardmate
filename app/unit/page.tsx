@@ -164,22 +164,6 @@ export default async function UnitPage() {
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
       <ScreenHeader back="/ward" backLabel="Ward" title={ward.name} subtitle={<>{roster.length} {roster.length === 1 ? "person" : "people"} on this unit</>} />
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       {/* Ahead of everything, and only ever once: somebody who has just entered the unit code
           has no name on them yet, and every screen after this one shows them as "Doctor" until
           they set one. Picking it off the unit's own list is one tap instead of typing. It

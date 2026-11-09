@@ -1234,10 +1234,6 @@ export function medPresetsFor(specialty: string | null | undefined): string[] {
   return progressNoteConfigFor(specialty).medPresets;
 }
 
-/** Every preset on any ward — what the server action treats as an unconfirmed default, so a
- *  chip saves amber whichever ward offered it. */
-export const MED_PRESETS = Array.from(new Set(Object.values(PROGRESS_NOTE_CONFIGS).flatMap((c) => c.medPresets)));
-
 /** Headings whose empty line prints with open space below rather than nothing — a finding is
  *  written as a sentence. C/O and Assessment on every ward, plus this ward's exam lines. */
 export function openSpaceHeadings(config: ProgressNoteConfig): string[] {

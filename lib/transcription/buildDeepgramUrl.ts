@@ -49,11 +49,7 @@ export function buildDeepgramParams(
   // no caller can switch it off.
   search.set("mip_opt_out", "true");
 
-  const safe = dedupeCaseInsensitive(keyterms).slice(0, MAX_KEYTERMS);
-  for (const term of safe) {
-    const trimmed = term.trim();
-    if (trimmed) search.append("keyterm", trimmed);
-  }
+  for (const t of dedupeCaseInsensitive(keyterms).slice(0, MAX_KEYTERMS)) search.append("keyterm", t);
 
   return search;
 }

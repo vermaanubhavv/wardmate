@@ -14,6 +14,7 @@ import { hasOperationClock } from "@/lib/specialty/intake";
 import { effectiveUrgency, istDate, jobTitle, URGENCY_META } from "@/lib/urgency";
 import { shortFinding } from "@/lib/shorthand";
 import { displayValue, isUnreadable } from "@/lib/display-value";
+import { dateTime } from "@/lib/format-date";
 import { classifyLab, type SuppliedRange } from "@/lib/lab-ranges";
 
 /** One line of what actually happened today — a resulted investigation, the operation if
@@ -288,13 +289,7 @@ function jobLine(t: Observation, specialty: string): string {
  * so what is read off the phone and what is pasted say the same thing.
  */
 export function formatHandoverText(handover: WardHandover): string {
-  const when = new Date(handover.generated_at).toLocaleString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  const when = dateTime(handover.generated_at);
 
   const n = handover.patients.length;
   const lines: string[] = [`*${handover.ward.name} handover*, ${when}`, `${n} ${n === 1 ? "patient" : "patients"}`];

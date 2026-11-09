@@ -14,7 +14,7 @@ import {
 import { buildSystemPrompt } from "@/lib/extract";
 import { dayLabel } from "@/lib/patients";
 import { evaluateTrigger, type TriggerContext } from "@/lib/checklist-triggers";
-import { matchDischargeTemplateFor, listDischargeTemplatesFor, dischargeTemplatesFor } from "@/lib/specialty/discharge";
+import { matchDischargeTemplateFor, dischargeTemplatesFor } from "@/lib/specialty/discharge";
 import { HISTORY_SECTION_LABEL, sectionsForSpecialty } from "@/lib/case-history-sections";
 import { caseHistorySectionOf, summariseCaseHistory } from "@/lib/case-history";
 
@@ -246,7 +246,6 @@ describe("internal medicine counts by the hospital day", () => {
     // MEDICINE_DISCHARGE_TEMPLATES was deliberately empty through the pilot build; published
     // for alpha testing on the product owner's direction — see the file header.
     expect(dischargeTemplatesFor(p).templates.length).toBeGreaterThan(10);
-    expect(listDischargeTemplatesFor(p).map((t) => t.key)).toContain(dischargeTemplatesFor(p).generic.key);
     expect(matchDischargeTemplateFor(p, { diagnosisText: "dengue fever with warning signs" })?.key).toBe("dengue");
   });
 
@@ -362,7 +361,6 @@ describe("obstetrics & gynaecology counts like a surgical unit, not a medicine o
 
   it("ships its own condition templates — LSCS is picked before a normal delivery", () => {
     expect(dischargeTemplatesFor(p).templates.length).toBeGreaterThan(5);
-    expect(listDischargeTemplatesFor(p).map((t) => t.key)).toContain(dischargeTemplatesFor(p).generic.key);
     expect(matchDischargeTemplateFor(p, { procedureText: "Emergency LSCS" })?.key).toBe("obg_lscs");
     expect(matchDischargeTemplateFor(p, { procedureText: "Normal vaginal delivery" })?.key).toBe("obg_nvd");
   });
@@ -458,7 +456,8 @@ describe("discharge templates follow the unit", () => {
   });
 
   it("the picker lists the unit's own templates plus its generic fallback", () => {
-    const keys = listDischargeTemplatesFor(getSpecialtyPack("medical_oncology")).map((t) => t.key);
+    const { templates, generic } = dischargeTemplatesFor(getSpecialtyPack("medical_oncology"));
+    const keys = [...templates, generic].map((t) => t.key);
     expect(keys).toContain("chemo_cycle");
     expect(keys).toContain("oncology_generic");
     expect(keys).not.toContain("breast_ca");

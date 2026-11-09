@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildDischargeDocument, procedureLines } from "@/lib/discharge-render";
-import { getSpecialtyPack } from "@/lib/specialty";
+import { generalPack, getSpecialtyPack } from "@/lib/specialty";
 import { compileDischargeDraft } from "@/lib/discharge-compile";
 import { oneOffContext } from "@/lib/discharge-oneoff";
 import { derivePatientState } from "@/lib/patient-state";
@@ -20,7 +20,7 @@ function buildDoc(isEsicFaridabad: boolean) {
     [],
     derivePatientState([], null),
     [],
-    undefined,
+    generalPack,
     isEsicFaridabad
   );
   const draft = compileDischargeDraft(context);

@@ -24,7 +24,6 @@ import {
   changeFromBaseline,
   firstAvailable,
   resolveWindow,
-  valueAtCheckpoint,
   valuesInWindow,
   worstValue,
   type ResolvedWindow,
@@ -35,7 +34,7 @@ import { classifyAtlanta, evaluateMarshall, type AtlantaInput } from "./marshall
 export type EvaluateContext = {
   inputs: EngineInput[];
   clock: InstanceClock;
-  /** checkpointKey → due instant, for cards locked/anchored to a checkpoint. */
+  /** checkpointKey → due instant, for cards locked until a checkpoint. */
   checkpointDueAt: Record<string, Instant>;
   /** componentId → clinician override (kept and re-applied on every recompute). */
   overrides: Record<
@@ -66,7 +65,6 @@ function selectValue(
   def: ComponentInput,
   inputs: EngineInput[],
   rw: ResolvedWindow,
-  checkpointAt: Instant | null,
   clock: InstanceClock
 ): EngineInput | null {
   switch (def.selector) {
@@ -84,11 +82,9 @@ function selectValue(
         def.rule.op === "lt" || def.rule.op === "lte" ? "low" : "high";
       return worstValue(inputs, def.inputKey, rw, dir);
     }
-    case "at_checkpoint":
-      return checkpointAt ? valueAtCheckpoint(inputs, def.inputKey, rw, checkpointAt) : null;
     case "change_from_baseline": {
       if (!def.baselineWindow) return null;
-      const baseRw = resolveWindow(def.baselineWindow, clock, checkpointAt);
+      const baseRw = resolveWindow(def.baselineWindow, clock);
       const dir = def.rule.op === "lt" || def.rule.op === "lte" ? "low" : "high";
       const sel = (i: EngineInput[], k: string, w: ResolvedWindow) => worstValue(i, k, w, dir);
       const cb = changeFromBaseline(inputs, def.inputKey, rw, baseRw, sel);
@@ -128,12 +124,8 @@ function componentUnknown(
   };
 }
 
-function evaluateComponent(
-  def: ComponentInput,
-  ctx: EvaluateContext,
-  checkpointAt: Instant | null
-): ComponentResult {
-  const rw = resolveWindow(def.window, ctx.clock, checkpointAt);
+function evaluateComponent(def: ComponentInput, ctx: EvaluateContext): ComponentResult {
+  const rw = resolveWindow(def.window, ctx.clock);
 
   // A clinician-assessed criterion: prefer the explicit assessment recorded from the card;
   // otherwise fall through to the observation path (a finding the resident dictated).
@@ -156,12 +148,12 @@ function evaluateComponent(
         missingReason: null,
       };
     }
-    const fromObs = evaluateComponentRaw(def, ctx, rw, checkpointAt);
+    const fromObs = evaluateComponentRaw(def, ctx, rw);
     return fromObs.status === "unknown" ? componentUnknown(def, rw, "requires_verification") : fromObs;
   }
 
   // Clinician override wins, but the imported result is computed first and kept underneath.
-  const imported = evaluateComponentRaw(def, ctx, rw, checkpointAt);
+  const imported = evaluateComponentRaw(def, ctx, rw);
   const ov = ctx.overrides[def.componentId];
   if (!ov) return imported;
 
@@ -193,11 +185,8 @@ function strip(c: ComponentResult): Omit<ComponentResult, "override"> {
 function evaluateComponentRaw(
   def: ComponentInput,
   ctx: EvaluateContext,
-  rw: ResolvedWindow,
-  checkpointAt: Instant | null
+  rw: ResolvedWindow
 ): ComponentResult {
-  if (rw.startMs === null) return componentUnknown(def, rw, "checkpoint_not_due");
-
   // Composite input: SIRS present / absent, evaluated over this component's window.
   if (def.inputKey === "sirs_present") {
     const s = evaluateSirs(ctx.inputs, rw);
@@ -230,7 +219,7 @@ function evaluateComponentRaw(
     return componentUnknown(def, rw, "outside_time_window");
   }
 
-  const picked = selectValue(def, ctx.inputs, rw, checkpointAt, ctx.clock);
+  const picked = selectValue(def, ctx.inputs, rw, ctx.clock);
   if (!picked) {
     // A value WAS recorded in the window but its unit could not be resolved — surface that as
     // an ambiguous/unsupported-unit unknown with the raw value shown, never as "no data".
@@ -302,7 +291,7 @@ export function evaluateCard(card: CardDefinition, ctx: EvaluateContext): CardRe
   let classification: string | null = null;
 
   if (card.calculation.kind === "sirs") {
-    const rw = resolveWindow(card.inputs[0].window, ctx.clock, checkpointAt);
+    const rw = resolveWindow(card.inputs[0].window, ctx.clock);
     const s = evaluateSirs(ctx.inputs, rw);
     components = s.criteria.map((c) => ({
       componentId: `sirs.${c.id}`,
@@ -320,27 +309,8 @@ export function evaluateCard(card: CardDefinition, ctx: EvaluateContext): CardRe
     }));
     total = s.status === "present" ? 1 : s.status === "absent" ? 0 : null;
     classification = s.status;
-  } else if (card.calculation.kind === "modified_marshall") {
-    const rw = resolveWindow(card.inputs[0].window, ctx.clock, checkpointAt);
-    const m = evaluateMarshall(ctx.inputs, rw);
-    components = m.systems.map((sys) => ({
-      componentId: `marshall.${sys.system}`,
-      label: `${cap(sys.system)} (Modified Marshall)`,
-      status: sys.score == null ? "unknown" : sys.organFailure ? "satisfied" : "not_satisfied",
-      rawValue: sys.basis,
-      normalizedValue: sys.score,
-      unit: "marshall points",
-      sourceId: sys.sourceId,
-      sourceAt: sys.sourceAt,
-      window: rw.window,
-      points: sys.score ?? 0,
-      contribution: sys.organFailure ? "organ_failure" : null,
-      missingReason: sys.score == null ? "no_data" : null,
-    }));
-    total = m.evaluable ? Math.max(...m.systems.map((s) => s.score ?? 0)) : null;
-    classification = m.anyOrganFailure ? "organ_failure" : m.evaluable ? "no_organ_failure" : "unknown";
   } else if (card.calculation.kind === "revised_atlanta") {
-    const rw = resolveWindow(card.inputs[0].window, ctx.clock, checkpointAt);
+    const rw = resolveWindow(card.inputs[0].window, ctx.clock);
     const m = evaluateMarshall(ctx.inputs, rw);
     const ci = ctx.classificationInputs ?? {};
     const a: AtlantaInput = {
@@ -375,7 +345,7 @@ export function evaluateCard(card: CardDefinition, ctx: EvaluateContext): CardRe
   } else {
     // sum_points, tiered_classification and structured_extraction
     components = card.inputs.map((def) =>
-      !checkpointDue ? componentUnknown(def, resolveWindow(def.window, ctx.clock, checkpointAt), "checkpoint_not_due") : evaluateComponent(def, ctx, checkpointAt)
+      !checkpointDue ? componentUnknown(def, resolveWindow(def.window, ctx.clock), "checkpoint_not_due") : evaluateComponent(def, ctx)
     );
     if (card.calculation.kind === "tiered_classification") {
       const calc = card.calculation;
@@ -444,7 +414,6 @@ export function evaluateCard(card: CardDefinition, ctx: EvaluateContext): CardRe
   const compositeIncomplete =
     (card.calculation.kind === "revised_atlanta" && classification === "unknown") ||
     (card.calculation.kind === "sirs" && classification === "not_evaluable") ||
-    (card.calculation.kind === "modified_marshall" && classification === "unknown") ||
     tierProvisionalIncomplete;
 
   const interpretation = interpret(card, total ?? provisionalTotal, classification);
@@ -565,8 +534,6 @@ function classComponent(
     missingReason: value == null ? "requires_verification" : null,
   };
 }
-
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /**
  * A stable hash of everything a clinician verified against, so a later data change flips the

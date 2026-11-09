@@ -417,15 +417,17 @@ const OVERRIDES: Partial<Record<SpecialtyKey, Template[]>> = {
   medical_oncology: [ONCOLOGY_FEVER],
 };
 
+/** The unit's own template for a complaint, before the shared ones; undefined = generic. */
+const templateFor = (complaint: string, specialty?: string | null) =>
+  [...(OVERRIDES[(specialty ?? "") as SpecialtyKey] ?? []), ...SHARED].find((t) => t.match.test(complaint));
+
 /** The template id a complaint gets on this unit — exported for the test. */
 export function hopiTemplateIdFor(complaint: string, specialty?: string | null): string {
-  const list = [...(OVERRIDES[(specialty ?? "") as SpecialtyKey] ?? []), ...SHARED];
-  return list.find((t) => t.match.test(complaint))?.id ?? "generic";
+  return templateFor(complaint, specialty)?.id ?? "generic";
 }
 
 export function hopiAttrsFor(complaint: string, specialty?: string | null): HopiAttr[] {
-  const list = [...(OVERRIDES[(specialty ?? "") as SpecialtyKey] ?? []), ...SHARED];
-  return list.find((t) => t.match.test(complaint))?.attrs ?? GENERIC_HOPI;
+  return templateFor(complaint, specialty)?.attrs ?? GENERIC_HOPI;
 }
 
 // --- examination cards ---------------------------------------------------------------------
@@ -566,10 +568,7 @@ export function clerkingFormatFor(specialty?: string | null, sex?: string | null
 // --- per-department wording ----------------------------------------------------------------
 
 /** Units whose clerking always walks the obstetric card, whatever sex is recorded. */
-const ALWAYS_OBSTETRIC = new Set<SpecialtyKey>(["obstetrics_gynaecology"]);
-
-export const alwaysShowsObstetricCard = (specialty?: string | null) =>
-  ALWAYS_OBSTETRIC.has((specialty ?? "") as SpecialtyKey);
+export const alwaysShowsObstetricCard = (specialty?: string | null) => specialty === "obstetrics_gynaecology";
 
 /** What the Local examination card is for, under its heading. */
 /** A department without its own line below keeps surgery's wording, as it always has; only a unit

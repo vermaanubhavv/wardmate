@@ -100,9 +100,7 @@ export function shorthandRules(specialty?: string | null): ShorthandRule[] {
   if (!rules) {
     const dept = (DEPARTMENT_PAIRS as Record<string, readonly (readonly [string, string])[]>)[key] ?? [];
     rules = [...HAND_RULES, ...[...CORE_PAIRS, ...dept].map(pairRule)]
-      .map((r, i) => ({ r, i }))
-      .sort((a, b) => wordCount(b.r.example) - wordCount(a.r.example) || a.i - b.i)
-      .map(({ r }) => r);
+      .sort((a, b) => wordCount(b.example) - wordCount(a.example));
     tables.set(key, rules);
   }
   return rules;
@@ -136,7 +134,8 @@ function dropRestarts(text: string): string {
   return w.join(" ");
 }
 
-function shorten(text: string, specialty?: string | null): string {
+/** An exam finding, a diagnosis or a note, in the unit's ward shorthand. */
+export function shortFinding(text: string, specialty?: string | null): string {
   // A complaint statement, segment by segment, in its objective form first — "pain in the
   // right upper abdomen since 10 days" → "Pain – RUQ × 10 days" (lib/complaint-duration.ts).
   let t = dropRestarts(text.trim().replace(/\s+/g, " "))
@@ -148,14 +147,9 @@ function shorten(text: string, specialty?: string | null): string {
   return t.replace(/\s+([,.;])/g, "$1").replace(/\s+/g, " ").trim();
 }
 
-/** An exam finding, a diagnosis or a note, in the unit's ward shorthand. */
-export function shortFinding(text: string, specialty?: string | null): string {
-  return shorten(text, specialty);
-}
-
 /** A job, as a to-do list reads it: the verb first, no "we need to", capital letter. */
 export function shortJob(text: string, specialty?: string | null): string {
-  const t = shorten(text, specialty).replace(JOB_FILLER, "").replace(/[.\s]+$/, "");
+  const t = shortFinding(text, specialty).replace(JOB_FILLER, "").replace(/[.\s]+$/, "");
   return t ? t[0].toUpperCase() + t.slice(1) : t;
 }
 

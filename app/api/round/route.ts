@@ -54,7 +54,7 @@ export async function POST(request: Request) {
   if (!transcript && audio instanceof Blob) {
     try {
       const keyterms = getDeepgramKeyterms(
-        deriveWardDictationContext(patients, ward.name, pack.lexiconSpecialty)
+        deriveWardDictationContext(patients, pack.lexiconSpecialty)
       );
       const result = await transcribe(audio, keyterms);
       spoken = true;

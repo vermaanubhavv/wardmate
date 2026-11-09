@@ -13,13 +13,12 @@
 export function track(
   name: string,
   props?: Record<string, unknown>,
-  opts?: { path?: string; wardId?: string | null }
+  opts?: { path?: string }
 ): void {
   try {
     const payload = JSON.stringify({
       name,
       path: opts?.path ?? (typeof location !== "undefined" ? location.pathname : undefined),
-      ward_id: opts?.wardId ?? undefined,
       props,
     });
     void fetch("/api/track", {

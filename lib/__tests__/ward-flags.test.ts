@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { abnormalTemp, criticalFlag, criticalFlags, currentVitals, isDischargeable, risingCreatinine } from "@/lib/ward-flags";
+import { abnormalTemp, criticalFlags, currentVitals, risingCreatinine } from "@/lib/ward-flags";
 import type { WardPatient } from "@/lib/patients";
 
 function patient(over: Partial<WardPatient>): WardPatient {
@@ -42,10 +42,13 @@ const lab = (label: string, value_text: string) => ({
   recorded_at: "2026-09-07T00:00:00Z",
 });
 
-describe("criticalFlag — only genuinely critical findings", () => {
+// The ward row's chip: the worst hit, as app/ward/page.tsx reads it.
+const firstFlag = (p: WardPatient, specialty?: string | null) => criticalFlags(p, specialty)[0] ?? null;
+
+describe("criticalFlags — only genuinely critical findings", () => {
   it("does not flag mild derangements", () => {
     expect(
-      criticalFlag(
+      firstFlag(
         patient({
           vitals: [vital("PR", "108"), vital("BP", "150/95"), vital("SpO2", "93%")],
           labs: [lab("SGPT", "100"), lab("Absolute Eosinophil Count", "0.35"), lab("Hb", "10.2")],
@@ -55,42 +58,42 @@ describe("criticalFlag — only genuinely critical findings", () => {
   });
 
   it("PR 120 is not critical; PR 121 is", () => {
-    expect(criticalFlag(patient({ vitals: [vital("PR", "120 /min")] }), "general_surgery")).toBeNull();
-    expect(criticalFlag(patient({ vitals: [vital("PR", "121 /min")] }), "general_surgery")?.reason).toBe("tachycardia");
+    expect(firstFlag(patient({ vitals: [vital("PR", "120 /min")] }), "general_surgery")).toBeNull();
+    expect(firstFlag(patient({ vitals: [vital("PR", "121 /min")] }), "general_surgery")?.reason).toBe("tachycardia");
   });
 
   it("flags hypotension (SBP < 90) and hypoxia (SpO2 < 90)", () => {
-    expect(criticalFlag(patient({ vitals: [vital("BP", "84/50")] }), "general_surgery")?.reason).toBe("hypotension");
-    expect(criticalFlag(patient({ vitals: [vital("SpO2", "88%")] }), "general_surgery")?.reason).toBe("hypoxia");
+    expect(firstFlag(patient({ vitals: [vital("BP", "84/50")] }), "general_surgery")?.reason).toBe("hypotension");
+    expect(firstFlag(patient({ vitals: [vital("SpO2", "88%")] }), "general_surgery")?.reason).toBe("hypoxia");
   });
 
   it("flags WBC > 16000 across scales, not below", () => {
-    expect(criticalFlag(patient({ labs: [lab("TLC", "15800")] }), "general_surgery")).toBeNull();
-    expect(criticalFlag(patient({ labs: [lab("TLC", "18200")] }), "general_surgery")?.reason).toBe("leucocytosis");
-    expect(criticalFlag(patient({ labs: [lab("Total Leucocyte Count", "17.4")] }), "general_surgery")?.reason).toBe("leucocytosis");
+    expect(firstFlag(patient({ labs: [lab("TLC", "15800")] }), "general_surgery")).toBeNull();
+    expect(firstFlag(patient({ labs: [lab("TLC", "18200")] }), "general_surgery")?.reason).toBe("leucocytosis");
+    expect(firstFlag(patient({ labs: [lab("Total Leucocyte Count", "17.4")] }), "general_surgery")?.reason).toBe("leucocytosis");
   });
 
   it("flags platelets < 50000 across scales", () => {
-    expect(criticalFlag(patient({ labs: [lab("Platelets", "60000")] }), "general_surgery")).toBeNull();
-    expect(criticalFlag(patient({ labs: [lab("Platelets", "42000")] }), "general_surgery")?.reason).toBe("severe thrombocytopenia");
-    expect(criticalFlag(patient({ labs: [lab("Platelet Count", "38")] }), "general_surgery")?.reason).toBe("severe thrombocytopenia");
-    expect(criticalFlag(patient({ labs: [lab("PLT", "0.3")] }), "general_surgery")?.reason).toBe("severe thrombocytopenia");
+    expect(firstFlag(patient({ labs: [lab("Platelets", "60000")] }), "general_surgery")).toBeNull();
+    expect(firstFlag(patient({ labs: [lab("Platelets", "42000")] }), "general_surgery")?.reason).toBe("severe thrombocytopenia");
+    expect(firstFlag(patient({ labs: [lab("Platelet Count", "38")] }), "general_surgery")?.reason).toBe("severe thrombocytopenia");
+    expect(firstFlag(patient({ labs: [lab("PLT", "0.3")] }), "general_surgery")?.reason).toBe("severe thrombocytopenia");
   });
 
   it("flags Hb < 5", () => {
-    expect(criticalFlag(patient({ labs: [lab("Hb", "6.1")] }), "general_surgery")).toBeNull();
-    expect(criticalFlag(patient({ labs: [lab("Hb", "4.2")] }), "general_surgery")?.reason).toBe("severe anaemia");
+    expect(firstFlag(patient({ labs: [lab("Hb", "6.1")] }), "general_surgery")).toBeNull();
+    expect(firstFlag(patient({ labs: [lab("Hb", "4.2")] }), "general_surgery")?.reason).toBe("severe anaemia");
   });
 
   it("flags an ICU / support entry, carrying its text", () => {
-    const f = criticalFlag(patient({ vitals: [vital("ICU", "on noradrenaline 0.08")] }), "general_surgery");
+    const f = firstFlag(patient({ vitals: [vital("ICU", "on noradrenaline 0.08")] }), "general_surgery");
     expect(f).toEqual({ label: "ICU", value: "on noradrenaline 0.08", reason: "on ICU / organ support" });
-    expect(criticalFlag(patient({ vitals: [vital("ICU", "yes")] }), "general_surgery")?.value).toBe("");
-    expect(criticalFlag(patient({ vitals: [vital("ICU", "")] }), "general_surgery")).toBeNull();
+    expect(firstFlag(patient({ vitals: [vital("ICU", "yes")] }), "general_surgery")?.value).toBe("");
+    expect(firstFlag(patient({ vitals: [vital("ICU", "")] }), "general_surgery")).toBeNull();
   });
 
   it("falls back to the management text for vasopressors", () => {
-    expect(criticalFlag(patient({ management: "POD 2, on noradrenaline, ventilated" }), "general_surgery")?.reason).toBe(
+    expect(firstFlag(patient({ management: "POD 2, on noradrenaline, ventilated" }), "general_surgery")?.reason).toBe(
       "vasopressor support"
     );
   });
@@ -151,30 +154,10 @@ describe("criticalFlags — per department, every hit", () => {
     expect(medicine({ vitals: [vital("GCS", "E2VTM4")] })).toEqual([]);
   });
 
-  it("returns every hit, worst first, and criticalFlag() is the first of them", () => {
+  it("returns every hit, worst first", () => {
     const p = patient({ vitals: [vital("SpO2", "86%")], labs: [lab("K", "6.4"), lab("Na", "118")] });
     expect(criticalFlags(p, "internal_medicine").map((f) => f.label)).toEqual(["SpO₂", "K⁺", "Na⁺"]);
-    expect(criticalFlag(p, "internal_medicine")?.label).toBe("SpO₂");
     expect(criticalFlags(patient({ vitals: [vital("BP", "84/50")], labs: [lab("Hb", "4.2")] })).length).toBe(2);
-  });
-});
-
-describe("isDischargeable — nothing critical, nothing outstanding", () => {
-  it("is dischargeable with no flag, nothing unconfirmed, no open tasks", () => {
-    expect(isDischargeable(patient({ unconfirmed_count: 0, open_task_count: 0 }), null)).toBe(true);
-  });
-
-  it("is not dischargeable when critically flagged, even with nothing else outstanding", () => {
-    const flag = { label: "BP", value: "84/50", reason: "hypotension" };
-    expect(isDischargeable(patient({ unconfirmed_count: 0, open_task_count: 0 }), flag)).toBe(false);
-  });
-
-  it("is not dischargeable with anything unconfirmed", () => {
-    expect(isDischargeable(patient({ unconfirmed_count: 1, open_task_count: 0 }), null)).toBe(false);
-  });
-
-  it("is not dischargeable with an open task", () => {
-    expect(isDischargeable(patient({ unconfirmed_count: 0, open_task_count: 1 }), null)).toBe(false);
   });
 });
 

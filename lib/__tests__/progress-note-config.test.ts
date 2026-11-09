@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { buildProgressNote, type ProgressNotePatient } from "@/lib/progress-note";
 import { systemPromptFor } from "@/lib/progress-note-ai";
 import {
-  MED_PRESETS,
   sectionsForPatient,
   PROGRESS_NOTE_CONFIGS,
   RESERVED_SECTION_IDS,
@@ -149,7 +148,6 @@ describe("medication presets", () => {
     // No department, no signed-off one-tap set yet.
     expect(medPresetsFor("no_such_ward")).toEqual([]);
     expect(medPresetsFor("general")).toEqual([]);
-    for (const key of SPECIALTY_KEYS) for (const p of medPresetsFor(key)) expect(MED_PRESETS, p).toContain(p);
   });
 });
 

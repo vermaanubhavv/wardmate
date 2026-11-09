@@ -105,7 +105,7 @@ export async function syncPatientPathways(
   if (!triggered && !needsRecompute({ force, changedAt, instances: instances ?? [], now: nowIso() })) return;
 
   for (const inst of instances ?? []) {
-    await recomputeInstanceRow(supabase, inst, "new_observation");
+    await recomputeInstanceRow(supabase, inst);
   }
 }
 
@@ -194,11 +194,7 @@ type InstanceRow = {
   classification_inputs: Record<string, unknown>;
 };
 
-async function recomputeInstanceRow(
-  supabase: Supa,
-  inst: InstanceRow,
-  trigger: string
-): Promise<void> {
+async function recomputeInstanceRow(supabase: Supa, inst: InstanceRow): Promise<void> {
   const def = getDefinition(inst.pathway_id, inst.pathway_version);
   if (!def) return;
 
@@ -220,7 +216,6 @@ async function recomputeInstanceRow(
     .order("recorded_at", { ascending: true });
 
   const admittedAt = toInstant(patient.admitted_on);
-  const symptomOnset = findSymptomOnset(obs ?? []);
   const facts: PatientFacts = {
     ageYears: patient.age_years ?? null,
     sex: patient.sex ?? null,
@@ -244,14 +239,9 @@ async function recomputeInstanceRow(
     });
   }
 
-  const { checkpointDueAt, dueNow } = await syncCheckpoints(supabase, inst, def);
+  const { checkpointDueAt, dueNow } = await syncCheckpoints(supabase, inst);
 
-  const clock: InstanceClock = {
-    admission: admittedAt,
-    symptomOnset,
-    activation: inst.status === "active" ? admittedAt : null,
-    now: nowIso(),
-  };
+  const clock: InstanceClock = { admission: admittedAt, now: nowIso() };
 
   const priorVerification = await loadVerification(supabase, inst.id);
 
@@ -277,8 +267,7 @@ async function recomputeInstanceRow(
 
   // Persist task decisions.
   const world = await buildExistingWorld(supabase, inst, def, inputs);
-  const clockForTasks: InstanceClock = { ...clock, activation: admittedAt };
-  const decisions = planPathwayTasks(def, results, inputs, clockForTasks, world);
+  const decisions = planPathwayTasks(def, results, clock, world);
   for (const d of decisions) {
     await persistTaskDecision(supabase, inst, d);
   }
@@ -320,7 +309,7 @@ async function recomputeInstanceRow(
       patientId: inst.patient_id,
       wardId: inst.ward_id,
       action: "checkpoint_executed",
-      detail: { checkpoint: cp.checkpoint_key, trigger },
+      detail: { checkpoint: cp.checkpoint_key, trigger: "new_observation" },
     });
   }
 
@@ -395,8 +384,7 @@ async function ensureCheckpoints(
 
 async function syncCheckpoints(
   supabase: Supa,
-  inst: InstanceRow,
-  def: PathwayDefinition
+  inst: InstanceRow
 ): Promise<{ checkpointDueAt: Record<string, Instant>; dueNow: { id: string; checkpoint_key: string }[] }> {
   await ensureCheckpoints(supabase, inst.id, inst.patient_id, inst.ward_id, inst.pathway_id, inst.pathway_version);
   const { data: rows } = await supabase
@@ -417,7 +405,6 @@ async function syncCheckpoints(
       return row ? { id: row.id, checkpoint_key: row.checkpoint_key } : null;
     })
     .filter((x): x is { id: string; checkpoint_key: string } => x != null);
-  void def;
   return { checkpointDueAt, dueNow };
 }
 
@@ -533,9 +520,9 @@ async function persistTaskDecision(
     return;
   }
 
-  // The input already has a result (or an active order) — nothing to ask for. Record it in the
+  // The input already has a result — nothing to ask for. Record it in the
   // audit trail but do NOT put a row on the to-do list.
-  if (decision.outcome === "link_existing_result" || decision.outcome === "link_existing_order") {
+  if (decision.outcome === "link_existing_result") {
     await audit(supabase, {
       instanceId: inst.id,
       patientId: inst.patient_id,
@@ -602,7 +589,7 @@ async function buildExistingWorld(
     if (!on) disabledToggles.add(key);
   }
 
-  return { resolvedInputKeys, activeOrders: new Set(), openTaskKeys, disabledToggles };
+  return { resolvedInputKeys, openTaskKeys, disabledToggles };
 }
 
 async function loadOverrides(supabase: Supa, instanceId: string) {
@@ -659,18 +646,6 @@ function toInstant(date: string): Instant {
   // `admitted_on` is a DATE. Anchor at 00:00 local (Asia/Kolkata) → UTC.
   if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return `${date}T00:00:00+05:30`;
   return new Date(date).toISOString();
-}
-
-function findSymptomOnset(obs: ObservationRow[]): Instant | null {
-  const hit = obs.find((o) => /symptom onset|onset of pain|pain (started|began)|since \d+ (h|hour|day)/i.test(`${o.label} ${o.source_quote}`));
-  if (!hit) return null;
-  const m = /since (\d+)\s*(hour|hr|h|day|d)/i.exec(`${hit.label} ${hit.source_quote}`);
-  if (m) {
-    const n = Number(m[1]);
-    const ms = /d/i.test(m[2]) ? n * 86_400_000 : n * 3_600_000;
-    return new Date(Date.parse(hit.recorded_at) - ms).toISOString();
-  }
-  return null;
 }
 
 export async function audit(

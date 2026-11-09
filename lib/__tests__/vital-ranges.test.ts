@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyVital, isKnownVital, matchVitalLabel } from "@/lib/vital-ranges";
+import { classifyVital, matchVitalLabel } from "@/lib/vital-ranges";
 
 describe("matchVitalLabel — a chart's own words still count as a vital", () => {
   it("matches what a resident says", () => {
@@ -24,7 +24,7 @@ describe("matchVitalLabel — a chart's own words still count as a vital", () =>
     expect(matchVitalLabel("haemoglobin")).toBeNull();
     expect(matchVitalLabel("creatinine")).toBeNull();
     expect(matchVitalLabel("drain output")).toBeNull();
-    expect(isKnownVital("SGPT")).toBe(false);
+    expect(matchVitalLabel("SGPT")).toBeNull();
   });
 
   it("still classifies the value once the label is matched", () => {
