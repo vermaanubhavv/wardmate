@@ -76,3 +76,14 @@ describe("buildProgressNote SOAP grouping", () => {
     expect(note.practitionerName).toBe("Dr. Anubhav");
   });
 });
+
+describe("buildProgressNote unconfirmed values", () => {
+  it("names today's amber values so the signing doctor checks them, and nothing when all are confirmed", () => {
+    const todays: Observation[] = [
+      obs({ kind: "vital", label: "Temperature", value_text: "101 F", needs_confirmation: true }),
+      obs({ kind: "lab", label: "Hb", value_text: "9.2", needs_confirmation: true, confirmed_at: "2026-09-18T05:00:00.000Z" }),
+    ];
+    expect(buildProgressNote(patient, todays, todays, null).unconfirmed).toEqual(["Temperature: 101 F"]);
+    expect(buildProgressNote(patient, [], [], null).unconfirmed).toEqual([]);
+  });
+});

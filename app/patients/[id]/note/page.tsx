@@ -267,6 +267,13 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
               )}
             </div>
 
+            {note.unconfirmed.length > 0 && (
+              <p className="mt-3 text-footnote">
+                <span className="font-semibold">Unconfirmed — check before signing:</span>{" "}
+                {note.unconfirmed.join("; ")}
+              </p>
+            )}
+
             <div className="mt-6 flex items-end justify-end">
               <div className="w-40 border-b border-line pb-1 text-right text-footnote text-muted">
                 Signature

@@ -98,6 +98,9 @@ export default async function HandoverPage() {
         {/* The assembled message, editable, and the Copy bar pinned under the page — see
             app/handover/copy-button.tsx. Cards and WhatsApp text keep separate orders on
             purpose: the text stays in bed order, the way the consultant reads it. */}
+        <Link href="/handover/print" className="mt-1 text-subhead font-semibold text-accent">
+          Print sheet ›
+        </Link>
         <CopyHandoverButton text={text} draftKey={`handover-draft:${ward.id}:${istDate(handover.generated_at)}`} />
       </section>
     </div>
