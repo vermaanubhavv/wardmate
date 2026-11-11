@@ -152,6 +152,8 @@ export type FeedbackResponse = {
   created_at: string;
 };
 export const getFeedbackResponses = () => callRows<FeedbackResponse>("admin_feedback_responses");
+export type PaperReason = { id: string; created_at: string; ward_name: string | null; text: string };
+export const getPaperReasons = () => callRows<PaperReason>("admin_paper_reasons");
 
 export type WeekActive = { week: string; active_users: number; new_users: number };
 export const getWeeklyActive = () => callRows<WeekActive>("admin_weekly_active");

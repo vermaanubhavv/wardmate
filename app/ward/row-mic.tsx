@@ -25,8 +25,10 @@ export default function RowMic({ patientId, bed, name }: { patientId: string; be
     label: `Bed ${bed} dictation`,
     patientId,
     maxSeconds: MAX_SECONDS,
-    onResult: () => {
-      router.push(`/patients/${patientId}`);
+    onResult: (data) => {
+      // The page offers Undo for a short while, keyed by the entry just made.
+      const entry = typeof data.entry_id === "string" ? `?undo=${data.entry_id}` : "";
+      router.push(`/patients/${patientId}${entry}`);
     },
   });
   const live = useLiveWords(stream);
