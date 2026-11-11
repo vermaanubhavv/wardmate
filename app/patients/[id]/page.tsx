@@ -94,6 +94,8 @@ type Entry = {
   extraction_error: string | null;
   accepted_at: string | null;
   edited_at: string | null;
+  /** Who dictated or photographed it — shown on the card, since the ward is shared. */
+  author_id: string;
   /** The admission clerking note rather than a round entry — see CaseHistoryCapture. */
   is_case_history: boolean;
   /** Published protocols this entry's words looked related to — see lib/protocols.ts. */
@@ -111,6 +113,19 @@ type HistoryRow = {
   new: { label: string; value_text: string | null };
 };
 
+/** Display names for a set of user ids — co-members' profiles are readable (patch 0018). */
+async function displayNames(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  ids: Iterable<string | null | undefined>,
+): Promise<Map<string, string>> {
+  const who = Array.from(new Set(Array.from(ids).filter((u): u is string => Boolean(u))));
+  const names = new Map<string, string>();
+  if (who.length === 0) return names;
+  const { data } = await supabase.from("profiles").select("id, display_name").in("id", who);
+  for (const p of data ?? []) if (p.display_name) names.set(p.id, p.display_name);
+  return names;
+}
+
 /**
  * Who changed what on each entry, newest first, as the entry card shows it. Only edits and
  * deletes: a confirm or a done-tick is visible on the value itself and would only be noise.
@@ -127,12 +142,7 @@ async function entryChanges(
     .order("changed_at", { ascending: false })
     .limit(200);
   const rows = (data ?? []) as HistoryRow[];
-  const who = Array.from(new Set(rows.map((r) => r.changed_by).filter((u): u is string => Boolean(u))));
-  const names = new Map<string, string>();
-  if (who.length > 0) {
-    const { data: profiles } = await supabase.from("profiles").select("id, display_name").in("id", who);
-    for (const p of profiles ?? []) if (p.display_name) names.set(p.id, p.display_name);
-  }
+  const names = await displayNames(supabase, rows.map((r) => r.changed_by));
   const byEntry = new Map<string, EntryChange[]>();
   for (const r of rows) {
     const list = byEntry.get(r.entry_id) ?? [];
@@ -204,7 +214,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     supabase
       .from("entries")
       .select(
-        "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, is_case_history, matched_protocol_ids, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, urgency, graded_at, recorded_at, pac_verdict, task_open, ref_low, ref_high, ref_text)"
+        "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, author_id, is_case_history, matched_protocol_ids, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, done_by, urgency, graded_at, recorded_at, pac_verdict, task_open, ref_low, ref_high, ref_text)"
       )
       .eq("patient_id", id)
       .order("recorded_at", { ascending: false })
@@ -282,6 +292,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     wardRanges,
     { data: dischargeWork },
     changesByEntry,
+    names,
   ] = await Promise.all([
       packP,
       burnsP,
@@ -313,6 +324,11 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       supabase.from("discharge_summaries").select("discharge_worked_on").eq("patient_id", id).maybeSingle(),
       // Who corrected or removed what, for the entry cards' (i) panel.
       entryChanges(supabase, id),
+      // Who dictated each entry and who ticked each job — the unit is shared, so a card says.
+      entriesP.then(({ data }) => {
+        const rows = (data ?? []) as unknown as Entry[];
+        return displayNames(supabase, [...rows.map((e) => e.author_id), ...rows.flatMap((e) => e.observations.map((o) => o.done_by))]);
+      }),
     ]);
   const patientWithBurn = { ...patient, ...(burns ?? {}) };
   const ward = (wardBeds ?? []).sort((a, b) => compareBeds(a.bed, b.bed));
@@ -588,8 +604,9 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
               <ul className="mt-2 flex flex-col gap-1.5">
                 {doneTasks.map((o) => (
                   <li key={o.id} className="flex items-baseline justify-between gap-3">
-                    <span className="text-subhead text-muted line-through truncate">
-                      {o.value_text ?? o.label}
+                    <span className="min-w-0 truncate text-subhead text-muted">
+                      <span className="line-through">{o.value_text ?? o.label}</span>
+                      {o.done_by && names.get(o.done_by) && <span className="text-footnote"> · {names.get(o.done_by)}</span>}
                     </span>
                     <form action={reopenTask} className="shrink-0">
                       <input type="hidden" name="observation_id" value={o.id} />
@@ -761,6 +778,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         photoUrls={photoUrls}
         protocolTitles={protocolTitles}
         changesByEntry={changesByEntry}
+        names={names}
       />
 
       {historyCheck && (
@@ -849,6 +867,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                                 }
                                 accepted={Boolean(entry.accepted_at)}
                                 edited={Boolean(entry.edited_at)}
+                                by={names.get(entry.author_id) ?? null}
                                 changes={changesByEntry.get(entry.id)}
                                 extractionError={entry.extraction_error}
                                 values={entry.observations.map((o) => ({
@@ -1096,6 +1115,7 @@ function CaseHistorySection({
   photoUrls,
   protocolTitles,
   changesByEntry,
+  names,
   specialty,
 }: {
   specialty: string;
@@ -1107,6 +1127,7 @@ function CaseHistorySection({
   photoUrls: Map<string, string>;
   protocolTitles: Map<string, string>;
   changesByEntry: Map<string, EntryChange[]>;
+  names: Map<string, string>;
 }) {
   return (
     <section className="px-4 pb-6">
@@ -1176,6 +1197,7 @@ function CaseHistorySection({
                   photoUrl={entry.photo_path ? (photoUrls.get(entry.photo_path) ?? null) : null}
                   accepted={Boolean(entry.accepted_at)}
                   edited={Boolean(entry.edited_at)}
+                  by={names.get(entry.author_id) ?? null}
                   changes={changesByEntry.get(entry.id)}
                   extractionError={entry.extraction_error}
                   values={entry.observations.map((o) => ({
