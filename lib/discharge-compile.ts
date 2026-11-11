@@ -134,14 +134,19 @@ function compileDiagnoses(context: DischargeContext): Diagnosis[] {
   const { patient, observations } = context;
   const out: Diagnosis[] = [];
 
-  const recorded =
-    patient.primary_diagnosis?.trim() ||
-    observations.find((o) => o.kind === "diagnosis")?.value_text?.trim() ||
-    null;
+  const diagnosisObs = observations.find((o) => o.kind === "diagnosis" && o.value_text?.trim());
+  const recorded = patient.primary_diagnosis?.trim() || diagnosisObs?.value_text?.trim() || null;
   const derived = recorded ? null : diagnosisFromProcedure(patient);
 
   if (recorded) {
-    out.push({ id: "dx-primary", category: "primary", text: recorded, source: "compiled" });
+    out.push({
+      id: "dx-primary",
+      category: "primary",
+      text: recorded,
+      source: "compiled",
+      // The patient row's own diagnosis has no dictation behind it; only the observation does.
+      sourceObservationIds: patient.primary_diagnosis?.trim() ? [] : diagnosisObs ? [diagnosisObs.id] : [],
+    });
   } else if (derived) {
     out.push({
       id: "dx-primary",
@@ -165,7 +170,7 @@ function compileDiagnoses(context: DischargeContext): Diagnosis[] {
     const key = value.toLowerCase();
     if (!value || comorbiditySet.has(key) || seenComplication.has(key)) continue;
     seenComplication.add(key);
-    out.push({ id: compiledRowId("dx-complication", seenComplication.size), category: "complication", text: value, source: "compiled" });
+    out.push({ id: compiledRowId("dx-complication", seenComplication.size), category: "complication", text: value, source: "compiled", sourceObservationIds: [o.id] });
   }
 
   return out;
@@ -174,21 +179,16 @@ function compileDiagnoses(context: DischargeContext): Diagnosis[] {
 function compileProcedures(context: DischargeContext): Procedure[] {
   const { patient, observations, procedure } = context;
 
-  const operativeNotes = observations
-    .filter((o) => o.kind === "note" && OPERATIVE_LABEL.test(o.label) && !POST_OP_LABEL.test(o.label))
-    .map((o) => (o.value_text ?? o.label).trim())
-    .filter(Boolean);
-  const postOpNotes = observations
-    .filter((o) => o.kind === "note" && POST_OP_LABEL.test(o.label))
-    .map((o) => (o.value_text ?? o.label).trim())
-    .filter(Boolean);
-  const anaesthesia = observations
-    .filter((o) => ANAESTHESIA_LABEL.test(`${o.label} ${o.value_text ?? ""}`))
-    .map((o) => (o.value_text ?? o.label).trim())[0] ?? null;
-  const drainObs = observations
-    .filter((o) => o.kind === "drain" || /drain/i.test(o.label))
-    .map((o) => (o.value_text ? `${o.label}: ${displayValue(o.value_text)}` : o.label).trim());
-  const procedureDone = observations.find((o) => o.kind === "procedure_done")?.value_text?.trim() ?? null;
+  const operativeObs = observations.filter((o) => o.kind === "note" && OPERATIVE_LABEL.test(o.label) && !POST_OP_LABEL.test(o.label));
+  const operativeNotes = operativeObs.map((o) => (o.value_text ?? o.label).trim()).filter(Boolean);
+  const postOpObs = observations.filter((o) => o.kind === "note" && POST_OP_LABEL.test(o.label));
+  const postOpNotes = postOpObs.map((o) => (o.value_text ?? o.label).trim()).filter(Boolean);
+  const anaesthesiaObs = observations.filter((o) => ANAESTHESIA_LABEL.test(`${o.label} ${o.value_text ?? ""}`))[0];
+  const anaesthesia = anaesthesiaObs ? (anaesthesiaObs.value_text ?? anaesthesiaObs.label).trim() : null;
+  const drainRows = observations.filter((o) => o.kind === "drain" || /drain/i.test(o.label));
+  const drainObs = drainRows.map((o) => (o.value_text ? `${o.label}: ${displayValue(o.value_text)}` : o.label).trim());
+  const procedureDoneObs = observations.find((o) => o.kind === "procedure_done");
+  const procedureDone = procedureDoneObs?.value_text?.trim() ?? null;
 
   const name = procedure ?? procedureDone ?? "";
   const hasAny = name || patient.surgery_date || operativeNotes.length > 0;
@@ -209,6 +209,9 @@ function compileProcedures(context: DischargeContext): Procedure[] {
       complications: complications.join("; ") || null,
       outcome: null,
       source: "compiled",
+      sourceObservationIds: [...operativeObs, ...postOpObs, ...drainRows, anaesthesiaObs, procedureDoneObs]
+        .filter((o): o is Observation => !!o)
+        .map((o) => o.id),
     },
   ];
 }
@@ -234,6 +237,7 @@ function compileHistopathology(context: DischargeContext): HistopathologySpecime
       result: looksReported ? result : null,
       reviewPlan: looksReported ? null : HPE_REVIEW_PLAN,
       source: "compiled",
+      sourceObservationIds: [o.id],
     });
   }
 
@@ -270,6 +274,7 @@ function compileMedications(context: DischargeContext): DischargeMedication[] {
       reason: null,
       drugKey: drugKey(m.label),
       source: "compiled",
+      sourceObservationIds: [m.id],
     };
   });
 }
@@ -505,6 +510,7 @@ export function compileDischargeDraft(
       completedAt: null,
       seniorReviewer: null,
     },
+    notRecorded: [],
   };
 
   // The one-off flow passes an explicit template + seedAll. A ward patient gets the template

@@ -7,6 +7,7 @@ import {
   medLine,
   adviceLines,
   BLANK,
+  NO_MEDICATIONS,
   type DischargeDocument,
 } from "@/lib/discharge-render";
 
@@ -54,6 +55,11 @@ export default function DischargeSheet({
 }) {
   return (
     <section className="px-4 pb-4 print:px-0">
+      {/* A4 for every discharge summary — the page size was the printer driver's choice before. */}
+      <style>{`
+        @page { size: A4 portrait; margin: 12mm; }
+        @media print { html, body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+      `}</style>
       <div className="ios-group px-5 py-5 text-footnote leading-snug text-black print:rounded-none print:border-0 print:p-0 print:shadow-none">
         {/* Page 1 on paper: heading through the course and the condition at discharge. Held to at least one page
             tall, so investigations onward start page 2; a course that spills onto page 2 is
@@ -200,7 +206,7 @@ export default function DischargeSheet({
         {/* 9. Medications on Discharge */}
         <SectionHeading editBase={editBase} section="medications">Medications on Discharge</SectionHeading>
         {doc.medications.length === 0 ? (
-          <p className="text-caption">{BLANK}</p>
+          <p className="text-caption">{doc.medicationsNone ? NO_MEDICATIONS : BLANK}</p>
         ) : (
           <ol className="list-decimal pl-8 text-caption">
             {doc.medications.map((m) => (
@@ -249,6 +255,15 @@ export default function DischargeSheet({
           {doc.authentication.department && <p>{doc.authentication.department}</p>}
           <p>Discharge summary completed: {doc.authentication.completedAt || BLANK}</p>
           {doc.authentication.seniorReviewer && <p>Senior reviewer: {doc.authentication.seniorReviewer}</p>}
+          {/* Signed by hand, dated by hand: the printout is a draft until both are on it. */}
+          <div className="mt-5 grid grid-cols-2 gap-x-6 break-inside-avoid">
+            {["Signature", "Date"].map((l) => (
+              <p key={l} className="flex items-end gap-1.5">
+                <span className="shrink-0 font-semibold">{l}:</span>
+                <span className="h-4 flex-1 border-b border-black/60" />
+              </p>
+            ))}
+          </div>
         </div>
       </div>
     </section>
