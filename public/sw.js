@@ -70,6 +70,36 @@ self.addEventListener("message", (event) => {
   }
 });
 
+// Web push (patch 0115). The payload is {title, body, url}; nothing in it names a patient.
+self.addEventListener("push", (event) => {
+  let data = { title: "WardMate", body: "", url: "/" };
+  try {
+    data = { ...data, ...event.data.json() };
+  } catch {
+    // An empty or non-JSON push still shows the app's name.
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      data: { url: data.url },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL(event.notification.data?.url || "/", self.location.origin).toString();
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      const open = list.find((c) => "focus" in c);
+      if (open) return open.navigate(url).then((c) => c?.focus());
+      return self.clients.openWindow(url);
+    })
+  );
+});
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") {
