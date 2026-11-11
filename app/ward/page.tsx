@@ -24,6 +24,7 @@ import { TriangleAlert, CircleCheckBig, Settings } from "lucide-react";
 import { getMyWards } from "@/lib/ward";
 import WardSearch from "./ward-search";
 import UnitSwitcher from "./unit-switcher";
+import RowMic from "./row-mic";
 
 export default async function Home({
   searchParams,
@@ -454,7 +455,7 @@ function PatientRow({
     >
       <Link
         href={`/patients/${patient.id}`}
-        className="flex min-h-11 items-center gap-3 py-2.5 pl-3 pr-11 active:bg-chip"
+        className="flex min-h-11 items-center gap-3 py-2.5 pl-3 pr-[5.75rem] active:bg-chip"
       >
         {/* Bed leads the row and is the largest thing in it: on rounds you are looking for a
             bed, not a name. Amber when another patient has been given the same bed. */}
@@ -501,9 +502,11 @@ function PatientRow({
         )}
       </Link>
 
-      {/* The row opens the patient; the ⋯ beside it holds edit, move and discharge. Muted, so
-          it reads as an accessory rather than a second thing to press on every row. */}
+      {/* The row opens the patient. Beside it: the mic, which dictates for this bed without
+          leaving the list (one tap from opening the app), and the ⋯ with edit, move and
+          discharge — muted, so it reads as an accessory rather than a second thing to press. */}
       <div className="absolute inset-y-0 right-1 flex items-center text-muted">
+        <RowMic patientId={patient.id} bed={patient.bed} name={patientName(patient)} />
         <PatientMenu patient={patient} templateChoices={templateChoices} specialty={pack.key} />
       </div>
     </li>
