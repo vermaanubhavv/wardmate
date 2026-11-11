@@ -10,7 +10,10 @@ import { specialtyChoices } from "./specialty-choices";
 import { LogIn, UserPlus } from "lucide-react";
 
 /** The only first-run decision: join the team already working, or start a new one. */
-export default async function OnboardingPage() {
+export default async function OnboardingPage({ searchParams }: { searchParams: Promise<{ code?: string }> }) {
+  // An invite link whose code the server could not join (expired, mistyped) lands here with
+  // the code typed in, so the one thing left to do is press Join — or read it again.
+  const initialCode = ((await searchParams).code ?? "").toUpperCase();
   const supabase = await createClient();
   // Pinned to this user by id. clinician_access_owner_read (0031) lets a unit owner read their
   // members' rows too, so an unfiltered .maybeSingle() would throw once they own a staffed unit.
@@ -45,7 +48,7 @@ export default async function OnboardingPage() {
           <p className="mb-3 text-footnote leading-relaxed text-muted">
             Ask a colleague for the eight-character unit code.
           </p>
-          <JoinForm autoFocus />
+          <JoinForm autoFocus initialCode={initialCode} />
         </section>
 
         <div className="my-8 flex items-center gap-3 text-footnote text-muted" aria-hidden>

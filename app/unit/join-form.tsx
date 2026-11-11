@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { joinWard, type JoinState } from "./actions";
 
-export default function JoinForm({ autoFocus = false }: { autoFocus?: boolean }) {
+export default function JoinForm({ autoFocus = false, initialCode = "" }: { autoFocus?: boolean; initialCode?: string }) {
   const [state, formAction, pending] = useActionState<JoinState, FormData>(joinWard, {
     error: null,
   });
@@ -15,6 +15,7 @@ export default function JoinForm({ autoFocus = false }: { autoFocus?: boolean })
           name="code"
           aria-label="Unit code"
           placeholder="ABCD2345"
+          defaultValue={initialCode}
           required
           autoFocus={autoFocus}
           autoCapitalize="characters"

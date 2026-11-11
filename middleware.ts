@@ -86,6 +86,9 @@ const PUBLIC_PREFIXES = [
   "/api/contact",
   "/api/feedback", // also covers /api/feedback/unsubscribe
   "/api/cron/feedback-email",
+  "/api/cron/push",
+  // The invite link: it keeps its code in a cookie and sends a signed-out tapper to /login itself.
+  "/join",
   "/monitoring",
 ];
 
