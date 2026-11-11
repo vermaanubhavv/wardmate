@@ -12,6 +12,7 @@ import InviteShare from "./invite-share";
 import CopySetup from "./copy-setup";
 import ClaimName from "./claim-name";
 import EsicTemplateToggle from "./esic-template-toggle";
+import PushToggle from "./push-toggle";
 import { getExpectedMembers } from "@/lib/expected-members";
 import CreateUnitForm from "../onboarding/create-unit-form";
 import { ConfirmSubmit } from "../action-sheet";
@@ -223,6 +224,11 @@ export default async function UnitPage() {
 
           <button className="btn btn-primary">Save</button>
         </form>
+      </section>
+
+      <section className="px-4 pb-6">
+        <p className="ios-group-header mb-2 px-4">Notifications</p>
+        <PushToggle />
       </section>
       {/* Shown even with one unit, now that a second can be made from this screen: the list is
           where you find out which unit you are looking at, and it appearing only after there

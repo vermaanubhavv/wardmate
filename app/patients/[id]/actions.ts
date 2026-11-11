@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 import { revalidatePatient } from "@/lib/revalidate";
-import { type Urgency } from "@/lib/urgency";
+import { effectiveUrgency, type Urgency } from "@/lib/urgency";
+import { sendPushTo } from "@/lib/push";
+import { assignedRedJob } from "@/lib/push-digest";
 import { istDayKey } from "@/lib/patient-state";
 import { extractObservations } from "@/lib/extract";
 import { getWardSpecialtyStored } from "@/lib/ward";
@@ -334,6 +336,15 @@ export async function assignTask(id: string, patientId: string, userId: string |
     )
     .eq("id", id)
     .eq("kind", "plan");
+
+  // A red job handed to somebody else reaches their phone now (lib/push.ts). Not your own —
+  // you are looking at it — and not a Soon or Has-time: those wait for the handover digest.
+  if (userId && userId !== user.id) {
+    const { data: job } = await supabase.from("observations").select("label, value_text, urgency, graded_at, recorded_at").eq("id", id).maybeSingle();
+    if (job && effectiveUrgency(job).urgency === "red") {
+      await sendPushTo([userId], assignedRedJob(job.value_text ?? job.label, patientId));
+    }
+  }
 
   revalidatePath(`/patients/${patientId}`);
   revalidatePath("/todo");
