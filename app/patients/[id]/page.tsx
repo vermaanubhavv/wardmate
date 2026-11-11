@@ -52,6 +52,7 @@ import Tick from "./tick";
 import SwipeDelete from "./swipe-delete";
 import PacSelect from "./pac-select";
 import EntryCard, { type EntryChange } from "./entry-card";
+import AssignSelect from "./assign-select";
 import CaseHistoryCapture from "./case-history-capture";
 import { CaseHistoryCard, ObjectiveSummaryView } from "./case-history-card";
 import RoutineRoundButton from "./routine-round";
@@ -75,7 +76,7 @@ import { getWardLabRanges } from "@/lib/ward-lab-ranges";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { hasOperationClock } from "@/lib/specialty/intake";
 import { usesBurnClock } from "@/lib/specialty/clocks";
-import { getWardSpecialtyStored } from "@/lib/ward";
+import { getWardSpecialtyStored, getWardMembers } from "@/lib/ward";
 import { getUser } from "@/lib/auth";
 import HistoryCheckCard from "./history-check-card";
 import { buildSources } from "@/lib/history-check/sources";
@@ -214,7 +215,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     supabase
       .from("entries")
       .select(
-        "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, author_id, is_case_history, matched_protocol_ids, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, done_by, urgency, graded_at, recorded_at, pac_verdict, task_open, ref_low, ref_high, ref_text)"
+        "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, author_id, is_case_history, matched_protocol_ids, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, done_by, assigned_to, urgency, graded_at, recorded_at, pac_verdict, task_open, ref_low, ref_high, ref_text)"
       )
       .eq("patient_id", id)
       .order("recorded_at", { ascending: false })
@@ -293,6 +294,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
     { data: dischargeWork },
     changesByEntry,
     names,
+    members,
   ] = await Promise.all([
       packP,
       burnsP,
@@ -329,6 +331,8 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         const rows = (data ?? []) as unknown as Entry[];
         return displayNames(supabase, [...rows.map((e) => e.author_id), ...rows.flatMap((e) => e.observations.map((o) => o.done_by))]);
       }),
+      // Who a job can be handed to.
+      getWardMembers(patient.ward_id),
     ]);
   const patientWithBurn = { ...patient, ...(burns ?? {}) };
   const ward = (wardBeds ?? []).sort((a, b) => compareBeds(a.bed, b.bed));
@@ -573,6 +577,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                       )}
                     </p>
                     <CameDue observation={o} />
+                    <AssignSelect observationId={o.id} patientId={patient.id} assignedTo={o.assigned_to ?? null} members={members} />
                     {/* The words it came from, so a job is never just the app's paraphrase —
                         shown only when they say more than the job itself does. */}
                     {!quoteAddsNothing(o.value_text ?? o.label, o.source_quote) && (

@@ -115,6 +115,21 @@ export async function getWardIsEsicFaridabad(wardId: string): Promise<boolean> {
 }
 
 /** Every unit this doctor belongs to, for the switcher. */
+/** The unit's members with a name on their profile, for handing a job to one of them. */
+export async function getWardMembers(wardId: string): Promise<{ id: string; name: string }[]> {
+  const supabase = await createClient();
+  // No embed: ward_members.user_id and profiles.id share no declared foreign key (see
+  // app/unit/page.tsx), so two reads.
+  const { data: rows } = await supabase.from("ward_members").select("user_id").eq("ward_id", wardId);
+  const ids = (rows ?? []).map((r) => r.user_id as string);
+  if (ids.length === 0) return [];
+  const { data: profiles } = await supabase.from("profiles").select("id, display_name").in("id", ids);
+  return (profiles ?? [])
+    .filter((p): p is { id: string; display_name: string } => Boolean(p.display_name))
+    .map((p) => ({ id: p.id, name: p.display_name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export async function getMyWards() {
   const supabase = await createClient();
   const { data } = await supabase

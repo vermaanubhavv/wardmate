@@ -318,6 +318,28 @@ export async function setUrgency(id: string, patientId: string, value: Urgency):
   // has nothing on that screen to make stale.
 }
 
+/** Hand a job to a member of the unit, or back to anyone (null). */
+export async function assignTask(id: string, patientId: string, userId: string | null): Promise<void> {
+  if (!id) return;
+  const supabase = await createClient();
+  const user = await getUser();
+  if (!user) return;
+
+  await supabase
+    .from("observations")
+    .update(
+      userId
+        ? { assigned_to: userId, assigned_by: user.id, assigned_at: new Date().toISOString() }
+        : { assigned_to: null, assigned_by: null, assigned_at: null }
+    )
+    .eq("id", id)
+    .eq("kind", "plan");
+
+  revalidatePath(`/patients/${patientId}`);
+  revalidatePath("/todo");
+  revalidatePath("/handover");
+}
+
 /** Tick a job off. The plan itself is kept — only its done state changes. */
 export async function completeTask(formData: FormData) {
   await setTaskDone(formData, true);

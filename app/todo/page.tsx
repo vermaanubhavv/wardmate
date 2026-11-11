@@ -1,5 +1,5 @@
 import ScreenHeader from "../screen-header";
-import { getCurrentWard, getWardPack } from "@/lib/ward";
+import { getCurrentWard, getWardMembers, getWardPack } from "@/lib/ward";
 import { getWardTasks } from "@/lib/todo";
 import { getWardScoringTasks } from "@/lib/scoring/read";
 import { createClient } from "@/lib/supabase/server";
@@ -23,10 +23,11 @@ export default async function TodoPage() {
 
   // Independent reads, sent together. The scoring ones are score-input to-do items across the
   // unit (inert unless the scoring engine is on for it).
-  const [tasks, scoringByPatient, pack] = await Promise.all([
+  const [tasks, scoringByPatient, pack, members] = await Promise.all([
     getWardTasks(ward.id),
     getWardScoringTasks(ward.id),
     getWardPack(ward.id),
+    getWardMembers(ward.id),
   ]);
   let scoringTasks: WardScoringTask[] = [];
   if (scoringByPatient.size > 0) {
@@ -57,7 +58,7 @@ export default async function TodoPage() {
       />
 
       <section className="px-4 pb-16 flex flex-col gap-4">
-        <TodoLists tasks={tasks} scoringTasks={scoringTasks} specialty={pack.key} />
+        <TodoLists tasks={tasks} scoringTasks={scoringTasks} specialty={pack.key} members={members} />
       </section>
     </div>
   );
