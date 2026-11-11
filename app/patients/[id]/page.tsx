@@ -53,6 +53,7 @@ import SwipeDelete from "./swipe-delete";
 import PacSelect from "./pac-select";
 import EntryCard, { type EntryChange } from "./entry-card";
 import AssignSelect from "./assign-select";
+import UndoDictation from "./undo-dictation";
 import CaseHistoryCapture from "./case-history-capture";
 import { CaseHistoryCard, ObjectiveSummaryView } from "./case-history-card";
 import RoutineRoundButton from "./routine-round";
@@ -160,8 +161,16 @@ async function entryChanges(
   return byEntry;
 }
 
-export default async function PatientPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PatientPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ undo?: string }>;
+}) {
   const { id } = await params;
+  // A dictation made from the ward row lands here with its entry id, for a short Undo.
+  const undoEntryId = (await searchParams).undo ?? null;
   const supabase = await createClient();
 
   const { data: patient } = await supabase
@@ -362,6 +371,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
   // exactly as a spoken one would.
   const caseHistoryEntries = allEntries.filter((e) => e.is_case_history);
   const entries = allEntries.filter((e) => !e.is_case_history);
+  const undoEntry = undoEntryId ? allEntries.find((e) => e.id === undoEntryId) ?? null : null;
 
   // Started off the entries, so usually in by now.
   const [signedRes, matchedProtocolsRes] = await photosAndProtocolsP;
@@ -971,6 +981,14 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
           )}
         </div>
       </div>
+
+      {/* Counted from when the entry landed, not from this render: a refresh while the id is
+          still in the URL must not re-offer Undo on an entry that is minutes old. */}
+      {undoEntry && (
+        <div className="px-4 pt-2">
+          <UndoDictation entryIds={[undoEntry.id]} patientId={patient.id} since={Date.parse(undoEntry.recorded_at)} />
+        </div>
+      )}
 
       {/* One clinical thought, then only what is outstanding. The bed leads, as it does on the
           ward list; the name carries age and sex; one line says the day, the operation and the

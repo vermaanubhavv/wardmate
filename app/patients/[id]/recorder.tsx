@@ -16,6 +16,7 @@ import {
 import { useLiveWords } from "@/lib/stt/use-live-words";
 import RecordingSheet, { CoverChips, HeardBox } from "@/app/recording-sheet";
 import { extFor, REC_MIME } from "./card-kit";
+import UndoDictation from "./undo-dictation";
 
 type Status = "idle" | "starting" | "recording" | "finishing" | "working";
 /** Live: each pause is filed as it is said. Batch: one recording, sent on Done. */
@@ -92,6 +93,12 @@ export default function Recorder({
   const [message, setMessage] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<string | null>(null);
   const [findings, setFindings] = useState<Finding[]>([]);
+  // The entries this dictation produced, and when the last landed — for the Undo window.
+  const [filedEntries, setFiledEntries] = useState<{ ids: string[]; at: number }>({ ids: [], at: 0 });
+  const noteFiled = (entryId: unknown) => {
+    if (typeof entryId !== "string") return;
+    setFiledEntries((f) => ({ ids: [...f.ids, entryId], at: Date.now() }));
+  };
   /** Live words whose save failed — kept so they can be retried without re-dictating. */
   const [unsaved, setUnsaved] = useState<string | null>(null);
 
@@ -244,6 +251,7 @@ export default function Recorder({
         return;
       }
       const found = normaliseFindings(data.observations);
+      noteFiled(data.entry_id);
       if (found.length > 0) {
         filedRef.current += found.length;
         setFindings((f) => [...f, ...found]);
@@ -450,6 +458,7 @@ export default function Recorder({
       void dropRecording(id);
       void clearChunks(id);
       window.dispatchEvent(new Event("outbox-changed"));
+      noteFiled(data.entry_id);
       setFindings((f) => [...f, ...normaliseFindings(data.observations)]);
       setMessage(
         data.error ??
@@ -544,6 +553,19 @@ export default function Recorder({
       )}
 
       {!sheetOpen && findings.length > 0 && <FindingList findings={findings} />}
+
+      {!sheetOpen && status === "idle" && filedEntries.ids.length > 0 && (
+        <UndoDictation
+          key={filedEntries.at}
+          entryIds={filedEntries.ids}
+          patientId={patientId}
+          since={filedEntries.at}
+          onUndone={() => {
+            setFindings([]);
+            setTranscript(null);
+          }}
+        />
+      )}
 
       {unsaved && status === "idle" && (
         <div className="flex flex-col gap-2">

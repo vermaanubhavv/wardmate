@@ -13,6 +13,7 @@ import type { SpecialtyPack } from "@/lib/specialty";
 import { effectiveUrgency, istDate, jobTitle, URGENCY_META } from "@/lib/urgency";
 import { shortFinding } from "@/lib/shorthand";
 import CopyHandoverButton from "./copy-button";
+import PaperPrompt from "./paper-prompt";
 import { displayValue } from "@/lib/display-value";
 
 export default async function HandoverPage() {
@@ -98,6 +99,7 @@ export default async function HandoverPage() {
         {/* The assembled message, editable, and the Copy bar pinned under the page — see
             app/handover/copy-button.tsx. Cards and WhatsApp text keep separate orders on
             purpose: the text stays in bed order, the way the consultant reads it. */}
+        <PaperPrompt />
         <Link href="/handover/print" className="mt-1 text-subhead font-semibold text-accent">
           Print sheet ›
         </Link>
