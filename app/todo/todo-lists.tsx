@@ -13,12 +13,13 @@
  */
 
 import Link from "next/link";
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
 import type { WardTask } from "@/lib/todo";
 import { Row as ScoringRow, type WardScoringTask } from "./scoring-section";
 import { jobTitle, scoringPriorityToUrgency, URGENCY_META, urgencyRank, type Urgency } from "@/lib/urgency";
 import UrgencyDot from "../patients/[id]/urgency-dot";
 import Tick from "../patients/[id]/tick";
+import AssignSelect, { type WardMember } from "../patients/[id]/assign-select";
 import { quoteAddsNothing } from "@/lib/dedupe-tasks";
 import { displayCase, stripPatientHonorific } from "@/lib/patients";
 import {
@@ -38,21 +39,27 @@ const GROUPS: { key: Urgency; title: string; note: string }[] = [
 
 type View = "urgency" | "type";
 
+/** The unit's members, for the assign control on every row — a context rather than a prop
+ *  threaded through three list components that never read it. */
+const MembersContext = createContext<WardMember[]>([]);
+
 export default function TodoLists({
   tasks,
   scoringTasks,
   specialty,
+  members,
 }: {
   /** The unit's pack key: its department's ward shorthand (lib/shorthand.ts). */
   specialty: string;
   tasks: WardTask[];
   scoringTasks: WardScoringTask[];
+  members: WardMember[];
 }) {
   const [view, setView] = useState<View>("urgency");
   const nothingOutstanding = tasks.length === 0 && scoringTasks.length === 0;
 
   return (
-    <>
+    <MembersContext.Provider value={members}>
       {!nothingOutstanding && (
         <div className="flex rounded-[9px] bg-fill-tertiary p-0.5 text-footnote font-medium">
           {(["urgency", "type"] as const).map((v) => (
@@ -77,7 +84,7 @@ export default function TodoLists({
       ) : (
         <ByType tasks={tasks} scoringTasks={scoringTasks} specialty={specialty} />
       )}
-    </>
+    </MembersContext.Provider>
   );
 }
 
@@ -272,6 +279,7 @@ function ByPatient({ tasks, specialty }: { tasks: WardTask[]; specialty: string 
 }
 
 function TaskRow({ task, specialty }: { task: WardTask; specialty: string }) {
+  const members = useContext(MembersContext);
   return (
     <li className="flex items-start gap-3 py-3 pl-4 pr-4">
       <Tick
@@ -306,6 +314,7 @@ function TaskRow({ task, specialty }: { task: WardTask; specialty: string }) {
         {/* Said in words, so a job that climbed with the calendar never looks like one somebody
             graded red. The dot carries the colour; this line carries the date. */}
         {task.note && <p className="mt-0.5 text-footnote text-muted">{task.note}</p>}
+        <AssignSelect observationId={task.id} patientId={task.patient_id} assignedTo={task.assigned_to} members={members} />
         {/* Only when it says something the job does not. */}
         {!quoteAddsNothing(task.value_text ?? task.label, task.source_quote) && (
           <p className="mt-0.5 truncate text-footnote italic text-muted">“{task.source_quote}”</p>

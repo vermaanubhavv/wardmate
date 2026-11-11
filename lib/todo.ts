@@ -17,6 +17,8 @@ export type WardTask = {
   /** Jev's stored bucket for the "By type" view (patch 0103); null = keywords decide. */
   task_category?: TaskCategory | "other" | null;
   patient: { display_name: string; bed: string };
+  /** Whose job it is (patch 0114); null = anyone's. */
+  assigned_to: string | null;
   /** What the colour means today, once the calendar has been taken into account. */
   effective: Urgency;
   /** "due today", "2 days overdue" — null while it is still within its stated timeframe. */
@@ -40,7 +42,7 @@ export async function getWardTasks(wardId: string): Promise<WardTask[]> {
   const { data: joined } = await supabase
     .from("observations")
     .select(
-      "id, patient_id, label, value_text, source_quote, urgency, graded_at, recorded_at, task_open, task_category, patients!inner(id, display_name, bed, ward_id, status)"
+      "id, patient_id, label, value_text, source_quote, urgency, graded_at, recorded_at, task_open, task_category, assigned_to, patients!inner(id, display_name, bed, ward_id, status)"
     )
     .eq("patients.ward_id", wardId)
     .eq("patients.status", "active")
@@ -61,6 +63,7 @@ export async function getWardTasks(wardId: string): Promise<WardTask[]> {
     recorded_at: string;
     task_open: boolean | null;
     task_category: TaskCategory | "other" | null;
+    assigned_to: string | null;
     patients: { id: string; display_name: string; bed: string };
   }[]).map(({ patients: p, ...t }) => {
     byId.set(p.id, { id: p.id, display_name: p.display_name, bed: p.bed });

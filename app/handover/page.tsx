@@ -53,7 +53,7 @@ export default async function HandoverPage() {
               <>
                 <GroupHeading>Watch tonight · {watch.length}</GroupHeading>
                 {watch.map((p) => (
-                  <WatchCard key={p.id} patient={p} pack={handover.pack} />
+                  <WatchCard key={p.id} patient={p} pack={handover.pack} members={handover.members} />
                 ))}
               </>
             )}
@@ -124,7 +124,7 @@ function BedChip({ bed }: { bed: string }) {
  * were due), then the values still to check in one line — only those the report itself
  * flagged are named; the full list opens on a tap.
  */
-function WatchCard({ patient, pack }: { patient: HandoverPatient; pack: SpecialtyPack }) {
+function WatchCard({ patient, pack, members }: { patient: HandoverPatient; pack: SpecialtyPack; members: Record<string, string> }) {
   const { openTasks, pending, missing } = patient.state;
   const management = managementLabel(patient, pack);
   const check = pending.length > 0 ? checkSummary(pending, patient.sex) : null;
@@ -173,6 +173,7 @@ function WatchCard({ patient, pack }: { patient: HandoverPatient; pack: Specialt
                   <span>
                     {jobTitle(t.value_text ?? t.label, t.recorded_at, undefined, pack.key)}
                     {effective.note && <span className="text-muted"> · {effective.note}</span>}
+                    {t.assigned_to && members[t.assigned_to] && <span className="text-muted"> → {members[t.assigned_to]}</span>}
                   </span>
                 </li>
               );

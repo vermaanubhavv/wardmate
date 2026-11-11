@@ -19,6 +19,8 @@ export type Observation = {
   done_at: string | null;
   /** Who ticked a job done — read by the patient page; absent from rows older callers select. */
   done_by?: string | null;
+  /** Whose job it is (patch 0114). Null or absent: anybody's. */
+  assigned_to?: string | null;
   urgency: Urgency;
   graded_at: string | null;
   recorded_at: string;
