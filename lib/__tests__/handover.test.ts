@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { deriveDoneToday } from "@/lib/handover";
+import { deriveDoneToday, deriveNewToday } from "@/lib/handover";
 import type { Observation } from "@/lib/patient-state";
 
 function obs(over: Partial<Observation>): Observation {
@@ -85,5 +85,35 @@ describe("deriveDoneToday", () => {
     const done = [obs({ id: "p1", kind: "procedure_done", value_text: "Chemoport insertion" })];
     expect(deriveDoneToday(done, [], TODAY)[0].text).toBe("Operated: Chemoport insertion");
     expect(deriveDoneToday(done, [], TODAY, false)[0].text).toBe("Procedure done: Chemoport insertion");
+  });
+});
+
+describe("deriveNewToday — what changed since yesterday, from the record alone", () => {
+  const today = "2026-09-19";
+  it("names a lab that went out of range today, a fever today, and a job said today", () => {
+    const items = deriveNewToday(
+      [
+        obs({ id: "a", label: "Hb", value_text: "7.8", value_num: 7.8, recorded_at: "2026-09-19T05:00:00Z" }),
+        obs({ id: "b", label: "Haemoglobin", value_text: "14.0", value_num: 14, recorded_at: "2026-09-18T05:00:00Z" }),
+        obs({ id: "c", kind: "vital", label: "Temp", value_text: "101.4", value_num: 101.4, recorded_at: "2026-09-19T06:00:00Z" }),
+      ],
+      [obs({ id: "d", kind: "plan", label: "plan", value_text: "remove drain", recorded_at: "2026-09-19T06:00:00Z" })],
+      today,
+      "male"
+    );
+    expect(items).toEqual(["Hb 7.8 (low)", "Temp 101.4°F ↑", "New job: remove drain"]);
+  });
+  it("a value that was already deranged yesterday is not news; a normal one is never listed", () => {
+    const items = deriveNewToday(
+      [
+        obs({ id: "a", label: "Hb", value_text: "7.8", value_num: 7.8, recorded_at: "2026-09-19T05:00:00Z" }),
+        obs({ id: "b", label: "Hb", value_text: "8.0", value_num: 8, recorded_at: "2026-09-18T05:00:00Z" }),
+        obs({ id: "c", label: "K", value_text: "4.1", value_num: 4.1, recorded_at: "2026-09-19T05:00:00Z" }),
+      ],
+      [obs({ id: "d", kind: "plan", label: "plan", value_text: "old job", recorded_at: "2026-09-17T06:00:00Z" })],
+      today,
+      "male"
+    );
+    expect(items).toEqual([]);
   });
 });

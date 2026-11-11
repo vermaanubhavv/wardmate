@@ -147,6 +147,16 @@ function WatchCard({ patient, pack, members }: { patient: HandoverPatient; pack:
           {management && <> · {management}</>}
         </p>
 
+        {patient.newToday.length > 0 && (
+          <ul className="flex flex-col gap-1">
+            {patient.newToday.map((n) => (
+              <li key={n} className="text-subhead">
+                <span className="font-semibold text-warn-fg">New:</span> {shortFinding(n, pack.key)}
+              </li>
+            ))}
+          </ul>
+        )}
+
         {patient.doneToday.length > 0 && (
           <ul className="flex flex-col gap-1">
             {patient.doneToday.map((d) => (

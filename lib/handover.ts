@@ -15,7 +15,8 @@ import { effectiveUrgency, istDate, jobTitle, URGENCY_META } from "@/lib/urgency
 import { shortFinding } from "@/lib/shorthand";
 import { displayValue, isUnreadable } from "@/lib/display-value";
 import { dateTime } from "@/lib/format-date";
-import { classifyLab, type SuppliedRange } from "@/lib/lab-ranges";
+import { canonicalLabName, classifyLab, type SuppliedRange } from "@/lib/lab-ranges";
+import { classifyVital, matchVitalLabel } from "@/lib/vital-ranges";
 
 /** One line of what actually happened today — a resulted investigation, the operation if
  *  done today, or a job ticked off. Deliberately NOT "everything recorded today": routine
@@ -42,6 +43,8 @@ export type HandoverPatient = {
   management: string | null;
   state: PatientState;
   doneToday: DoneTodayItem[];
+  /** What changed since yesterday — deriveNewToday. */
+  newToday: string[];
 };
 
 /**
@@ -53,6 +56,43 @@ export type HandoverPatient = {
  * drown the two or three things worth telling a consultant about, so neither kind is
  * included here — see the confirmed scope in the plan this was built from.
  */
+/**
+ * "New since yesterday", from the record alone: a lab recorded today that is out of range
+ * where its last reading was not (a value that was already deranged yesterday is not news), a
+ * temperature recorded today that is high, and a job said today that is still open. Each is
+ * named as recorded. Nothing is inferred from the absence of a reading.
+ */
+export function deriveNewToday(rawObservations: Observation[], openTasks: Observation[], todayKey: string, sex: string | null): string[] {
+  const out: string[] = [];
+  const rangeOf = (o: Observation): SuppliedRange | null =>
+    o.ref_low != null || o.ref_high != null ? { low: o.ref_low ?? null, high: o.ref_high ?? null, text: o.ref_text ?? null, source: "report" } : null;
+  const flagOf = (o: Observation) => classifyLab(o.label, o.value_text, sex, rangeOf(o))?.flag ?? null;
+
+  // Newest first on the record; walk it so "the reading before today's" is the first earlier one.
+  const labs = rawObservations.filter((o) => o.kind === "lab").slice().sort((a, b) => b.recorded_at.localeCompare(a.recorded_at));
+  const seen = new Set<string>();
+  for (const o of labs) {
+    if (istDate(o.recorded_at) !== todayKey) continue;
+    const name = canonicalLabName(o.label);
+    if (seen.has(name)) continue;
+    seen.add(name);
+    const flag = flagOf(o);
+    if (!flag) continue;
+    const previous = labs.find((p) => istDate(p.recorded_at) !== todayKey && canonicalLabName(p.label) === name);
+    if (previous && flagOf(previous) === flag) continue;
+    out.push(`${name} ${displayValue(o.value_text)} (${flag})`);
+  }
+
+  const temp = rawObservations.find((o) => o.kind === "vital" && istDate(o.recorded_at) === todayKey && matchVitalLabel(o.label) === "temp");
+  if (temp) {
+    const high = classifyVital(temp.label, temp.value_text).find((c) => c.flag === "high");
+    if (high) out.push(`Temp ${high.value} ↑`);
+  }
+
+  for (const t of openTasks) if (istDate(t.recorded_at) === todayKey) out.push(`New job: ${t.value_text ?? t.label}`);
+  return out;
+}
+
 export function deriveDoneToday(
   rawObservations: Observation[],
   doneTasks: Observation[],
@@ -210,6 +250,7 @@ export async function getWardHandover(ward: { id: string; name: string }): Promi
       template,
       procedure: procedureFor(p, procedures),
       state,
+      newToday: deriveNewToday(rawObs, state.openTasks, todayKey, p.sex),
       doneToday: deriveDoneToday(rawObs, state.doneTasks, todayKey, hasOperationClock(pack)).map((d) => {
         const who = members[rawObs.find((o) => o.id === d.id)?.done_by ?? ""];
         return who ? { ...d, text: `${d.text} (${who})` } : d;
@@ -317,6 +358,7 @@ export function formatHandoverText(handover: WardHandover): string {
     lines.push("", "*WATCH TONIGHT*");
     for (const p of watch) {
       lines.push(heading(p));
+      for (const n of p.newToday) lines.push(`- New: ${shortFinding(n, handover.pack.key)}`);
       for (const d of p.doneToday) lines.push(`- Today: ${shortFinding(d.text, handover.pack.key)}`);
       for (const t of p.state.openTasks) lines.push(`- ${jobLine(t, handover.pack.key, handover.members)}`);
       if (p.state.pending.length > 0) lines.push(`- ${checkSummaryText(checkSummary(p.state.pending, p.sex))}`);
