@@ -2,7 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getWardScreen } from "@/lib/ward-screen";
 import { getDoctorName, getUser } from "@/lib/auth";
-import { dayLabel, patientName, stripPatientHonorific, type WardPatient } from "@/lib/patients";
+import { dayLabel, managementLabel, patientName, stripPatientHonorific, type WardPatient } from "@/lib/patients";
+import { classifyTaskCategory, TASK_CATEGORY_META, TASK_CATEGORY_ORDER, type TaskCategory } from "@/lib/task-category";
 import type { SpecialtyPack } from "@/lib/specialty";
 import { shortLabel } from "@/lib/specialty/labels";
 import { procedureFor } from "@/lib/templates";
@@ -93,9 +94,13 @@ export default async function Home({
   // Jobs past the day they were due, per patient — the one thing on a row that is red without
   // being a critical reading. Read off the same calendar-aware note /todo groups by.
   const overdueCounts = new Map<string, number>();
+  // What kind of jobs are open on each patient — the "pending job type" filter and search.
+  const jobTypes = new Map<string, Set<TaskCategory>>();
   for (const t of tasks) {
     jobCounts.set(t.patient_id, (jobCounts.get(t.patient_id) ?? 0) + 1);
     if (t.note?.endsWith("overdue")) overdueCounts.set(t.patient_id, (overdueCounts.get(t.patient_id) ?? 0) + 1);
+    const category = classifyTaskCategory(t.value_text ?? t.label, t.task_category);
+    if (category) jobTypes.set(t.patient_id, new Set([...(jobTypes.get(t.patient_id) ?? []), category]));
   }
   const patients = screenPatients.map((p) => ({ ...p, open_task_count: jobCounts.get(p.id) ?? 0 }));
   const totalOverdue = [...overdueCounts.values()].reduce((a, b) => a + b, 0);
@@ -118,7 +123,25 @@ export default async function Home({
     [...allFlags].map(([id, f]) => [id, f[0] ?? null])
   );
   const criticalCount = [...flags.values()].filter(Boolean).length;
-  const visiblePatients = (filter === "critical" ? patients.filter((p) => flags.get(p.id)) : patients)
+
+  // The other two things a round sorts patients by: where they are in their management
+  // (POST OP / PRE OP …, computed on read like the day count) and what kind of job is open.
+  // Each chip is a URL, like Critical, so the filter survives a refresh and the back button.
+  const managementOf = new Map(patients.map((p) => [p.id, managementLabel(p, pack)]));
+  const managementCounts = new Map<string, number>();
+  for (const m of managementOf.values()) if (m) managementCounts.set(m, (managementCounts.get(m) ?? 0) + 1);
+  const jobTypeCounts = new Map<TaskCategory, number>();
+  for (const set of jobTypes.values()) for (const c of set) jobTypeCounts.set(c, (jobTypeCounts.get(c) ?? 0) + 1);
+  const [filterKind, filterValue] = filter?.includes(":") ? [filter.slice(0, filter.indexOf(":")), filter.slice(filter.indexOf(":") + 1)] : [filter, ""];
+  const passesFilter = (p: WardPatient & { open_task_count: number }) =>
+    filterKind === "critical"
+      ? Boolean(flags.get(p.id))
+      : filterKind === "mgmt"
+        ? managementOf.get(p.id) === filterValue
+        : filterKind === "job"
+          ? jobTypes.get(p.id)?.has(filterValue as TaskCategory) ?? false
+          : true;
+  const visiblePatients = patients.filter(passesFilter)
     // Critical beds first, then walking order. A stable sort keeps bed order inside each half,
     // so a flagged BP in bed 24 is seen before the round reaches it rather than found by
     // scanning twenty rows.
@@ -203,8 +226,8 @@ export default async function Home({
 
         {/* The Critical filter appears only when something is critical: a chip reading
             "Critical 0" on every visit was noise in the one colour that must never be. */}
-        {(criticalCount > 0 || filter) && (
-          <div className="mt-2 flex gap-2">
+        {(criticalCount > 0 || managementCounts.size > 0 || jobTypeCounts.size > 0 || filter) && (
+          <div className="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <FilterChip href="/ward" label="All" value={patients.length} active={!filter} />
             {criticalCount > 0 && (
               <FilterChip
@@ -215,6 +238,12 @@ export default async function Home({
                 active={filter === "critical"}
               />
             )}
+            {[...managementCounts].sort((a, b) => b[1] - a[1]).map(([m, n]) => (
+              <FilterChip key={m} href={`/ward?filter=mgmt:${encodeURIComponent(m)}`} label={m} value={n} active={filter === `mgmt:${m}`} />
+            ))}
+            {TASK_CATEGORY_ORDER.filter((c) => jobTypeCounts.has(c)).map((c) => (
+              <FilterChip key={c} href={`/ward?filter=job:${c}`} label={TASK_CATEGORY_META[c].label} value={jobTypeCounts.get(c)!} active={filter === `job:${c}`} />
+            ))}
           </div>
         )}
 
@@ -302,6 +331,8 @@ export default async function Home({
                 procedures={procedures}
                 templateChoices={templateChoices}
                 pack={pack}
+                management={managementOf.get(p.id) ?? null}
+                jobTypeLabels={[...(jobTypes.get(p.id) ?? [])].map((c) => TASK_CATEGORY_META[c].label)}
               />
             ))}
           </ul>
@@ -406,6 +437,8 @@ function PatientRow({
   procedures,
   templateChoices,
   pack,
+  management,
+  jobTypeLabels,
 }: {
   patient: WardPatient;
   /** The one genuinely critical vital or blood result on this patient, if any — see lib/ward-flags.ts. */
@@ -422,6 +455,10 @@ function PatientRow({
   templateChoices: { family: string; variant: string | null; label: string }[];
   /** The unit's specialty pack — it decides whether the day reads "POD 3" or "C2 D3". */
   pack: SpecialtyPack;
+  /** POST OP / PRE OP … as the handover says it; searchable, never shown twice on the row. */
+  management: string | null;
+  /** The kinds of job open on this patient, for the search box. */
+  jobTypeLabels: string[];
 }) {
   // Named only for patients who have actually been operated on, and only from the operation
   // recorded against them. A patient still awaiting surgery counts from admission and has no
@@ -450,7 +487,8 @@ function PatientRow({
     // inside it, so opening the menu does not also walk into the patient. Only a critical
     // reading colours the row's edge.
     <li
-      data-search={`${patient.bed} ${patientName(patient)}`.toLowerCase()}
+      // Bed and name, then what a round asks for next: "pod 3", "post op", "pre op", "sampling".
+      data-search={[patient.bed, patientName(patient), dayLabel(patient, pack), management, ...jobTypeLabels].filter(Boolean).join(" ").toLowerCase()}
       className={"ios-row relative border-l-[3px] " + (flag ? "border-l-critical-dot" : "border-l-transparent")}
     >
       <Link
