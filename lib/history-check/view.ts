@@ -78,6 +78,9 @@ export type RunView = {
   rejected: number;
   /** Leading differentials as "questions that would separate", never as a diagnosis. */
   leading: string[];
+  /** The same differentials with what in the history raised each — the recorded facts that
+   *  point there, by the tree's own pointers. Shown as "to consider", never as a diagnosis. */
+  leadingDetail: { name: string; raisedBy: string[] }[];
 };
 
 const KIND_LABEL: Record<HistorySource["kind"], string> = { voice: "Voice", photo: "Photo", manual: "Typed" };
@@ -110,7 +113,7 @@ export function buildRunView(
   };
   const empty: ModeView = { bands: [], text: "", unasked: tree.slots.length };
   if (run.status !== "ok" || !run.result) {
-    return { ...base, wrongPatient: null, wrongPatientDismissed: false, conflicts: [], answered: [], answeredCount: 0, ward: empty, academic: empty, rejected: 0, leading: [] };
+    return { ...base, wrongPatient: null, wrongPatientDismissed: false, conflicts: [], answered: [], answeredCount: 0, ward: empty, academic: empty, rejected: 0, leading: [], leadingDetail: [] };
   }
 
   const resolutions: Resolutions = run.resolutions ?? {};
@@ -175,7 +178,10 @@ export function buildRunView(
 
   const ward = mode("ward");
   const academic = mode("academic");
-  const leading = buildGapList(tree, forGaps, { postOp: opts.postOp, mode: "ward" }).leading.map((l) => l.name);
+  const leadingList = buildGapList(tree, forGaps, { postOp: opts.postOp, mode: "ward" }).leading;
+  const leading = leadingList.map((l) => l.name);
+  const slotLabel = new Map(tree.slots.map((s) => [s.id, s.label]));
+  const leadingDetail = leadingList.map((l) => ({ name: l.name, raisedBy: l.supportedBy.map((id) => slotLabel.get(id) ?? id) }));
   const wp = resolutions.wrong_patient;
 
   return {
@@ -189,5 +195,6 @@ export function buildRunView(
     academic,
     rejected: run.result.rejections.length,
     leading,
+    leadingDetail,
   };
 }

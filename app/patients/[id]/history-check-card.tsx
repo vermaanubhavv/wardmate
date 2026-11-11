@@ -188,6 +188,8 @@ export default function HistoryCheckCard({
               <ConflictBox key={c.slotId} patientId={patientId} runId={run.runId} conflict={c} />
             ))}
 
+            <Differentials items={run.leadingDetail} />
+
             <GapBands bands={view.bands} unasked={view.unasked} answered={run.answeredCount} leading={run.leading} mode={shownMode} />
 
             <AnsweredList items={run.answered} />
@@ -331,6 +333,32 @@ function ConflictBox({ patientId, runId, conflict }: { patientId: string; runId:
         </button>
       </form>
       {error && <p className="mt-2 text-footnote text-warn-fg">{error}</p>}
+    </div>
+  );
+}
+
+/**
+ * The differentials the recorded history points towards, with what points there — a quiet
+ * section of its own rather than a parenthesis after each question, so it is deliberately
+ * visible and deliberately framed: questions to consider, never a diagnosis. The ordering is
+ * the tree's pointer count (lib/history-check/gaps.ts), nothing the model decided.
+ */
+function Differentials({ items }: { items: { name: string; raisedBy: string[] }[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="border-t border-line px-4 py-3">
+      <p className="text-subhead font-semibold">Differentials to consider</p>
+      <ul className="mt-1.5 flex flex-col gap-1.5">
+        {items.map((d) => (
+          <li key={d.name} className="text-subhead">
+            {d.name}
+            {d.raisedBy.length > 0 && (
+              <span className="block text-caption text-muted">Raised by: {d.raisedBy.join(", ")}</span>
+            )}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-caption text-muted">Questions to consider, never a diagnosis. The order follows what the history has recorded so far.</p>
     </div>
   );
 }
