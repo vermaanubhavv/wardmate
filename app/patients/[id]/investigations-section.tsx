@@ -3,6 +3,7 @@ import { groupInvestigations } from "@/lib/investigations";
 import type { Observation } from "@/lib/patient-state";
 import type { WardRanges } from "@/lib/exam-summary";
 import { displayValue } from "@/lib/display-value";
+import LabTrends from "./lab-trends";
 
 /** How one result is judged: the range printed on its own report, then this ward's learned
  *  range. Neither invented — with neither, classifyLab falls back to its built-in table, and
@@ -60,6 +61,9 @@ export default function InvestigationsSection({
 
   return (
     <section className="px-4 pb-6">
+      {/* The key labs across the stay first — a falling haemoglobin is a line, not eight
+          report folds to open in turn. The reports themselves follow, unchanged. */}
+      <LabTrends observations={observations} sex={sex} wardRanges={wardRanges} />
       <p className="ios-group-header mb-2 px-4">Investigations · {reports.length}</p>
       <ul className="flex flex-col gap-2">
         {reports.map((report) => (
