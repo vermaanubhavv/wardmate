@@ -61,6 +61,9 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   const [sending, setSending] = useState(false);
   const [reviews, setReviews] = useState<string[]>([]);
   const [recovered, setRecovered] = useState(0);
+  // Items that just landed — a "Saved" chip for a few seconds, then nothing, which is the
+  // resting state the bar should return to.
+  const [justSaved, setJustSaved] = useState(0);
   // When the screen on show came out of the offline cache while the phone still had some
   // signal — the service worker gives the network three seconds, then shows the saved copy, or
   // shows a copy under five minutes old straight away on a full page load.
@@ -106,7 +109,11 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
 
     if (result.reviews.length > 0) setReviews((r) => [...r, ...result.reviews]);
     // Anything that landed changed a patient, so the screen behind this is now out of date.
-    if (result.sent > 0) router.refresh();
+    if (result.sent > 0) {
+      setJustSaved(result.sent);
+      setTimeout(() => setJustSaved(0), 4000);
+      router.refresh();
+    }
   }, [refresh, router]);
 
   // Runs on mount, and again whenever the connection comes back — `online` is a dependency,
@@ -236,7 +243,17 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
         </p>
       )}
 
-      {sending && <p>Sending {pending === 1 ? "1 item" : `${pending} items`}…</p>}
+      {justSaved > 0 && !sending && pending === 0 && (
+        <p>
+          <Chip>Saved</Chip> {justSaved === 1 ? "1 item" : `${justSaved} items`} sent.
+        </p>
+      )}
+
+      {sending && (
+        <p>
+          <Chip>Syncing</Chip> Sending {pending === 1 ? "1 item" : `${pending} items`}…
+        </p>
+      )}
 
       {!sending && pending > 0 && (
         <ul className="mt-1 flex flex-col gap-1.5">
@@ -256,14 +273,14 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
               </li>
             ) : item.sending ? (
               <li key={item.id}>
-                {item.label || "Item"}, {timeOf(item.queuedAt)} — sending…
+                <Chip>Syncing</Chip> {item.label || "Item"}, {timeOf(item.queuedAt)}
               </li>
             ) : (
               <li key={item.id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="flex-1">
-                  {item.label || "Item"}, {timeOf(item.queuedAt)} —{" "}
+                  <Chip>{item.attempts > 0 ? "Failed" : "Queued"}</Chip> {item.label || "Item"}, {timeOf(item.queuedAt)} —{" "}
                   {item.attempts > 0
-                    ? "not sent: the server turned it down."
+                    ? "the server turned it down."
                     : online
                       ? "not sent yet."
                       : "saved on this phone, sends when you are back online."}
@@ -306,4 +323,14 @@ function timeOf(iso: string) {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+/** One word for where an item is — Saved / Syncing / Queued / Failed — legible on either of the
+ *  bar's two backgrounds, so it is the bar's own text colour on a translucent pill. */
+function Chip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="mr-1 inline-block rounded-full bg-current/15 px-1.5 py-px align-baseline text-caption2 font-semibold uppercase tracking-wide">
+      {children}
+    </span>
+  );
 }
