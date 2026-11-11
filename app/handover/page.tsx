@@ -14,6 +14,7 @@ import { effectiveUrgency, istDate, jobTitle, URGENCY_META } from "@/lib/urgency
 import { shortFinding } from "@/lib/shorthand";
 import CopyHandoverButton from "./copy-button";
 import PaperPrompt from "./paper-prompt";
+import { nudgeSentence } from "@/lib/checklist-nudges";
 import { displayValue } from "@/lib/display-value";
 
 export default async function HandoverPage() {
@@ -228,7 +229,7 @@ function WatchCard({ patient, pack, members }: { patient: HandoverPatient; pack:
           <summary className="flex min-h-11 cursor-pointer items-center">
             {missing.length} not yet recorded
           </summary>
-          <p className="pb-2">{missing.map((m) => m.item.label).join(", ")}</p>
+          <p className="pb-2">{nudgeSentence(dayLabel(patient, pack), patient.procedure ? shortFinding(patient.procedure, pack.key) : null, missing.map((m) => m.item.label))}</p>
         </details>
       )}
     </div>

@@ -24,7 +24,7 @@ import {
   type Observation,
   type PacVerdict,
 } from "@/lib/patient-state";
-import { compareBeds, displayCase, isIdentifierLabel, stripPatientHonorific, managementChoicesFor } from "@/lib/patients";
+import { compareBeds, displayCase, isIdentifierLabel, stripPatientHonorific, managementChoicesFor, dayLabel } from "@/lib/patients";
 import { effectiveUrgency, jobTitle, postOpJob } from "@/lib/urgency";
 import BedsideBar from "./bedside-bar";
 import type { DictationCopy } from "./recorder";
@@ -53,6 +53,8 @@ import SwipeDelete from "./swipe-delete";
 import PacSelect from "./pac-select";
 import EntryCard, { type EntryChange } from "./entry-card";
 import AssignSelect from "./assign-select";
+import { nudgeSentence } from "@/lib/checklist-nudges";
+import { shortFinding } from "@/lib/shorthand";
 import UndoDictation from "./undo-dictation";
 import CaseHistoryCapture from "./case-history-capture";
 import { CaseHistoryCard, ObjectiveSummaryView } from "./case-history-card";
@@ -654,6 +656,13 @@ export default async function PatientPage({
               </span>
             )}
           </div>
+          {/* The gaps as one sentence, the way a senior says it on the round — the template's
+              POD-gated items (lib/checklist-triggers.ts), not a judgement of this patient. */}
+          {missing.length > 0 && (
+            <p className="mb-2 px-4 text-footnote text-warn-fg">
+              {nudgeSentence(dayLabel(patientWithBurn, pack), procedure ? shortFinding(procedure, pack.key) : null, missing.map((m) => m.item.label))}
+            </p>
+          )}
 
           {template && routineFillable && <RoutineRoundButton patientId={patient.id} />}
 

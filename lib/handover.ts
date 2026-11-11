@@ -15,6 +15,7 @@ import { effectiveUrgency, istDate, jobTitle, URGENCY_META } from "@/lib/urgency
 import { shortFinding } from "@/lib/shorthand";
 import { displayValue, isUnreadable } from "@/lib/display-value";
 import { dateTime } from "@/lib/format-date";
+import { nudgeSentence } from "@/lib/checklist-nudges";
 import { canonicalLabName, classifyLab, type SuppliedRange } from "@/lib/lab-ranges";
 import { classifyVital, matchVitalLabel } from "@/lib/vital-ranges";
 
@@ -363,7 +364,7 @@ export function formatHandoverText(handover: WardHandover): string {
       for (const t of p.state.openTasks) lines.push(`- ${jobLine(t, handover.pack.key, handover.members)}`);
       if (p.state.pending.length > 0) lines.push(`- ${checkSummaryText(checkSummary(p.state.pending, p.sex))}`);
       if (p.state.missing.length > 0) {
-        lines.push(`- Not yet recorded: ${p.state.missing.map((m) => m.item.label).join(", ")}`);
+        lines.push(`- ${nudgeSentence(dayLabel(p, handover.pack), p.procedure ? shortFinding(p.procedure, handover.pack.key) : null, p.state.missing.map((m) => m.item.label))}`);
       }
       lines.push("");
     }
