@@ -66,6 +66,10 @@ export type ProgressNote = {
   /** Headings whose empty line prints with open space below — this ward's, from
    *  lib/progress-note-config.ts openSpaceHeadings(). */
   openSpace: string[];
+  /** Today's values still amber — numbers, drugs and doses nobody has confirmed — as
+   *  "label: value". Printed as a list under the sheet so the doctor signing it checks those
+   *  against the chart before the signature makes them the record. Empty when all confirmed. */
+  unconfirmed: string[];
 };
 
 const istDay = (iso: string) =>
@@ -422,6 +426,9 @@ export function buildProgressNote(
     objective,
     assessment,
     openSpace: openSpaceHeadings(noteConfig),
+    unconfirmed: todaysObservations
+      .filter((o) => o.needs_confirmation && !o.confirmed_at && o.value_text?.trim())
+      .map((o) => `${o.label}: ${o.value_text!.trim()}`),
   };
 }
 
@@ -454,6 +461,10 @@ export function formatProgressNoteText(note: ProgressNote): string {
   out.push("");
   out.push(...note.plan);
   out.push("");
+  if (note.unconfirmed.length > 0) {
+    out.push("Unconfirmed — check before signing: " + note.unconfirmed.join("; "));
+    out.push("");
+  }
   out.push("Signature: " + BLANK);
   out.push("");
   out.push(

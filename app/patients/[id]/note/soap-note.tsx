@@ -33,6 +33,17 @@ function Section({
   );
 }
 
+/** The amber values, named on the sheet itself: a signature under a figure nobody has
+ *  confirmed should at least be a signature that knew. Nothing when all are confirmed. */
+export function UnconfirmedNote({ items }: { items: string[] }) {
+  if (items.length === 0) return null;
+  return (
+    <p className="border-b border-black px-3 py-2 text-footnote">
+      <span className="font-semibold">Unconfirmed — check before signing:</span> {items.join("; ")}
+    </p>
+  );
+}
+
 /**
  * The generic SOAP-format printable — for every ward that is not the ESIC Medical College
  * Faridabad pilot (see lib/ward.ts getWardIsEsicFaridabad and patch 0078). Same underlying round
@@ -67,6 +78,8 @@ export default function SoapNote({ note, specialty }: { note: ProgressNote; spec
       <Section label="Objective" lines={note.objective} openSpace={note.openSpace} specialty={specialty} minHeight="min-h-[140px]" />
       <Section label="Assessment" lines={note.assessment} openSpace={note.openSpace} specialty={specialty} minHeight="min-h-[110px]" />
       <Section label="Plan" lines={note.plan} openSpace={note.openSpace} specialty={specialty} minHeight="min-h-[110px]" />
+
+      <UnconfirmedNote items={note.unconfirmed} />
 
       <div className="px-3 py-2 text-subhead">
         <span className="font-semibold">Practitioner&rsquo;s name:</span>{" "}

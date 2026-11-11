@@ -30,8 +30,10 @@ import { BackBar } from "@/app/screen-header";
  *
  * Each side is held to one page by FitPage, which scales it down only when it would spill.
  *
- * Every card prints even when empty, as "NR" (nobody recorded it) or "NAD" (a negative was
- * recorded) — the same two states the patient page uses, never collapsed into each other.
+ * Every card prints even when empty: a blank line to fill by pen (nobody recorded it) or "NAD"
+ * (a negative was recorded) — the same two states the patient page uses, never collapsed into
+ * each other. The blank is a line, not a word: this sheet replaces the paper one, so a gap has
+ * to look like the gap on paper, and nothing may read as a value that was never said.
  * Nothing here is composed: every line is a stored value, printed as stored. Browser print →
  * "Save as PDF" produces the file; same pattern as the discharge summary's print page.
  */
@@ -140,10 +142,11 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-const NR = () => <span className="text-black/60">NR</span>;
+/** A gap, as paper shows it: a line to write on, never a word that could pass for a value. */
+const Blank = () => <span className="inline-block h-3.5 w-24 border-b border-black/60 align-baseline" />;
 
 function SectionLines({ section }: { section: HistorySection }) {
-  return section.lines.length > 0 ? section.lines.map((l) => <p key={l.id}>{objectiveComplaint(l.text) ?? l.text}</p>) : <p>{section.note ?? "NR"}</p>;
+  return section.lines.length > 0 ? section.lines.map((l) => <p key={l.id}>{objectiveComplaint(l.text) ?? l.text}</p>) : <p>{section.note ?? <Blank />}</p>;
 }
 
 /** A history card in its own box, as recorded or NR / NAD. */
@@ -168,7 +171,7 @@ function LeadBox({ section, table, grow = 1.5, min = 24 }: { section: HistorySec
     <Box heading={section.label} grow={grow} min={min} strong>
       {above.length > 0
         ? above.map((t, i) => <p key={i}>{t}</p>)
-        : inRows.length === 0 && Object.keys(answers).length === 0 && <p>{section.note ?? "NR"}</p>}
+        : inRows.length === 0 && Object.keys(answers).length === 0 && <p>{section.note ?? <Blank />}</p>}
       {fields.length > 0 && (
         <div className="mt-1 grid grid-cols-2 gap-x-5 gap-y-1.5">
           {fields.map((f) => (
@@ -304,7 +307,7 @@ export default async function CaseHistoryPrintPage({
       .map((l) => [l.key, l])
   );
   // Complaints and their story first, then the department's lead cards, then the rest — the
-  // rest two to a row, since most are a line or an "NR".
+  // rest two to a row, since most are a line or a blank.
   const [opening, remainder] = [cards.slice(0, 2), cards.slice(2)];
   // A lead that is one of the opening cards (the presenting illness) stays in its place and is
   // simply drawn as a lead block there.
@@ -371,7 +374,7 @@ export default async function CaseHistoryPrintPage({
   const chief = byKey.get("chief")!;
   const past = byKey.get("past")!;
   const sub = "text-caption2 font-semibold uppercase";
-  const ageSex = `${patient.age_years != null ? `${patient.age_years} yrs` : "NR"} / ${patient.sex ?? "NR"}`;
+  const ageSex = `${patient.age_years != null ? `${patient.age_years} yrs` : "____"} / ${patient.sex ?? "____"}`;
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col bg-background print:max-w-none print:bg-white">
@@ -431,7 +434,7 @@ export default async function CaseHistoryPrintPage({
               ].map(([k, v]) => (
                 <div key={k} className="border-b border-r border-black/60 px-1 py-0.5">
                   <p className="text-caption2 uppercase text-black/70">{k}</p>
-                  <p className="min-h-[1.35em] font-semibold">{v ?? <NR />}</p>
+                  <p className="min-h-[1.35em] font-semibold">{v ?? <Blank />}</p>
                 </div>
               ))}
             </div>
@@ -475,7 +478,7 @@ export default async function CaseHistoryPrintPage({
             <Pair grow={1.2} min={34}>
               <Box heading="Examination — general physical" className="">
                 <Row label="Vitals">
-                  {exam.vitals.length > 0 ? exam.vitals.map((v) => `${v.label} ${v.value}`).join(" · ") : <NR />}
+                  {exam.vitals.length > 0 ? exam.vitals.map((v) => `${v.label} ${v.value}`).join(" · ") : <Blank />}
                 </Row>
                 <Row label="General">
                   {exam.piccle ? (
@@ -485,12 +488,12 @@ export default async function CaseHistoryPrintPage({
                         ` · ${exam.piccle.notRecorded.join(", ").toLowerCase()} not recorded`}
                     </>
                   ) : (
-                    <NR />
+                    <Blank />
                   )}
                 </Row>
                 {(offers("performance") || performance.lines.length > 0) && (
                   <Row label="Performance status">
-                    {performance.lines.length > 0 ? performance.lines.map((l) => l.text).join("; ") : <NR />}
+                    {performance.lines.length > 0 ? performance.lines.map((l) => l.text).join("; ") : <Blank />}
                   </Row>
                 )}
               </Box>
@@ -503,7 +506,7 @@ export default async function CaseHistoryPrintPage({
                     .filter(Boolean);
                   return (
                     <Row key={c.label} label={c.heading}>
-                      {values.length > 0 ? values.join("; ") : <NR />}
+                      {values.length > 0 ? values.join("; ") : <Blank />}
                     </Row>
                   );
                 })}
@@ -528,7 +531,7 @@ export default async function CaseHistoryPrintPage({
             <Box heading="Latest investigations" grow={1} min={26}>
               {allReports.length === 0 ? (
                 <p>
-                  <NR />
+                  <Blank />
                 </p>
               ) : (
                 <>
@@ -559,10 +562,10 @@ export default async function CaseHistoryPrintPage({
 
             <Box heading="Summary" grow={0.8} min={22}>
               <Row label="Presenting with">
-                {chief.lines.length > 0 ? chief.lines.map((l) => objectiveComplaint(l.text) ?? l.text).join("; ") : <NR />}
+                {chief.lines.length > 0 ? chief.lines.map((l) => objectiveComplaint(l.text) ?? l.text).join("; ") : <Blank />}
               </Row>
               <Row label="Past history">{past.lines.length > 0 ? past.lines.map((l) => l.text).join("; ") : past.note}</Row>
-              <Row label="Provisional diagnosis">{patient.primary_diagnosis ?? <NR />}</Row>
+              <Row label="Provisional diagnosis">{patient.primary_diagnosis ?? <Blank />}</Row>
               {differential.length > 0 && <Row label="Differential diagnosis">{differential.join("; ")}</Row>}
             </Box>
 
@@ -570,7 +573,7 @@ export default async function CaseHistoryPrintPage({
               <div className="grid grid-cols-2 gap-x-4">
                 <div>
                   <p className={sub}>Plan</p>
-                  {planItems.length > 0 ? planItems.map((p, i) => <p key={i}>• {p}</p>) : <NR />}
+                  {planItems.length > 0 ? planItems.map((p, i) => <p key={i}>• {p}</p>) : <Blank />}
                 </div>
                 <div>
                   <p className={sub}>Current treatment</p>
@@ -582,7 +585,7 @@ export default async function CaseHistoryPrintPage({
                       </p>
                     ))
                   ) : (
-                    <NR />
+                    <Blank />
                   )}
                 </div>
               </div>
