@@ -120,6 +120,7 @@ export default function EntryCard({
   photoUrl,
   accepted,
   edited,
+  by = null,
   changes = [],
   extractionError,
   values,
@@ -136,6 +137,8 @@ export default function EntryCard({
   photoUrl?: string | null;
   accepted: boolean;
   edited: boolean;
+  /** Who dictated it. Null when their profile has no name. */
+  by?: string | null;
   /** Who corrected or removed which value, newest first. */
   changes?: EntryChange[];
   extractionError: string | null;
@@ -189,11 +192,17 @@ export default function EntryCard({
       >
         <span className="chev shrink-0 text-caption2 text-muted transition-transform">▶</span>
         <span className="shrink-0 text-footnote tabular-nums text-muted">{time}</span>
+        {by && <span className="shrink-0 text-footnote text-muted">{by}</span>}
         <span className="min-w-0 flex-1 truncate text-footnote text-muted">{gist}</span>
       </summary>
 
       <div className={embedded ? "px-4 pb-3 pt-3" : "px-4 pb-3"}>
-        {embedded && <p className="mb-1 text-caption2 uppercase tracking-wide text-muted">{time}</p>}
+        {embedded && (
+          <p className="mb-1 text-caption2 uppercase tracking-wide text-muted">
+            {time}
+            {by && <> · {by}</>}
+          </p>
+        )}
         {values.length === 0 ? (
           <p className="text-subhead text-muted">
             {extractionError
