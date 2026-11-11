@@ -10,7 +10,8 @@ import { Search } from "lucide-react";
  * patients to serve the few times someone searches.
  *
  * The field filters the server-rendered rows of the list with this id in place, by the
- * `data-search` each row carries. Nothing is fetched; the list is already all here. Rows a
+ * `data-search` each row carries — bed, name, the day count ("POD 3"), management ("POST OP")
+ * and the kinds of job open, so the one box answers most of what a round asks. Nothing is fetched; the list is already all here. Rows a
  * later server refresh puts in the list are filtered too, so a search in progress never shows
  * a patient it should be hiding.
  */
@@ -78,7 +79,7 @@ export default function WardSearch({
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Bed or name"
+          placeholder="Bed, name, POD 3, post op…"
           aria-label="Search by bed or name"
           autoCorrect="off"
           autoCapitalize="off"
@@ -97,7 +98,7 @@ export default function WardSearch({
         </button>
       </div>
       {shown === 0 && (
-        <p className="px-1 text-footnote text-muted">No bed or name matches &ldquo;{query.trim()}&rdquo;.</p>
+        <p className="px-1 text-footnote text-muted">Nothing matches &ldquo;{query.trim()}&rdquo;.</p>
       )}
     </div>
   );
