@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { compareBeds, stripPatientHonorific } from "@/lib/patients";
 import { classifyLab, type LabFlag, type SuppliedRange } from "@/lib/lab-ranges";
 import { displayValue } from "@/lib/display-value";
+import { asRegion, type PhotoRegion } from "@/lib/photo-crop";
 
 /**
  * Everything on the unit still waiting to be checked: every value marked `needs_confirmation`
@@ -29,6 +30,8 @@ export type PendingConfirm = {
   source: "voice" | "photo" | "manual";
   /** The photo it was read off, for showing beside it. Null for a spoken or typed value. */
   photo_path: string | null;
+  /** Where on that photo the line sits (patch 0116) — the card shows that crop. */
+  source_region: PhotoRegion | null;
   /** Why it is waiting, in one short phrase for the card. */
   reason: string;
   /** Low/high against the printed range (or the built-in one), shown with that range. */
@@ -70,7 +73,7 @@ export async function getWardPendingConfirmations(wardId: string): Promise<Pendi
   const { data: rows } = await supabase
     .from("observations")
     .select(
-      "id, patient_id, kind, label, value_text, unit, source_quote, conflict_note, recorded_at, ref_low, ref_high, ref_text, entries(source, photo_path)"
+      "id, patient_id, kind, label, value_text, unit, source_quote, conflict_note, recorded_at, ref_low, ref_high, ref_text, source_region, entries(source, photo_path)"
     )
     .in(
       "patient_id",
@@ -109,6 +112,7 @@ export async function getWardPendingConfirmations(wardId: string): Promise<Pendi
         unit: (r.unit as string | null) ?? null,
         source,
         photo_path: entry?.photo_path ?? null,
+        source_region: asRegion(r.source_region),
         reason: reasonFor({ conflict_note: r.conflict_note, kind: r.kind, source }),
         flag: reading?.flag ?? null,
         range: reading?.flag ? (supplied ? rangeText(r.ref_low, r.ref_high, reading.range) : reading.range) : null,

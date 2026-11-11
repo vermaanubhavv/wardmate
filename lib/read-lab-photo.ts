@@ -20,6 +20,9 @@ export type ReadLabValue = {
   ref_high: number | null;
   /** The range as printed, e.g. "13.0 - 17.0". Checkable against the photo like source_quote. */
   ref_text: string | null;
+  /** Where on the photo the source_quote line sits — fractions of the full image, top-left
+   *  origin. Null when the reader could not place it; never guessed. Absent on older reads. */
+  region?: { x: number; y: number; width: number; height: number } | null;
 };
 
 export type LabPhotoResult = {
@@ -61,6 +64,8 @@ Absolute rules:
 
 6. If the image is neither a laboratory report nor an observation chart / monitor, or no values are legible, return an empty list. That is a correct answer.
 
+7. region: for each value, the smallest axis-aligned box around the printed line you copied into source_quote — the test name and its result together as they appear on the page. Coordinates are fractions of the FULL IMAGE: x and y from the left and top edges, width and height as fractions of the image's width and height, all between 0 and 1, regardless of how the paper is tilted in the photo. If you cannot place the line, region is null. Rule 1 applies: a box you are unsure of is null, not a guess.
+
 For value_num, give the number alone when the result is numeric; otherwise null. For qualitative results ("positive", "nil", "trace"), put the word in value_text and leave value_num null.`;
 
 const SCHEMA = {
@@ -85,6 +90,18 @@ const SCHEMA = {
             type: ["string", "null"],
             description: "The reference range exactly as printed beside this result, or null.",
           },
+          region: {
+            type: ["object", "null"],
+            description: "The smallest box around the printed line copied into source_quote, as fractions of the full image (0 = left/top edge, 1 = right/bottom), or null when it cannot be placed.",
+            properties: {
+              x: { type: "number" },
+              y: { type: "number" },
+              width: { type: "number" },
+              height: { type: "number" },
+            },
+            required: ["x", "y", "width", "height"],
+            additionalProperties: false,
+          },
         },
         required: [
           "label",
@@ -97,6 +114,7 @@ const SCHEMA = {
           "ref_low",
           "ref_high",
           "ref_text",
+          "region",
         ],
         additionalProperties: false,
       },

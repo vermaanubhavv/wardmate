@@ -1,6 +1,7 @@
 import type { Supa } from "@/lib/supabase/server";
 import type { ExtractedObservation } from "@/lib/extract";
 import type { ReadLabValue } from "@/lib/read-lab-photo";
+import { asRegion } from "@/lib/photo-crop";
 
 type DayPatient = { post_op_day: number | null; admission_day: number };
 
@@ -72,5 +73,6 @@ export function labRow(v: ReadLabValue) {
     ref_high: v.ref_high,
     ref_text: v.ref_text,
     conflict_note: v.uncertain ? "Printing was unclear — check against the photo." : null,
+    source_region: asRegion(v.region),
   };
 }

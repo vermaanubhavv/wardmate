@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { cropStyle } from "@/lib/photo-crop";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { flagMisheard } from "../patients/[id]/flag-misheard";
@@ -142,6 +143,8 @@ export default function ConfirmQueue({
                 <SwipeCard
                   key={o.id}
                   o={o}
+                  photoUrl={o.photo_path ? photos[o.photo_path] ?? null : null}
+                  onViewPhoto={setViewing}
                   disabled={pending}
                   editing={editingId === o.id}
                   draft={draft}
@@ -227,6 +230,8 @@ export default function ConfirmQueue({
 
 function SwipeCard({
   o,
+  photoUrl,
+  onViewPhoto,
   disabled,
   editing,
   draft,
@@ -238,6 +243,9 @@ function SwipeCard({
   onSave,
 }: {
   o: PendingConfirm;
+  /** The signed link to the photo this value was read off, when there is one. */
+  photoUrl: string | null;
+  onViewPhoto: (src: string) => void;
   disabled: boolean;
   editing: boolean;
   draft: string;
@@ -319,6 +327,19 @@ function SwipeCard({
             )}
             {o.range && <span className="text-footnote text-muted">ref {o.range}</span>}
           </p>
+        )}
+
+        {/* The piece of the photo this value was read from, when the reader placed it: the
+            value is checked against the page, not against the reader's copy of it. Tap for
+            the whole photo. */}
+        {photoUrl && o.source_region && (
+          <button
+            type="button"
+            onClick={() => onViewPhoto(photoUrl)}
+            aria-label="Open the full photo"
+            className="max-h-24 w-full overflow-hidden rounded-[8px] border border-line/70 bg-chip active:opacity-80"
+            style={cropStyle(photoUrl, o.source_region)}
+          />
         )}
 
         <p className="text-footnote italic text-muted">

@@ -6,6 +6,7 @@ import { createClient, type Supa } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 import { istDayKey } from "@/lib/patient-state";
 import type { RegisterRow } from "@/lib/read-register";
+import { asRegion } from "@/lib/photo-crop";
 
 /**
  * Writes the rows the resident approved, and only those.
@@ -74,6 +75,7 @@ export async function applyRegister(formData: FormData) {
         value_num: null,
         unit: null,
         source_quote: row.source_quote,
+        source_region: asRegion(row.region),
         needs_confirmation: true,
         conflict_note: row.uncertain
           ? "Handwriting was unclear — check against the register photo."
@@ -90,6 +92,7 @@ export async function applyRegister(formData: FormData) {
         value_num: null,
         unit: null,
         source_quote: row.source_quote,
+        source_region: asRegion(row.region),
         needs_confirmation: true,
         conflict_note: row.uncertain
           ? "Handwriting was unclear — check against the register photo."

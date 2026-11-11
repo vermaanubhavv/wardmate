@@ -20,6 +20,9 @@ export type RegisterRow = {
   uncertain: boolean;
   /** One per plan, same order: Jev's to-do rescue and bucket. Absent on reads from before. */
   plan_judgments?: { task_open: boolean | null; task_category: TaskCategoryJudgment | null }[];
+  /** Where on the photo this row sits — fractions of the full image, top-left origin. Null when
+   *  the reader could not place it; never guessed. Absent on reads from before. */
+  region?: { x: number; y: number; width: number; height: number } | null;
 };
 
 export type RegisterResult = {
@@ -44,6 +47,8 @@ Absolute rules:
 5. Keep the writer's own words and units. Do not expand abbreviations, do not convert units, do not tidy phrasing. "abd soft" stays "abd soft".
 
 6. If the image is not a ward register, or nothing is legible, return an empty list of rows. That is a correct answer.
+
+8. region: for each row, the smallest axis-aligned box around that patient's whole row as written on the page. Coordinates are fractions of the FULL IMAGE: x and y from the left and top edges, width and height as fractions of the image's width and height, all between 0 and 1, regardless of how the register is tilted in the photo. If you cannot place the row, region is null — rule 1 applies, a box you are unsure of is null, not a guess.
 
 7. Every written column of a row must end up somewhere in your output. A register is usually ruled into columns with headings such as BED, NAME, DIAGNOSIS, POD, FINDINGS, ADVICE, PLAN, TREATMENT or REMARKS. Work across the row column by column and account for all of them. Silently dropping a column — the advice column especially — loses the instructions the round depends on.
 
@@ -77,8 +82,20 @@ const SCHEMA = {
           },
           plans: { type: "array", items: { type: "string" } },
           uncertain: { type: "boolean" },
+          region: {
+            type: ["object", "null"],
+            description: "The smallest box around the printed line copied into source_quote, as fractions of the full image (0 = left/top edge, 1 = right/bottom), or null when it cannot be placed.",
+            properties: {
+              x: { type: "number" },
+              y: { type: "number" },
+              width: { type: "number" },
+              height: { type: "number" },
+            },
+            required: ["x", "y", "width", "height"],
+            additionalProperties: false,
+          },
         },
-        required: ["name", "bed", "source_quote", "findings", "plans", "uncertain"],
+        required: ["name", "bed", "source_quote", "findings", "plans", "uncertain", "region"],
         additionalProperties: false,
       },
     },
