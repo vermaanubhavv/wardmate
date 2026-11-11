@@ -250,7 +250,7 @@ export default async function PatientPage({
     ]);
   });
 
-  // History check (behind NEXT_PUBLIC_HISTORY_CHECK). Suggestions come from the chief
+  // History check (on unless NEXT_PUBLIC_HISTORY_CHECK=off). Suggestions come from the chief
   // complaints of the case history as dictated (identifier labels dropped, exactly as
   // allEntries does below); the card itself is rendered from stored runs, never live. Needs
   // only the entries and the pack, so it starts as soon as both land; awaited further down.

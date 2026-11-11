@@ -6,9 +6,12 @@ clinical value: every stored answer carries a verbatim quote from the dictation,
 a third state that is never rendered as a negative, and the output is a list of questions to
 consider, never a diagnosis or an instruction.
 
-Feature flag: `NEXT_PUBLIC_HISTORY_CHECK=on` (env, Vercel + `.env.local`). With the flag off the
+Feature flag: `NEXT_PUBLIC_HISTORY_CHECK=off` (env, Vercel + `.env.local`) turns it off: the
 card is not rendered, the API route returns 404, the server actions refuse, the `/learn` pages
-return 404, and nothing under `lib/history-check/` is queried. Off by default.
+return 404, and nothing under `lib/history-check/` is queried. On by default since the
+paper-replacement phase (item 16), which made the differentials a visible section of the card:
+"Differentials to consider", each with the recorded facts that raised it, under the standing
+one-line disclaimer.
 
 Clinical content carries `reviewStatus` and `reviewedBy`, and the card and learning pages show
 a chip for each: amber "Pending clinician review", or green "Reviewed · <reviewer>".
