@@ -33,6 +33,7 @@ import DiagnosisCombobox from "../../diagnosis-combobox";
 import { IconCheck, statusChip, SelChip, OptionRow, Toggle, genBtn, approveBtn, StepShell } from "../card-kit";
 import {
   saveDischargeSection,
+  setDischargeNotRecordedAction,
   revalidateDischargeAction,
   approveDischargeSectionAction,
   finaliseDischargeAction,
@@ -139,6 +140,30 @@ const DX_CATEGORIES: { value: DiagnosisCategory; label: string }[] = [
   { value: "comorbidity", label: "Comorbidity" },
   { value: "complication", label: "Complication" },
 ];
+
+/**
+ * The dictated words a compiled row rests on — the same (i) the patient page offers, so a drug
+ * or a diagnosis on the summary is never only the compiler's word for it. A value still amber
+ * says so, in amber, and the row blocks Finalise until it is confirmed on the patient page.
+ */
+function Sources({ ids, sources, patientId }: { ids?: string[]; sources?: DischargeCheckContext["sources"]; patientId: string }) {
+  const rows = (ids ?? []).map((id) => sources?.[id]).filter((s): s is NonNullable<typeof s> => !!s);
+  if (rows.length === 0) return null;
+  const unconfirmed = rows.some((r) => r.unconfirmed);
+  return (
+    <p className={"text-caption2 leading-snug " + (unconfirmed ? "text-warn-fg" : "text-muted")}>
+      From: {rows.map((r) => `“${r.quote}”`).join(" · ")}
+      {unconfirmed && (
+        <>
+          {" · "}
+          <Link href={`/patients/${patientId}`} className="font-semibold underline">
+            not confirmed — confirm on the patient page
+          </Link>
+        </>
+      )}
+    </p>
+  );
+}
 
 export default function DischargeWorkspace({
   patientId,
@@ -696,7 +721,7 @@ export default function DischargeWorkspace({
       case "histopathology":
         return statusChip(draft.histopathology.length ? "compiled" : "none", "muted");
       case "medications":
-        return statusChip(draft.medications.length ? "compiled" : "none", "muted");
+        return statusChip(draft.medications.length ? "compiled" : (draft.notRecorded ?? []).includes("medications") ? "none on discharge" : "none", "muted");
       case "conditionAtDischarge":
         return blockingBySection.has("conditionAtDischarge") ? statusChip("incomplete", "warn") : statusChip("compiled", "muted");
       case "primaryCareActions":
@@ -800,6 +825,7 @@ export default function DischargeWorkspace({
                     ))}
                   </div>
                   {d.derivedFrom && <p className="text-caption2 text-muted">Derived from the operation ({d.derivedFrom}) — confirm it.</p>}
+                  <Sources ids={d.sourceObservationIds} sources={liveCheckContext.sources} patientId={patientId} />
                   <button type="button" onClick={() => patch("diagnoses", "diagnoses", draft.diagnoses.filter((_, j) => j !== i))} className="self-start text-caption text-muted">
                     Remove
                   </button>
@@ -840,6 +866,7 @@ export default function DischargeWorkspace({
                 <div key={p.id} className="flex flex-col gap-2 rounded-[10px] border border-line p-2.5">
                   <SuggestField label="Procedure" value={p.name} options={profile.procedureSuggestions} onChange={(v) => setP({ name: v })} />
                   <Field label="Date" type="date" value={p.date} onChange={(v) => setP({ date: v || null })} />
+                  <Sources ids={p.sourceObservationIds} sources={liveCheckContext.sources} patientId={patientId} />
                   {/* A unit that does not operate prints one line — what, when, what it found —
                       so it asks only for that. */}
                   {profile.operative ? (
@@ -1069,6 +1096,9 @@ export default function DischargeWorkspace({
                       <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-chip text-footnote text-muted">×</span>
                     </button>
                   </div>
+                  <div className="px-3 pb-2 empty:hidden">
+                    <Sources ids={m.sourceObservationIds} sources={liveCheckContext.sources} patientId={patientId} />
+                  </div>
                   {open && (
                     <div className="flex flex-col gap-2 border-t border-line p-3">
                       <Field label="Generic name" value={m.generic} onChange={(v) => setM({ generic: v })} />
@@ -1103,6 +1133,29 @@ export default function DischargeWorkspace({
                 </div>
               );
             })}
+            {draft.medications.length === 0 && !oneOff && (
+              <div className="flex items-center gap-3 rounded-[10px] border border-line px-3 py-2.5">
+                <div className="flex-1">
+                  <p className="text-footnote font-semibold">No medications on discharge</p>
+                  <p className="text-caption2 text-muted">
+                    Printed in words. Left unmarked, an empty list prints as a blank line and, with drugs on the record, blocks Finalise.
+                  </p>
+                </div>
+                <Toggle
+                  on={(draft.notRecorded ?? []).includes("medications")}
+                  onClick={() => {
+                    const was = (draft.notRecorded ?? []).includes("medications");
+                    const next = was
+                      ? (draft.notRecorded ?? []).filter((x) => x !== "medications")
+                      : [...(draft.notRecorded ?? []), "medications" as DischargeSectionId];
+                    setDraft((d) => ({ ...d, notRecorded: next }));
+                    void setDischargeNotRecordedAction(patientId, next).then((r) => {
+                      if (!r.ok) setMessage(r.error ?? "Could not save the mark.");
+                    });
+                  }}
+                />
+              </div>
+            )}
             {removedMed && (
               <div className="flex items-center justify-between rounded-[10px] bg-chip pl-3 text-footnote">
                 <span className="truncate text-muted">Removed {removedMed.med.generic || "drug"}</span>

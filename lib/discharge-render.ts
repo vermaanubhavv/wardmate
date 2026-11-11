@@ -26,6 +26,8 @@ import { stripPatientHonorific } from "@/lib/patients";
  */
 
 export const BLANK = "____________________";
+/** The words the medication section prints when the resident has marked it so (patch 0113). */
+export const NO_MEDICATIONS = "No medications on discharge";
 
 const istDay = (iso: string | null): string | null =>
   iso
@@ -94,6 +96,8 @@ export type DischargeDocument = {
   investigationsApproved: boolean;
   histopathology: HistopathologySpecimen[];
   medications: DischargeMedication[];
+  /** The resident has positively said there are none — printed in words, never a blank. */
+  medicationsNone: boolean;
   /** drugKey -> the ward formulary's confirmed wording. Plain object so the document survives
    *  JSON (the one-off flow ships it through a route response). */
   medicationFormulary: Record<string, string>;
@@ -194,6 +198,7 @@ export function buildDischargeDocument(
     investigationsApproved: !!draft.relevantInvestigations.approvedAt,
     histopathology: draft.histopathology,
     medications: draft.medications,
+    medicationsNone: draft.medications.length === 0 && (draft.notRecorded ?? []).includes("medications"),
     medicationFormulary: Object.fromEntries(context.formularyMappings),
     condition: conditionParts.join(" ") || null,
     primaryCareActions: draft.primaryCareActions,
@@ -316,7 +321,7 @@ export function formatDischargePlainText(doc: DischargeDocument): string {
   }
 
   heading("Medications on discharge");
-  if (doc.medications.length === 0) out.push(`  ${BLANK}`);
+  if (doc.medications.length === 0) out.push(doc.medicationsNone ? `  ${NO_MEDICATIONS}` : `  ${BLANK}`);
   doc.medications.forEach((m, i) => out.push(`  ${i + 1}. ${medLine(m)}`));
 
   heading("Primary care actions");
@@ -342,6 +347,7 @@ export function formatDischargePlainText(doc: DischargeDocument): string {
   if (doc.authentication.designation) out.push(`  ${doc.authentication.designation}`);
   if (doc.authentication.department) out.push(`  ${doc.authentication.department}`);
   out.push(`  Completed: ${doc.authentication.completedAt || BLANK}`);
+  out.push(`  Signature: ${BLANK}    Date: ${BLANK}`);
   if (doc.authentication.seniorReviewer) out.push(`  Senior reviewer: ${doc.authentication.seniorReviewer}`);
 
   return out.join("\n");

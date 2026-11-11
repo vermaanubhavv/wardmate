@@ -64,7 +64,10 @@ export type Diagnosis = {
   text: string;
   source: SectionSource;
   /** When the primary was derived from the operation rather than recorded — shown, never hidden. */
-  derivedFrom?: string | null;
+  derivedFrom?: string | null;  /** Observation ids this row was compiled from — the tap that shows the dictated words it
+   *  rests on, and what the checks look at for an unconfirmed value. Empty or absent on a row
+   *  the resident typed. */
+  sourceObservationIds?: string[];
 };
 
 // --- 5. Operation / Procedures ---------------------------------------------------------------
@@ -80,7 +83,10 @@ export type Procedure = {
   drains: string | null;
   complications: string | null;
   outcome: string | null;
-  source: SectionSource;
+  source: SectionSource;  /** Observation ids this row was compiled from — the tap that shows the dictated words it
+   *  rests on, and what the checks look at for an unconfirmed value. Empty or absent on a row
+   *  the resident typed. */
+  sourceObservationIds?: string[];
 };
 
 /** The row a resident adds to say, positively, that no procedure was done this admission.
@@ -135,7 +141,10 @@ export type HistopathologySpecimen = {
   status: HistopathologyStatus;
   result: string | null;
   reviewPlan: string | null;
-  source: SectionSource;
+  source: SectionSource;  /** Observation ids this row was compiled from — the tap that shows the dictated words it
+   *  rests on, and what the checks look at for an unconfirmed value. Empty or absent on a row
+   *  the resident typed. */
+  sourceObservationIds?: string[];
 };
 
 // --- 9. Medications on Discharge --------------------------------------------------------
@@ -171,7 +180,10 @@ export type DischargeMedication = {
   reason: string | null;
   /** The lookup key for the ward formulary mapping — see lib/drug-key.ts. */
   drugKey: string;
-  source: SectionSource;
+  source: SectionSource;  /** Observation ids this row was compiled from — the tap that shows the dictated words it
+   *  rests on, and what the checks look at for an unconfirmed value. Empty or absent on a row
+   *  the resident typed. */
+  sourceObservationIds?: string[];
 };
 
 // --- 10. Condition at Discharge ---------------------------------------------------------
@@ -336,6 +348,9 @@ export type DischargeDraft = {
   advice: Advice;
   redFlags: RedFlags;
   authentication: Authentication;
+  /** Sections the resident has positively marked as having nothing to list (patch 0113).
+   *  Prints as words, and lifts that section's "empty" check. Absent on older drafts. */
+  notRecorded?: DischargeSectionId[];
 };
 
 /** The editable / approvable section ids, in protocol order. Drives the workspace and the

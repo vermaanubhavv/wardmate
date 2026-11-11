@@ -24,6 +24,7 @@ import {
   medLine,
   adviceLines,
   BLANK,
+  NO_MEDICATIONS,
   type DischargeDocument,
 } from "@/lib/discharge-render";
 
@@ -255,7 +256,7 @@ function buildBody(doc: DischargeDocument, logoBytes: Buffer | null): (Paragraph
 
   // 9. Medications
   out.push(heading("Medications on Discharge"));
-  if (doc.medications.length === 0) out.push(body(BLANK));
+  if (doc.medications.length === 0) out.push(body(doc.medicationsNone ? NO_MEDICATIONS : BLANK));
   doc.medications.forEach((m, i) => out.push(new Paragraph({ children: [plain(`${i + 1}. ${medLine(m)}`)] })));
 
   // 11–14. One Advice list, matching the printed sheet.

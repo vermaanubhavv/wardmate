@@ -43,7 +43,19 @@ export type DischargeCheckContext = {
   /** Condition-at-Discharge variables that must be set, per the unit (lib/specialty/discharge.ts).
    *  Absent = 5, the surgical rule. */
   conditionMinimum?: number;
+  /** Every observation on the record, by id: the dictated words a compiled row rests on and
+   *  whether that value is still amber. What the workspace shows under a row, and what the
+   *  unconfirmed check reads. Absent on older callers. */
+  sources?: Record<string, { quote: string; unconfirmed: boolean }>;
 };
+
+/** The sections whose compiled rows carry sourceObservationIds. */
+const TRACED_SECTIONS: { id: DischargeSectionId; rows: (d: DischargeDraft) => { sourceObservationIds?: string[] }[] }[] = [
+  { id: "diagnoses", rows: (d) => d.diagnoses },
+  { id: "procedures", rows: (d) => d.procedures },
+  { id: "histopathology", rows: (d) => d.histopathology },
+  { id: "medications", rows: (d) => d.medications },
+];
 
 export function buildCheckContext(context: DischargeContext): DischargeCheckContext {
   const FOLLOW_UP_MENTION = /\b(opd|follow[\s-]?up|review|clinic|come back|revisit)\b/i;
@@ -54,6 +66,11 @@ export function buildCheckContext(context: DischargeContext): DischargeCheckCont
     ),
     drainInSituOnRecord: drainStillIn(context.observations),
     conditionMinimum: dischargeProfileFor(context.pack).conditionMinimum,
+    // ponytail: every observation of the stay goes to the browser; narrow to the ids the draft
+    // references if the payload ever shows in the page's weight.
+    sources: Object.fromEntries(
+      context.observations.map((o) => [o.id, { quote: o.source_quote, unconfirmed: o.needs_confirmation && !o.confirmed_at }])
+    ),
   };
 }
 
@@ -150,8 +167,26 @@ export function runDischargeChecks(
     warn("investigations-unapproved", "relevantInvestigations", "Relevant Investigations have not been approved.");
   }
 
+  // --- Unconfirmed values ------------------------------------------------------------
+  // A number, drug or dose still amber on the record cannot become part of a signed summary.
+  // The remedy is on the patient page (confirm it, which may mean correcting it first), or to
+  // take the row off the list and write it by hand.
+  if (checkContext.sources) {
+    for (const { id, rows } of TRACED_SECTIONS) {
+      const n = rows(draft).filter((r) => (r.sourceObservationIds ?? []).some((oid) => checkContext.sources![oid]?.unconfirmed)).length;
+      if (n > 0) {
+        block(
+          `unconfirmed-${id}`,
+          id,
+          `${n} ${n === 1 ? "row rests" : "rows rest"} on a value not yet confirmed on the patient page. Confirm it there, or remove the row and enter it by hand.`
+        );
+      }
+    }
+  }
+
   // --- Medication -------------------------------------------------------------------
-  if (draft.medications.length === 0 && checkContext.activeMedicationCount > 0) {
+  const notRecorded = new Set(draft.notRecorded ?? []);
+  if (draft.medications.length === 0 && checkContext.activeMedicationCount > 0 && !notRecorded.has("medications")) {
     block(
       "medications-missing",
       "medications",

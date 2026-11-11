@@ -146,3 +146,20 @@ const wardSeeded = compileDischargeDraft(context);
 ok("ward patient: template seeds advice, switched on", wardSeeded.advice.items.length > 0 && wardSeeded.advice.included === true);
 ok("ward patient: template does NOT seed the clinical course", wardSeeded.clinicalCourse.text === "");
 ok("ward patient: template does NOT overwrite compiled medications", wardSeeded.medications.length === 1 && /amoxicillin/i.test(wardSeeded.medications[0].generic));
+
+// Traceability — compiled rows carry the observation they rest on, and an unconfirmed one blocks
+ok("compiled medication carries its source observation id", draft.medications[0]?.sourceObservationIds?.[0] === observations[1].id);
+const tracedCtx = {
+  ...checkCtx,
+  sources: Object.fromEntries(observations.map((o) => [o.id, { quote: o.source_quote, unconfirmed: o.id === observations[1].id }])),
+};
+const traced = runDischargeChecks(done, tracedCtx);
+ok("blocks: a medication resting on an unconfirmed value", traced.blocking.some((c) => c.id === "unconfirmed-medications"), JSON.stringify(traced.blocking));
+ok("does not block the diagnosis, whose source is confirmed", !traced.blocking.some((c) => c.id === "unconfirmed-diagnoses"));
+
+// "No medications on discharge" lifts the empty-list block
+const none = structuredClone(done);
+none.medications = [];
+ok("blocks: drugs on record, none listed", runDischargeChecks(none, checkCtx).blocking.some((c) => c.id === "medications-missing"));
+none.notRecorded = ["medications"];
+ok("marked none on discharge: no longer blocks", !runDischargeChecks(none, checkCtx).blocking.some((c) => c.id === "medications-missing"));

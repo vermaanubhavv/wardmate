@@ -7,6 +7,7 @@ import { searchFormulary } from "@/lib/formulary";
 import type { DischargeSectionId } from "@/lib/discharge-entities";
 import {
   writeDischargeSection,
+  writeDischargeNotRecorded,
   approveDischargeSection,
   finaliseDischargeSummary,
   reopenDischargeSummary,
@@ -36,6 +37,14 @@ export async function saveDischargeSection(
   const result = await writeDischargeSection(patientId, sectionId, value);
   if (result.ok && revalidate) revalidatePath(`/patients/${patientId}/discharge`);
   return result;
+}
+
+/** Mark a section as positively having nothing to list (or clear it) — patch 0113. */
+export async function setDischargeNotRecordedAction(
+  patientId: string,
+  sections: DischargeSectionId[]
+): Promise<{ ok: boolean; error?: string }> {
+  return writeDischargeNotRecorded(patientId, sections);
 }
 
 /** The workspace's one revalidation after quiet autosaves — see saveDischargeSection. */

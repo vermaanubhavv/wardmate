@@ -58,6 +58,8 @@ export type DischargeRow = {
   red_flags: unknown;
   authentication: unknown;
   final_check: unknown;
+  /** Section ids marked "nothing to list" — patch 0113. */
+  not_recorded: unknown;
   updated_at: string | null;
 };
 
@@ -106,7 +108,7 @@ export type DischargeContext = {
 };
 
 const DISCHARGE_ROW_COLUMNS =
-  "id, status, finalised_at, indication_for_admission, encounter, diagnoses, procedures, clinical_course, relevant_investigations, histopathology, medications, condition_at_discharge, primary_care_actions, patient_actions, advice, red_flags, authentication, final_check, updated_at";
+  "id, status, finalised_at, indication_for_admission, encounter, diagnoses, procedures, clinical_course, relevant_investigations, histopathology, medications, condition_at_discharge, primary_care_actions, patient_actions, advice, red_flags, authentication, final_check, not_recorded, updated_at";
 
 /**
  * An AI draft only ever reflects the record at the moment it was written. A clinical history or

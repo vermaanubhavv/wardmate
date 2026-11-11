@@ -45,7 +45,12 @@ export function mergeDischargeDraft(context: DischargeContext): DischargeDraft {
   const row = context.row;
   if (!row) return compiled;
 
-  const merged: DischargeDraft = { ...compiled, status: row.status, finalisedAt: row.finalised_at };
+  const merged: DischargeDraft = {
+    ...compiled,
+    status: row.status,
+    finalisedAt: row.finalised_at,
+    notRecorded: Array.isArray(row.not_recorded) ? (row.not_recorded as DischargeSectionId[]) : [],
+  };
   for (const { column, key } of Object.values(SECTION_COLUMN)) {
     if (context.aiDraftStale && AI_COLUMNS.has(column)) continue;
     const stored = row[column];
@@ -113,6 +118,26 @@ export async function writeDischargeSection(
       .eq("patient_id", patientId);
     return upErr ? { ok: false, error: upErr.message } : { ok: true };
   }
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
+
+/** Mark a section as positively having nothing to list, or clear the mark — patch 0113. */
+export async function writeDischargeNotRecorded(
+  patientId: string,
+  sections: DischargeSectionId[]
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient();
+  const user = await getUser();
+  if (!user) return { ok: false, error: "Not signed in." };
+  const { data: existing } = await supabase.from("discharge_summaries").select("id, status").eq("patient_id", patientId).maybeSingle();
+  if (existing?.status === "finalised") return { ok: false, error: "This summary is finalised. Reopen it before editing." };
+  if (existing) {
+    const { error } = await supabase.from("discharge_summaries").update({ not_recorded: sections, updated_at: new Date().toISOString() }).eq("patient_id", patientId);
+    return error ? { ok: false, error: error.message } : { ok: true };
+  }
+  const wardId = await wardIdFor(patientId);
+  if (!wardId) return { ok: false, error: "Patient not found." };
+  const { error } = await supabase.from("discharge_summaries").insert({ patient_id: patientId, ward_id: wardId, created_by: user.id, not_recorded: sections });
   return error ? { ok: false, error: error.message } : { ok: true };
 }
 
