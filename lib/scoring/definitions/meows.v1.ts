@@ -42,15 +42,12 @@ const meowsCard: CardDefinition = {
   citation:
     "MEOWS (CEMACH) — Singh S et al., Anaesthesia 2012;67:12–18. Red: temp < 35 or > 38 °C; SBP < 90 or > 160; DBP > 100; HR < 40 or > 120; RR < 10 or > 30; SpO₂ < 95 %; responds only to pain / unresponsive. Yellow: temp 35–36 °C; SBP 150–160 or 90–100; DBP 90–100; HR 100–120 or 40–50; RR 21–30; responds to voice. One red or two yellow triggers a prompt review by the obstetric team. A prompt for review, not a diagnosis.",
   type: "structured_classification",
-  timingLabel: "worst since presentation — re-score on change",
   calculation: {
     kind: "tiered_classification",
     tiers: ["red", "yellow"],
     fallback: "no_trigger",
     tierThresholds: { red: 1, yellow: 2 },
   },
-  requiresConfirmation: true,
-  recomputeOn: ["new_observation", "deterioration", "manual"],
   // Order matters: interpret() falls back to a text match, and "recorded" contains "red".
   interpretationBands: [
     { min: 0, class: "red", text: "MEOWS triggers (a red parameter) — prompt review by the obstetric team.", tone: "attention" },
@@ -100,7 +97,6 @@ export const meowsV1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-01",
   diagnosisTriggers: {
-    codes: [],
     textPatterns: [
       "pregnan",
       "antenatal",
@@ -130,11 +126,8 @@ export const meowsV1: PathwayDefinition = {
     ],
     excludePatterns: ["not pregnant", "pregnancy test negative", "upt negative"],
   },
-  eligibility: { minAgeYears: 12, notes: ["Pregnant or recently delivered women (up to 6 weeks postpartum). A prompt for review, not a diagnosis."] },
-  exclusions: ["Non-obstetric admissions — use the general early-warning score."],
   cards: [meowsCard],
   tasks: [],
   checkpoints: [],
-  recomputePolicy: ["new_observation", "deterioration", "manual"],
   institutionalToggles: {},
 };

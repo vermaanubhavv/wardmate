@@ -1,21 +1,15 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getCurrentWard, getDiagnosisSuggestions, getWardSpecialtyStored } from "@/lib/ward";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { listTemplateChoices } from "@/lib/templates";
 import PatientForm from "./patient-form";
 
 export default async function NewPatientPage() {
-  const { ward } = await getCurrentWard();
+  const { ward, error } = await getCurrentWard();
 
   if (!ward) {
-    return (
-      <main className="flex-1 px-6 py-10 max-w-md mx-auto w-full">
-        <p className="rounded-[10px] bg-warn-bg px-4 py-3 text-subhead text-warn-fg">No ward found for your account.</p>
-        <Link href="/ward" className="mt-4 inline-block text-subhead text-muted underline">
-          Back
-        </Link>
-      </main>
-    );
+    if (error) throw new Error(error.message);
+    redirect("/onboarding");
   }
 
   // The unit's department decides which checklist rows the form offers and whether it asks

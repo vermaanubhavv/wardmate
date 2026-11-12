@@ -106,8 +106,6 @@ export const NEUROSURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Antenatal scans and folic-acid intake; gestation, birth weight, mode of delivery, APGAR; time since birth; whether the sac is intact or leaking; leg movement and posture; passage of urine and meconium, dribbling; feeding; previous sibling with a neural tube defect. Examination: sac size, site, epithelialisation, CSF leak; head circumference, fontanelle, sutures; lower-limb power and reflexes, deformities (clubfoot, hip dislocation); anal tone and wink; bladder; other anomalies. Baseline: cranial USG, spine USG / MRI, CBC, renal USG, blood group.",
     progressNote:
       "Each day — temperature; feeding; head circumference and fontanelle; wound (CSF leak, soiling); leg movement; urine output and bladder emptying. Discharge day — wound healing, head size stable, feeding well; CIC taught if needed; follow-up fixed.",
   },
@@ -144,8 +142,6 @@ export const NEUROSURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Headache, confusion, memory change, gait disturbance, limb weakness, falls; trivial head injury weeks earlier; antiplatelets, anticoagulants; alcohol; liver disease; baseline function. Examination: GCS, orientation, pupils, focal deficit, pronator drift, gait, signs of other injuries. Baseline: NCCT head, CBC, coagulation (PT/INR), platelets, renal function, electrolytes, blood sugar.",
     progressNote:
       "Each day — GCS and orientation; pupils; limb power; headache; drain output; position (flat); sodium; seizure watch. Discharge day — drain out, neurology improved or stable, mobilising; antithrombotic plan written.",
   },
@@ -196,8 +192,6 @@ export const NEUROSURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Headache (morning, with vomiting), seizures, focal weakness, speech, personality change, visual loss, hearing loss, hormonal symptoms (pituitary); duration and progression; primary cancer elsewhere, weight loss, smoking. Examination: GCS, higher functions, cranial nerves, fundus, visual fields and acuity, motor and sensory, cerebellar signs; breast, chest and nodes if metastasis suspected. Baseline: MRI brain with contrast, CT, CBC, electrolytes, blood sugar, coagulation; pituitary hormones and visual fields for sellar lesions; chest imaging.",
     progressNote:
       "Each day — GCS; pupils; limb power; speech; seizures; wound and drain; sodium and urine output (DI / SIADH); blood sugar on steroids; steroid dose today. Discharge day — neurologically stable, wound healthy, steroid taper written, histopathology follow-up fixed.",
   },
@@ -240,8 +234,6 @@ export const NEUROSURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Mechanism and time of injury; loss of consciousness and lucid interval; vomiting, seizures, ENT bleed or CSF leak; alcohol; helmet; antiplatelets / anticoagulants; other injuries (ATLS). Examination: GCS (E V M) with trend, pupils size and reaction, lateralising signs, scalp wound, signs of base-of-skull fracture, cervical spine, other injuries. Baseline: NCCT head (and cervical spine as indicated), CBC, coagulation, blood group and cross-match, blood sugar, electrolytes.",
     progressNote:
       "Each day — GCS; pupils; limb power; seizures; sodium; wound and drain; ICP / ventilation if in the ICU; chest; feeding. Discharge day — GCS 15 or at plateau, mobilising, eating, wound healthy; antiepileptic plan written.",
   },
@@ -289,8 +281,6 @@ export const NEUROSURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Measure head circumference in infants at each visit.", "Refer urgently with any sign of shunt block or infection."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Headache (morning, with vomiting), visual blurring, gait, cognition, urinary incontinence (NPH triad); in infants — head growth, irritability, feeding, fontanelle, sunset eyes; cause — tumour, TBM, IVH, previous meningitis, MMC; previous shunts. Examination: GCS, fundus (papilloedema), sixth-nerve palsy, head circumference, fontanelle, gait; abdomen (previous surgery, peritonitis). Baseline: CT / MRI brain, CSF analysis if infection suspected, CBC, electrolytes, abdominal USG if revision.",
     progressNote:
       "Each day — GCS; headache / vomiting; pupils; head circumference and fontanelle (infant); shunt chamber refill; wounds; abdomen; temperature. Discharge day — symptoms resolved, wounds healthy, afebrile, eating.",
   },
@@ -346,8 +336,6 @@ export const NEUROSURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Mechanism and time of injury; neck / back pain; weakness, numbness, paraesthesia; bladder and bowel function; priapism; breathing difficulty; other injuries; previous function. Examination: log-roll, spinal tenderness and step, full ASIA chart (motor, light touch, pin-prick, sacral sparing, anal tone, bulbocavernosus reflex), respiratory function, neurogenic shock. Baseline: X-ray and CT of the spine, MRI for cord and ligaments, CBC, blood group, renal function, ABG if cervical.",
     progressNote:
       "Each day — ASIA motor and sensory score; respiratory function (cervical); bladder method and residue; bowel movement; pressure areas; wound and drain; DVT prophylaxis; mobilisation. Discharge day — neurology documented, bladder and bowel routine established, carers trained, rehabilitation arranged.",
   },
@@ -388,8 +376,6 @@ export const NEUROSURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Refer back urgently with any new weakness or bladder / bowel disturbance."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Neck / back pain versus limb pain, dermatome; numbness, weakness; hand clumsiness, gait imbalance (myelopathy); bladder and bowel, saddle anaesthesia; claudication distance; conservative treatment tried; red flags (fever, weight loss, cancer, TB). Examination: posture, tenderness, SLR / femoral stretch, Spurling, dermatomal sensation, myotomal power, reflexes, Hoffmann, Babinski, clonus, tandem gait, perianal sensation and anal tone. Baseline: MRI of the spine, X-rays with flexion-extension views, pre-anaesthetic workup.",
     progressNote:
       "Each day — limb pain versus before; power and sensation; bladder / bowel; wound and drain; swallowing and voice (anterior cervical); mobilisation. Discharge day — walking, neurology stable or better, wound dry.",
   },
@@ -433,8 +419,6 @@ export const NEUROSURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Screen for post-concussion symptoms (headache, memory, mood, sleep)."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Mechanism and time of injury; loss of consciousness and duration; amnesia; vomiting; seizure; headache; ENT bleed or CSF leak; alcohol; helmet / seat belt; antiplatelets / anticoagulants; age over 65. Examination: GCS with trend, pupils, lateralising signs, scalp wounds, signs of base-of-skull fracture, cervical spine, other injuries. Baseline: NCCT head per CT head rules, cervical spine imaging as indicated, CBC, coagulation, blood sugar.",
     progressNote:
       "Each day — GCS hourly-to-4-hourly trend; pupils; headache; vomiting; seizures; limb power; sodium; repeat CT result. Discharge day — GCS 15 (or baseline), no deficit, tolerating orals, mobilising; carer briefed on warning signs.",
   },
@@ -465,8 +449,6 @@ export const NEUROSURGERY_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     primaryCareActions: [],
     conditionAllSatisfactory: true,
   },
-  clerkingFocus:
-    "Presenting complaint with onset, duration and progression; headache, vomiting, seizures, weakness, bladder and bowel; past medical and drug history (antiplatelets, anticoagulants); GCS, pupils, cranial nerves, motor and sensory examination; provisional diagnosis and plan. Baseline: CT / MRI as indicated, CBC, coagulation.",
   progressNote:
     "Each day — GCS; pupils; limb power; seizures; wound / drain; the day's plan. On readiness — neurologically stable, wound healthy, mobilising. For discharge with advice.",
 };

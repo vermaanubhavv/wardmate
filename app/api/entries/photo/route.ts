@@ -5,9 +5,7 @@ import { readLabPhoto } from "@/lib/read-lab-photo";
 import { claimPhotoRead } from "@/lib/photo-cap";
 import { canonicalLabName } from "@/lib/lab-ranges";
 import { labRow } from "@/lib/observations";
-
-const ALLOWED = ["image/jpeg", "image/png", "image/webp"] as const;
-const MAX_BYTES = 12 * 1024 * 1024;
+import { readImage } from "@/lib/image-upload";
 
 /**
  * Photograph of a lab report in, stored values out.
@@ -27,23 +25,11 @@ export async function POST(request: Request) {
 
   const form = await request.formData();
   const patientId = String(form.get("patient_id") ?? "");
-  const photo = form.get("photo");
 
   if (!patientId) return NextResponse.json({ error: "No patient." }, { status: 400 });
-  if (!(photo instanceof Blob) || photo.size === 0) {
-    return NextResponse.json({ error: "No photo was received." }, { status: 400 });
-  }
-  if (photo.size > MAX_BYTES) {
-    return NextResponse.json({ error: "That photo is too large." }, { status: 413 });
-  }
-
-  const mediaType = ALLOWED.find((t) => photo.type === t);
-  if (!mediaType) {
-    return NextResponse.json(
-      { error: `Unsupported image type (${photo.type || "unknown"}).` },
-      { status: 415 }
-    );
-  }
+  const image = await readImage(form.get("photo"));
+  if (image instanceof Response) return image;
+  const { mediaType, ext, bytes } = image;
 
   const { data: patient } = await supabase
     .from("current_patients")
@@ -70,9 +56,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const ext = mediaType === "image/png" ? "png" : mediaType === "image/webp" ? "webp" : "jpg";
   const path = `${patientId}/${entry.id}.${ext}`;
-  const bytes = Buffer.from(await photo.arrayBuffer());
 
   const { error: uploadError } = await supabase.storage
     .from("evidence")

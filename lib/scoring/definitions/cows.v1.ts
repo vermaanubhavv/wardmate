@@ -54,9 +54,7 @@ const cowsCard: CardDefinition = {
   citation:
     "COWS — Wesson DR, Ling W. J Psychoactive Drugs 2003;35:253–9. Eleven items, total 0–48: 5–12 mild, 13–24 moderate, 25–36 moderately severe, > 36 severe. Resting pulse is taken after sitting or lying for one minute; here it is the highest charted heart rate in the assessment window. Describes severity; it does not prescribe.",
   type: "calculator",
-  timingLabel: "admission assessment",
   calculation: { kind: "sum_points" },
-  recomputeOn: ["new_observation", "manual"],
   interpretationBands: [
     { min: 0, max: 4, text: "COWS 0–4 — below the mild range.", tone: "neutral" },
     { min: 5, max: 12, text: "COWS 5–12 — mild opioid withdrawal.", tone: "neutral" },
@@ -157,15 +155,11 @@ export const cowsV1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-01",
   diagnosisTriggers: {
-    codes: [],
     textPatterns: ["opioid withdrawal", "opioid dependence", "heroin", "smack", "doda", "buprenorphine"],
     excludePatterns: ["opioid withdrawal resolved"],
   },
-  eligibility: { minAgeYears: 18, notes: ["A patient at risk of, or in, opioid withdrawal who can be observed and communicate."] },
-  exclusions: ["Cannot communicate / sedated — several items are subjective."],
   cards: [cowsCard],
   tasks: [],
   checkpoints: [],
-  recomputePolicy: ["new_observation", "manual"],
   institutionalToggles: {},
 };

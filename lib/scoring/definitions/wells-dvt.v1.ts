@@ -42,9 +42,7 @@ const card: CardDefinition = {
   citation:
     "Wells DVT (two-tier) — Wells PS et al., Lancet 1997;350:1795–8; NEJM 2003;349:1227–35. Score ≥ 2: DVT likely — proceed to compression ultrasound. Score < 2: DVT unlikely — a negative D-dimer can rule it out without imaging. The classic score subtracts 2 points when an alternative diagnosis is at least as likely; this card keeps that as an explicit override instead (see the last criterion) rather than a negative point value, so the number itself only ever counts up. Not validated in pregnancy or suspected recurrent DVT without adjustment.",
   type: "calculator",
-  timingLabel: "at assessment",
   calculation: { kind: "sum_points" },
-  recomputeOn: ["new_observation", "manual"],
   interpretationBands: [
     { min: 0, max: 1, text: "Wells DVT < 2 — DVT unlikely. A negative D-dimer can rule it out without imaging. If an alternative diagnosis was marked at least as likely, DVT is unlikely regardless of this number.", tone: "neutral" },
     { min: 2, max: 9, text: "Wells DVT ≥ 2 — DVT likely. Proceed to compression ultrasound. If an alternative diagnosis was marked at least as likely, treat as unlikely instead and reassess.", tone: "attention" },
@@ -79,7 +77,6 @@ export const wellsDvtV1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-01",
   diagnosisTriggers: {
-    codes: ["I80", "I82.4"],
     textPatterns: [
       "deep vein thrombosis",
       "dvt",
@@ -91,8 +88,6 @@ export const wellsDvtV1: PathwayDefinition = {
     ],
     excludePatterns: ["dvt prophylaxis", "on dvt prophylaxis", "post dvt", "old dvt", "known dvt on treatment"],
   },
-  eligibility: { minAgeYears: 16, notes: ["Not validated in pregnancy, or for a suspected recurrent DVT, without adjustment — use clinical judgement."] },
-  exclusions: ["A patient already anticoagulated for a confirmed clot — this is a pre-test screen, not a monitoring tool."],
   cards: [card],
   tasks: [
     {
@@ -107,6 +102,5 @@ export const wellsDvtV1: PathwayDefinition = {
     },
   ],
   checkpoints: [],
-  recomputePolicy: ["new_observation", "manual"],
   institutionalToggles: {},
 };

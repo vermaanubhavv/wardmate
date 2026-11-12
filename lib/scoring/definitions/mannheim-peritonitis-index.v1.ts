@@ -33,9 +33,7 @@ const mpiCard: CardDefinition = {
   citation:
     "Mannheim Peritonitis Index — Linder MM et al., Chirurg 1987;58:84–92. Range 0–47; many cohorts (incl. Indian series, PMC11057927) treat ~26 as the high-risk cut-off, but the threshold is cohort-dependent — confirm your unit's. A prognostic index, not a surgical-indication score; source control is not delayed for it.",
   type: "calculator",
-  timingLabel: "admission, completed from operative findings",
   calculation: { kind: "sum_points" },
-  recomputeOn: ["new_lab", "new_observation", "deterioration", "manual"],
   interpretationBands: [
     { min: 0, max: 25, text: "MPI < 26 — lower predicted risk on this index. Interpret with physiology and the operative picture, not this number alone.", tone: "neutral" },
     { min: 26, max: 47, text: "MPI ≥ 26 — higher predicted mortality in most cohorts. Escalate monitoring / critical-care planning; repeat SOFA if organ dysfunction persists.", tone: "attention" },
@@ -72,12 +70,9 @@ export const mannheimPeritonitisIndexV1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-30",
   diagnosisTriggers: {
-    codes: ["K65", "K65.0", "K65.1", "K65.9", "K63.1"],
     textPatterns: ["perforation peritonitis", "hollow viscus perforation", "secondary peritonitis", "generalised peritonitis", "faecal peritonitis", "biliary peritonitis", "duodenal perforation", "ileal perforation", "gastric perforation", "pneumoperitoneum", "perforated peptic ulcer"],
     excludePatterns: ["primary peritonitis", "spontaneous bacterial peritonitis", "sbp", "tuberculous peritonitis", "peritoneal dialysis peritonitis"],
   },
-  eligibility: { minAgeYears: 16, notes: ["Secondary peritonitis from a hollow-viscus perforation or anastomotic leak. Several factors are operative — the score completes after laparotomy."] },
-  exclusions: ["Primary / spontaneous bacterial peritonitis (different pathophysiology).", "Tuberculous peritonitis."],
   cards: [mpiCard],
   tasks: [
     {
@@ -107,6 +102,5 @@ export const mannheimPeritonitisIndexV1: PathwayDefinition = {
   checkpoints: [
     { key: "mpi_postop_24h", dueFrom: "admission", dueAtHours: 24, label: "Complete MPI from operative findings", recomputeCards: ["mpi"] },
   ],
-  recomputePolicy: ["new_lab", "new_observation", "deterioration", "scheduled_checkpoint", "manual"],
   institutionalToggles: {},
 };

@@ -26,9 +26,7 @@ const curbCard: CardDefinition = {
   citation:
     "CURB-65 — Lim WS et al., Thorax 2003;58:377–82; BTS/NICE community-acquired pneumonia guidance. 0–1 low severity (consider home treatment); 2 moderate (short inpatient stay or supervised outpatient); 3–5 high severity (manage in hospital, assess for critical care). A clinical adjunct — always combine with oxygenation, comorbidity, social circumstances and judgement.",
   type: "calculator",
-  timingLabel: "at presentation",
   calculation: { kind: "sum_points" },
-  recomputeOn: ["new_lab", "new_observation", "manual"],
   interpretationBands: [
     { min: 0, max: 1, text: "CURB-65 0–1 — low severity. Outpatient management may be appropriate if oxygenation, comorbidity and social circumstances allow.", tone: "neutral" },
     { min: 2, max: 2, text: "CURB-65 2 — moderate severity. Consider a short inpatient stay or closely supervised outpatient treatment.", tone: "attention" },
@@ -111,7 +109,6 @@ export const curb65V1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-01",
   diagnosisTriggers: {
-    codes: ["J13", "J15", "J18", "J18.9"],
     textPatterns: [
       "community-acquired pneumonia",
       "community acquired pneumonia",
@@ -129,8 +126,6 @@ export const curb65V1: PathwayDefinition = {
       "pneumonitis",
     ],
   },
-  eligibility: { minAgeYears: 16, notes: ["Adult community-acquired pneumonia only. Not validated for hospital-acquired or aspiration pneumonia, or for the immunosuppressed."] },
-  exclusions: ["Hospital-acquired / ventilator-associated pneumonia.", "Severe immunosuppression — interpret with specialist input."],
   cards: [curbCard],
   tasks: [
     {
@@ -158,6 +153,5 @@ export const curb65V1: PathwayDefinition = {
   checkpoints: [
     { key: "curb_review_24h", dueFrom: "admission", dueAtHours: 24, label: "Reassess severity and response at 24 hours", recomputeCards: ["curb_65"] },
   ],
-  recomputePolicy: ["new_lab", "new_observation", "scheduled_checkpoint", "manual"],
   institutionalToggles: {},
 };

@@ -36,9 +36,7 @@ const absiCard: CardDefinition = {
   citation:
     "ABSI — Tobiasen J et al., Ann Plast Surg 1982;8:95. Sex, age band, inhalation injury, full-thickness burn and TBSA. Total 2–3 very low threat to life (survival ≥ 99 %), 4–5 moderate (98 %), 6–7 moderately severe (80–90 %), 8–9 serious (50–70 %), 10–11 severe (20–40 %), ≥ 12 maximum (≤ 10 %). A prognostic prompt, not a treatment decision.",
   type: "calculator",
-  timingLabel: "at admission",
   calculation: { kind: "sum_points" },
-  recomputeOn: ["new_observation", "manual"],
   interpretationBands: [
     { min: 2, max: 3, text: "ABSI 2–3 — very low threat to life; published probability of survival ≥ 99 %.", tone: "neutral" },
     { min: 4, max: 5, text: "ABSI 4–5 — moderate threat to life; published probability of survival 98 %.", tone: "neutral" },
@@ -138,16 +136,12 @@ export const absiV1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-01",
   diagnosisTriggers: {
-    codes: [],
     // Normalised substring match: "burn" also covers burns / flame burn / electrical burn.
     textPatterns: ["burn", "scald"],
     excludePatterns: ["heartburn", "heart burn", "burning micturition", "burning sensation", "burning pain", "burning feet"],
   },
-  eligibility: { notes: ["Thermal, electrical or scald burns. ABSI is a prognostic prompt."] },
-  exclusions: [],
   cards: [absiCard],
   tasks: [],
   checkpoints: [],
-  recomputePolicy: ["new_observation", "manual"],
   institutionalToggles: {},
 };

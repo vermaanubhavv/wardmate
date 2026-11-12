@@ -28,14 +28,11 @@ const tg18Card: CardDefinition = {
   citation:
     "Tokyo Guidelines 2018 — Yokoe M et al., J Hepatobiliary Pancreat Sci 2018;25:41–54. Grade III = organ dysfunction; Grade II = marked local inflammation / high WBC / RUQ mass / symptoms > 72 h; Grade I = neither. Re-grade on new organ dysfunction or imaging.",
   type: "structured_classification",
-  timingLabel: "dynamic — re-grade on change",
   calculation: {
     kind: "tiered_classification",
     tiers: ["grade_iii", "grade_ii"],
     fallback: "grade_i",
   },
-  requiresConfirmation: true,
-  recomputeOn: ["new_lab", "new_observation", "new_imaging", "deterioration", "manual"],
   interpretationBands: [
     { min: 0, class: "grade_i", text: "Grade I (mild) — no organ dysfunction, mild inflammation. Early cholecystectomy pathway where appropriate.", tone: "neutral" },
     { min: 0, class: "grade_ii", text: "Grade II (moderate) — marked local inflammation. Early senior review; management per local pathway.", tone: "attention" },
@@ -71,12 +68,9 @@ export const cholecystitisTg18V1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-01",
   diagnosisTriggers: {
-    codes: ["K81.0", "K80.00", "K80.10"],
     textPatterns: ["acute cholecystitis", "acute calculous cholecystitis", "acute acalculous cholecystitis", "? cholecystitis", "cholecystitis"],
     excludePatterns: ["chronic cholecystitis", "post cholecystectomy", "h/o cholecystectomy", "gallbladder cancer"],
   },
-  eligibility: { minAgeYears: 16, notes: ["Suspected vs definite TG18 diagnosis is a clinician judgement; this card grades severity once cholecystitis is the working diagnosis."] },
-  exclusions: ["Gallbladder malignancy.", "Post-cholecystectomy collection."],
   cards: [tg18Card],
   tasks: [
     {
@@ -104,6 +98,5 @@ export const cholecystitisTg18V1: PathwayDefinition = {
   checkpoints: [
     { key: "tg18c_reassess_24h", dueFrom: "admission", dueAtHours: 24, label: "Re-grade Tokyo severity at 24 hours", recomputeCards: ["tg18_cholecystitis"] },
   ],
-  recomputePolicy: ["new_lab", "new_observation", "new_imaging", "deterioration", "scheduled_checkpoint", "manual"],
   institutionalToggles: {},
 };

@@ -36,14 +36,11 @@ const card: CardDefinition = {
   citation:
     "ADA consensus (Kitabchi AE et al., Diabetes Care 2009;32:1335–43) / JBDS DKA guideline. Severe: pH < 7.00, bicarbonate < 10, or stupor/coma. Moderate: pH 7.00–7.24, bicarbonate 10–14.9, or drowsy. Mild: neither — the default once DKA is diagnosed. Grades severity only; does not itself distinguish DKA from HHS.",
   type: "structured_classification",
-  timingLabel: "dynamic — re-grade on change",
   calculation: {
     kind: "tiered_classification",
     tiers: ["severe", "moderate"],
     fallback: "mild",
   },
-  requiresConfirmation: true,
-  recomputeOn: ["new_lab", "new_observation", "deterioration", "manual"],
   interpretationBands: [
     { min: 0, class: "mild", text: "Mild DKA — pH 7.25–7.30 / bicarbonate 15–18, alert. Standard protocol: fixed-rate insulin infusion, fluids, hourly glucose.", tone: "neutral" },
     { min: 0, class: "moderate", text: "Moderate DKA — closer review; senior input on fluid and insulin rate.", tone: "attention" },
@@ -73,12 +70,9 @@ export const dkaSeverityV1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-01",
   diagnosisTriggers: {
-    codes: ["E10.10", "E11.10"],
     textPatterns: ["diabetic ketoacidosis", "dka", "ketoacidosis"],
     excludePatterns: ["dka resolved", "dka resolving", "post dka", "euglycaemic dka on sglt2"],
   },
-  eligibility: { minAgeYears: 12, notes: ["Grades DKA once diagnosed. Does not itself diagnose DKA or distinguish it from HHS."] },
-  exclusions: ["HHS without significant ketosis/acidosis — a separate clinical picture, not this ladder."],
   cards: [card],
   tasks: [
     {
@@ -96,6 +90,5 @@ export const dkaSeverityV1: PathwayDefinition = {
   checkpoints: [
     { key: "dka_reassess_2h", dueFrom: "admission", dueAtHours: 2, label: "Re-grade DKA severity at 2 hours", recomputeCards: ["dka_severity"] },
   ],
-  recomputePolicy: ["new_lab", "new_observation", "deterioration", "scheduled_checkpoint", "manual"],
   institutionalToggles: {},
 };

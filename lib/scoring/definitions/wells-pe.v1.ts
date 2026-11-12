@@ -41,9 +41,7 @@ const card: CardDefinition = {
   citation:
     "Wells PE (two-tier) — Wells PS et al., Thromb Haemost 2000;83:416–20; Christopher Study Investigators, JAMA 2006;295:172–9. Score > 4: PE likely — proceed to CT pulmonary angiography. Score ≤ 4: PE unlikely — a negative D-dimer can rule it out without imaging.",
   type: "calculator",
-  timingLabel: "at assessment",
   calculation: { kind: "sum_points" },
-  recomputeOn: ["new_observation", "manual"],
   interpretationBands: [
     { min: 0, max: 4, text: "Wells PE ≤ 4 — PE unlikely. A negative D-dimer can rule it out without imaging.", tone: "neutral" },
     { min: 4.5, max: 12.5, text: "Wells PE > 4 — PE likely. Proceed to CT pulmonary angiography.", tone: "attention" },
@@ -71,7 +69,6 @@ export const wellsPeV1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-01",
   diagnosisTriggers: {
-    codes: ["I26", "I26.9"],
     textPatterns: [
       "pulmonary embolism",
       " pe ",
@@ -83,8 +80,6 @@ export const wellsPeV1: PathwayDefinition = {
     ],
     excludePatterns: ["on anticoagulation for pe", "known pe", "old pe", "chronic thromboembolic"],
   },
-  eligibility: { minAgeYears: 16, notes: ["Not validated in pregnancy without adjustment (use a pregnancy-adapted algorithm)."] },
-  exclusions: ["A patient already anticoagulated for a confirmed PE."],
   cards: [card],
   tasks: [
     {
@@ -109,6 +104,5 @@ export const wellsPeV1: PathwayDefinition = {
     },
   ],
   checkpoints: [],
-  recomputePolicy: ["new_observation", "manual"],
   institutionalToggles: {},
 };

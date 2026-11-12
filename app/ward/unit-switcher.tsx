@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Check, ChevronDown } from "lucide-react";
 import { switchWard } from "../unit/actions";
+import { useModal } from "@/lib/use-modal";
 
 /**
  * The unit's name as the screen's title, and the way to change unit from it.
@@ -31,17 +32,7 @@ export default function UnitSwitcher({
     () => false
   );
 
-  useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (open && !d.open) {
-      d.showModal();
-      // The browser focuses the first button when a dialog opens, which draws a ring around
-      // the first unit as if it were already chosen. The sheet itself takes focus instead.
-      d.focus();
-    }
-    if (!open && d.open) d.close();
-  }, [open, mounted]);
+  useModal(ref, open, mounted);
 
   const title = <h1 className="ios-large-title truncate text-title1">{current.name}</h1>;
   if (units.length < 2) return title;

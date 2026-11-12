@@ -1,5 +1,4 @@
-import type Anthropic from "@anthropic-ai/sdk";
-import { AI_MODEL, anthropic } from "@/lib/model";
+import { AI_MODEL, anthropic, replyJson, type ImageType } from "@/lib/model";
 import { generalPack, type SpecialtyPack } from "@/lib/specialty";
 import { forWard } from "@/lib/specialty/prompt-words";
 
@@ -80,9 +79,25 @@ Both are null for every other kind of page.
 Reply with a single JSON object and nothing else:
 {"kind": "...", "kindConfidence": "high" | "low", "transcript": "...", "unreadable": null or "...", "procedure": null or "...", "surgeryDate": null or "YYYY-MM-DD"}`;
 
+const NULLABLE_TEXT = { anyOf: [{ type: "string" }, { type: "null" }] };
+
+const SCHEMA = {
+  type: "object",
+  properties: {
+    kind: { type: "string", enum: PAPER_KINDS.map((k) => k.kind) },
+    kindConfidence: { type: "string", enum: ["high", "low"] },
+    transcript: { type: "string" },
+    unreadable: NULLABLE_TEXT,
+    procedure: NULLABLE_TEXT,
+    surgeryDate: NULLABLE_TEXT,
+  },
+  required: ["kind", "kindConfidence", "transcript", "unreadable", "procedure", "surgeryDate"],
+  additionalProperties: false,
+};
+
 export async function readPaper(
   base64Image: string,
-  mediaType: "image/jpeg" | "image/png" | "image/webp",
+  mediaType: ImageType,
   pack: SpecialtyPack = generalPack
 ): Promise<ReadPaperResult> {
   const response = await anthropic().messages.create({
@@ -98,7 +113,7 @@ export async function readPaper(
     // one classification, not reasoning. Thinking is ON BY DEFAULT on Opus 5 and bills as
     // output at the output rate — left at the default "high", every photographed page was
     // paying for deep deliberation to do what is essentially careful typing.
-    output_config: { effort: "low" },
+    output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA } },
     messages: [
       {
         role: "user",
@@ -119,13 +134,11 @@ export async function readPaper(
       `cache_read=${u.cache_read_input_tokens ?? 0} out=${u.output_tokens}`
   );
 
-  const text = response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
-    .map((b) => b.text)
-    .join("")
-    .trim();
-
-  const parsed = parseJson(text);
+  let parsed;
+  try {
+    parsed = replyJson(response, null);
+  } catch {}
+  if (!parsed) throw new Error("Could not read that photo — the reply was not in the expected form.");
   const kind = (PAPER_KINDS.find((k) => k.kind === parsed.kind)?.kind ?? "other") as PaperKind;
 
   return {
@@ -150,15 +163,4 @@ export async function readPaper(
         : null,
     model: AI_MODEL,
   };
-}
-
-function parseJson(text: string): Record<string, unknown> {
-  const body = text.startsWith("```")
-    ? text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "")
-    : text;
-  try {
-    return JSON.parse(body) as Record<string, unknown>;
-  } catch {
-    throw new Error("Could not read that photo — the reply was not in the expected form.");
-  }
 }

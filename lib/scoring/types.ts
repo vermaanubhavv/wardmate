@@ -77,7 +77,6 @@ export type MissingReason =
   | "outside_time_window"
   | "unsupported_unit"
   | "ambiguous_unit"
-  | "checkpoint_not_due"
   | "not_applicable"
   | "requires_verification"
   | "insufficient_inputs";
@@ -125,7 +124,7 @@ export type ComponentResult = {
 // Card results
 // ---------------------------------------------------------------------------
 
-type CardType = "calculator" | "structured_classification" | "documentation_only";
+type CardType = "calculator" | "structured_classification";
 
 export type CardState =
   | "not_started"
@@ -148,7 +147,7 @@ export type CardResult = {
   title: string;
   state: CardState;
   components: ComponentResult[];
-  /** Numeric total for calculators; null for classification / documentation cards. */
+  /** Numeric total for calculators; null for classification cards. */
   total: number | null;
   /**
    * Provisional total — computed treating still-unknown clinician-assessed criteria as not
@@ -245,18 +244,9 @@ export type ComponentInput = {
   /**
    * How to pick one value out of the window when several exist.
    * `admission` = closest to window start; `first` = earliest; `worst` = engine picks the
-   * value that maximises the score contribution; `highest`/`lowest` = numeric extremes;
-   * `change_from_baseline` = (value in window) − (baseline value), baseline window in
-   * `baselineWindow`.
+   * value that maximises the score contribution; `highest`/`lowest` = numeric extremes.
    */
-  selector:
-    | "admission"
-    | "first"
-    | "worst"
-    | "highest"
-    | "lowest"
-    | "change_from_baseline";
-  baselineWindow?: TimeWindow;
+  selector: "admission" | "first" | "worst" | "highest" | "lowest";
   /** The point(s) this component scores. Ignored when `bands` is set. */
   points: number;
   /** The rule that has to hold for the points to be awarded (single-threshold criteria). */
@@ -271,7 +261,7 @@ export type ComponentInput = {
   required: boolean;
   /**
    * A component that must never be auto-completed by ordering a test (DOCX: no CT solely for
-   * BISAP / mCTSI). The engine will not emit a missing-data task for these.
+   * BISAP). The engine will not emit a missing-data task for these.
    */
   noAutoTask?: boolean;
   /**
@@ -309,8 +299,6 @@ type CardCalculation =
    *  is the worst of the creatinine, urine-output and RRT criteria, never their total. */
   | { kind: "max_points" }
   | { kind: "sirs" }
-  | { kind: "revised_atlanta" }
-  | { kind: "structured_extraction" }
   /**
    * Tiered severity classification (Tokyo Guidelines Grade I/II/III): walk `tiers` from most
    * severe; the class is the first tier with any `satisfied` criterion, else `fallback`.
@@ -341,32 +329,12 @@ export type CardDefinition = {
   /** One-line source + interpretation, shown behind a tap. */
   citation?: string;
   type: CardType;
-  /** Sub-heading shown under the title, e.g. "first 24 hours". */
-  timingLabel: string;
   calculation: CardCalculation;
   inputs: ComponentInput[];
   interpretationBands: CardInterpretationBand[];
-  /** A card locked until a checkpoint is due (Ranson 48-hour stage). */
-  lockedUntilCheckpoint?: string;
-  /** Events that cause this card to be recomputed. */
-  recomputeOn: RecomputeEvent[];
-  /** Only build/activate this card when at least one input is present (mCTSI needs a CT). */
-  requiresAnyInputPresent?: boolean;
-  /** Structured-classification / documentation cards need explicit clinician confirmation. */
-  requiresConfirmation?: boolean;
 };
 
-type RecomputeEvent =
-  | "new_lab"
-  | "new_observation"
-  | "new_imaging"
-  | "scheduled_checkpoint"
-  | "deterioration"
-  | "manual";
-
 type DiagnosisTrigger = {
-  /** Local diagnosis codes, if the ward ever configures a coding system. */
-  codes: string[];
   /** Case-insensitive phrases matched against `primary_diagnosis` / diagnosis observations. */
   textPatterns: string[];
   /** Phrases that, if present, block the trigger (e.g. "chronic pancreatitis"). */
@@ -398,12 +366,9 @@ export type PathwayDefinition = {
   /** ISO date the clinical content is due for governance review. */
   reviewDueAt: string;
   diagnosisTriggers: DiagnosisTrigger;
-  eligibility: { minAgeYears?: number; maxAgeYears?: number; notes: string[] };
-  exclusions: string[];
   cards: CardDefinition[];
   tasks: GeneratedTaskDefinition[];
   checkpoints: Checkpoint[];
-  recomputePolicy: RecomputeEvent[];
   /** Ward-configurable toggles: key → default enabled. */
   institutionalToggles: Record<string, boolean>;
 };
@@ -414,7 +379,6 @@ export type PathwayDefinition = {
 
 export type TriggerSource =
   | "diagnosis_text"
-  | "diagnosis_code"
   | "manual_activation"
   | "problem_list_change";
 

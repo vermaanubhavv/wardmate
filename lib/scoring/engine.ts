@@ -21,7 +21,6 @@ import type {
 import { evaluateRule } from "./operators";
 import {
   admissionValue,
-  changeFromBaseline,
   firstAvailable,
   resolveWindow,
   valuesInWindow,
@@ -29,13 +28,10 @@ import {
   type ResolvedWindow,
 } from "./time-windows";
 import { evaluateSirs } from "./sirs";
-import { classifyAtlanta, evaluateMarshall, type AtlantaInput } from "./marshall";
 
 export type EvaluateContext = {
   inputs: EngineInput[];
   clock: InstanceClock;
-  /** checkpointKey → due instant, for cards locked until a checkpoint. */
-  checkpointDueAt: Record<string, Instant>;
   /** componentId → clinician override (kept and re-applied on every recompute). */
   overrides: Record<
     string,
@@ -43,13 +39,6 @@ export type EvaluateContext = {
   >;
   /** Prior verification, cleared by the caller when inputs changed materially. */
   verification: Record<string, { by: string; at: Instant; resultHash: string }>;
-  /** Clinician-confirmed classification inputs for Atlanta-type cards. */
-  classificationInputs?: {
-    localComplications?: boolean | null;
-    systemicComplications?: boolean | null;
-    organFailureDurationHours?: number | null;
-    organFailureResolved?: boolean | null;
-  };
   /**
    * componentId → the clinician's recorded assessment of a `clinicianAssessed` criterion
    * (from the pathway instance, not from observations).
@@ -64,8 +53,7 @@ export type EvaluateContext = {
 function selectValue(
   def: ComponentInput,
   inputs: EngineInput[],
-  rw: ResolvedWindow,
-  clock: InstanceClock
+  rw: ResolvedWindow
 ): EngineInput | null {
   switch (def.selector) {
     case "admission":
@@ -81,24 +69,6 @@ function selectValue(
       const dir =
         def.rule.op === "lt" || def.rule.op === "lte" ? "low" : "high";
       return worstValue(inputs, def.inputKey, rw, dir);
-    }
-    case "change_from_baseline": {
-      if (!def.baselineWindow) return null;
-      const baseRw = resolveWindow(def.baselineWindow, clock);
-      const dir = def.rule.op === "lt" || def.rule.op === "lte" ? "low" : "high";
-      const sel = (i: EngineInput[], k: string, w: ResolvedWindow) => worstValue(i, k, w, dir);
-      const cb = changeFromBaseline(inputs, def.inputKey, rw, baseRw, sel);
-      if (!cb) return null;
-      // Represent the delta as a synthetic input carrying both endpoints' provenance.
-      return {
-        ...cb.current,
-        value: cb.delta,
-        original: {
-          value: `${cb.current.original.value} vs baseline ${cb.baseline.original.value}`,
-          unit: cb.current.original.unit,
-        },
-        sourceQuote: `${cb.current.sourceQuote} · baseline: ${cb.baseline.sourceQuote}`,
-      };
     }
   }
 }
@@ -219,7 +189,7 @@ function evaluateComponentRaw(
     return componentUnknown(def, rw, "outside_time_window");
   }
 
-  const picked = selectValue(def, ctx.inputs, rw, ctx.clock);
+  const picked = selectValue(def, ctx.inputs, rw);
   if (!picked) {
     // A value WAS recorded in the window but its unit could not be resolved — surface that as
     // an ambiguous/unsupported-unit unknown with the raw value shown, never as "no data".
@@ -276,16 +246,6 @@ function evaluateComponentRaw(
 // ---------------------------------------------------------------------------
 
 export function evaluateCard(card: CardDefinition, ctx: EvaluateContext): CardResult {
-  const checkpointAt =
-    card.lockedUntilCheckpoint != null
-      ? ctx.checkpointDueAt[card.lockedUntilCheckpoint] ?? null
-      : null;
-
-  // Locked-until-checkpoint card that is not due yet: every component reads checkpoint_not_due.
-  const checkpointDue =
-    card.lockedUntilCheckpoint == null ||
-    (checkpointAt != null && Date.parse(ctx.now) >= Date.parse(checkpointAt));
-
   let components: ComponentResult[];
   let total: number | null = null;
   let classification: string | null = null;
@@ -309,44 +269,9 @@ export function evaluateCard(card: CardDefinition, ctx: EvaluateContext): CardRe
     }));
     total = s.status === "present" ? 1 : s.status === "absent" ? 0 : null;
     classification = s.status;
-  } else if (card.calculation.kind === "revised_atlanta") {
-    const rw = resolveWindow(card.inputs[0].window, ctx.clock);
-    const m = evaluateMarshall(ctx.inputs, rw);
-    const ci = ctx.classificationInputs ?? {};
-    const a: AtlantaInput = {
-      organFailurePresent: m.anyOrganFailure,
-      organFailureDurationHours: ci.organFailureDurationHours ?? null,
-      organFailureResolved: Boolean(ci.organFailureResolved),
-      localComplications: ci.localComplications ?? null,
-      systemicComplications: ci.systemicComplications ?? null,
-    };
-    const res = classifyAtlanta(a);
-    components = [
-      marshallSummaryComponent(m, rw.window),
-      classComponent("atlanta.local_complications", "Local complications", ci.localComplications, rw.window),
-      classComponent("atlanta.systemic_complications", "Systemic complications", ci.systemicComplications, rw.window),
-      {
-        componentId: "atlanta.organ_failure_duration",
-        label: "Organ-failure duration",
-        status: ci.organFailureDurationHours == null ? "unknown" : "satisfied",
-        rawValue: ci.organFailureDurationHours == null ? null : `${ci.organFailureDurationHours} h`,
-        normalizedValue: ci.organFailureDurationHours ?? null,
-        unit: "h",
-        sourceId: null,
-        sourceAt: null,
-        window: rw.window,
-        points: 0,
-        contribution: res.organFailureCategory,
-        missingReason: ci.organFailureDurationHours == null ? "requires_verification" : null,
-      },
-    ];
-    total = null;
-    classification = res.classification;
   } else {
-    // sum_points, tiered_classification and structured_extraction
-    components = card.inputs.map((def) =>
-      !checkpointDue ? componentUnknown(def, resolveWindow(def.window, ctx.clock), "checkpoint_not_due") : evaluateComponent(def, ctx)
-    );
+    // sum_points, max_points and tiered_classification
+    components = card.inputs.map((def) => evaluateComponent(def, ctx));
     if (card.calculation.kind === "tiered_classification") {
       const calc = card.calculation;
       const defById = new Map(card.inputs.map((i) => [i.componentId, i]));
@@ -412,7 +337,6 @@ export function evaluateCard(card: CardDefinition, ctx: EvaluateContext): CardRe
 
   // Composite cards: treat an unknown classification as incomplete.
   const compositeIncomplete =
-    (card.calculation.kind === "revised_atlanta" && classification === "unknown") ||
     (card.calculation.kind === "sirs" && classification === "not_evaluable") ||
     tierProvisionalIncomplete;
 
@@ -423,8 +347,6 @@ export function evaluateCard(card: CardDefinition, ctx: EvaluateContext): CardRe
   const verified = priorVerify && priorVerify.resultHash === resultHash;
 
   const state: CardState = deriveState({
-    card,
-    checkpointDue,
     componentsAllUnknown: components.every((c) => c.status === "unknown"),
     missingRequiredCount,
     compositeIncomplete,
@@ -452,15 +374,12 @@ export function evaluateCard(card: CardDefinition, ctx: EvaluateContext): CardRe
 }
 
 function deriveState(a: {
-  card: CardDefinition;
-  checkpointDue: boolean;
   componentsAllUnknown: boolean;
   missingRequiredCount: number;
   compositeIncomplete: boolean;
   verified: boolean;
   staleVerify: boolean;
 }): CardState {
-  if (a.card.lockedUntilCheckpoint != null && !a.checkpointDue) return "not_started";
   if (a.componentsAllUnknown) return "not_started";
   if (a.staleVerify) return "stale";
   if (a.verified) return "verified";
@@ -488,51 +407,6 @@ function interpret(
     if (band) return { text: band.text, tone: band.tone };
   }
   return null;
-}
-
-function marshallSummaryComponent(
-  m: ReturnType<typeof evaluateMarshall>,
-  window: ComponentInput["window"]
-): ComponentResult {
-  return {
-    componentId: "atlanta.organ_failure",
-    label: "Organ failure (Modified Marshall ≥ 2)",
-    status: !m.evaluable ? "unknown" : m.anyOrganFailure ? "satisfied" : "not_satisfied",
-    rawValue: m.systems
-      .filter((s) => s.score != null)
-      .map((s) => `${s.system} ${s.score}`)
-      .join(", ") || null,
-    normalizedValue: m.evaluable ? Math.max(...m.systems.map((s) => s.score ?? 0)) : null,
-    unit: "marshall points",
-    sourceId: null,
-    sourceAt: null,
-    window,
-    points: 0,
-    contribution: m.anyOrganFailure ? "organ_failure" : null,
-    missingReason: m.evaluable ? null : "no_data",
-  };
-}
-
-function classComponent(
-  id: string,
-  label: string,
-  value: boolean | null | undefined,
-  window: ComponentInput["window"]
-): ComponentResult {
-  return {
-    componentId: id,
-    label,
-    status: value == null ? "unknown" : value ? "satisfied" : "not_satisfied",
-    rawValue: value == null ? null : value ? "present" : "absent",
-    normalizedValue: null,
-    unit: null,
-    sourceId: null,
-    sourceAt: null,
-    window,
-    points: 0,
-    contribution: null,
-    missingReason: value == null ? "requires_verification" : null,
-  };
 }
 
 /**

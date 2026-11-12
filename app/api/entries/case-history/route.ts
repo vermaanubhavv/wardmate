@@ -10,12 +10,10 @@ import { extractObservations } from "@/lib/extract";
 import { claimPhotoRead } from "@/lib/photo-cap";
 import { getWardPack } from "@/lib/ward";
 import { getTemplateForPatient } from "@/lib/templates";
-import { applyProcedureDone } from "@/lib/apply-procedure-done";
-import { insertObservations } from "@/lib/observations";
+import { ENTRY_PATIENT_COLUMNS, storeExtractedEntry } from "@/lib/store-entry";
 import { readReceipt, saveReceipt } from "@/lib/dictation-receipt";
-
-const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp"] as const;
-const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
+import { readImage } from "@/lib/image-upload";
+import type { ImageType } from "@/lib/model";
 
 /**
  * The admission clerking note, in — by photo or by dictation — structured observations out.
@@ -53,9 +51,7 @@ export async function POST(request: Request) {
 
   const { data: patient, error: patientError } = await supabase
     .from("current_patients")
-    .select(
-      "id, ward_id, display_name, bed, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text"
-    )
+    .select(ENTRY_PATIENT_COLUMNS)
     .eq("id", patientId)
     .maybeSingle();
 
@@ -94,29 +90,18 @@ export async function POST(request: Request) {
   let transcript: string;
   let insertFields: Record<string, unknown>;
   let forceConfirm: boolean;
+  let image: { mediaType: ImageType; ext: string; bytes: Buffer } | null = null;
 
   if (photo instanceof Blob) {
-    if (photo.size === 0) {
-      return NextResponse.json({ error: "No photo was received." }, { status: 400 });
-    }
-    if (photo.size > MAX_PHOTO_BYTES) {
-      return NextResponse.json({ error: "That photo is too large." }, { status: 413 });
-    }
+    const checked = await readImage(photo);
+    if (checked instanceof Response) return checked;
+    image = checked;
     const capped = await claimPhotoRead(supabase, patient.ward_id);
     if (capped) return NextResponse.json({ error: capped }, { status: 429 });
-    const mediaType = ALLOWED_IMAGE.find((t) => photo.type === t);
-    if (!mediaType) {
-      return NextResponse.json(
-        { error: `Unsupported image type (${photo.type || "unknown"}).` },
-        { status: 415 }
-      );
-    }
-
-    const bytes = Buffer.from(await photo.arrayBuffer());
 
     let read;
     try {
-      read = await readCaseSheet(bytes.toString("base64"), mediaType, await packP);
+      read = await readCaseSheet(image.bytes.toString("base64"), image.mediaType, await packP);
     } catch (e) {
       return NextResponse.json(
         { error: plainAiError(e) },
@@ -209,65 +194,37 @@ export async function POST(request: Request) {
     return NextResponse.json(body);
   }
 
-  const { data: entry, error: entryError } = await supabase
-    .from("entries")
-    .insert({
-      patient_id: patientId,
-      author_id: user.id,
-      is_case_history: true,
-      transcript,
-      ...insertFields,
-      extraction_raw: extraction.raw as never,
-    })
-    .select("id")
-    .single();
-
-  if (entryError || !entry) {
-    return NextResponse.json(
-      { error: `Could not save: ${entryError?.message ?? "unknown error"}` },
-      { status: 500 }
-    );
-  }
-
-  // The photo itself, kept as evidence for exactly the reason lab photos are — see the branch
-  // above. Uploaded after the entry exists so the stored file can be named after it.
-  if (photo instanceof Blob) {
-    const mediaType = ALLOWED_IMAGE.find((t) => photo.type === t)!;
-    const ext = mediaType === "image/png" ? "png" : mediaType === "image/webp" ? "webp" : "jpg";
-    const path = `${patientId}/${entry.id}.${ext}`;
-    const bytes = Buffer.from(await photo.arrayBuffer());
-
-    const { error: uploadError } = await supabase.storage
-      .from("evidence")
-      .upload(path, bytes, { contentType: mediaType, upsert: false });
-
-    if (!uploadError) {
-      await supabase.from("entries").update({ photo_path: path }).eq("id", entry.id);
-    }
-    // A failed upload does not fail the request — the transcript and its observations are
-    // already saved, which is the part that feeds the to-do list. The photo is corroborating
-    // evidence, not the record itself.
-  }
-
-  const obsError = await insertObservations(
-    supabase,
-    entry.id,
+  const evidence = image; // const, so the callback below keeps the narrowing
+  const entryId = await storeExtractedEntry(supabase, {
     patientId,
+    authorId: user.id,
     patient,
-    extraction.observations,
-    { forceConfirm }
-  );
-  if (obsError) {
-    return NextResponse.json(
-      { entry_id: entry.id, transcript, observations: [], error: obsError },
-      { status: 500 }
-    );
-  }
+    pack: await packP,
+    extraction,
+    transcript,
+    row: { is_case_history: true, transcript, ...insertFields },
+    observationOpts: { forceConfirm },
+    // The photo itself, kept as evidence for exactly the reason lab photos are — see the branch
+    // above. Uploaded after the entry exists so the stored file can be named after it.
+    afterInsert: async (id) => {
+      if (!evidence) return;
+      const path = `${patientId}/${id}.${evidence.ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("evidence")
+        .upload(path, evidence.bytes, { contentType: evidence.mediaType, upsert: false });
 
-  await applyProcedureDone(supabase, patientId, patient, extraction.observations, await packP);
+      if (!uploadError) {
+        await supabase.from("entries").update({ photo_path: path }).eq("id", id);
+      }
+      // A failed upload does not fail the request — the transcript and its observations are
+      // already saved, which is the part that feeds the to-do list. The photo is corroborating
+      // evidence, not the record itself.
+    },
+  });
+  if (entryId instanceof Response) return entryId;
 
   const body = {
-    entry_id: entry.id,
+    entry_id: entryId,
     transcript,
     observations: extraction.observations,
     discarded: extraction.rejected.length,

@@ -22,9 +22,7 @@ const airCard: CardDefinition = {
   citation:
     "AIR score — Andersson & Andersson; WSES Jerusalem guidelines 2020 (World J Emerg Surg 2020;15:27). 0–4 low probability, 5–8 intermediate (imaging / observation), 9–12 high. Use with age, sex, pregnancy status and examination — not as a stand-alone diagnosis.",
   type: "calculator",
-  timingLabel: "at presentation",
   calculation: { kind: "sum_points" },
-  recomputeOn: ["new_lab", "new_observation", "manual"],
   interpretationBands: [
     { min: 0, max: 4, text: "AIR 0–4 — low probability. Consider discharge / outpatient review if clinically appropriate.", tone: "neutral" },
     { min: 5, max: 8, text: "AIR 5–8 — intermediate probability. Imaging or active observation.", tone: "attention" },
@@ -155,12 +153,9 @@ export const appendicitisAirV1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-01",
   diagnosisTriggers: {
-    codes: ["K35", "K35.80", "K35.9"],
     textPatterns: ["acute appendicitis", "appendicitis", "? appendicitis", "acute appendix", "rif pain for evaluation"],
     excludePatterns: ["appendicular lump", "appendicular mass", "interval appendicectomy", "post appendicectomy", "h/o appendicectomy"],
   },
-  eligibility: { minAgeYears: 16, notes: ["Adult clinical prediction card — not for isolated paediatric use."] },
-  exclusions: ["Appendicular mass / lump (different pathway).", "Pregnancy — interpret with obstetric input."],
   cards: [airCard],
   tasks: [
     {
@@ -188,6 +183,5 @@ export const appendicitisAirV1: PathwayDefinition = {
   checkpoints: [
     { key: "air_review_12h", dueFrom: "admission", dueAtHours: 12, label: "Re-score AIR / review at 12 hours", recomputeCards: ["air"] },
   ],
-  recomputePolicy: ["new_lab", "new_observation", "scheduled_checkpoint", "manual"],
   institutionalToggles: {},
 };

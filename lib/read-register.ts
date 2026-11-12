@@ -1,4 +1,4 @@
-import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
+import { AI_MODEL, readImageJson, type ImageType } from "@/lib/model";
 import { generalPack, type SpecialtyPack } from "@/lib/specialty";
 import { hasOperationClock } from "@/lib/specialty/intake";
 import { forWard } from "@/lib/specialty/prompt-words";
@@ -123,40 +123,24 @@ export function registerPrompt(pack: SpecialtyPack): string {
 
 export async function readRegister(
   base64Image: string,
-  mediaType: "image/jpeg" | "image/png" | "image/webp",
+  mediaType: ImageType,
   pack: SpecialtyPack = generalPack
 ): Promise<RegisterResult> {
-  const client = anthropic();
-
-  const response = await client.messages.create({
-    model: AI_MODEL,
+  const parsed = await readImageJson({
     // A full register page is many rows of handwriting; give it room.
-    max_tokens: 16000,
+    maxTokens: 16000,
     system: registerPrompt(pack),
     // Dense handwriting, read once, and a wrong row boundary puts a value on the wrong
     // patient — so if any read earns "high" it is this one. It is still set to "medium":
     // "high" is off across the whole app for now, on cost. If register accuracy proves not
     // good enough at medium, the fix is "high" again or a stronger model (see lib/model.ts)
     // once funded — not accepting worse reads.
-    output_config: {
-      effort: "medium",
-      format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> },
-    },
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "image", source: { type: "base64", media_type: mediaType, data: base64Image } },
-          {
-            type: "text",
-            text: "Transcribe this ward round register, one entry per patient.",
-          },
-        ],
-      },
-    ],
+    schema: SCHEMA,
+    base64Image,
+    mediaType,
+    prompt: "Transcribe this ward round register, one entry per patient.",
+    fallback: { rows: [] },
   });
-
-  const parsed = replyJson(response, { rows: [] });
 
   const rows: RegisterRow[] = parsed.rows ?? [];
   // Second look before anything is shown: see judgeRegisterRows. No key or an error: unchanged.

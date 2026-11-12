@@ -8,7 +8,7 @@ import {
   type ItemTrigger,
   type TriggerContext,
 } from "@/lib/checklist-triggers";
-import { getSpecialtyPack, offersChecklistFamily } from "@/lib/specialty";
+import { getSpecialtyPack, offersChecklistFamily, type SpecialtyPack } from "@/lib/specialty";
 import { firstNumber } from "@/lib/lab-ranges";
 
 type TemplateItem = {
@@ -212,14 +212,30 @@ export const listTemplateChoices = cache(async function listTemplateChoices(
     .eq("phase", pack.pickerPhase)
     .order("family");
 
+  return toTemplateChoices(data, pack);
+})
+
+/**
+ * Template rows to picker choices, deduped by family + variant. "Lap chole — after surgery" is
+ * the template's name; the choice is the operation itself.
+ *
+ * The pack filters to the rows this unit's department uses — its phase, and its own checklist
+ * families within that phase (oncology and medicine checklists are both filed under
+ * before_surgery, so phase alone is not enough). A row without a phase is kept: the pre-0060
+ * ward_screen() returns rows without it, and those are only the after-surgery ones.
+ */
+export function toTemplateChoices(
+  rows: { family: string; variant: string | null; name: string; phase?: string }[] | null | undefined,
+  pack: SpecialtyPack
+): TemplateChoice[] {
   const seen = new Set<string>();
   const out: TemplateChoice[] = [];
-  for (const t of data ?? []) {
+  for (const t of rows ?? []) {
+    if (t.phase && t.phase !== pack.pickerPhase) continue;
     if (!offersChecklistFamily(pack, t.family)) continue;
     const key = `${t.family}|${t.variant ?? ""}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    // "Lap chole — after surgery" is the template's name; the choice is the operation itself.
     out.push({
       family: t.family,
       variant: t.variant,
@@ -227,7 +243,7 @@ export const listTemplateChoices = cache(async function listTemplateChoices(
     });
   }
   return out;
-})
+}
 
 /** The key a patient's operation is looked up under. Kept in one place so the ward list and
  *  the patient screen cannot disagree about how family and variant combine. */

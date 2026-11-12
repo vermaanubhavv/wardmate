@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import ScreenHeader from "../screen-header";
 import { getCurrentWard } from "@/lib/ward";
@@ -20,15 +21,9 @@ import { displayValue } from "@/lib/display-value";
 export default async function HandoverPage() {
   const { ward, error: wardError } = await getCurrentWard();
 
-  if (wardError || !ward) {
-    return (
-      <main className="flex-1 max-w-md mx-auto w-full">
-        <ScreenHeader back="/ward" title="Handover" />
-        <p role="alert" className="mx-4 ios-group px-4 py-3 text-subhead text-warn-fg">
-          {wardError ? "The handover could not be loaded. Check the connection and try again." : "No ward found."}
-        </p>
-      </main>
-    );
+  if (!ward) {
+    if (wardError) throw new Error(wardError.message);
+    redirect("/onboarding");
   }
 
   const handover = await getWardHandover(ward);

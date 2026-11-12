@@ -23,7 +23,6 @@ import { toEngineInputs, type ObservationRow, type PatientFacts } from "./observ
 import { planPathwayTasks, type ExistingWorld } from "./tasks";
 import { checkpointDueInstant, dueCheckpoints, needsRecompute } from "./checkpoints";
 import type {
-  CardDefinition,
   CardResult,
   InstanceClock,
   Instant,
@@ -190,7 +189,6 @@ type InstanceRow = {
   pathway_id: string;
   pathway_version: string;
   status: string;
-  ranson_aetiology: "non_gallstone" | "gallstone" | "uncertain" | null;
   classification_inputs: Record<string, unknown>;
 };
 
@@ -223,22 +221,6 @@ async function recomputeInstanceRow(supabase: Supa, inst: InstanceRow): Promise<
   };
   const inputs = toEngineInputs((obs ?? []) as ObservationRow[], facts);
 
-  // Add CT-extraction inputs the clinician entered on the instance (mCTSI).
-  for (const [k, v] of Object.entries((inst.classification_inputs?.ct as Record<string, string>) ?? {})) {
-    inputs.push({
-      key: `ct_${k}`,
-      value: null,
-      unit: null,
-      text: String(v),
-      original: { value: String(v), unit: null },
-      at: nowIso(),
-      sourceId: `instance.ct.${k}`,
-      sourceQuote: `CT report (clinician-entered): ${v}`,
-      refLow: null,
-      refHigh: null,
-    });
-  }
-
   const { checkpointDueAt, dueNow } = await syncCheckpoints(supabase, inst);
 
   const clock: InstanceClock = { admission: admittedAt, now: nowIso() };
@@ -248,18 +230,15 @@ async function recomputeInstanceRow(supabase: Supa, inst: InstanceRow): Promise<
   const ctx: EvaluateContext = {
     inputs,
     clock,
-    checkpointDueAt,
     overrides: await loadOverrides(supabase, inst.id),
     verification: priorVerification,
-    classificationInputs: readClassificationInputs(inst),
     assessedComponents: (inst.classification_inputs?.assessed as EvaluateContext["assessedComponents"]) ?? {},
     now: clock.now,
   };
 
-  const applicableCards = selectApplicableCards(def, inst, inputs);
   const results: CardResult[] = [];
 
-  for (const cardDef of applicableCards) {
+  for (const cardDef of def.cards) {
     const result = evaluateCard(cardDef, ctx);
     results.push(result);
     await persistCard(supabase, inst, result);
@@ -317,36 +296,6 @@ async function recomputeInstanceRow(supabase: Supa, inst: InstanceRow): Promise<
     .from("pathway_instances")
     .update({ next_checkpoint_at: nextPendingCheckpoint(checkpointDueAt), updated_at: startedAt })
     .eq("id", inst.id);
-}
-
-// ---------------------------------------------------------------------------
-// Card selection (aetiology / CT gating)
-// ---------------------------------------------------------------------------
-
-function selectApplicableCards(
-  def: PathwayDefinition,
-  inst: InstanceRow,
-  inputs: EvaluateContext["inputs"]
-): CardDefinition[] {
-  return def.cards.filter((card) => {
-    // Ranson variant gating — never silently choose (DOCX Card B).
-    if (card.cardId.startsWith("ranson_")) {
-      const ae = inst.ranson_aetiology;
-      const isGallstone = card.cardId.includes("gallstone") && !card.cardId.includes("nongallstone");
-      const isNonGallstone = card.cardId.includes("nongallstone");
-      if (ae === "gallstone") return isGallstone;
-      if (ae === "non_gallstone") return isNonGallstone;
-      // uncertain / unset: show BOTH admission variants; keep 48-hour variants hidden until
-      // the clinician commits to an aetiology.
-      return card.cardId.startsWith("ranson_admission_");
-    }
-    // mCTSI — only when a contrast CT report actually exists.
-    if (card.requiresAnyInputPresent) {
-      const keys = card.inputs.map((i) => i.inputKey);
-      return inputs.some((i) => keys.includes(i.key));
-    }
-    return true;
-  });
 }
 
 // ---------------------------------------------------------------------------
@@ -626,16 +575,6 @@ async function loadVerification(supabase: Supa, instanceId: string) {
     }
   }
   return map;
-}
-
-function readClassificationInputs(inst: InstanceRow): EvaluateContext["classificationInputs"] {
-  const ci = inst.classification_inputs ?? {};
-  return {
-    localComplications: (ci.localComplications as boolean | null | undefined) ?? null,
-    systemicComplications: (ci.systemicComplications as boolean | null | undefined) ?? null,
-    organFailureDurationHours: (ci.organFailureDurationHours as number | null | undefined) ?? null,
-    organFailureResolved: (ci.organFailureResolved as boolean | null | undefined) ?? null,
-  };
 }
 
 // ---------------------------------------------------------------------------

@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import ScreenHeader from "../../screen-header";
 import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
@@ -24,15 +25,9 @@ const LIMIT = 200;
 export default async function AccessLogPage() {
   const { ward, error } = await getCurrentWard();
 
-  if (error || !ward) {
-    return (
-      <main className="flex-1 px-4 py-10 max-w-md mx-auto w-full">
-        <h1 className="ios-large-title">Access log</h1>
-        <p className="mt-4 ios-group px-4 py-3 text-subhead text-warn-fg">
-          {error ? `Could not read the database: ${error.message}` : "No ward found."}
-        </p>
-      </main>
-    );
+  if (!ward) {
+    if (error) throw new Error(error.message);
+    redirect("/onboarding");
   }
 
   const user = await getUser();

@@ -3,7 +3,7 @@
  * code keeps only the cases it can verify. Output: scripts/eval-models/library/extract.json,
  * committed, and run as set D by cases.ts.
  *
- *   node --env-file=.env.eval --import ./scripts/alias-register.mjs scripts/eval-models/generate.ts --batches 30
+ *   npm run eval:generate -- --batches 30
  *
  * Every patient is invented. A case is dropped unless every finding's quote is verbatim in its
  * transcript and no "never said" word (or synonym) appears in it — so nothing in the library
@@ -101,7 +101,8 @@ export function rejectReason(c: Omit<LibraryCase, "id">): string | null {
   return null;
 }
 
-if (import.meta.url.endsWith(process.argv[1]?.split("/").pop() ?? "")) {
+// Run as a script, not when a test imports rejectReason (vite-node leaves no script in argv).
+if (!process.env.VITEST) {
   const CALLS = Number(parseArgs({ options: { batches: { type: "string", default: "30" } } }).values.batches);
   const key = process.env.EVAL_ANTHROPIC_API_KEY;
   if (!key) throw new Error("EVAL_ANTHROPIC_API_KEY is not set");

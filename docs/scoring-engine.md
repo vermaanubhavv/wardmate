@@ -33,11 +33,10 @@ Also: a line per score in the **progress note**, and **one investigations to-do*
 that clears when the relevant panel is back. No manual verification step — scores recalculate
 on read (like post-op day).
 
-**Engine capability (not shipped, kept for governance + tests):** staged/legacy scores (Ranson
-gallstone / non-gallstone, change-from-baseline, 48-hour locked checkpoints), Revised Atlanta /
-Modified Marshall with a persistence timer, documentation-only cards (Modified CTSI). These live
-as `PANCREATITIS_EXTENDED_CARDS` in `definitions/acute-pancreatitis.v1.ts`, exercised only by
-`lib/scoring/__tests__/`. The remaining DOCX pathways are recorded (not built) under §8 "Unbuilt pathways".
+Ranson, Revised Atlanta / Modified Marshall and Modified CTSI are not built (the test-only
+cards and the engine paths only they used — change-from-baseline, checkpoint-locked cards,
+Atlanta classification inputs — were removed; see git history to restore). The remaining DOCX
+pathways are recorded (not built) under §8 "Unbuilt pathways".
 
 Everything here is **behind a feature flag and OFF by default**. With the flag closed, nothing
 in `lib/scoring/` or `supabase/patches/0053` is read or written and WardMate behaves exactly as
@@ -58,7 +57,7 @@ lib/scoring/observations-adapter.ts  ──►  EngineInput[]     PathwayDefinit
         │                              ├─ time-windows.ts   (admission / first / worst / …)
         │                              ├─ units.ts          (safe normalisation, reject ambiguous)
         │                              ├─ operators.ts      (allow-listed, NO eval)
-        │                              ├─ sirs.ts / marshall.ts
+        │                              ├─ sirs.ts            
         │                              └─ tasks.ts          (dedup vs existing world)
         │                                        │
         ▼                                        ▼
@@ -93,7 +92,7 @@ A `PathwayDefinition` (`lib/scoring/types.ts`) is validated by
 | an operator not in `ALLOWED_OPERATORS` | no arbitrary expressions |
 | a task `action` matching the unsafe-verb list (`prescribe`, `transfuse`, `transfer to ICU`, `perform ERCP`, …) | no autonomous treatment |
 | a task with no `reason` | every task must answer "why is Wardmate suggesting this?" |
-| a `lockedUntilCheckpoint` / `recomputeCards` naming an undefined checkpoint/card | dangling reference |
+| a checkpoint `recomputeCards` / task `cardId` naming an undefined card | dangling reference |
 | a numeric operator with no threshold, `in_range` without `[low,high]` | malformed rule |
 
 Built-in definitions are validated **on module load** (`definitions/registry.ts`) — a malformed
@@ -102,7 +101,7 @@ definition throws in dev/test, never ships.
 ### Operators (the whole allow-list)
 
 `gt · gte · lt · lte · eq · present · in_range`. Composite criteria (`sirs`,
-`revised_atlanta`, `structured_extraction`) are named `CardCalculation`
+`tiered_classification`, `max_points`) are named `CardCalculation`
 kinds handled by dedicated tested functions — they are **not** expressible as data rules.
 
 ## 3. Event lifecycle & idempotency
@@ -133,8 +132,8 @@ creating an investigation task it checks, in order:
 (There is no order entry in this product, so there is no order to link.) The schema rejects
 duplicate task keys, so each definition task yields exactly one decision.
 
-Only `create` inserts a new row. A component flagged `noAutoTask` (pleural effusion for BISAP,
-every mCTSI component) never produces a task — Wardmate does not order a CT to complete a score.
+Only `create` inserts a new row. A component flagged `noAutoTask` (pleural effusion for BISAP)
+never produces a task — Wardmate does not order a CT to complete a score.
 
 ## 5. Time-window behaviour
 
@@ -143,12 +142,10 @@ every mCTSI component) never produces a task — Wardmate does not order a CT to
 definition measures from it. Add another anchor only when a definition needs one.
 
 Selectors: `admission` (nearest window start) · `first` · `highest` · `lowest` · `worst`
-(extreme that favours the criterion) · `change_from_baseline` (needs `baselineWindow`, and
-**both** endpoints, or returns nothing).
+(extreme that favours the criterion).
 
 A value that exists but falls outside the window → component `unknown` with
-`missingReason: "outside_time_window"`, **never** counted. A checkpoint-locked card
-before its due time → every component `checkpoint_not_due`, card `not_started`.
+`missingReason: "outside_time_window"`, **never** counted.
 
 ## 6. Units
 
@@ -191,8 +188,7 @@ timestamps" is answerable (`getCardHistory()` / the panel's history view).
    `SCORING_ENGINE_ALLOW_DRAFTS` pilot switch was removed when no draft remained; re-add it in
    `triggerableDefinitions()` if a draft ever needs piloting).
 
-There is a worked example: the whole of `acute-pancreatitis.v1.ts` is nothing but data + two
-local builder functions for the repeated Ranson variants.
+There is a worked example: the whole of `acute-pancreatitis.v1.ts` is nothing but data.
 
 ### Unbuilt pathways
 
@@ -237,7 +233,7 @@ content (AJCC, AIS/ISS, BI-RADS, TI-RADS) that needs content-governance / licens
 |---|---|---|
 | `NEXT_PUBLIC_SCORING_ENGINE=on` | env (Vercel + `.env.local`) | global kill-switch; module inert |
 | a `ward_scoring_engine` row for the ward | DB (ward owner opts in) | that ward is untouched |
-| `ward_scoring_toggles` rows | DB, per ward + pathway | disable a specific generated-task toggle (e.g. `ranson_extended`) |
+| `ward_scoring_toggles` rows | DB, per ward + pathway | disable a specific generated-task toggle |
 
 `isScoringEngineEnabled(wardId)` requires **both** the env switch and the ward row.
 
@@ -274,10 +270,9 @@ third-party calculator text/logo (§8 "Unbuilt pathways", rows marked **licensin
 
 `npm test` (Vitest, `vitest.config.ts`). Pure-logic only — no jsdom, no Next runtime.
 
-`lib/scoring/__tests__/` covers the DOCX acceptance list: every BISAP/Ranson threshold incl.
-equality boundaries, both Ranson variants, admission-vs-48h isolation, missing-stays-unknown,
+`lib/scoring/__tests__/` covers the DOCX acceptance list: every BISAP threshold incl.
+equality boundaries, time-window isolation, missing-stays-unknown,
 task dedup, existing-result suppression, unsupported-unit → incomplete, no CT task
-for mCTSI, pleural effusion unknown without imaging, checkpoint fires once, organ failure < 48 h
-not persistent, persistence → severe only at ≥ 48 h, no autonomous treatment action, override
+to complete a score, pleural effusion unknown without imaging, checkpoint fires once, no autonomous treatment action, override
 keeps original + replacement, flag-off unchanged, verification requires completeness, timezone
 -safe checkpoints, historical version pinning.

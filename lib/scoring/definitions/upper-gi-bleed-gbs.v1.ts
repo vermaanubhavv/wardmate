@@ -30,9 +30,7 @@ const gbsCard: CardDefinition = {
   citation:
     "Glasgow-Blatchford Score — Blatchford O et al., Lancet 2000;356:1318–1321; ACG Upper GI bleeding guideline 2021. GBS 0–1 = very low risk; guidelines suggest such patients may be considered for outpatient management with clinician assessment and local policy.",
   type: "calculator",
-  timingLabel: "before endoscopy",
   calculation: { kind: "sum_points" },
-  recomputeOn: ["new_lab", "new_observation", "manual"],
   interpretationBands: [
     { min: 0, max: 1, text: "GBS 0–1 — very low risk. May be considered for outpatient management (clinician + local policy).", tone: "neutral" },
     { min: 2, max: 6, text: "GBS 2–6 — admit; inpatient endoscopy.", tone: "attention" },
@@ -172,12 +170,9 @@ export const upperGiBleedGbsV1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-01",
   diagnosisTriggers: {
-    codes: ["K92.0", "K92.1", "K92.2", "I85.01"],
     textPatterns: ["upper gi bleed", "upper gi bleeding", "ugib", "haematemesis", "hematemesis", "malena", "melaena", "melena", "coffee ground vomiting", "bleeding peptic ulcer", "variceal bleed"],
     excludePatterns: ["lower gi bleed", "per rectal bleeding", "haemorrhoidal bleed", "resolved gi bleed"],
   },
-  eligibility: { minAgeYears: 16, notes: ["Pre-endoscopy risk score. Post-endoscopy risk (full Rockall) is a later addition."] },
-  exclusions: ["Lower GI bleeding.", "Bleeding already controlled at endoscopy (use a post-endoscopy score)."],
   cards: [gbsCard],
   tasks: [
     {
@@ -205,6 +200,5 @@ export const upperGiBleedGbsV1: PathwayDefinition = {
   checkpoints: [
     { key: "gbs_recheck_6h", dueFrom: "admission", dueAtHours: 6, label: "Recheck GBS after resuscitation / serial Hb", recomputeCards: ["gbs"] },
   ],
-  recomputePolicy: ["new_lab", "new_observation", "scheduled_checkpoint", "manual"],
   institutionalToggles: {},
 };

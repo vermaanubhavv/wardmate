@@ -20,9 +20,9 @@ import { adv, proc, COMMON_MEDS } from "@/lib/discharge-template-parts";
  *     course from the record along the template's form — see applyDischargeTemplate() in
  *     lib/discharge-compile.ts and templateGuide() in lib/discharge-ai.ts.
  *
- * `clerkingFocus` and `progressNote` carry the history / daily-note focus for each diagnosis.
- * `progressNote` shows as a read-only "What to check today" hint in the note builder — never
- * saved, never prefilled, never sent to the AI compile. `clerkingFocus` is not yet wired.
+ * `progressNote` carries the daily-note focus for each diagnosis. It shows as a read-only
+ * "What to check today" hint in the note builder — never saved, never prefilled, never sent to
+ * the AI compile.
  *
  * Conditional drugs — given only in some patients — are written with the generic name inside
  * `[ … ]` and the condition beside it, so a row nobody edited prints as visibly unfinished rather
@@ -81,7 +81,6 @@ export type DischargeTemplate = {
      *  strike through what is not true — the way the old paper form printed "Satisfactory". */
     conditionAllSatisfactory: boolean;
   };
-  clerkingFocus: string;
   progressNote: string;
 };
 
@@ -191,8 +190,6 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Lump — duration, rate of growth (rapid growth suggests a phyllodes tumour), pain, change with the menstrual cycle; nipple discharge (colour, single or multiple ducts) or retraction; skin change; age, menstrual and lactation history, hormone use; family history of breast or ovarian cancer; previous lumps or biopsies. Examination: both breasts and axillae — size, position, consistency, mobility, skin and nipple, axillary and supraclavicular nodes. Baseline: triple assessment — ultrasound (with mammogram if over 35–40), FNAC or core biopsy; pre-anaesthetic workup.",
     progressNote:
       "POD 0 — pain controlled; wound dry; no haematoma. POD 1 (or same day, day case) — comfortable; wound clean. Plan: discharge with advice and the histopathology follow-up.",
   },
@@ -243,8 +240,6 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Lump — duration, growth, pain; nipple discharge or retraction; skin changes; axillary or arm swelling; symptoms of metastasis (bone pain, cough, weight loss); menstrual, reproductive and hormone history; family history of breast or ovarian cancer; previous imaging, biopsy and any neoadjuvant chemotherapy. Examination: lump characteristics and fixity, skin and nipple, axillary and supraclavicular nodes, the other breast, chest, abdomen and spine. Baseline: mammogram and ultrasound, core biopsy with immunohistochemistry, metastatic workup as per stage.",
     progressNote:
       "Each day — flap colour and viability (edge necrosis); collection under the flaps (haematoma, seroma); output and character of each drain separately; wound; shoulder and arm range of movement; pain; temperature. Discharge — flaps healthy; drain output [ __ ml / 24 h ]; arm exercises taught; drain-care instructions if a drain is still in.",
   },
@@ -308,8 +303,6 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Change in bowel habit; bleeding per rectum or melaena; tenesmus; mass; weight loss and anorexia; episodes of obstruction; symptoms of anaemia; family history (Lynch syndrome, FAP); previous colonoscopy; stoma-site marking before an operation that may need a stoma. Examination: abdominal mass, hepatomegaly, digital rectal examination (for a rectal tumour — distance from the anal verge, fixity), nodes. Baseline: colonoscopy with biopsy, CEA, CT of chest, abdomen and pelvis, MRI pelvis for rectal tumours, CBC.",
     progressNote:
       "Each day — enhanced-recovery milestones (out of bed, oral intake, off IV fluids, catheter out, analgesia step-down); flatus / stool or stoma — mucosal viability from POD 1, colour (pink / dusky / black), mucocutaneous separation or retraction, output volume and consistency; drain output and character, if one was placed; wound; at any point, most often POD 3–7, the signs that raise a leak question — not progressing as expected, new tachycardia or arrhythmia, fever, worsening abdominal pain, rising TLC / CRP, peritonism, ileus that does not settle; voiding once the catheter is out after pelvic dissection; electrolytes if ileostomy output is high; stoma teaching. Discharge — eating, stoma managed independently, drain out, voiding. Discharge with stoma supplies, thromboprophylaxis as decided, and clinic dates.",
   },
@@ -369,8 +362,6 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Epigastric pain; early satiety; vomiting (undigested food, timing after meals); weight loss; dysphagia; melaena or symptoms of anaemia; previous H. pylori, ulcer or partial gastrectomy; family history. Examination: nutritional status, epigastric mass, succussion splash, Virchow's node, Sister Mary Joseph nodule, hepatomegaly, ascites. Baseline: upper GI endoscopy with biopsy, CT of chest and abdomen, staging laparoscopy, CBC, albumin, electrolytes and blood gas (gastric outlet obstruction — hypochloraemic, hypokalaemic metabolic alkalosis).",
     progressNote:
       "Each day — Ryle's output and character; feeding-jejunostomy feed tolerance; drain output and character (bilious drain raises a duodenal-stump or anastomotic-leak question) [ ± drain amylase ]; contrast study if one is done; oral intake escalation; once feeds start in a malnourished or obstructed patient — potassium, phosphate, magnesium (refeeding); weight; sepsis parameters. Discharge — tolerating feeds, drains out. Discharge with feed plan, B12 schedule after total gastrectomy, and clinic dates.",
   },
@@ -439,8 +430,6 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Swelling — duration, growth, sudden increase (haemorrhage into a nodule or malignancy); pressure symptoms — dysphagia, breathlessness, stridor, hoarseness; toxic symptoms — weight loss, palpitations, heat intolerance, tremor; hypothyroid symptoms; neck irradiation; family history of thyroid cancer or MEN; current antithyroid drugs and beta-blockers. Examination: moves with swallowing, size, nodularity, lower border (retrosternal extension), tracheal deviation, Pemberton's sign, cervical nodes, eye signs, pulse, tremor. Baseline: thyroid function tests, USG neck (TI-RADS), FNAC (Bethesda), pre-operative vocal-cord check (indirect / video laryngoscopy), serum calcium, CT neck and chest if retrosternal; euthyroid before surgery.",
     progressNote:
       "Each day — voice and cough; breathing and stridor; neck swelling or tension under the wound (a haematoma almost always declares itself in the first 24 hours) [ and drain output, if one was placed ]; perioral or fingertip tingling, Chvostek's and Trousseau's signs; serum calcium (± PTH) after total thyroidectomy — repeated in those at highest risk, since hypocalcaemia can first appear on POD 2–5; thyroxine charted from POD 1 after total thyroidectomy; after surgery for thyrotoxicosis — pulse, temperature, restlessness; swallowing; wound. Discharge day — voice stable, no haematoma, calcium normal or stable on supplements, tingling explained to the patient, drain out if one was placed.",
   },
@@ -498,8 +487,6 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Pain — epigastric, band-like, radiating to the back, eased by leaning forward; alcohol intake (quantity, last drink); known gallstones; drugs; previous episodes; family history. Examination: epigastric tenderness, distension, signs of a pleural effusion, Cullen's and Grey-Turner's signs, temperature, signs of shock. Baseline: amylase / lipase, LFT, serum calcium, triglycerides, glucose, haematocrit, renal function, blood gas, CRP; USG abdomen for gallstones; severity score (BISAP / modified Glasgow). Contrast CT only if the diagnosis is in doubt, or after 72 hours when not improving or a local complication is suspected — CT does not predict severity.",
     progressNote:
       "Each day — pain score; oral intake and tolerance (feed as tolerated; Ryle's / nasojejunal feeds if not tolerated by day 3–5); fluid balance and urine output; organ-failure parameters (respiratory rate, SpO₂, BP, creatinine) and whether any has lasted beyond 48 hours; severity reassessed at 24 hours, 48 hours and day 7; haematocrit / urea trend; blood glucose and calcium; abdominal examination and girth, bladder pressure if tense; temperature and CRP trend; jaundice or signs of cholangitis (raises the question of ERCP within 72 hours for the senior); deterioration, persistent organ failure or sepsis (raises the CT question). On improvement — pain settled; eating; markers down. Mild gallstone pancreatitis — cholecystectomy in the same admission; severe or with collections — interval cholecystectomy once they settle. Discharge with follow-up imaging as needed.",
   },
@@ -565,8 +552,6 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Fever — duration, rigors; right upper abdominal pain, radiation to the right shoulder, pleuritic pain or cough; recent dysentery; alcohol (quantity, country liquor / toddy); diabetes; biliary disease, recent ERCP or abdominal sepsis; jaundice; weight loss (a necrotic tumour can mimic an abscess). Examination: tender hepatomegaly, intercostal tenderness, right basal chest signs, jaundice, peritonism (rupture). Baseline: CBC, LFT, PT / INR, blood sugar / HbA1c, renal function, amoebic serology, blood culture, USG abdomen (size, segment, liquefaction, volume), CT if complicated or unclear, chest X-ray; pus culture if aspirated.",
     progressNote:
       "Each day — fever curve; pain and liver tenderness; pigtail output and character (bile-stained output raises a biliary-communication question); aspirate culture report and the antibiotic choice it guides; blood sugar; TLC and LFT trend; chest signs; the source looked for (biliary tract, appendix or diverticular disease); repeat USG when indicated. Discharge — afebrile for 48 hours, pain settled, drain output low or drain out.",
   },
@@ -629,8 +614,6 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Charcot's triad — fever with rigors, right upper quadrant pain, jaundice; confusion or hypotension (Reynolds' pentad); jaundice — duration, progression, pruritus, pale stools, dark urine; painless progressive jaundice with weight loss and anorexia (malignancy); previous cholecystectomy, ERCP or stent; bleeding tendency. Examination: icterus, scratch marks, palpable gallbladder (Courvoisier), hepatomegaly, mass, signs of sepsis. Baseline: LFT with direct bilirubin, ALP, GGT; PT / INR; CBC; renal function; amylase / lipase; blood culture; USG abdomen (CBD diameter, stones); MRCP; CT if malignancy suspected; Tokyo grade.",
     progressNote:
       "Each day — temperature and sepsis parameters; bilirubin trend; INR; after ERCP — abdominal pain, amylase, melaena; T-tube output and colour, and the T-tube cholangiogram once the bile is clear and the patient has recovered; after surgery, bilirubin that rises or bile that keeps leaking raises a retained-stone or duct-injury question; oral intake. Discharge — afebrile, bilirubin falling, eating; stent and cholecystectomy plan written down.",
   },
@@ -694,8 +677,6 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Mechanism — road traffic accident (vehicle, speed, seat-belt, two-wheeler with or without helmet), fall (height), assault; time of injury; loss of consciousness; abdominal pain and its site, left shoulder-tip pain (Kehr's sign); vomiting; haematuria; other injuries; alcohol; anticoagulants or antiplatelets; last meal. Examination: ATLS primary survey; pulse, BP, shock index; seat-belt sign and bruising; distension, tenderness, guarding; FAST; chest, pelvis, spine and head; urethral meatus. Baseline: serial haemoglobin, blood group and cross-match, eFAST, CT abdomen with contrast if stable, urine for blood, amylase, LFT, renal function, chest and pelvic X-rays; medico-legal registration.",
     progressNote:
       "Non-operative — at first every 4–6 hours, then daily: pulse, BP, abdominal girth and examination, haemoglobin trend; diet and mobilisation once stable. Operated — as the perforation template. Discharge — haemoglobin stable, pain settled, eating and mobilising; activity restriction and vaccine plan written down.",
   },
@@ -749,8 +730,6 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Pain — colicky suggests simple obstruction, constant suggests strangulation; vomiting — early is proximal, feculent is distal or late; distension; time of last flatus and stool; previous abdominal or pelvic surgery (adhesions); known hernia; altered bowel habit, bleeding per rectum, weight loss (malignancy). Examination: distension, visible peristalsis, scars, all hernial orifices, bowel sounds, digital rectal examination. Baseline: erect and supine abdominal X-ray, CT abdomen with contrast, electrolytes, renal function, CBC, lactate.",
     progressNote:
       "Each day — Ryle's output volume and character; abdominal girth; flatus / stool passed; fluid balance and urine output; electrolytes (potassium); signs that raise a strangulation question — rising pulse, fever, pain becoming continuous, localised tenderness or guarding, rising TLC or lactate. Water-soluble contrast if given — contrast in the colon on the [ __ ]-hour film. Not settling by 48–72 hours, or any strangulation sign — the question of operation goes to the senior. On settling — Ryle's clamped, orals tolerated, tube removed, diet advanced. Plan discharge.",
   },
@@ -798,8 +777,6 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Treat chronic cough / constipation / prostatism to reduce recurrence."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Duration; reducibility (spontaneous / manual / irreducible); dragging pain; episodes of obstruction (colicky pain, vomiting, constipation); precipitating factors — chronic cough, straining at stool, prostatism, ascites, heavy work; previous repair on either side. Examination: cough impulse, defect and contents, reducibility, testis and cord, the contralateral side, external genitalia. Baseline: pre-anaesthetic workup; USG if the diagnosis is uncertain.",
     progressNote:
       "POD 0 — pain; first void after surgery [ passed / catheterised ] (retention is common after spinal anaesthesia in older men); vitals; walking (local infiltration can block the femoral nerve for some hours); scrotal swelling or haematoma. POD 1 — ambulant; orals; wound; scrotal / cord collection; testicular pain or swelling. Plan: discharge with advice.",
   },
@@ -846,8 +823,6 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Migratory pain (peri-umbilical to RIF); anorexia; nausea and vomiting; fever; diarrhoea or urinary symptoms; last menstrual period and gynaecological history in women. Examination: RIF tenderness, guarding, rebound, Rovsing's and psoas signs, mass, temperature. Baseline: CBC with differential, CRP, urine routine, urine pregnancy test in women; USG or CT if diagnosis unclear; Alvarado score.",
     progressNote:
       "POD 0 — orals as tolerated; pain; vitals; passed urine. POD 1 — diet; ambulant; wound; temperature; [ drain output ]. Perforated or gangrenous — antibiotics about 4 days after source control (no more than 24 hours if gangrenous without perforation); wound pain and redness around POD 4–5 (wound infection question); ileus beyond POD 4–5, especially with fever, raises a continuing-sepsis question; spiking fever, malaise, anorexia, diarrhoea or tenesmus around POD 5–7 raises a pelvic or other intra-abdominal collection question; rigors or jaundice after a gangrenous appendix raise a pylephlebitis question. Discharge when afebrile, eating and drain out — collection symptoms explained to the patient.",
   },
@@ -897,8 +872,6 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Onset, site and character of pain; radiation to the back or right shoulder; relation to fatty food; fever with rigors; nausea and vomiting; jaundice, pruritus, pale stools, dark urine; number and duration of previous attacks; previous USG / ERCP. Examination: temperature, Murphy's sign, a palpable tender gallbladder or mass, jaundice, guarding. Baseline: CBC with differential, CRP, LFT, amylase / lipase, USG abdomen (wall thickness, pericholecystic fluid, stone size, CBD diameter); MRCP if the CBD is dilated or the LFT is deranged; Tokyo Guidelines grade.",
     progressNote:
       "Each day (conservative phase) — temperature trend; pain; Murphy's sign; TLC / CRP trend; oral intake; jaundice. Post-operative — drain output [ __ ml ] and character (bile in the drain raises a bile-leak question — LFT, USG); orals; port sites; temperature. Plan: early cholecystectomy in the same admission where fit (Tokyo Guidelines 2018), otherwise interval; discharge when afebrile and eating.",
   },
@@ -960,8 +933,6 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Sudden severe pain becoming generalised; time of onset; previous dyspepsia, NSAID, steroid, alcohol or smoking history; fever for weeks and contacts with fever (enteric); trauma. Examination: distension, generalised guarding and rigidity, absent bowel sounds, obliteration of liver dullness, temperature, signs of shock. Baseline: erect chest / abdominal X-ray for free gas, CBC, renal function, electrolytes, blood gas and lactate, blood cultures before antibiotics, blood group and cross-match; CT abdomen if the picture is unclear.",
     progressNote:
       "POD 0–2 (ICU / HDU if needed) — vitals, inotrope requirement, ventilation, urine output, Ryle's output, blood gas / lactate; abdomen soft / distended; each drain — output and character (bilious or feculent after repair raises a leak / fistula question). POD 3–5 — sepsis parameters; ileus resolving; flatus passed on POD [ __ ]; orals started; drains reducing; antibiotic day [ __ ] — with source control most need about 4 days, and no more than 24 hours for a gastroduodenal perforation operated within 24 hours. POD 5–8 — wound for SSI (open and drain if pus) and for serosanguinous discharge that can herald a burst abdomen; chest. POD 6+ — tolerating diet; drains removed; mobilising. Discharge when afebrile, eating and the wound settled.",
   },
@@ -1010,8 +981,6 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Duration and pattern of biliary colic; relation to fatty food; any episodes of fever, jaundice or pancreatitis (these change the plan); previous USG confirming stones; fitness for anaesthesia and comorbidities. Examination: usually unremarkable between attacks; Murphy's sign, scars, herniae. Baseline: USG abdomen, LFT, CBC, pre-anaesthetic workup; MRCP only if the CBD is dilated or the LFT is deranged.",
     progressNote:
       "POD 0 — orals once awake and not nauseated; pain and shoulder-tip pain; vitals; passed urine; drain output and character if one was placed. POD 1 — diet; ambulant; port sites; temperature; jaundice, bilious drain or increasing pain (raises a bile-leak or duct-injury question). Plan: remove the drain if placed and output is minimal and non-bilious; discharge with advice.",
   },
@@ -1074,8 +1043,6 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Bleeding — colour, whether on or after defecation, dripping versus mixed with stool; prolapse — reduces on its own, needs manual reduction, or irreducible; pain — a fissure gives severe pain on defecation lasting hours, an abscess gives constant throbbing pain; discharge; itching; bowel habit and constipation; previous anorectal surgery; risk factors for a specific fistula cause (inflammatory bowel disease, tuberculosis, immunosuppression). Examination: perianal inspection (tags, external opening, sentinel pile), digital rectal examination unless too painful, proctoscopy or sigmoidoscopy, examination under anaesthesia. Baseline: haemoglobin if there is chronic bleeding; colonoscopy if over 40 or with alarm features; MRI pelvis for a complex fistula.",
     progressNote:
       "POD 0 — pain score; first void [ passed / catheterised ]; bleeding, including concealed bleeding (pulse, BP; may show only on rectal examination); sitz baths started. POD 1 — first bowel motion [ passed / not yet ] and pain with it; analgesia; voiding; wound / pack. Plan: discharge with sitz baths, stool softeners and follow-up; bleeding around day 7–8 (secondary haemorrhage) explained to the patient.",
   },
@@ -1129,8 +1096,6 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Symptoms — aching, heaviness, itching, night cramps, swelling by evening; duration and progression; bleeding from a vein; ulcer; previous DVT (deep-system patency decides the operation); pregnancy, oral contraceptives; occupation with prolonged standing; previous surgery or sclerotherapy. Examination: distribution (GSV / SSV), skin changes (pigmentation, eczema, lipodermatosclerosis, ulcer), cough impulse at the SFJ, Trendelenburg / tourniquet tests, peripheral pulses (ABPI before compression). Baseline: venous duplex (reflux, deep-system patency), CBC, coagulation, pre-anaesthetic workup.",
     progressNote:
       "POD 0 — mobilised; bandage intact; groin and stab wounds; bleeding. POD 1 — calf soft and non-tender; walking; bandage / stocking in place; numbness or tingling along the inner leg (saphenous) or outer foot (sural), foot drop after SSV surgery (common peroneal). Plan: discharge with advice.",
   },
@@ -1200,8 +1165,6 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Diabetes — duration, treatment, control; ulcer — onset and trigger (trauma, footwear, burn), painful or painless, discharge, smell, spread; fever; claudication or rest pain; previous ulcers or amputations; smoking; kidney, heart and eye disease. Examination: sepsis signs; ulcer site, size and depth, probe-to-bone, pus tracking along tendon sheaths, crepitus, extent of gangrene; pulses (femoral, popliteal, dorsalis pedis, posterior tibial) and ABPI; monofilament sensation; deformity (Charcot); the other foot. Baseline: blood sugar, HbA1c, ketones, CBC, CRP, renal function, electrolytes, X-ray foot (osteomyelitis, gas), arterial Doppler, pus / tissue culture, ECG; Wagner grade.",
     progressNote:
       "Each day — temperature and sepsis parameters; sugar chart and insulin; wound — slough, granulation, pus, smell, spreading cellulitis (mark the margin); culture report and antibiotic de-escalation; need for relook debridement; offloading; renal function. Discharge — infection controlled, sugar controlled, dressing and offloading plan set.",
   },
@@ -1262,8 +1225,6 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Site; duration; pain; fever; speed of spread; injection, injury or insect bite at the site; diabetes, steroids or immunosuppression; previous abscesses; lactation (breast abscess); injecting drug use. Examination: site, size, fluctuation, induration, surrounding cellulitis (mark the margin), crepitus, skin necrosis or bullae, pain out of proportion to the signs (necrotising infection), regional nodes, sepsis signs. Baseline: blood sugar, HbA1c, CBC, renal function, USG for depth and loculi, pus culture, X-ray for gas if necrotising infection is suspected (LRINEC as an adjunct only).",
     progressNote:
       "Each day — temperature; dressing — cavity size, discharge, granulation, slough; cellulitis margin; blood sugar; culture report. Discharge — afebrile, cellulitis settled, dressing plan set.",
   },
@@ -1272,7 +1233,7 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
   // Kept below abscess_drainage, so "infected sebaceous cyst — I&D" is an abscess discharge.
   // Schwartz 11e p. 527: "sebaceous" cysts are epidermoid cysts with a keratin-plugged punctum.
   // p. 1570: a mass > 5 cm, deep to fascia or enlarging needs imaging and biopsy before excision
-  // (sarcoma) — hence the clerking line.
+  // (sarcoma).
   {
     key: "lump_excision",
     label: "Excision of lipoma / sebaceous cyst / minor lump",
@@ -1309,8 +1270,6 @@ export const DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Duration, growth, pain; discharge from a punctum and previous infections (sebaceous cyst); number and sites of other lumps; for a node — fever, night sweats, weight loss, cough, TB contact. Examination: site, size, shape, surface, consistency, fluctuation, slip sign, punctum, fixity to skin and deep structures, transillumination, regional nodes. A lump over 5 cm, deep to the fascia, hard or enlarging needs imaging (USG / MRI) and a core biopsy before excision — think of a sarcoma. Baseline: USG of the swelling if deep or large; FNAC for a node; blood sugar; pre-anaesthetic workup if under general anaesthesia.",
     progressNote:
       "Day of surgery — pain controlled; wound dry; no haematoma. Discharge the same day or POD 1 with advice and the histopathology follow-up.",
   },
@@ -1352,8 +1311,6 @@ export const GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     primaryCareActions: [],
     conditionAllSatisfactory: true,
   },
-  clerkingFocus:
-    "Presenting complaint with onset, duration and character; associated symptoms and relevant negatives; past medical, surgical and drug history; examination findings on arrival; provisional diagnosis and plan. Baseline investigations as indicated.",
   progressNote:
     "Each day — symptoms; vitals with temperature; new confusion; pain; examination including chest; oral intake; flatus / stool; urine output; drains / tubes — output and character; wound; cannula sites; pressure areas if bed-bound; mobilisation; calf tenderness; the day's plan. On readiness — afebrile, eating, mobilising, wound healthy, tubes out. For discharge with advice.",
 };

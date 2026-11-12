@@ -10,7 +10,6 @@
  *  - an unsafe autonomous action in a task (prescribe / transfer / order / operate …)
  *  - a component missing its provenance requirement (inputKey + selector)
  *  - an invalid card state / status value
- *  - a checkpoint referenced by a card that is not defined
  *  - a task dedup key that is not unique
  */
 
@@ -26,33 +25,11 @@ import type {
 type ValidationIssue = { path: string; message: string };
 export type ValidationResult = { ok: boolean; issues: ValidationIssue[] };
 
-const VALID_CARD_TYPES = ["calculator", "structured_classification", "documentation_only"];
+const VALID_CARD_TYPES = ["calculator", "structured_classification"];
 const VALID_STATUSES = ["active", "draft", "unavailable", "retired"];
 const VALID_ANCHORS = ["admission"];
-const VALID_SELECTORS = [
-  "admission",
-  "first",
-  "worst",
-  "highest",
-  "lowest",
-  "change_from_baseline",
-];
-const VALID_CALC_KINDS = [
-  "sum_points",
-  "max_points",
-  "sirs",
-  "revised_atlanta",
-  "structured_extraction",
-  "tiered_classification",
-];
-const VALID_RECOMPUTE = [
-  "new_lab",
-  "new_observation",
-  "new_imaging",
-  "scheduled_checkpoint",
-  "deterioration",
-  "manual",
-];
+const VALID_SELECTORS = ["admission", "first", "worst", "highest", "lowest"];
+const VALID_CALC_KINDS = ["sum_points", "max_points", "sirs", "tiered_classification"];
 const VALID_ROLES = ["resident", "nursing", "senior", "radiology"];
 const VALID_PRIORITIES = ["routine", "soon", "urgent"];
 
@@ -88,20 +65,17 @@ export function validatePathwayDefinition(def: unknown): ValidationResult {
     add("$.diagnosisTriggers", "required");
   } else {
     const t = d.diagnosisTriggers;
-    if (!Array.isArray(t.textPatterns) && !Array.isArray(t.codes)) {
-      add("$.diagnosisTriggers", "need at least codes[] or textPatterns[]");
-    }
+    if (!Array.isArray(t.textPatterns)) add("$.diagnosisTriggers.textPatterns", "must be an array");
     if (!Array.isArray(t.excludePatterns)) add("$.diagnosisTriggers.excludePatterns", "must be an array");
   }
 
   // Cards ------------------------------------------------------------------
   const allComponentIds = new Set<string>();
-  const definedCheckpoints = new Set((d.checkpoints ?? []).map((c) => c.key));
 
   if (!Array.isArray(d.cards) || d.cards.length === 0) {
     add("$.cards", "at least one card required");
   } else {
-    d.cards.forEach((card, ci) => validateCard(card, `$.cards[${ci}]`, add, allComponentIds, definedCheckpoints));
+    d.cards.forEach((card, ci) => validateCard(card, `$.cards[${ci}]`, add, allComponentIds));
   }
 
   // Checkpoints ----------------------------------------------------------
@@ -135,10 +109,6 @@ export function validatePathwayDefinition(def: unknown): ValidationResult {
     }
   });
 
-  if (!Array.isArray(d.recomputePolicy) || d.recomputePolicy.length === 0) {
-    add("$.recomputePolicy", "at least one recompute trigger required");
-  }
-
   return { ok: issues.length === 0, issues };
 }
 
@@ -146,8 +116,7 @@ function validateCard(
   card: CardDefinition,
   p: string,
   add: (path: string, m: string) => void,
-  allComponentIds: Set<string>,
-  definedCheckpoints: Set<string>
+  allComponentIds: Set<string>
 ) {
   if (!card.cardId) add(`${p}.cardId`, "required");
   if (!VALID_CARD_TYPES.includes(card.type)) add(`${p}.type`, "invalid card type");
@@ -161,12 +130,6 @@ function validateCard(
     for (const inp of card.inputs ?? []) {
       if (inp.tier && !tierSet.has(inp.tier)) add(`${p}.inputs`, `component '${inp.componentId}' has tier '${inp.tier}' not in tiers/fallback`);
     }
-  }
-  if (!Array.isArray(card.recomputeOn) || card.recomputeOn.some((r) => !VALID_RECOMPUTE.includes(r))) {
-    add(`${p}.recomputeOn`, "invalid recompute event");
-  }
-  if (card.lockedUntilCheckpoint && !definedCheckpoints.has(card.lockedUntilCheckpoint)) {
-    add(`${p}.lockedUntilCheckpoint`, `unknown checkpoint '${card.lockedUntilCheckpoint}'`);
   }
   if (!Array.isArray(card.inputs) || card.inputs.length === 0) {
     add(`${p}.inputs`, "at least one input required");
@@ -196,11 +159,7 @@ function validateComponent(
   if (!inp.label) add(`${p}.label`, "required");
   if (!inp.inputKey) add(`${p}.inputKey`, "required (provenance: what value feeds this)");
   if (!VALID_SELECTORS.includes(inp.selector)) add(`${p}.selector`, "invalid selector");
-  if (inp.selector === "change_from_baseline" && !inp.baselineWindow) {
-    add(`${p}.baselineWindow`, "required for change_from_baseline");
-  }
   validateWindow(inp.window, `${p}.window`, add);
-  if (inp.baselineWindow) validateWindow(inp.baselineWindow, `${p}.baselineWindow`, add);
 
   if (inp.canonicalUnit != null) {
     // The unit must be one the engine can actually normalise to.

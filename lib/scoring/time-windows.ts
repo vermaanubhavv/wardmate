@@ -7,7 +7,6 @@
  */
 
 import type { EngineInput, InstanceClock, Instant, TimeWindow } from "./types";
-import { round } from "./units";
 
 const HOUR_MS = 3_600_000;
 
@@ -81,21 +80,4 @@ export function worstValue(
   direction: "high" | "low"
 ): EngineInput | null {
   return direction === "high" ? highestValue(inputs, key, rw) : lowestValue(inputs, key, rw);
-}
-
-/**
- * Change from baseline: (selected value in `rw`) − (selected value in `baselineRw`).
- * Returns null unless BOTH endpoints exist — a fall/rise cannot be asserted from one reading.
- */
-export function changeFromBaseline(
-  inputs: EngineInput[],
-  key: string,
-  rw: ResolvedWindow,
-  baselineRw: ResolvedWindow,
-  select: (i: EngineInput[], k: string, w: ResolvedWindow) => EngineInput | null
-): { delta: number; current: EngineInput; baseline: EngineInput } | null {
-  const baseline = select(inputs, key, baselineRw);
-  const current = select(inputs, key, rw);
-  if (!baseline || !current || baseline.value == null || current.value == null) return null;
-  return { delta: round(current.value - baseline.value, 2), current, baseline };
 }

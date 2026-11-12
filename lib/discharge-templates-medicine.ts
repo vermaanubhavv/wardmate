@@ -69,8 +69,6 @@ export const MEDICINE_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     primaryCareActions: [],
     conditionAllSatisfactory: true,
   },
-  clerkingFocus:
-    "Presenting complaint with onset, duration and course; associated symptoms and pertinent negatives; the problem list; past medical history and all current drugs including native medicines; examination on arrival; provisional diagnosis and the workup planned. Baseline: CBC with differential, renal and liver function, electrolytes, glucose, urinalysis, and the condition-specific tests (cultures, serologies, imaging).",
   progressNote:
     "Each day — symptoms; vitals including the temperature trend; examination; oral intake; the results back and the problem each addresses; the day's plan. For discharge — afebrile, stable off support, tolerating orals, oral medicines prescribed, and follow-up with repeat-test dates written down.",
 };
@@ -123,8 +121,6 @@ function febrile(opts: {
       primaryCareActions: [],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Onset and duration of fever, pattern, localising symptoms, exposure/travel/contact history, past episodes; examination for a focus; provisional differential and the workup planned.",
     progressNote:
       "Each day — temperature chart, localising symptoms, examination, the results back and what they change, the day's plan. For discharge — afebrile for at least 24–48 hours, haemodynamically stable, tolerating orals, oral step-down prescribed.",
   };

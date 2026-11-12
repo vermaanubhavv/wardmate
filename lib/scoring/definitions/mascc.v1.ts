@@ -26,9 +26,7 @@ const masccCard: CardDefinition = {
   citation:
     "MASCC risk index — Klastersky J et al., J Clin Oncol 2000;18:3038–51. Maximum 26; ≥ 21 identifies patients at low risk of serious complications. A prompt beside clinical judgement, never a decision about outpatient care or treatment.",
   type: "calculator",
-  timingLabel: "at presentation with fever",
   calculation: { kind: "sum_points" },
-  recomputeOn: ["new_observation", "manual"],
   interpretationBands: [
     { min: 0, max: 20, text: "MASCC 0–20 — higher risk of serious complications on this index. Has a senior reviewed the febrile-neutropenia plan?", tone: "attention" },
     { min: 21, max: 26, text: "MASCC 21–26 — low risk on MASCC — still a prompt, not a decision about outpatient care.", tone: "neutral" },
@@ -180,15 +178,11 @@ export const masccV1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-01",
   diagnosisTriggers: {
-    codes: [],
     textPatterns: ["febrile neutropenia", "neutropenic fever", "neutropenic sepsis", "fever on chemotherapy", "fever post chemotherapy", "post-chemotherapy fever"],
     excludePatterns: ["no neutropenia", "neutropenia ruled out"],
   },
-  eligibility: { minAgeYears: 16, notes: ["Adults with cancer and febrile neutropenia. A risk prompt, not a management decision."] },
-  exclusions: [],
   cards: [masccCard],
   tasks: [],
   checkpoints: [],
-  recomputePolicy: ["new_observation", "manual"],
   institutionalToggles: {},
 };

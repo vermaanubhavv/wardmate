@@ -4,9 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/auth";
 import { getCurrentWard, getWardSpecialtyStored } from "@/lib/ward";
 import { claimPhotoRead } from "@/lib/photo-cap";
-
-const ALLOWED = ["image/jpeg", "image/png", "image/webp"] as const;
-const MAX_BYTES = 12 * 1024 * 1024;
+import { readImage } from "@/lib/image-upload";
 
 /** Read a paper into suggestions only. Creating the patient remains a separate, reviewed action. */
 export async function POST(request: Request) {
@@ -15,21 +13,12 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const form = await request.formData();
-  const paper = form.get("paper");
-  if (!(paper instanceof Blob) || paper.size === 0) {
-    return NextResponse.json({ error: "No paper image was received." }, { status: 400 });
-  }
-  if (paper.size > MAX_BYTES) {
-    return NextResponse.json({ error: "That image is too large. Try a closer, well-lit photo." }, { status: 413 });
-  }
-
-  const mediaType = ALLOWED.find((type) => type === paper.type);
-  if (!mediaType) {
-    return NextResponse.json(
-      { error: `Unsupported image type (${paper.type || "unknown"}).` },
-      { status: 415 }
-    );
-  }
+  const image = await readImage(form.get("paper"), {
+    missing: "No paper image was received.",
+    tooLarge: "That image is too large. Try a closer, well-lit photo.",
+  });
+  if (image instanceof Response) return image;
+  const { mediaType, bytes } = image;
 
   // The unit's department. It changes only what the paper is expected to carry — an oncology
   // day-care sheet prints a regimen and a cycle where an admission sheet prints an operation —
@@ -40,11 +29,7 @@ export async function POST(request: Request) {
   const specialty = ward ? await getWardSpecialtyStored(ward.id) : null;
 
   try {
-    const result = await readAdmissionPaper(
-      Buffer.from(await paper.arrayBuffer()).toString("base64"),
-      mediaType,
-      specialty
-    );
+    const result = await readAdmissionPaper(bytes.toString("base64"), mediaType, specialty);
     return NextResponse.json({ patient: result.patient });
   } catch (error) {
     return NextResponse.json(

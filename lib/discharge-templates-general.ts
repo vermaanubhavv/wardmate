@@ -34,8 +34,6 @@ export const GENERAL_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     primaryCareActions: [],
     conditionAllSatisfactory: true,
   },
-  clerkingFocus:
-    "Presenting complaint with onset, duration and course; associated symptoms and pertinent negatives; past medical and surgical history and all current drugs; examination on arrival; provisional diagnosis and the workup planned.",
   progressNote:
     "Each day — symptoms; vitals; examination; oral intake; results back; the day's plan. For discharge — stable, tolerating orals, medicines prescribed, and follow-up written down.",
 };

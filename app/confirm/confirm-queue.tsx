@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { cropStyle } from "@/lib/photo-crop";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { flagMisheard } from "../patients/[id]/flag-misheard";
 import { runOrQueue, type RunResult } from "@/lib/offline-actions";
 import type { PendingConfirm } from "@/lib/confirm-queue";
+import { useModal } from "@/lib/use-modal";
 import { ActionSheet } from "../action-sheet";
 import BottomBar from "../bottom-bar";
 import { displayLabel, displayValue, isUnreadable } from "@/lib/display-value";
@@ -426,15 +427,7 @@ function SmallAlert({
   onConfirm: () => void;
 }) {
   const ref = useRef<HTMLDialogElement | null>(null);
-  useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (open && !d.open) {
-      d.showModal();
-      d.focus();
-    }
-    if (!open && d.open) d.close();
-  }, [open]);
+  useModal(ref, open);
 
   return (
     <dialog

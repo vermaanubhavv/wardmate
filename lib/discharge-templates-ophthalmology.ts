@@ -101,8 +101,6 @@ export const OPHTHALMOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Complete the tetanus immunisation schedule.", "Refer back urgently with pain or reduced vision in either eye."],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Mechanism (sharp / blunt / projectile, hammering metal on metal), time since injury, object and its material; loss of vision; pain; prior vision and spectacles; previous eye surgery; tetanus status; last meal; other injuries. Examination (without pressure on the globe): visual acuity, RAPD, lids, wound site and extent, uveal prolapse, Seidel test, anterior chamber, pupil shape, lens, fundus if visible; the other eye. Baseline: X-ray orbit / CT orbit for IOFB (no MRI if a metallic body is possible), B-scan only after closure, pre-anaesthetic workup.",
     progressNote:
       "Each day — visual acuity; pain; lids; wound apposition and sutures; Seidel; anterior chamber depth and cells / hypopyon; fibrin; IOP; red reflex / fundus; signs of endophthalmitis; the other eye. Discharge day — wound watertight, AC formed, no endophthalmitis; drops taught.",
   },
@@ -152,8 +150,6 @@ export const OPHTHALMOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Refer back urgently if vision drops or pain increases."],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Agent (alkali — lime / chuna, cement, cleaning agents; acid — battery, toilet cleaner), time of injury, first aid given and how long the eye was washed, one or both eyes; pain, vision; other burns; previous eye disease. Examination: check and record pH first and irrigate before full examination; visual acuity; lids and lashes; fornices (evert the lids for particles); conjunctival and limbal ischaemia in clock hours; fluorescein epithelial defect; corneal haze; AC; IOP. Grade by Roper-Hall / Dua. Baseline: pH strips, fluorescein, IOP.",
     progressNote:
       "Each day — pain; visual acuity; epithelial defect size (fluorescein); limbal ischaemia; corneal haze and thinning; AC reaction; IOP; symblepharon (sweep the fornices); steroid frequency and taper day. Discharge day — defect healing, IOP controlled, drop schedule written down.",
   },
@@ -204,8 +200,6 @@ export const OPHTHALMOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Refer back the same day with any red, painful or blurred operated eye."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Indication and its history — previous keratitis (organism, treatment), trauma, keratoconus, previous surgery; duration of visual loss; previous grafts and rejection; glaucoma; herpes; dry eye, lid disease, diabetes. Examination: visual acuity (both eyes), lids and lashes, tear film, corneal opacity / thinning / perforation, vascularisation (quadrants), AC, lens, IOP, B-scan if the fundus is not visible, fellow eye. Baseline: B-scan, IOP, blood sugar, pre-anaesthetic workup; smear and culture if active infection.",
     progressNote:
       "Each day — visual acuity; pain; graft clarity; epithelium (fluorescein); sutures (loose, exposed); wound leak (Seidel); AC depth and reaction; IOP; signs of rejection or recurrent infection. Discharge day — graft in place, AC formed, IOP controlled; drops taught; rejection symptoms explained.",
   },
@@ -257,8 +251,6 @@ export const OPHTHALMOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Injury with vegetable matter (crop, stick), contact-lens wear, use of steroid or home-remedy drops, previous eye surgery or herpes; duration of pain, redness, watering, photophobia, reduced vision; diabetes, immunosuppression. Examination: visual acuity; lids and lacrimal sac (regurgitation — dacryocystitis); ulcer size, depth, margins (feathery / satellite lesions), infiltrate, thinning; epithelial defect (fluorescein); hypopyon height; IOP (digital if needed); corneal sensation; fellow eye. Baseline: corneal scraping — Gram stain, KOH mount, culture; blood sugar; B-scan if no fundal view.",
     progressNote:
       "Each day — symptoms; visual acuity; ulcer size (infiltrate and epithelial defect in mm); thinning / Descemetocele / perforation; hypopyon height; IOP; smear / culture results; drop frequency and taper; liver function if on oral antifungal. Discharge day — infiltrate reducing and defect healing on a stable regimen; drop schedule written down.",
   },
@@ -309,8 +301,6 @@ export const OPHTHALMOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Refer back the same day with a red, sticky, painful operated eye (bleb infection)."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Duration of glaucoma; drops used, adherence and side effects; previous laser or surgery; episodes of pain, haloes and redness (angle closure); steroid use; family history; diabetes, hypertension, asthma (timolol), sulfa allergy (acetazolamide). Examination: visual acuity; IOP (Goldmann) with time; gonioscopy; AC depth; lens; optic disc (CDR, notching, haemorrhage); conjunctiva (bleb site). Baseline: perimetry (visual fields), OCT RNFL, pachymetry, IOP phasing, blood sugar, pre-anaesthetic workup.",
     progressNote:
       "Each day — visual acuity; pain; bleb (height, extent, vascularity); Seidel test; AC depth; hyphaema; IOP; choroidal detachment; fundus. Discharge day — bleb formed, AC deep, IOP [ __ ], no leak; drops taught; operated-eye antiglaucoma drops stopped.",
   },
@@ -365,8 +355,6 @@ export const OPHTHALMOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Floaters, flashes, curtain-like field loss — onset, progression, whether central vision is affected (macula on / off); myopia; previous cataract surgery or trauma; diabetes and its control; fellow-eye history. Examination: visual acuity, RAPD, IOP, AC, lens / IOL, dilated fundus with indirect ophthalmoscopy (extent of detachment, breaks, PVR, macula), fellow-eye fundus. Baseline: B-scan if media opaque, OCT macula, blood sugar / HbA1c, blood pressure, renal function, pre-anaesthetic workup.",
     progressNote:
       "Each day — visual acuity; pain; IOP (raised with gas / oil); AC (oil in AC, fibrin); fill of tamponade; retina attached on indirect ophthalmoscopy; posturing adherence. Discharge day — retina attached, IOP controlled; posture and flight / gas restrictions explained.",
   },
@@ -416,8 +404,6 @@ export const OPHTHALMOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Control blood sugar in diabetics.", "Refer back the same day with a painful red eye after surgery."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Gradual painless loss of vision — duration, glare, uniocular diplopia, change in glasses; trauma, steroid use, uveitis; diabetes, hypertension, COPD / BPH (ability to lie flat, alpha-blockers — floppy iris), anticoagulants; previous eye surgery; fellow-eye vision. Examination: visual acuity and pinhole, lids and lacrimal sac (ROPLAS / regurgitation — must be clear), cornea, AC depth, pupil and dilatation, lens grading, IOP, fundus / B-scan if no view, fellow eye. Baseline: keratometry and A-scan biometry (IOL power), IOP, syringing, blood sugar, blood pressure, urine routine.",
     progressNote:
       "POD 1 — visual acuity; pain; lids; wound apposition; corneal clarity; AC depth and cells / flare; IOL position; pupil; IOP; red reflex / fundus. Plan: discharge with drops taught and follow-up dates.",
   },
@@ -466,8 +452,6 @@ export const OPHTHALMOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Watering — duration, one or both eyes; discharge; swelling at the inner canthus; previous acute dacryocystitis or abscess; nasal symptoms, trauma, sinus surgery; planned cataract surgery (sac must be clear first). Examination: lids and puncta, regurgitation on pressure over the sac (ROPLAS), sac swelling, fluorescein dye disappearance test, nasal examination / endoscopy. Baseline: lacrimal syringing and probing, CBC, bleeding and clotting time, blood sugar, pre-anaesthetic workup; dacryocystogram / CT if atypical.",
     progressNote:
       "POD 0 — no active nasal bleed; wound dry; pain controlled. POD 1 — pack removed, no bleed; wound healthy; stent in place. Plan: discharge with nasal-care advice and follow-up.",
   },
@@ -506,8 +490,6 @@ export const OPHTHALMOLOGY_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     primaryCareActions: [],
     conditionAllSatisfactory: true,
   },
-  clerkingFocus:
-    "Presenting complaint with eye, onset, duration and course — vision loss, pain, redness, watering, discharge, photophobia, floaters, diplopia; trauma; previous eye disease, surgery and glasses; diabetes, hypertension, steroid use; drug and allergy history. Examination: visual acuity (both eyes, with pinhole), pupils and RAPD, lids and adnexa, conjunctiva, cornea (fluorescein), AC, lens, IOP, fundus. Baseline: condition-specific tests (B-scan, OCT, fields, smear / culture), blood sugar.",
   progressNote:
     "Each day — symptoms; visual acuity; pain; anterior segment findings; IOP; fundus; the results back and the plan. For discharge — stable, IOP controlled, drops taught, and follow-up written down.",
 };

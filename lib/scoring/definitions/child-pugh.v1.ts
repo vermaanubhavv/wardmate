@@ -21,9 +21,7 @@ const childCard: CardDefinition = {
   citation:
     "Child-Pugh (Child-Turcotte-Pugh) — Pugh RN et al., Br J Surg 1973;60:646–9. Total 5–15: Class A 5–6 (well-compensated), B 7–9 (significant compromise), C 10–15 (decompensated). Prognostic and peri-procedural risk gauge — MELD is preferred for transplant listing.",
   type: "calculator",
-  timingLabel: "at assessment",
   calculation: { kind: "sum_points" },
-  recomputeOn: ["new_lab", "new_observation", "manual"],
   interpretationBands: [
     { min: 5, max: 6, text: "Child-Pugh A (5–6) — well-compensated. ~1-year survival high; lower peri-procedural risk.", tone: "neutral" },
     { min: 7, max: 9, text: "Child-Pugh B (7–9) — significant functional compromise. Elective procedures need senior / hepatology input.", tone: "attention" },
@@ -136,12 +134,9 @@ export const childPughV1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-30",
   diagnosisTriggers: {
-    codes: ["K74.6", "K70.30", "K70.31", "K76.6", "I85.0"],
     textPatterns: ["cirrhosis", "chronic liver disease", "cld", "decompensated liver disease", "decompensated cirrhosis", "portal hypertension", "hepatic decompensation", "alcoholic liver disease", "child pugh"],
     excludePatterns: ["acute liver failure", "fulminant hepatic failure", "compensated cirrhosis stable outpatient", "post liver transplant"],
   },
-  eligibility: { minAgeYears: 16, notes: ["Established chronic liver disease / cirrhosis. Not for acute (fulminant) liver failure — a different assessment."] },
-  exclusions: ["Acute / fulminant liver failure.", "Post-liver-transplant."],
   cards: [childCard],
   tasks: [
     {
@@ -157,6 +152,5 @@ export const childPughV1: PathwayDefinition = {
     },
   ],
   checkpoints: [],
-  recomputePolicy: ["new_lab", "new_observation", "manual"],
   institutionalToggles: {},
 };

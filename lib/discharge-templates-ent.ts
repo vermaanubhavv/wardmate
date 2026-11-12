@@ -89,8 +89,6 @@ export const ENT_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Indication — stridor (onset, progression, positional), hoarseness, dysphagia, neck swelling, trauma, prolonged intubation; underlying disease (laryngeal malignancy, bilateral cord palsy, neuromuscular disease); smoking; previous neck surgery or radiotherapy. Examination: respiratory distress, stridor, saturation, neck (goitre, nodes, landmarks), indirect laryngoscopy / flexible endoscopy of the larynx. Baseline: CBC, coagulation profile, chest X-ray, soft-tissue neck X-ray / CT neck as indicated, ABG if distressed.",
     progressNote:
       "Each day — breathing and saturation; secretions (amount, colour); tube patency and inner-cannula cleaning; stoma (bleeding, emphysema, infection); cuff pressure; humidification; chest. POD [ 3–5 ] — first tube change done. Before discharge — caregiver trained and has demonstrated suction, cannula cleaning, tie change and emergency reinsertion; kit and supplies arranged.",
   },
@@ -138,8 +136,6 @@ export const ENT_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Support smoking cessation.", "Refer back if hoarseness persists beyond 3 weeks after surgery."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Hoarseness — onset, duration, progression, voice use (teacher, singer, vendor); breathlessness or stridor; dysphagia, odynophagia, referred otalgia; cough, haemoptysis; reflux symptoms; smoking and alcohol; weight loss; previous thyroid or neck surgery. Examination: voice quality, indirect / video laryngoscopy (lesion site, cord mobility), neck nodes, thyroid. Baseline: pre-anaesthetic workup, video laryngostroboscopy, CT neck if malignancy is suspected.",
     progressNote:
       "POD 0 — no stridor; no haemoptysis beyond streaks; orals started; voice rest explained. POD 1 — comfortable, tolerating diet, afebrile. Plan: discharge with voice rest and reflux advice; histopathology awaited.",
   },
@@ -190,8 +186,6 @@ export const ENT_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Check blood sugar and treat diabetes if present.", "Arrange dental treatment of any source tooth."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Sore throat, odynophagia, drooling, trismus, hot-potato voice, neck swelling and pain, fever; breathing difficulty or stridor; dental pain or recent extraction; recurrent tonsillitis; diabetes, immunosuppression, IV drug use. Examination: airway and stridor first, trismus (inter-incisor distance), soft-palate bulge and uvula deviation, tonsils, dentition, neck swelling and spaces, torticollis, chest. Baseline: CBC, blood sugar / HbA1c, renal function, CECT neck (± chest if extension suspected), pus culture and sensitivity.",
     progressNote:
       "Each day — airway and saturation; fever curve; trismus; swallowing and oral intake; neck swelling and drain output; wound; culture result and antibiotic changes; blood sugar. Discharge day — afebrile 24–48 h, swallowing, swelling settling, drain out; switched to oral antibiotics.",
   },
@@ -241,8 +235,6 @@ export const ENT_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Refer back immediately with any post-tonsillectomy bleed."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Episodes of sore throat per year (and missed school / work), fever, odynophagia; quinsy; snoring, mouth breathing, witnessed apnoeas, daytime sleepiness; ear symptoms (otitis media with effusion); bleeding tendency and family history of bleeding; recent URI; rheumatic fever. Examination: tonsil size and grade, anterior pillar congestion, jugulodigastric nodes, adenoid facies, ears (tympanic membranes), nose. Baseline: CBC, bleeding and clotting time / coagulation profile, pre-anaesthetic workup; X-ray soft-tissue nasopharynx for adenoids.",
     progressNote:
       "POD 0 — no bleeding from the mouth or nose; vitals stable; oral fluids taken; pain controlled. POD 1 — tolerating soft diet, afebrile, fossae clean with slough, no bleeding. Plan: discharge with bleeding warnings and diet advice.",
   },
@@ -294,8 +286,6 @@ export const ENT_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Treat nasal infection and allergy early.", "Refer back with any ear discharge or facial weakness."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Ear discharge — duration, character (mucoid / scanty foul-smelling), blood-stained; hearing loss; tinnitus, vertigo, facial weakness, headache, fever (complications); nasal and throat infection, allergy; previous ear surgery; diabetes. Examination: otoscopy / otoendoscopy (perforation site and size, cholesteatoma, granulations, polyp), tuning-fork tests, fistula test, facial nerve, nose and throat, cranial nerves. Baseline: pure tone audiometry, ear swab culture if discharging, HRCT temporal bone for squamous disease, pre-anaesthetic workup.",
     progressNote:
       "POD 0 — facial nerve intact; no vertigo or nystagmus; mastoid dressing dry; pain controlled. POD 1 — dressing removed, wound healthy, no haematoma; facial nerve intact; afebrile. Plan: discharge with ear-care advice; pack removal date given.",
   },
@@ -347,8 +337,6 @@ export const ENT_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Treat allergic rhinitis and asthma; support long-term steroid-spray use."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Nasal obstruction, discharge (anterior / postnasal, character), facial pain or pressure, reduced smell, headache; duration and medical treatment tried; allergy, asthma, aspirin sensitivity; epistaxis; visual symptoms or eye swelling; diabetes, immunosuppression; previous nasal surgery. Examination: anterior rhinoscopy, diagnostic nasal endoscopy (polyp grade, discharge, septum), eyes, facial swelling. Baseline: CT paranasal sinuses (coronal), CBC with eosinophil count, blood sugar, pre-anaesthetic workup.",
     progressNote:
       "POD 0 — packs in situ; no active bleed; eyes normal (no proptosis, periorbital swelling or diplopia); no CSF leak. POD 1–2 — packs removed, no bleed, breathing through the nose, afebrile. Plan: discharge with saline douche and debridement dates.",
   },
@@ -397,8 +385,6 @@ export const ENT_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Nasal obstruction — side, constant or alternating; mouth breathing, snoring; headache; epistaxis; sinusitis symptoms; allergic rhinitis; nasal trauma; previous nasal surgery; nasal-spray use. Examination: external nose, Cottle's test, anterior rhinoscopy and nasal endoscopy (deviation, spur, turbinates), cold-spatula test. Baseline: pre-anaesthetic workup; CT paranasal sinuses if sinus disease is suspected.",
     progressNote:
       "POD 0 — packs in situ; no active bleed or ooze; vitals stable. POD 1 — packs removed, no bleed, no septal haematoma; breathing through the nose. Plan: discharge with nasal-care advice.",
   },
@@ -452,8 +438,6 @@ export const ENT_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Bleeding — side, amount, duration, anterior or trickling into the throat, recurrence; trauma, nose picking; hypertension; anticoagulant, antiplatelet or NSAID use; bleeding elsewhere, easy bruising; liver disease; nasal obstruction, blood-stained discharge, facial swelling (neoplasm); in adolescent males, nasal obstruction (angiofibroma); family history. Examination: haemodynamic status first, blood pressure, anterior rhinoscopy / endoscopy for the bleeding site, oropharynx, neck nodes. Baseline: CBC, blood group and crossmatch, coagulation profile, INR if on warfarin, renal and liver function.",
     progressNote:
       "Each day — any fresh bleed from the pack or into the throat; pack in place; pulse and blood pressure; haemoglobin trend; antibiotic cover while packed; blood-pressure control. After pack removal — no rebleed for 24 h. Plan: discharge with first-aid and nasal-care advice.",
   },
@@ -497,8 +481,6 @@ export const ENT_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     primaryCareActions: [],
     conditionAllSatisfactory: true,
   },
-  clerkingFocus:
-    "Presenting complaint with onset, duration and course; ear (discharge, hearing loss, tinnitus, vertigo, otalgia), nose (obstruction, discharge, bleeding, smell), throat (sore throat, dysphagia, hoarseness, stridor) and neck swelling; past medical, surgical and drug history; smoking and alcohol. Examination: otoscopy, anterior rhinoscopy / endoscopy, oral cavity and oropharynx, indirect laryngoscopy, neck, cranial nerves. Baseline: CBC and the condition-specific tests (audiometry, CT, endoscopy).",
   progressNote:
     "Each day — symptoms; vitals; airway; bleeding; wound / pack / drain; oral intake; the results back and the plan. For discharge — afebrile, stable, no bleeding, tolerating orals, oral medicines prescribed, and follow-up written down.",
 };

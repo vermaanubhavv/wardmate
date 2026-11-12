@@ -77,9 +77,11 @@ function open(): Promise<IDBDatabase> {
   });
 }
 
-function tx<T>(
+/** One transaction on one store. Resolves once it has committed, with the request's result
+ *  (undefined when `run` drives a cursor instead of returning a request). */
+function tx<T = undefined>(
   mode: IDBTransactionMode,
-  run: (store: IDBObjectStore) => IDBRequest<T>,
+  run: (store: IDBObjectStore) => IDBRequest<T> | void,
   store: string = STORE
 ): Promise<T> {
   return open().then(
@@ -87,27 +89,11 @@ function tx<T>(
       new Promise<T>((resolve, reject) => {
         const t = db.transaction(store, mode);
         const req = run(t.objectStore(store));
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-        t.oncomplete = () => db.close();
-      })
-  );
-}
-
-function chunkStoreTx<T>(
-  mode: IDBTransactionMode,
-  run: (store: IDBObjectStore) => IDBRequest<T> | void
-): Promise<T | undefined> {
-  return open().then(
-    (db) =>
-      new Promise<T | undefined>((resolve, reject) => {
-        const t = db.transaction(CHUNKS, mode);
-        const req = run(t.objectStore(CHUNKS));
         t.oncomplete = () => {
           db.close();
-          resolve(req ? req.result : undefined);
+          resolve(req ? req.result : (undefined as T));
         };
-        t.onerror = () => reject(t.error);
+        t.onerror = t.onabort = () => reject(t.error);
       })
   );
 }
@@ -127,9 +113,13 @@ export async function putChunk(
   meta: ChunkRow["meta"]
 ): Promise<void> {
   try {
-    await chunkStoreTx("readwrite", (s) => {
-      s.put({ recId, seq, blob, meta } satisfies ChunkRow);
-    });
+    await tx(
+      "readwrite",
+      (s) => {
+        s.put({ recId, seq, blob, meta } satisfies ChunkRow);
+      },
+      CHUNKS
+    );
   } catch {
     // Storage full or unavailable — the in-memory chunks and the save-on-stop path still hold.
   }
@@ -138,17 +128,20 @@ export async function putChunk(
 /** Drop a recording's live chunks — called once it has been saved the ordinary way. */
 export async function clearChunks(recId: string): Promise<void> {
   try {
-    await chunkStoreTx("readwrite", (s) => {
-      const idx = s.index("recId");
-      const cur = idx.openCursor(IDBKeyRange.only(recId));
-      cur.onsuccess = () => {
-        const c = cur.result;
-        if (c) {
-          c.delete();
-          c.continue();
-        }
-      };
-    });
+    await tx(
+      "readwrite",
+      (s) => {
+        const cur = s.index("recId").openCursor(IDBKeyRange.only(recId));
+        cur.onsuccess = () => {
+          const c = cur.result;
+          if (c) {
+            c.delete();
+            c.continue();
+          }
+        };
+      },
+      CHUNKS
+    );
   } catch {
     // Nothing to clear, or no database.
   }
@@ -162,7 +155,7 @@ export async function clearChunks(recId: string): Promise<void> {
 export async function recoverInterruptedChunks(): Promise<Pending[]> {
   let rows: ChunkRow[];
   try {
-    rows = (await chunkStoreTx<ChunkRow[]>("readonly", (s) => s.getAll() as IDBRequest<ChunkRow[]>)) ?? [];
+    rows = (await tx<ChunkRow[]>("readonly", (s) => s.getAll() as IDBRequest<ChunkRow[]>, CHUNKS)) ?? [];
   } catch {
     return [];
   }

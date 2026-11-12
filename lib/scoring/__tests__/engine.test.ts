@@ -96,165 +96,27 @@ describe("pleural effusion", () => {
   });
 });
 
-// ── 3. Admission data cannot populate the 48-hour stage ─────────────────────
+// ── 3. A value outside the component's window does not fill it ─────────────
 describe("time-window isolation", () => {
-  it("an admission calcium does not fill the Ranson 48-hour calcium component", () => {
-    const r = evaluateCard(
-      card("ranson_48h_nongallstone"),
-      ctx([input("calcium", 7, "mg/dL", 2)], { checkpointDueAt: { ranson_48h: H(48) }, now: H(50) })
-    );
-    const ca = comp(r, "ranson_48h_nongallstone.calcium");
-    expect(ca.status).toBe("unknown");
-    expect(ca.missingReason).toBe("outside_time_window");
-  });
-
-  it("the 48-hour card is locked (not_started) before the checkpoint is due", () => {
-    const r = evaluateCard(
-      card("ranson_48h_nongallstone"),
-      ctx([input("calcium", 7, "mg/dL", 44)], { checkpointDueAt: { ranson_48h: H(48) }, now: H(30) })
-    );
-    expect(r.state).toBe("not_started");
-    expect(comp(r, "ranson_48h_nongallstone.calcium").missingReason).toBe("checkpoint_not_due");
-  });
-});
-
-// ── 2. Both Ranson variants, all thresholds ────────────────────────────────
-describe("Ranson variants", () => {
-  it("non-gallstone admission thresholds", () => {
-    const r = evaluateCard(
-      card("ranson_admission_nongallstone"),
-      ctx([
-        input("age_years", 56, "years", 0),
-        input("wbc", 16001, "cells/mm3", 2),
-        input("glucose", 201, "mg/dL", 2),
-        input("ldh", 351, "IU/L", 2),
-        input("ast", 251, "IU/L", 2),
-      ])
-    );
-    expect(r.total).toBe(5);
-  });
-  it("non-gallstone admission boundary values do NOT score", () => {
-    const r = evaluateCard(
-      card("ranson_admission_nongallstone"),
-      ctx([
-        input("age_years", 55, "years", 0),
-        input("wbc", 16000, "cells/mm3", 2),
-        input("glucose", 200, "mg/dL", 2),
-        input("ldh", 350, "IU/L", 2),
-        input("ast", 250, "IU/L", 2),
-      ])
-    );
-    expect(r.total).toBe(0);
-  });
-  it("gallstone admission uses the higher cut-offs (age 70, WBC 18k, glucose 220, LDH 400)", () => {
-    const belowGallstone = evaluateCard(
-      card("ranson_admission_gallstone"),
-      ctx([
-        input("age_years", 65, "years", 0),
-        input("wbc", 17000, "cells/mm3", 2),
-        input("glucose", 210, "mg/dL", 2),
-        input("ldh", 380, "IU/L", 2),
-        input("ast", 240, "IU/L", 2),
-      ])
-    );
-    expect(belowGallstone.total).toBe(0);
-    const above = evaluateCard(
-      card("ranson_admission_gallstone"),
-      ctx([
-        input("age_years", 71, "years", 0),
-        input("wbc", 18001, "cells/mm3", 2),
-        input("glucose", 221, "mg/dL", 2),
-        input("ldh", 401, "IU/L", 2),
-        input("ast", 251, "IU/L", 2),
-      ])
-    );
-    expect(above.total).toBe(5);
-  });
-
-  it("non-gallstone 48h: Hct fall > 10 points and BUN rise > 5 use change-from-baseline", () => {
-    const r = evaluateCard(
-      card("ranson_48h_nongallstone"),
-      ctx(
-        [
-          input("hct", 45, "%", 2),
-          input("hct", 33, "%", 46), // fall of 12
-          input("bun", 20, "mg/dL", 2),
-          input("bun", 27, "mg/dL", 46), // rise of 7
-          input("calcium", 7.5, "mg/dL", 46),
-          input("pao2", 55, "mmHg", 46),
-          input("base_deficit", 5, "mEq/L", 46),
-          input("fluid_sequestration", 7, "L", 46, { sourceQuote: "estimated fluid sequestration 7 L" }),
-        ],
-        { checkpointDueAt: { ranson_48h: H(48) }, now: H(50) }
-      )
-    );
-    expect(comp(r, "ranson_48h_nongallstone.hct_fall").status).toBe("satisfied");
-    expect(comp(r, "ranson_48h_nongallstone.bun_rise").status).toBe("satisfied");
-    expect(r.total).toBe(6);
-  });
-
-  it("gallstone 48h has no PaO2 component and a lower BUN-rise / base-deficit cut-off", () => {
-    const g = card("ranson_48h_gallstone");
-    expect(g.inputs.some((i) => i.componentId.endsWith(".pao2"))).toBe(false);
-    const r = evaluateCard(
-      g,
-      ctx(
-        [
-          input("bun", 20, "mg/dL", 2),
-          input("bun", 23, "mg/dL", 46), // rise 3 → > 2 for gallstone
-          input("base_deficit", 5.5, "mEq/L", 46), // > 5 for gallstone
-          input("fluid_sequestration", 4.5, "L", 46),
-        ],
-        { checkpointDueAt: { ranson_48h: H(48) }, now: H(50) }
-      )
-    );
-    expect(comp(r, "ranson_48h_gallstone.bun_rise").status).toBe("satisfied");
-    expect(comp(r, "ranson_48h_gallstone.base_deficit").status).toBe("satisfied");
-    expect(comp(r, "ranson_48h_gallstone.fluid_sequestration").status).toBe("satisfied");
+  it("a BUN recorded after the first 24 hours does not fill the BISAP BUN component", () => {
+    const r = evaluateCard(card("bisap"), ctx([input("bun", 40, "mg/dL", 30)], { now: H(50) }));
+    const bun = comp(r, "bisap.bun");
+    expect(bun.status).toBe("unknown");
+    expect(bun.missingReason).toBe("outside_time_window");
   });
 });
 
 // ── 8. Unsupported units → visible incomplete ──────────────────────────────
 describe("unit safety", () => {
-  it("an ambiguous WBC (no unit) makes the component unknown but shows the raw value", () => {
+  it("an ambiguous BUN (no unit) makes the component unknown but shows the raw value", () => {
     const r = evaluateCard(
-      card("ranson_admission_nongallstone"),
-      ctx([input("wbc", null, null, 2, { original: { value: "11.2", unit: null }, unitError: "ambiguous_unit: WBC with no unit" })])
+      card("bisap"),
+      ctx([input("bun", null, null, 2, { original: { value: "11.2", unit: null }, unitError: "ambiguous_unit: BUN with no unit" })])
     );
-    const w = comp(r, "ranson_admission_nongallstone.wbc");
-    expect(w.status).toBe("unknown");
-    expect(w.missingReason).toBe("ambiguous_unit");
-    expect(w.rawValue).toBe("11.2");
-  });
-});
-
-// ── 12 & 13. Atlanta persistence timer ────────────────────────────────────
-describe("Revised Atlanta persistence", () => {
-  const run = (ci: Record<string, unknown>) =>
-    evaluateCard(card("atlanta"), ctx([input("creatinine", 3.5, "mg/dL", 10)], { classificationInputs: ci, now: H(30) }));
-
-  it("organ failure present for < 48 h is NOT classified as persistent/severe", () => {
-    const r = run({ organFailureDurationHours: 24 });
-    expect(r.classification).toBe("moderately_severe");
-    expect(r.classification).not.toBe("severe");
-  });
-  it("organ failure for exactly 48 h is severe", () => {
-    const r = run({ organFailureDurationHours: 48 });
-    expect(r.classification).toBe("severe");
-  });
-  it("organ failure for 47 h is not yet severe", () => {
-    const r = run({ organFailureDurationHours: 47 });
-    expect(r.classification).not.toBe("severe");
-  });
-  it("mild only when no organ failure and complications explicitly absent", () => {
-    const r = evaluateCard(
-      card("atlanta"),
-      ctx([input("creatinine", 0.9, "mg/dL", 10)], {
-        classificationInputs: { localComplications: false, systemicComplications: false },
-        now: H(30),
-      })
-    );
-    expect(r.classification).toBe("mild");
+    const b = comp(r, "bisap.bun");
+    expect(b.status).toBe("unknown");
+    expect(b.missingReason).toBe("ambiguous_unit");
+    expect(b.rawValue).toBe("11.2");
   });
 });
 
@@ -277,9 +139,9 @@ describe("manual override", () => {
   });
 });
 
-// ── 9. No CT task solely for mCTSI + card not built without a CT ────────────
-describe("mCTSI does not drive a CT order", () => {
-  it("no generated task references contrast CT or an mCTSI component", () => {
+// ── 9. No CT task solely to complete a score ────────────────────────────────
+describe("scores do not drive a CT order", () => {
+  it("no generated task references contrast CT", () => {
     const bisapResult = evaluateCard(card("bisap"), ctx([input("bun", 10, "mg/dL", 4)]));
     const decisions = planPathwayTasks(
       acutePancreatitisV1,
@@ -456,7 +318,7 @@ describe("versioning", () => {
   });
 });
 
-// ── Trigger detection (configured code + text fallback + exclusions) ───────
+// ── Trigger detection (text patterns + exclusions) ─────────────────────────
 describe("trigger detection", () => {
   const withActive = () => triggerableDefinitions();
   it("matches a free-text working diagnosis", () => {
@@ -468,13 +330,9 @@ describe("trigger detection", () => {
     const m = detectTriggers({ text: "chronic pancreatitis" }, withActive());
     expect(m.length).toBe(0);
   });
-  it("matches a configured ICD code", () => {
-    const m = detectTriggers({ text: "abdominal pain", codes: ["K85.9"] }, withActive());
-    expect(m[0]?.source).toBe("diagnosis_code");
-  });
 });
 
-// ── SIRS / Modified Marshall units are honoured ───────────────────────────
+// ── SIRS units are honoured ─────────────────────────────────────────────────
 describe("BISAP SIRS component", () => {
   it("needs ≥ 2 criteria; one criterion alone is not_satisfied, none assessable is unknown", () => {
     const oneOnly = evaluateCard(card("bisap"), ctx([input("hr", 120, "/min", 3)]));

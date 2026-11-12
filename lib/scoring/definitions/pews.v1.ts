@@ -75,9 +75,7 @@ const pewsCard: CardDefinition = {
   citation:
     "Brighton PEWS — Monaghan A, Paediatr Nurs 2005;17:32–5. Behaviour, cardiovascular and respiratory 0–3 each; +2 for ¼-hourly nebulisers; +2 for persistent post-operative vomiting. Heart and respiratory rates are judged against the normal range for age. 3 → more frequent observations, inform the nurse in charge; ≥ 4 or any single 3 → prompt review by the doctor. A prompt for review, not a diagnosis.",
   type: "calculator",
-  timingLabel: "re-score at each observation set",
   calculation: { kind: "sum_points" },
-  recomputeOn: ["new_observation", "deterioration", "manual"],
   interpretationBands: [
     { min: 0, max: 2, text: "PEWS 0–2 — routine observations for age; re-score on change.", tone: "neutral" },
     {
@@ -123,7 +121,6 @@ export const pewsV1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-01",
   diagnosisTriggers: {
-    codes: [],
     textPatterns: [
       "paediatric",
       "pediatric",
@@ -146,11 +143,8 @@ export const pewsV1: PathwayDefinition = {
     ],
     excludePatterns: ["child pugh", "childbirth"],
   },
-  eligibility: { maxAgeYears: 16, notes: ["Children on a paediatric ward. Heart- and respiratory-rate bands are judged against the normal range for age by the resident."] },
-  exclusions: ["Adults — use the adult early-warning score."],
   cards: [pewsCard],
   tasks: [],
   checkpoints: [],
-  recomputePolicy: ["new_observation", "deterioration", "manual"],
   institutionalToggles: {},
 };

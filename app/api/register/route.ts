@@ -5,9 +5,7 @@ import { getUser } from "@/lib/auth";
 import { getCurrentWard, getWardPack } from "@/lib/ward";
 import { readRegister } from "@/lib/read-register";
 import { claimPhotoRead } from "@/lib/photo-cap";
-
-const ALLOWED = ["image/jpeg", "image/png", "image/webp"] as const;
-const MAX_BYTES = 16 * 1024 * 1024;
+import { readImage } from "@/lib/image-upload";
 
 /**
  * Reads a photographed round register into a DRAFT. Writes no observations and touches no
@@ -24,22 +22,9 @@ export async function POST(request: Request) {
   if (!ward) return NextResponse.json({ error: "No ward found." }, { status: 404 });
 
   const form = await request.formData();
-  const photo = form.get("photo");
-
-  if (!(photo instanceof Blob) || photo.size === 0) {
-    return NextResponse.json({ error: "No photo was received." }, { status: 400 });
-  }
-  if (photo.size > MAX_BYTES) {
-    return NextResponse.json({ error: "That photo is too large." }, { status: 413 });
-  }
-
-  const mediaType = ALLOWED.find((t) => photo.type === t);
-  if (!mediaType) {
-    return NextResponse.json(
-      { error: `Unsupported image type (${photo.type || "unknown"}).` },
-      { status: 415 }
-    );
-  }
+  const image = await readImage(form.get("photo"), { maxBytes: 16 * 1024 * 1024 });
+  if (image instanceof Response) return image;
+  const { mediaType, ext, bytes } = image;
 
   const capped = await claimPhotoRead(supabase, ward.id);
   if (capped) return NextResponse.json({ error: capped }, { status: 429 });
@@ -57,9 +42,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const ext = mediaType === "image/png" ? "png" : mediaType === "image/webp" ? "webp" : "jpg";
   const path = `register/${ward.id}/${read.id}.${ext}`;
-  const bytes = Buffer.from(await photo.arrayBuffer());
 
   const { error: uploadError } = await supabase.storage
     .from("evidence")

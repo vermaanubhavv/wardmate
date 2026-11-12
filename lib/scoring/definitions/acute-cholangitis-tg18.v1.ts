@@ -28,15 +28,12 @@ const tg18Card: CardDefinition = {
   citation:
     "Tokyo Guidelines 2018 — Kiriyama S et al., J Hepatobiliary Pancreat Sci 2018;25:17–30. Grade III = organ dysfunction; Grade II = any 2 of (abnormal WBC, fever ≥ 39 °C, age ≥ 75, bilirubin ≥ 5 mg/dL, low albumin); Grade I = neither. Escalate Grade II/III for early biliary drainage planning.",
   type: "structured_classification",
-  timingLabel: "dynamic — re-grade on change",
   calculation: {
     kind: "tiered_classification",
     tiers: ["grade_iii", "grade_ii"],
     fallback: "grade_i",
     tierThresholds: { grade_ii: 2 },
   },
-  requiresConfirmation: true,
-  recomputeOn: ["new_lab", "new_observation", "deterioration", "manual"],
   interpretationBands: [
     { min: 0, class: "grade_i", text: "Grade I (mild) — responds to initial medical management. Biliary drainage electively / if no response.", tone: "neutral" },
     { min: 0, class: "grade_ii", text: "Grade II (moderate) — early biliary drainage. Senior GI / HPB review.", tone: "attention" },
@@ -72,12 +69,9 @@ export const cholangitisTg18V1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-01",
   diagnosisTriggers: {
-    codes: ["K83.0", "K80.30", "K80.50"],
     textPatterns: ["acute cholangitis", "ascending cholangitis", "cholangitis", "? cholangitis", "obstructive jaundice with sepsis", "cbd stone with cholangitis"],
     excludePatterns: ["primary sclerosing cholangitis", "psc", "cholangiocarcinoma", "recurrent pyogenic cholangitis stable"],
   },
-  eligibility: { minAgeYears: 16, notes: ["Grades severity once cholangitis is the working diagnosis. Choledocholithiasis-risk stratification is a separate decision."] },
-  exclusions: ["Cholangiocarcinoma.", "Primary sclerosing cholangitis without an acute infective episode."],
   cards: [tg18Card],
   tasks: [
     {
@@ -105,6 +99,5 @@ export const cholangitisTg18V1: PathwayDefinition = {
   checkpoints: [
     { key: "tg18ch_reassess_12h", dueFrom: "admission", dueAtHours: 12, label: "Re-grade Tokyo severity at 12 hours", recomputeCards: ["tg18_cholangitis"] },
   ],
-  recomputePolicy: ["new_lab", "new_observation", "deterioration", "scheduled_checkpoint", "manual"],
   institutionalToggles: {},
 };

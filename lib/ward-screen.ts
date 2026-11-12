@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { compareBeds, type WardPatient } from "@/lib/patients";
 import { getCurrentWard, getActivePatients, getWardSpecialtyStored } from "@/lib/ward";
-import { getProcedureLabels, listTemplateChoices, type TemplateChoice } from "@/lib/templates";
-import { getSpecialtyPack, offersChecklistFamily, type SpecialtyPack } from "@/lib/specialty";
+import { getProcedureLabels, listTemplateChoices, toTemplateChoices, type TemplateChoice } from "@/lib/templates";
+import { getSpecialtyPack, type SpecialtyPack } from "@/lib/specialty";
 import { readsChemoColumns, usesBurnClock } from "@/lib/specialty/clocks";
 
 export type Ward = {
@@ -33,35 +33,6 @@ type RpcShape = {
 };
 
 /**
- * "Lap chole — after surgery" is the template's name; the choice is the operation itself.
- *
- * The pack filters to the rows this unit's department actually uses — its phase, and its own
- * checklist families within that phase. It is optional because a
- * database still on the pre-0060 ward_screen() returns rows without it — those are already
- * only the after-surgery ones, which is exactly what a surgical unit wants, so an absent
- * phase is kept rather than discarded.
- */
-function toChoices(rows: RpcShape["procedures"], pack: SpecialtyPack): TemplateChoice[] {
-  const seen = new Set<string>();
-  const out: TemplateChoice[] = [];
-  for (const t of rows ?? []) {
-    if (t.phase && t.phase !== pack.pickerPhase) continue;
-    // Phase is not enough: oncology and medicine checklists are both filed under
-    // before_surgery, so the department has to say which of them are its own.
-    if (!offersChecklistFamily(pack, t.family)) continue;
-    const key = `${t.family}|${t.variant ?? ""}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push({
-      family: t.family,
-      variant: t.variant,
-      label: t.name.replace(/\s+—\s+(after|before) surgery$/i, ""),
-    });
-  }
-  return out;
-}
-
-/**
  * Everything the ward list needs, in one round trip.
  *
  * It was six: verify the user, read their profile, read the ward, read the patients, read the
@@ -83,7 +54,7 @@ export async function getWardScreen(): Promise<WardScreen> {
   if (!error && data) {
     const payload = data as RpcShape;
     const pack = getSpecialtyPack(payload.ward?.specialty);
-    const choices = toChoices(payload.procedures ?? [], pack);
+    const choices = toTemplateChoices(payload.procedures ?? [], pack);
 
     return {
       ward: payload.ward,

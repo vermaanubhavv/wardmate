@@ -47,9 +47,6 @@ const PRESSURE_GARMENT = "Wear the pressure garment for 23 hours a day once the 
 const SCAR_CARE = "Massage the healed skin with moisturiser 3–4 times a day. Protect it from the sun (cover it, or sunscreen once fully healed) for at least a year.";
 const DIET_HP = "High-protein, high-calorie diet — eggs, milk, pulses, paneer, meat or fish — to help the wounds heal.";
 
-const BURN_CLERKING =
-  "Time, place and agent of the burn (flame / scald / chemical / electrical / contact); closed-space exposure, smoke inhalation, hoarseness, stridor, soot in the mouth; first aid given (cool running water, duration); how it happened, and whether the history fits the injury; tetanus status; comorbidities. Examination: airway and breathing first; TBSA by Lund-Browder with depth per area; circumferential burns and distal circulation; face, hands, perineum and joints involved; associated injuries; weight. Baseline: CBC, electrolytes, renal function, blood glucose, urine output chart, [ carboxyhaemoglobin / ABG if inhalation suspected ], wound swab.";
-
 export const BURNS_PLASTIC_SURGERY_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
   key: "burns_plastic_surgery_generic",
   label: "Burns & Plastic Surgery — generic template",
@@ -77,8 +74,6 @@ export const BURNS_PLASTIC_SURGERY_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate
     primaryCareActions: [],
     conditionAllSatisfactory: true,
   },
-  clerkingFocus:
-    "Presenting complaint, mechanism and duration of the wound or deformity; previous treatment and operations; smoking, diabetes, nutrition and other factors that delay healing; tetanus status; examination of the wound (site, size, depth, exposed structures, infection) and the function it affects; baseline CBC, glucose, albumin, wound swab.",
   progressNote:
     "Each day — pain; temperature; dressing (soakage, smell); graft or flap status; donor site; nutrition; physiotherapy. For discharge — afebrile, wound or graft stable, dressing plan and next dressing date written down.",
 };
@@ -114,8 +109,6 @@ export const BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Reinforce splint and exercise adherence; refer back early if the range is being lost."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Original burn — date, agent, treatment, whether grafted; functional loss (daily activities, work); progression of the contracture; previous releases. Examination: site, type (band / sheet), range of movement, skin quality around it, joint and tendon status beneath, possible donor sites. Baseline: CBC, glucose, pre-anaesthetic workup; X-ray of the joint if long-standing.",
     progressNote:
       "Each day — pain; temperature; splint position; limb perfusion distal to the release. First dressing — graft take / flap colour; donor site. Then — physiotherapy started and range achieved. For discharge — graft or flap stable, splint fitted, exercise and garment plan taught.",
   },
@@ -152,9 +145,6 @@ export const BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Watch for delayed cataract and peripheral neuropathy; refer back if found."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      BURN_CLERKING +
-      " Electrical-specific: voltage (high / low), AC / DC, duration of contact, fall from height, loss of consciousness, entry and exit points; ECG, CK and urine myoglobin; compartments of every limb in the current path; spine and head for a fall.",
     progressNote:
       "Each day — cardiac rhythm (first 24 h); urine output and colour; CK and renal function trend; compartments and distal pulses; wounds; temperature. For discharge — wounds covered or healing, renal function normal, physiotherapy plan and eye review arranged.",
   },
@@ -189,7 +179,6 @@ export const BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Support nutrition; check healed areas for breakdown and early contracture."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus: BURN_CLERKING,
     progressNote:
       "Each day — vitals and temperature; urine output (early phase); pain; dressing soakage and smell; nutrition and weight; physiotherapy. Graft inspection — take %, loss areas, donor site. For discharge — graft stable, afebrile, eating well, dressing / garment / physiotherapy plan written down.",
   },
@@ -232,8 +221,6 @@ export const BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Monitor weight gain and feeding; check hearing and speech milestones; support the cleft-team follow-up."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Type of cleft; feeding method and difficulty, weight gain and growth chart; nasal regurgitation; ear infections; associated anomalies and syndromes (heart, limbs); birth and antenatal history; family history of clefts; immunisation status. Examination: cleft extent, nasal deformity, alveolus, palate; chest and heart; weight. Baseline: CBC, pre-anaesthetic checks per the anaesthetist; echo if a murmur.",
     progressNote:
       "Each day — airway and breathing; bleeding; feeding and intake; wet nappies; temperature; suture line; arm splints. For discharge — feeding well, afebrile, suture line intact, parents confident with feeding and lip care.",
   },
@@ -268,8 +255,6 @@ export const BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Check adherence to the splint; refer back urgently if movement is suddenly lost."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Time and mechanism (sharp / crush / glass / machine); hand dominance and occupation; tetanus status; first aid. Examination: posture of the fingers (cascade); FDS and FDP of each finger; extensors; two-point discrimination on each digital nerve; capillary refill of each finger; associated fracture. Baseline: X-ray of the hand; CBC; pre-anaesthetic workup.",
     progressNote:
       "Each day — capillary refill of every finger; pain; splint position; elevation; dressing; temperature. For discharge — perfusion good, splint correct, therapy protocol taught and first session booked.",
   },
@@ -310,8 +295,6 @@ export const BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Home-nursing support for turning and skin checks; manage continence; treat spasticity; nutrition support."],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Cause of immobility (spinal injury, stroke, frailty); duration of the sore; previous sores and flaps; continence and catheter; spasticity and contractures; nutrition and weight; home support and mattress. Examination: site, size, grade, undermining, bone exposure, discharge; all other pressure points; neurological level. Baseline: CBC, albumin, glucose, wound swab, X-ray / MRI of the underlying bone if osteomyelitis suspected.",
     progressNote:
       "Each day — flap colour, capillary refill and swelling; drain output; turning chart; other pressure points; continence; temperature; nutrition. For discharge — flap healthy, drain out, caregivers trained in turning and skin checks, mattress arranged.",
   },
@@ -345,8 +328,6 @@ export const BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Smoking cessation; diabetes control if diabetic."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Cause and age of the wound; previous debridements and fixation; smoking, diabetes, peripheral vascular disease; tetanus status. Examination: site, size, exposed structures, infection, surrounding skin, distal pulses and sensation, candidate flaps and donor sites. Baseline: CBC, glucose, wound swab; X-ray of underlying bone / implant; Doppler if the flap depends on a named vessel.",
     progressNote:
       "Each day — flap colour, temperature, capillary refill, turgor; drain; limb elevation; donor site; temperature. For discharge — flap healthy, donor site settled, flap-protection advice given.",
   },
@@ -381,7 +362,6 @@ export const BURNS_PLASTIC_SURGERY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Check that the burns heal within 2–3 weeks; refer back if not (may need grafting)."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus: BURN_CLERKING,
     progressNote:
       "Each day — vitals; urine output (early phase); pain; oral intake; dressing soakage and smell; re-assessment of depth; temperature. For discharge — afebrile, eating, burns healed or healing, dressing plan and next dressing date written down.",
   },
