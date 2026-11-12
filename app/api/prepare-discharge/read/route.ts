@@ -6,9 +6,7 @@ import { readPaper } from "@/lib/read-paper";
 import { readLabPhoto } from "@/lib/read-lab-photo";
 import { getCurrentWard, getWardPack } from "@/lib/ward";
 import { claimPhotoRead } from "@/lib/photo-cap";
-
-const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp"] as const;
-const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
+import { readImage } from "@/lib/image-upload";
 
 /**
  * Read one page for a ONE-OFF discharge — somebody who is not a patient in WardMate.
@@ -25,27 +23,15 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const form = await request.formData();
-  const photo = form.get("photo");
-
-  if (!(photo instanceof Blob) || photo.size === 0) {
-    return NextResponse.json({ error: "No photo was received." }, { status: 400 });
-  }
-  if (photo.size > MAX_PHOTO_BYTES) {
-    return NextResponse.json({ error: "That photo is too large." }, { status: 413 });
-  }
-  const mediaType = ALLOWED_IMAGE.find((t) => photo.type === t);
-  if (!mediaType) {
-    return NextResponse.json(
-      { error: `Unsupported image type (${photo.type || "unknown"}).` },
-      { status: 415 }
-    );
-  }
+  const image = await readImage(form.get("photo"));
+  if (image instanceof Response) return image;
+  const { mediaType, bytes } = image;
 
   const { ward } = await getCurrentWard();
   const capped = await claimPhotoRead(supabase, ward?.id);
   if (capped) return NextResponse.json({ error: capped }, { status: 429 });
 
-  const base64 = Buffer.from(await photo.arrayBuffer()).toString("base64");
+  const base64 = bytes.toString("base64");
 
   let read;
   try {

@@ -55,9 +55,7 @@ const ciwaCard: CardDefinition = {
   citation:
     "CIWA-Ar — Sullivan JT et al., Br J Addict 1989;84:1353–7. Total 0–67. < 8 minimal; 8–15 mild–moderate (symptom-triggered benzodiazepine per local protocol); ≥ 15–16 higher risk of withdrawal seizures and delirium tremens. Guides monitoring and dosing frequency — it does not prescribe. Invalid if the patient cannot communicate or another illness is driving the signs.",
   type: "calculator",
-  timingLabel: "re-score at each observation set",
   calculation: { kind: "sum_points" },
-  recomputeOn: ["new_observation", "deterioration", "manual"],
   interpretationBands: [
     { min: 0, max: 7, text: "CIWA-Ar < 8 — minimal withdrawal. Medication not usually required; continue scheduled monitoring and thiamine.", tone: "neutral" },
     { min: 8, max: 14, text: "CIWA-Ar 8–14 — mild to moderate withdrawal. Symptom-triggered benzodiazepine per local protocol; re-score after each dose.", tone: "attention" },
@@ -110,12 +108,9 @@ export const ciwaArV1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-30",
   diagnosisTriggers: {
-    codes: ["F10.23", "F10.239", "F10.231", "F10.232"],
     textPatterns: ["alcohol withdrawal", "delirium tremens", "dts", "alcohol dependence for detox", "withdrawal seizure", "impending dts", "chronic alcoholic with withdrawal"],
     excludePatterns: ["alcohol withdrawal resolved", "no features of withdrawal", "stable on chlordiazepoxide taper day"],
   },
-  eligibility: { minAgeYears: 18, notes: ["A patient at risk of, or in, alcohol withdrawal who can communicate. Not valid in delirium from another cause or when a medical illness is driving the observations."] },
-  exclusions: ["Cannot communicate / intubated — use a symptom-triggered protocol not requiring subjective items.", "Withdrawal complete."],
   cards: [ciwaCard],
   tasks: [
     {
@@ -142,6 +137,5 @@ export const ciwaArV1: PathwayDefinition = {
   checkpoints: [
     { key: "ciwa_review_4h", dueFrom: "admission", dueAtHours: 4, label: "Review CIWA-Ar trend and monitoring interval", recomputeCards: ["ciwa_ar"] },
   ],
-  recomputePolicy: ["new_observation", "deterioration", "scheduled_checkpoint", "manual"],
   institutionalToggles: {},
 };

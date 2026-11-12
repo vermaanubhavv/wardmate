@@ -96,8 +96,6 @@ export const UROLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Haematuria, flank pain, flank mass; weight loss, fever; varicocele of recent onset; bone pain or cough (metastases); history of stones, pyonephrosis or TB (non-functioning kidney); smoking; hypertension, diabetes. Examination: flank mass, varicocele, nodes, pedal oedema, blood pressure. Baseline: CECT abdomen, chest imaging, DTPA / DMSA split function, serum creatinine and eGFR, CBC, urine culture, pre-anaesthetic workup.",
     progressNote:
       "Each day — urine output; creatinine trend; drain output and character; bowel function and oral intake; wound; temperature. Discharge day — creatinine stable, drain and catheter out, voiding, eating.",
   },
@@ -131,8 +129,6 @@ export const UROLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Treat urinary infection promptly; confirm the stent-removal date is kept."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Loin pain (especially after large fluid intake), episodes of infection, haematuria, stones, loin mass; previous surgery; renal function. Examination: loin mass, tenderness, blood pressure. Baseline: USG KUB, CT urography, DTPA with diuretic renogram (split function, drainage), renal function, urine culture.",
     progressNote:
       "Each day — drain output; urine output and haematuria; temperature; wound. Discharge day — drain out, catheter out and voiding, afebrile; stent-removal date written.",
   },
@@ -173,8 +169,6 @@ export const UROLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Reinforce fluid intake; treat urinary infection early."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Loin pain, haematuria, fever and UTI episodes, passage of stones, previous stone surgery; diet, fluid intake, family history, gout, recurrent UTI; medicines (calcium, vitamin D). Examination: loin tenderness, mass. Baseline: NCCT KUB, urine culture, renal function, serum calcium and uric acid, coagulation, CBC.",
     progressNote:
       "Each day — haematuria grade; nephrostomy and catheter output; temperature (post-PCNL sepsis); haemoglobin; chest (supracostal access). Discharge day — urine clear, tubes out, afebrile; stent date written.",
   },
@@ -216,8 +210,6 @@ export const UROLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Reinforce fluid intake; confirm the stent-removal date is kept."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Colicky loin-to-groin pain, vomiting, haematuria, fever with rigors (infected obstructed kidney — an emergency), previous stones, single kidney, pregnancy in women. Examination: renal angle tenderness, temperature, blood pressure. Baseline: NCCT KUB, urine routine and culture, renal function, CBC, serum calcium and uric acid.",
     progressNote:
       "Each day — pain; temperature; haematuria; catheter out and voiding; renal function if obstructed. Discharge day — voiding, afebrile, pain controlled; stent-removal date written.",
   },
@@ -255,8 +247,6 @@ export const UROLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Support smoking cessation.", "Refer back promptly with any new haematuria."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Painless haematuria, clots, retention; irritative symptoms; smoking; occupational dye / rubber exposure; previous bladder tumour and its histology; weight loss, bone pain. Examination: pallor, suprapubic mass, bimanual under anaesthesia, nodes. Baseline: USG KUB, CT urography, urine cytology, renal function, CBC, urine culture.",
     progressNote:
       "Each day — irrigation rate and urine colour; clots; haemoglobin; catheter; temperature. Discharge day — urine clear, catheter out and voiding; histopathology follow-up fixed.",
   },
@@ -299,8 +289,6 @@ export const UROLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Treat urinary infection per culture; refer back with retention or heavy haematuria."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "LUTS — voiding (hesitancy, poor stream, straining, dribbling) and storage (frequency, nocturia, urgency); IPSS; episodes of retention; haematuria; UTI; bladder stones; drugs (anticholinergics, alpha-blockers, 5-ARI); diabetes, neurological disease. Examination: palpable bladder, DRE (size, consistency, nodules), external genitalia, neurological screen. Baseline: USG KUB with prostate volume and PVR, uroflowmetry, PSA, renal function, urine culture.",
     progressNote:
       "Each day — irrigation and urine colour; clots; haemoglobin; sodium (TUR syndrome); catheter. Discharge day — urine clear, catheter out, voiding with a low residue.",
   },
@@ -339,8 +327,6 @@ export const UROLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Treat UTI per culture; refer back if the stream slows."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Poor stream, straining, spraying, retention; duration; previous catheterisation, instrumentation, pelvic fracture or perineal trauma, urethritis; previous urethrotomies; UTI. Examination: palpable bladder, meatus, penile skin (lichen sclerosus), perineum, suprapubic catheter site. Baseline: uroflowmetry, RGU and MCU, USG with PVR, renal function, urine culture.",
     progressNote:
       "Each day — catheter draining and its position; urine colour; temperature; wound / oral graft site; self-calibration teaching. Discharge day — afebrile; catheter plan or voiding well; calibration schedule understood.",
   },
@@ -386,8 +372,6 @@ export const UROLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Swelling — duration, size change, pain; ability to get above it; transillumination; filarial exposure; trauma. Phimosis — ballooning, recurrent balanitis, painful erection, diabetes. Examination: scrotal swelling, testis palpable, cough impulse (exclude hernia), transillumination; prepuce and meatus. Baseline: USG scrotum if the testis is not felt; blood sugar; pre-anaesthetic workup.",
     progressNote:
       "Day of surgery — pain; voided; scrotal swelling / wound bleeding. Discharge — voiding, pain controlled, no haematoma.",
   },
@@ -439,8 +423,6 @@ export const UROLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Onset of retention; prior LUTS and IPSS; precipitants — constipation, UTI, alcohol, cold remedies, anticholinergics, opioids, recent surgery or anaesthesia; haematuria; back pain, leg weakness or saddle numbness (cauda equina). Examination: palpable bladder, DRE (prostate size, nodules, anal tone), perianal sensation, lower-limb neurology. Baseline: drained volume, renal function, electrolytes, urine culture, USG KUB with prostate volume, PSA (after catheterisation-related rise settles).",
     progressNote:
       "Each day — urine output (post-obstructive diuresis); creatinine trend; catheter draining; bowels; alpha-blocker started. Discharge day — renal function settling, catheter care taught, trial-void date fixed.",
   },
@@ -477,8 +459,6 @@ export const UROLOGY_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     primaryCareActions: [],
     conditionAllSatisfactory: true,
   },
-  clerkingFocus:
-    "Presenting complaint with onset and duration; LUTS, haematuria, loin pain, fever; previous urological procedures, stents and catheters; past medical and drug history; examination including abdomen, genitalia and DRE; provisional diagnosis and plan. Baseline: urine routine and culture, renal function, USG KUB.",
   progressNote:
     "Each day — urine output and colour; catheter / drain; temperature; renal function; the day's plan. On readiness — afebrile, voiding or catheter plan clear. For discharge with advice.",
 };

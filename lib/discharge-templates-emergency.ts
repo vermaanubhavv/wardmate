@@ -58,8 +58,6 @@ export const EMERGENCY_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     primaryCareActions: [],
     conditionAllSatisfactory: true,
   },
-  clerkingFocus:
-    "Time of arrival and mode; presenting complaint with onset and duration; mechanism for injury; triage category and vitals on arrival; allergies; current drugs; relevant past history; last meal; examination findings; the working diagnosis and what was done in the emergency; who accompanies the patient.",
   progressNote:
     "Observation — vitals and GCS at the set intervals; symptoms; response to treatment; results back. For discharge — stable vitals over the observation period, symptoms settled, able to walk / drink, responsible adult available where needed, warning signs explained.",
 };
@@ -96,8 +94,6 @@ export const EMERGENCY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Recheck urine output, bleeding and bite-site swelling in 24–48 hours.", "Watch for serum sickness after ASV."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Time and place of bite; snake seen or brought (description only — do not handle); first aid given (tourniquet, cutting, native treatment); time to arrival; local pain and swelling; bleeding, ptosis, diplopia, dysphagia, breathlessness, abdominal pain, urine colour and output. Examination: bite marks, swelling extent (mark and time it), regional nodes, bleeding sites, ptosis, neck-flexor weakness, single-breath count, vitals. Baseline: 20WBCT at arrival and every 6 hours, CBC, PT/INR, renal function, urine for blood.",
     progressNote:
       "Observation — 20WBCT at the set intervals; swelling margin; ptosis / neuro signs; urine output and colour; vitals; ASV vials and reactions. For discharge — no envenomation (or resolved after ASV), clotting normal, observed for the full period, bleeding and neuro warning signs explained.",
   },
@@ -132,8 +128,6 @@ export const EMERGENCY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Ensure every vaccine dose is taken on schedule.", "Check the wound for infection."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Animal — species, owned or stray, vaccination status, provoked or unprovoked, can it be observed; date and time; site, number and depth of wounds (head, face, hands, genitals are high-risk); bleeding; previous rabies vaccination; tetanus status; immune suppression. Examination: each wound — type, depth, contamination; tendons, nerves, vessels for hand bites. Category of exposure (WHO I / II / III) decides vaccine and immunoglobulin.",
     progressNote:
       "At discharge — wound washed and cleaned, category recorded, vaccine dose 1 given (± immunoglobulin), tetanus addressed, card handed over with the schedule written on it, wound-check date given.",
   },
@@ -169,8 +163,6 @@ export const EMERGENCY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Follow up for suicide risk; ensure psychiatry attendance.", "Watch for delayed weakness (intermediate syndrome) in the first days after OP poisoning."],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Substance — name, container / label, amount, time; route; intent and circumstances; vomiting or lavage before arrival; co-ingestion of alcohol or tablets; symptoms — salivation, sweating, vomiting, diarrhoea, breathlessness, weakness, drowsiness; past self-harm and psychiatric history; current stressors. Examination: GCS, pupils, secretions, chest, heart rate, fasciculations, power including neck flexion, smell. Baseline: serum cholinesterase (OP), ABG, glucose, electrolytes, renal and liver function, ECG, chest X-ray. Medicolegal intimation.",
     progressNote:
       "Observation — GCS, pupils, secretions, chest, heart rate, BP, power and neck flexion at the set intervals; atropine / oxime doses and time of the last. For discharge — off atropine for the required period, no weakness, psychiatry review done, MLC completed, safety advice given to family.",
   },
@@ -205,8 +197,6 @@ export const EMERGENCY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Review persistent post-concussion symptoms.", "Refer back if any red flag."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Mechanism and time; loss of consciousness and its duration; amnesia before / after; vomiting; headache; seizure; alcohol or drugs; anticoagulant or antiplatelet use; age; bleeding disorder. Examination: GCS, pupils, focal deficit, scalp wounds, signs of skull-base fracture, cervical spine, other injuries. CT head per decision rule.",
     progressNote:
       "Observation — GCS, pupils, limb power and vitals at the set intervals; vomiting; headache. For discharge — GCS 15/15 throughout, no vomiting, CT normal or not indicated, responsible adult present, head-injury advice given.",
   },
@@ -233,8 +223,6 @@ export const EMERGENCY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Wound check and suture removal on the day written."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Mechanism (glass, metal, bite, crush), time, contamination; tetanus status; diabetes, immune suppression, anticoagulants; hand dominance and occupation for hand wounds. Examination: size, depth, edges, contamination, foreign body; distal sensation, power, circulation and each tendon's function before anaesthesia; X-ray for glass or suspected fracture.",
     progressNote:
       "At discharge — wound explored and closed, distal neurovascular and tendon function intact after repair, tetanus addressed, suture-removal day written.",
   },
@@ -265,8 +253,6 @@ export const EMERGENCY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Re-examine and X-ray if not improving at 7–10 days."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Mechanism, time, ability to bear weight immediately and now; swelling onset; previous injury to the same part; occupation and hand dominance. Examination: swelling, bruising, point tenderness over bone (decision rules — Ottawa ankle / knee), joint stability, range of movement, distal pulses, sensation and power. X-ray when the decision rule says so.",
     progressNote:
       "At discharge — fracture excluded or not indicated, distal neurovascular status intact, support applied, RICE and follow-up advice given.",
   },
@@ -297,8 +283,6 @@ export const EMERGENCY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Confirm stone passage on imaging; refer if not passed in 4 weeks or if infection / obstruction."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Pain — onset, site, radiation, colicky; vomiting; haematuria; dysuria, fever (infected obstructed kidney is an emergency); previous stones; single kidney; renal disease; pregnancy in women; urinary retention. Examination: renal angle tenderness, abdomen to exclude other causes, temperature. Baseline: urine routine, renal function, CBC, USG KUB or NCCT KUB.",
     progressNote:
       "Observation — pain score and analgesia; vomiting; temperature; urine output. For discharge — pain settled, afebrile, renal function normal, stone size suitable for trial of passage, follow-up imaging date written.",
   },
@@ -327,8 +311,6 @@ export const EMERGENCY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Review the diabetes regimen and renal function; confirm no further hypoglycaemia."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Symptoms and how found; diabetes type and duration; exact drugs and doses, last dose and last meal; recent dose change; missed meals, vomiting, exercise, alcohol; renal or liver disease; previous episodes and awareness; non-diabetic — other drugs, sepsis, adrenal. Examination: GCS, injuries from a fall, signs of infection. Baseline: glucose, renal function, electrolytes.",
     progressNote:
       "Observation — hourly capillary glucose; GCS; meals taken. For discharge — glucose stable after a meal for the required period (longer for sulfonylurea or long-acting insulin), cause identified, regimen revised, family taught.",
   },
@@ -354,8 +336,6 @@ export const EMERGENCY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Recheck renal function if abnormal; counsel on heat precautions at work."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Exposure — activity, duration, time of day; fluids taken; symptoms — cramps, dizziness, fainting, confusion, seizure, vomiting; sweating; drugs (diuretics, anticholinergics, antipsychotics); alcohol; age and comorbidities. Examination: core temperature, GCS, hydration, BP, heart rate. Baseline: electrolytes, renal function, glucose, CK, liver function, urine for myoglobin.",
     progressNote:
       "Observation — temperature, GCS, vitals, urine output; fluids given. For discharge — normothermic, GCS 15/15, tolerating orals, urine output adequate, labs normal or improving.",
   },
@@ -382,8 +362,6 @@ export const EMERGENCY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Recheck hydration if symptoms persist; stool examination if bloody or prolonged."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Stool frequency, volume, blood or mucus; vomiting; fever; abdominal pain; urine output; food and water source, others affected; travel; recent antibiotics; diabetes, renal disease, diuretics. Examination: hydration — pulse, BP lying and standing, mucosa, skin turgor, capillary refill; abdomen. Baseline: electrolytes and renal function if dehydrated; stool routine if bloody.",
     progressNote:
       "Observation — stool and vomiting episodes; fluids in; urine output; vitals. For discharge — tolerating oral fluids, passed urine, vitals normal, ORS explained.",
   },

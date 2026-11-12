@@ -85,8 +85,6 @@ export const PULMONARY_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     primaryCareActions: [],
     conditionAllSatisfactory: true,
   },
-  clerkingFocus:
-    "Cough — duration, sputum colour and volume, blood; breathlessness grade (mMRC) and its course; wheeze; chest pain; fever, weight loss, night sweats; smoking in pack-years and biomass exposure; occupation; past TB and its treatment; previous admissions, NIV or intubation; current inhalers and technique; comorbidities. Examination: respiratory rate, SpO2 on air, accessory muscles, clubbing, cyanosis, chest findings, signs of right heart failure. Baseline: chest X-ray, CBC, renal function, ABG where indicated, sputum AFB / CBNAAT.",
   progressNote:
     "Each day — breathlessness, cough, sputum; respiratory rate, SpO2 and the oxygen it needs; chest findings; temperature; results back and the day's plan. For discharge — stable on room air (or on the home-oxygen plan), afebrile, inhaler technique checked, oral step-down prescribed, follow-up written down.",
 };
@@ -141,8 +139,6 @@ export const PULMONARY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Previous TB episodes — regimens, adherence, outcome, where treated; contact with a known DR-TB patient; current symptoms (cough, haemoptysis, weight loss, fever); HIV and diabetes status; alcohol, tobacco and substance use; psychiatric history (cycloserine); hearing, vision and neuropathy at baseline; drugs that prolong QT. Baseline: CBNAAT, LPA, culture DST, ECG with QTc, CBC, renal and liver function, electrolytes including potassium and magnesium, TSH, HIV, blood sugar, audiometry, visual acuity and colour vision, chest X-ray, weight.",
     progressNote:
       "Each day — cough, haemoptysis, appetite, weight; temperature; tolerance of each drug; neuropathy, vision and mood checks; QTc on the scheduled ECGs; electrolytes. For discharge — regimen tolerated, Nikshay registration and DR-TB centre linkage done, treatment supporter identified, monitoring dates written down.",
   },
@@ -183,8 +179,6 @@ export const PULMONARY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Any sudden breathlessness — chest X-ray and refer.", "Support smoking cessation."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Onset — sudden, at rest or exertion; pleuritic chest pain; breathlessness; previous episodes and side; smoking (tobacco, cannabis); underlying lung disease — COPD, TB, cystic lung disease; trauma or recent procedure; occupation (diver, pilot). Examination: respiratory rate, SpO2, tracheal position, hyper-resonance, absent breath sounds, signs of tension. Baseline: chest X-ray (size), ABG if secondary.",
     progressNote:
       "Each day — breathlessness, pain; SpO2; ICD — swinging, bubbling, output; drain site; check X-ray. For discharge — air leak stopped, drain removed, lung re-expanded on X-ray, stable on room air, flying and diving advice given.",
   },
@@ -235,8 +229,6 @@ export const PULMONARY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Breathlessness and its course; pleuritic pain; fever, weight loss, night sweats (TB); cough and sputum (parapneumonic); past TB or contact; symptoms of heart, liver or kidney failure (transudate); weight loss, smoking, breast or other cancer (malignant). Examination: side, stony dullness, mediastinal shift, signs of the underlying cause. Baseline: chest X-ray, USG thorax, pleural fluid protein / LDH / sugar / ADA / cell count / AFB / CBNAAT / culture / cytology, serum protein and LDH, CBC, renal and liver function.",
     progressNote:
       "Each day — breathlessness; SpO2; temperature; drain output and character; drain site; fluid reports back and what they change; check X-ray. For discharge — drain removed, minimal residual fluid, afebrile, cause established or pending reports listed, ATT / Nikshay linkage done if tubercular.",
   },
@@ -275,8 +267,6 @@ export const PULMONARY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Check inhaler technique and adherence.", "Smoking cessation.", "Influenza and pneumococcal vaccination."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Baseline breathlessness (mMRC) and the change; sputum volume and colour; fever; exacerbations and admissions in the past year; previous NIV or intubation; smoking in pack-years and biomass exposure; current inhalers, technique and adherence; home oxygen; comorbidities — heart failure, diabetes. Examination: respiratory rate, SpO2, accessory muscles, flap, cyanosis, wheeze, signs of cor pulmonale. Baseline: ABG, chest X-ray, CBC, renal function, ECG, sputum culture if purulent.",
     progressNote:
       "Each day — breathlessness, sputum; respiratory rate, SpO2 on the oxygen given; ABG if on NIV; wheeze; day of steroid / antibiotic. For discharge — stable on room air or home oxygen, off NIV for 24 hours, inhaler technique checked, steroid end-date written.",
   },
@@ -304,8 +294,6 @@ export const PULMONARY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Review within 2 working days of discharge.", "Check technique, adherence and triggers."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Onset and trigger; usual control — night waking, reliever use, activity limitation; previous admissions, ICU or intubation; current controller and technique; adherence; atopy, rhinitis; NSAID / beta-blocker use; occupation. Examination: ability to speak, respiratory rate, heart rate, SpO2, PEFR, wheeze or silent chest, exhaustion. Baseline: PEFR, SpO2, ABG if SpO2 < 92%, chest X-ray if pneumothorax or pneumonia suspected.",
     progressNote:
       "Each day — breathlessness, night symptoms; PEFR (best of three) morning and evening; SpO2; reliever needed. For discharge — PEFR > 75% of best, stable on room air, inhaler technique checked, action plan given, steroid end-date written.",
   },
@@ -336,8 +324,6 @@ export const PULMONARY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Early antibiotics for exacerbations, guided by the last sputum culture.", "Vaccination and airway-clearance adherence."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Daily sputum volume and colour at baseline and now; haemoptysis; breathlessness; exacerbations per year; previous sputum organisms (Pseudomonas); cause — past TB, childhood infections, ABPA, immunodeficiency; smoking. Examination: clubbing, coarse crackles, SpO2. Baseline: sputum culture before antibiotics, sputum AFB / CBNAAT, CBC, chest X-ray, HRCT if not done.",
     progressNote:
       "Each day — sputum volume and colour, haemoptysis, breathlessness; temperature; SpO2; antibiotic day and culture result. For discharge — afebrile, sputum reduced, airway clearance taught, antibiotic end-date written.",
   },
@@ -369,8 +355,6 @@ export const PULMONARY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Monitor oxygen needs and liver function; vaccinate; treat infections early."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Breathlessness duration and progression; dry cough; exposures — birds, moulds, cooler, dusts, occupation; drugs (amiodarone, methotrexate, nitrofurantoin); connective-tissue symptoms — joint pain, Raynaud's, rash, dry eyes / mouth, muscle weakness; smoking; family history. Examination: clubbing, fine end-inspiratory crackles, SpO2 at rest and on walking, signs of CTD and pulmonary hypertension. Baseline: HRCT, PFT with DLCO, 6-minute walk, ANA / ENA / RF / anti-CCP / myositis panel as indicated, echo, CBC, renal and liver function.",
     progressNote:
       "Each day — breathlessness; SpO2 at rest and on exertion; oxygen requirement; temperature; results back. For discharge — stable oxygen requirement, home-oxygen plan written, antifibrotic / steroid plan and monitoring tests written.",
   },
@@ -399,8 +383,6 @@ export const PULMONARY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Check CPAP adherence, BP, blood sugar and weight; treat nasal blockage."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Snoring, witnessed apnoeas, choking at night; daytime sleepiness (Epworth score); morning headache; nocturia; driving and near-misses; alcohol and sedatives; weight trend; hypertension, diabetes, heart failure, hypothyroidism. Examination: BMI, neck circumference, Mallampati, nasal obstruction, tonsils, retrognathia, signs of right heart failure. Baseline: polysomnography, ABG, TSH, blood sugar, echo if right heart failure.",
     progressNote:
       "Each night / day — CPAP hours used, mask leak, comfort; morning sleepiness; SpO2 overnight. For discharge — pressure titrated, mask fitted, patient uses the machine independently, driving advice given.",
   },
@@ -437,8 +419,6 @@ export const PULMONARY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Cough duration, sputum, haemoptysis; fever, night sweats, weight loss; past TB — regimen, adherence, outcome; contact history; HIV, diabetes, alcohol, tobacco; liver disease; current drugs. Examination: weight, pallor, nodes, chest findings. Baseline: sputum smear and CBNAAT, chest X-ray, CBC, liver and renal function, HIV, blood sugar, weight for the NTEP band.",
     progressNote:
       "Each day — cough, fever, appetite; temperature; weight; tolerance of ATT — nausea, jaundice, rash; results back. For discharge — ATT tolerated, afebrile, Nikshay registration and DOTS linkage done, treatment supporter identified, sputum follow-up date written down.",
   },
@@ -470,8 +450,6 @@ export const PULMONARY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Check that fever and cough are settling at the end of the course; repeat X-ray at 6 weeks where indicated.", "Vaccinate."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Fever, cough, sputum, pleuritic pain, breathlessness — onset and duration; confusion; recent hospitalisation or antibiotics; aspiration risk; smoking, alcohol, diabetes, immune suppression; TB exposure or symptoms. Examination: respiratory rate, BP, SpO2, confusion, consolidation signs; CURB-65. Baseline: chest X-ray, CBC, renal function, blood cultures, sputum Gram stain and culture, sputum AFB / CBNAAT, ABG if hypoxic.",
     progressNote:
       "Each day — fever curve; cough, sputum; respiratory rate, SpO2 and oxygen; chest findings; cultures; antibiotic day. For discharge — afebrile 48 hours, stable on room air, tolerating orals, oral step-down prescribed with end-date, follow-up X-ray date where indicated.",
   },

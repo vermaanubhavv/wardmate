@@ -1,4 +1,4 @@
-import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
+import { AI_MODEL, readImageJson, type ImageType } from "@/lib/model";
 import { judgeLabValues } from "@/lib/jev-observations";
 
 export type ReadLabValue = {
@@ -126,35 +126,22 @@ const SCHEMA = {
 
 export async function readLabPhoto(
   base64Image: string,
-  mediaType: "image/jpeg" | "image/png" | "image/webp"
+  mediaType: ImageType
 ): Promise<LabPhotoResult> {
-  const client = anthropic();
-
-  const response = await client.messages.create({
-    model: AI_MODEL,
-    max_tokens: 8000,
+  const parsed = await readImageJson({
+    maxTokens: 8000,
     // Marked for caching; inert on Sonnet 5 for the same reason as lib/read-paper.ts — ~700
     // tokens against a 1024-token minimum. Harmless, and live again on a model with a lower one.
     system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
     // Higher effort than the voice path: reading small print off a phone photo taken at an
     // angle under ward lighting is genuinely harder than parsing a clean sentence, and a
     // misread digit here is a wrong lab value.
-    output_config: {
-      effort: "medium",
-      format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> },
-    },
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "image", source: { type: "base64", media_type: mediaType, data: base64Image } },
-          { type: "text", text: "Transcribe the values on this report, observation chart, or monitor." },
-        ],
-      },
-    ],
+    schema: SCHEMA,
+    base64Image,
+    mediaType,
+    prompt: "Transcribe the values on this report, observation chart, or monitor.",
+    fallback: { values: [], report_type: "" },
   });
-
-  const parsed = replyJson(response, { values: [], report_type: "" });
 
   const values: ReadLabValue[] = (parsed.values ?? []).map((v: ReadLabValue) => ({
     ...v,

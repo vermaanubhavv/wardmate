@@ -4,8 +4,7 @@ import { getUser } from "@/lib/auth";
 import { extractObservations } from "@/lib/extract";
 import { getTemplateForPatient } from "@/lib/templates";
 import { getPublishedProtocolContext } from "@/lib/protocols";
-import { applyProcedureDone } from "@/lib/apply-procedure-done";
-import { insertObservations } from "@/lib/observations";
+import { ENTRY_PATIENT_COLUMNS, storeExtractedEntry } from "@/lib/store-entry";
 import { getWardPack } from "@/lib/ward";
 
 /**
@@ -34,9 +33,7 @@ export async function POST(request: Request) {
 
   const { data: patient } = await supabase
     .from("current_patients")
-    .select(
-      "id, ward_id, display_name, bed, surgery_date, post_op_day, admission_day, template_family, template_variant, procedure_text"
-    )
+    .select(ENTRY_PATIENT_COLUMNS)
     .eq("id", patientId)
     .maybeSingle();
 
@@ -74,46 +71,24 @@ export async function POST(request: Request) {
     });
   }
 
-  const { data: entry, error: entryError } = await supabase
-    .from("entries")
-    .insert({
-      patient_id: patientId,
-      author_id: user.id,
+  const entryId = await storeExtractedEntry(supabase, {
+    patientId,
+    authorId: user.id,
+    patient,
+    pack,
+    extraction,
+    row: {
       source: "manual",
       transcript: text,
       extraction_model: extraction.model,
-      extraction_raw: extraction.raw as never,
       matched_protocol_ids: extraction.matchedProtocolIds,
-    })
-    .select("id")
-    .single();
-
-  if (entryError || !entry) {
-    return NextResponse.json(
-      { error: `Could not save: ${entryError?.message ?? "unknown error"}` },
-      { status: 500 }
-    );
-  }
-
-  const obsError = await insertObservations(
-    supabase,
-    entry.id,
-    patientId,
-    patient,
-    extraction.observations,
-    { verb: "wrote" }
-  );
-  if (obsError) {
-    return NextResponse.json(
-      { entry_id: entry.id, observations: [], error: obsError },
-      { status: 500 }
-    );
-  }
-
-  await applyProcedureDone(supabase, patientId, patient, extraction.observations, pack);
+    },
+    observationOpts: { verb: "wrote" },
+  });
+  if (entryId instanceof Response) return entryId;
 
   return NextResponse.json({
-    entry_id: entry.id,
+    entry_id: entryId,
     observations: extraction.observations,
     discarded: extraction.rejected.length,
   });

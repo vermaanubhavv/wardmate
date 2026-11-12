@@ -94,8 +94,6 @@ export const PSYCHIATRY_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     primaryCareActions: [],
     conditionAllSatisfactory: false,
   },
-  clerkingFocus:
-    "Presenting symptoms with onset, duration and course; informant and reliability; precipitants; past episodes, treatment and adherence; substance use; medical illness; family history of mental illness and suicide; personal and premorbid history. Mental state examination; risk assessment (self-harm, harm to others, self-neglect, vulnerability); physical examination. Baseline: CBC, renal and liver function, thyroid, glucose, lipids, ECG as the medicines need; urine drug screen where relevant.",
   progressNote:
     "Each day — sleep; food intake; mental state (mood, psychotic features, behaviour); risk review; medicine doses and side-effects; family meetings. For discharge — symptoms settled, risk reviewed and documented, family briefed on the safety plan and supervision of medicines.",
 };
@@ -129,8 +127,6 @@ export const PSYCHIATRY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Contact within the first week after discharge; limited prescriptions; ask directly about self-harm thoughts at every visit."],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Method, time, amount, and who found the patient; intent (note, planning, precautions against discovery, belief about lethality); regret or continued wish to die; precipitants; previous attempts; current depression, psychosis, substance use; access to means; supports; family history of suicide. Mental state examination; structured risk assessment. Medical clearance and any residual organ injury documented.",
     progressNote:
       "Each day — mood; thoughts of self-harm (asked directly); sleep; intake; engagement; family meetings; observation level. For discharge — no active self-harm intent, risk reviewed and documented, safety plan made and given to the family, follow-up within 7 days booked.",
   },
@@ -166,8 +162,6 @@ export const PSYCHIATRY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Support abstinence; monitor liver function; screen family members for distress."],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Age at first drink, pattern and quantity (standard drinks / day), last drink; dependence features (craving, tolerance, withdrawal, loss of control, salience, continued use despite harm); past withdrawal seizures or delirium; previous abstinence and treatment; other substances; complications (liver, pancreas, neuropathy, memory, trauma); family, work and legal impact; motivation. Examination: withdrawal signs (CIWA-Ar), Wernicke features, liver stigmata. Baseline: CBC, LFT with GGT, renal function, glucose, electrolytes, magnesium; USG abdomen.",
     progressNote:
       "Each day — CIWA-Ar and taper dose; orientation; sleep; intake; thiamine; mood; motivation. For discharge — withdrawal over, taper completed, anti-craving plan agreed, family briefed.",
   },
@@ -200,8 +194,6 @@ export const PSYCHIATRY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Continue opioid substitution without gaps; screen and treat HIV, hepatitis B and C; hepatitis B vaccination."],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Substance, route, quantity and cost per day, last use; dependence features; injecting and sharing; previous overdoses; previous treatment (detox, substitution); other substances; complications (abscess, endocarditis, blood-borne viruses); legal and family impact; motivation. Examination: COWS, injection sites, pupils, nutrition. Baseline: CBC, LFT, renal function, urine drug screen, HIV / HBsAg / HCV with consent, ECG if methadone.",
     progressNote:
       "Each day — COWS; dose and response; craving; sleep; intake; mood; ward behaviour. For discharge — stable on the plan, overdose risk explained, clinic arrangement made.",
   },
@@ -232,8 +224,6 @@ export const PSYCHIATRY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Review drugs that can cause delirium; screen cognition once recovered; manage the underlying cause."],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Onset and fluctuation of confusion (from the informant); baseline cognition and function; new drugs (anticholinergics, sedatives, opioids, steroids); alcohol or sedative withdrawal; infection, urine retention, constipation, pain, dehydration; sensory impairment. Examination: attention (months backwards), CAM, orientation, focal neurology, infection source, hydration. Baseline: CBC, electrolytes, glucose, renal and liver function, calcium, urine routine, cultures, [ CT head / LP as indicated ].",
     progressNote:
       "Each day — CAM; attention; sleep–wake cycle; agitation and any sedation given; cause being treated; intake and output; falls. For discharge — CAM negative, oriented, sedative stopped, family briefed.",
   },
@@ -262,8 +252,6 @@ export const PSYCHIATRY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Ask about self-harm thoughts at every visit; limited prescriptions; encourage continuation of treatment."],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Low mood, anhedonia, fatigue; sleep, appetite and weight; guilt, hopelessness; psychotic symptoms; suicidal ideation, plans and attempts; duration and precipitants; past episodes and any mania / hypomania (bipolarity); substance use; medical causes (thyroid, anaemia, drugs); family history of mood disorder and suicide. Mental state examination; structured risk assessment. Baseline: CBC, thyroid, glucose, renal and liver function, B12 where relevant; ECG before some medicines.",
     progressNote:
       "Each day — mood; sleep; food intake; psychotic features; thoughts of self-harm (asked directly); medicine dose and side-effects; ECT session notes if given. For discharge — improving, risk reviewed and documented, safety plan given to the family, follow-up within 7 days booked.",
   },
@@ -293,8 +281,6 @@ export const PSYCHIATRY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Monitor drug levels, renal and thyroid function, weight and glucose; avoid antidepressants without psychiatry advice."],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Elevated or irritable mood, decreased need for sleep, pressured speech, grandiosity, increased activity, risky spending or sexual behaviour; psychotic symptoms; duration; past depressive and manic episodes; treatment and adherence; substance use; family history. Mental state examination; risk (harm to self, others, reputation, finances). Baseline: CBC, renal and thyroid function, LFT, glucose, lipids, pregnancy test in women of child-bearing age, ECG.",
     progressNote:
       "Each day — sleep hours; mood and activity; speech; psychotic features; aggression; risk; medicine doses, levels and side-effects. For discharge — sleeping, calm, levels in range, insight noted, family briefed.",
   },
@@ -324,8 +310,6 @@ export const PSYCHIATRY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Monitor weight, glucose and lipids on antipsychotics; support adherence; rehabilitation and disability-benefit referral where relevant."],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Positive symptoms (delusions, hallucinations, disorganisation), negative symptoms, onset and duration; precipitants; substance use (cannabis, stimulants); past episodes, treatment, adherence and response; organic causes (fever, head injury, seizures, drugs); family history. Mental state examination; risk (self-harm, violence, self-neglect). Baseline: CBC, glucose, lipids, renal, liver and thyroid function, ECG; urine drug screen; CT / MRI if atypical or first episode with neurological signs.",
     progressNote:
       "Each day — sleep; self-care; psychotic features; behaviour and aggression; insight; medicine dose and side-effects (EPS, sedation); family engagement. For discharge — symptoms reduced, calm, risk reviewed, family briefed on relapse signs and supervision of medicines.",
   },
@@ -357,8 +341,6 @@ export const PSYCHIATRY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Support continuation of the SSRI for months after improvement; avoid long-term benzodiazepines."],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Obsessions and compulsions (content, time per day, resistance, insight) or anxiety symptoms (panic attacks, worry, avoidance); duration; impairment; comorbid depression, tics, substance use; suicidal ideation; family accommodation; previous treatment and doses. Mental state examination; risk assessment. Baseline: CBC, thyroid function, glucose; ECG where relevant.",
     progressNote:
       "Each day — symptom severity (Y-BOCS / HAM-A); therapy sessions and homework; sleep; mood; thoughts of self-harm; medicine dose and side-effects. For discharge — symptoms reduced, therapy plan set, family briefed.",
   },

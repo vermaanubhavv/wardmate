@@ -1,13 +1,10 @@
 /**
  * Deciding which pathway a diagnosis should activate.
  *
- * Two ways in, in priority order (DOCX §1: "Use configured terminology codes plus normalized
- * text matching as a fallback"):
- *   1. a configured local diagnosis code exact-matches
- *   2. a configured text pattern appears in the diagnosis text, and no exclude pattern does
+ * A configured text pattern appears in the diagnosis text, and no exclude pattern does.
  *
- * Pure. No database. The caller passes the patient's diagnosis strings/codes and the set of
- * candidate definitions.
+ * Pure. No database. The caller passes the patient's diagnosis text and the set of candidate
+ * definitions.
  */
 
 import type { PathwayDefinition, TriggerSource } from "./types";
@@ -23,28 +20,15 @@ export type TriggerMatch = {
 };
 
 export function detectTriggers(
-  diagnosis: { text: string; codes?: string[] },
+  diagnosis: { text: string },
   definitions: PathwayDefinition[]
 ): TriggerMatch[] {
   const text = norm(diagnosis.text);
-  const codes = (diagnosis.codes ?? []).map((c) => c.trim().toLowerCase());
   const matches: TriggerMatch[] = [];
 
   for (const def of definitions) {
     if (def.status !== "active") continue;
     const t = def.diagnosisTriggers;
-
-    const codeHit = t.codes.find((c) => codes.includes(c.trim().toLowerCase()));
-    if (codeHit) {
-      matches.push({
-        pathwayId: def.pathwayId,
-        pathwayVersion: def.pathwayVersion,
-        source: "diagnosis_code",
-        matchedOn: codeHit,
-        diagnosisText: diagnosis.text,
-      });
-      continue;
-    }
 
     const excluded = t.excludePatterns.some((p) => text.includes(norm(p)));
     if (excluded) continue;

@@ -67,8 +67,6 @@ export const OBGYN_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     primaryCareActions: [],
     conditionAllSatisfactory: true,
   },
-  clerkingFocus:
-    "Presenting complaint with onset, duration and course; LMP, EDD and period of gestation where relevant; gravida/para/living/abortion record; antenatal course and booking status; menstrual and obstetric history; past medical, surgical and drug history; examination including per-abdomen and per-vaginum findings; provisional diagnosis and the plan. Baseline: CBC, blood group and Rh, urine routine, and the condition-specific tests (USG, OGTT, coagulation profile).",
   progressNote:
     "Each day — symptoms; vitals including blood pressure trend; per-abdomen and lochia/bleeding findings; oral intake; the results back and the plan; for a delivered patient, involution and breastfeeding. For discharge — afebrile, stable, involuting/wound healthy, tolerating orals, oral medicines prescribed, and follow-up written down.",
 };
@@ -142,8 +140,6 @@ export const OBGYN_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Check Hb after two weeks."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Amenorrhoea and LMP; pain — site, onset, shoulder-tip pain; bleeding per vaginum; fainting; previous ectopic, PID, tubal surgery, IUCD, infertility treatment; obstetric history; blood group. Examination: pulse, BP, pallor, abdominal guarding, per-vaginum — cervical motion tenderness, adnexal mass. Baseline: UPT, serum β-hCG, TVS, CBC, blood group and cross-match.",
     progressNote:
       "Each day — pulse, BP, pallor, pain, abdomen, wound, urine output, Hb. For discharge — stable, Hb acceptable, wound healthy, anti-D decided, HPE and follow-up arranged.",
   },
@@ -175,8 +171,6 @@ export const OBGYN_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Check Hb and adherence to iron; postnatal visits as scheduled."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Mode and time of delivery; estimated blood loss and how measured; risk factors — multiple pregnancy, polyhydramnios, prolonged labour, previous PPH, anaemia, APH; placental completeness; drugs given. Examination: pulse, BP, shock index, pallor, uterine tone and height, perineum and cervix, bladder. Baseline: CBC, blood group and cross-match, coagulation profile, renal function.",
     progressNote:
       "Each day — pulse, BP, uterine tone, lochia, urine output, Hb, transfusion given. For discharge — no active bleeding, Hb acceptable, oral iron prescribed, breastfeeding.",
   },
@@ -211,8 +205,6 @@ export const OBGYN_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "LMP and weeks of gestation; bleeding — amount, clots, tissue passed; pain; fever; previous miscarriages; for MTP — indication and consent under the MTP Act; blood group; contraceptive history. Examination: pulse, BP, pallor, per-speculum (os, products), per-vaginum (uterine size, adnexa). Baseline: UPT, USG, CBC, blood group and Rh.",
     progressNote:
       "Post-procedure — pulse, BP, bleeding, pain, temperature, voiding. For discharge — bleeding minimal, stable, anti-D decided, contraception chosen.",
   },
@@ -247,8 +239,6 @@ export const OBGYN_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Indication — menstrual history, AUB pattern, pressure symptoms, prolapse symptoms; Pap smear and endometrial sampling results; parity and family complete; previous surgery; medical comorbidities. Examination: pallor, abdominal mass, per-speculum, per-vaginum, prolapse grading. Baseline: CBC, blood group, renal function, blood sugar, USG, Pap smear, pre-anaesthetic workup.",
     progressNote:
       "Each day — pain, vitals, urine output and catheter, bowel function, wound, vaginal bleeding, mobilisation. For discharge — voiding, bowels opened, afebrile, wound healthy, HPE follow-up arranged.",
   },
@@ -288,8 +278,6 @@ export const OBGYN_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Check BP every [ … ] days and step down the antihypertensive as advised; refer if above the target written."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Gestation; BP readings and when first raised; headache, visual symptoms, epigastric pain, fits, breathlessness, reduced fetal movements; previous pre-eclampsia; chronic hypertension, renal disease, diabetes; drugs. Examination: BP, oedema, reflexes, fundus, fetal assessment. Baseline: urine protein, CBC with platelets, LFT, renal function, LDH, coagulation, fetal USG and Doppler.",
     progressNote:
       "Each day — BP chart, symptoms, urine output, magnesium toxicity checks while on it, platelets, LFT, renal function, antihypertensive as charted. For discharge — BP controlled on oral medicine, no symptoms, labs improving, BP-check plan written down.",
   },
@@ -328,8 +316,6 @@ export const OBGYN_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Postnatal home visits as scheduled; check wound, BP, breastfeeding and mood."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Obstetric formula, LMP, EDD, gestation; booking and antenatal course; indication for caesarean; previous caesareans; labour events; medical disorders; blood group. Examination: vitals, fundal height, lie, presentation, fetal heart, per-vaginum where relevant. Baseline: CBC, blood group and cross-match, urine, viral markers, USG.",
     progressNote:
       "Each day (POD) — pain, vitals, urine and catheter, bowel sounds and flatus, oral intake, uterine involution, lochia, wound, breastfeeding, mobilisation. For discharge — afebrile, ambulant, voiding, wound healthy, breastfeeding established.",
   },
@@ -366,8 +352,6 @@ export const OBGYN_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Postnatal home visits as scheduled; check BP, bleeding, breastfeeding and mood."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Obstetric formula, LMP, EDD, gestation; booking and antenatal course; onset of labour, leaking, bleeding, fetal movements; medical disorders; blood group. Examination: vitals, fundal height, lie, presentation, fetal heart, contractions, per-vaginum. Baseline: CBC, blood group, urine, viral markers.",
     progressNote:
       "Each day — vitals, uterine involution, lochia, perineum, voiding, breastfeeding, mood. For discharge — afebrile, stable, voiding, perineum healthy, breastfeeding established.",
   },
@@ -415,8 +399,6 @@ export const OBGYN_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Routine antenatal care; check BP and urine at each visit."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Obstetric formula, LMP, EDD, gestation; booking status and antenatal course; the presenting complaint — vomiting with ketosis, pain, tightenings, leaking, bleeding, fetal movements, BP symptoms; previous preterm birth; medical disorders; blood group. Examination: vitals, hydration, fundal height, lie, presentation, fetal heart, per-speculum where relevant. Baseline: CBC, urine (ketones, culture), electrolytes, USG, NST.",
     progressNote:
       "Each day — symptoms, vitals, intake and output, fetal heart and movements, contractions, the day's plan. For discharge — symptoms settled, fetal wellbeing reassuring, oral intake adequate, next antenatal visit fixed.",
   },

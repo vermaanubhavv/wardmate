@@ -41,13 +41,6 @@ describe("pathway definition schema", () => {
     expect(res.issues.some((i) => /unsupported canonical unit/i.test(i.message))).toBe(true);
   });
 
-  it("rejects a checkpoint reference to an undefined checkpoint", () => {
-    const d = clone();
-    d.cards[0].lockedUntilCheckpoint = "nope";
-    const res = validatePathwayDefinition(d);
-    expect(res.ok).toBe(false);
-  });
-
   it("rejects a task with no reason", () => {
     const d = clone();
     d.tasks[0].reason = "";

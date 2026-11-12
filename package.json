@@ -10,7 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:push": "node scripts/db-push.mjs",
-    "env:sync": "node scripts/env-sync.mjs"
+    "env:sync": "node scripts/env-sync.mjs",
+    "eval:models": "node --env-file=.env.eval node_modules/vite-node/vite-node.mjs --config vitest.config.ts scripts/eval-models/run.ts",
+    "eval:generate": "node --env-file=.env.eval node_modules/vite-node/vite-node.mjs --config vitest.config.ts scripts/eval-models/generate.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",

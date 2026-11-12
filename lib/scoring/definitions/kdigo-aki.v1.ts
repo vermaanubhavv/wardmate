@@ -20,9 +20,7 @@ const kdigoCard: CardDefinition = {
   citation:
     "KDIGO AKI Guideline 2012, Kidney Int Suppl 2012;2:1–138. Stage = worst of: creatinine (1.5–1.9× baseline or ≥ 0.3 mg/dL rise in 48 h = 1; 2.0–2.9× = 2; ≥ 3× or ≥ 4.0 mg/dL or RRT = 3) and urine output (< 0.5 mL/kg/h for 6–12 h = 1; ≥ 12 h = 2; < 0.3 mL/kg/h ≥ 24 h or anuria ≥ 12 h = 3). Stage guides monitoring, nephrotoxin review, fluid assessment and referral — it is not a dialysis instruction.",
   type: "calculator",
-  timingLabel: "re-stage with each creatinine / urine-output review",
   calculation: { kind: "max_points" },
-  recomputeOn: ["new_lab", "new_observation", "deterioration", "manual"],
   interpretationBands: [
     { min: 0, max: 0, text: "Not stageable / no AKI criterion met on what is recorded. Confirm the creatinine trend against the patient's baseline.", tone: "neutral" },
     { min: 1, max: 1, text: "KDIGO Stage 1. Review and stop nephrotoxins, assess volume status, treat the cause, monitor creatinine and urine output at least daily.", tone: "attention" },
@@ -123,12 +121,9 @@ export const kdigoAkiV1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-30",
   diagnosisTriggers: {
-    codes: ["N17", "N17.9", "N17.0", "N17.1", "N17.2"],
     textPatterns: ["acute kidney injury", "aki", "acute renal failure", "arf", "rising creatinine", "acute on chronic kidney disease", "prerenal aki", "atn", "acute tubular necrosis"],
     excludePatterns: ["chronic kidney disease stable", "ckd stage", "end stage renal disease on maintenance", "esrd on mhd", "aki resolved", "recovering renal function"],
   },
-  eligibility: { minAgeYears: 16, notes: ["Staging needs the creatinine trend against the patient's own baseline — a clinician judgement, entered on the card. Acute-on-chronic AKI is staged the same way against the pre-admission baseline."] },
-  exclusions: ["Stable CKD or ESRD on maintenance dialysis without a new acute change."],
   cards: [kdigoCard],
   tasks: [
     {
@@ -146,6 +141,5 @@ export const kdigoAkiV1: PathwayDefinition = {
   checkpoints: [
     { key: "kdigo_restage_12h", dueFrom: "admission", dueAtHours: 12, label: "Re-stage after the next creatinine / urine-output review", recomputeCards: ["kdigo_aki"] },
   ],
-  recomputePolicy: ["new_lab", "new_observation", "deterioration", "scheduled_checkpoint", "manual"],
   institutionalToggles: {},
 };

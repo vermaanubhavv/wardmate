@@ -49,9 +49,7 @@ const card: CardDefinition = {
   citation:
     "HAS-BLED — Pisters R et al., Chest 2010;138:1093–100. A score ≥ 3 indicates higher bleeding risk: review more often, correct modifiable factors (blood pressure, labile INR, concomitant antiplatelets/NSAIDs, alcohol), and use with caution. It does NOT on its own contraindicate anticoagulation; a high stroke risk (CHA₂DS₂-VASc) usually still favours it.",
   type: "calculator",
-  timingLabel: "at assessment",
   calculation: { kind: "sum_points" },
-  recomputeOn: ["new_lab", "new_observation", "manual"],
   interpretationBands: [
     { min: 0, max: 2, text: "HAS-BLED 0–2 — lower bleeding risk. Standard review. Confirm the score against the full history.", tone: "neutral" },
     { min: 3, max: 9, text: "HAS-BLED ≥ 3 — higher bleeding risk. Anticoagulate with caution, review more frequently, and correct modifiable factors (BP, labile INR, antiplatelets/NSAIDs, alcohol). Not a contraindication by itself.", tone: "attention" },
@@ -103,7 +101,6 @@ export const hasBledV1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-01",
   diagnosisTriggers: {
-    codes: ["I48", "I48.0", "I48.1", "I48.2", "I48.91"],
     textPatterns: [
       "atrial fibrillation",
       "atrial flutter",
@@ -116,8 +113,6 @@ export const hasBledV1: PathwayDefinition = {
     ],
     excludePatterns: ["valvular atrial fibrillation", "mechanical valve"],
   },
-  eligibility: { minAgeYears: 18, notes: ["Bleeding-risk adjunct to a CHA₂DS₂-VASc anticoagulation decision in non-valvular AF."] },
-  exclusions: [],
   cards: [card],
   tasks: [
     {
@@ -132,6 +127,5 @@ export const hasBledV1: PathwayDefinition = {
     },
   ],
   checkpoints: [],
-  recomputePolicy: ["new_lab", "new_observation", "manual"],
   institutionalToggles: {},
 };

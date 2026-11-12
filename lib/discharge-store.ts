@@ -154,27 +154,9 @@ export async function approveDischargeSection(
   const draft = mergeDischargeDraft(context);
   const now = new Date().toISOString();
 
-  if (sectionId === "clinicalCourse") {
-    if (!draft.clinicalCourse.text.trim()) return { ok: false, error: "Nothing to approve yet." };
-    return writeDischargeSection(patientId, "clinicalCourse", {
-      ...draft.clinicalCourse,
-      approvedAt: now,
-      approvedBy: user.id,
-    });
-  }
-  if (sectionId === "indication") {
-    if (!draft.indicationForAdmission.text.trim()) return { ok: false, error: "Nothing to approve yet." };
-    return writeDischargeSection(patientId, "indication", {
-      ...draft.indicationForAdmission,
-      approvedAt: now,
-      approvedBy: user.id,
-    });
-  }
-  return writeDischargeSection(patientId, "relevantInvestigations", {
-    ...draft.relevantInvestigations,
-    approvedAt: now,
-    approvedBy: user.id,
-  });
+  const section = draft[sectionId === "indication" ? "indicationForAdmission" : sectionId];
+  if ("text" in section && !section.text.trim()) return { ok: false, error: "Nothing to approve yet." };
+  return writeDischargeSection(patientId, sectionId, { ...section, approvedAt: now, approvedBy: user.id });
 }
 
 /** Finalise. Runs the completeness checks server-side and refuses while any block remains. */

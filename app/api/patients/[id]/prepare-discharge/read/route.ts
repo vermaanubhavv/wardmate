@@ -6,9 +6,7 @@ import { readPaper } from "@/lib/read-paper";
 import { readLabPhoto } from "@/lib/read-lab-photo";
 import { claimPhotoRead } from "@/lib/photo-cap";
 import { getWardPack } from "@/lib/ward";
-
-const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp"] as const;
-const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
+import { readImage } from "@/lib/image-upload";
 
 /**
  * Read ONE page of a patient's file and say what is on it. Stores nothing.
@@ -45,26 +43,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!patient) return NextResponse.json({ error: "Patient not found." }, { status: 404 });
 
   const form = await request.formData();
-  const photo = form.get("photo");
-
-  if (!(photo instanceof Blob) || photo.size === 0) {
-    return NextResponse.json({ error: "No photo was received." }, { status: 400 });
-  }
-  if (photo.size > MAX_PHOTO_BYTES) {
-    return NextResponse.json({ error: "That photo is too large." }, { status: 413 });
-  }
-  const mediaType = ALLOWED_IMAGE.find((t) => photo.type === t);
-  if (!mediaType) {
-    return NextResponse.json(
-      { error: `Unsupported image type (${photo.type || "unknown"}).` },
-      { status: 415 }
-    );
-  }
+  const image = await readImage(form.get("photo"));
+  if (image instanceof Response) return image;
+  const { mediaType, ext, bytes } = image;
 
   const capped = await claimPhotoRead(supabase, patient.ward_id);
   if (capped) return NextResponse.json({ error: capped }, { status: 429 });
 
-  const bytes = Buffer.from(await photo.arrayBuffer());
   const base64 = bytes.toString("base64");
 
   // The investigations-only screen sends labOnly: one call to the lab reader instead of two.
@@ -118,7 +103,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
   }
 
-  const ext = mediaType === "image/png" ? "png" : mediaType === "image/webp" ? "webp" : "jpg";
   const path = `${patientId}/prep-${crypto.randomUUID()}.${ext}`;
   const { error: uploadError } = await supabase.storage
     .from("evidence")

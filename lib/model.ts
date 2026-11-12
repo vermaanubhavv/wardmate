@@ -72,3 +72,38 @@ export function replyJson(response: Anthropic.Message, fallback: unknown): any {
   const block = response.content.find((b) => b.type === "text");
   return block && block.type === "text" ? JSON.parse(block.text) : fallback;
 }
+
+export type ImageType = "image/jpeg" | "image/png" | "image/webp";
+
+/** One photograph plus one instruction in, the structured (json_schema) reply out, at effort
+ *  "medium" — the call every photo reader makes. `fallback` as for replyJson. */
+export async function readImageJson(opts: {
+  system: Anthropic.MessageCreateParams["system"];
+  schema: object;
+  maxTokens: number;
+  base64Image: string;
+  mediaType: ImageType;
+  prompt: string;
+  fallback: unknown;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+}): Promise<any> {
+  const response = await anthropic().messages.create({
+    model: AI_MODEL,
+    max_tokens: opts.maxTokens,
+    system: opts.system,
+    output_config: {
+      effort: "medium",
+      format: { type: "json_schema", schema: opts.schema as Record<string, unknown> },
+    },
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "image", source: { type: "base64", media_type: opts.mediaType, data: opts.base64Image } },
+          { type: "text", text: opts.prompt },
+        ],
+      },
+    ],
+  });
+  return replyJson(response, opts.fallback);
+}

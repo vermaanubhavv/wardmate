@@ -2,6 +2,11 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs/config";
 
 const nextConfig: NextConfig = {
+  // The original admin dashboard (patch 0065) is now one tab of the console; old bookmarks
+  // still land there.
+  async redirects() {
+    return [{ source: "/admin/units", destination: "/admin/wards", permanent: false }];
+  },
   experimental: {
     // Formats and letterheads arrive as photographs of paper, and a phone photograph is
     // routinely two to four megabytes. Next caps a Server Action body at 1 MB by default,

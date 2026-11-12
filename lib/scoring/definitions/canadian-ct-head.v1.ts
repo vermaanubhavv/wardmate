@@ -48,10 +48,7 @@ const cchCard: CardDefinition = {
   citation:
     "Canadian CT Head Rule — Stiell IG et al., Lancet 2001;357:1391–6. For GCS 13–15 minor head injury with LOC, amnesia or disorientation. High risk: GCS < 15 at 2 h, suspected open/depressed skull fracture, sign of basal skull fracture, ≥ 2 vomiting episodes, age ≥ 65. Medium risk: amnesia before impact ≥ 30 min, dangerous mechanism. Not applicable with anticoagulation/bleeding disorder, seizure, age < 16, focal deficit or unstable vitals.",
   type: "structured_classification",
-  timingLabel: "at assessment — re-check at 2 h after injury",
   calculation: { kind: "tiered_classification", tiers: ["high", "medium"], fallback: "not_met" },
-  requiresConfirmation: true,
-  recomputeOn: ["new_observation", "manual"],
   interpretationBands: [
     { min: 0, class: "high", text: "Rule positive — high-risk criterion present; CT head is indicated by this rule", tone: "attention" },
     { min: 0, class: "medium", text: "Rule positive — medium-risk criterion; CT head is indicated by this rule", tone: "attention" },
@@ -92,26 +89,11 @@ export const canadianCtHeadV1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-01",
   diagnosisTriggers: {
-    codes: [],
     textPatterns: ["head injury", "minor head injury", "rta with head injury", "fall with head injury", "concussion"],
     excludePatterns: ["no head injury", "old head injury"],
   },
-  eligibility: { minAgeYears: 16, notes: ["GCS 13–15 after head injury with witnessed loss of consciousness, definite amnesia or witnessed disorientation."] },
-  exclusions: [
-    "Age < 16 years.",
-    "Minimal head injury (no LOC, amnesia or disorientation).",
-    "No clear history of trauma as the primary event.",
-    "Obvious penetrating skull injury or obvious depressed fracture.",
-    "Acute focal neurological deficit.",
-    "Unstable vital signs associated with major trauma.",
-    "Seizure before assessment.",
-    "Bleeding disorder or oral anticoagulant use.",
-    "Returned for reassessment of the same head injury.",
-    "Pregnancy.",
-  ],
   cards: [cchCard],
   tasks: [],
   checkpoints: [],
-  recomputePolicy: ["new_observation", "manual"],
   institutionalToggles: {},
 };

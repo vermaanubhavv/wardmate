@@ -81,8 +81,6 @@ export const DERMATOLOGY_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     primaryCareActions: [],
     conditionAllSatisfactory: true,
   },
-  clerkingFocus:
-    "Onset, site of first lesion, spread and evolution; itch, pain, fever; mucosal (eyes, mouth, genitals) involvement; all drugs in the last 8 weeks including native medicines; past skin disease; atopy; contacts. Examination: morphology and distribution, percentage of body surface involved, mucosae, nails, hair, lymph nodes; vitals. Baseline: CBC, renal and liver function, glucose; biopsy / scraping / swab as indicated.",
   progressNote:
     "Each day — new lesions; healing of old; mucosae; itch; temperature; intake; drug side-effects. For discharge — no new lesions, afebrile, eating, taper and topical plan written down.",
 };
@@ -127,8 +125,6 @@ export const DERMATOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Record the culprit drug as an allergy in every record; watch for late eye, genital and nail complications."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Every drug in the last 8 weeks with start dates (anticonvulsants, allopurinol, sulfonamides, NSAIDs, nevirapine, antibiotics, native medicines); prodrome; timeline of rash and mucosal involvement; eyes, mouth, genitals; previous reactions. Examination: % body surface with detachment, Nikolsky sign, target lesions, all mucosae, vitals. Baseline: CBC, renal and liver function, glucose, bicarbonate, electrolytes (SCORTEN), blood and skin cultures; biopsy; ophthalmology review on day 1.",
     progressNote:
       "Each day — new detachment; re-epithelialisation; eyes (ophthalmology), mouth, genitals; fluid balance and intake; temperature; cultures; SCORTEN day 3. For discharge — re-epithelialised, eating, culprit drug on the allergy card, eye follow-up booked.",
   },
@@ -161,8 +157,6 @@ export const DERMATOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Record the culprit as an allergy; watch for late thyroid disease and diabetes after DRESS."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "All drugs in the last 8 weeks with dates (anticonvulsants, allopurinol, dapsone, sulfonamides, antitubercular drugs, vancomycin); fever; facial swelling; lymph nodes; jaundice, urine output, breathlessness. Examination: rash type and extent, facial oedema, pustules, mucosae, nodes, liver. Baseline: CBC with eosinophils and smear, liver and renal function, urine routine, CRP; RegiSCAR scoring.",
     progressNote:
       "Each day — fever; rash; facial oedema; eosinophil count; liver and renal function trend; steroid dose. For discharge — afebrile, labs improving, taper and test dates written down.",
   },
@@ -205,8 +199,6 @@ export const DERMATOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Monitor blood sugar, BP and weight on steroids; check counts on azathioprine."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Onset in mouth or skin; spread; pain and intake; weight loss; previous treatment and steroid exposure; drugs (thiol drugs); diabetes, hypertension, TB, hepatitis. Examination: flaccid blisters and erosions, Nikolsky, % BSA, oral / genital / eye involvement, PDAI. Baseline: CBC, renal and liver function, glucose, HBsAg, anti-HCV, HIV, chest X-ray, TPMT if azathioprine planned; biopsy with DIF; anti-Dsg ELISA.",
     progressNote:
       "Each day — new blisters; healing of erosions; oral intake; temperature; glucose and BP on steroids; infection. For discharge — no new blisters, eating, taper and blood-test dates written down.",
   },
@@ -246,8 +238,6 @@ export const DERMATOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Watch blood sugar and BP; review other drugs for triggers (gliptins, diuretics)."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Age; itch preceding blisters; drug history (gliptins, diuretics, antibiotics); neurological disease (stroke, dementia, Parkinson's); mobility and who helps at home. Examination: tense blisters on urticarial base, % BSA, mucosae; general condition. Baseline: CBC with eosinophils, renal and liver function, glucose; biopsy with DIF; BP180 / BP230 ELISA.",
     progressNote:
       "Each day — new blisters; healing; itch; temperature; intake; glucose and BP if on steroids; skin infection. For discharge — no new blisters, carer trained in topical application.",
   },
@@ -287,8 +277,6 @@ export const DERMATOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Watch for relapse and for infection; review drugs for a trigger."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Pre-existing skin disease (psoriasis, eczema); new drugs; abrupt steroid stop; fever, chills; weight loss, lymph nodes, night sweats (lymphoma); itch. Examination: % BSA, scaling, nails, hair, palms and soles, nodes, oedema, temperature. Baseline: CBC with smear (Sézary cells), albumin, electrolytes, renal and liver function; biopsy; HIV.",
     progressNote:
       "Each day — erythema and scaling %; temperature; fluid balance and weight; oedema; albumin; skin infection. For discharge — erythema settling, afebrile, cause and plan written down.",
   },
@@ -328,8 +316,6 @@ export const DERMATOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Screen for metabolic syndrome; monitor methotrexate bloods; avoid beta-blockers, lithium and systemic steroids where possible."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Duration and pattern of psoriasis; triggers (infection, drugs — beta-blockers, lithium, antimalarials; steroid withdrawal; stress; alcohol); previous systemic treatment and response; joint pain and morning stiffness; comorbidities (diabetes, hypertension, fatty liver). Examination: PASI / BSA, pustules, nails, scalp, joints. Baseline: CBC, liver and renal function, lipids, glucose, HBsAg, anti-HCV, HIV, chest X-ray (before systemic therapy).",
     progressNote:
       "Each day — PASI / extent; pustules; temperature; itch; bloods on systemic therapy. For discharge — improving, methotrexate day and blood-test dates written down.",
   },
@@ -371,8 +357,6 @@ export const DERMATOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Supervise monthly MDT under the national programme; examine household contacts; monthly nerve function assessment while on steroids."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Diagnosis and classification; MDT start date and adherence; timing of reaction; fever, joint pain, eye symptoms, testicular pain; new numbness or weakness. Examination: skin lesions (inflamed / new / ENL nodules), all peripheral nerves for thickening and tenderness, voluntary muscle and sensory testing of hands, feet, eyes, disability grade, eyes, testes. Baseline: CBC, renal and liver function, glucose, urine; slit-skin smear; G6PD before dapsone if not done.",
     progressNote:
       "Each day — fever; new lesions / ENL nodules; nerve tenderness; VMT / ST record; eyes; steroid side-effects. For discharge — reaction settling, nerve function charted, MDT continued, steroid taper and next pack date written down.",
   },
@@ -412,8 +396,6 @@ export const DERMATOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Check blood sugar; treat tinea pedis and lymphoedema to prevent recurrence."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Onset, spread, pain, fever; portal of entry (tinea pedis, wound, insect bite, eczema); diabetes; previous episodes; lymphoedema; venous disease. Examination: margin (mark it), warmth, tenderness, fluctuance, blisters, crepitus, pain out of proportion; lymph nodes; web spaces. Baseline: CBC, CRP, glucose, renal function; swab / pus culture; blood culture if febrile.",
     progressNote:
       "Each day — temperature; margin against the mark; pain; swelling; pus; glucose. For discharge — afebrile, margin receding, on oral antibiotics, portal of entry treated.",
   },
@@ -453,8 +435,6 @@ export const DERMATOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Look for immunosuppression (HIV, diabetes, malignancy); follow up post-herpetic neuralgia."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Day of rash; prodromal pain; dermatome; eye symptoms, tip-of-nose lesion (Hutchinson's sign); facial weakness, ear lesions; immunosuppression (HIV, diabetes, steroids, chemotherapy, malignancy); previous zoster. Examination: dermatome, dissemination (> 20 vesicles outside), secondary infection, eyes, cranial nerves. Baseline: CBC, renal function, glucose, HIV (with consent); Tzanck / PCR if atypical; ophthalmology if V1.",
     progressNote:
       "Each day — new vesicles; crusting; pain score; eyes; neurological signs; temperature; renal function on acyclovir. For discharge — no new vesicles, crusting, pain controlled on oral medicines.",
   },

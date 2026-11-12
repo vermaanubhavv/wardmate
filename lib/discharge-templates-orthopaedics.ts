@@ -105,8 +105,6 @@ export const ORTHOPAEDICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Pain, swelling, fever, onset and duration; inability to bear weight or move the joint; preceding trauma, injection, surgery or skin infection; discharging sinus and extruded bone pieces (chronic osteomyelitis); diabetes, immunosuppression, sickle-cell disease, IV drug use; TB contact and constitutional symptoms. Examination: temperature, joint effusion, warmth, painful restriction of movement, local tenderness, sinus, limb length and deformity, regional nodes. Baseline: CBC, CRP, ESR, blood culture, joint aspirate (cell count, Gram stain, culture, AFB), blood sugar, X-ray of the part, USG / MRI as indicated.",
     progressNote:
       "Each day — temperature trend; pain; joint swelling and range; wound and drain output; CRP / TLC trend; culture report and antibiotic change; limb splintage. Discharge day — afebrile, CRP falling, wound healthy, oral antibiotic chosen and duration fixed; follow-up bloods and X-ray planned.",
   },
@@ -163,8 +161,6 @@ export const ORTHOPAEDICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Mechanism and time of injury; time to first antibiotic; tetanus status; contamination (farm, road, water); other injuries (ATLS primary and secondary survey); smoking, diabetes, previous function. Examination: wound size, contamination, soft-tissue loss, exposed bone, distal pulses, capillary refill, sensation and motor function, compartment signs, photographs of the wound. Baseline: X-ray of the whole bone with the joints above and below, CBC, blood group and cross-match, renal function, blood sugar.",
     progressNote:
       "Each day — distal neurovascular status; compartment check; wound / NPWT and pin sites; temperature; antibiotic day; limb elevation; mobilisation. Discharge day — pin sites clean, wound settling, mobilising safely; next surgery date and pin-site care taught.",
   },
@@ -225,8 +221,6 @@ export const ORTHOPAEDICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: false,
     },
-    clerkingFocus:
-      "Mechanism of fall and why (syncope, dizziness, trip); time since fall and time on the floor; pre-injury mobility and walking aid; living situation; previous fractures; comorbidities, anticoagulants and antiplatelets; cognition. Examination: shortening and external rotation, tenderness, distal neurovascular status, pressure areas, other injuries (wrist, head), cardiorespiratory examination. Baseline: X-ray pelvis with both hips and lateral of the hip, CBC, renal function, electrolytes, blood sugar, coagulation, ECG, chest X-ray, blood group and cross-match; AMTS / delirium screen.",
     progressNote:
       "Each day — pain; delirium screen; haemoglobin; urine output and catheter; bowels; pressure areas; wound; chest; thromboprophylaxis given; weight-bearing status and physiotherapy progress. Discharge day — walking with a walker, wound healthy, bowels open, catheter out and voiding; thromboprophylaxis and falls plan in place.",
   },
@@ -283,8 +277,6 @@ export const ORTHOPAEDICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       ],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Pain — site, night pain, rest pain; walking distance and aids; stiffness; deformity; previous injections or surgery on the joint; response to conservative treatment; comorbidities (diabetes, heart disease), anticoagulants, dental and skin infections, steroid use. Examination: gait, deformity (varus / valgus, fixed flexion), range of movement, limb length, ligament stability, distal pulses, spine and other joints, skin over the joint. Baseline: standing X-rays of the joint, CBC, ESR / CRP, blood sugar and HbA1c, renal function, urine routine and culture, ECG, echo if indicated, dental check.",
     progressNote:
       "Each day — pain; wound and drain; haemoglobin; distal neurovascular status; range of movement achieved; weight-bearing and distance walked; thromboprophylaxis given; calf check. Discharge day — independent with a walker, stairs with support, wound healthy, target range reached, blood-thinner plan understood.",
   },
@@ -322,8 +314,6 @@ export const ORTHOPAEDICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Mechanism of injury (twisting, non-contact, pop), immediate swelling, ability to continue play; episodes of giving way; locking or catching (meniscus); sport and activity level; previous knee injury. Examination: effusion, joint-line tenderness, Lachman, anterior drawer, pivot shift, McMurray, collateral ligaments, range of movement, quadriceps wasting. Baseline: X-ray knee, MRI knee, pre-anaesthetic workup.",
     progressNote:
       "POD 0 — pain; distal neurovascular status; dressing; brace position. POD 1 — straight-leg raise achieved; flexion __°; mobilising with crutches; wound dry. Plan: discharge with brace and rehabilitation protocol.",
   },
@@ -372,8 +362,6 @@ export const ORTHOPAEDICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Refer back urgently with any new weakness or bladder / bowel disturbance."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Back pain and leg pain — which dominates, dermatome, duration; claudication distance; numbness, weakness, foot drop; bladder and bowel symptoms, saddle anaesthesia; conservative treatment tried; red flags (fever, weight loss, trauma, cancer history, TB). Examination: posture, spinal tenderness, SLR and crossed SLR, femoral stretch, dermatomal sensation, myotomal power, reflexes, perianal sensation and anal tone, peripheral pulses. Baseline: MRI lumbosacral spine, X-ray with flexion-extension views, pre-anaesthetic workup.",
     progressNote:
       "Each day — leg pain versus before; power and sensation by root; bladder / bowel; wound and drain; mobilisation. Discharge day — walking independently, neurology stable or better, wound dry, no CSF leak.",
   },
@@ -416,8 +404,6 @@ export const ORTHOPAEDICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Check the wound; support smoking cessation."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Mechanism and time of injury; other injuries; hand dominance / occupation; previous function; smoking, diabetes, steroids, osteoporosis; anticoagulants. Examination: deformity, swelling, skin integrity (closed / open), distal pulses, capillary refill, sensation and motor function of named nerves, compartment signs, joints above and below. Baseline: X-ray two views with joints above and below, CT for intra-articular fractures, CBC, blood group, renal function, blood sugar.",
     progressNote:
       "Each day — pain; distal neurovascular status; compartment check; swelling and elevation; wound and drain; weight-bearing and physiotherapy. Discharge day — check X-ray satisfactory, wound healthy, mobilising safely with the aid, neurovascular intact.",
   },
@@ -459,8 +445,6 @@ export const ORTHOPAEDICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Check the plaster and circulation if the patient returns with pain or swelling."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Mechanism and time of injury; hand dominance; previous injury to the limb; osteoporosis risk. Examination: deformity, swelling, skin, distal pulses, capillary refill, sensation and motor function, joints above and below. Baseline: X-ray two views with the joints above and below; post-reduction X-ray.",
     progressNote:
       "Each day — pain; swelling; circulation, sensation and movement of the fingers / toes; plaster check; elevation. Discharge day — swelling settled, neurovascular intact, plaster comfortable, check X-ray acceptable.",
   },
@@ -495,8 +479,6 @@ export const ORTHOPAEDICS_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     primaryCareActions: [],
     conditionAllSatisfactory: true,
   },
-  clerkingFocus:
-    "Presenting complaint with onset, mechanism and duration; function before the problem; past medical, surgical and drug history; examination of the part with distal neurovascular status and the joints above and below; provisional diagnosis and plan. Baseline: X-rays and investigations as indicated.",
   progressNote:
     "Each day — pain; distal neurovascular status; wound / drain; mobilisation; the day's plan. On readiness — afebrile, wound healthy, mobilising safely. For discharge with advice.",
 };

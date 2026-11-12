@@ -184,6 +184,29 @@ function readManagement(raw: string): string | null {
 }
 
 /**
+ * The shared body of the four status moves below: read the patient id, check there is a
+ * signed-in user, write the patch (only if the patient is currently `from`, when given), and
+ * revalidate the three lists every move touches. Returns null when there was nothing to do.
+ */
+async function setPatientStatus(formData: FormData, patch: Record<string, string | null>, from?: string) {
+  const id = String(formData.get("patient_id") ?? "");
+  if (!id) return null;
+
+  const supabase = await createClient();
+  const user = await getUser();
+  if (!user) return null;
+
+  let query = supabase.from("patients").update(patch).eq("id", id);
+  if (from) query = query.eq("status", from);
+  const { data, error } = await query.select("id");
+
+  revalidatePath("/");
+  revalidatePath("/ward");
+  revalidatePath("/unit/discharged");
+  return { id, data, error };
+}
+
+/**
  * Take a patient off the active ward list.
  *
  * This sets their status rather than destroying anything, which is the schema's deliberate
@@ -193,50 +216,26 @@ function readManagement(raw: string): string | null {
  * out to be a mistake the record is still there to put back.
  */
 export async function dischargePatient(formData: FormData) {
-  const id = String(formData.get("patient_id") ?? "");
-  if (!id) return;
+  const moved = await setPatientStatus(formData, { status: "discharged", discharged_at: new Date().toISOString() });
+  if (!moved) return;
 
-  const supabase = await createClient();
-  const user = await getUser();
-  if (!user) return;
-
-  await supabase
-    .from("patients")
-    .update({ status: "discharged", discharged_at: new Date().toISOString() })
-    .eq("id", id);
-
-  revalidatePath("/");
-  revalidatePath("/ward");
   revalidatePath("/todo");
   revalidatePath("/handover");
-  revalidatePath("/unit/discharged");
   // The query param drives a one-time "Patient discharged · Undo" banner on the ward
   // page (app/ward/page.tsx) — instant feedback only. It carries no state of its own and
   // is gone the moment the page is reloaded or left; the real 48-hour undo window lives
   // in /unit/discharged's own query, not here.
-  redirect(`/ward?discharged=${id}`);
+  redirect(`/ward?discharged=${moved.id}`);
 }
 
 /** Undo a removal: back onto the active ward list, exactly as they were. */
 export async function restorePatient(formData: FormData) {
-  const id = String(formData.get("patient_id") ?? "");
-  if (!id) return;
+  const moved = await setPatientStatus(formData, { status: "active", discharged_at: null });
+  if (!moved) return;
 
-  const supabase = await createClient();
-  const user = await getUser();
-  if (!user) return;
-
-  await supabase
-    .from("patients")
-    .update({ status: "active", discharged_at: null })
-    .eq("id", id);
-
-  revalidatePath("/");
-  revalidatePath("/ward");
-  revalidatePath("/unit/discharged");
   revalidatePath("/todo");
   revalidatePath("/handover");
-  revalidatePath(`/patients/${id}`);
+  revalidatePath(`/patients/${moved.id}`);
 }
 
 /**
@@ -248,29 +247,15 @@ export async function restorePatient(formData: FormData) {
  * move to trash so an accidental tap never destroys a clinical record immediately.
  */
 export async function deletePatientForever(formData: FormData) {
-  const id = String(formData.get("patient_id") ?? "");
-  if (!id) return;
-
-  const supabase = await createClient();
-  const user = await getUser();
-  if (!user) return;
-
   // An UPDATE, not a delete, so a direct destructive action never depends on a client-side
   // confirmation alone. The scheduled database job performs the eventual irreversible purge.
-  const { data: trashed, error } = await supabase
-    .from("patients")
-    .update({ status: "trashed", trashed_at: new Date().toISOString() })
-    .eq("id", id)
-    .eq("status", "active")
-    .select("id");
+  const moved = await setPatientStatus(formData, { status: "trashed", trashed_at: new Date().toISOString() }, "active");
+  if (!moved) return;
 
-  revalidatePath("/");
-  revalidatePath("/ward");
-  revalidatePath("/unit/discharged");
   revalidatePath("/unit/trash");
 
-  if (error) redirect(`/ward?delete_failed=${encodeURIComponent(error.message)}`);
-  if (!trashed || trashed.length === 0) redirect("/ward?delete_failed=refused");
+  if (moved.error) redirect(`/ward?delete_failed=${encodeURIComponent(moved.error.message)}`);
+  if (!moved.data || moved.data.length === 0) redirect("/ward?delete_failed=refused");
 
   redirect("/unit/trash");
 }
@@ -279,24 +264,11 @@ export async function deletePatientForever(formData: FormData) {
  * Undo a trash: back onto the active ward, exactly reversing the direct delete action.
  */
 export async function restoreFromTrash(formData: FormData) {
-  const id = String(formData.get("patient_id") ?? "");
-  if (!id) return;
+  const moved = await setPatientStatus(formData, { status: "active", trashed_at: null }, "trashed");
+  if (!moved) return;
 
-  const supabase = await createClient();
-  const user = await getUser();
-  if (!user) return;
-
-  await supabase
-    .from("patients")
-    .update({ status: "active", trashed_at: null })
-    .eq("id", id)
-    .eq("status", "trashed");
-
-  revalidatePath("/");
-  revalidatePath("/ward");
-  revalidatePath("/unit/discharged");
   revalidatePath("/unit/trash");
-  revalidatePath(`/patients/${id}`);
+  revalidatePath(`/patients/${moved.id}`);
 }
 
 export type EditPatientState = { error: string | null; ok?: boolean };

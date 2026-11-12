@@ -28,9 +28,7 @@ const scortenCard: CardDefinition = {
   citation:
     "SCORTEN — Bastuji-Garin S et al., J Invest Dermatol 2000;115:149–53. Seven criteria, one point each, scored within 24 h of admission. Predicted mortality 0–1: 3.2 %, 2: 12.1 %, 3: 35.3 %, 4: 58.3 %, ≥ 5: 90 %. A prognostic prompt, not a treatment decision.",
   type: "calculator",
-  timingLabel: "first 24 hours of admission",
   calculation: { kind: "sum_points" },
-  recomputeOn: ["new_lab", "new_observation", "manual"],
   interpretationBands: [
     { min: 0, max: 1, text: "SCORTEN 0–1 — published predicted mortality 3.2 %.", tone: "neutral" },
     { min: 2, max: 2, text: "SCORTEN 2 — published predicted mortality 12.1 %.", tone: "attention" },
@@ -149,17 +147,13 @@ export const scortenV1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-01",
   diagnosisTriggers: {
-    codes: [],
     // Matching is a normalised substring test (triggers.ts), so a bare "ten" would fire on
     // "hypertension" / "tender" — TEN alone is only caught via "sjs/ten" or the full name.
     textPatterns: ["sjs", "stevens johnson", "toxic epidermal necrolysis", "sjs/ten", "sjs-ten"],
     excludePatterns: ["sjs ruled out", "ten ruled out", "not sjs"],
   },
-  eligibility: { notes: ["Stevens-Johnson syndrome / toxic epidermal necrolysis. Validated within 24 h of admission."] },
-  exclusions: [],
   cards: [scortenCard],
   tasks: [],
   checkpoints: [],
-  recomputePolicy: ["new_lab", "new_observation", "manual"],
   institutionalToggles: {},
 };

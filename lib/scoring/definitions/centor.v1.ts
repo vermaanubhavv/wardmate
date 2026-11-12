@@ -49,9 +49,7 @@ const centorCard: CardDefinition = {
   citation:
     "Centor criteria — Centor RM et al., Med Decis Making 1981;1:239–46. One point each for fever > 38 °C, absence of cough, tender anterior cervical lymphadenopathy, tonsillar exudate/swelling. Approximate probability of a positive GAS throat culture in the adult derivation cohort: 0 ≈ 2.5 %, 1 ≈ 6.5 %, 2 ≈ 15 %, 3 ≈ 32 %, 4 ≈ 56 %. McIsaac age adjustment not applied.",
   type: "calculator",
-  timingLabel: "at presentation",
   calculation: { kind: "sum_points" },
-  recomputeOn: ["new_observation", "manual"],
   interpretationBands: [
     { min: 0, max: 0, text: `Centor 0 — approximate probability of group A streptococcal pharyngitis ≈ 2.5 %. ${TAIL}`, tone: "neutral" },
     { min: 1, max: 1, text: `Centor 1 — approximate probability of group A streptococcal pharyngitis ≈ 6.5 %. ${TAIL}`, tone: "neutral" },
@@ -88,15 +86,11 @@ export const centorV1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-01",
   diagnosisTriggers: {
-    codes: [],
     textPatterns: ["sore throat", "pharyngitis", "tonsillitis", "throat infection"],
     excludePatterns: ["peritonsillar abscess", "quinsy"],
   },
-  eligibility: { minAgeYears: 15, notes: ["Derived in adults with sore throat. A probability of GAS pharyngitis, not a diagnosis."] },
-  exclusions: ["Peritonsillar abscess, epiglottitis or airway compromise — assess directly, not by score."],
   cards: [centorCard],
   tasks: [],
   checkpoints: [],
-  recomputePolicy: ["new_observation", "manual"],
   institutionalToggles: {},
 };

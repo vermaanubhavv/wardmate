@@ -1,4 +1,4 @@
-import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
+import { AI_MODEL, readImageJson, type ImageType } from "@/lib/model";
 import { generalPack, type SpecialtyPack } from "@/lib/specialty";
 import { forWard } from "@/lib/specialty/prompt-words";
 
@@ -53,33 +53,20 @@ const SCHEMA = {
  */
 export async function readCaseSheet(
   base64Image: string,
-  mediaType: "image/jpeg" | "image/png" | "image/webp",
+  mediaType: ImageType,
   pack: SpecialtyPack = generalPack
 ): Promise<CaseSheetResult> {
-  const client = anthropic();
-
-  const response = await client.messages.create({
-    model: AI_MODEL,
-    max_tokens: 8000,
+  const parsed = await readImageJson({
+    maxTokens: 8000,
     system: forWard(SYSTEM_PROMPT, pack),
     // Same tier as the lab photo: reading handwriting off a ward-lit phone photo is harder
     // than parsing clean speech, and a case sheet is usually a fuller page than a lab slip.
-    output_config: {
-      effort: "medium",
-      format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> },
-    },
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "image", source: { type: "base64", media_type: mediaType, data: base64Image } },
-          { type: "text", text: "Transcribe this case sheet." },
-        ],
-      },
-    ],
+    schema: SCHEMA,
+    base64Image,
+    mediaType,
+    prompt: "Transcribe this case sheet.",
+    fallback: { transcript: "" },
   });
-
-  const parsed = replyJson(response, { transcript: "" });
 
   return { transcript: String(parsed.transcript ?? ""), model: AI_MODEL };
 }

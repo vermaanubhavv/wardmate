@@ -26,9 +26,7 @@ const qsofaCard: CardDefinition = {
   citation:
     "qSOFA — Singer M et al. (The Third International Consensus Definitions for Sepsis and Septic Shock), JAMA 2016;315:801–10. Respiratory rate ≥ 22, altered mentation (GCS < 15), systolic BP ≤ 100 — one point each. ≥ 2 in a patient with suspected infection warrants prompt senior review, lactate, blood cultures and a source assessment. Not a diagnosis of sepsis; not a substitute for clinical judgement or a full SOFA score.",
   type: "calculator",
-  timingLabel: "since presentation — re-score on change",
   calculation: { kind: "sum_points" },
-  recomputeOn: ["new_observation", "deterioration", "manual"],
   interpretationBands: [
     { min: 0, max: 1, text: "qSOFA 0–1 — lower risk on this screen. Continue to monitor; re-score if the patient changes.", tone: "neutral" },
     { min: 2, max: 3, text: "qSOFA ≥ 2 with suspected infection — higher risk of a poor outcome. Prompt senior review, lactate, blood cultures before antibiotics, and a source assessment.", tone: "attention" },
@@ -78,10 +76,7 @@ const sirsCard: CardDefinition = {
   citation:
     "SIRS — Bone RC et al., Chest 1992. Two or more of: temperature > 38 °C or < 36 °C; heart rate > 90/min; respiratory rate > 20/min (or PaCO₂ < 32 mmHg); white-cell count > 12 000 or < 4 000/mm³ (or > 10 % bands). Sensitive but non-specific; shown alongside qSOFA, not instead of clinical assessment.",
   type: "structured_classification",
-  timingLabel: "since presentation — re-score on change",
   calculation: { kind: "sirs" },
-  recomputeOn: ["new_lab", "new_observation", "deterioration", "manual"],
-  requiresConfirmation: true,
   interpretationBands: [
     { min: 0, class: "absent", text: "SIRS not met on the values recorded.", tone: "neutral" },
     { min: 0, class: "present", text: "SIRS present (≥ 2 criteria). Non-specific — interpret with the source assessment and qSOFA.", tone: "attention" },
@@ -119,7 +114,6 @@ export const qsofaV1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-01",
   diagnosisTriggers: {
-    codes: ["A41", "A41.9", "R65.1", "R65.2"],
     textPatterns: [
       "sepsis",
       "? sepsis",
@@ -133,8 +127,6 @@ export const qsofaV1: PathwayDefinition = {
     ],
     excludePatterns: ["sepsis screen negative", "no evidence of sepsis"],
   },
-  eligibility: { minAgeYears: 16, notes: ["Adult sepsis screen. qSOFA is a risk-stratification prompt, not a diagnosis."] },
-  exclusions: ["Neutropenic sepsis on an oncology unit follows the febrile-neutropenia pathway."],
   cards: [qsofaCard, sirsCard],
   tasks: [
     {
@@ -162,6 +154,5 @@ export const qsofaV1: PathwayDefinition = {
   checkpoints: [
     { key: "qsofa_review_6h", dueFrom: "admission", dueAtHours: 6, label: "Re-score qSOFA / SIRS and review the source at 6 hours", recomputeCards: ["qsofa", "sirs"] },
   ],
-  recomputePolicy: ["new_lab", "new_observation", "deterioration", "scheduled_checkpoint", "manual"],
   institutionalToggles: {},
 };

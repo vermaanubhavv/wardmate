@@ -2,7 +2,7 @@
  * Model comparison over the app's own AI routes, run through the Message Batches API (half
  * price) with a hard spend cap. Cases: scripts/eval-models/cases.ts — synthetic only.
  *
- *   node --env-file=.env.eval --import ./scripts/alias-register.mjs scripts/eval-models/run.ts --run A
+ *   npm run eval:models -- --run A
  *
  * .env.eval holds EVAL_ANTHROPIC_API_KEY — a separate key in its own Console workspace with a
  * spend limit. The routes never see it: they get a dummy ANTHROPIC_API_KEY and every call they

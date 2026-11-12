@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import ScreenHeader from "../screen-header";
 import { getCurrentWard, getWardMembers, getWardPack } from "@/lib/ward";
 import { getWardTasks } from "@/lib/todo";
@@ -10,15 +11,9 @@ import { stripPatientHonorific } from "@/lib/patients";
 export default async function TodoPage() {
   const { ward, error } = await getCurrentWard();
 
-  if (error || !ward) {
-    return (
-      <main className="flex-1 max-w-md mx-auto w-full">
-        <ScreenHeader back="/ward" title="To do" />
-        <p role="alert" className="mx-4 ios-group px-4 py-3 text-subhead text-warn-fg">
-          {error ? "The list could not be loaded. Check the connection and try again." : "No ward found."}
-        </p>
-      </main>
-    );
+  if (!ward) {
+    if (error) throw new Error(error.message);
+    redirect("/onboarding");
   }
 
   // Independent reads, sent together. The scoring ones are score-input to-do items across the

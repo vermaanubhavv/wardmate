@@ -100,8 +100,6 @@ export const PAEDIATRICS_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     primaryCareActions: [],
     conditionAllSatisfactory: true,
   },
-  clerkingFocus:
-    "Presenting complaint with onset, duration and course, and who gave the history; associated symptoms and danger signs; feeding and urine output; birth, immunisation, developmental and nutritional history; family and contact history. Examination: weight, length/height and MUAC with the date, vitals, hydration, respiratory distress, systemic examination. Provisional diagnosis and plan.",
   progressNote:
     "Each day — weight (with date), feeding and intake, urine and stool counts, vitals and saturation, danger signs, examination, results back, the day's plan. For discharge — afebrile, feeding well, active, danger signs absent, parents taught the medicines and the danger signs, follow-up written down.",
 };
@@ -134,8 +132,6 @@ export const PAEDIATRICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Home visit to check feeding, warmth and weight gain."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Age in days; birth weight and gestation; maternal risk factors (PROM > 18 hours, maternal fever, foul liquor, UTI); place and mode of delivery; resuscitation; feeding; temperature; lethargy, poor suck, fast breathing, apnoea, fits, jaundice, umbilical or skin infection. Examination: weight with date, temperature, CRT, respiratory distress, fontanelle, tone, umbilicus, skin. Baseline: sepsis screen, blood culture before antibiotics, blood glucose, CSF where indicated.",
     progressNote:
       "Each day — weight, feeding (breastfeeds / EBM volume as said), temperature, activity, respiratory status, jaundice, culture status, antibiotic day. For discharge — feeding well at the breast, maintaining temperature in room air, weight gaining, antibiotic course complete, mother taught danger signs.",
   },
@@ -169,8 +165,6 @@ export const PAEDIATRICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Check jaundice and feeding at the home visit."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Age in days at onset of jaundice; extent; gestation and birth weight; mother's and baby's blood group; previous sibling with jaundice or exchange; feeding and weight loss; stool and urine colour; lethargy, poor suck, high-pitched cry, arching. Examination: extent of jaundice, hydration, cephalhaematoma, pallor, hepatosplenomegaly, neurological signs. Baseline: TSB, blood groups, DCT, haematocrit, retics, G6PD where indicated.",
     progressNote:
       "Each day — TSB with the hour of life (as recorded; thresholds read by the resident, not the app), phototherapy hours, feeding, weight, urine and stool counts, temperature, neurological signs. For discharge — phototherapy stopped, rebound checked if planned, feeding well.",
   },
@@ -196,8 +190,6 @@ export const PAEDIATRICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Watch development and hearing at each visit; refer early if a milestone slips."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Fever, headache, vomiting, irritability, fits, altered sensorium, neck pain; prior antibiotics; TB contact; ear discharge, head injury, VP shunt; immunisation (Hib, PCV). Examination: GCS / AVPU, fontanelle, neck stiffness, Kernig's, focal deficit, cranial nerves, fundus, signs of raised ICP, rash. Baseline: CSF analysis before antibiotics where safe, blood culture, glucose, electrolytes, imaging if indicated.",
     progressNote:
       "Each day — temperature, sensorium, fits, focal signs, head circumference in an infant, feeding, sodium and urine output, antibiotic day. For discharge — afebrile, conscious, feeding, course complete, hearing test arranged.",
   },
@@ -225,8 +217,6 @@ export const PAEDIATRICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Reassure; confirm the parents know the first-aid steps."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Description of the fit from the eyewitness — type, duration, number in 24 hours, post-ictal state, focal features; height and source of fever; age; previous febrile seizures; family history of febrile seizures or epilepsy; development; immunisation. Examination: sensorium, meningeal signs, fontanelle, focal deficit, source of fever. Baseline: tests directed at the fever source; LP only if meningitis is suspected.",
     progressNote:
       "Each day — further fits, sensorium, temperature, source of fever and its treatment, feeding. For discharge — back to baseline, fever source addressed, parents taught first aid for a fit.",
   },
@@ -261,8 +251,6 @@ export const PAEDIATRICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Check adherence and supply of the seizure medicine at each visit."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Eyewitness description of each seizure — onset, type, duration, frequency, post-ictal state; triggers; previous seizures and current drugs with adherence; birth history, development, head injury, family history; missed doses or intercurrent illness. Examination: sensorium, focal deficit, head circumference, neurocutaneous markers, fundus. Baseline: glucose, calcium, magnesium, electrolytes; EEG and neuroimaging as indicated.",
     progressNote:
       "Each day — seizure count and description, sensorium, drug and dose as charted, adverse effects, feeding. For discharge — seizure-free for the agreed period, oral medicine established, rescue plan and diary explained.",
   },
@@ -299,8 +287,6 @@ export const PAEDIATRICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Enrol with the Anganwadi / community programme; weekly weight and MUAC; trace defaulters."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Diet history — breastfeeding, complementary feeding, 24-hour recall; weight loss; diarrhoea, vomiting, cough, fever; TB contact; HIV exposure; birth weight; immunisation; development; family and social circumstances. Examination: weight, length/height, MUAC, bilateral pitting oedema, danger signs, hypothermia, hydration, eye signs of vitamin A deficiency, skin, infection focus. Baseline: glucose, CBC, electrolytes, urine, chest X-ray, Mantoux, HIV as indicated.",
     progressNote:
       "Each day — weight, oedema, feed type and intake as charted, appetite, stools, temperature, glucose, infection, phase of treatment. For discharge — appetite test passed, oedema resolved, infections treated, caregiver trained, community follow-up arranged.",
   },
@@ -327,8 +313,6 @@ export const PAEDIATRICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Day of fever; warning signs — abdominal pain, persistent vomiting, bleeding, lethargy, reduced urine; oral intake; neighbourhood cases. Examination: pulse, BP with pulse pressure, CRT, hepatomegaly, effusion, ascites, bleeding, tourniquet test if done. Baseline: NS1 / IgM by day of illness, CBC with haematocrit, LFT.",
     progressNote:
       "Each day — day of illness, vitals with pulse pressure and CRT, urine output as counted, haematocrit and platelet trend, warning signs, fluids as charted. For discharge — afebrile 24–48 hours without paracetamol, eating, passing urine, platelets rising, no respiratory distress.",
   },
@@ -359,8 +343,6 @@ export const PAEDIATRICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Check BP and weight; treat infections early — they trigger relapse."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Onset and progression of swelling; urine output and frothing; haematuria; previous episodes, steroid courses and response; infections; varicella and TB contact; immunisation. Examination: weight, BP, oedema, ascites, effusion, infection focus, Cushingoid features. Baseline: urine albumin and microscopy, serum albumin, cholesterol, creatinine, electrolytes, CBC; complement and HBsAg as indicated.",
     progressNote:
       "Each day — weight, BP, oedema, urine output, dipstick protein, steroid dose as charted, signs of infection or thrombosis. For discharge — oedema subsiding, BP controlled, parents taught urine testing and steroid schedule.",
   },
@@ -392,8 +374,6 @@ export const PAEDIATRICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Recheck inhaler technique; review control and controller need."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Onset and triggers; previous episodes, admissions and PICU stays; current relievers and controllers with technique and adherence; night symptoms; atopy; smoke exposure; family history. Examination: ability to talk / feed, respiratory rate, retractions, saturation, wheeze or silent chest, sensorium. Baseline: saturation; chest X-ray only if pneumonia, pneumothorax or first episode.",
     progressNote:
       "Each day — respiratory rate, work of breathing, saturation in room air, bronchodilator interval as charted, steroid day. For discharge — in room air, spacer every four hours or less often, technique checked, action plan given.",
   },
@@ -421,8 +401,6 @@ export const PAEDIATRICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Age; prematurity; coryza then cough and fast breathing; feeding and wet nappies; apnoea; fever; congenital heart disease or chronic lung disease; smoke exposure; sick contacts. Examination: respiratory rate, retractions, saturation, crepitations and wheeze, hydration. Baseline: saturation; tests only if atypical.",
     progressNote:
       "Each day — respiratory rate, work of breathing, saturation, oxygen, feeding (breastfeeds / volume as said), wet nappies, apnoea. For discharge — saturation adequate in room air as charted, feeding adequately, parents confident.",
   },
@@ -450,8 +428,6 @@ export const PAEDIATRICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Check the child's breathing and feeding after two days."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Fever, cough, fast or difficult breathing, duration; danger signs; feeding; prior antibiotics; TB contact; measles; foreign body; recurrent chest infections; immunisation (Hib, PCV, measles). Examination: respiratory rate counted for a full minute, chest indrawing, saturation, grunting, auscultation, pallor, nutrition. Baseline: saturation, CBC, chest X-ray, blood culture in severe pneumonia.",
     progressNote:
       "Each day — temperature, respiratory rate, indrawing, saturation and oxygen, feeding, antibiotic day and route. For discharge — afebrile, in room air, feeding, on oral antibiotic.",
   },
@@ -479,8 +455,6 @@ export const PAEDIATRICS_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: ["Rotavirus vaccine if due."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Number and nature of stools (as counted by the parent), blood or mucus; vomiting; fever; urine output; thirst; feeding and what fluids given at home; drugs given; similar illness in family. Examination: weight, general condition, eyes, thirst, skin pinch, pulse, CRT, nutrition. Baseline: electrolytes in severe dehydration or IV fluids; stool tests if blood.",
     progressNote:
       "Each day — weight, stools and vomits as counted, urine, dehydration findings as recorded, fluids and ORS intake, feeding. For discharge — no dehydration signs, taking ORS and feeds, mother taught to prepare ORS.",
   },

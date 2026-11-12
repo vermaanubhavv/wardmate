@@ -1,4 +1,4 @@
-import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
+import { AI_MODEL, readImageJson, type ImageType } from "@/lib/model";
 
 /**
  * Reads WHERE things are on a blank form photo, not what is written on it. Runs once, when a
@@ -99,30 +99,17 @@ const SCHEMA = {
 
 export async function readFormLayout(
   base64Image: string,
-  mediaType: "image/jpeg" | "image/png" | "image/webp"
+  mediaType: ImageType
 ): Promise<FormLayout> {
-  const client = anthropic();
-
-  const response = await client.messages.create({
-    model: AI_MODEL,
-    max_tokens: 4000,
+  const parsed = await readImageJson({
+    maxTokens: 4000,
     system: SYSTEM_PROMPT,
-    output_config: {
-      effort: "medium",
-      format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> },
-    },
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "image", source: { type: "base64", media_type: mediaType, data: base64Image } },
-          { type: "text", text: "Locate the fields on this form and give their bounding boxes." },
-        ],
-      },
-    ],
+    schema: SCHEMA,
+    base64Image,
+    mediaType,
+    prompt: "Locate the fields on this form and give their bounding boxes.",
+    fallback: { zones: [] },
   });
-
-  const parsed = replyJson(response, { zones: [] });
 
   // Clamp rather than trust: a box that runs off the image edge would print text outside the
   // page. The model is asked to stay in [0,1]; this is the enforcement, the same shape the

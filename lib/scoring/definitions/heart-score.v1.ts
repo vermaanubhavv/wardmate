@@ -21,9 +21,7 @@ const heartCard: CardDefinition = {
   citation:
     "HEART score — Six AJ et al., Neth Heart J 2008;16:191–6; validated Backus BE et al., Int J Cardiol 2013. 0–3 ≈ 1–2 % 6-week MACE (consider early discharge / outpatient); 4–6 moderate (admit, serial troponin); 7–10 high (early invasive strategy). Supports disposition — does not diagnose ACS or replace serial troponin.",
   type: "calculator",
-  timingLabel: "at assessment",
   calculation: { kind: "sum_points" },
-  recomputeOn: ["new_lab", "new_observation", "manual"],
   interpretationBands: [
     { min: 0, max: 3, text: "HEART 0–3 — low risk (≈ 1–2 % 6-week MACE). Early discharge / outpatient follow-up may be reasonable after a negative troponin, per clinical judgement and local policy.", tone: "neutral" },
     { min: 4, max: 6, text: "HEART 4–6 — moderate risk. Admit / observe with serial troponin; cardiology review.", tone: "attention" },
@@ -149,12 +147,9 @@ export const heartScoreV1: PathwayDefinition = {
   ],
   reviewDueAt: "2027-09-30",
   diagnosisTriggers: {
-    codes: ["R07.4", "R07.9", "I20.9", "I24.9"],
     textPatterns: ["chest pain", "chest pain for evaluation", "acute coronary syndrome", "? acs", "unstable angina", "atypical chest pain", "cardiac chest pain", "rule out mi", "r/o mi"],
     excludePatterns: ["st elevation mi", "stemi", "confirmed nstemi", "post pci", "musculoskeletal chest pain confirmed", "chest pain non-cardiac confirmed"],
   },
-  eligibility: { minAgeYears: 21, notes: ["Undifferentiated chest pain where ACS is a consideration. Not for a confirmed STEMI/NSTEMI (already an ACS pathway) or clearly non-cardiac pain."] },
-  exclusions: ["Confirmed STEMI or NSTEMI.", "Clearly non-cardiac chest pain."],
   cards: [heartCard],
   tasks: [
     {
@@ -171,6 +166,5 @@ export const heartScoreV1: PathwayDefinition = {
   checkpoints: [
     { key: "heart_recheck_3h", dueFrom: "admission", dueAtHours: 3, label: "Re-score after the repeat troponin", recomputeCards: ["heart"] },
   ],
-  recomputePolicy: ["new_lab", "new_observation", "scheduled_checkpoint", "manual"],
   institutionalToggles: {},
 };

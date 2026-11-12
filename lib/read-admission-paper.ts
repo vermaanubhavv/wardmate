@@ -1,4 +1,4 @@
-import { AI_MODEL, anthropic, replyJson } from "@/lib/model";
+import { AI_MODEL, readImageJson, type ImageType } from "@/lib/model";
 import { getSpecialtyPack } from "@/lib/specialty";
 import { plausibleAge } from "@/lib/read-new-patient";
 
@@ -107,39 +107,24 @@ function textOrNull(v: unknown): string | null {
 
 export async function readAdmissionPaper(
   base64Image: string,
-  mediaType: "image/jpeg" | "image/png" | "image/webp",
+  mediaType: ImageType,
   /** The unit's department. Only changes the closing instruction — what a paper is expected to
    *  print — never a rule. Anything unrecognised reads as general surgery. */
   specialty?: string | null
 ): Promise<AdmissionPaperResult> {
   const pack = getSpecialtyPack(specialty);
-  const client = anthropic();
-  const response = await client.messages.create({
-    model: AI_MODEL,
-    max_tokens: 1000,
+  const parsed = await readImageJson({
+    maxTokens: 1000,
     system: SYSTEM_PROMPT,
-    output_config: {
-      effort: "medium",
-      format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> },
-    },
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "image", source: { type: "base64", media_type: mediaType, data: base64Image } },
-          {
-            type: "text",
-            text:
-              pack.key === "medical_oncology"
-                ? "Read this admission, OPD or day-care chemotherapy paper. It may carry a regimen and a cycle; it may equally carry neither, and null is the right answer then."
-                : "Read this admission or OPD paper.",
-          },
-        ],
-      },
-    ],
+    schema: SCHEMA,
+    base64Image,
+    mediaType,
+    prompt:
+      pack.key === "medical_oncology"
+        ? "Read this admission, OPD or day-care chemotherapy paper. It may carry a regimen and a cycle; it may equally carry neither, and null is the right answer then."
+        : "Read this admission or OPD paper.",
+    fallback: {},
   });
-
-  const parsed = replyJson(response, {});
 
   // A cycle number outside the range a real course of chemotherapy runs to is a misread of
   // something else on the paper — a day, a dose, a bed — so it is dropped rather than stored.

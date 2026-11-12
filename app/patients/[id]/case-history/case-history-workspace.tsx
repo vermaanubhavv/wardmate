@@ -254,6 +254,26 @@ const SPECIALTY_CARD_TITLE: Record<string, string> = {
   onco_mucosa_line: "Mucosa, skin & line",
 };
 
+/** The plain one-text-box cards. These are seeded from their own section and saved as one
+ *  "note" row under this label… */
+const TEXT_SECTION = {
+  obstetric: "menstrual and obstetric history",
+  dietary: "dietary history",
+  environmental: "environmental history",
+  onco_disease: "oncological history",
+  onco_treatment: "treatment received",
+  onco_cycle: "current cycle",
+  onco_toxicity: "toxicity since last cycle",
+  performance: "performance status",
+} as const;
+/** …and these are seeded from any alias and saved as one exam row under `label`. */
+const TEXT_EXAM = {
+  onco_nodes: { label: "lymph node survey", aliases: ["lymph node survey"] },
+  onco_mucosa_line: { label: "mucosa, skin and vascular access", aliases: ["mucosa, skin and vascular access"] },
+  ...EXAM_CARD,
+};
+type TextId = keyof typeof TEXT_SECTION | keyof typeof TEXT_EXAM;
+
 export default function CaseHistoryWorkspace({
   patientId,
   sex,
@@ -349,17 +369,20 @@ export default function CaseHistoryWorkspace({
     if (lines.every(readsDenial)) return { mode: "none", text: "" };
     return { mode: "significant", text: lines.join("; ") };
   };
-  // Oncology cards. Plain free text seeded from the record — the chips below write into the
-  // same string, so a card filled by tapping and a card filled by dictation are the same card.
+  // The plain text cards (TEXT_SECTION). Free text seeded from the record — the chips write into
+  // the same string, so a card filled by tapping and one filled by dictation are the same card.
+  // Saved as one row, so every stored row is joined in, or saving would drop the rest.
   const seedText = (key: string) =>
     (bySection[key] ?? []).map((o) => (o.value ?? "").trim()).filter(Boolean).join("; ");
-  const [oncoDisease, setOncoDisease] = useState(() => seedText("onco_disease"));
-  const [oncoTreatment, setOncoTreatment] = useState(() => seedText("onco_treatment"));
-  const [oncoCycle, setOncoCycle] = useState(() => seedText("onco_cycle"));
-  const [oncoToxicity, setOncoToxicity] = useState(() => seedText("onco_toxicity"));
-  const [performance, setPerformance] = useState(() => seedText("performance"));
-  const [oncoNodes, setOncoNodes] = useState(() => examValue(["lymph node survey"]));
-  const [oncoMucosaLine, setOncoMucosaLine] = useState(() => examValue(["mucosa, skin and vascular access"]));
+  const [texts, setTexts] = useState<Record<TextId, string>>(
+    () =>
+      Object.fromEntries([
+        ...Object.keys(TEXT_SECTION).map((id) => [id, seedText(id)]),
+        ...Object.entries(TEXT_EXAM).map(([id, c]) => [id, examValue(c.aliases)]),
+      ]) as Record<TextId, string>
+  );
+  const setText = (id: TextId, v: string | ((prev: string) => string)) =>
+    setTexts((t) => ({ ...t, [id]: typeof v === "function" ? v(t[id]) : v }));
 
   const [past, setPast] = useState(() => seedHistory("past"));
   const [personal, setPersonal] = useState(() => seedHistory("personal"));
@@ -380,11 +403,6 @@ export default function CaseHistoryWorkspace({
     setMedication({ none: false, text: (medication.text ? medication.text.replace(/\n+$/, "") + "\n" : "") + line });
     mark("medication");
   }
-
-  // One text box each, saved as one row — so every stored row is joined in, or saving would drop the rest.
-  const [obstetric, setObstetric] = useState<string>(() => seedText("obstetric"));
-  const [dietary, setDietary] = useState<string>(() => seedText("dietary"));
-  const [environmental, setEnvironmental] = useState<string>(() => seedText("environmental"));
 
   const [piccle, setPiccle] = useState<Record<string, { state: SignState; note: string }>>(() => {
     const out: Record<string, { state: SignState; note: string }> = {};
@@ -409,13 +427,6 @@ export default function CaseHistoryWorkspace({
     return out;
   });
 
-  const [abdomen, setAbdomen] = useState<string>(() => examValue(EXAM_CARD.abdomen.aliases));
-  const [chest, setChest] = useState<string>(() => examValue(EXAM_CARD.chest.aliases));
-  const [cvs, setCvs] = useState<string>(() => examValue(EXAM_CARD.cvs.aliases));
-  const [cns, setCns] = useState<string>(() => examValue(EXAM_CARD.cns.aliases));
-  const [mse, setMse] = useState<string>(() => examValue(EXAM_CARD.mse.aliases));
-  const [skin, setSkin] = useState<string>(() => examValue(EXAM_CARD.skin.aliases));
-  const [local, setLocal] = useState<string>(() => examValue(EXAM_CARD.local.aliases));
   // The department's examination cards. A card it does not walk still shows when the record
   // already holds a value for it — a medicine patient's earlier local examination is not hidden.
   const examSteps = useMemo(
@@ -513,8 +524,8 @@ export default function CaseHistoryWorkspace({
     past: [past.text, (v) => setPast({ mode: "significant", text: v })],
     personal: [personal.text, (v) => setPersonal({ mode: "significant", text: v })],
     family: [family.text, (v) => setFamily({ mode: "significant", text: v })],
-    environmental: [environmental, setEnvironmental],
-    obstetric: [obstetric, setObstetric],
+    environmental: [texts.environmental, (v) => setText("environmental", v)],
+    obstetric: [texts.obstetric, (v) => setText("obstetric", v)],
   };
 
   // In the order the unit lists them — for oncology the disease, then what has been given for
@@ -621,26 +632,10 @@ export default function CaseHistoryWorkspace({
         "note",
         medication.none ? ["None"] : medication.text.split("\n").map((s) => s.trim()).filter(Boolean)
       );
-    else if (id === "dietary")
-      res = await runOrQueue("caseSection", "Case history card", patientId, "dietary history", "note", dietary.trim() ? [dietary.trim()] : []);
-    else if (id === "environmental")
-      res = await runOrQueue("caseSection", "Case history card", patientId, "environmental history", "note", environmental.trim() ? [environmental.trim()] : []);
-    else if (id === "obstetric")
-      res = await runOrQueue("caseSection", "Case history card", patientId, "menstrual and obstetric history", "note", obstetric.trim() ? [obstetric.trim()] : []);
-    else if (id === "onco_disease")
-      res = await runOrQueue("caseSection", "Case history card", patientId, "oncological history", "note", oneLine(oncoDisease));
-    else if (id === "onco_treatment")
-      res = await runOrQueue("caseSection", "Case history card", patientId, "treatment received", "note", oneLine(oncoTreatment));
-    else if (id === "onco_cycle")
-      res = await runOrQueue("caseSection", "Case history card", patientId, "current cycle", "note", oneLine(oncoCycle));
-    else if (id === "onco_toxicity")
-      res = await runOrQueue("caseSection", "Case history card", patientId, "toxicity since last cycle", "note", oneLine(oncoToxicity));
-    else if (id === "performance")
-      res = await runOrQueue("caseSection", "Case history card", patientId, "performance status", "note", oneLine(performance));
-    else if (id === "onco_nodes")
-      res = await runOrQueue("caseExam", "Case history examination", patientId, [{ label: "lymph node survey", kind: "exam", value: oncoNodes.trim() || null }]);
-    else if (id === "onco_mucosa_line")
-      res = await runOrQueue("caseExam", "Case history examination", patientId, [{ label: "mucosa, skin and vascular access", kind: "exam", value: oncoMucosaLine.trim() || null }]);
+    else if (id in TEXT_SECTION)
+      res = await runOrQueue("caseSection", "Case history card", patientId, TEXT_SECTION[id as keyof typeof TEXT_SECTION], "note", oneLine(texts[id as TextId]));
+    else if (id in TEXT_EXAM)
+      res = await runOrQueue("caseExam", "Case history examination", patientId, [{ label: TEXT_EXAM[id as keyof typeof TEXT_EXAM].label, kind: "exam", value: texts[id as TextId].trim() || null }]);
     else if (id === "piccle")
       res = await runOrQueue("caseExam", "Case history examination", 
         patientId,
@@ -662,20 +657,6 @@ export default function CaseHistoryWorkspace({
         patientId,
         VITALS.map((v) => ({ label: v.key, kind: "vital" as const, value: vitals[v.key]?.trim() || null }))
       );
-    else if (id === "abdomen")
-      res = await runOrQueue("caseExam", "Case history examination", patientId, [{ label: "per abdomen", kind: "exam", value: abdomen.trim() || null }]);
-    else if (id === "chest")
-      res = await runOrQueue("caseExam", "Case history examination", patientId, [{ label: "chest", kind: "exam", value: chest.trim() || null }]);
-    else if (id === "cvs")
-      res = await runOrQueue("caseExam", "Case history examination", patientId, [{ label: EXAM_CARD.cvs.label, kind: "exam", value: cvs.trim() || null }]);
-    else if (id === "cns")
-      res = await runOrQueue("caseExam", "Case history examination", patientId, [{ label: EXAM_CARD.cns.label, kind: "exam", value: cns.trim() || null }]);
-    else if (id === "mse")
-      res = await runOrQueue("caseExam", "Case history examination", patientId, [{ label: EXAM_CARD.mse.label, kind: "exam", value: mse.trim() || null }]);
-    else if (id === "skin")
-      res = await runOrQueue("caseExam", "Case history examination", patientId, [{ label: EXAM_CARD.skin.label, kind: "exam", value: skin.trim() || null }]);
-    else if (id === "local")
-      res = await runOrQueue("caseExam", "Case history examination", patientId, [{ label: "local examination", kind: "exam", value: local.trim() || null }]);
 
     stop(res.ok);
     if (!res.ok) {
@@ -959,7 +940,7 @@ export default function CaseHistoryWorkspace({
     const yesNo = { past, personal, family, surgical }[id as "past" | "personal" | "family" | "surgical"];
     if (yesNo) return yesNo.mode === "none" ? "No relevant history" : yesNo.mode === "significant" ? yesNo.text || "Significant" : "Not recorded";
     if (id === "medication") return medication.none ? "Not on any regular medication" : medication.text.split("\n")[0] || "Not recorded";
-    const text = { dietary, environmental, obstetric }[id as "dietary" | "environmental" | "obstetric"];
+    const text = id === "dietary" || id === "environmental" || id === "obstetric" ? texts[id] : undefined;
     return text?.trim() || "Not recorded";
   }
 
@@ -1194,7 +1175,7 @@ export default function CaseHistoryWorkspace({
       return (
         <>
           <p className="text-caption leading-[1.45] text-muted">What the patient eats: vegetarian or mixed, meals a day, appetite, recent change — only what was said.</p>
-          <DictateArea value={dietary} onChange={(v) => { setDietary(v); mark("dietary"); }} placeholder="e.g. mixed diet, three meals a day, appetite reduced for two weeks" rows={4} />
+          <DictateArea value={texts.dietary} onChange={(v) => { setText("dietary", v); mark("dietary"); }} placeholder="e.g. mixed diet, three meals a day, appetite reduced for two weeks" rows={4} />
         </>
       );
 
@@ -1202,7 +1183,7 @@ export default function CaseHistoryWorkspace({
       return (
         <>
           <p className="text-caption leading-[1.45] text-muted">Housing, water source, sanitation, occupational or travel exposure — only what was said.</p>
-          <DictateArea value={environmental} onChange={(v) => { setEnvironmental(v); mark("environmental"); }} placeholder="e.g. borewell water, works in a stone quarry, no recent travel" rows={4} />
+          <DictateArea value={texts.environmental} onChange={(v) => { setText("environmental", v); mark("environmental"); }} placeholder="e.g. borewell water, works in a stone quarry, no recent travel" rows={4} />
         </>
       );
 
@@ -1210,7 +1191,7 @@ export default function CaseHistoryWorkspace({
       return (
         <>
           <p className="text-caption leading-[1.45] text-muted">LMP, cycle, obstetric score (G/P/L/A), menopause — whatever is relevant.</p>
-          <DictateArea value={obstetric} onChange={(v) => { setObstetric(v); mark("obstetric"); }} placeholder="e.g. LMP 12/07, regular 28-day cycle, P2L2, not menopausal" rows={4} />
+          <DictateArea value={texts.obstetric} onChange={(v) => { setText("obstetric", v); mark("obstetric"); }} placeholder="e.g. LMP 12/07, regular 28-day cycle, P2L2, not menopausal" rows={4} />
         </>
       );
 
@@ -1279,15 +1260,15 @@ export default function CaseHistoryWorkspace({
         </div>
       );
 
-    if (id === "abdomen") return <PillsAndText pills={ABDOMEN_PILLS} value={abdomen} onChange={(v) => { setAbdomen(v); mark("abdomen"); }} placeholder="Anything else on the abdomen" />;
-    if (id === "chest") return <PillsAndText pills={CHEST_PILLS} value={chest} onChange={(v) => { setChest(v); mark("chest"); }} placeholder="Anything else on the chest" />;
-    if (id === "cvs") return <PillsAndText pills={CVS_PILLS} value={cvs} onChange={(v) => { setCvs(v); mark("cvs"); }} placeholder="Apex, heart sounds, murmur (site, grade, radiation), JVP" />;
+    if (id === "abdomen") return <PillsAndText pills={ABDOMEN_PILLS} value={texts.abdomen} onChange={(v) => { setText("abdomen", v); mark("abdomen"); }} placeholder="Anything else on the abdomen" />;
+    if (id === "chest") return <PillsAndText pills={CHEST_PILLS} value={texts.chest} onChange={(v) => { setText("chest", v); mark("chest"); }} placeholder="Anything else on the chest" />;
+    if (id === "cvs") return <PillsAndText pills={CVS_PILLS} value={texts.cvs} onChange={(v) => { setText("cvs", v); mark("cvs"); }} placeholder="Apex, heart sounds, murmur (site, grade, radiation), JVP" />;
     if (id === "cns")
       return (
         <PillsAndText
           pills={CNS_PILLS}
-          value={cns}
-          onChange={(v) => { setCns(v); mark("cns"); }}
+          value={texts.cns}
+          onChange={(v) => { setText("cns", v); mark("cns"); }}
           placeholder="GCS as E V M, higher functions, power per limb, tone, reflexes, plantars, meningeal signs"
         />
       );
@@ -1295,8 +1276,8 @@ export default function CaseHistoryWorkspace({
       return (
         <PillsAndText
           pills={MSE_PILLS}
-          value={mse}
-          onChange={(v) => { setMse(v); mark("mse"); }}
+          value={texts.mse}
+          onChange={(v) => { setText("mse", v); mark("mse"); }}
           placeholder="What was seen and elicited under each heading, in the patient's words where quoted"
           rows={6}
         />
@@ -1306,8 +1287,8 @@ export default function CaseHistoryWorkspace({
         <>
           <PillsAndText
             pills={SKIN_PILLS}
-            value={skin}
-            onChange={(v) => { setSkin(v); mark("skin"); }}
+            value={texts.skin}
+            onChange={(v) => { setText("skin", v); mark("skin"); }}
             placeholder="Primary lesion, colour, surface, distribution and configuration; mucosa, nails, hair"
             rows={6}
           />
@@ -1324,7 +1305,7 @@ export default function CaseHistoryWorkspace({
       return (
         <>
           <p className="text-caption leading-[1.45] text-muted">{localExamHintFor(specialty)}</p>
-          <DictateArea value={local} onChange={(v) => { setLocal(v); mark("local"); }} placeholder="Site, size, tenderness, consistency, margins…" rows={6} />
+          <DictateArea value={texts.local} onChange={(v) => { setText("local", v); mark("local"); }} placeholder="Site, size, tenderness, consistency, margins…" rows={6} />
           {/* The department's diagram, as it prints on the back of the history sheet — marked by
               hand there; describe here what gets drawn. */}
           {hasExamDiagram(specialty) && (
@@ -1345,8 +1326,8 @@ export default function CaseHistoryWorkspace({
           </p>
           <PillsAndText
             pills={ONCO_DISEASE_PILLS}
-            value={oncoDisease}
-            onChange={(v) => { setOncoDisease(v); mark("onco_disease"); }}
+            value={texts.onco_disease}
+            onChange={(v) => { setText("onco_disease", v); mark("onco_disease"); }}
             placeholder="Primary site, histology and grade, IHC / molecular markers, stage, date of diagnosis"
             rows={5}
           />
@@ -1362,8 +1343,8 @@ export default function CaseHistoryWorkspace({
           </p>
           <PillsAndText
             pills={ONCO_TREATMENT_PILLS}
-            value={oncoTreatment}
-            onChange={(v) => { setOncoTreatment(v); mark("onco_treatment"); }}
+            value={texts.onco_treatment}
+            onChange={(v) => { setText("onco_treatment", v); mark("onco_treatment"); }}
             placeholder="What was given, how many cycles, when it finished, and the response"
             rows={5}
           />
@@ -1380,8 +1361,8 @@ export default function CaseHistoryWorkspace({
           </p>
           <PillsAndText
             pills={ONCO_CYCLE_PILLS}
-            value={oncoCycle}
-            onChange={(v) => { setOncoCycle(v); mark("onco_cycle"); }}
+            value={texts.onco_cycle}
+            onChange={(v) => { setText("onco_cycle", v); mark("onco_cycle"); }}
             placeholder="Regimen, which cycle, which day, and any dose change with the reason"
             rows={5}
           />
@@ -1398,8 +1379,8 @@ export default function CaseHistoryWorkspace({
           </p>
           <PillsAndText
             pills={ONCO_TOXICITY_PILLS}
-            value={oncoToxicity}
-            onChange={(v) => { setOncoToxicity(v); mark("onco_toxicity"); }}
+            value={texts.onco_toxicity}
+            onChange={(v) => { setText("onco_toxicity", v); mark("onco_toxicity"); }}
             placeholder="e.g. mouth ulcers for four days, could not take solids; no fever"
             rows={5}
           />
@@ -1410,8 +1391,8 @@ export default function CaseHistoryWorkspace({
       const setEcog = (line: string) => {
         // The ECOG line is replaced; anything typed after it is kept. One patient has one
         // performance status, so these are exclusive — but the note beside it is not.
-        const rest = performance.replace(/^ECOG\s*\d[^;]*;?\s*/i, "").trim();
-        setPerformance(rest ? `${line}; ${rest}` : line);
+        const rest = texts.performance.replace(/^ECOG\s*\d[^;]*;?\s*/i, "").trim();
+        setText("performance", rest ? `${line}; ${rest}` : line);
         mark("performance");
       };
       return (
@@ -1424,7 +1405,7 @@ export default function CaseHistoryWorkspace({
             {ECOG_CHOICES.map((c) => (
               <OptionRow
                 key={c.line}
-                selected={performance.trim().toLowerCase().startsWith(c.line.toLowerCase())}
+                selected={texts.performance.trim().toLowerCase().startsWith(c.line.toLowerCase())}
                 onClick={() => setEcog(c.line)}
               >
                 {c.label}
@@ -1432,8 +1413,8 @@ export default function CaseHistoryWorkspace({
             ))}
           </div>
           <DictateArea
-            value={performance}
-            onChange={(v) => { setPerformance(v); mark("performance"); }}
+            value={texts.performance}
+            onChange={(v) => { setText("performance", v); mark("performance"); }}
             placeholder="Weight trend, what they can and cannot do, who is looking after them"
             rows={3}
           />
@@ -1456,10 +1437,10 @@ export default function CaseHistoryWorkspace({
                 {NODE_FINDINGS.map((f) => (
                   <SelChip
                     key={f}
-                    selected={new RegExp(`${escRe(station)}\\s*—\\s*[^;]*\\b${escRe(f)}\\b`, "i").test(oncoNodes)}
+                    selected={new RegExp(`${escRe(station)}\\s*—\\s*[^;]*\\b${escRe(f)}\\b`, "i").test(texts.onco_nodes)}
                     onClick={() => {
                       const line = `${station} — ${f}`;
-                      setOncoNodes((v) => (v.trim() ? `${v.trim()}; ${line}` : line));
+                      setText("onco_nodes", (v) => (v.trim() ? `${v.trim()}; ${line}` : line));
                       mark("onco_nodes");
                     }}
                   >
@@ -1470,8 +1451,8 @@ export default function CaseHistoryWorkspace({
             ))}
           </div>
           <DictateArea
-            value={oncoNodes}
-            onChange={(v) => { setOncoNodes(v); mark("onco_nodes"); }}
+            value={texts.onco_nodes}
+            onChange={(v) => { setText("onco_nodes", v); mark("onco_nodes"); }}
             placeholder="Size in cm, number, mobility, matting, tenderness — per station"
             rows={4}
           />
@@ -1490,10 +1471,10 @@ export default function CaseHistoryWorkspace({
             {MUCOSITIS_GRADES.map((g) => (
               <OptionRow
                 key={g.line}
-                selected={oncoMucosaLine.trim().toLowerCase().startsWith(g.line.toLowerCase())}
+                selected={texts.onco_mucosa_line.trim().toLowerCase().startsWith(g.line.toLowerCase())}
                 onClick={() => {
-                  const rest = oncoMucosaLine.replace(/^(No mucositis|Grade \d mucositis)[^;]*;?\s*/i, "").trim();
-                  setOncoMucosaLine(rest ? `${g.line}; ${rest}` : g.line);
+                  const rest = texts.onco_mucosa_line.replace(/^(No mucositis|Grade \d mucositis)[^;]*;?\s*/i, "").trim();
+                  setText("onco_mucosa_line", rest ? `${g.line}; ${rest}` : g.line);
                   mark("onco_mucosa_line");
                 }}
               >
@@ -1503,8 +1484,8 @@ export default function CaseHistoryWorkspace({
           </div>
           <PillsAndText
             pills={SKIN_LINE_PILLS}
-            value={oncoMucosaLine}
-            onChange={(v) => { setOncoMucosaLine(v); mark("onco_mucosa_line"); }}
+            value={texts.onco_mucosa_line}
+            onChange={(v) => { setText("onco_mucosa_line", v); mark("onco_mucosa_line"); }}
             placeholder="Ulcer site, rash distribution, line site findings"
             rows={4}
           />
@@ -1746,10 +1727,10 @@ export default function CaseHistoryWorkspace({
     personal: personal.mode === "unset",
     family: family.mode === "unset",
     surgical: surgical.mode === "unset",
-    dietary: !dietary.trim(),
-    environmental: !environmental.trim(),
+    dietary: !texts.dietary.trim(),
+    environmental: !texts.environmental.trim(),
     medication: !medication.none && !medication.text.trim(),
-    obstetric: !obstetric.trim(),
+    obstetric: !texts.obstetric.trim(),
   };
   const cardSections = sectionsOf(current.id);
   const cardDirty = cardSections.some((id) => dirty.has(id));
@@ -1768,27 +1749,11 @@ export default function CaseHistoryWorkspace({
     family: hist(family),
     medication: medication.none ? "None" : medication.text,
     surgical: hist(surgical),
-    obstetric,
-    dietary,
-    environmental,
-    onco_disease: oncoDisease,
-    onco_treatment: oncoTreatment,
-    onco_cycle: oncoCycle,
-    onco_toxicity: oncoToxicity,
-    performance,
-    onco_nodes: oncoNodes,
-    onco_mucosa_line: oncoMucosaLine,
+    ...texts,
     examination:
       PICCLE_SIGNS.some((s) => piccle[s.label].state !== "unset") || VITALS.some((v) => (vitals[v.key] ?? "").trim())
         ? "Recorded on the card"
         : "",
-    abdomen,
-    chest,
-    cvs,
-    cns,
-    mse,
-    skin,
-    local,
     diagnosis: diagnosis.text,
     plan: [...plan.workup, ...plan.conservative, ...plan.medications].filter((i) => i.trim()).join("; "),
   };
@@ -1872,7 +1837,7 @@ export default function CaseHistoryWorkspace({
   );
 }
 
-/** A free-text oncology card's value, as the one line it is stored as. An empty card stores
+/** A plain text card's value, as the one line it is stored as. An empty card stores
  *  nothing at all rather than an empty string — absence is shown, never filled. */
 function oneLine(text: string): string[] {
   const t = text.trim();

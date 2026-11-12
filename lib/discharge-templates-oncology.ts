@@ -106,8 +106,6 @@ export const ONCOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [PC_NO_HOME_FEVER, PC_NO_IM, FEVER_CARD],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "The regimen, the cycle and the exact day of the cycle; the last chemotherapy date; the last known counts and nadir; onset and pattern of fever; localising symptoms — mouth, throat, perianal pain, dysuria, cough, diarrhoea, line site; previous febrile episodes and what grew; antibiotic exposure; prophylaxis and G-CSF given; transfusion history. Examination: temperature, perfusion and blood pressure (look for sepsis early), oral cavity, perianum (do NOT do a digital rectal examination), chest, skin, and every line site. Baseline: CBC with differential and ANC, blood cultures from peripheral and line before antibiotics, urine culture, chest imaging, renal and liver function, lactate, CRP.",
     progressNote:
       "Each day — temperature trend and time to defervescence; ANC and platelet trend; culture results and day of antibiotic; source found or still not found; oral intake; line site; G-CSF given or not. Escalate on persistent fever beyond 72 hours or any new organ sign. For discharge — afebrile 48 hours, ANC rising, tolerating orals, source treated or excluded.",
   },
@@ -140,8 +138,6 @@ export const ONCOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [PC_NO_HOME_FEVER, FEVER_CARD],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "The diagnosis with histology, stage and molecular markers; intent of treatment (curative, adjuvant, neoadjuvant or palliative) and whether the patient knows it; the regimen, the cycle number and what is planned in total; toxicity after the last cycle graded by what it stopped the patient doing — vomiting, mucositis, diarrhoea, neuropathy, fever; interval admissions and transfusions; weight trend and appetite; comorbidities and drugs; ECOG performance status. Examination: performance status, weight and body surface area, mucosa, line site, the primary site and nodes, chest and abdomen, neuropathy. Baseline: CBC with ANC, renal and liver function, electrolytes; regimen-specific tests — echocardiogram for anthracyclines, audiometry and creatinine clearance for cisplatin, hepatitis B and C and HIV serology before rituximab or steroids.",
     progressNote:
       "Day of admission — fitness for chemotherapy: counts, renal and liver function, weight, ECOG, consent. Chemotherapy day — premedication given, drugs and doses run, infusion tolerated, any reaction or extravasation. Day after — vomiting, oral intake, mucosa, line site. For discharge — tolerating orals, no fever, antiemetics prescribed, next cycle and count dates given.",
   },
@@ -178,8 +174,6 @@ export const ONCOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [PC_NO_HOME_FEVER, "Do not give an antidiarrhoeal if there is fever or blood in the stool — refer instead."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "The regimen and the exact day of the cycle; what the patient can and cannot eat or drink and since when; number and character of stools; vomiting frequency and whether drugs are being kept down; the antiemetics actually taken at home and how; mouth pain and its effect on swallowing; fever at any point; weight change. Examination: hydration, weight, oral cavity graded, abdomen, perianum, line site. Baseline: CBC with ANC, electrolytes with magnesium, renal function, and stool studies if diarrhoea.",
     progressNote:
       "Each day — the toxicity graded again, oral intake in millilitres, stool count, vomiting episodes, weight, electrolytes, ANC. For discharge — maintaining oral intake without drips, toxicity down to grade 1, electrolytes corrected, next-cycle plan written.",
   },
@@ -218,8 +212,6 @@ export const ONCOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [PC_NO_HOME_FEVER, PC_NO_IM, "Transfuse only with irradiated and leucodepleted products, and only after discussing with the treating unit.", FEVER_CARD],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Duration of fever, fatigue, bleeding and bone pain; infections and transfusions already had; any preceding cytotoxic or radiation exposure or marrow disorder; comorbidities that decide fitness for intensive treatment; who is at home to look after the patient and how far away they live — it decides whether ambulatory count monitoring is safe. Examination: performance status, pallor, petechiae and bleeding sites, oral cavity and gums, lymph nodes, liver and spleen, testes, sternal tenderness, fundus, and a full septic screen. Baseline: CBC with peripheral smear and blast count, marrow aspiration, biopsy, flow cytometry, cytogenetics and molecular panel; CSF study where indicated; coagulation profile and fibrinogen (urgently if promyelocytic leukaemia is suspected); uric acid, potassium, phosphate, calcium and renal function; hepatitis B and C and HIV serology; echocardiogram before anthracyclines; blood group and antibody screen.",
     progressNote:
       "Each day — temperature, counts with ANC and platelets, transfusions given, tumour lysis panel while at risk, mucositis grade, oral intake, line site, and the day of the chemotherapy block. Note every culture and every antibiotic day. For discharge — afebrile, ANC and platelets recovering without support, mucositis settled, prophylaxis prescribed and the return date fixed.",
   },
@@ -252,8 +244,6 @@ export const ONCOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [PC_NO_HOME_FEVER, FEVER_CARD],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Duration and site of node enlargement; B symptoms — fever, drenching night sweats, weight loss over 10 % in six months — asked and recorded as present or absent, because they are part of the stage; pruritus and alcohol-induced pain; mediastinal symptoms; the biopsy report with immunohistochemistry; staging scans; hepatitis B status before rituximab; toxicity and counts after the last cycle. Examination: all node groups with size, liver and spleen, Waldeyer's ring, skin, testes, and performance status. Baseline: CBC, LDH, uric acid, renal and liver function, hepatitis B and C and HIV serology, echocardiogram before an anthracycline, PET-CT for staging and response, and marrow study where indicated.",
     progressNote:
       "Day of admission — fitness, counts, hepatitis B status, echocardiogram if due. Chemotherapy day — premedication, drugs and doses, infusion tolerated, reaction or not. Day after — intake, mucosa, fever, tumour lysis panel while at risk. For discharge — afebrile, eating, antiemetics and prophylaxis prescribed, next cycle and scan dates given.",
   },
@@ -292,8 +282,6 @@ export const ONCOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [PC_NO_HOME_FEVER, "Avoid NSAIDs and contrast studies without discussing with the unit — the kidneys are at risk."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Bone pain — site, character, night pain, any sudden change suggesting a fracture; neurological symptoms suggesting cord compression; fatigue and breathlessness; infections; thirst, confusion and urine output; drug history including painkillers and native medicines; neuropathy graded by what it stops the patient doing. Examination: performance status, pallor, spinal tenderness and deformity, a focused neurological examination of the lower limbs including sensory level and anal tone, hydration, and infection sites. Baseline: CBC, calcium, renal function with creatinine clearance, albumin, beta-2 microglobulin, LDH, serum and urine protein electrophoresis with immunofixation, serum free light chains, marrow study, and whole-body low-dose CT or MRI.",
     progressNote:
       "Each day — pain score and what it stops the patient doing, calcium, creatinine and urine output, counts, neuropathy grade, and the cycle day. For discharge — pain controlled on the written regimen, calcium and creatinine stable, bone treatment given, next cycle and lab dates fixed.",
   },
@@ -331,8 +319,6 @@ export const ONCOLOGY_DISCHARGE_TEMPLATES: DischargeTemplate[] = [
       primaryCareActions: [PC_NO_IM, PC_NO_HOME_FEVER, "Use only irradiated and leucodepleted products where the unit has specified them."],
       conditionAllSatisfactory: true,
     },
-    clerkingFocus:
-      "Symptoms of anaemia and of bleeding, with sites; the regimen and the day of the cycle; the count trend and previous nadirs; transfusion history, reactions and how many units so far; diet, and any blood loss from the gut or the genital tract. Examination: pallor, bleeding sites including gums, skin, fundus if the platelets are very low, liver and spleen, and a septic screen. Baseline: CBC with smear and reticulocyte count, blood group and antibody screen, iron studies, B12 and folate where the picture fits, renal and liver function, and a marrow study if the cause is unexplained.",
     progressNote:
       "Each day — counts before and after each unit, bleeding sites, transfusion reactions, and the cause under investigation. For discharge — count above the agreed threshold, no active bleeding, cause identified or being worked up, and the next count date given.",
   },
@@ -364,8 +350,6 @@ export const ONCOLOGY_GENERIC_DISCHARGE_TEMPLATE: DischargeTemplate = {
     primaryCareActions: [PC_NO_HOME_FEVER, FEVER_CARD],
     conditionAllSatisfactory: true,
   },
-  clerkingFocus:
-    "The diagnosis with histology and stage, the intent of treatment and what the patient understands of it; the regimen, cycle and day; toxicity since the last cycle graded by what it stopped the patient doing; performance status and weight trend; comorbidities and all drugs including native medicines; who is at home and how far away the hospital is. Examination: performance status, mucosa, line site, the primary site and nodes, chest and abdomen, and a septic screen. Baseline: CBC with ANC, renal and liver function, electrolytes, and anything the regimen specifically requires.",
   progressNote:
     "Each day — temperature, counts, oral intake, the toxicity being treated and its grade, line site, and the cycle day. For discharge — afebrile, tolerating orals, supportive drugs prescribed, and the next cycle and count dates written down.",
 };

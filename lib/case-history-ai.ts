@@ -78,6 +78,32 @@ export function buildClerkingDigest(observations: DigestObservation[]): string {
   return out.join("\n") || "(nothing recorded yet)";
 }
 
+/** One case-history model call: the cached system prompt, a structured reply, and the
+ *  uncertain_points every card carries. */
+async function ask(
+  system: string,
+  schema: object,
+  maxTokens: number,
+  effort: "low" | "medium",
+  content: string
+) {
+  const response = await anthropic().messages.create({
+    model: AI_MODEL,
+    max_tokens: maxTokens,
+    system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
+    output_config: {
+      effort,
+      format: { type: "json_schema", schema: schema as Record<string, unknown> },
+    },
+    messages: [{ role: "user", content }],
+  });
+  const parsed = replyJson(response, {});
+  const uncertainPoints: string[] = Array.isArray(parsed.uncertain_points)
+    ? parsed.uncertain_points.map(String)
+    : [];
+  return { parsed, uncertainPoints };
+}
+
 // --- Provisional diagnosis -------------------------------------------------------------
 
 const DIAGNOSIS_SYSTEM = `You propose the PROVISIONAL DIAGNOSIS for a general-surgery admission in an Indian hospital, from a digest of the case sheet (history and examination).
@@ -108,23 +134,19 @@ export async function generateDiagnosis(
   digest: string,
   admissionPhrase: string = DEFAULT_ADMISSION_PHRASE
 ): Promise<{ text: string; differentials: string[]; uncertainPoints: string[]; model: string }> {
-  const response = await anthropic().messages.create({
-    model: AI_MODEL,
-    max_tokens: 600,
-    system: [{ type: "text", text: forDept(DIAGNOSIS_SYSTEM, admissionPhrase), cache_control: { type: "ephemeral" } }],
-    output_config: {
-      effort: "low",
-      format: { type: "json_schema", schema: DIAGNOSIS_SCHEMA as unknown as Record<string, unknown> },
-    },
-    messages: [{ role: "user", content: `Clerking digest:\n\n${digest}` }],
-  });
-  const parsed = replyJson(response, { diagnosis: "", differentials: [], uncertain_points: [] });
+  const { parsed, uncertainPoints } = await ask(
+    forDept(DIAGNOSIS_SYSTEM, admissionPhrase),
+    DIAGNOSIS_SCHEMA,
+    600,
+    "low",
+    `Clerking digest:\n\n${digest}`
+  );
   return {
     text: String(parsed.diagnosis ?? "").trim(),
     differentials: Array.isArray(parsed.differentials)
       ? parsed.differentials.map(String).map((s: string) => s.trim()).filter(Boolean)
       : [],
-    uncertainPoints: Array.isArray(parsed.uncertain_points) ? parsed.uncertain_points.map(String) : [],
+    uncertainPoints,
     model: AI_MODEL,
   };
 }
@@ -162,24 +184,20 @@ export async function generateRelevantNegatives(
   admissionPhrase: string = DEFAULT_ADMISSION_PHRASE
 ): Promise<{ text: string; uncertainPoints: string[]; model: string }> {
   const ddx = differentials.filter(Boolean);
-  const ask =
+  const question =
     `Working provisional diagnosis: ${diagnosis || "(not yet settled)"}\n` +
     `Differential diagnoses under consideration: ${ddx.length ? ddx.join("; ") : "(none listed)"}\n\n` +
     `Clerking digest:\n\n${digest}`;
-  const response = await anthropic().messages.create({
-    model: AI_MODEL,
-    max_tokens: 400,
-    system: [{ type: "text", text: forDept(NEGATIVES_SYSTEM, admissionPhrase), cache_control: { type: "ephemeral" } }],
-    output_config: {
-      effort: "low",
-      format: { type: "json_schema", schema: NEGATIVES_SCHEMA as unknown as Record<string, unknown> },
-    },
-    messages: [{ role: "user", content: ask }],
-  });
-  const parsed = replyJson(response, { text: "", uncertain_points: [] });
+  const { parsed, uncertainPoints } = await ask(
+    forDept(NEGATIVES_SYSTEM, admissionPhrase),
+    NEGATIVES_SCHEMA,
+    400,
+    "low",
+    question
+  );
   return {
     text: String(parsed.text ?? "").trim(),
-    uncertainPoints: Array.isArray(parsed.uncertain_points) ? parsed.uncertain_points.map(String) : [],
+    uncertainPoints,
     model: AI_MODEL,
   };
 }
@@ -232,23 +250,19 @@ export async function generatePlan(
   uncertainPoints: string[];
   model: string;
 }> {
-  const response = await anthropic().messages.create({
-    model: AI_MODEL,
-    max_tokens: 900,
-    system: [{ type: "text", text: planSystem(admissionPhrase, operating), cache_control: { type: "ephemeral" } }],
-    output_config: {
-      effort: "low",
-      format: { type: "json_schema", schema: PLAN_SCHEMA as unknown as Record<string, unknown> },
-    },
-    messages: [{ role: "user", content: `Clerking digest:\n\n${digest}` }],
-  });
-  const parsed = replyJson(response, { workup: [], conservative: [], medications: [], uncertain_points: [] });
+  const { parsed, uncertainPoints } = await ask(
+    planSystem(admissionPhrase, operating),
+    PLAN_SCHEMA,
+    900,
+    "low",
+    `Clerking digest:\n\n${digest}`
+  );
   const arr = (v: unknown) => (Array.isArray(v) ? v.map(String).filter(Boolean) : []);
   return {
     workup: arr(parsed.workup),
     conservative: arr(parsed.conservative),
     medications: arr(parsed.medications),
-    uncertainPoints: Array.isArray(parsed.uncertain_points) ? parsed.uncertain_points.map(String) : [],
+    uncertainPoints,
     model: AI_MODEL,
   };
 }
@@ -315,17 +329,13 @@ export async function compileCaseHistory(
   patient?: PatientContext,
   admissionPhrase: string = DEFAULT_ADMISSION_PHRASE
 ): Promise<{ sections: { label: string; text: string }[]; uncertainPoints: string[]; model: string }> {
-  const response = await anthropic().messages.create({
-    model: AI_MODEL,
-    max_tokens: 2000,
-    system: [{ type: "text", text: forDept(COMPILE_SYSTEM, admissionPhrase), cache_control: { type: "ephemeral" } }],
-    output_config: {
-      effort: "medium",
-      format: { type: "json_schema", schema: COMPILE_SCHEMA as unknown as Record<string, unknown> },
-    },
-    messages: [{ role: "user", content: `${patientLine(patient)}Working notes:\n\n${digest}` }],
-  });
-  const parsed = replyJson(response, { sections: [], uncertain_points: [] });
+  const { parsed, uncertainPoints } = await ask(
+    forDept(COMPILE_SYSTEM, admissionPhrase),
+    COMPILE_SCHEMA,
+    2000,
+    "medium",
+    `${patientLine(patient)}Working notes:\n\n${digest}`
+  );
   const sections = (Array.isArray(parsed.sections) ? parsed.sections : [])
     .map((s: { label?: unknown; text?: unknown }) => ({
       label: String(s.label ?? "").toLowerCase().trim(),
@@ -334,7 +344,7 @@ export async function compileCaseHistory(
     .filter((s: { label: string; text: string }) => s.text && COMPILE_LABELS.has(s.label));
   return {
     sections,
-    uncertainPoints: Array.isArray(parsed.uncertain_points) ? parsed.uncertain_points.map(String) : [],
+    uncertainPoints,
     model: AI_MODEL,
   };
 }
