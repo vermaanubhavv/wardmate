@@ -23,7 +23,7 @@ describe("IV Fluid and Electrolyte Correction topics", () => {
   it("pins exactly which topics a clinician has signed off", () => {
     // Adding an id here is a claim that a named clinician read that topic. Nothing else is.
     expect(listFluidTopics().filter((t) => t.reviewStatus === "reviewed").map((t) => t.id).sort()).toEqual([
-      "acid_base_basics", "calcium_and_hypertonic_dextrose", "gi_losses_and_upper_gi_bleeding",
+      "acid_base_basics", "body_water_and_units", "calcium_and_hypertonic_dextrose", "gi_losses_and_upper_gi_bleeding",
       "hypercalcaemia", "hyperkalaemia", "hypermagnesaemia", "hypernatraemia", "hyperphosphataemia",
       "hypertonic_saline", "hypocalcaemia", "hypokalaemia", "hypomagnesaemia", "hyponatraemia",
       "hypophosphataemia", "magnesium_sulfate", "metabolic_acidosis", "metabolic_alkalosis",
@@ -100,6 +100,8 @@ describe("sodium correction worksheet", () => {
     for (const c of cites) {
       const topic = getFluidTopic(c.topic);
       expect(topic, c.topic).not.toBeNull();
+      // A worksheet chains numbers into a result, so it may only draw on signed-off topics.
+      expect(topic!.reviewStatus, c.topic).toBe("reviewed");
       expect(topic!.source.pageKind ?? "pdf", c.text).toBe(c.pageKind);
       expect(blocks(c.topic).some((b) => b.kind === "quote" && b.text === c.text && b.page === c.page), c.text).toBe(true);
     }

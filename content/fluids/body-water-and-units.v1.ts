@@ -2,7 +2,7 @@ import type { FluidTopic } from "@/lib/fluids/types";
 import { PANDYA, caution, formula, points, quote, steps, table } from "@/content/fluids/_helpers";
 
 /**
- * BODY WATER, ELECTROLYTES AND UNITS — v1.0.0. CLINICAL CONTENT: PENDING CLINICIAN REVIEW.
+ * BODY WATER, ELECTROLYTES AND UNITS — v1.0.0. CLINICAL CONTENT: REVIEWED (Dr Anubhav Verma).
  *
  * Digest of chapter 1, which the source edition carries in full. Every number below is the
  * book's; the quotes give the PDF page it came from. The mg/dL to mEq/L and mEq/L to mg/dL
@@ -16,8 +16,8 @@ export const bodyWaterAndUnitsV1: FluidTopic = {
   group: "fluids",
   summary: "Compartments and their volumes, normal plasma electrolytes, mEq and mg conversions, osmolality, and the daily water arithmetic.",
   setting: "Every ward; the physiology every fluid prescription rests on",
-  reviewStatus: "pending_clinician_review",
-  reviewedBy: null,
+  reviewStatus: "reviewed",
+  reviewedBy: "Dr Anubhav Verma",
   references: [PANDYA],
   source: { chapters: ["1 Basic Physiology"], pages: "6–13" },
   sections: [
