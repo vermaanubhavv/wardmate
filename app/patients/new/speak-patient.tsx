@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { SpokenPatient } from "@/lib/read-new-patient";
 import { REC_MIME } from "../[id]/card-kit";
 import { openLiveDictation, type LiveDictationSession } from "@/lib/stt/live";
+import { clearChunks, putChunk, saveRecording } from "@/lib/outbox";
 
 type Status = "idle" | "starting" | "recording" | "working";
 
@@ -21,10 +22,18 @@ const MAX_SECONDS = 60;
  * Live first: the words stream in as they are spoken (lib/stt/live.ts) and the boxes fill at
  * each pause, from everything said so far. Where live cannot start — no Deepgram key, a weak
  * signal, a browser that cannot stream — it records the clip and sends it on stop, as before.
+ *
+ * With no signal at all the clip is kept on the phone (lib/outbox.ts, a second at a time) and,
+ * once the signal returns, the patient is ADDED from it without this form — the owner's call,
+ * for speed. The server refuses an obvious double (same unit, bed and name) and says so
+ * (app/api/patients/new-by-voice).
  */
 export default function SpeakPatient({
+  wardId,
   onParsed,
 }: {
+  /** The unit a patient spoken with no signal is added to later. */
+  wardId: string;
   onParsed: (patient: SpokenPatient) => void;
 }) {
   const [status, setStatus] = useState<Status>("idle");
@@ -34,6 +43,8 @@ export default function SpeakPatient({
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+  // This clip's id on the phone, and when it was spoken.
+  const recRef = useRef({ id: "", at: "" });
 
   const liveRef = useRef<LiveDictationSession | null>(null);
   const finalRef = useRef("");
@@ -151,8 +162,14 @@ export default function SpeakPatient({
       // Safari on iPhone records mp4; Chrome records webm.
       const recorder = new MediaRecorder(stream, REC_MIME ? { mimeType: REC_MIME } : undefined);
       chunksRef.current = [];
+      recRef.current = { id: crypto.randomUUID(), at: new Date().toISOString() };
+      const rec = recRef.current;
+      let seq = 0;
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
+        if (e.data.size === 0) return;
+        chunksRef.current.push(e.data);
+        // Kept on the phone as it is spoken, so a kill mid-sentence still leaves the words.
+        void putChunk(rec.id, seq++, e.data, queued(recorder.mimeType || "audio/webm", rec.at));
       };
       recorder.onstop = () => void send(recorder.mimeType || "audio/webm");
 
@@ -189,15 +206,31 @@ export default function SpeakPatient({
     streamRef.current = null;
   }
 
+  function queued(mimeType: string, recordedAt: string) {
+    return { kind: "new-patient" as const, url: "/api/patients/new-by-voice", wardId, label: "New patient", mimeType, recordedAt };
+  }
+
+  /** No signal: keep the clip, and let the connection bar add the patient when it can. */
+  async function keepForLater(blob: Blob, mimeType: string) {
+    const rec = recRef.current;
+    await saveRecording(rec.id, { ...queued(mimeType, rec.at), audio: blob });
+    await clearChunks(rec.id);
+    window.dispatchEvent(new Event("outbox-changed"));
+    setStatus("idle");
+    setMessage("No signal — saved on this phone. The patient is added on its own when the signal returns.");
+  }
+
   async function send(mimeType: string) {
     const blob = new Blob(chunksRef.current, { type: mimeType });
     chunksRef.current = [];
 
     if (blob.size < 1000) {
+      void clearChunks(recRef.current.id);
       setStatus("idle");
       setMessage("That was too short to hear anything.");
       return;
     }
+    if (!navigator.onLine) return keepForLater(blob, mimeType);
 
     const form = new FormData();
     form.append("audio", blob);
@@ -206,6 +239,7 @@ export default function SpeakPatient({
       const res = await fetch("/api/patients/parse", { method: "POST", body: form });
       const data = await res.json();
       setStatus("idle");
+      void clearChunks(recRef.current.id);
 
       if (!res.ok) {
         setMessage(data.error ?? "Something went wrong.");
@@ -222,8 +256,7 @@ export default function SpeakPatient({
           : `Filled ${filled} ${filled === 1 ? "box" : "boxes"} — check them before adding.`
       );
     } catch {
-      setStatus("idle");
-      setMessage("No connection. Nothing was filled in.");
+      await keepForLater(blob, mimeType);
     }
   }
 

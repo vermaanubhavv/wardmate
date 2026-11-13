@@ -152,7 +152,7 @@ export default function PatientForm({
       </p>
 
       {/* Above the boxes it fills, so the order on screen is the order of the work. */}
-      <SpeakPatient onParsed={fillFromSpeech} />
+      <SpeakPatient wardId={wardId} onParsed={fillFromSpeech} />
       <AdmissionPaper onParsed={fillFromPaper} oncology={oncology} />
 
       {/* Bed and location together: the bed label often already says ICU, but the label is

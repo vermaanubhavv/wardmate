@@ -22,9 +22,8 @@ import {
 import MedicationEditor, { medLine } from "../medication-editor";
 import { antibioticDay, antibioticKey, dayLabel, isCourse, startForDay } from "@/lib/antibiotics";
 import LiveDictation, { DictateButton, routeVia, type LiveLine, type LiveSection } from "../live-dictation";
-import { medPresetsFor, type NoteVitalField, type ProgressNoteConfig } from "@/lib/progress-note-config";
+import { medPresetsFor, SHARED_VITALS, vitalKey, type ProgressNoteConfig } from "@/lib/progress-note-config";
 
-const vitalKey = (k: string) => `vital:${k.replace(/\W+/g, "_")}`;
 const appendTo = (prev: string, add: string) => (prev.trim() ? `${prev.trim()}; ${add}` : add);
 
 export type NoteObs = { kind: string; label: string; value: string | null };
@@ -32,19 +31,6 @@ export type NoteObs = { kind: string; label: string; value: string | null };
 const SENSORIUM_ALIASES = ["sensorium", "cns", "gcs"];
 const SENSORIUM = ["Conscious & oriented", "Drowsy", "Altered sensorium", "Irritable"];
 const ASSESSMENT = ["Satisfactory", "Stable", "Improving", "Static", "Deteriorating"];
-// Placeholders are a dash, never a plausible reading: a grey "120/80" in an empty field reads
-// as a recorded value at a glance on a phone.
-const SHARED_VITALS: NoteVitalField[] = [
-  { key: "BP", label: "BP", ph: "—", aliases: ["bp", "blood pressure"] },
-  { key: "PR", label: "PR", ph: "—", aliases: ["pr", "pulse", "pulse rate"] },
-  { key: "RR", label: "RR", ph: "—", aliases: ["rr", "respiratory rate"] },
-  { key: "Temp", label: "Temp", ph: "—", aliases: ["temp", "temperature"] },
-  { key: "SpO2", label: "SpO₂", ph: "—", aliases: ["spo2", "saturation", "oxygen saturation"] },
-  { key: "GRBS", label: "GRBS", ph: "—", aliases: ["grbs", "rbs", "cbg"] },
-  // Anything here means the patient is on the ICU/HDU — it flags them Critical on the ward
-  // list. Free text so the resident can note the support ("on noradrenaline 0.08", "HFNC").
-  { key: "ICU", label: "ICU / support", ph: "e.g. on noradrenaline 0.08", aliases: ["icu", "icu / support", "support"] },
-];
 
 /** The shared cards are fixed ids; each department's exam cards use their section id. */
 type StepId = string;
@@ -620,6 +606,7 @@ export default function NoteWorkspace({
       {live && (
         <LiveDictation
           patientId={patientId}
+          screen="note"
           title="Dictating today's note"
           example={`e.g. “${noteConfig.dictationExample}”`}
           sections={live}

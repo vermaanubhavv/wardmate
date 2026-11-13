@@ -49,12 +49,12 @@ describe("record offline → app killed → reopened → sync on reconnect", () 
 
     // No signal: the flush stops, nothing is marked refused.
     fetchMock.mockRejectedValue(new TypeError("Failed to fetch"));
-    expect(await flush()).toEqual({ sent: 0, failed: 1, reviews: [] });
+    expect(await flush()).toEqual({ sent: 0, failed: 1, reviews: [], late: [], patients: [] });
     expect((await listWaiting())[0].attempts).toBe(0);
 
     // Signal back: sent, with the recording's own id for the server's duplicate check.
     ok();
-    expect(await flush()).toEqual({ sent: 1, failed: 0, reviews: [] });
+    expect(await flush()).toEqual({ sent: 1, failed: 0, reviews: [], late: [], patients: [] });
     const form = fetchMock.mock.calls[1][1].body as FormData;
     expect(form.get("client_uuid")).toBe("r1");
     expect(form.get("patient_id")).toBe("p1");
@@ -81,13 +81,13 @@ describe("duplicate-sync protection", () => {
     await saveRecording("r4", { ...meta, audio: new Blob([new Uint8Array(1200)]) });
     markInFlight("r4");
     ok();
-    expect(await flush()).toEqual({ sent: 0, failed: 0, reviews: [] });
+    expect(await flush()).toEqual({ sent: 0, failed: 0, reviews: [], late: [], patients: [] });
     expect(fetchMock).not.toHaveBeenCalled();
     expect((await listWaiting())[0].sending).toBe(true);
 
     // The upload gave up: the row is the queue's to send — once.
     clearInFlight("r4");
-    expect(await flush()).toEqual({ sent: 1, failed: 0, reviews: [] });
+    expect(await flush()).toEqual({ sent: 1, failed: 0, reviews: [], late: [], patients: [] });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(await listWaiting()).toEqual([]);
   });
@@ -95,12 +95,12 @@ describe("duplicate-sync protection", () => {
   it("a recording the server refused is kept but not retried until the resident asks", async () => {
     await saveRecording("r5", { ...meta, audio: new Blob([new Uint8Array(1200)]) });
     fetchMock.mockResolvedValue({ ok: false, status: 400, json: async () => ({ error: "No audio" }) });
-    expect(await flush()).toEqual({ sent: 0, failed: 1, reviews: [] });
+    expect(await flush()).toEqual({ sent: 0, failed: 1, reviews: [], late: [], patients: [] });
     expect((await listWaiting())[0].attempts).toBe(1);
-    expect(await flush()).toEqual({ sent: 0, failed: 0, reviews: [] });
+    expect(await flush()).toEqual({ sent: 0, failed: 0, reviews: [], late: [], patients: [] });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     ok();
-    expect(await flush({ retryRefused: true })).toEqual({ sent: 1, failed: 0, reviews: [] });
+    expect(await flush({ retryRefused: true })).toEqual({ sent: 1, failed: 0, reviews: [], late: [], patients: [] });
   });
 });
 

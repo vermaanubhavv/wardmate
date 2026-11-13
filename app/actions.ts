@@ -8,5 +8,6 @@ export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   revalidatePath("/", "layout");
-  redirect("/login");
+  // The flag tells the login screen to empty the outbox — only a deliberate sign-out does.
+  redirect("/login?signed_out=1");
 }

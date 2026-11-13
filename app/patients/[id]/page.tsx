@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { wardTime } from "@/lib/late-dictation";
 import { cookies } from "next/headers";
 import { ANTIBIOTIC_DAY_COOKIE, antibioticDay, antibioticKey, isAntibiotic, isCourse, readDayPosition, withDay } from "@/lib/antibiotics";
 import { antibioticStarts } from "@/lib/antibiotic-starts";
@@ -100,6 +101,8 @@ type Entry = {
   edited_at: string | null;
   /** Who dictated or photographed it — shown on the card, since the ward is shared. */
   author_id: string;
+  /** Set when a take recorded with no signal was processed later — see late-dictation. */
+  processed_at?: string | null;
   /** The admission clerking note rather than a round entry — see CaseHistoryCapture. */
   is_case_history: boolean;
   /** Published protocols this entry's words looked related to — see lib/protocols.ts. */
@@ -222,14 +225,17 @@ export default async function PatientPage({
 
   // Made a real promise once: a Supabase query is a thenable that runs again each time it is
   // awaited, and this one is awaited twice below.
-  const entriesP = Promise.resolve(
+  const entriesQ = (late: string) =>
     supabase
       .from("entries")
       .select(
-        "id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, author_id, is_case_history, matched_protocol_ids, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, done_by, assigned_to, urgency, graded_at, recorded_at, pac_verdict, task_open, ref_low, ref_high, ref_text)"
+        `id, source, transcript, original_transcript, photo_path, recorded_at, extraction_error, accepted_at, edited_at, author_id, is_case_history, matched_protocol_ids${late}, observations(id, kind, label, value_text, value_num, unit, source_quote, needs_confirmation, confirmed_at, conflict_note, done_at, done_by, assigned_to, urgency, graded_at, recorded_at, pac_verdict, task_open, ref_low, ref_high, ref_text)`
       )
       .eq("patient_id", id)
-      .order("recorded_at", { ascending: false })
+      .order("recorded_at", { ascending: false });
+  // A database without 0118 (processed_at) still shows the timeline, only without that time.
+  const entriesP = Promise.resolve(entriesQ(", processed_at")).then((r) =>
+    r.error && /processed_at/.test(r.error.message) ? entriesQ("") : r
   );
 
   // Short-lived links for the stored photographs (private bucket, one-hour expiry, minted only
@@ -879,11 +885,11 @@ export default async function PatientPage({
                                 key={entry.id}
                                 entryId={entry.id}
                                 patientId={patient.id}
-                                time={new Date(entry.recorded_at).toLocaleTimeString("en-IN", {
-                                  timeZone: "Asia/Kolkata",
-                                  hour: "numeric",
-                                  minute: "2-digit",
-                                })}
+                                time={
+                                  entry.processed_at
+                                    ? `recorded ${wardTime(entry.recorded_at)}, processed ${wardTime(entry.processed_at)}`
+                                    : wardTime(entry.recorded_at)
+                                }
                                 transcript={entry.transcript}
                                 heard={entry.original_transcript}
                                 photoUrl={
@@ -1223,7 +1229,11 @@ function CaseHistorySection({
                   embedded
                   entryId={entry.id}
                   patientId={patientId}
-                  time={shortDate(entry.recorded_at)}
+                  time={
+                    entry.processed_at
+                      ? `${shortDate(entry.recorded_at)}, processed ${wardTime(entry.processed_at)}`
+                      : shortDate(entry.recorded_at)
+                  }
                   transcript={entry.transcript}
                   heard={entry.original_transcript}
                   photoUrl={entry.photo_path ? (photoUrls.get(entry.photo_path) ?? null) : null}

@@ -24,6 +24,7 @@ import { runDischargeChecks, type DischargeCheckContext } from "@/lib/discharge-
 import type { DischargeCheck } from "@/lib/discharge-checks";
 import FormularyLink from "./formulary-link";
 import LiveDictation, { DictateButton, routeVia, type LiveLine, type LiveSection } from "../live-dictation";
+import { applyDischargeLines, DISCHARGE_LIVE_SECTIONS } from "@/lib/late-dictation";
 import type { DischargeProfile } from "@/lib/specialty/discharge-profile";
 import type { DischargeTemplateIndex } from "@/lib/discharge-template-match";
 import type { FinalFix } from "@/lib/final-check";
@@ -435,39 +436,21 @@ export default function DischargeWorkspace({
   // them like any edit — an AI section loses its approval, exactly as when typed); drugs, the
   // diagnosis and anything unplaced are shown for the resident to put on their card.
   const [live, setLive] = useState<LiveSection[] | null>(null);
-  const liveSections = (): LiveSection[] => [
-    { key: "indication", label: "Indication for admission", existing: draft.indicationForAdmission.text },
-    { key: "diagnoses", label: "Diagnosis", existing: draft.diagnoses.map((d) => d.text).filter(Boolean).join("; "), held: true },
-    { key: "clinicalCourse", label: "Clinical course", existing: draft.clinicalCourse.text },
-    { key: "medications", label: "Discharge medications", held: true, drug: true },
-    { key: "condition", label: "Condition at discharge", existing: draft.conditionAtDischarge.freeText ?? "" },
-    { key: "primaryCareActions", label: "For the local doctor", existing: draft.primaryCareActions.join("; ") },
-    { key: "patientActions", label: "Follow-up", existing: draft.patientActions.join("; ") },
-    { key: "other", label: "Other — place by hand", held: true },
-  ];
+  const liveSections = (): LiveSection[] => {
+    const existing: Record<string, string> = {
+      indication: draft.indicationForAdmission.text,
+      diagnoses: draft.diagnoses.map((d) => d.text).filter(Boolean).join("; "),
+      clinicalCourse: draft.clinicalCourse.text,
+      condition: draft.conditionAtDischarge.freeText ?? "",
+      primaryCareActions: draft.primaryCareActions.join("; "),
+      patientActions: draft.patientActions.join("; "),
+    };
+    return DISCHARGE_LIVE_SECTIONS.map((s) => ({ ...s, existing: existing[s.key] }));
+  };
   function applyDictation(lines: LiveLine[]) {
-    const add = (prev: string, t: string) => (prev.trim() ? `${prev.trim()} ${t}` : t);
-    const touched = new Set<DischargeSectionId>();
-    setDraft((d) => {
-      let n = d;
-      for (const { section, text } of lines) {
-        if (section === "indication") {
-          n = { ...n, indicationForAdmission: { ...n.indicationForAdmission, text: add(n.indicationForAdmission.text, text), source: "resident", approvedAt: null, approvedBy: null } };
-          touched.add("indication");
-        } else if (section === "clinicalCourse") {
-          n = { ...n, clinicalCourse: { ...n.clinicalCourse, text: add(n.clinicalCourse.text, text), source: "resident", approvedAt: null, approvedBy: null } };
-          touched.add("clinicalCourse");
-        } else if (section === "condition") {
-          n = { ...n, conditionAtDischarge: { ...n.conditionAtDischarge, freeText: add(n.conditionAtDischarge.freeText ?? "", text) } };
-          touched.add("conditionAtDischarge");
-        } else if (section === "primaryCareActions" || section === "patientActions") {
-          n = { ...n, [section]: [...n[section], text] };
-          touched.add(section);
-        }
-      }
-      return n;
-    });
-    if (touched.size === 0) return;
+    const { touched } = applyDischargeLines(draft, lines);
+    if (touched.length === 0) return;
+    setDraft((d) => applyDischargeLines(d, lines).draft);
     setDirty((s) => new Set([...s, ...touched]));
     scheduleSave();
   }
@@ -1528,6 +1511,7 @@ export default function DischargeWorkspace({
       {live && (
         <LiveDictation
           patientId={patientId}
+          screen="discharge"
           title="Dictating the discharge"
           example="e.g. “admitted with acute appendicitis… underwent lap appendicectomy on day one, uneventful recovery… review in surgery OPD after a week…”"
           sections={live}

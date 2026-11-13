@@ -16,6 +16,8 @@
  * flush runs while the app is open, and its progress is on screen.
  */
 
+import type { NewPatientResult } from "@/lib/new-patient-voice";
+
 // Deliberately still the old name. A phone may be holding recordings that were made offline
 // and never sent; renaming the database would orphan them somewhere nobody would ever look.
 // A rebrand is not worth losing a round.
@@ -29,7 +31,7 @@ const CHUNKS = "chunks";
 const VERSION = 2;
 
 /** Audio kinds. Text, photo and action items are the same queue, one row each — see below. */
-export type PendingKind = "round" | "bedside" | "case-history" | "text" | "photo" | "action";
+export type PendingKind = "round" | "bedside" | "case-history" | "dictation" | "new-patient" | "text" | "photo" | "action";
 
 export type Pending = {
   id: string;
@@ -53,6 +55,12 @@ export type Pending = {
    *  this module stays free of server code and testable. */
   action?: string;
   args?: unknown[];
+  /** A live-panel take recorded with no signal (kind "dictation"): which screen it was for
+   *  ("note" | "discharge" | "clerking") and when it was said — the server files it at that time. */
+  screen?: string;
+  recordedAt?: string;
+  /** A new patient spoken with no signal (kind "new-patient"): the unit they join. */
+  wardId?: string;
   queuedAt: string;
   attempts: number;
 };
@@ -220,6 +228,17 @@ export async function queueItem(item: Omit<Pending, "id" | "queuedAt" | "attempt
   return full;
 }
 
+/** Throw away everything waiting — the deliberate sign-out, so a shared phone does not keep
+ *  the last doctor's unsent recordings. */
+export function clearOutbox() {
+  try {
+    indexedDB.deleteDatabase(DB_NAME);
+  } catch {
+    // No IndexedDB: nothing was kept.
+  }
+  window.dispatchEvent(new Event("outbox-changed"));
+}
+
 /** Drop a recording once the server has it — the counterpart to saveRecording(). Silent if
  *  it was already sent and removed.
  *
@@ -305,6 +324,18 @@ export type FlushResult = {
   failed: number;
   /** Round dictations that went through and now need reviewing, in the order they were said. */
   reviews: string[];
+  /** Live-panel takes that went through: what they filled, and when said vs processed. */
+  late: LateResult[];
+  /** New patients spoken with no signal: added, already there, or not addable. */
+  patients: NewPatientResult[];
+};
+
+export type LateResult = {
+  label: string;
+  recorded_at: string;
+  processed_at: string;
+  placed: number;
+  to_check: number;
 };
 
 /**
@@ -322,12 +353,12 @@ export async function flush({
   retryRefused = false,
   actions = {},
 }: { retryRefused?: boolean; actions?: Record<string, OfflineAction> } = {}): Promise<FlushResult> {
-  const result: FlushResult = { sent: 0, failed: 0, reviews: [] };
+  const result: FlushResult = { sent: 0, failed: 0, reviews: [], late: [], patients: [] };
   const items = toSend(await listPending(), inFlight, retryRefused);
 
   for (const item of items) {
     let ok: boolean;
-    let data: { dictation_id?: string } | null = null;
+    let data: ({ dictation_id?: string; status?: string } & Partial<LateResult>) | null = null;
     try {
       if (item.kind === "action") {
         const fn = actions[item.action ?? ""];
@@ -350,6 +381,15 @@ export async function flush({
 
     if (ok) {
       if (item.kind === "round" && data?.dictation_id) result.reviews.push(data.dictation_id);
+      if (item.kind === "new-patient" && data?.status) result.patients.push(data as unknown as NewPatientResult);
+      if (item.kind === "dictation" && data?.processed_at)
+        result.late.push({
+          label: item.label,
+          recorded_at: data.recorded_at ?? item.recordedAt ?? item.queuedAt,
+          processed_at: data.processed_at,
+          placed: data.placed ?? 0,
+          to_check: data.to_check ?? 0,
+        });
       await remove(item.id);
       result.sent += 1;
     } else {
@@ -387,5 +427,8 @@ export function body(item: Pending): { body: BodyInit; headers?: Record<string, 
   // recognise a recording it already processed — the queue and a recorder's own upload can
   // both reach it, and a kill between "server has it" and "row deleted" sends it again.
   form.append("client_uuid", item.id);
+  if (item.screen) form.append("screen", item.screen);
+  if (item.recordedAt) form.append("recorded_at", item.recordedAt);
+  if (item.wardId) form.append("ward_id", item.wardId);
   return { body: form };
 }

@@ -89,6 +89,7 @@ export default function DictationOverlay({
   return (
     <LiveDictation
       patientId={patientId}
+      screen="clerking"
       title="Dictating the clerking"
       example={clerkingExampleFor(specialty)}
       sections={sections}

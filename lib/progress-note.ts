@@ -184,7 +184,8 @@ export function buildProgressNote(
     .filter(
       (o) =>
         o.kind === "note" &&
-        !/comorbid|assessment/i.test(o.label) &&
+        // "not placed": a line dictated with no signal that is waiting in To check, not a complaint.
+        !/comorbid|assessment|not placed/i.test(o.label) &&
         !CNS_ALIASES.includes(norm(o.label))
     )
     .map((o) => o.value_text ?? o.label);

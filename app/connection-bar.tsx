@@ -8,8 +8,11 @@ import {
   flush,
   listWaiting,
   recoverInterruptedChunks,
+  type LateResult,
   type Pending,
 } from "@/lib/outbox";
+import { wardTime } from "@/lib/late-dictation";
+import type { NewPatientResult } from "@/lib/new-patient-voice";
 import { OFFLINE_ACTIONS } from "@/lib/offline-actions";
 import { usePublishedHeight } from "@/lib/use-published-height";
 
@@ -60,6 +63,8 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [reviews, setReviews] = useState<string[]>([]);
+  const [late, setLate] = useState<LateResult[]>([]);
+  const [added, setAdded] = useState<NewPatientResult[]>([]);
   const [recovered, setRecovered] = useState(0);
   // Items that just landed — a "Saved" chip for a few seconds, then nothing, which is the
   // resting state the bar should return to.
@@ -108,6 +113,8 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
     await refresh();
 
     if (result.reviews.length > 0) setReviews((r) => [...r, ...result.reviews]);
+    if (result.late.length > 0) setLate((l) => [...l, ...result.late]);
+    if (result.patients.length > 0) setAdded((a) => [...a, ...result.patients]);
     // Anything that landed changed a patient, so the screen behind this is now out of date.
     if (result.sent > 0) {
       setJustSaved(result.sent);
@@ -167,10 +174,14 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
     document.addEventListener("visibilitychange", woke);
     // Recorders announce a queued item so the count appears without waiting for a reload.
     window.addEventListener("outbox-changed", refresh as EventListener);
+    // The live panel queued a take and asks for it to go now — signal may already be back.
+    const sendNow = () => void send();
+    window.addEventListener("outbox-send", sendNow);
 
     return () => {
       document.removeEventListener("visibilitychange", woke);
       window.removeEventListener("outbox-changed", refresh as EventListener);
+      window.removeEventListener("outbox-send", sendNow);
     };
   }, [recover, refresh, send]);
 
@@ -187,7 +198,7 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
   const barRef = usePublishedHeight("--top-inset");
 
   // Nothing to say: online, nothing queued, nothing to review, nothing recovered.
-  if (online && !savedAt && pending === 0 && reviews.length === 0 && !sending && recovered === 0)
+  if (online && !savedAt && pending === 0 && reviews.length === 0 && late.length === 0 && added.length === 0 && !sending && recovered === 0)
     return null;
 
   const fetched = timeOf(savedAt ?? renderedAt);
@@ -296,6 +307,58 @@ export default function ConnectionBar({ renderedAt }: { renderedAt: string }) {
           )}
         </ul>
       )}
+
+      {late.map((r, i) => (
+        <p key={`${r.processed_at}-${i}`} className="mt-1">
+          {r.label} recorded {wardTime(r.recorded_at)}, processed {wardTime(r.processed_at)} —{" "}
+          {r.placed === 1 ? "1 line" : `${r.placed} lines`} filled in
+          {r.to_check > 0 && (
+            <>
+              ,{" "}
+              <Link href="/confirm" className="font-semibold underline">
+                {r.to_check} to check
+              </Link>
+            </>
+          )}
+          .{" "}
+          <button onClick={() => setLate((l) => l.filter((_, j) => j !== i))} className="tap font-semibold underline">
+            OK
+          </button>
+        </p>
+      ))}
+
+      {added.map((p, i) => (
+        <p key={`${p.processed_at}-${i}`} className="mt-1">
+          New patient recorded {wardTime(p.recorded_at)}:{" "}
+          {p.status === "created" && (
+            <>
+              <Link href={`/patients/${p.patient_id}`} className="font-semibold underline">
+                {p.name}, bed {p.bed}
+              </Link>{" "}
+              added.
+            </>
+          )}
+          {p.status === "exists" && (
+            <>
+              <Link href={`/patients/${p.patient_id}`} className="font-semibold underline">
+                {p.name}, bed {p.bed}
+              </Link>{" "}
+              is already on the unit — not added again.
+            </>
+          )}
+          {(p.status === "incomplete" || p.status === "failed") && (
+            <>
+              not added ({p.status === "incomplete" ? "no name or bed was heard" : p.error}). Heard: “{p.transcript}”.{" "}
+              <Link href="/patients/new" className="font-semibold underline">
+                Add by hand
+              </Link>
+            </>
+          )}{" "}
+          <button onClick={() => setAdded((a) => a.filter((_, j) => j !== i))} className="tap font-semibold underline">
+            OK
+          </button>
+        </p>
+      ))}
 
       {reviews.length > 0 && (
         <p className="mt-1">
