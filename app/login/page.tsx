@@ -4,6 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Mark from "@/app/mark";
+import { clearOutbox } from "@/lib/outbox";
 import InstallHint, { isNativeApp, subscribeNever } from "@/app/install-hint";
 import { Mail, KeyRound, TriangleAlert } from "lucide-react";
 
@@ -51,7 +52,19 @@ export default function LoginPage() {
   }, [cooldown]);
 
   // /auth/callback sends the doctor back here with a reason when Google did not work out.
-  const failed = useSearchParams().get("failed");
+  const params = useSearchParams();
+  const failed = params.get("failed");
+
+  // Signed out on purpose (app/actions.ts): recordings still waiting to be sent belong to the
+  // doctor who just left, and a shared phone must not keep them. Only on a deliberate sign-out —
+  // a session that merely expired also lands here, and its unsent words must survive sign-in.
+  const signedOut = params.has("signed_out");
+  useEffect(() => {
+    if (!signedOut) return;
+    clearOutbox();
+    // The cached ward screens too: public/sw.js empties them on this message.
+    navigator.serviceWorker?.ready.then((reg) => reg.active?.postMessage("clear-pages")).catch(() => {});
+  }, [signedOut]);
 
   // Google refuses OAuth inside an embedded web view (disallowed_useragent). The iOS app opens it
   // in Apple's sign-in sheet instead (googleSignInSheet); an app build from before that has

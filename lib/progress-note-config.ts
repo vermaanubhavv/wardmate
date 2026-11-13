@@ -74,6 +74,23 @@ export type ProgressNoteConfig = {
 
 export type NoteVitalField = { key: string; label: string; ph: string; aliases: string[] };
 
+// Placeholders are a dash, never a plausible reading: a grey "120/80" in an empty field reads
+// as a recorded value at a glance on a phone.
+export const SHARED_VITALS: NoteVitalField[] = [
+  { key: "BP", label: "BP", ph: "—", aliases: ["bp", "blood pressure"] },
+  { key: "PR", label: "PR", ph: "—", aliases: ["pr", "pulse", "pulse rate"] },
+  { key: "RR", label: "RR", ph: "—", aliases: ["rr", "respiratory rate"] },
+  { key: "Temp", label: "Temp", ph: "—", aliases: ["temp", "temperature"] },
+  { key: "SpO2", label: "SpO₂", ph: "—", aliases: ["spo2", "saturation", "oxygen saturation"] },
+  { key: "GRBS", label: "GRBS", ph: "—", aliases: ["grbs", "rbs", "cbg"] },
+  // Anything here means the patient is on the ICU/HDU — it flags them Critical on the ward
+  // list. Free text so the resident can note the support ("on noradrenaline 0.08", "HFNC").
+  { key: "ICU", label: "ICU / support", ph: "e.g. on noradrenaline 0.08", aliases: ["icu", "icu / support", "support"] },
+];
+
+/** The live-dictation section key for a vitals field. */
+export const vitalKey = (k: string) => `vital:${k.replace(/\W+/g, "_")}`;
+
 /** Card ids the workspace uses for the lines every department shares. */
 export const RESERVED_SECTION_IDS = ["complaints", "sensorium", "vitals", "bowel", "assessment", "plan", "meds", "review"];
 

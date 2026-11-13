@@ -49,6 +49,12 @@ export type LiveDictationHandlers = {
   onRescued?: (text: string) => void;
   /** Live link lost (or never made) but the rescue recording is running. */
   onLinkLost?: (message: string) => void;
+  /** Each second of the rescue recording once the link is lost, in order (the ones already
+   *  held first) — so a phone killed mid-take still has the words on it. */
+  onRescueChunk?: (chunk: Blob, mimeType: string) => void;
+  /** The rescue recording could not be transcribed on stop (no signal, or the server failed).
+   *  Without it the recording is dropped; with it, the caller keeps it to send later. */
+  onRescueUnsent?: (audio: Blob, mimeType: string) => void;
 };
 
 export type LiveDictationSession = {
@@ -66,7 +72,7 @@ type DeepgramMessage = {
 
 const MIME_CANDIDATES = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
 
-function pickMime(): string | null {
+export function pickMime(): string | null {
   if (typeof MediaRecorder === "undefined") return null;
   return MIME_CANDIDATES.find((t) => MediaRecorder.isTypeSupported(t)) ?? null;
 }
@@ -161,7 +167,11 @@ export async function openLiveDictation(
       const chunks: Blob[] = [];
       rescueChunks = chunks;
       rescue = new MediaRecorder(stream, { mimeType: mime });
-      rescue.ondataavailable = (e) => e.data.size > 0 && chunks.push(e.data);
+      rescue.ondataavailable = (e) => {
+        if (e.data.size === 0) return;
+        chunks.push(e.data);
+        if (rescued && mime) h.onRescueChunk?.(e.data, mime);
+      };
       rescue.start(1000);
     } catch {
       rescue = null;
@@ -183,6 +193,7 @@ export async function openLiveDictation(
     if (closed) return;
     clearInterval(ping);
     if (h.onRescued && mime) {
+      if (!rescued) rescueChunks.forEach((c) => h.onRescueChunk?.(c, mime));
       rescued = true;
       startRescue();
       h.onLinkLost?.("Live link lost — still recording. What you say is written up when you tap Done.");
@@ -219,14 +230,19 @@ export async function openLiveDictation(
     const blob = await stopRescue();
     releaseMic();
     if (blob && rescued && h.onRescued) {
+      // Still no signal: keep it for later rather than try and fail.
+      if (!navigator.onLine && h.onRescueUnsent) return h.onRescueUnsent(blob, mime ?? "");
       try {
         const form = new FormData();
         form.set("audio", blob, `rescue.${mime?.includes("mp4") ? "mp4" : "webm"}`);
         const res = await fetch("/api/transcribe", { method: "POST", body: form });
+        // A 5xx is the server, not the recording — keep it. A 4xx ("nothing was heard") is not.
+        if (res.status >= 500) return h.onRescueUnsent?.(blob, mime ?? "");
         const data = (await res.json()) as { text?: string };
         if (data.text?.trim()) h.onRescued(data.text.trim());
       } catch {
-        /* no signal either — nothing more can be done */
+        // No signal either: kept for later when the caller can, otherwise nothing more to do.
+        h.onRescueUnsent?.(blob, mime ?? "");
       }
     }
   };
