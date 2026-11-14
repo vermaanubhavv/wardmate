@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { subscribeNever } from "../install-hint";
 import { Toggle } from "../patients/[id]/card-kit";
 import { savePushSubscription, deletePushSubscription } from "./push-actions";
 
@@ -16,23 +17,28 @@ function keyBytes(base64url: string): Uint8Array {
  * the handover-time reminder. Off deletes the subscription, so there is nothing to un-mute.
  */
 export default function PushToggle() {
-  const [state, setState] = useState<"checking" | "unsupported" | "on" | "off" | "denied">("checking");
   const key = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  // What the phone allows, read at render (after hydration); only the subscription is async.
+  const phone = useSyncExternalStore(
+    subscribeNever,
+    () =>
+      !key || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)
+        ? "unsupported"
+        : Notification.permission === "denied"
+          ? "denied"
+          : "ok",
+    () => "checking",
+  );
+  const [sub, setState] = useState<"checking" | "unsupported" | "on" | "off" | "denied">("checking");
+  const state = phone === "ok" ? sub : phone;
 
   useEffect(() => {
-    if (!key || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
-      setState("unsupported");
-      return;
-    }
-    if (Notification.permission === "denied") {
-      setState("denied");
-      return;
-    }
+    if (phone !== "ok") return;
     navigator.serviceWorker.ready
       .then((reg) => reg.pushManager.getSubscription())
-      .then((sub) => setState(sub ? "on" : "off"))
+      .then((s) => setState(s ? "on" : "off"))
       .catch(() => setState("unsupported"));
-  }, [key]);
+  }, [phone]);
 
   async function turnOn() {
     const permission = await Notification.requestPermission();

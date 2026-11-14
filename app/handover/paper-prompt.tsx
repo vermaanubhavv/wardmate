@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useSyncExternalStore, useTransition } from "react";
+import { subscribeNever } from "../install-hint";
 import { recordPaperReason } from "./actions";
 
 /** Today's key, in the phone's own day — the prompt is a once-a-day question, not a form. */
@@ -13,18 +14,18 @@ const todayKey = () => `paper-prompt:${new Date().toLocaleDateString("en-CA")}`;
  * a cleared browser simply asks again).
  */
 export default function PaperPrompt() {
-  const [show, setShow] = useState(false);
+  // Read after hydration; the server snapshot says "already asked" so nothing flashes.
+  const askedToday = useSyncExternalStore(subscribeNever, () => {
+    try {
+      return Boolean(localStorage.getItem(todayKey()));
+    } catch {
+      return false;
+    }
+  }, () => true);
+  const [closed, setClosed] = useState(false);
   const [text, setText] = useState("");
   const [sent, setSent] = useState(false);
   const [pending, start] = useTransition();
-
-  useEffect(() => {
-    try {
-      setShow(!localStorage.getItem(todayKey()));
-    } catch {
-      setShow(true);
-    }
-  }, []);
 
   const done = () => {
     try {
@@ -32,10 +33,10 @@ export default function PaperPrompt() {
     } catch {
       // Asked again tomorrow either way.
     }
-    setShow(false);
+    setClosed(true);
   };
 
-  if (!show) return null;
+  if (askedToday || closed) return null;
 
   return (
     <form
