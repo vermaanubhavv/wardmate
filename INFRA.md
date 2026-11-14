@@ -1,25 +1,23 @@
 # WardMate — infrastructure and setup
 
 For a developer taking this over or joining. Written from what is actually configured, not
-from what was planned — everything below is checked against the live project as of 2026-08-18.
+from what was planned — checked against the live project 2026-08-18; stack, deploy and patch sections updated 2026-11-14.
 
 ---
 
-## The one thing to do first
+## Where the code lives
 
-**This code has never been pushed to GitHub.** It exists as a local git repository on the
-founder's laptop and is deployed straight from there with the Vercel CLI. There is no remote,
-no PR review, no CI. Before anything else, get it onto GitHub (or wherever) and connect that
-repo to Vercel for deploys — everything past this point assumes that has happened.
+`https://github.com/vermaanubhavv/wardmate` (private), branch `main`. Merging to `main` deploys
+the app and applies new SQL patches — see "Automating deploys".
 
 ## Stack
 
 | Layer | What | Notes |
 |---|---|---|
 | Framework | **Next.js** (App Router, React Server Components) | |
-| Hosting | **Vercel** | Project name `wardmate`. Deployed via `vercel --prod` from the CLI today — see above. |
+| Hosting | **Vercel** | Project name `wardmate`. Deployed by Vercel's Git integration on every push to `main` — see "Automating deploys". |
 | Database | **Supabase** (Postgres) | Project ref `zrisashumxmiiwffhezc` → `https://zrisashumxmiiwffhezc.supabase.co`. Region **Mumbai (`ap-south-1`)** — patient data at rest stays in India. Also provides auth and file storage. |
-| AI | **Anthropic API** (`claude-opus-5`) | Structures spoken/typed notes into clinical values; reads photographed lab reports and the ward register. |
+| AI | **Anthropic API** (`claude-sonnet-5-5`, `claude-haiku-5-5` for fast passes; set in `lib/model.ts`, Sonnet is the ceiling) | Structures spoken/typed notes into clinical values; reads photographed lab reports and the ward register. |
 | Speech-to-text | **Deepgram** | Behind `lib/stt/`; the only engine (OpenAI and Sarvam were removed to keep patient audio with one sub-processor). Runs `nova-3-medical` in `en-IN` with a per-patient keyterm list — see `docs/medical-dictation-keyterms.md`. |
 | Outbound email | **Resend**, via Supabase's SMTP integration | Sends the sign-in codes. Outreach check-ins (waitlist / quiet / active) go out daily at 10:00 IST from pg_cron via Resend's API; key in Supabase Vault as `resend_api_key` — see `supabase/patches/0081_outreach_emails.sql`. |
 | Monitoring | **Sentry** (`@sentry/nextjs`) | Crash reports in the browser and on the server; performance traces on the server only (browser tracing was dropped for bundle size — the waits residents feel are timed by `lib/track.ts` instead). Dormant unless `NEXT_PUBLIC_SENTRY_DSN` is set. See "Sentry" below. |
@@ -59,9 +57,9 @@ functions" below, and it is scoped narrowly on purpose.
 
 ## Database
 
-Everything is applied as a sequence of **hand-written, hand-run SQL patches** — there is no
-migration tool. They live in `supabase/patches/`, are numbered, and each is idempotent (safe
-to run twice). Nineteen have shipped:
+Everything is applied as a sequence of **hand-written, numbered SQL patches** in
+`supabase/patches/`, each idempotent (safe to run twice). CI applies them on merge (below). The
+first twenty, for orientation — `ls supabase/patches` for the rest:
 
 ```
 0001  grants
@@ -288,9 +286,8 @@ locally when `env/production.env` changes.
 
 ## Known gaps / near-term work
 
-- No CI, no automated tests, no staging environment. Every deploy today is a human running
-  `vercel --prod` after eyeballing the change.
-- No git remote (see top of document).
+- No staging environment: every merge to `main` goes straight to production, gated only by
+  tests, the Vercel build check and review.
 - SMS/phone-number sign-in was discussed and explicitly deferred — it requires DLT template
   registration with Indian telecom carriers before any SMS can be sent to Indian numbers at
   all, which is a multi-week compliance process, not a code change.
