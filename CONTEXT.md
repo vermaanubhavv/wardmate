@@ -49,8 +49,9 @@ Corollaries that have repeatedly decided design arguments:
   source of duplicate patients on a ward that types the name differently each admission. The
   function only ever removes a leading title and returns the original if that would leave nothing,
   so it cannot empty a name. Do not extend this to any clinical field.
-- **It stores almost nothing identifying.** A name and a bed. No hospital number, no phone, no
-  address. If this database leaked it would be close to useless.
+- **It stores almost nothing identifying.** Name, age, sex, bed, and the optional UHID/IP and
+  MRD numbers (patch 0024). No phone, no address. Tests, fixtures, logs and prompts carry
+  synthetic data only.
 
 Two rules were written, tested, and deliberately deleted for breaking this — both are documented
 in the code as warnings not to re-add them:
@@ -63,16 +64,22 @@ in the code as warnings not to re-add them:
 
 - **Next.js 16.3** (App Router, React 19.2, Server Components + Server Actions), **Tailwind v4**
 - **Supabase** — Postgres + Auth + Storage. Project ref `zrisashumxmiiwffhezc`
-- **Anthropic API** — `claude-opus-5`, structuring speech/photos into observations
+- **Anthropic API** — `claude-sonnet-5-5` (`AI_MODEL`) for structuring speech/photos into
+  observations, `claude-haiku-5-5` (`FAST_MODEL`) for the live-dictation router and proofreads.
+  Both live in `lib/model.ts`. **Sonnet is the ceiling**: `lib/__tests__/model.test.ts` fails if
+  an Opus-class model id appears anywhere in the source. Read that file's comment before
+  changing models
 - **Deepgram** — the only speech-to-text engine: `nova-3-medical` in `en-IN`, given a per-patient
   keyterm list built from the patient's diagnoses / operation / drains / drugs — see
   `docs/medical-dictation-keyterms.md`
 - **Vercel** — production deploys, project `wardmate` (directory still named `coreresident`)
-- **GitHub** — `https://github.com/vermaanubhavv/wardmate` (private), branch `main`, ~74 commits
+- **GitHub** — `https://github.com/vermaanubhavv/wardmate` (private), branch `main`
 
-Server env vars (names only): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
-`ANTHROPIC_API_KEY`, `DEEPGRAM_API_KEY`. **There is no service-role key, on
-purpose.** Controlled writes use `SECURITY DEFINER` Postgres functions instead.
+Env vars: see `INFRA.md` and `env/*.example`. **No page or user request uses the service-role
+key.** User-initiated writes go through RLS, or through `SECURITY DEFINER` Postgres functions
+where a controlled write is needed. The key exists only for background jobs
+(`lib/supabase/admin.ts`: the push and feedback-email crons, the unsubscribe link). Do not reach
+for it anywhere else.
 
 Auth: Google OAuth (primary) + 6-digit email OTP via Resend. Google callback must point at
 Supabase's own URL (`https://zrisashumxmiiwffhezc.supabase.co/auth/v1/callback`), not the app's.
@@ -95,9 +102,18 @@ performance courtesy; they are not what keeps one unit's patients away from anot
 
 ## 5. Database
 
-`supabase/schema.sql` is the base. Everything after it is a hand-numbered, idempotent patch in
-`supabase/patches/NNNN_name.sql`, run by pasting into the Supabase SQL Editor. **There is no
-migration tool.** This is the single biggest fragility in the project.
+`supabase/schema.sql` is the base. Everything after it is a hand-numbered, idempotent,
+`begin; … commit;`-wrapped patch in `supabase/patches/NNNN_name.sql`.
+
+**Patches apply themselves on merge.** `.github/workflows/deploy.yml` runs `npm test` and then
+`npm run db:push` on every push to `main`. `db:push` applies every file not yet in
+`public._patch_log`, in filename order. It also fails the run if a public table lacks RLS or a
+view lacks `security_invoker`. Nobody pastes SQL any more. To confirm a patch landed, read the
+"Apply database patches" step of that run.
+
+**Numbering:** take the next number after the highest file on the latest `main`, not on your
+branch. Numbers have collided before: there are two `0111_*` files, and the offline-dictation
+work had to be renumbered from 0112 to 0118. Renumber on merge if `main` has moved past you.
 
 **Rule that bites every time:** `current_patients` is a view doing `select p.*`, frozen at
 creation. Any new column on `patients` is invisible until the view is rebuilt. Every patch that
@@ -111,17 +127,9 @@ Core tables: `profiles`, `wards`, `ward_members`, `patients`, `entries`, `observ
 `care_templates`, `template_items`, `round_dictations`, `register_reads`, `ward_formats`,
 `glossary_terms`.
 
-### Patch status — VERIFY BEFORE ASSUMING
-
-| Patch | What | Status |
-|---|---|---|
-| 0001–0020 | base through `ward_screen()` | applied |
-| 0021 | `planned_surgery_date` | **unconfirmed — ask the user** |
-| 0022 | `glossary_terms` + `flag_glossary_term()` | **unconfirmed — ask** |
-| 0023 | `patients.location`, `profiles.designation/department`, `home_screen()` | **NOT run** |
-
-The app degrades rather than crashes when a patch is missing — glossary returns empty, landing
-counts read zero with a note naming the patch. Check before debugging a "bug".
+A route that reads a column from a newer patch usually falls back when the column is missing
+(see `processed_at` in `app/patients/[id]/page.tsx`). Keep doing that: Vercel and the patch
+step run in parallel, so new code can be live about 30s before its patch is.
 
 ---
 
@@ -140,32 +148,36 @@ speak / photograph
 Corrections are applied to the **transcript before extraction**, never as a "correct it silently"
 prompt instruction. If the model corrected a term while structuring, its quote would no longer
 appear in the transcript and the whole observation would be **discarded** — missing data, with
-nothing said. This is subtle, it has already been got wrong once, and it is why
-`getPromptGlossary()` exists but is deliberately unwired.
+nothing said. This is subtle, and it has already been got wrong once. A prompt-side glossary
+(`getPromptGlossary()`) was written for that approach and later deleted. Do not bring it back.
 
 The raw hearing is kept in `entries.original_transcript` and shown behind the (i) as "Heard: …"
 whenever it differs.
 
-Three routes take speech: `app/api/entries/voice` (bedside), `app/api/round` (whole round, split
-per bed), `app/api/patients/parse` (spoken new patient). The round route also accepts typed text
+The speech routes: `app/api/entries/voice` (bedside), `app/api/round` (whole round, split per
+bed), `app/api/patients/parse` (spoken new patient), `app/api/entries/case-history`, and the
+two offline catch-up routes, `app/api/entries/late-dictation` and
+`app/api/patients/new-by-voice`. The last two take a take recorded with no signal and file it
+at the time it was said. The round route also accepts typed text
 — **that branch is deliberately not corrected.**
 
 ---
 
 ## 7. Routes
 
-- `/` — landing: name, designation, department, unit, counts by ward/ICU/emergency
-- `/ward` — the ward list (this was `/` until recently; check link targets if something 404s).
-  As of the visual-refresh work (§12), also carries a Patients/Critical/Dischargeable stat row
-  and a top-3 to-do preview under the unit card.
-- `/patients/[id]` — one patient: to-dos, unconfirmed, "where things stand" (collapsed), record
-  by day (collapsible), discharge. **Not yet visually refreshed — see §12, this is next.**
-- `/patients/new`, `/todo` (now has a "By urgency / By type" toggle), `/handover` (renamed
-  "Update" in the UI — same route), `/confirm` (narrowed to real dictation conflicts only,
-  `conflict_note` set — the broader "might be misheard" queue lives per-patient), `/unit`,
-  `/unit/discharged` (opt-in saved-summary list, 48h undo window — **`/removed` no longer
-  exists, replaced by this**), `/unit/trash`, `/formats`, `/round/[id]`, `/register/[id]`,
-  `/login`, `/auth/callback`
+- `/` — public landing; `/home` — signed-in landing (name, unit, counts)
+- `/ward` — the ward list
+- `/patients/[id]` — one patient (header, vitals, jobs, to check, record by day, labs,
+  scoring, discharge). Sub-routes: `note`, `discharge`, `case-history`, `history-check`,
+  `prepare-discharge`
+- `/patients/new`, `/todo`, `/handover` ("Update" in the UI), `/confirm` (real dictation
+  conflicts only)
+- `/unit` (settings, invite, push toggle), `/unit/discharged`, `/unit/trash`,
+  `/unit/access-log`; `/join?code=…` (invite link)
+- `/learn` (examination, fluids, history), `/protocols`, `/formats`, `/round/[id]`,
+  `/register/[id]`
+- `/admin/*` — internal console, see `docs/admin-console.md`
+- `/login`, `/auth/callback`, `/onboarding`, `/terms`, `/waitlist`, `/feedback`
 
 ---
 
@@ -188,7 +200,7 @@ display only — explicitly not for authorisation).
 ## 9. Design language
 
 iOS-native-adjacent, on a phone, one-handed, at 7am. Apple's own system colours except the
-accent, which is the brand teal `#0f9e96`. Light theme only, deliberately: ward lighting varies
+accent, which is the brand teal (`#0b7f79` for what you press, `#0f9e96` in the mark; the colour roles are in `BRAND.md`). Light theme only, deliberately: ward lighting varies
 and an app that changes appearance between rooms is one more thing to think about.
 
 Font: the **phone's system font**. A brand typeface (Sora) was tried and pulled — native won.
@@ -214,45 +226,33 @@ colour tokens in `app/globals.css` — `--critical-bg`/`--critical-fg`/`--critic
 `bg-critical-bg`, `text-warn-fg`, etc.) — so a new screen reaches for a token instead of
 re-typing a raw Tailwind shade. Same single-fixed-light-theme, iOS-chrome philosophy as above;
 this is about purposeful colour/icons on top of it, not a rewrite. `app/ward/page.tsx` is the
-reference implementation — its `StatTile` and `Badge` components are the pattern to copy.
+reference implementation — its `Badge` component is the pattern to copy.
 
 ---
 
 ## 10. Open issues
 
-1. **Permanent delete does not work.** Reported repeatedly. Confirmed so far: the
-   `patients_delete` RLS policy EXISTS, RLS is on and not forced, FK cascades on
-   `entries`/`observations` are correct. **Not yet checked: whether `DELETE` is actually
-   GRANTed to the `authenticated` role** — a policy says *which* rows, a grant says *whether at
-   all*, and `create policy` succeeding says nothing about `grant delete`. Next step:
+Nothing is open in `CONTEXT.md` itself. Track work in GitHub issues and PRs. The old list here
+(permanent delete, patches 0021–0023, the unwired glossary, "no tests") is all resolved.
+Deletion was fixed by patches 0015/0025, the glossary function was removed, and there is now a
+Vitest suite of about 1,400 tests that runs on every merge.
 
-   ```sql
-   select count(*) from information_schema.role_table_grants
-   where table_schema='public' and table_name='patients'
-     and privilege_type='DELETE' and grantee='authenticated';
-   ```
-   If 0 → `grant delete on patients to authenticated;`. The app now surfaces the database's own
-   error on `/removed?failed=…`; that wording is the fastest route to the answer.
-
-2. **Patch 0023 not run** — landing counts read zero until it is.
-3. **0021 / 0022 unconfirmed** — ask before assuming a feature is broken.
-4. **`getPromptGlossary()` is unwired** — intentional, see §6. Delete it or wire it, don't
-   half-do it.
-5. **No tests, no CI** *(stale as of the visual-refresh work, §12)* **— this has since changed.**
-   There is now a real Vitest suite (`npm run test`, 378 tests as of this writing) under
-   `lib/**/__tests__/`, and GitHub PRs get a real Vercel deployment check (`npm run build`
-   equivalent, in Vercel's own environment) — wait for that check to report success before
-   merging, it has caught things a local build alone would not. Keep writing tests for new pure
-   functions in `lib/` in this same pattern; don't let this regress back to "no tests."
+Known, deliberately parked: the onboarding form's link to the clinician data agreement
+(`app/onboarding/professional-form.tsx`) waits on legal review of the draft.
 
 ---
 
 ## 11. Working agreements that have held up
 
-- **Patches are numbered, idempotent, and pasted by hand.** Next is `0024`. Always
-  `begin;`/`commit;`, `if not exists`, `drop policy if exists` before `create policy`.
-- **Deploy with `npx vercel --prod --yes`.** It occasionally returns a transient error; retry
-  once before investigating.
+- **Patches are numbered and idempotent; CI applies them** (§5). Always `begin;`/`commit;`,
+  `if not exists`, `drop policy if exists` before `create policy`.
+- **Merging to `main` is the deploy.** Vercel's Git integration builds production, and
+  `deploy.yml` runs tests and patches. Open a PR, wait for the **Vercel** status check to
+  report success (`mcp__github__pull_request_read`, `method: "get_status"`), then merge. Do not
+  merge on a pending check.
+- **Tests are the floor.** `npm test` before every push. Write a test for any new pure function
+  in `lib/`, in the existing `lib/**/__tests__/` pattern. `npm run lint` should show 0 errors.
+  `tsc --noEmit` needs `npx next typegen` first, or `LayoutProps` reads as missing.
 - **Git author must be a real identity.** Commits once carried a local placeholder
   (`anubhavverma@Anubhavs-MacBook-Air.local`) and Vercel silently BLOCKED every deploy for it.
   Fixed; do not let it regress.
@@ -264,57 +264,24 @@ reference implementation — its `StatTile` and `Badge` components are the patte
 
 ---
 
-## 12. Next up — visual-refresh rollout, Phase 3
+## 12. Visual refresh — where it stands
 
-The interns-called-it-boring visual refresh (§9) is being rolled out screen by screen, in
-separate PRs, because doing the whole app in one pass on an unreviewed, no-live-data sandbox
-is reckless for a production app with real patients. Progress so far, each already merged to
-`main`:
+Rolled out screen by screen, a mockup approved before code on each large screen:
 
-- **Phase 1** (PRs #15, #16): the ward page — Patients/Critical/Dischargeable stat row, a
-  top-3 to-do preview, nav tiles redefined (dropped "To do", renamed "Ward round" → "Update"
-  with a same-day summary + editable WhatsApp draft, narrowed "Confirm" to real conflicts,
-  moved "Discharged" to `/unit` with a 48h undo window). Also: `/todo`'s "By urgency / By
-  type" toggle, and fixing a bug where every scoring-engine suggestion was mislabeled "For the
-  BISAP score" regardless of which pathway actually suggested it.
-- **Phase 2** (PR #17): `/login`, `/` (front door), `/onboarding`, `/patients/new` — same icon
-  set and colour tokens applied to the screens before a doctor ever reaches a patient.
+- **Phase 1–2** (PRs #15–#17): ward page, login, front door, onboarding, new patient.
+- **Phase 3 — done** (the 2026-10-18 UI/UX audit, PRs #156–#167): the patient screen (#160:
+  one clinical header, three vitals, every drug once, outstanding-only pills), ward list
+  (#158), to check (#159), to do and handover (#161), the recording sheet (#163), unit
+  settings (#167), and colour roles brought up to the shipped app (#164, see `BRAND.md`).
+- **Phase 4 — not started:** the discharge workspace, `prepare-discharge`, `formats`,
+  `protocols`, `round/[id]`, `register/[id]`, `learn/*`, and the admin panel (lowest priority;
+  internal tooling). Same process: read the screen, mock it up, get approval, then build. Reuse
+  the semantic tokens in `app/globals.css` and the `lucide-react` conventions. Check an icon's
+  export name exists before importing it (`ls node_modules/lucide-react/dist/esm/icons | grep …`).
 
-**Phase 3 — not started, this is the next piece:** `app/patients/[id]/page.tsx`, ~1,400 lines,
-the single most-used screen in the app (a resident opens it every bed, every round). Deserves
-the same care the ward page got, not a rushed pass:
+**Standing limitation of a cloud session:** it has no Supabase credentials, and the proxy
+blocks the Vercel preview URL. Verification is build, lint, tests and the Vercel check. Say
+that plainly; the user still checks screens against real ward data themselves.
 
-1. **Read the whole file first** — it has sections for to-dos, unconfirmed values, "where
-   things stand" against the operation's checklist, the day-by-day record, scoring cards
-   (`app/patients/[id]/scoring/`), and the discharge/case-history entry points. Understand what
-   each section already does before touching it — this file has had a lot of careful, deliberate
-   design decisions (see its own comments) that a visual pass must not accidentally undo.
-2. **Reuse, don't reinvent**: the semantic colour tokens (`--critical-*`/`--warn-*`/`--good-*`
-   in `app/globals.css`) and the icon conventions from `app/ward/page.tsx` (`StatTile`, `Badge`)
-   and `app/login/page.tsx` (leading icons on inputs). Pick `lucide-react` icons for whatever
-   this page needs; check the exact export name exists first (`ls node_modules/lucide-react/
-   dist/esm/icons | grep ...`) — icon names get renamed across lucide versions (e.g.
-   `CheckCircle2` → `CircleCheckBig`) and importing a nonexistent one fails the build.
-3. **Mockup first, for a page this size and this central to daily use** — same process Phase 1
-   used: an HTML/Artifact mockup of the redesigned layout, reviewed and approved before writing
-   any real code. Don't skip this step just because the pattern is now established; this page
-   is bigger and higher-stakes than anything redesigned so far.
-4. **Ship it the same way**: `git fetch origin main && git checkout -B claude/blissful-sagan-c3mbge origin/main`
-   first if the branch's last PR was already merged (check `git log` — squash-merges mean the
-   local branch and `main` diverge every time), then build/lint/test locally, commit, push
-   `--force-with-lease`, open a PR, wait ~30-45s for the Vercel deployment check via
-   `mcp__github__pull_request_read` (`method: "get_status"`) before merging — a `pending`
-   Vercel status means it's still building, don't merge on `mergeable_state: "unstable"`.
-5. **Standing limitation**: this sandbox has no Supabase credentials and no network access to
-   the Vercel preview URL (proxy policy blocks `*.vercel.app`) — verification is
-   build+lint+test+real-Vercel-CI-check only. Say this plainly rather than implying a live
-   click-through happened; the user still needs to check it against real ward data themselves.
-
-**Phase 4, further out**: discharge/case-history flows, `prepare-discharge`, `formats`,
-`protocols`, `round/[id]`, `register/[id]`, `learn/*`, and the admin panel
-(lowest priority — internal tooling, not a resident-facing screen).
-
-Also noted but explicitly deferred by the user: **new scoring-engine pathways** beyond the 17
-already in `lib/scoring/definitions/` — the existing engine (§ design language, `StatTile`
-etc. aside) already auto-triggers investigation suggestions off `primary_diagnosis`; adding
-*more* diseases/pathways is separate, future work the user will scope in its own session.
+Deferred by the user to its own session: **new specialty packs and scoring pathways** (see
+`docs/specialty-packs.md`, `docs/scoring-engine.md`).
