@@ -273,7 +273,10 @@ Rolled out screen by screen, a mockup approved before code on each large screen:
   one clinical header, three vitals, every drug once, outstanding-only pills), ward list
   (#158), to check (#159), to do and handover (#161), the recording sheet (#163), unit
   settings (#167), and colour roles brought up to the shipped app (#164, see `BRAND.md`).
-- **Phase 4 — not started:** the discharge workspace, `prepare-discharge`, `formats`,
+- **Phase 4 — started.** The discharge workspace opens on the summary (2026-11-17): what it
+  will say, with "N things need you" pinned on top, every ready section one line below as it
+  will print, Finalise always in the bar; a section opens on tap and finishing it goes to the
+  next that needs you. Mockup approved as direction A. Still to do: `prepare-discharge`, `formats`,
   `protocols`, `round/[id]`, `register/[id]`, `learn/*`, and the admin panel (lowest priority;
   internal tooling). Same process: read the screen, mock it up, get approval, then build. Reuse
   the semantic tokens in `app/globals.css` and the `lucide-react` conventions. Check an icon's

@@ -23,7 +23,7 @@ import { buildConditionProse } from "@/lib/discharge-entities";
 import { runDischargeChecks, type DischargeCheckContext } from "@/lib/discharge-checks";
 import type { DischargeCheck } from "@/lib/discharge-checks";
 import FormularyLink from "./formulary-link";
-import LiveDictation, { DictateButton, routeVia, type LiveLine, type LiveSection } from "../live-dictation";
+import LiveDictation, { routeVia, type LiveLine, type LiveSection } from "../live-dictation";
 import { applyDischargeLines, DISCHARGE_LIVE_SECTIONS } from "@/lib/late-dictation";
 import type { DischargeProfile } from "@/lib/specialty/discharge-profile";
 import type { DischargeTemplateIndex } from "@/lib/discharge-template-match";
@@ -31,7 +31,9 @@ import type { FinalFix } from "@/lib/final-check";
 import { Field, Area, StringList, SuggestField, SelectField, SegmentedField } from "./discharge-fields";
 import { DEFAULT_UNIT_CONSULTANTS } from "@/lib/unit-consultants";
 import DiagnosisCombobox from "../../diagnosis-combobox";
-import { IconCheck, statusChip, SelChip, OptionRow, Toggle, genBtn, approveBtn, StepShell } from "../card-kit";
+import { SelChip, OptionRow, Toggle, genBtn, statusChip } from "../card-kit";
+import { usePublishedHeight } from "@/lib/use-published-height";
+import { Camera, CircleAlert, Check, ChevronLeft, ChevronRight, Mic, Sparkles, TriangleAlert } from "lucide-react";
 import {
   saveDischargeSection,
   setDischargeNotRecordedAction,
@@ -61,76 +63,79 @@ const ADMISSION_TYPES = ["Emergency", "Elective"];
 
 // --- the look ------------------------------------------------------------------
 //
-// One card per protocol section, walked through in order like a terminal multi-select, then a
-// Review card carrying the completeness checks and Finalise. Every section arrives compiled
-// from the record (lib/discharge-compile.ts) or already saved; the resident confirms or edits
-// by tapping, and moving to the next card saves the one being left.
+// The workspace opens on the SUMMARY, not on its first section: what it will say, with what
+// still needs the resident pinned on top ("3 things need you") and everything already compiled
+// from the record below, one line each, reading as it will print. Most sections arrive ready,
+// so the resident's work is the short list at the top, not a walk through every card. Tap a
+// line to open that section; finishing one goes to the next that needs you, then back to the
+// summary. Finalise is always in the bar, with its count. Every section stays one tap away;
+// nothing compiled is hidden, it just stops asking for a tap.
 //
-// The card UI primitives (SelChip, OptionRow, Toggle, …) live in ../card-kit so the
+// The section editors' primitives (SelChip, OptionRow, Toggle, …) live in ../card-kit so the
 // case-history workspace can wear the same look.
 
-type StepId = DischargeSectionId | "review" | "start";
+type StepId = DischargeSectionId | "start";
+type View = StepId | "overview";
 
-// Patient Actions and Red Flags live inside the Advice card rather than as their own steps —
-// same data, same checks, one less card to page through. Diagnoses comes first, ahead of
-// Indication: the indication reads against the diagnosis, and the review preview already
-// lists it first. Only the cards move; the printed order is DISCHARGE_SECTIONS' own.
+// Patient Actions and Red Flags live inside the Advice card rather than as their own sections —
+// same data, same checks, one less line. Diagnoses comes first, ahead of Indication: the
+// indication reads against the diagnosis. Only the screen order moves; the printed order is
+// DISCHARGE_SECTIONS' own.
 const CARD_SECTIONS = DISCHARGE_SECTIONS.filter((s) => s.id !== "patientActions" && s.id !== "redFlags");
-const ALL_STEPS: { id: StepId; title: string; required: boolean }[] = [
-  ...[
-    ...CARD_SECTIONS.filter((s) => s.id === "diagnoses"),
-    ...CARD_SECTIONS.filter((s) => s.id !== "diagnoses"),
-  ].map((s) => ({
-    id: s.id as StepId,
-    title: s.title,
-    required: s.required,
-  })),
-  { id: "review", title: "Review & sign", required: true },
-];
+const ALL_CARDS: { id: StepId; title: string }[] = [
+  ...CARD_SECTIONS.filter((s) => s.id === "diagnoses"),
+  ...CARD_SECTIONS.filter((s) => s.id !== "diagnoses"),
+].map((s) => ({ id: s.id as StepId, title: s.title }));
 
-/** The cards this unit walks through. A non-operating unit sees "Procedures", and no
- *  Histopathology card unless the draft already holds a specimen — nothing on record is hidden. */
-function stepsFor(profile: DischargeProfile, hasHistopathology: boolean, oneOff: boolean) {
-  const steps = profile.operative
-    ? ALL_STEPS
-    : ALL_STEPS.filter((s) => s.id !== "histopathology" || hasHistopathology).map((s) =>
+/** The short label a section goes by on the summary and in "next: …". */
+const SHORT: Partial<Record<StepId, string>> = {
+  diagnoses: "Diagnosis",
+  indication: "Indication",
+  admission: "Admission",
+  procedures: "Operation",
+  clinicalCourse: "Clinical Course",
+  conditionAtDischarge: "Condition",
+  relevantInvestigations: "Investigations",
+  histopathology: "Histopathology",
+  medications: "Medications",
+  primaryCareActions: "For the GP",
+  advice: "Advice",
+  authentication: "Signed",
+};
+
+/** The sections this unit's summary has. A non-operating unit sees "Procedures", and no
+ *  Histopathology unless the draft already holds a specimen — nothing on record is hidden. */
+function cardsFor(profile: DischargeProfile, hasHistopathology: boolean) {
+  return profile.operative
+    ? ALL_CARDS
+    : ALL_CARDS.filter((s) => s.id !== "histopathology" || hasHistopathology).map((s) =>
         s.id === "procedures" ? { ...s, title: "Procedures" } : s
       );
-  // A one-off has no record to compile from: its first card is who it is for, the papers and the template.
-  return oneOff ? [{ id: "start" as StepId, title: "Start", required: true }, ...steps] : steps;
 }
 
-/** Sections whose checks/nav should surface on the Advice card now that they share it. */
+/** The sections whose checks belong to a card — Advice carries Patient Actions and Red Flags. */
 function cardSections(id: StepId): DischargeSectionId[] {
   if (id === "start") return [];
   return id === "advice" ? ["advice", "patientActions", "redFlags"] : [id as DischargeSectionId];
 }
 
-/** One line of the review preview — reads as the finished summary will, and is the tap target
- *  for editing that section. */
-function PreviewLine({
-  label,
-  onEdit,
-  last,
-  children,
-}: {
-  label: string;
-  onEdit: () => void;
-  last?: boolean;
-  children: React.ReactNode;
-}) {
+/** The card a section is edited on. */
+const cardOf = (section: DischargeSectionId): StepId =>
+  section === "patientActions" || section === "redFlags" ? "advice" : section;
+
+/** One section on the summary — reads as the finished summary will, and is the tap target for
+ *  editing it. */
+function SummaryRow({ label, onEdit, last, children }: { label: string; onEdit: () => void; last?: boolean; children: React.ReactNode }) {
   return (
     <button
       type="button"
       onClick={onEdit}
-      className={
-        "flex w-full items-start gap-1.5 px-3 py-2 text-left active:bg-chip" +
-        (last ? "" : " border-b border-line/60")
-      }
+      className={"flex min-h-11 w-full items-start gap-2.5 px-3.5 py-2.5 text-left text-footnote leading-snug active:bg-chip" + (last ? "" : " border-b border-line/60")}
     >
-      <span className="shrink-0 font-semibold">{label}:</span>
-      <span className="min-w-0 flex-1">{children}</span>
-      <span className="shrink-0 text-caption2 text-accent">edit</span>
+      <Check className="mt-px h-4 w-4 shrink-0 text-accent" strokeWidth={2.4} aria-hidden />
+      <span className="min-w-0 flex-1">
+        <span className="font-semibold">{label}</span> {children}
+      </span>
     </button>
   );
 }
@@ -206,10 +211,7 @@ export default function DischargeWorkspace({
   // can add a specimen, which switches the card on; nothing switches it off.)
   const [oneOffHistopathology, setOneOffHistopathology] = useState(false);
   const hasHistopathology = oneOff ? oneOffHistopathology : initialDraft.histopathology.length > 0;
-  const STEPS = useMemo(
-    () => stepsFor(profile, hasHistopathology, oneOff),
-    [profile, hasHistopathology, oneOff]
-  );
+  const CARDS = useMemo(() => cardsFor(profile, hasHistopathology), [profile, hasHistopathology]);
   // The unit's own department first; surgery's sub-departments only where the unit operates.
   const departmentSuggestions = [...new Set([profile.specialtyLabel, ...(profile.operative ? SURGICAL_DEPARTMENTS : [])])];
   const [dirty, setDirty] = useState<Set<DischargeSectionId>>(new Set());
@@ -217,17 +219,15 @@ export default function DischargeWorkspace({
   const [isFinalising, setIsFinalising] = useState(false);
   const [generating, setGenerating] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  // Opens on the card named in ?section — how "tap a line to edit" on the printable summary
-  // lands you in the right place. Read once, at first render.
-  const [step, setStep] = useState(() => {
-    const s = searchParams.get("section");
-    const i = s ? STEPS.findIndex((step) => step.id === s) : -1;
-    return i >= 0 ? i : 0;
+  // Opens on the summary — or on the section named in ?section, which is how "tap a line to
+  // edit" on the printable summary lands you in the right place. A one-off opens on its Start
+  // card: there is no record to summarise yet. Read once, at first render.
+  const [view, setView] = useState<View>(() => {
+    const s = searchParams.get("section") as DischargeSectionId | null;
+    const card = s ? cardOf(s) : null;
+    if (card && CARDS.some((c) => c.id === card)) return card;
+    return oneOff ? "start" : "overview";
   });
-  // Condition at Discharge starts empty by design (nothing is pre-marked), so its "set at least
-  // N" blocker would greet every resident as a red error. It is shown once they have reached
-  // Review & sign — the only place Finalise lives.
-  const [reachedReview, setReachedReview] = useState(() => STEPS[step].id === "review");
   const [askReset, setAskReset] = useState(false);
   const [openMed, setOpenMed] = useState<string | null>(null);
   // The drug last removed, and where it sat, for the inline Undo — no confirm dialog.
@@ -238,6 +238,8 @@ export default function DischargeWorkspace({
   const [oneOffCheckContext, setOneOffCheckContext] = useState(checkContext);
   const [usedTemplate, setUsedTemplate] = useState<string | null>(null);
   const [oneOffDoc, setOneOffDoc] = useState<DischargeDocument | null>(null);
+  // The floating bar publishes its own height, so the page always leaves room for it.
+  const barRef = usePublishedHeight("--bar-height", 16);
 
   // --- real-time autosave -------------------------------------------------------------
   //
@@ -398,12 +400,8 @@ export default function DischargeWorkspace({
     for (const c of checks.blocking) m.set(c.section, [...(m.get(c.section) ?? []), c]);
     return m;
   }, [checks]);
-  /** A card's red errors — Condition at Discharge's held back until Review has been reached. */
-  const blockingFor = (s: DischargeSectionId) =>
-    s === "conditionAtDischarge" && !reachedReview ? [] : (blockingBySection.get(s) ?? []);
-
-  const current = STEPS[step];
-  const stepIndexOf = (id: StepId) => STEPS.findIndex((s) => s.id === id);
+  /** A card's red errors, its own and those of any section it carries. */
+  const blockingOn = (id: StepId) => cardSections(id).flatMap((s) => blockingBySection.get(s) ?? []);
 
   function patch<K extends keyof DischargeDraft>(section: DischargeSectionId, key: K, value: DischargeDraft[K]) {
     setDraft((d) => ({ ...d, [key]: value }));
@@ -455,11 +453,10 @@ export default function DischargeWorkspace({
     scheduleSave();
   }
 
-  /** Move between cards. Autosave has the card being left; navigation never waits. */
-  function goTo(index: number) {
-    if (index < 0 || index >= STEPS.length) return;
-    if (STEPS[index].id === "review") setReachedReview(true);
-    setStep(index);
+  /** Move between the summary and a section. Autosave has the one being left; navigation never
+   *  waits. */
+  function goTo(next: View) {
+    setView(next);
     setOpenMed(null);
     setRemovedMed(null);
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
@@ -636,91 +633,106 @@ export default function DischargeWorkspace({
     });
   };
 
-  // --- what the section list dots and the badge say --------------------------------
-  function filledFor(id: StepId): boolean {
-    switch (id) {
-      case "indication":
-        return !!draft.indicationForAdmission.text.trim();
-      case "admission":
-        return true;
-      case "diagnoses":
-        return draft.diagnoses.some((d) => d.category === "primary" && d.text.trim());
-      case "procedures":
-        return draft.procedures.length > 0;
-      case "clinicalCourse":
-        return !!draft.clinicalCourse.text.trim();
-      case "relevantInvestigations":
-        return draft.relevantInvestigations.items.length > 0;
-      case "histopathology":
-        return draft.histopathology.length > 0;
-      case "medications":
-        return draft.medications.length > 0;
-      case "conditionAtDischarge":
-        return (
-          ALL_CONDITION_VARIABLES.some((v) => {
-            const x = dc.vars[v.key];
-            return x === true || (typeof x === "string" && x.trim().length > 0);
-          }) || !!dc.freeText?.trim()
-        );
-      case "primaryCareActions":
-        return draft.primaryCareActions.length > 0;
-      case "advice":
-        return draft.advice.included || draft.patientActions.length > 0 || draft.redFlags.included;
-      case "authentication":
-        return !!draft.authentication.doctorName?.trim();
-      default:
-        return false;
-    }
+  // --- what still needs the resident ------------------------------------------------
+  //
+  // An AI section with text nobody has approved yet, on this unit's own cards. Only Clinical
+  // Course blocks Finalise for it (lib/discharge-checks.ts); the other two are listed so the
+  // resident reads them, without blocking.
+  function aiPending(id: StepId): boolean {
+    if (readOnly) return false;
+    if (id === "indication") return !!draft.indicationForAdmission.text.trim() && !draft.indicationForAdmission.approvedAt;
+    if (id === "clinicalCourse") return !!draft.clinicalCourse.text.trim() && !draft.clinicalCourse.approvedAt;
+    if (id === "relevantInvestigations")
+      return draft.relevantInvestigations.items.length > 0 && !draft.relevantInvestigations.approvedAt;
+    return false;
+  }
+  const needs = readOnly ? [] : CARDS.filter((c) => blockingOn(c.id).length > 0 || aiPending(c.id));
+  const needsIds = new Set(needs.map((c) => c.id));
+  // Warnings on a section already listed under "Needs you" would only say it twice.
+  const glance = readOnly ? [] : checks.warnings.filter((w) => !needsIds.has(cardOf(w.section)));
+  /** Where finishing this section goes: the next one that needs you, else the summary. */
+  function nextAfter(id: StepId): View {
+    const order = CARDS.findIndex((c) => c.id === id);
+    const rest = needs.filter((c) => c.id !== id);
+    return (rest.find((c) => CARDS.findIndex((x) => x.id === c.id) > order) ?? rest[0])?.id ?? "overview";
   }
 
-  function badgeFor(id: StepId): React.ReactNode {
+  /** The one line each section shows on the summary, as it will read when printed. */
+  function summaryOf(id: StepId): React.ReactNode {
+    const none = (text: string) => <span className="text-muted">{text}</span>;
+    const missing = (text: string) => <em className="text-warn-fg">{text}</em>;
     switch (id) {
+      case "diagnoses": {
+        const primary = draft.diagnoses.find((d) => d.category === "primary")?.text.trim();
+        const others = draft.diagnoses.filter((d) => d.category !== "primary" && d.text.trim()).length;
+        return primary ? (
+          <>
+            {primary}
+            {others > 0 && <span className="text-muted"> · {others} more</span>}
+          </>
+        ) : (
+          missing("primary not set")
+        );
+      }
       case "indication":
-        return draft.indicationForAdmission.approvedAt
-          ? statusChip("approved", "ok")
-          : draft.indicationForAdmission.text
-            ? statusChip("review", "warn")
-            : statusChip("empty", "muted");
+        return draft.indicationForAdmission.text.trim().slice(0, 140) || none("not written");
       case "admission":
-        return statusChip("compiled", "muted");
-      case "diagnoses":
-        return draft.diagnoses.some((d) => d.category === "primary")
-          ? statusChip("compiled", "muted")
-          : statusChip("primary missing", "warn");
+        return (
+          [draft.admission.department, draft.admission.unit, draft.admission.admissionType].filter(Boolean).join(" · ") ||
+          none("not filled")
+        );
       case "procedures":
-        return statusChip(draft.procedures.length ? "compiled" : "none", "muted");
-      case "clinicalCourse":
-        return draft.clinicalCourse.approvedAt
-          ? statusChip("approved", "ok")
-          : draft.clinicalCourse.text
-            ? statusChip("review", "warn")
-            : statusChip("required", "warn");
-      case "relevantInvestigations":
-        return draft.relevantInvestigations.approvedAt
-          ? statusChip("approved", "ok")
-          : draft.relevantInvestigations.items.length
-            ? statusChip("review", "warn")
-            : statusChip("optional", "muted");
-      case "histopathology":
-        return statusChip(draft.histopathology.length ? "compiled" : "none", "muted");
-      case "medications":
-        return statusChip(draft.medications.length ? "compiled" : (draft.notRecorded ?? []).includes("medications") ? "none on discharge" : "none", "muted");
+        return draft.procedures.length
+          ? draft.procedures.map((p) => [p.name, p.date].filter(Boolean).join(" · ")).join("; ")
+          : none("none this admission");
+      case "clinicalCourse": {
+        const first = draft.clinicalCourse.text.trim().split(/(?<=\.)\s/)[0]?.slice(0, 140);
+        return first ? `${first}…` : missing("not written");
+      }
       case "conditionAtDischarge":
-        return blockingBySection.has("conditionAtDischarge") ? statusChip("incomplete", "warn") : statusChip("compiled", "muted");
+        return dc.prose.trim() || dc.freeText?.trim() || missing("not set");
+      case "relevantInvestigations": {
+        const kept = draft.relevantInvestigations.items.filter((i) => i.accepted);
+        return kept.length ? kept.map((i) => i.group).filter(Boolean).join(", ") || `${kept.length} kept` : none("none");
+      }
+      case "histopathology":
+        return draft.histopathology.length
+          ? draft.histopathology.map((h) => `${h.specimen || "specimen"} · ${h.status}`).join("; ")
+          : none("none");
+      case "medications":
+        return draft.medications.length
+          ? draft.medications.map((m) => [m.generic, m.strength].filter(Boolean).join(" ")).filter(Boolean).join(", ")
+          : (draft.notRecorded ?? []).includes("medications")
+            ? "None on discharge"
+            : none("none listed");
       case "primaryCareActions":
-        return statusChip(`${draft.primaryCareActions.length}`, "muted");
+        return draft.primaryCareActions.length ? draft.primaryCareActions.join("; ") : "None.";
       case "advice": {
-        const parts: string[] = [];
-        if (draft.patientActions.length) parts.push(`${draft.patientActions.length} to patient`);
-        if (draft.advice.included) parts.push("advice");
-        if (draft.redFlags.included) parts.push("red flags");
-        return parts.length ? statusChip(parts.join(" · "), "ok") : statusChip("optional", "muted");
+        const parts = [
+          ...draft.patientActions,
+          ...(draft.advice.included ? draft.advice.items.map((a) => a.module || "advice") : []),
+          ...(draft.redFlags.included && draft.redFlags.items.length ? ["red flags"] : []),
+        ];
+        return parts.length ? parts.join(" · ") : none("nothing added");
       }
       case "authentication":
-        return draft.authentication.doctorName ? statusChip("compiled", "muted") : statusChip("name missing", "warn");
+        return draft.authentication.doctorName?.trim()
+          ? [draft.authentication.doctorName, draft.authentication.designation].filter(Boolean).join(" · ")
+          : missing("name missing");
       default:
         return null;
     }
+  }
+
+  /** What a "Needs you" row says under its title. */
+  function needLine(id: StepId): { text: string; tone: "critical" | "warn" } {
+    const blocks = blockingOn(id);
+    // An AI draft waiting on approval says just that; its "not approved" blocker would only
+    // repeat it at length.
+    if (aiPending(id)) return { text: `AI draft to read and approve${blocks.length ? " · blocks Finalise" : ""}`, tone: blocks.length ? "critical" : "warn" };
+    if (blocks.length > 0)
+      return { text: `Blocks Finalise · ${blocks[0].message}${blocks.length > 1 ? ` (+${blocks.length - 1} more)` : ""}`, tone: "critical" };
+    return { text: "", tone: "warn" };
   }
 
   // --- section bodies -------------------------------------------------------------
@@ -739,8 +751,7 @@ export default function DischargeWorkspace({
               setOneOffCheckContext(ctx);
               setUsedTemplate(label);
               setDirty(new Set());
-              setReachedReview(false);
-              goTo(1);
+              goTo("overview");
             }}
           />
         );
@@ -760,11 +771,6 @@ export default function DischargeWorkspace({
               </button>
             )}
             <Area value={draft.indicationForAdmission.text} onChange={editIndication} rows={3} placeholder="Patient admitted with … requiring …" />
-            {draft.indicationForAdmission.text && !draft.indicationForAdmission.approvedAt && !readOnly && (
-              <button type="button" onClick={() => approve("indication")} className={approveBtn}>
-                Approve
-              </button>
-            )}
           </>
         );
       }
@@ -922,11 +928,6 @@ export default function DischargeWorkspace({
               </div>
             )}
             <Area value={draft.clinicalCourse.text} onChange={editClinicalCourse} rows={8} placeholder="The patient was admitted with …" />
-            {draft.clinicalCourse.text && !draft.clinicalCourse.approvedAt && !readOnly && (
-              <button type="button" onClick={() => approve("clinicalCourse")} className={approveBtn}>
-                Approve Clinical Course
-              </button>
-            )}
           </>
         );
       }
@@ -996,11 +997,6 @@ export default function DischargeWorkspace({
             >
               ＋ Add a result
             </OptionRow>
-            {draft.relevantInvestigations.items.length > 0 && !draft.relevantInvestigations.approvedAt && !readOnly && (
-              <button type="button" onClick={() => approve("relevantInvestigations")} className={approveBtn}>
-                Approve list
-              </button>
-            )}
           </>
         );
       }
@@ -1357,128 +1353,15 @@ export default function DischargeWorkspace({
           </>
         );
 
-      case "review": {
-        const primary = draft.diagnoses.find((d) => d.category === "primary")?.text;
-        const proc = draft.procedures[0]?.name;
-        const courseSnippet = draft.clinicalCourse.text.trim().split(/(?<=\.)\s/)[0]?.slice(0, 160) || null;
-        const acceptedInv = draft.relevantInvestigations.items.filter(
-          (it) => it.accepted || !draft.relevantInvestigations.items.some((x) => x.accepted)
-        );
-        return (
-          <>
-            <span
-              className={
-                "inline-flex items-center gap-1.5 self-start rounded-full px-3 py-1 text-caption font-semibold " +
-                (checks.blocking.length === 0 ? "bg-accent/10 text-accent" : "bg-warn-bg text-warn-fg")
-              }
-            >
-              {checks.blocking.length === 0 ? (
-                <>
-                  <IconCheck className="h-3.5 w-3.5" /> Nothing left to fix
-                </>
-              ) : (
-                `${checks.blocking.length} to fix before finalising`
-              )}
-            </span>
-
-            {(checks.blocking.length > 0 || checks.warnings.length > 0) && (
-              <div className="flex flex-col gap-1">
-                {checks.blocking.map((c) => (
-                  <button key={c.id} type="button" onClick={() => goTo(stepIndexOf(c.section === "patientActions" || c.section === "redFlags" ? "advice" : c.section))} className="block text-left text-footnote text-critical-fg">
-                    ● {c.message}
-                  </button>
-                ))}
-                {checks.warnings.map((c) => (
-                  <button key={c.id} type="button" onClick={() => goTo(stepIndexOf(c.section === "patientActions" || c.section === "redFlags" ? "advice" : c.section))} className="block text-left text-footnote text-warn-fg">
-                    ▲ {c.message}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* The summary as it will read — tap any line to jump to that card and edit it. */}
-            <div className="overflow-hidden rounded-[10px] border border-line bg-card text-caption leading-[1.5]">
-              <p className="border-b border-line px-3 pb-1.5 pt-2 text-center text-caption2 font-bold uppercase tracking-[0.06em]">
-                Discharge summary · tap a line to edit
-              </p>
-              <PreviewLine label="Diagnosis" onEdit={() => goTo(stepIndexOf("diagnoses"))}>
-                {primary || <em className="text-warn-fg">not set</em>}
-                {proc ? ` · ${proc}` : ""}
-              </PreviewLine>
-              <PreviewLine label="Indication" onEdit={() => goTo(stepIndexOf("indication"))}>
-                {draft.indicationForAdmission.text.trim().slice(0, 160) || <em className="text-warn-fg">not written</em>}
-              </PreviewLine>
-              <PreviewLine label="Course" onEdit={() => goTo(stepIndexOf("clinicalCourse"))}>
-                {courseSnippet ? `${courseSnippet}…` : <em className="text-warn-fg">not written</em>}
-              </PreviewLine>
-              <PreviewLine label="Condition" onEdit={() => goTo(stepIndexOf("conditionAtDischarge"))}>
-                {dc.prose.trim() || dc.freeText?.trim() || <em className="text-warn-fg">not set</em>}
-              </PreviewLine>
-              <PreviewLine label="Investigations" onEdit={() => goTo(stepIndexOf("relevantInvestigations"))}>
-                {acceptedInv.length ? acceptedInv.map((i) => i.group).filter(Boolean).join(", ") : <em className="text-muted">none</em>}
-              </PreviewLine>
-              {stepIndexOf("histopathology") >= 0 && (
-                <PreviewLine label="Histopathology" onEdit={() => goTo(stepIndexOf("histopathology"))}>
-                  {draft.histopathology.length
-                    ? draft.histopathology.map((h) => `${h.specimen || "specimen"} (${h.status})`).join("; ")
-                    : <em className="text-muted">none</em>}
-                </PreviewLine>
-              )}
-              <PreviewLine label="Medication" onEdit={() => goTo(stepIndexOf("medications"))}>
-                {draft.medications.length ? draft.medications.map((m) => m.generic).filter(Boolean).join(", ") : <em className="text-muted">none listed</em>}
-              </PreviewLine>
-              <PreviewLine label="Patient to" onEdit={() => goTo(stepIndexOf("advice"))}>
-                {draft.patientActions.length ? draft.patientActions.join("; ") : <em className="text-muted">nothing added</em>}
-              </PreviewLine>
-              <PreviewLine label="Advice" onEdit={() => goTo(stepIndexOf("advice"))}>
-                {draft.advice.included && draft.advice.items.length
-                  ? draft.advice.items.map((a) => a.module || "advice").join(", ")
-                  : <em className="text-muted">not included</em>}
-              </PreviewLine>
-              <PreviewLine label="Red flags" onEdit={() => goTo(stepIndexOf("advice"))}>
-                {draft.redFlags.included && draft.redFlags.items.length
-                  ? draft.redFlags.items.join(", ")
-                  : <em className="text-muted">not included</em>}
-              </PreviewLine>
-              <PreviewLine label="Signed" onEdit={() => goTo(stepIndexOf("authentication"))} last>
-                {draft.authentication.doctorName || <em className="text-warn-fg">name missing</em>}
-              </PreviewLine>
-            </div>
-
-            {!oneOff && (
-            <div className="mt-1 flex items-center gap-4">
-              <Link href={`/patients/${patientId}/discharge/print`} className="text-footnote text-accent">
-                Full page preview
-              </Link>
-              {!finalised && (
-                <button type="button" onClick={() => setAskReset(true)} disabled={pending} className="text-footnote text-muted">
-                  Discard edits &amp; rebuild
-                </button>
-              )}
-            </div>
-            )}
-          </>
-        );
-      }
-
       default:
         return null;
     }
   }
 
-  const isOptionalEmpty =
-    current.id !== "review" && !current.required && !filledFor(current.id) && !dirty.has(current.id as DischargeSectionId);
-  // An AI card still waiting on approval: the bar's primary approves it on the way past, so
-  // the small inline Approve is no longer the only way through and "Next" can't skip it.
-  const toApprove: "clinicalCourse" | "indication" | "relevantInvestigations" | null = readOnly
-    ? null
-    : current.id === "indication" && draft.indicationForAdmission.text && !draft.indicationForAdmission.approvedAt
-      ? "indication"
-      : current.id === "clinicalCourse" && draft.clinicalCourse.text && !draft.clinicalCourse.approvedAt
-        ? "clinicalCourse"
-        : current.id === "relevantInvestigations" && draft.relevantInvestigations.items.length > 0 && !draft.relevantInvestigations.approvedAt
-          ? "relevantInvestigations"
-          : null;
+  // An AI section still waiting on approval: the bar's primary approves it on the way past, so
+  // the small inline Approve is not the only way through and moving on can't skip it.
+  const toApprove =
+    (view === "indication" || view === "clinicalCourse" || view === "relevantInvestigations") && aiPending(view) ? view : null;
 
   if (oneOffDoc) {
     return (
@@ -1501,40 +1384,155 @@ export default function DischargeWorkspace({
     );
   }
 
+  const saveLine = (
+    <p className="text-center text-caption text-muted">
+      {saveState === "saving" && "Saving…"}
+      {saveState === "saved" && dirty.size === 0 && <span className="text-accent">All changes saved</span>}
+      {saveState === "error" && <span className="text-critical-fg">Not saved — check your connection</span>}
+      {message && <span>{saveState !== "idle" ? " · " : ""}{message}</span>}
+    </p>
+  );
+
+  const finaliseButton = finalised ? (
+    <Link
+      href={`/patients/${patientId}/discharge/print`}
+      className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-center text-callout font-semibold text-accent-ink"
+    >
+      Print / download
+    </Link>
+  ) : (
+    <button
+      type="button"
+      onClick={finalise}
+      disabled={pending || checks.blocking.length > 0}
+      className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-callout font-semibold text-accent-ink disabled:opacity-50"
+    >
+      {oneOff
+        ? isFinalising
+          ? "Rendering…"
+          : checks.blocking.length > 0
+            ? `Preview & print · ${checks.blocking.length} to fix`
+            : "Preview & print"
+        : isFinalising
+          ? "Finalising…"
+          : checks.blocking.length > 0
+            ? `Finalise · ${checks.blocking.length} to fix`
+            : "Finalise & print"}
+    </button>
+  );
+
+  /** The bar that floats at the foot of the screen: the summary's Finalise, or a section's
+   *  way on. */
+  const bar = (primary: React.ReactNode, secondary: React.ReactNode) => (
+    <div
+      ref={barRef}
+      className="bottom-bar fixed inset-x-0 bottom-0 z-10 mx-auto flex max-w-md flex-col gap-1.5 border-t border-line bg-background/90 px-4 pt-3 backdrop-blur-xl"
+    >
+      <div className="flex items-center gap-2">
+        {secondary}
+        {primary}
+      </div>
+      {saveLine}
+    </div>
+  );
+  const secondaryBtn = "rounded-[12px] border border-line px-5 py-3 text-subhead font-semibold";
+
+  const dictation = live && (
+    <LiveDictation
+      patientId={patientId}
+      screen="discharge"
+      title="Dictating the discharge"
+      example="e.g. “admitted with acute appendicitis… underwent lap appendicectomy on day one, uneventful recovery… review in surgery OPD after a week…”"
+      sections={live}
+      route={routeVia(patientId, live)}
+      onLines={applyDictation}
+      onClose={() => setLive(null)}
+    />
+  );
+
+  // --- a section ----------------------------------------------------------------------
+  if (view !== "overview") {
+    const card = view === "start" ? { id: "start" as StepId, title: "Start" } : CARDS.find((c) => c.id === view);
+    const next = view === "start" ? "overview" : nextAfter(view);
+    const nextLabel = next === "overview" ? null : SHORT[next];
+    const needIndex = needs.findIndex((c) => c.id === view);
+    const blocks = blockingOn(view);
+    return (
+      <div className="flex flex-col gap-3 px-4 pb-[var(--bar-height)]">
+        {oneOff && usedTemplate && view !== "start" && (
+          <p className="text-footnote leading-relaxed text-muted">
+            Filled from the {usedTemplate} template. Replace every <span className="font-mono">[ … ]</span> with the patient&rsquo;s details.
+          </p>
+        )}
+        {dictation}
+        <button type="button" onClick={() => goTo("overview")} className="tap flex items-center gap-0.5 self-start text-subhead text-accent">
+          <ChevronLeft className="h-5 w-5" aria-hidden /> Summary
+        </button>
+        <div className="ios-group flex flex-col gap-3 px-4 py-4">
+          <div>
+            <p className="text-caption2 font-semibold uppercase tracking-[0.03em] text-muted">
+              {needIndex >= 0 ? `Needs you · ${needIndex + 1} of ${needs.length}` : "Discharge summary"}
+            </p>
+            <div className="mt-0.5 flex items-start justify-between gap-2">
+              <h2 className="text-title1 font-bold leading-tight tracking-[-0.021em]">{card?.title}</h2>
+              {aiPending(view) && (
+                <span className="mt-1.5 inline-flex shrink-0 items-center gap-1 rounded-full bg-warn-bg px-2.5 py-1 text-caption font-semibold text-warn-fg">
+                  <Sparkles className="h-3 w-3" aria-hidden /> AI draft
+                </span>
+              )}
+              {view === "medications" && draft.medications.length === 0 && (draft.notRecorded ?? []).includes("medications") && statusChip("none on discharge", "muted")}
+            </div>
+          </div>
+          {blocks.length > 0 && (
+            <div className="rounded-[10px] bg-critical-bg px-3 py-2">
+              {blocks.map((c) => (
+                <p key={c.id} className="text-footnote text-critical-fg">
+                  {c.message}
+                </p>
+              ))}
+            </div>
+          )}
+          {renderSection(view)}
+        </div>
+        {bar(
+          view === "start" ? (
+            <button type="button" onClick={() => goTo("overview")} className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-callout font-semibold text-accent-ink">
+              Go to the summary
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                if (toApprove) approve(toApprove);
+                goTo(next);
+              }}
+              className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-callout font-semibold text-accent-ink"
+            >
+              {toApprove ? (nextLabel ? `Approve · next: ${nextLabel}` : "Approve · done") : nextLabel ? `Next: ${nextLabel}` : "Done"}
+            </button>
+          ),
+          view === "start" ? null : (
+            <button type="button" onClick={() => goTo("overview")} className={secondaryBtn}>
+              Summary
+            </button>
+          )
+        )}
+      </div>
+    );
+  }
+
+  // --- the summary --------------------------------------------------------------------
+  const readyCards = CARDS.filter((c) => !needsIds.has(c.id));
+  const segment = (id: StepId) =>
+    blockingOn(id).length > 0 ? "bg-critical-dot" : aiPending(id) ? "bg-warn-dot" : "bg-accent";
   return (
     <div className="flex flex-col gap-3 px-4 pb-[var(--bar-height)]">
-      {oneOff && usedTemplate && current.id !== "start" && (
+      {oneOff && usedTemplate && (
         <p className="text-footnote leading-relaxed text-muted">
           Filled from the {usedTemplate} template. Replace every <span className="font-mono">[ … ]</span> with the patient&rsquo;s details.
         </p>
       )}
-      {live && (
-        <LiveDictation
-          patientId={patientId}
-          screen="discharge"
-          title="Dictating the discharge"
-          example="e.g. “admitted with acute appendicitis… underwent lap appendicectomy on day one, uneventful recovery… review in surgery OPD after a week…”"
-          sections={live}
-          route={routeVia(patientId, live)}
-          onLines={applyDictation}
-          onClose={() => setLive(null)}
-        />
-      )}
-      {!finalised && !live && !oneOff && (
-        <DictateButton
-          title="Dictate the discharge"
-          sub="Speak the summary — each part fills its section as you talk."
-          onClick={() => setLive(liveSections())}
-        />
-      )}
-      {finalised && (
-        <div className="ios-group flex items-center justify-between px-4 py-3">
-          <span className="text-subhead font-medium text-accent">Finalised</span>
-          <button type="button" onClick={reopen} className="text-footnote font-medium text-accent" disabled={pending}>
-            Reopen to edit
-          </button>
-        </div>
-      )}
+      {dictation}
 
       {finalised && finalCheck && (finalCheck.fixes.length > 0 || finalCheck.questions.length > 0) && (
         <div className="ios-group flex flex-col gap-2 px-4 py-3">
@@ -1568,113 +1566,158 @@ export default function DischargeWorkspace({
         </div>
       )}
 
-      {/* THE CARD, the jump menu and the fixed navigation */}
-      <StepShell
-        kicker="Discharge"
-        step={step}
-        steps={STEPS.length}
-        title={current.title}
-        badge={current.id !== "review" && badgeFor(current.id)}
-        noun="section"
-        items={STEPS.map((s) => {
-          const isBlocking = s.id !== "review" && cardSections(s.id).some((sec) => blockingBySection.has(sec));
-          const done = s.id === "review" ? checks.blocking.length === 0 : filledFor(s.id);
-          return {
-            title: s.title,
-            dot: isBlocking ? "bg-recording" : done ? "bg-accent" : "bg-line",
-            trailing: !oneOff && dirty.has(s.id as DischargeSectionId) && <span className="text-caption2 text-accent">unsaved</span>,
-          };
-        })}
-        onJump={goTo}
-        between={
-          <>
-            {/* Reading the paper file in is a step of THIS summary, not a rival to it — so it lives
-                here, quietly, rather than as a button on the patient page. */}
-            {!finalised && !oneOff && (
+      <div className="ios-group flex flex-col gap-2.5 px-4 py-4">
+        <p className="text-caption2 font-semibold uppercase tracking-[0.03em] text-muted">Discharge summary</p>
+        <div className="flex items-center gap-2.5">
+          {(finalised || needs.length === 0) && (
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-good-bg text-good-fg">
+              <Check className="h-[18px] w-[18px]" strokeWidth={2.6} aria-hidden />
+            </span>
+          )}
+          <h2 className="text-title1 font-bold leading-tight tracking-[-0.021em]">
+            {finalised
+              ? "Finalised"
+              : needs.length === 0
+                ? "Ready to finalise"
+                : `${needs.length} ${needs.length === 1 ? "thing needs" : "things need"} you`}
+          </h2>
+        </div>
+        <p className="text-footnote text-muted">
+          {finalised
+            ? "Reopen it to change anything."
+            : `${readyCards.length} of ${CARDS.length} sections ready${oneOff ? "" : " from the record"}`}
+        </p>
+        <div
+          className="grid gap-[3px]"
+          style={{ gridTemplateColumns: `repeat(${CARDS.length}, minmax(0, 1fr))` }}
+          role="img"
+          aria-label={`${readyCards.length} of ${CARDS.length} sections ready`}
+        >
+          {CARDS.map((c) => (
+            <span key={c.id} className={"h-1.5 rounded-full " + segment(c.id)} />
+          ))}
+        </div>
+        {finalised ? (
+          <button type="button" onClick={reopen} disabled={pending} className="tap self-start text-footnote font-medium text-accent">
+            Reopen to edit
+          </button>
+        ) : oneOff ? (
+          <button type="button" onClick={() => goTo("start")} className="tap self-start text-footnote font-medium text-accent">
+            Back to Start — who it is for, the papers, the template
+          </button>
+        ) : (
+            <div className="flex gap-2 pt-0.5">
+              {!live && (
+                <button
+                  type="button"
+                  onClick={() => setLive(liveSections())}
+                  className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-line text-subhead font-semibold text-accent active:bg-chip"
+                >
+                  <Mic className="h-[18px] w-[18px]" aria-hidden /> Dictate
+                </button>
+              )}
+              {/* Reading the paper file in is a step of THIS summary, not a rival to it. */}
               <Link
                 href={`/patients/${patientId}/prepare-discharge`}
-                className="self-center text-footnote text-muted underline decoration-line underline-offset-2"
+                className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-line text-subhead font-semibold text-accent active:bg-chip"
               >
-                Read in the paper file
+                <Camera className="h-[18px] w-[18px]" aria-hidden /> Read paper file
               </Link>
-            )}
-          </>
-        }
-        after={
-          <>
-            <div className="flex items-center gap-2 text-caption text-muted">
-              {saveState === "saving" && <span>Saving…</span>}
-              {saveState === "saved" && dirty.size === 0 && <span className="text-accent">All changes saved</span>}
-              {saveState === "error" && <span className="text-critical-fg">Not saved — check your connection</span>}
-              {message && <span>· {message}</span>}
             </div>
-
-            <ActionSheet
-              open={askReset}
-              title="Rebuild this summary from the record?"
-              message="Every edit made here is discarded and the summary is compiled again from what was recorded."
-              action="Discard edits and rebuild"
-              onCancel={() => setAskReset(false)}
-              onConfirm={reset}
-            />
-          </>
-        }
-        onBack={() => goTo(step - 1)}
-        backDisabled={step === 0}
-        next={
-          current.id !== "review" ? (
-            <button
-              type="button"
-              onClick={() => {
-                if (toApprove) approve(toApprove);
-                goTo(step + 1);
-              }}
-              className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-callout font-semibold text-accent-ink"
-            >
-              {toApprove ? "Approve & next" : isOptionalEmpty ? "Skip" : "Next"}
-            </button>
-          ) : finalised ? (
-            <Link
-              href={`/patients/${patientId}/discharge/print`}
-              className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-center text-callout font-semibold text-accent-ink"
-            >
-              Print / download
-            </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={finalise}
-              disabled={pending || checks.blocking.length > 0}
-              className="flex-1 rounded-[12px] bg-accent px-4 py-3 text-callout font-semibold text-accent-ink disabled:opacity-50"
-            >
-              {oneOff
-                ? isFinalising
-                  ? "Rendering…"
-                  : checks.blocking.length > 0
-                    ? `Preview & print (${checks.blocking.length} to fix)`
-                    : "Preview & print"
-                : isFinalising
-                  ? "Finalising…"
-                  : checks.blocking.length > 0
-                    ? `Finalise (${checks.blocking.length} to fix)`
-                    : "Finalise & print"}
-            </button>
-          )
-        }
-      >
-        {current.id !== "review" && cardSections(current.id).some((s) => blockingFor(s).length > 0) && (
-          <div className="rounded-[10px] bg-critical-bg px-3 py-2">
-            {cardSections(current.id)
-              .flatMap(blockingFor)
-              .map((c) => (
-                <p key={c.id} className="text-footnote text-critical-fg">
-                  {c.message}
-                </p>
-              ))}
-          </div>
         )}
-        {renderSection(current.id)}
-      </StepShell>
+      </div>
+
+      {needs.length > 0 && (
+        <section className="flex flex-col gap-1.5">
+          <p className="ios-group-header px-4">Needs you</p>
+          <div className="ios-group overflow-hidden">
+            {needs.map((c, i) => {
+              const line = needLine(c.id);
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => goTo(c.id)}
+                  className={"flex min-h-11 w-full items-center gap-3 px-3.5 py-3 text-left active:bg-chip" + (i < needs.length - 1 ? " border-b border-line/60" : "")}
+                >
+                  <span
+                    className={
+                      "grid h-7 w-7 shrink-0 place-items-center rounded-full " +
+                      (line.tone === "critical" ? "bg-critical-bg text-critical-fg" : "bg-warn-bg text-warn-fg")
+                    }
+                  >
+                    {line.tone === "critical" ? <CircleAlert className="h-4 w-4" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="text-subhead font-semibold">{c.title}</span>
+                    <span className={"text-footnote " + (line.tone === "critical" ? "text-critical-fg" : "text-warn-fg")}>{line.text}</span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted" aria-hidden />
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {glance.length > 0 && (
+        <section className="flex flex-col gap-1.5">
+          <p className="ios-group-header px-4">Worth a glance · not blocking</p>
+          <div className="ios-group overflow-hidden">
+            {glance.map((w, i) => (
+              <button
+                key={w.id}
+                type="button"
+                onClick={() => goTo(cardOf(w.section))}
+                className={"flex min-h-11 w-full items-start gap-2.5 px-3.5 py-2.5 text-left text-footnote leading-snug active:bg-chip" + (i < glance.length - 1 ? " border-b border-line/60" : "")}
+              >
+                <TriangleAlert className="mt-px h-4 w-4 shrink-0 text-warn-fg" aria-hidden />
+                <span className="flex-1">
+                  <span className="font-semibold">{SHORT[cardOf(w.section)] ?? w.section}</span> {w.message}
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {readyCards.length > 0 && (
+        <section className="flex flex-col gap-1.5">
+          <p className="ios-group-header px-4">{needs.length > 0 ? "Ready · reads as it will print" : "The summary · tap to change"}</p>
+          <div className="ios-group overflow-hidden">
+            {readyCards.map((c, i) => (
+              <SummaryRow key={c.id} label={SHORT[c.id] ?? c.title} onEdit={() => goTo(c.id)} last={i === readyCards.length - 1}>
+                {summaryOf(c.id)}
+              </SummaryRow>
+            ))}
+          </div>
+          {!finalised && <p className="px-4 text-caption text-muted">Tap any line to change it. Editing an approved section takes its approval back.</p>}
+        </section>
+      )}
+
+      {!oneOff && !finalised && (
+        <button type="button" onClick={() => setAskReset(true)} disabled={pending} className="tap self-center text-footnote text-muted">
+          Discard edits &amp; rebuild
+        </button>
+      )}
+
+      <ActionSheet
+        open={askReset}
+        title="Rebuild this summary from the record?"
+        message="Every edit made here is discarded and the summary is compiled again from what was recorded."
+        action="Discard edits and rebuild"
+        onCancel={() => setAskReset(false)}
+        onConfirm={reset}
+      />
+
+      {bar(
+        finaliseButton,
+        oneOff ? null : (
+          <Link href={`/patients/${patientId}/discharge/print`} className={secondaryBtn}>
+            Preview
+          </Link>
+        )
+      )}
     </div>
   );
 }
