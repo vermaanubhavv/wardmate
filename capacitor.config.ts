@@ -1,20 +1,26 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 /**
- * The iOS wrapper.
+ * The iOS and Android wrappers.
  *
  * WardMate is a server-rendered app — every screen, the sign-in, and the transcription all
- * come from the server — so there is no version of it that can be frozen into an .ipa and
- * shipped. This wrapper therefore does not bundle the app at all: it opens the live site in a
- * native web view, and `capacitor-shell/` exists only because Capacitor requires a web
- * directory to point at.
+ * come from the server — so there is no version of it that can be frozen into an .ipa or .apk
+ * and shipped. Neither wrapper bundles the app at all: each opens the live site in a native web
+ * view, and `capacitor-shell/` exists only because Capacitor requires a web directory to point
+ * at.
  *
- * What it buys, and the only reason to build it: a native microphone permission granted once
- * instead of per-session, recording that survives the screen locking mid-round, and a
- * TestFlight link that can be sent to a colleague.
+ * What it buys, and the only reason to build either: a native microphone permission granted
+ * once instead of per-session, recording that survives the screen locking mid-round, and an
+ * install link (TestFlight, or a sideloaded .apk) that can be sent to a colleague.
  *
- * The consequence to remember: because the app is the live site, a `vercel --prod` deploy
- * updates the native app too. Nothing needs rebuilding or resubmitting for a normal change.
+ * The consequence to remember: because the app is the live site, every deploy to production
+ * updates both native apps too. Nothing needs rebuilding or resubmitting for a normal change —
+ * see `docs/ios-app.md` and `docs/android-app.md` for what does.
+ *
+ * The two platforms survive a locked screen differently. iOS gets it from
+ * `UIBackgroundModes: audio` in Info.plist. Android has no manifest-only equivalent; it needs a
+ * foreground service (`android/app/.../RecordingForegroundService.java`), started and stopped
+ * from `lib/stt/background-service.ts` around every live dictation session in `lib/stt/live.ts`.
  */
 const config: CapacitorConfig = {
   appId: "in.wardmate.app",
@@ -52,6 +58,12 @@ const config: CapacitorConfig = {
     // screens at all and waited on the network for every one. Links to anywhere not listed
     // still open in Safari: Capacitor sends them there before WebKit's own block applies.
     limitsNavigationsToAppBoundDomains: true,
+  },
+
+  android: {
+    // The microphone grant comes from RECORD_AUDIO in AndroidManifest.xml; this block only
+    // needs touching to turn on chrome://inspect for a debug build.
+    webContentsDebuggingEnabled: false,
   },
 };
 
