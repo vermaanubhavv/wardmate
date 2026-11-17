@@ -1,3 +1,4 @@
+import { startBackgroundRecording, stopBackgroundRecording } from "@/lib/stt/background-service";
 import { buildDeepgramParams } from "@/lib/transcription/buildDeepgramUrl";
 
 /**
@@ -112,7 +113,11 @@ export async function openLiveDictation(
       throw new Error("Microphone blocked — allow it for this site in your browser settings.");
     }
   }
+  // On Android, a foreground service keeps the mic alive through a locked screen; every way a
+  // session ends runs releaseMic, so that is where it stops. A no-op in the browser and on iOS.
+  startBackgroundRecording();
   const releaseMic = () => {
+    stopBackgroundRecording();
     if (!given) stream.getTracks().forEach((t) => t.stop());
   };
 
