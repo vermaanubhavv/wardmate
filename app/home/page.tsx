@@ -20,7 +20,7 @@ const DESCRIPTION =
   "WardMate turns a spoken ward round into the unit's paperwork — the jobs list, the handover, the discharge summaries. Built by a resident, for residents in India.";
 
 export const metadata: Metadata = {
-  title: "WardMate — Your AI residency companion",
+  title: "WardMate — Say the round once",
   description: DESCRIPTION,
   alternates: { canonical: "https://wardmate.in/home" },
   robots: { index: true, follow: true },
@@ -28,13 +28,13 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "WardMate",
     url: "https://wardmate.in/home",
-    title: "WardMate — Your AI residency companion",
+    title: "WardMate — Say the round once",
     description: DESCRIPTION,
     images: [{ url: "https://wardmate.in/icon-512.png", width: 512, height: 512, alt: "WardMate" }],
   },
   twitter: {
     card: "summary",
-    title: "WardMate — Your AI residency companion",
+    title: "WardMate — Say the round once",
     description: DESCRIPTION,
     images: ["https://wardmate.in/icon-512.png"],
   },
@@ -188,30 +188,35 @@ export default function HomePage() {
         <div className="wm-progress" aria-hidden />
       </header>
 
-      {/* ---- hero: text + one real, featured screenshot and a single callout ---- */}
+      {/* ---- hero: one spoken sentence, and the three things it becomes ---- */}
       <section className="wm-hero">
-        <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 pt-20 pb-24 lg:grid-cols-[1.05fr_0.95fr] lg:pt-28">
+        <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 pt-16 pb-20 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:pt-24 lg:pb-24">
           <div>
-            <span className="wm-pill wm-in">
-              <span className="wm-live-dot" aria-hidden />
-              Your AI residency companion
-            </span>
-            <h1 className="wm-in mt-5 max-w-[13ch] text-[44px] font-bold leading-[1.02] tracking-[-0.03em] sm:text-[60px]" style={d(120)}>
-              Less clerical.{" "}
-              <span className="wm-accent-text">More clinical.</span>
+            <h1 className="wm-in max-w-[13ch] text-[44px] font-bold leading-[1.02] tracking-[-0.03em] sm:text-[60px]">
+              Say the round once.
             </h1>
-            <p className="wm-in mt-6 max-w-[50ch] text-body leading-snug text-muted" style={d(240)}>
-              WardMate&rsquo;s AI drafts the ward list and the round from what&rsquo;s already
-              in front of you, and flags what the guidelines say you shouldn&rsquo;t miss — so
-              training time goes to the patient, not the paperwork. Built by a resident
-              who&rsquo;s done the on-call nights, not just studied them.
+            <p className="wm-in mt-6 max-w-[46ch] text-body leading-snug text-muted" style={d(120)}>
+              Speak at the bedside. The to-do list, the handover and the discharge summary come
+              from what you said, and every value keeps the sentence it came from.
             </p>
+            <figure className="wm-in wm-said mt-8" style={d(240)}>
+              <blockquote className="wm-voice text-title3 leading-snug">
+                &ldquo;Bed 7, Shikha, day 5 pancreatitis. Temp 102 at three. Send CRP and
+                lactate.&rdquo;
+              </blockquote>
+              <figcaption className="mt-2 flex items-center gap-1.5 text-footnote text-muted">
+                <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
+                  <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z M6 11a6 6 0 0 0 12 0 M12 17v4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Six seconds, at the bedside
+              </figcaption>
+            </figure>
             <div className="wm-in mt-8 flex flex-wrap gap-3" style={d(360)}>
               <a
                 href="#waitlist"
                 className="wm-card rounded-[12px] bg-accent px-6 py-3.5 text-subhead font-semibold text-accent-ink shadow-[0_14px_30px_-14px_var(--accent)]"
               >
-                Join the waitlist →
+                Join the waitlist
               </a>
               <a href="#about" className="wm-card rounded-[12px] border border-line bg-card/70 px-6 py-3.5 text-subhead font-semibold backdrop-blur">
                 See how it works
@@ -219,26 +224,59 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="wm-in relative mx-auto w-full max-w-[300px] lg:max-w-[340px]" style={d(200)}>
-            <div
-              className="pointer-events-none absolute -inset-10 -z-10 rounded-full"
-              style={{ background: "radial-gradient(55% 55% at 50% 45%, color-mix(in srgb, var(--accent) 26%, transparent), transparent)" }}
-            />
-            <div>
-              {/* eslint-disable-next-line @next/next/no-img-element -- fixed marketing asset */}
-              <img
-                src="/home/phone-ward-round.png"
-                alt="Wardmate ward round screen, triaged most urgent first, with a critical fever flagged ahead of routine patients"
-                className="mx-auto w-full rounded-[22px] ring-1 ring-black/5 shadow-[0_40px_80px_-30px_rgba(0,0,0,0.45)]"
-              />
+          {/* What the sentence became. Rows arrive after the quote, in the order they were said. */}
+          <div className="wm-in wm-glow-border mx-auto w-full max-w-[420px] px-5 py-4 shadow-[0_30px_60px_-30px_var(--accent)]" style={d(420)}>
+            <div className="flex items-center gap-3 pb-3">
+              <span className="grid h-9 min-w-9 place-items-center rounded-[9px] bg-chip text-body font-semibold tabular-nums">7</span>
+              <div>
+                <p className="text-subhead font-semibold">Shikha, 25/F</p>
+                <p className="text-footnote text-muted">Day 5 · Acute pancreatitis</p>
+              </div>
             </div>
-            <div className="wm-chip wm-chip-a">
-              <span className="h-2.5 w-2.5 rounded-full bg-critical-dot" />
-              <span>
-                <span className="block font-semibold text-critical-fg">Needs attention now</span>
-                <span className="text-muted">Bed 7 · Temp 102°F</span>
-              </span>
+            <div className="wm-in border-t border-line py-3" style={d(620)}>
+              <p className="flex items-center gap-2 text-subhead font-semibold">
+                Temp 102°F
+                <span className="rounded-[6px] bg-warn-bg px-1.5 py-0.5 text-caption font-semibold text-warn-fg">Check</span>
+              </p>
+              <p className="wm-voice mt-0.5 text-footnote text-muted">&ldquo;Temp 102 at three&rdquo;</p>
             </div>
+            <div className="wm-in border-t border-line py-3" style={d(780)}>
+              <p className="text-subhead font-semibold">To do: send CRP, lactate</p>
+              <p className="wm-voice mt-0.5 text-footnote text-muted">&ldquo;Send CRP and lactate&rdquo;</p>
+            </div>
+            <div className="wm-in border-t border-line pt-3 pb-1" style={d(940)}>
+              <p className="flex items-center gap-2 text-subhead font-semibold">
+                Pain score
+                <span className="rounded-[6px] border border-dashed border-warn-fg px-1.5 py-0.5 text-caption font-semibold text-warn-fg">Not recorded</span>
+              </p>
+              <p className="mt-0.5 text-footnote text-muted">Nobody said one, so there isn&rsquo;t one.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ---- the belief: absence is shown, never filled ---- */}
+      <section className="border-y border-line bg-card">
+        <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-20 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+          <div className="wm-reveal">
+            <h2 className="max-w-[16ch] text-title1 font-semibold leading-[1.08] tracking-tight sm:text-[44px]">
+              It would rather show you a blank.
+            </h2>
+            <p className="mt-5 max-w-[50ch] text-callout leading-snug text-muted">
+              WardMate never invents a clinical value. If nobody said a temperature, there is no
+              temperature. The discharge summary prints an empty line where nothing was recorded,
+              so you can see what you were not told before you sign it.
+            </p>
+          </div>
+          <div className="wm-reveal wm-paper wm-voice mx-auto w-full max-w-[420px]">
+            <p className="wm-paper-head">Discharge summary · Unit Alpha</p>
+            <p>Diagnosis: Acute pancreatitis</p>
+            <p>Temp at discharge: 98.6°F</p>
+            <p className="flex items-baseline gap-2">
+              Serum amylase: <span className="wm-paper-blank" aria-label="left blank" />
+            </p>
+            <p className="wm-paper-note">Not recorded. Left blank on purpose.</p>
+            <p>Follow-up: Surgery OPD, 1 week</p>
           </div>
         </div>
       </section>

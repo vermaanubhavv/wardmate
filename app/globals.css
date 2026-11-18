@@ -69,8 +69,11 @@
   --color-good-bg: var(--good-bg);
   --color-good-fg: var(--good-fg);
   --color-good-dot: var(--good-dot);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-mono);
+  /* One typeface: the system font set on body. `font-mono` (bed chips, IP numbers, <pre>) has
+     always rendered in it — these two tokens used to point at themselves, which CSS treats as
+     unset — so that is now said outright instead of shipping a mono webfont nobody saw. */
+  --font-sans: inherit;
+  --font-mono: inherit;
 
   /* The iOS type scale, in rem so Larger Text still scales it. Ten sizes, named the way
      Apple names them, replacing twenty-nine arbitrary pixel values that had crept in. */
