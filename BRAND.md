@@ -101,10 +101,17 @@ splash and share card are all rendered from it. The ring turns and the dots run 
 is busy, so the logo and the spinner are one drawing.
 
 **Type.** The app is set in the system font and stays that way. The brand face is **IBM Plex
-Sans** (chosen 2026-11-18), used on the website's headings and wordmark and loaded only on
-`/home`; it is for marketing and print, never the app's own screens. What was said, and the
-printed discharge summary, are set in the system serif. The tagline is "Your Residency
-Companion". The browser-tab icon (`app/favicon.ico`) is a bolder cut of the mark drawn for 16–48px.
+Sans** (chosen 2026-11-18). It appears in four places: the website's headings (loaded only on
+`/home`); the "wardmate" wordmark, which is drawn as outlines in `app/wordmark.tsx` so no screen
+downloads a font for it; the share card (`assets/fonts/IBMPlexSans-SemiBold.ttf`); and documents
+bound for paper — the discharge summary, case history sheet, handover and progress note
+(`app/print-font.ts`). What was said on the website is set in the system serif. The tagline is
+"Your Residency Companion". The browser-tab icon (`app/favicon.ico`) is a bolder cut of the mark
+drawn for 16–48px.
+
+**Native icons.** `assets/icon.png`, `icon-foreground.png`, `icon-background.png` and the two
+splash files are the sources; the files under `android/` and `ios/` are generated from them with
+`npx @capacitor/assets generate` and need an app rebuild to reach a phone.
 
 **Colour — each one has one job.**
 

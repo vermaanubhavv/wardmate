@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans } from "next/font/google";
 import Mark from "@/app/mark";
+import { WordmarkText } from "@/app/wordmark";
 import WaitlistForm from "@/app/waitlist/waitlist-form";
 import ContactForm from "@/app/home/contact-form";
 import { ScreenTour, TriageDemo } from "@/app/home/interactive";
@@ -162,9 +163,7 @@ export default function HomePage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <a href="#" className="flex items-center gap-2">
             <Mark className="h-7 w-7" />
-            <span className="wm-brand text-body font-semibold tracking-tight">
-              ward<span className="text-accent">mate</span>
-            </span>
+            <WordmarkText className="text-body" />
           </a>
           <nav aria-label="Sections" className="hidden items-center gap-1 md:flex">
             {NAV.map(([href, label]) => (

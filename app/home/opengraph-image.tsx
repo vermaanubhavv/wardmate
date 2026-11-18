@@ -1,4 +1,6 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { MARK_BEAD, MARK_DOTS, MARK_RING } from "@/app/mark";
 
 /** The card a link to /home unfurls into on WhatsApp, X and the rest. */
@@ -6,7 +8,8 @@ export const alt = "WardMate — Say the round once";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function Image() {
+export default async function Image() {
+  const plex = await readFile(join(process.cwd(), "assets/fonts/IBMPlexSans-SemiBold.ttf"));
   return new ImageResponse(
     (
       <div
@@ -19,6 +22,7 @@ export default function Image() {
           padding: 80,
           background: "#0b7f79",
           color: "#ffffff",
+          fontFamily: "IBM Plex Sans",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 20, fontSize: 48 }}>
@@ -39,6 +43,6 @@ export default function Image() {
         </div>
       </div>
     ),
-    size,
+    { ...size, fonts: [{ name: "IBM Plex Sans", data: plex, weight: 600, style: "normal" }] },
   );
 }

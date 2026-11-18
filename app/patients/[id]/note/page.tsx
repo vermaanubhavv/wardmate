@@ -1,3 +1,4 @@
+import { brandDoc } from "@/app/print-font";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
@@ -205,7 +206,7 @@ export default async function ProgressNotePage({ params }: { params: Promise<{ i
             <SoapNote note={note} specialty={pack.key} />
           </div>
         ) : (
-          <div className="ios-group px-5 py-5 text-callout leading-relaxed text-black print:rounded-none print:border-0 print:p-0 print:shadow-none">
+          <div className={`${brandDoc} ios-group px-5 py-5 text-callout leading-relaxed text-black print:rounded-none print:border-0 print:p-0 print:shadow-none`}>
             <div className="text-center">
               <p className="text-callout font-bold uppercase">Progress Sheet</p>
             </div>
