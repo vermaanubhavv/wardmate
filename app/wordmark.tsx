@@ -30,8 +30,12 @@ export function WordmarkText({ className = "" }: { className?: string }) {
 /** The app's name, with the mark beside it. */
 export default function Wordmark() {
   return (
-    <div className="flex items-center gap-1.5">
-      <Mark className="h-6 w-6 shrink-0" />
+    <div className="flex items-center gap-2">
+      {/* Sized up from the text's own height on purpose: the mark's taper, bead and three
+          dots lose their separation and blur into a smudge below about 28px — see the
+          render test that found this. 24px (h-6) was too small for this particular drawing;
+          this is the smallest size it stays legible at next to 15px type. */}
+      <Mark className="h-8 w-8 shrink-0" />
       <WordmarkText className="text-subhead" />
     </div>
   );
