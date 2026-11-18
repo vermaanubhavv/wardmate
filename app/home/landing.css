@@ -28,53 +28,44 @@
   color: var(--accent);
 }
 
-.wm-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 12px 5px 8px;
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--card) 70%, transparent);
-  backdrop-filter: blur(8px);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--accent);
+/* What was said, set in the phone's own serif (New York on an iPhone) so speech and the
+   printed summary read as a different voice from the interface around them. */
+.wm-voice {
+  font-family: ui-serif, "New York", Georgia, serif;
+}
+.wm-said {
+  border-left: 2px solid var(--accent);
+  padding-left: 16px;
+  max-width: 34ch;
 }
 
-.wm-live-dot {
-  position: relative;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--accent);
+/* A corner of the printed discharge summary. */
+.wm-paper {
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--background);
+  font-size: var(--text-body);
+  line-height: 1.9;
+}
+.wm-paper-head {
+  margin-bottom: 6px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-size: var(--text-footnote);
+  color: var(--muted);
+}
+.wm-paper-blank {
+  flex: 1;
+  border-bottom: 1.5px solid var(--warn-fg);
+}
+.wm-paper-note {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-size: var(--text-footnote);
+  line-height: 1.4;
+  color: var(--warn-fg);
+  margin-bottom: 4px;
 }
 
-/* Glassy chips that float over the hero phone. */
-.wm-chip {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--card) 82%, transparent);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 18px 40px -18px rgb(0 0 0 / 0.3);
-  font-size: 12.5px;
-  line-height: 1.25;
-  white-space: nowrap;
-}
-.wm-chip-a {
-  top: 4%;
-  left: -4%;
-}
-@media (min-width: 1024px) {
-  .wm-chip-a {
-    left: -12%;
-  }
-}
 .wm-card {
   transition: transform 400ms var(--wm-ease), box-shadow 400ms var(--wm-ease);
 }
@@ -269,9 +260,6 @@ html {
   .wm-in {
     animation: wm-rise 1100ms var(--wm-ease) both;
     animation-delay: var(--d, 0ms);
-  }
-  .wm-chip-a {
-    animation: wm-rise 900ms 900ms var(--wm-ease) both;
   }
 
   @supports (animation-timeline: view()) {

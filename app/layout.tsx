@@ -1,16 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono } from "next/font/google";
 import "./globals.css";
 import RegisterSW from "./register-sw";
 import ConnectionBar from "./connection-bar";
 import PageView from "./page-view";
 import EarlyTapsReplay from "./early-taps";
 import { EARLY_TAPS_SCRIPT } from "./early-taps-script";
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "WardMate",
@@ -35,7 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   const renderedAt = new Date().toISOString();
 
   return (
-    <html lang="en" className={`${geistMono.variable} h-full antialiased`}>
+    <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
         {/* First thing parsed: holds a tap made before the app's JavaScript is running. */}
         <script dangerouslySetInnerHTML={{ __html: EARLY_TAPS_SCRIPT }} />

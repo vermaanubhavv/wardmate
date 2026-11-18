@@ -94,16 +94,17 @@ the grouped grey background (`#f2f2f7`), content on white cards, hairline separa
 (`#c6c6c8`), the system font and Apple's type scale (caption to large title). One fixed light
 theme — ward lighting varies too much for a phone that changes appearance between rooms.
 
-**The mark.** A teal ring, open at the lower right like a speech bubble, with three dots inside
-— someone talking. `public/mark.png` is the designer's own artwork; the app icon and the small
-"wardmate" lockup at the top of the ward list use it. A redrawn vector of it turns while the app
-is busy.
+**The mark.** A teal ring that tapers like a loading circle, with a bead at its thick end and
+three dots inside — someone talking. `app/mark.tsx` draws it and
+`assets/brand-source/wardmate-mark.svg` is the same geometry as a file; the app icon, favicon,
+splash and share card are all rendered from it. The ring turns and the dots run while the app
+is busy, so the logo and the spinner are one drawing.
 
 **Colour — each one has one job.**
 
 | Colour | Value | Its only job |
 | --- | --- | --- |
-| Teal | `#0b7f79` (mark: `#0f9e96`) | What you press: buttons, links, the mic, the selected tab |
+| Teal | `#0b7f79` | What you press: buttons, links, the mic, the selected tab |
 | Orange | `#c2410c` on `#ffedd5` | "Check this": an unconfirmed number, drug or dose; a value still not recorded is the same orange as an outline, never filled |
 | Red / yellow / green | red-500, amber-500, emerald-500 | How soon a job is due — Now, Soon, Has time — and nothing else |
 | Red | `#ef4444` | The mic is live |
