@@ -30,13 +30,11 @@ export const metadata: Metadata = {
     url: "https://wardmate.in/home",
     title: "WardMate — Say the round once",
     description: DESCRIPTION,
-    images: [{ url: "https://wardmate.in/icon-512.png", width: 512, height: 512, alt: "WardMate" }],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "WardMate — Say the round once",
     description: DESCRIPTION,
-    images: ["https://wardmate.in/icon-512.png"],
   },
 };
 

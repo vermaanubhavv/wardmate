@@ -20,12 +20,9 @@
   --foreground: #000000; /* label */
   --muted: #636366; /* stronger secondary label, readable in bright ward lighting */
   --line: #c6c6c8; /* separator */
-  /* WardMate teal, from the mark — darkened one step for anything READ. The mark's own
-     #0f9e96 measures 3.3:1 on white, under WCAG AA for the 13–17px text it sits behind; this
-     one measures 4.85:1 on white and 4.35:1 on the grouped background and still reads as the
-     same colour beside the icon. The brand value stays for the mark and its animation. */
+  /* WardMate teal — one value for the mark and for everything pressed or read in teal. It
+     measures 4.85:1 on white and 4.35:1 on the grouped background. */
   --accent: #0b7f79;
-  --accent-brand: #0f9e96;
   --accent-ink: #ffffff;
   --chip: #efeff4; /* the flat fill behind a bed number */
   --fill-tertiary: rgba(118, 118, 128, 0.12); /* Apple's segmented-control track */
@@ -59,7 +56,6 @@
   --color-chip: var(--chip);
   --color-fill-tertiary: var(--fill-tertiary);
   --color-recording: var(--recording);
-  --color-accent-brand: var(--accent-brand);
   --color-critical-bg: var(--critical-bg);
   --color-critical-fg: var(--critical-fg);
   --color-critical-dot: var(--critical-dot);
@@ -297,7 +293,7 @@ dialog:modal {
  * spinner sitting next to it.
  *
  * The ring turns about the centre of the viewBox, not its own bounding box: the arc has a gap
- * and the bell hangs outside it, so a fill-box origin would sit off-centre and the whole mark
+ * and the bead hangs outside it, so a fill-box origin would sit off-centre and the whole mark
  * would wobble as it went round. */
 @keyframes wm-spin {
   to {
