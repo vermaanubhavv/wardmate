@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { IBM_Plex_Sans } from "next/font/google";
 import Mark from "@/app/mark";
 import WaitlistForm from "@/app/waitlist/waitlist-form";
 import ContactForm from "@/app/home/contact-form";
@@ -15,6 +16,11 @@ import "./landing.css";
  * met with a different-looking app. Visual rhythm comes from varying each section's shape
  * (a paired screenshot here, a 3-up grid there) rather than repeating one block six times.
  */
+
+/* The brand typeface. Loaded here, not in the root layout, so only the marketing page pays for
+   it — the app itself stays on the system font. landing.css applies it to headings and the
+   wordmark. */
+const brand = IBM_Plex_Sans({ variable: "--font-brand", subsets: ["latin"], weight: ["600", "700"] });
 
 const DESCRIPTION =
   "WardMate turns a spoken ward round into the unit's paperwork — the jobs list, the handover, the discharge summaries. Built by a resident, for residents in India.";
@@ -150,13 +156,13 @@ const d = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
 
 export default function HomePage() {
   return (
-    <main className="flex-1 w-full">
+    <main className={`wm-home ${brand.variable} flex-1 w-full`}>
       {/* ---- header ---- */}
       <header className="sticky top-0 z-20 top-bar border-b border-line bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <a href="#" className="flex items-center gap-2">
             <Mark className="h-7 w-7" />
-            <span className="text-body font-semibold tracking-tight">
+            <span className="wm-brand text-body font-semibold tracking-tight">
               ward<span className="text-accent">mate</span>
             </span>
           </a>

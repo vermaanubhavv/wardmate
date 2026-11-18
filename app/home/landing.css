@@ -16,6 +16,13 @@
   --wm-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* The brand face (IBM Plex Sans) on headings and the wordmark; body copy stays in the system
+   font so the page still reads like the app it leads into. */
+.wm-home :is(h1, h2, h3),
+.wm-brand {
+  font-family: var(--font-brand), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+
 /* ---------- static depth (always on) ---------- */
 
 .wm-hero {

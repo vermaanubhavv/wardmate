@@ -100,6 +100,12 @@ three dots inside — someone talking. `app/mark.tsx` draws it and
 splash and share card are all rendered from it. The ring turns and the dots run while the app
 is busy, so the logo and the spinner are one drawing.
 
+**Type.** The app is set in the system font and stays that way. The brand face is **IBM Plex
+Sans** (chosen 2026-11-18), used on the website's headings and wordmark and loaded only on
+`/home`; it is for marketing and print, never the app's own screens. What was said, and the
+printed discharge summary, are set in the system serif. The tagline is "Your Residency
+Companion". The browser-tab icon (`app/favicon.ico`) is a bolder cut of the mark drawn for 16–48px.
+
 **Colour — each one has one job.**
 
 | Colour | Value | Its only job |
