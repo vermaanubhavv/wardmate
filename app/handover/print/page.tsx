@@ -1,3 +1,4 @@
+import { brandDoc } from "@/app/print-font";
 import { notFound } from "next/navigation";
 import { BackBar } from "@/app/screen-header";
 import { getCurrentWard } from "@/lib/ward";
@@ -32,7 +33,7 @@ export default async function HandoverPrintPage() {
       </header>
 
       <section className="px-4 pb-4 print:px-0">
-        <div className="ios-group px-5 py-5 text-callout leading-relaxed text-black print:rounded-none print:border-0 print:p-0 print:shadow-none">
+        <div className={`${brandDoc} ios-group px-5 py-5 text-callout leading-relaxed text-black print:rounded-none print:border-0 print:p-0 print:shadow-none`}>
           {lines.map((line, i) => {
             const heading = line.match(/^\*(.+)\*(.*)$/);
             if (heading) {

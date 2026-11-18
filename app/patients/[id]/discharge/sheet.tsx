@@ -1,3 +1,4 @@
+import { brandDoc } from "@/app/print-font";
 import Link from "next/link";
 import FormularyLink from "./formulary-link";
 import type { DischargeSectionId } from "@/lib/discharge-entities";
@@ -60,7 +61,7 @@ export default function DischargeSheet({
         @page { size: A4 portrait; margin: 12mm; }
         @media print { html, body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
       `}</style>
-      <div className="ios-group px-5 py-5 text-footnote leading-snug text-black print:rounded-none print:border-0 print:p-0 print:shadow-none">
+      <div className={`${brandDoc} ios-group px-5 py-5 text-footnote leading-snug text-black print:rounded-none print:border-0 print:p-0 print:shadow-none`}>
         {/* Page 1 on paper: heading through the course and the condition at discharge. Held to at least one page
             tall, so investigations onward start page 2; a course that spills onto page 2 is
             followed straight on, never pushed to page 3. */}

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { WordmarkText } from "@/app/wordmark";
 import Mark from "@/app/mark";
 import WaitlistForm from "./waitlist-form";
 
@@ -54,8 +55,8 @@ export default function WaitlistPage() {
     <main className="flex-1 w-full max-w-md mx-auto px-6 py-14 flex flex-col gap-10">
       <header className="flex flex-col items-center gap-3.5 text-center">
         <Mark className="h-12 w-12" />
-        <h1 className="text-title1 font-semibold tracking-tight">
-          ward<span className="text-accent">mate</span>
+        <h1 className="text-title1">
+          <WordmarkText />
         </h1>
         <p className="max-w-[19rem] text-subhead leading-snug text-muted">
           The ward round, recorded by speaking — and turned into the unit&rsquo;s

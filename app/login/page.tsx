@@ -3,6 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { WordmarkText } from "@/app/wordmark";
 import Mark from "@/app/mark";
 import { clearOutbox } from "@/lib/outbox";
 import InstallHint, { isNativeApp, subscribeNever } from "@/app/install-hint";
@@ -166,8 +167,8 @@ export default function LoginPage() {
             so it's the one thing allowed to be a little bigger than it needs to be. */}
         <Mark className="h-14 w-14" />
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            ward<span className="text-accent">mate</span>
+          <h1 className="text-3xl">
+            <WordmarkText />
           </h1>
           <p className="text-muted mt-1">Your Residency Companion</p>
         </div>

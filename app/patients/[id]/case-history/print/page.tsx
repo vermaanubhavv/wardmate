@@ -1,3 +1,4 @@
+import { brandDoc } from "@/app/print-font";
 import { notFound } from "next/navigation";
 import { objectiveComplaint } from "@/lib/complaint-duration";
 import { createClient } from "@/lib/supabase/server";
@@ -398,7 +399,7 @@ export default async function CaseHistoryPrintPage({
 
       {/* Shown at its printed size, so scroll sideways on a phone. */}
       <section className="overflow-x-auto pb-6 print:overflow-visible print:pb-0">
-        <div className="flex w-max flex-col gap-[30mm] px-[16mm] py-[14mm] text-black print:w-auto print:gap-0 print:p-0">
+        <div className={`${brandDoc} flex w-max flex-col gap-[30mm] px-[16mm] py-[14mm] text-black print:w-auto print:gap-0 print:p-0`}>
           {/* ---- Front ---- */}
           <FitPage breakAfter>
             {/* The unit's uploaded logo (the same one its discharge summary uses); an empty box
