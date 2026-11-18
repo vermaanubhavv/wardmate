@@ -11,7 +11,8 @@ export const metadata: Metadata = {
   description: "Your Residency Companion",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "WardMate", statusBarStyle: "default" },
-  icons: { icon: "/icon-192.png", apple: "/apple-touch-icon.png" },
+  // The browser tab uses app/favicon.ico, a bolder cut of the mark drawn for 16–48px.
+  icons: { apple: "/apple-touch-icon.png" },
 };
 
 export const viewport: Viewport = {
