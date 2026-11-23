@@ -44,6 +44,10 @@ export default withSentryConfig(nextConfig, {
   // an ad blocker or a hospital firewall can't quietly swallow every error report.
   tunnelRoute: "/monitoring",
 
+  // instrumentation-client.ts uses the plain @sentry/browser SDK on purpose (no navigation
+  // tracing, 370 KB lighter), so there is no onRouterTransitionStart hook to export.
+  suppressOnRouterTransitionStartWarning: true,
+
   // Upload source maps for the browser bundle, then delete them so they aren't served.
   widenClientFileUpload: true,
   sourcemaps: { deleteSourcemapsAfterUpload: true },

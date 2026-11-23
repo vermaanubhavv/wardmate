@@ -127,7 +127,7 @@ Supabase Auth, two methods live:
 1. **Email OTP** — a 6-digit code, not a magic link. This is deliberate: the app is installed
    as a home-screen PWA, and a magic link opens in the system browser, which can leave the
    installed app still signed out. A typed code has no such failure mode. See the comment at
-   the top of `middleware.ts` and `app/login/page.tsx`.
+   the top of `proxy.ts` and `app/login/page.tsx`.
 2. **Google OAuth** — added as a faster alternative for the many doctors already on Gmail. It
    still round-trips through a browser, so it inherits some of the same PWA risk; the OTP
    route was kept as the guaranteed fallback rather than replaced. Requires Google Cloud OAuth
@@ -139,7 +139,7 @@ domain was completed 2026-08-18.
 
 ### The middleware is a performance layer now, not just a gate
 
-`middleware.ts` used to call Supabase on every single request to verify the session — this
+`proxy.ts` used to call Supabase on every single request to verify the session — this
 was costing roughly 2 seconds per request in production (measured, not estimated) and was the
 single largest source of latency in the app. It now reads the JWT expiry locally and only
 calls Supabase when the token is genuinely close to expiring. This is safe only because the
@@ -193,10 +193,10 @@ Error and performance monitoring, added 2026-09-09. The integration is committed
 until `NEXT_PUBLIC_SENTRY_DSN` is set** — with no DSN, `Sentry.init` is a no-op and the app is
 byte-for-byte what it was before.
 
-Files: `instrumentation-client.ts` (browser), `instrumentation.ts` (server + middleware, one
+Files: `instrumentation-client.ts` (browser), `instrumentation.ts` (server + proxy, one
 `Sentry.init` for both runtimes),
 `app/global-error.tsx` (root-level crash screen — the only error boundary above the app
-chrome), `next.config.ts` (`withSentryConfig`), `middleware.ts` (allowlists `/monitoring`).
+chrome), `next.config.ts` (`withSentryConfig`), `proxy.ts` (allowlists `/monitoring`).
 
 ### Privacy — read before changing any Sentry config
 

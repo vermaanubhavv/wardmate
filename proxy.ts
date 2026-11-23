@@ -92,7 +92,7 @@ const PUBLIC_PREFIXES = [
   "/monitoring",
 ];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
   if (PUBLIC_PREFIXES.some((p) => path.startsWith(p))) return NextResponse.next({ request });

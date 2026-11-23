@@ -186,7 +186,7 @@ at the time it was said. The round route also accepts typed text
 Both were measured, not guessed. From this server **every query costs ~220ms regardless of what
 it asks**, so the *number of round trips* is the loading time.
 
-1. **`middleware.ts`** reads JWT expiry locally out of the cookie and only calls
+1. **`proxy.ts`** reads JWT expiry locally out of the cookie and only calls
    `supabase.auth.getUser()` within 10 minutes of expiry. It used to call it on every request:
    ~2000ms per page. Safe because middleware was never the security boundary.
 2. **`ward_screen()` RPC** collapses six queries into one. `lib/ward-screen.ts` falls back to
