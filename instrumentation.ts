@@ -1,5 +1,5 @@
 // Server-side instrumentation entry point. Next.js calls `register()` once when the server
-// boots (Node.js runtime: API routes, Server Actions, RSC; edge runtime: middleware.ts) and
+// boots (Node.js runtime: API routes, Server Actions, RSC; proxy.ts) and
 // `onRequestError` whenever a request throws. Both just forward to Sentry, which stays
 // dormant until SENTRY_DSN is set.
 import * as Sentry from "@sentry/nextjs";
