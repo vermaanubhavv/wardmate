@@ -1070,6 +1070,23 @@ export default function CaseHistoryWorkspace({
       const c = current._c ?? complaintList[0];
       const attrs = hopiAttrsFor(c, specialty);
       const set = (v: string) => { setHopi({ ...hopi, [c]: v }); mark("hopi"); };
+      // No complaint picked: a generic page has nothing to tailor its pills to, so send the
+      // resident back. An older record that saved HOPI without a complaint keeps its page.
+      if (complaints.length === 0 && !(hopi[c] ?? "").trim() && !(complaintDur[c] ?? "").trim())
+        return (
+          <>
+            <p className="text-subhead leading-[1.45] text-muted">
+              The history of presenting illness is taken one complaint at a time. Add the chief complaint first.
+            </p>
+            <button
+              type="button"
+              onClick={() => goTo(STEPS.findIndex((s) => s.id === "complaints"))}
+              className="h-11 self-start rounded-[10px] bg-accent px-4 text-subhead font-medium text-accent-ink"
+            >
+              Add a complaint
+            </button>
+          </>
+        );
       return (
         <>
           <p className="text-caption leading-[1.45] text-muted">
