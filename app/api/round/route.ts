@@ -7,6 +7,7 @@ import { deriveWardDictationContext } from "@/lib/transcription/patient-context"
 import { getDeepgramKeyterms } from "@/lib/transcription/selectMedicalKeyterms";
 import { correctTranscript } from "@/lib/glossary";
 import { buildRoundDraft } from "@/lib/round-draft";
+import { insertBedMarks, parseBedMarks } from "@/lib/bed-marks";
 import { getCurrentWard, getActivePatients, getWardPack } from "@/lib/ward";
 import { readReceipt, saveReceipt } from "@/lib/dictation-receipt";
 import { tagRequest, log } from "@/lib/observability";
@@ -58,9 +59,15 @@ export async function POST(request: Request) {
       );
       const result = await transcribe(audio, keyterms);
       spoken = true;
+      // The beds the resident pinned while speaking, written in as "Bed 12." at each tap so the
+      // split below treats them as if they had been said. No marks, or no word timings: the
+      // transcript is exactly what the engine returned, as before.
+      const marks = parseBedMarks(form.get("bed_marks"));
+      const heard =
+        marks.length > 0 && result.words?.length ? insertBedMarks(result.words, marks) : result.text;
       // Only what the engine heard. `typed` above is the resident's own writing and is left
       // exactly as they wrote it — this fixes mishearings, not people.
-      transcript = (await correctTranscript(result.text, pack)).text;
+      transcript = (await correctTranscript(heard, pack)).text;
     } catch (e) {
       return NextResponse.json(
         { error: plainAiError(e) },

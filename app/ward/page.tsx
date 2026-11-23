@@ -11,6 +11,7 @@ import { shortFinding } from "@/lib/shorthand";
 import RegisterButton from "../register-button";
 import { ChevronIcon, PlusIcon } from "../icons";
 import RoundRecorder from "../round-recorder";
+import { pinnedBedRoundEnabled } from "@/lib/bed-marks";
 import PatientMenu from "../patients/patient-menu";
 import { restorePatient } from "../patients/actions";
 import { signOut } from "../actions";
@@ -356,7 +357,18 @@ export default async function Home({
             <span className="mt-1.5 text-caption text-muted">Add</span>
           </div>
 
-          <RoundRecorder unitName={ward.name} />
+          <RoundRecorder
+            unitName={ward.name}
+            beds={
+              pinnedBedRoundEnabled()
+                ? patients.map((p) => ({
+                    bed: p.bed,
+                    name: stripPatientHonorific(p.display_name),
+                    detail: [p.age_years, p.sex === "other" ? null : p.sex].filter((x) => x != null).join(" "),
+                  }))
+                : undefined
+            }
+          />
           <RegisterButton />
         </div>
       </BottomBar>

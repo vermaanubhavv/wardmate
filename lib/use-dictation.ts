@@ -69,6 +69,9 @@ export type UseDictationOptions = {
   onResult: (data: ResultBody) => string | null | void;
   /** Optional override for the "server refused it" (non-5xx) line. */
   rejectionMessage?: (data: ResultBody) => string;
+  /** Extra form fields read at send time (the round's pinned-bed taps). Saved with the
+   *  recording too, so a queued retry sends them. */
+  fields?: () => Record<string, string>;
 };
 
 const OFFLINE_SAVED = "No signal — saved on this phone. It will be sent when you are back online.";
@@ -101,10 +104,10 @@ export function useDictation(opts: UseDictationOptions) {
     statusRef.current = status;
   }, [status]);
 
-  const meta = useCallback(
-    () => ({ kind, url, label, ...(patientId ? { patientId } : {}) }),
-    [kind, url, label, patientId]
-  );
+  const meta = useCallback(() => {
+    const fields = optsRef.current.fields?.();
+    return { kind, url, label, ...(patientId ? { patientId } : {}), ...(fields ? { fields } : {}) };
+  }, [kind, url, label, patientId]);
 
   // Elapsed count is the "still listening" signal now that nothing holds a finger down.
   useEffect(() => {
@@ -205,6 +208,7 @@ export function useDictation(opts: UseDictationOptions) {
       form.append("audio", blob, `${kind}.${ext}`);
       form.append("client_uuid", id);
       if (patientId) form.append("patient_id", patientId);
+      for (const [k, v] of Object.entries(optsRef.current.fields?.() ?? {})) form.append(k, v);
 
       try {
         await saveRecording(id, { ...meta(), audio: blob, mimeType });

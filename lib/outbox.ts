@@ -41,6 +41,9 @@ export type Pending = {
   url: string;
   /** For a bedside recording, note or photo: whose bed it was. */
   patientId?: string;
+  /** Extra form fields a recorder sends with its audio (the round's pinned-bed taps), kept so a
+   *  queued copy posts exactly what the live upload would have. */
+  fields?: Record<string, string>;
   /** Shown in the queue so it is obvious what is waiting, without playing it back. */
   label: string;
   /** A recording (round, bedside, case-history). */
@@ -430,5 +433,6 @@ export function body(item: Pending): { body: BodyInit; headers?: Record<string, 
   if (item.screen) form.append("screen", item.screen);
   if (item.recordedAt) form.append("recorded_at", item.recordedAt);
   if (item.wardId) form.append("ward_id", item.wardId);
+  for (const [k, v] of Object.entries(item.fields ?? {})) form.append(k, v);
   return { body: form };
 }

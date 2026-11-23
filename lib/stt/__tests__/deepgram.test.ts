@@ -23,6 +23,7 @@ describe("transcribe (Deepgram)", () => {
       text: "Bed five is afebrile.",
       provider: "deepgram",
       model: "nova-3-medical",
+      words: [],
     });
 
     const url = new URL(fetchMock.mock.calls[0][0] as string);

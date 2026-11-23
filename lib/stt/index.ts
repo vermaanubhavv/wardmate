@@ -17,7 +17,14 @@ import { traced } from "@/lib/observability";
 export const STT_PROVIDER = "deepgram";
 export const STT_MODEL = "nova-3-medical";
 
-export type Transcription = { text: string; provider: string; model: string };
+export type Transcription = {
+  text: string;
+  provider: string;
+  model: string;
+  /** Each word with when it began, in seconds. Deepgram returns these on every request; only
+   *  the pinned-bed round (lib/bed-marks.ts) reads them. */
+  words?: { word: string; start: number }[];
+};
 
 /**
  * Transcribe one recorded clip. `keyterms` is the patient-selected list (lib/transcription);
@@ -57,10 +64,21 @@ async function deepgram(audio: Blob, keyterms?: string[]): Promise<Transcription
   }
 
   const data = (await res.json()) as {
-    results?: { channels?: { alternatives?: { transcript?: string }[] }[] };
+    results?: {
+      channels?: {
+        alternatives?: {
+          transcript?: string;
+          words?: { word?: string; punctuated_word?: string; start?: number }[];
+        }[];
+      }[];
+    };
   };
-  const text = data.results?.channels?.[0]?.alternatives?.[0]?.transcript ?? "";
-  return { text: text.trim(), provider: STT_PROVIDER, model: STT_MODEL };
+  const alt = data.results?.channels?.[0]?.alternatives?.[0];
+  const text = alt?.transcript ?? "";
+  const words = (alt?.words ?? [])
+    .map((w) => ({ word: w.punctuated_word ?? w.word ?? "", start: w.start ?? 0 }))
+    .filter((w) => w.word);
+  return { text: text.trim(), provider: STT_PROVIDER, model: STT_MODEL, words };
 }
 
 /**

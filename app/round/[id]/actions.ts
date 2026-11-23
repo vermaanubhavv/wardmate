@@ -8,6 +8,7 @@ import { istDayKey } from "@/lib/patient-state";
 import type { DraftSegment } from "@/lib/round-draft";
 import { applyProcedureDone } from "@/lib/apply-procedure-done";
 import { getWardPack } from "@/lib/ward";
+import { pinnedBedRoundEnabled } from "@/lib/bed-marks";
 
 /**
  * Writes the segments the resident approved, and only those.
@@ -68,7 +69,10 @@ export async function applyRound(formData: FormData) {
 
     if (!entry) continue;
 
-    const rows = segment.observations.map((o) => ({
+    const confirmHere = pinnedBedRoundEnabled();
+    const now = new Date().toISOString();
+    const ticked = (k: number) => confirmHere && formData.get(`confirm_${i}_${k}`) === "yes";
+    const rows = segment.observations.map((o, k) => ({
       entry_id: entry.id,
       patient_id: patientId,
       kind: o.kind,
@@ -78,8 +82,12 @@ export async function applyRound(formData: FormData) {
       unit: o.unit,
       source_quote: o.source_quote,
       // Dictated ABOUT a bed rather than AT one, so every value carries the extra doubt of
-      // having been routed: the resident was not standing in front of this patient.
-      needs_confirmation: true,
+      // having been routed: the resident was not standing in front of this patient. The one
+      // exception is a value the resident ticked Confirm on, with its quote in front of them,
+      // on the review screen (pinned-bed trial only).
+      ...(ticked(k)
+        ? { needs_confirmation: false, confirmed_at: now, confirmed_by: user.id }
+        : { needs_confirmation: true }),
       urgency: o.urgency,
       task_open: o.task_open ?? null,
       task_category: o.task_category ?? null,
