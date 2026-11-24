@@ -49,3 +49,20 @@ describe("parseBedMarks with the ward's beds", () => {
     expect(parseBedMarks('[{"bed":"Bay 9.9","at":1}]', beds)).toEqual([]);
   });
 });
+
+describe("recordingClock", () => {
+  it("leaves paused time out, so taps line up with the transcriber's word timings", async () => {
+    const { recordingClock } = await import("../use-dictation");
+    let t = 0;
+    const c = recordingClock(() => t);
+    c.start();
+    t = 30_000; c.pause();          // 30 s recorded
+    t = 120_000;                    // 90 s talking to seniors
+    expect(c.seconds()).toBe(30);   // a tap now lands at 0:30
+    c.resume();
+    t = 125_000;
+    expect(c.seconds()).toBe(35);
+    c.pause(); c.pause();           // a double tap does not double count
+    expect(c.seconds()).toBe(35);
+  });
+});
