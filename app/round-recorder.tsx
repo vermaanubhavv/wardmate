@@ -13,7 +13,7 @@ import { useLiveWords } from "@/lib/stt/use-live-words";
 import { heardByBed } from "@/lib/heard-by-bed";
 
 /** Longer than the bedside button: this is meant to cover a run of beds in one go. */
-const MAX_SECONDS = 300;
+const MAX_SECONDS = 600;
 
 /**
  * Dictate a run of beds from the ward list — "bed 1 discharge today, bed 2 send fresh

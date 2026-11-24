@@ -232,7 +232,8 @@ export function useDictation(opts: UseDictationOptions) {
         setStatus("idle");
 
         if (!res.ok) {
-          if (res.status >= 500) {
+          // 413: too big for the upload limit. Never thrown away — it stays on the phone.
+          if (res.status >= 500 || res.status === 413) {
             setMessage(SERVER_5XX);
           } else {
             void dropRecording(id);
@@ -285,7 +286,11 @@ export function useDictation(opts: UseDictationOptions) {
         "audio/mpeg",
       ].find((t) => MediaRecorder.isTypeSupported(t));
 
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      // Speech-quality bitrate: a 10-minute round is ~2.4 MB, under the 4.5 MB upload limit.
+      const recorder = new MediaRecorder(stream, {
+        ...(mimeType ? { mimeType } : {}),
+        audioBitsPerSecond: 32_000,
+      });
       chunksRef.current = [];
       const recId = recIdRef.current;
       const chunkMime = recorder.mimeType || mimeType || "audio/webm";
