@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import PinnedBed, { type RoundBed } from "./pinned-bed";
+import type { BedMark } from "@/lib/bed-marks";
 import { useRouter } from "next/navigation";
 import { MicIcon } from "./icons";
 import Mark from "./mark";
@@ -33,14 +35,22 @@ const MAX_SECONDS = 300;
  * The capture / persist / upload lifecycle is `useDictation` — shared with the bedside and
  * case-history recorders so it cannot drift.
  */
-export default function RoundRecorder({ unitName }: { unitName: string }) {
+export default function RoundRecorder({ unitName, beds }: { unitName: string; beds?: RoundBed[] }) {
   const router = useRouter();
+
+  // Pinned bed (lib/bed-marks.ts): each tap is kept as the bed and the seconds into the
+  // recording, sent with the audio. `beds` is only passed while the flag is on.
+  const [pinned, setPinned] = useState<number | null>(null);
+  const marksRef = useRef<BedMark[]>([]);
+  const startedAtRef = useRef<number | null>(null);
 
   const { status, seconds, message, setMessage, stream, start, stop, discard } = useDictation({
     kind: "round",
     url: "/api/round",
     label: "Round dictation",
     maxSeconds: MAX_SECONDS,
+    fields: () =>
+      marksRef.current.length ? { bed_marks: JSON.stringify(marksRef.current) } : ({} as Record<string, string>),
     onResult: (data) => {
       const id = data.dictation_id;
       if (typeof id === "string") router.push(`/round/${id}`);
@@ -54,9 +64,26 @@ export default function RoundRecorder({ unitName }: { unitName: string }) {
     if (message) track("round_recording_failed", { reason: message });
   }, [message]);
 
+  // The clock starts when the microphone does, so a tap while the permission sheet is still up
+  // counts from 0:00.
+  useEffect(() => {
+    if (status === "recording" && startedAtRef.current === null) startedAtRef.current = Date.now();
+  }, [status]);
+
   function onStart() {
     track("round_recording_started");
+    marksRef.current = [];
+    startedAtRef.current = null;
+    setPinned(null);
     void start();
+  }
+
+  function pin(index: number) {
+    const b = beds?.[index];
+    if (!b) return;
+    const at = startedAtRef.current === null ? 0 : (Date.now() - startedAtRef.current) / 1000;
+    marksRef.current.push({ bed: b.bed, at });
+    setPinned(index);
   }
 
   const live = useLiveWords(stream);
@@ -80,7 +107,7 @@ export default function RoundRecorder({ unitName }: { unitName: string }) {
         <RecordingSheet
           status={status}
           title={`${unitName} round`}
-          subtitle="Say the bed number before each patient."
+          subtitle={beds?.length ? "Tap the bed you are at, or say its number." : "Say the bed number before each patient."}
           seconds={seconds}
           maxSeconds={MAX_SECONDS}
           stream={stream}
@@ -91,6 +118,7 @@ export default function RoundRecorder({ unitName }: { unitName: string }) {
           }}
           onDone={stop}
         >
+          {beds && <PinnedBed beds={beds} pinned={pinned} onPin={pin} />}
           <HeardBox>
             {groups.length > 0 ? (
               groups.map((g, i) => (

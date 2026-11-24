@@ -12,6 +12,7 @@ import { ConfirmSubmit } from "../../action-sheet";
 import BottomBar from "../../bottom-bar";
 import SaveButton from "./save-button";
 import OnePatientTip from "./one-patient-tip";
+import { pinnedBedRoundEnabled } from "@/lib/bed-marks";
 
 type WardPatient = {
   id: string;
@@ -171,6 +172,7 @@ function UpdateCard({
   const match = matchBed(segment.bed, patients);
   const sure = match.status === "matched" && !segment.uncertain;
   const matched = patients.find((p) => p.id === match.patientId);
+  const confirmHere = pinnedBedRoundEnabled();
 
   return (
     <div
@@ -198,19 +200,46 @@ function UpdateCard({
         <OnePatientTip dictationId={tipFor} patientId={match.patientId} />
       )}
 
-      {segment.observations.length > 0 && (
-        <ul className="mt-3 flex flex-col gap-1">
-          {segment.observations.map((o, k) => (
-            <li key={k} className="text-subhead">
-              {/* Numbers, drugs and doses stay amber: nothing here has been confirmed yet. */}
-              <span className="text-muted">{o.label}:</span>{" "}
-              <span className={o.needs_confirmation || o.value_num != null ? "text-warn-fg" : undefined}>
-                {o.value_text}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
+      {segment.observations.length > 0 &&
+        (confirmHere ? (
+          // Pinned-bed trial: each value carries its own quote and its own Confirm, so the
+          // round can be confirmed here instead of value by value on each patient page later.
+          // Unticked is the default: a value nobody ticked is saved amber, exactly as before.
+          <ul className="mt-3 flex flex-col divide-y divide-line">
+            {segment.observations.map((o, k) => (
+              <li key={k} className="flex items-start gap-3 py-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-subhead">
+                    <span className="text-muted">{o.label}:</span>{" "}
+                    <span className="text-warn-fg">{o.value_text}</span>
+                  </p>
+                  <p className="text-footnote italic text-muted">“{o.source_quote}”</p>
+                </div>
+                <label className="flex min-h-11 shrink-0 items-center gap-2 text-footnote">
+                  <input
+                    type="checkbox"
+                    name={`confirm_${index}_${k}`}
+                    value="yes"
+                    className="h-5 w-5 accent-accent"
+                  />
+                  Confirm
+                </label>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <ul className="mt-3 flex flex-col gap-1">
+            {segment.observations.map((o, k) => (
+              <li key={k} className="text-subhead">
+                {/* Numbers, drugs and doses stay amber: nothing here has been confirmed yet. */}
+                <span className="text-muted">{o.label}:</span>{" "}
+                <span className={o.needs_confirmation || o.value_num != null ? "text-warn-fg" : undefined}>
+                  {o.value_text}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ))}
 
       {segment.extraction_failed ? (
         <p className="mt-3 text-footnote text-warn-fg">
