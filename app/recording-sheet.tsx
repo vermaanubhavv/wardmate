@@ -25,9 +25,11 @@ export default function RecordingSheet({
   note,
   onDiscard,
   onDone,
+  onPause,
+  onResume,
   children,
 }: {
-  status: "starting" | "recording" | "finishing";
+  status: "starting" | "recording" | "paused" | "finishing";
   title: React.ReactNode;
   subtitle?: React.ReactNode;
   seconds: number;
@@ -39,6 +41,9 @@ export default function RecordingSheet({
   /** Left out where there is nothing left to throw away. */
   onDiscard?: () => void;
   onDone: () => void;
+  /** Offered only where a pause makes sense (the unit round). */
+  onPause?: () => void;
+  onResume?: () => void;
   children?: React.ReactNode;
 }) {
   const levels = useLevels(stream);
@@ -73,7 +78,13 @@ export default function RecordingSheet({
                 <span className="relative h-2.5 w-2.5 rounded-full bg-recording" />
               </span>
             )}
-            {status === "recording" ? "Recording" : status === "starting" ? "Starting…" : "Finishing…"}
+            {status === "recording"
+              ? "Recording"
+              : status === "paused"
+                ? "Paused"
+                : status === "starting"
+                  ? "Starting…"
+                  : "Finishing…"}
           </span>
           <h2 id="recording-sheet-title" className="text-title2 font-bold tracking-tight">
             {title}
@@ -115,10 +126,23 @@ export default function RecordingSheet({
               Discard
             </button>
           )}
+          {onPause && onResume && (
+            <button
+              type="button"
+              onClick={status === "paused" ? onResume : onPause}
+              disabled={status !== "recording" && status !== "paused"}
+              className={
+                "h-[54px] flex-1 rounded-[14px] text-body font-semibold active:opacity-70 disabled:opacity-50 " +
+                (status === "paused" ? "bg-recording text-white" : "bg-chip text-foreground/80")
+              }
+            >
+              {status === "paused" ? "Resume" : "Pause"}
+            </button>
+          )}
           <button
             type="button"
             onClick={onDone}
-            disabled={status !== "recording"}
+            disabled={status !== "recording" && status !== "paused"}
             className="h-[54px] flex-[2] rounded-[14px] bg-accent text-body font-semibold text-accent-ink active:opacity-80 disabled:opacity-50"
           >
             Done

@@ -38,3 +38,31 @@ describe("parseBedMarks", () => {
     expect(parseBedMarks(null)).toEqual([]);
   });
 });
+
+describe("parseBedMarks with the ward's beds", () => {
+  it("keeps a real bed whose label the plain pattern would refuse", () => {
+    const beds = new Set(["Bay 2.1", "ICU (iso) 3"]);
+    expect(parseBedMarks('[{"bed":"Bay 2.1","at":1},{"bed":"ICU (iso) 3","at":2}]', beds)).toEqual([
+      { bed: "Bay 2.1", at: 1 },
+      { bed: "ICU (iso) 3", at: 2 },
+    ]);
+    expect(parseBedMarks('[{"bed":"Bay 9.9","at":1}]', beds)).toEqual([]);
+  });
+});
+
+describe("recordingClock", () => {
+  it("leaves paused time out, so taps line up with the transcriber's word timings", async () => {
+    const { recordingClock } = await import("../use-dictation");
+    let t = 0;
+    const c = recordingClock(() => t);
+    c.start();
+    t = 30_000; c.pause();          // 30 s recorded
+    t = 120_000;                    // 90 s talking to seniors
+    expect(c.seconds()).toBe(30);   // a tap now lands at 0:30
+    c.resume();
+    t = 125_000;
+    expect(c.seconds()).toBe(35);
+    c.pause(); c.pause();           // a double tap does not double count
+    expect(c.seconds()).toBe(35);
+  });
+});

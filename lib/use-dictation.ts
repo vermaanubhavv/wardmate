@@ -48,7 +48,22 @@ import {
  * any surface-specific UI. Those stay in the component.
  */
 
-export type DictationStatus = "idle" | "starting" | "recording" | "working";
+export type DictationStatus = "idle" | "starting" | "recording" | "paused" | "working";
+
+/**
+ * Seconds of audio actually recorded, with paused stretches left out — the same timeline the
+ * transcriber's word timings are on, so a pinned-bed tap lines up with the words after it.
+ */
+export function recordingClock(now: () => number = Date.now) {
+  let total = 0;
+  let since: number | null = null;
+  return {
+    start() { total = 0; since = now(); },
+    pause() { if (since !== null) { total += now() - since; since = null; } },
+    resume() { if (since === null) since = now(); },
+    seconds() { return (total + (since === null ? 0 : now() - since)) / 1000; },
+  };
+}
 
 type ResultBody = Record<string, unknown>;
 
@@ -99,6 +114,7 @@ export function useDictation(opts: UseDictationOptions) {
   const recIdRef = useRef<string>("");
   const seqRef = useRef(0);
   const discardRef = useRef(false);
+  const clockRef = useRef(recordingClock());
   const statusRef = useRef<DictationStatus>(status);
   useEffect(() => {
     statusRef.current = status;
@@ -109,16 +125,10 @@ export function useDictation(opts: UseDictationOptions) {
     return { kind, url, label, ...(patientId ? { patientId } : {}), ...(fields ? { fields } : {}) };
   }, [kind, url, label, patientId]);
 
-  // Elapsed count is the "still listening" signal now that nothing holds a finger down.
-  useEffect(() => {
-    if (status !== "recording") return;
-    const id = setInterval(() => setSeconds((s) => s + 1), 1000);
-    return () => clearInterval(id);
-  }, [status]);
-
   const stop = useCallback(() => {
-    if (recorderRef.current?.state === "recording") {
-      recorderRef.current.stop();
+    const r = recorderRef.current;
+    if (r && (r.state === "recording" || r.state === "paused")) {
+      r.stop();
       setStatus("working");
       navigator.vibrate?.(15);
     } else {
@@ -143,18 +153,23 @@ export function useDictation(opts: UseDictationOptions) {
     void clearChunks(id);
   }, []);
 
-  // A recording always starts from 0:00, so the cap is a timer from the moment it starts.
+  // Elapsed count is the "still listening" signal now that nothing holds a finger down. It is
+  // recorded time, so it freezes on a pause, and so does the cap: a discussion does not use it up.
   useEffect(() => {
     if (status !== "recording") return;
-    const id = setTimeout(stop, maxSeconds * 1000);
-    return () => clearTimeout(id);
+    const id = setInterval(() => {
+      const s = Math.floor(clockRef.current.seconds());
+      setSeconds(s);
+      if (s >= maxSeconds) stop();
+    }, 1000);
+    return () => clearInterval(id);
   }, [status, maxSeconds, stop]);
 
   // Phone locked / swiped away / killed mid-dictation: write what we have now. A later clean
   // stop re-saves the fuller take under the same id, so this never doubles it.
   const salvage = useCallback(() => {
     if (discardRef.current) return;
-    if (statusRef.current !== "recording" && statusRef.current !== "working") return;
+    if (!["recording", "paused", "working"].includes(statusRef.current)) return;
     const chunks = chunksRef.current;
     const mime = recorderRef.current?.mimeType || "audio/webm";
     if (chunks.length) {
@@ -165,7 +180,7 @@ export function useDictation(opts: UseDictationOptions) {
     }
     try {
       recorderRef.current?.requestData?.();
-      if (recorderRef.current?.state === "recording") recorderRef.current.stop();
+      if (recorderRef.current && recorderRef.current.state !== "inactive") recorderRef.current.stop();
     } catch {
       // Already stopped, or the page is going faster than this can run.
     }
@@ -232,7 +247,8 @@ export function useDictation(opts: UseDictationOptions) {
         setStatus("idle");
 
         if (!res.ok) {
-          if (res.status >= 500) {
+          // 413: too big for the upload limit. Never thrown away — it stays on the phone.
+          if (res.status >= 500 || res.status === 413) {
             setMessage(SERVER_5XX);
           } else {
             void dropRecording(id);
@@ -285,19 +301,25 @@ export function useDictation(opts: UseDictationOptions) {
         "audio/mpeg",
       ].find((t) => MediaRecorder.isTypeSupported(t));
 
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      // Speech-quality bitrate: a 10-minute round is ~2.4 MB, under the 4.5 MB upload limit.
+      const recorder = new MediaRecorder(stream, {
+        ...(mimeType ? { mimeType } : {}),
+        audioBitsPerSecond: 32_000,
+      });
       chunksRef.current = [];
       const recId = recIdRef.current;
-      const chunkMeta = { ...meta(), mimeType: recorder.mimeType || mimeType || "audio/webm" };
+      const chunkMime = recorder.mimeType || mimeType || "audio/webm";
       recorder.ondataavailable = (e) => {
         if (e.data.size === 0 || discardRef.current) return;
         chunksRef.current.push(e.data);
-        void putChunk(recId, seqRef.current++, e.data, chunkMeta);
+        // meta() read per chunk, so a crash-recovered round keeps the beds tapped so far.
+        void putChunk(recId, seqRef.current++, e.data, { ...meta(), mimeType: chunkMime });
       };
       recorder.onstop = () => void send(recorder.mimeType);
 
       recorder.start(1000);
       recorderRef.current = recorder;
+      clockRef.current.start();
       setStatus("recording");
       navigator.vibrate?.(30);
     } catch {
@@ -306,8 +328,38 @@ export function useDictation(opts: UseDictationOptions) {
     }
   }, [meta, send]);
 
+  /**
+   * Pause without ending the recording: nothing is captured, the live words go quiet (the mic
+   * track is muted), and the cap stops counting. What was said so far is already on the phone.
+   */
+  const pause = useCallback(() => {
+    const r = recorderRef.current;
+    if (r?.state !== "recording") return;
+    r.requestData();
+    r.pause();
+    clockRef.current.pause();
+    streamRef.current?.getAudioTracks().forEach((t) => (t.enabled = false));
+    setStatus("paused");
+    navigator.vibrate?.(15);
+  }, []);
+
+  const resume = useCallback(() => {
+    const r = recorderRef.current;
+    if (r?.state !== "paused") return;
+    streamRef.current?.getAudioTracks().forEach((t) => (t.enabled = true));
+    r.resume();
+    clockRef.current.resume();
+    setStatus("recording");
+    navigator.vibrate?.(30);
+  }, []);
+
+  const recordedSeconds = useCallback(() => clockRef.current.seconds(), []);
+
   return {
     status,
+    pause,
+    resume,
+    recordedSeconds,
     recording: status === "recording",
     seconds,
     message,

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export type RoundBed = { bed: string; name: string; detail: string };
@@ -19,12 +20,18 @@ export default function PinnedBed({
   pinned: number | null;
   onPin: (index: number) => void;
 }) {
+  const row = useRef<HTMLDivElement>(null);
+  // Stepping with the arrows past the edge of the row keeps the pinned bed on screen.
+  useEffect(() => {
+    if (pinned !== null) row.current?.children[pinned]?.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [pinned]);
+
   if (beds.length === 0) return null;
   const now = pinned === null ? null : beds[pinned];
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex gap-1.5 overflow-x-auto pb-1" role="listbox" aria-label="Bed you are at">
+      <div ref={row} className="flex gap-1.5 overflow-x-auto pb-1" role="listbox" aria-label="Bed you are at">
         {beds.map((b, i) => (
           <button
             key={`${b.bed}-${i}`}
@@ -33,7 +40,7 @@ export default function PinnedBed({
             aria-selected={i === pinned}
             onClick={() => onPin(i)}
             className={
-              "min-h-9 shrink-0 rounded-[8px] px-2.5 font-mono text-footnote " +
+              "min-h-11 min-w-11 shrink-0 rounded-[8px] px-3 font-mono text-footnote " +
               (i === pinned ? "bg-accent text-accent-ink" : "bg-chip text-muted")
             }
           >

@@ -10,10 +10,11 @@ import RecordingSheet, { HeardBox } from "./recording-sheet";
 import { track } from "@/lib/track";
 import { useDictation } from "@/lib/use-dictation";
 import { useLiveWords } from "@/lib/stt/use-live-words";
-import { heardByBed } from "@/lib/heard-by-bed";
+import { heardByBed, heardByPinnedBed } from "@/lib/heard-by-bed";
+import { clock } from "./recording-sheet";
 
 /** Longer than the bedside button: this is meant to cover a run of beds in one go. */
-const MAX_SECONDS = 300;
+const MAX_SECONDS = 600;
 
 /**
  * Dictate a run of beds from the ward list — "bed 1 discharge today, bed 2 send fresh
@@ -42,9 +43,11 @@ export default function RoundRecorder({ unitName, beds }: { unitName: string; be
   // recording, sent with the audio. `beds` is only passed while the flag is on.
   const [pinned, setPinned] = useState<number | null>(null);
   const marksRef = useRef<BedMark[]>([]);
-  const startedAtRef = useRef<number | null>(null);
+  // The same taps for the live preview: which bed, and how many live phrases had been heard.
+  const [liveMarks, setLiveMarks] = useState<{ at: number; bed: string }[]>([]);
 
-  const { status, seconds, message, setMessage, stream, start, stop, discard } = useDictation({
+  const { status, seconds, message, setMessage, stream, start, stop, discard, pause, resume, recordedSeconds } =
+    useDictation({
     kind: "round",
     url: "/api/round",
     label: "Round dictation",
@@ -64,16 +67,10 @@ export default function RoundRecorder({ unitName, beds }: { unitName: string; be
     if (message) track("round_recording_failed", { reason: message });
   }, [message]);
 
-  // The clock starts when the microphone does, so a tap while the permission sheet is still up
-  // counts from 0:00.
-  useEffect(() => {
-    if (status === "recording" && startedAtRef.current === null) startedAtRef.current = Date.now();
-  }, [status]);
-
   function onStart() {
     track("round_recording_started");
     marksRef.current = [];
-    startedAtRef.current = null;
+    setLiveMarks([]);
     setPinned(null);
     void start();
   }
@@ -81,13 +78,18 @@ export default function RoundRecorder({ unitName, beds }: { unitName: string; be
   function pin(index: number) {
     const b = beds?.[index];
     if (!b) return;
-    const at = startedAtRef.current === null ? 0 : (Date.now() - startedAtRef.current) / 1000;
+    // Recorded time, pauses left out — the timeline the word timings are on. Before the mic is
+    // up it counts as 0:00; while paused it is the moment of the pause, so the bed takes the
+    // first word said after Resume.
+    const at = status === "recording" || status === "paused" ? recordedSeconds() : 0;
     marksRef.current.push({ bed: b.bed, at });
+    setLiveMarks((m) => [...m, { at: live.heard.length, bed: b.bed }]);
     setPinned(index);
   }
 
   const live = useLiveWords(stream);
-  const groups = heardByBed([...live.heard, live.current].join(" "));
+  const phrases = [...live.heard, live.current];
+  const groups = liveMarks.length ? heardByPinnedBed(phrases, liveMarks) : heardByBed(phrases.join(" "));
 
   return (
     <div className="flex flex-col items-center">
@@ -103,7 +105,7 @@ export default function RoundRecorder({ unitName, beds }: { unitName: string; be
 
       <span className="mt-1.5 text-caption text-muted">{status === "working" ? "Transcribing…" : "Dictate round"}</span>
 
-      {(status === "starting" || status === "recording") && (
+      {(status === "starting" || status === "recording" || status === "paused") && (
         <RecordingSheet
           status={status}
           title={`${unitName} round`}
@@ -111,12 +113,21 @@ export default function RoundRecorder({ unitName, beds }: { unitName: string; be
           seconds={seconds}
           maxSeconds={MAX_SECONDS}
           stream={stream}
-          note="Nothing is saved until you tap Done. You check each bed before anything is filed."
+          note={
+            status === "paused"
+              ? "Paused. Nothing is being recorded. Tap Resume to carry on in the same round."
+              : "Nothing is saved until you tap Done. You check each bed before anything is filed."
+          }
           onDiscard={() => {
             track("round_recording_discarded");
             discard();
           }}
           onDone={stop}
+          onPause={() => {
+            track("round_recording_paused");
+            pause();
+          }}
+          onResume={resume}
         >
           {beds && <PinnedBed beds={beds} pinned={pinned} onPin={pin} />}
           <HeardBox>
@@ -131,12 +142,15 @@ export default function RoundRecorder({ unitName, beds }: { unitName: string; be
                   <span className="text-body">{g.text}</span>
                 </div>
               ))
-            ) : (
+            ) : status === "paused" ? null : (
               <p className="text-subhead text-muted">
                 {live.state === "unavailable"
                   ? "No live words on this signal. The recording carries on; you see every word on the review screen."
                   : "e.g. “Bed 1, discharge today. Bed 2, send fresh investigations.”"}
               </p>
+            )}
+            {status === "paused" && (
+              <p className="text-subhead text-muted">Paused at {clock(seconds)}. Not listening.</p>
             )}
           </HeardBox>
         </RecordingSheet>

@@ -20,7 +20,7 @@ export function pinnedBedRoundEnabled(): boolean {
 }
 
 /** The form field, read defensively: it comes off a phone and may have sat in the outbox. */
-export function parseBedMarks(raw: unknown): BedMark[] {
+export function parseBedMarks(raw: unknown, wardBeds: ReadonlySet<string> = new Set()): BedMark[] {
   if (typeof raw !== "string" || !raw) return [];
   try {
     const list: unknown = JSON.parse(raw);
@@ -29,9 +29,10 @@ export function parseBedMarks(raw: unknown): BedMark[] {
       .filter(
         (m): m is BedMark =>
           typeof m?.bed === "string" &&
-          // A bed label as a ward writes it ("12", "12A", "ICU-3", "B 4") and nothing else, since
-          // it is written into the transcript the model reads.
-          /^[\w/ -]{1,12}$/.test(m.bed) &&
+          // A bed on this ward exactly as it is written, or a plain label ("12", "12A", "ICU-3")
+          // for a bed that has since changed. Nothing else, since it goes into the transcript
+          // the model reads. A dropped tap would file that patient under the bed before.
+          (wardBeds.has(m.bed) || /^[\w/ -]{1,12}$/.test(m.bed)) &&
           typeof m?.at === "number" &&
           Number.isFinite(m.at) &&
           m.at >= 0

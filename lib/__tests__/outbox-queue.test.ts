@@ -33,6 +33,19 @@ afterEach(() => vi.unstubAllGlobals());
 const ok = () => fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) });
 
 describe("record offline → app killed → reopened → sync on reconnect", () => {
+  it("keeps the round's pinned-bed taps saved with the newest chunk", async () => {
+    const round = { ...meta, kind: "round" as const, url: "/api/round", label: "Round dictation", patientId: undefined };
+    await putChunk("r2", 0, second(), round);
+    await putChunk("r2", 1, second(), { ...round, fields: { bed_marks: '[{"bed":"12","at":0}]' } });
+    await putChunk("r2", 2, second(), { ...round, fields: { bed_marks: '[{"bed":"12","at":0},{"bed":"14","at":1.5}]' } });
+    const [item] = await recoverInterruptedChunks();
+    expect(item.fields?.bed_marks).toContain('"14"');
+    ok();
+    await flush();
+    const form = fetchMock.mock.calls[0][1].body as FormData;
+    expect(form.get("bed_marks")).toBe('[{"bed":"12","at":0},{"bed":"14","at":1.5}]');
+  });
+
   it("reassembles the live chunks into one queued recording and sends it once the signal is back", async () => {
     // Three seconds spoken, written a second at a time; the recorder dies before saveRecording.
     await putChunk("r1", 0, second(), meta);
