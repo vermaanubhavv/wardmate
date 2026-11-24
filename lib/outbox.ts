@@ -197,7 +197,8 @@ export async function recoverInterruptedChunks(): Promise<Pending[]> {
       await clearChunks(recId);
       continue;
     }
-    const item = await saveRecording(recId, { ...group[0].meta, audio: blob });
+    // The newest chunk's meta: it carries every pinned-bed tap made before the recorder died.
+    const item = await saveRecording(recId, { ...group[group.length - 1].meta, audio: blob });
     recovered.push(item);
     await clearChunks(recId);
   }

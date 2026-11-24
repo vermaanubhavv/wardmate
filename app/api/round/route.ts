@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       // The beds the resident pinned while speaking, written in as "Bed 12." at each tap so the
       // split below treats them as if they had been said. No marks, or no word timings: the
       // transcript is exactly what the engine returned, as before.
-      const marks = parseBedMarks(form.get("bed_marks"));
+      const marks = parseBedMarks(form.get("bed_marks"), new Set(patients.map((p) => p.bed)));
       const heard =
         marks.length > 0 && result.words?.length ? insertBedMarks(result.words, marks) : result.text;
       // Only what the engine heard. `typed` above is the resident's own writing and is left

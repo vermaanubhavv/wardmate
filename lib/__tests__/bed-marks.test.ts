@@ -38,3 +38,14 @@ describe("parseBedMarks", () => {
     expect(parseBedMarks(null)).toEqual([]);
   });
 });
+
+describe("parseBedMarks with the ward's beds", () => {
+  it("keeps a real bed whose label the plain pattern would refuse", () => {
+    const beds = new Set(["Bay 2.1", "ICU (iso) 3"]);
+    expect(parseBedMarks('[{"bed":"Bay 2.1","at":1},{"bed":"ICU (iso) 3","at":2}]', beds)).toEqual([
+      { bed: "Bay 2.1", at: 1 },
+      { bed: "ICU (iso) 3", at: 2 },
+    ]);
+    expect(parseBedMarks('[{"bed":"Bay 9.9","at":1}]', beds)).toEqual([]);
+  });
+});

@@ -288,11 +288,12 @@ export function useDictation(opts: UseDictationOptions) {
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       chunksRef.current = [];
       const recId = recIdRef.current;
-      const chunkMeta = { ...meta(), mimeType: recorder.mimeType || mimeType || "audio/webm" };
+      const chunkMime = recorder.mimeType || mimeType || "audio/webm";
       recorder.ondataavailable = (e) => {
         if (e.data.size === 0 || discardRef.current) return;
         chunksRef.current.push(e.data);
-        void putChunk(recId, seqRef.current++, e.data, chunkMeta);
+        // meta() read per chunk, so a crash-recovered round keeps the beds tapped so far.
+        void putChunk(recId, seqRef.current++, e.data, { ...meta(), mimeType: chunkMime });
       };
       recorder.onstop = () => void send(recorder.mimeType);
 
