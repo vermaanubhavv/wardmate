@@ -9,14 +9,20 @@
  * ward as it stands. A bed said aloud still counts: the marker only adds a split, it never
  * removes one.
  *
- * Behind NEXT_PUBLIC_PINNED_BED_ROUND=on while it is tried on a test unit.
+ * On for the units in PINNED_BED_UNITS, or everywhere with NEXT_PUBLIC_PINNED_BED_ROUND=on.
  */
 
 export type BedMark = { bed: string; at: number };
 export type TimedWord = { word: string; start: number };
 
-export function pinnedBedRoundEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_PINNED_BED_ROUND === "on";
+/**
+ * Trial units: PINNED_BED_UNITS is a comma list of join codes. A server-only setting, never in
+ * the code or the browser bundle, since a join code lets anyone into its unit.
+ */
+export function pinnedBedRoundEnabled(joinCode: string | null | undefined): boolean {
+  if (process.env.NEXT_PUBLIC_PINNED_BED_ROUND === "on") return true;
+  const units = (process.env.PINNED_BED_UNITS ?? "").split(",").map((c) => c.trim());
+  return !!joinCode && units.includes(joinCode);
 }
 
 /** The form field, read defensively: it comes off a phone and may have sat in the outbox. */

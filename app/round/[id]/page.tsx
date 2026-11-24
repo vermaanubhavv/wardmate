@@ -53,7 +53,11 @@ export default async function RoundReviewPage({
   }
 
   // Only a draft is reviewed against the ward list, so only a draft pays for reading it.
-  const { patients } = await getActivePatients(dictation.ward_id);
+  const [{ patients }, { data: unit }] = await Promise.all([
+    getActivePatients(dictation.ward_id),
+    supabase.from("wards").select("join_code").eq("id", dictation.ward_id).maybeSingle(),
+  ]);
+  const confirmHere = pinnedBedRoundEnabled(unit?.join_code);
 
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
@@ -124,6 +128,7 @@ export default async function RoundReviewPage({
                   index={i}
                   patients={patients}
                   tipFor={segments.length === 1 ? dictation.id : null}
+                  confirmHere={confirmHere}
                 />
               )
             )
@@ -160,10 +165,13 @@ function UpdateCard({
   index,
   patients,
   tipFor,
+  confirmHere,
 }: {
   segment: DraftSegment;
   index: number;
   patients: WardPatient[];
+  /** Pinned-bed trial units: each value gets its own Confirm tick. */
+  confirmHere: boolean;
   /** The dictation id when this is its only card — the one-patient tip may show. */
   tipFor: string | null;
 }) {
@@ -172,7 +180,6 @@ function UpdateCard({
   const match = matchBed(segment.bed, patients);
   const sure = match.status === "matched" && !segment.uncertain;
   const matched = patients.find((p) => p.id === match.patientId);
-  const confirmHere = pinnedBedRoundEnabled();
 
   return (
     <div

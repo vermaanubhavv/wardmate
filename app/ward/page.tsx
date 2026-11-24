@@ -360,7 +360,7 @@ export default async function Home({
           <RoundRecorder
             unitName={ward.name}
             beds={
-              pinnedBedRoundEnabled()
+              pinnedBedRoundEnabled(ward.join_code)
                 ? patients.map((p) => ({
                     bed: p.bed,
                     name: stripPatientHonorific(p.display_name),

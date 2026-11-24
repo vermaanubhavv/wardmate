@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { insertBedMarks, parseBedMarks } from "../bed-marks";
 
 const words = [
@@ -64,5 +64,17 @@ describe("recordingClock", () => {
     expect(c.seconds()).toBe(35);
     c.pause(); c.pause();           // a double tap does not double count
     expect(c.seconds()).toBe(35);
+  });
+});
+
+describe("pinnedBedRoundEnabled", () => {
+  it("is on only for the units listed in PINNED_BED_UNITS", async () => {
+    const { pinnedBedRoundEnabled } = await import("../bed-marks");
+    vi.stubEnv("PINNED_BED_UNITS", "TESTAAAA, TESTBBBB");
+    expect(pinnedBedRoundEnabled("TESTBBBB")).toBe(true);
+    expect(pinnedBedRoundEnabled("OTHER123")).toBe(false);
+    expect(pinnedBedRoundEnabled(null)).toBe(false);
+    vi.unstubAllEnvs();
+    expect(pinnedBedRoundEnabled("TESTBBBB")).toBe(false);
   });
 });

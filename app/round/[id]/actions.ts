@@ -36,7 +36,11 @@ export async function applyRound(formData: FormData) {
   const segments = ((dictation.raw as { segments?: DraftSegment[] } | null)?.segments ??
     []) as DraftSegment[];
 
-  const pack = await getWardPack(dictation.ward_id);
+  const [pack, { data: unit }] = await Promise.all([
+    getWardPack(dictation.ward_id),
+    supabase.from("wards").select("join_code").eq("id", dictation.ward_id).maybeSingle(),
+  ]);
+  const confirmHere = pinnedBedRoundEnabled(unit?.join_code);
 
   for (let i = 0; i < segments.length; i++) {
     const segment = segments[i];
@@ -69,7 +73,6 @@ export async function applyRound(formData: FormData) {
 
     if (!entry) continue;
 
-    const confirmHere = pinnedBedRoundEnabled();
     const now = new Date().toISOString();
     const ticked = (k: number) => confirmHere && formData.get(`confirm_${i}_${k}`) === "yes";
     const rows = segment.observations.map((o, k) => ({
