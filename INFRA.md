@@ -120,6 +120,30 @@ A patient can only be hard-deleted (`0015`) if already soft-removed from the war
 is enforced at the RLS policy level, not just in the UI, specifically so that no single
 mis-aimed action in the interface can destroy a clinical record outright.
 
+### Retention: WardMate is not the medical record
+
+WardMate is a documentation and clinical tool layered over the hospital's file or HMIS, never a
+replacement for it (owner's decision, 2026-11-25; DPDP: hold no personal data past its purpose).
+So `app/api/cron/retention` (daily, 03:00 IST, `vercel.json`) deletes:
+
+- patients discharged more than `DISCHARGE_RETENTION_DAYS` (90, `lib/retention.ts`) ago;
+- patients in Trash past their 48 hours;
+- whole-round recordings (`round_dictations`) and register photos (`register_reads`) older
+  than the same 90 days.
+
+Files in the `evidence` bucket go first, then the row: once the row is gone nothing can tell
+which files were its. It runs with the service-role key (a background job, like the push cron)
+and returns counts only. Before it existed, the hourly SQL Trash purge (`0080`) deleted rows
+but left their files behind unless someone opened the Trash page.
+
+### Copying the handover out
+
+"Copy for WhatsApp" on `/handover` is a unit setting (`wards.handover_copy_enabled`, patch
+`0120`), switched by the unit owner with the unit head's permission. Units that existed before
+0120 kept it on; new units start with it off. Off hides the copy button only: the text can still
+be read, edited and printed. The per-patient note copy (for pasting into an HMIS field) is not
+gated.
+
 ## Auth
 
 Supabase Auth, two methods live:

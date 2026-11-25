@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import ScreenHeader from "../screen-header";
-import { getCurrentWard } from "@/lib/ward";
+import { getCurrentWard, getWardHandoverCopyEnabled } from "@/lib/ward";
 import { dayLabel, managementLabel, patientName } from "@/lib/patients";
 import {
   checkSummary,
@@ -26,7 +26,7 @@ export default async function HandoverPage() {
     redirect("/onboarding");
   }
 
-  const handover = await getWardHandover(ward);
+  const [handover, copyEnabled] = await Promise.all([getWardHandover(ward), getWardHandoverCopyEnabled(ward.id)]);
   const text = formatHandoverText(handover);
   const { watch, jobsOpen, clear } = handoverGroups(handover.patients);
 
@@ -99,7 +99,7 @@ export default async function HandoverPage() {
         <Link href="/handover/print" className="mt-1 text-subhead font-semibold text-accent">
           Print sheet ›
         </Link>
-        <CopyHandoverButton text={text} draftKey={`handover-draft:${ward.id}:${istDate(handover.generated_at)}`} />
+        <CopyHandoverButton text={text} draftKey={`handover-draft:${ward.id}:${istDate(handover.generated_at)}`} copyEnabled={copyEnabled} />
       </section>
     </div>
   );

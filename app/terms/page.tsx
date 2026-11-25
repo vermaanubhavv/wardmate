@@ -65,9 +65,12 @@ export default function TermsPage() {
         </Clause>
 
         <Clause n={6} title="How long data is kept">
-          An active patient stays on the record for as long as you keep them there. Removing a
-          patient moves them to Trash for 48 hours — recoverable the whole time — after which the
-          record and any photo or audio evidence tied to it is permanently deleted.
+          WardMate is a documentation tool, not the medical record — your hospital&rsquo;s file
+          is. An active patient stays for as long as they are on the ward. A discharged patient
+          is permanently deleted 90 days after discharge, with every photo and audio recording
+          tied to them; whole-round recordings and register photos are deleted on the same
+          90-day clock. Removing a patient moves them to Trash for 48 hours — recoverable the
+          whole time — after which they are permanently deleted the same way.
         </Clause>
 
         <Clause n={7} title="No warranty on the clinical content">
