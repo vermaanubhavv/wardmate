@@ -1570,7 +1570,7 @@ export default function DischargeWorkspace({
         <p className="text-caption2 font-semibold uppercase tracking-[0.03em] text-muted">Discharge summary</p>
         <div className="flex items-center gap-2.5">
           {(finalised || needs.length === 0) && (
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-good-bg text-good-fg">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent/10 text-accent">
               <Check className="h-[18px] w-[18px]" strokeWidth={2.6} aria-hidden />
             </span>
           )}

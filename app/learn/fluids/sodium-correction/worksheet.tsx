@@ -77,7 +77,7 @@ export default function SodiumWorksheet() {
             </Step>
           </ol>
         )}
-        <div className="mt-3 rounded-[10px] border border-orange-300 bg-orange-50 px-3 py-2 text-[13px] text-orange-800">
+        <div className="mt-3 rounded-[10px] border border-warn-fg/30 bg-warn-bg px-3 py-2 text-[13px] text-warn-fg">
           <p className="font-semibold">Rough guide only</p>
           <p className="mt-1">These are estimates; urine output, ongoing losses and fluid restriction all change the real rise. Consider checking sodium 2–4 hourly while correcting.</p>
           <Quotes cites={[CITES.unreliable, CITES.measure, CITES.monitor]} />
@@ -111,7 +111,7 @@ function Step({ n, title, value, cites, children }: { n: number; title: string; 
   return (
     <li className="px-4 py-3">
       <p className="text-[11px] font-bold uppercase tracking-wide text-muted">{n}. {title}</p>
-      <p className="mt-1 rounded-[8px] bg-orange-50 px-3 py-2 text-[17px] font-semibold tabular-nums text-orange-800">{value}</p>
+      <p className="mt-1 rounded-[8px] bg-warn-bg px-3 py-2 text-[17px] font-semibold tabular-nums text-warn-fg">{value}</p>
       <p className="mt-1 text-[12px] text-muted">{children}</p>
       <Quotes cites={cites} />
     </li>

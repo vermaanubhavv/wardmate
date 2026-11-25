@@ -140,7 +140,7 @@ function DischargedCard({
       </p>
 
       {saved ? (
-        <p className="mt-1 text-footnote text-good-fg">
+        <p className="mt-1 text-footnote text-muted">
           Summary saved{finalisedAt ? ` ${shortDate(finalisedAt)}` : ""} — kept here indefinitely.
         </p>
       ) : (
