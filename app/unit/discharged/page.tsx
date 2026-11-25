@@ -6,6 +6,7 @@ import { compareBeds, patientName } from "@/lib/patients";
 import { restorePatient } from "../../patients/actions";
 import { DISCHARGE_UNDO_WINDOW_HOURS, getFinalisedDischargeMap, visibleDischargedFilter } from "@/lib/discharged";
 import { shortDate, dateTime, hoursLeft } from "@/lib/format-date";
+import { DISCHARGE_RETENTION_DAYS, daysUntilDeletion } from "@/lib/retention";
 
 type DischargedPatient = {
   id: string;
@@ -21,18 +22,17 @@ type DischargedPatient = {
 /**
  * Two different lists, not one growing one.
  *
- * "Saved" is permanent — a discharge summary was deliberately finalised for that patient
- * (discharge_summaries.status = "finalised"), so it stays here indefinitely, exactly like
- * the old /removed page's cards.
+ * "Saved" — a discharge summary was deliberately finalised for that patient
+ * (discharge_summaries.status = "finalised"), so it stays here until the retention job deletes
+ * the patient, DISCHARGE_RETENTION_DAYS after discharge (lib/retention.ts,
+ * app/api/cron/retention/route.ts). WardMate is not the medical record; the hospital's is.
  *
  * "Recently discharged" is the actual home of the undo safety net: a patient discharged
  * within the last 48 hours whose summary was never finalised. Past that window with
  * nothing saved, a patient simply stops appearing here — computed fresh on every read from
- * `discharged_at`, no cron job, no status flip, no new column. Nothing is deleted: their
- * entries and observations stay exactly as untouched as any other patient's (see the
- * no-delete comment on dischargePatient, app/patients/actions.ts) — they are just no longer
- * reachable from any list, the same way a truly private conversation is still on the
- * server without being in anyone's inbox.
+ * `discharged_at`, no status flip, no new column. Leaving the list deletes nothing: their
+ * entries and observations stay as they were until the same retention job deletes the
+ * patient, saved summary or not.
  */
 export default async function DischargedPage() {
   const { ward, error } = await getCurrentWard();
@@ -69,7 +69,8 @@ export default async function DischargedPage() {
   return (
     <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
       <ScreenHeader back="/unit" backLabel="Unit" title="Discharged" subtitle={<>A recent discharge can still be undone; once a summary is saved it stays here for
-          good. Nothing recorded about a patient is ever deleted.</>} />
+          {DISCHARGE_RETENTION_DAYS} days. Every patient is deleted {DISCHARGE_RETENTION_DAYS} days after discharge, with
+          everything recorded about them — the hospital&rsquo;s file is the record.</>} />
 
       <section className="px-4 pb-16 flex flex-col gap-6">
         {patients.length === 0 ? (
@@ -141,7 +142,10 @@ function DischargedCard({
 
       {saved ? (
         <p className="mt-1 text-footnote text-good-fg">
-          Summary saved{finalisedAt ? ` ${shortDate(finalisedAt)}` : ""} — kept here indefinitely.
+          Summary saved{finalisedAt ? ` ${shortDate(finalisedAt)}` : ""}
+          {patient.discharged_at
+            ? ` — deleted in ${daysUntilDeletion(patient.discharged_at)} ${daysUntilDeletion(patient.discharged_at) === 1 ? "day" : "days"}.`
+            : "."}
         </p>
       ) : (
         <p className="mt-1 text-footnote text-warn-fg">

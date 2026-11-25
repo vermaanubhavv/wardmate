@@ -171,6 +171,21 @@ export async function setProgressNoteTemplate(wardId: string, isEsicFaridabad: b
   revalidateUnit();
 }
 
+/**
+ * Whether the unit may copy its handover out of the app (patch 0120). Owner only, like the
+ * template switch above: the wards update policy permits nobody else, so a member's call
+ * changes nothing. The unit head's permission is asked for on the screen, not checked here.
+ */
+export async function setHandoverCopyEnabled(wardId: string, enabled: boolean) {
+  if (!wardId) return;
+
+  const supabase = await createClient();
+  await supabase.from("wards").update({ handover_copy_enabled: enabled }).eq("id", wardId);
+
+  revalidateUnit();
+  revalidatePath("/handover");
+}
+
 /** Switch which unit the app is showing. */
 export async function switchWard(formData: FormData) {
   const wardId = String(formData.get("ward_id") ?? "");

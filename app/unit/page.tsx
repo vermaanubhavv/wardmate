@@ -2,7 +2,7 @@ import ScreenHeader from "../screen-header";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentWard, getMyWards, getWardConsultantStored, getWardIsEsicFaridabad, getWardSpecialtyStored } from "@/lib/ward";
+import { getCurrentWard, getMyWards, getWardConsultantStored, getWardHandoverCopyEnabled, getWardIsEsicFaridabad, getWardSpecialtyStored } from "@/lib/ward";
 import { consultantForWard } from "@/lib/unit-consultants";
 import CodeBox from "./code-box";
 import JoinForm from "./join-form";
@@ -12,6 +12,7 @@ import InviteShare from "./invite-share";
 import CopySetup from "./copy-setup";
 import ClaimName from "./claim-name";
 import EsicTemplateToggle from "./esic-template-toggle";
+import HandoverCopyToggle from "./handover-copy-toggle";
 import PushToggle from "./push-toggle";
 import { getExpectedMembers } from "@/lib/expected-members";
 import CreateUnitForm from "../onboarding/create-unit-form";
@@ -61,6 +62,7 @@ export default async function UnitPage() {
     consultantStored,
     isEsicFaridabad,
     specialtyStored,
+    handoverCopyEnabled,
     isAdmin,
   ] = await Promise.all([
       // No embedded profiles(display_name) here, deliberately. PostgREST can only embed
@@ -99,6 +101,7 @@ export default async function UnitPage() {
       getWardConsultantStored(ward.id),
       getWardIsEsicFaridabad(ward.id),
       getWardSpecialtyStored(ward.id),
+      getWardHandoverCopyEnabled(ward.id),
       isCurrentUserAdmin(),
     ]);
 
@@ -481,6 +484,29 @@ export default async function UnitPage() {
           </form>
           <p className="mt-2 text-footnote text-muted">
             Printed at the top of every discharge summary, exactly as typed.
+          </p>
+        </section>
+      )}
+      {/* Owner only: the wards update policy lets nobody else change it. The unit head's
+          permission is the condition for switching it on — the copied handover carries names,
+          beds and diagnoses into WhatsApp, where WardMate cannot protect or delete them. */}
+      {isOwner && (
+        <section className="px-4 pb-6">
+          <div className="flex items-center justify-between ios-group px-4 py-3">
+            <div className="pr-4">
+              <p className="text-subhead">Copy handover for WhatsApp</p>
+              <p className="mt-0.5 text-footnote text-muted">
+                {handoverCopyEnabled
+                  ? "On — the handover can be copied out in full."
+                  : "Off — the handover can be read and printed, not copied."}
+              </p>
+            </div>
+            <HandoverCopyToggle wardId={ward.id} initial={handoverCopyEnabled} />
+          </div>
+          <p className="mt-2 text-footnote text-muted">
+            The copied text includes patients&rsquo; names, beds and diagnoses. Once pasted into
+            WhatsApp it is outside WardMate, and deleting it here does not remove it there. Switch
+            this on only with your unit head&rsquo;s permission.
           </p>
         </section>
       )}
