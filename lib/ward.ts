@@ -114,6 +114,23 @@ export async function getWardIsEsicFaridabad(wardId: string): Promise<boolean> {
   return ((data as { is_esic_faridabad?: boolean | null } | null)?.is_esic_faridabad) ?? true;
 }
 
+/**
+ * Whether this unit may copy its handover out of the app ("Copy for WhatsApp"; patch 0120,
+ * `wards.handover_copy_enabled`). A guarded read like the one above. Defaults true on any
+ * error: every unit that existed before 0120 was migrated to on, so a database the patch has
+ * not reached yet must keep the button its residents already use.
+ */
+export async function getWardHandoverCopyEnabled(wardId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("wards")
+    .select("handover_copy_enabled")
+    .eq("id", wardId)
+    .maybeSingle();
+  if (error) return true;
+  return ((data as { handover_copy_enabled?: boolean | null } | null)?.handover_copy_enabled) ?? true;
+}
+
 /** Every unit this doctor belongs to, for the switcher. */
 /** The unit's members with a name on their profile, for handing a job to one of them. */
 export async function getWardMembers(wardId: string): Promise<{ id: string; name: string }[]> {

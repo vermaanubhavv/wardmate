@@ -15,7 +15,16 @@ import { useCopy } from "../use-copy";
  * Edits are kept in sessionStorage under `draftKey` (ward + day), because every card above is
  * a link and checking a detail on a patient used to throw the edits away.
  */
-export default function CopyHandoverButton({ text, draftKey }: { text: string; draftKey: string }) {
+export default function CopyHandoverButton({
+  text,
+  draftKey,
+  copyEnabled,
+}: {
+  text: string;
+  draftKey: string;
+  /** Unit setting, patch 0120. Off: the text can still be read, edited and printed, not copied. */
+  copyEnabled: boolean;
+}) {
   const [value, setValue] = useState(text);
   const [state, copy] = useCopy();
   const textRef = useRef<HTMLTextAreaElement>(null);
@@ -60,7 +69,7 @@ export default function CopyHandoverButton({ text, draftKey }: { text: string; d
         className="w-full rounded-[10px] border border-line bg-card p-3 text-subhead leading-relaxed text-foreground"
       />
 
-      <BottomBar>
+      {copyEnabled ? <BottomBar>
         {state === "failed" && (
           <p className="text-center text-footnote text-warn-fg">
             Could not copy automatically — select the text in Preview and copy it by hand.
@@ -82,7 +91,12 @@ export default function CopyHandoverButton({ text, draftKey }: { text: string; d
             {state === "copied" ? "Copied" : "Copy for WhatsApp"}
           </button>
         </div>
-      </BottomBar>
+      </BottomBar> : (
+        <p className="mt-2 text-footnote text-muted">
+          Copying the handover out is off for this unit. The unit owner can switch it on in Unit
+          settings, with the unit head&rsquo;s permission.
+        </p>
+      )}
     </div>
   );
 }
