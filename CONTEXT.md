@@ -298,5 +298,5 @@ the audit made in #164), the live-dictation pulse uses `--recording`, and the Le
 pages use the `warn` tokens instead of raw orange shades. Two things left as they are, on
 purpose: the admin console keeps its own category chips (green, blue, violet) because it is
 not a ward screen, and `--critical-bg`/`--critical-fg` (red tint for a dangerous value, a
-failed read, a destructive action) stay in use although BRAND.md's table has no row for them —
-that row is a brand decision still to be made.
+failed read, a destructive action) stay in use, and BRAND.md's table now has a "Red tint" row
+naming that job (danger, never decoration).

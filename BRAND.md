@@ -121,6 +121,7 @@ splash files are the sources; the files under `android/` and `ios/` are generate
 | Orange | `#c2410c` on `#ffedd5` | "Check this": an unconfirmed number, drug or dose; a value still not recorded is the same orange as an outline, never filled |
 | Red / yellow / green | red-500, amber-500, emerald-500 | How soon a job is due — Now, Soon, Has time — and nothing else |
 | Red | `#ef4444` | The mic is live |
+| Red tint | `#b91c1c` on `#fee2e2` | Danger: a dangerous value, something that failed, an action that destroys — never decoration |
 | Grey | `#636366` | Everything secondary: dates, labels, "nothing outstanding" |
 
 A screen with nothing to do should look calm and nearly empty; colour appears only where
