@@ -26,7 +26,7 @@ export default async function LearnFluidTopicPage({ params }: { params: Promise<
         <div className="ios-group px-4 py-3">
           <div className="flex items-center justify-between gap-2">
             <h1 className="text-[20px] font-semibold">{topic.title}</h1>
-            <span className={"shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium " + (reviewed ? "bg-accent/10 text-accent" : "bg-orange-100 text-orange-700")}>
+            <span className={"shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium " + (reviewed ? "bg-accent/10 text-accent" : "bg-warn-bg text-warn-fg")}>
               {reviewed ? `Reviewed · ${topic.reviewedBy}` : "Pending clinician review"}
             </span>
           </div>
@@ -85,7 +85,7 @@ function Block({ block, book }: { block: FluidBlock; book: boolean }) {
       );
     case "caution":
       return (
-        <div className="rounded-[10px] border border-orange-300 bg-orange-50 px-3 py-2 text-orange-800">
+        <div className="rounded-[10px] border border-warn-fg/30 bg-warn-bg px-3 py-2 text-warn-fg">
           <Label>{block.title ?? "Caution"}</Label>
           <ul className="list-disc space-y-1 pl-5 text-[13px] leading-snug">
             {block.items.map((x, i) => <li key={i}>{x}</li>)}

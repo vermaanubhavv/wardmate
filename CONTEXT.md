@@ -289,15 +289,14 @@ that plainly; the user still checks screens against real ward data themselves.
 Deferred by the user to its own session: **new specialty packs and scoring pathways** (see
 `docs/specialty-packs.md`, `docs/scoring-engine.md`).
 
-**Open reconciliation point, not yet done:** Phase 1 (`session_015EvhcwijAszGWGaCfU1hYq`,
-PRs #15–#18) introduced `--critical-bg`/`--critical-fg`/`--critical-dot`,
-`--warn-bg`/`--warn-fg`/`--warn-dot`, `--good-bg`/`--good-fg`/`--good-dot` in
-`app/globals.css` before `BRAND.md`'s own colour table existed. BRAND.md (updated by the later
-audit, §9 above) is the authoritative source now — teal for what-you-press, one orange for
-"check this" (`#c2410c` on `#ffedd5`, used identically for an unconfirmed value and a value not
-yet recorded), red/yellow/green for job urgency only, red `#ef4444` for a live mic, grey
-`#636366` for everything secondary. The `--critical-*`/`--warn-*`/`--good-*` tokens roughly map
-onto BRAND.md's orange and red/yellow/green rows but were never checked against it directly —
-whoever next touches `app/globals.css`'s colour tokens should reconcile the two (rename/merge
-to BRAND.md's table, or confirm they already agree) rather than let two colour systems drift
-side by side.
+**Colour tokens reconciled against BRAND.md (2026-11-25).** BRAND.md's colour table is the
+authority; `app/globals.css` now says which job each token has. `--accent`, `--muted`,
+`--recording`, the `--warn-*` pair and the three `*-dot` urgency colours already agreed with it
+value for value. What changed: green outside job urgency is gone from the app (PAC "Fit", the
+finalised tick, the investigation chip, "saved"/"held" lines are teal or grey — the same call
+the audit made in #164), the live-dictation pulse uses `--recording`, and the Learn fluids
+pages use the `warn` tokens instead of raw orange shades. Two things left as they are, on
+purpose: the admin console keeps its own category chips (green, blue, violet) because it is
+not a ward screen, and `--critical-bg`/`--critical-fg` (red tint for a dangerous value, a
+failed read, a destructive action) stay in use, and BRAND.md's table now has a "Red tint" row
+naming that job (danger, never decoration).

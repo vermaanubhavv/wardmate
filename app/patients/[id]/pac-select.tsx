@@ -13,7 +13,7 @@ const FROM_VERDICT: Partial<Record<NonNullable<PacVerdict>, Choice>> = {
 };
 
 const TONE: Record<Choice | "", string> = {
-  fit: "bg-good-bg text-good-fg",
+  fit: "bg-accent/10 text-accent",
   unfit: "bg-critical-bg text-critical-fg",
   not_done: "bg-warn-bg text-warn-fg",
   "": "bg-warn-bg text-warn-fg",

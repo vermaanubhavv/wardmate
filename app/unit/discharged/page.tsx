@@ -141,7 +141,7 @@ function DischargedCard({
       </p>
 
       {saved ? (
-        <p className="mt-1 text-footnote text-good-fg">
+        <p className="mt-1 text-footnote text-muted">
           Summary saved{finalisedAt ? ` ${shortDate(finalisedAt)}` : ""}
           {patient.discharged_at
             ? ` — deleted in ${daysUntilDeletion(patient.discharged_at)} ${daysUntilDeletion(patient.discharged_at) === 1 ? "day" : "days"}.`
