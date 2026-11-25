@@ -98,3 +98,23 @@ describe("showAll (the printed sheet)", () => {
     expect(summariseCaseHistory([obs("1", "family history", "nil")]).sections.find((s) => s.key === "family")!.hidden).toBe(true);
   });
 });
+
+describe("syncPlanMeds", () => {
+  it("typing a drug line letter by letter leaves one plan line, not one per keystroke", async () => {
+    const { syncPlanMeds } = await import("../case-history");
+    let plan: string[] = [];
+    let prev: string[] = [];
+    for (const text of ["Thyroxine — d", "Thyroxine — do", "Thyroxine — dose", "Thyroxine — stopped 3 years back"]) {
+      plan = syncPlanMeds(plan, prev, [text]);
+      prev = [text];
+    }
+    expect(plan).toEqual(["Thyroxine — stopped 3 years back"]);
+  });
+  it("keeps a line the resident added in the plan by hand", async () => {
+    const { syncPlanMeds } = await import("../case-history");
+    expect(syncPlanMeds(["Thyroxine — d", "Pantoprazole 40 mg OD"], ["Thyroxine — d"], ["Thyroxine — do"])).toEqual([
+      "Pantoprazole 40 mg OD",
+      "Thyroxine — do",
+    ]);
+  });
+});

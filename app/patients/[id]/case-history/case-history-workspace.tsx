@@ -5,7 +5,7 @@ import { runOrQueue, type RunResult } from "@/lib/offline-actions";
 import { startWait } from "@/lib/track";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { caseHistorySectionOf, seedHopi } from "@/lib/case-history";
+import { caseHistorySectionOf, seedHopi, syncPlanMeds } from "@/lib/case-history";
 import { durationToDays, splitComplaint } from "@/lib/complaint-duration";
 import { answerOf, negativeChecklist, setAnswer, type NegativeSlot } from "@/lib/relevant-negatives";
 import { complaintChipsFor, hasChip, pastChipsFor, toggleChip } from "@/lib/case-history-chips";
@@ -484,15 +484,17 @@ export default function CaseHistoryWorkspace({
   const syncedMedsRef = useRef<string[]>([]);
   useEffect(() => {
     const lines = medication.none ? [] : medication.text.split("\n").map((s) => s.trim()).filter(Boolean);
+    // Read the last copy NOW, not inside the updater: React runs the updater later, after the
+    // ref below has moved on, so it would see this keystroke as "already copied" and never drop
+    // the half-typed line before it. That left one plan line per keystroke.
+    const prevSynced = syncedMedsRef.current;
+    syncedMedsRef.current = lines;
     setPlan((p) => {
-      const prevSynced = syncedMedsRef.current;
-      const kept = p.medications.filter((m) => lines.includes(m) || !prevSynced.includes(m));
-      const meds = [...kept, ...lines.filter((l) => !kept.includes(l))];
+      const meds = syncPlanMeds(p.medications, prevSynced, lines);
       return meds.length === p.medications.length && meds.every((m, i) => m === p.medications[i])
         ? p
         : { ...p, medications: meds };
     });
-    syncedMedsRef.current = lines;
   }, [medication.text, medication.none]);
   const [compiled, setCompiled] = useState<{ sections: { label: string; text: string }[]; uncertain: string[] } | null>(null);
 
