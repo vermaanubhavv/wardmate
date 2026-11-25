@@ -357,3 +357,13 @@ export function seedHopi(values: string[], pages: string[]): { text: Record<stri
   }
   return { text, dur };
 }
+
+/**
+ * The plan's medication list after the medication history changed: lines copied from the
+ * history last time (`prevSynced`) and no longer in it are dropped, so an edited line replaces
+ * its old self; lines the resident added in the plan by hand stay; new history lines are added.
+ */
+export function syncPlanMeds(planMeds: string[], prevSynced: string[], historyLines: string[]): string[] {
+  const kept = planMeds.filter((m) => historyLines.includes(m) || !prevSynced.includes(m));
+  return [...kept, ...historyLines.filter((l) => !kept.includes(l))];
+}
