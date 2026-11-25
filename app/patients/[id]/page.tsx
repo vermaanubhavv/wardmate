@@ -1336,8 +1336,8 @@ const PAC_META: Record<
 > = {
   fit: {
     word: "Fit",
-    chip: "bg-good-bg text-good-fg",
-    dot: "bg-good-dot",
+    chip: "bg-accent/10 text-accent",
+    dot: "bg-accent",
   },
   fit_with_conditions: {
     word: "Fit \u2014 conditions",
@@ -1700,7 +1700,7 @@ function kindToSoapSection(kind: string): (typeof SOAP_ORDER)[number] {
 
 const SOAP_LOOK: Record<(typeof SOAP_ORDER)[number], { icon: LucideIcon; chip: string }> = {
   subjective: { icon: MessageSquareText, chip: "bg-chip text-accent" },
-  objective: { icon: Ruler, chip: "bg-good-bg text-good-fg" },
+  objective: { icon: Ruler, chip: "bg-chip text-accent" },
   assessment: { icon: Stethoscope, chip: "bg-warn-bg text-warn-fg" },
   plan: { icon: ListChecks, chip: "bg-chip text-accent" },
   checks: { icon: ShieldCheck, chip: "bg-chip text-muted" },

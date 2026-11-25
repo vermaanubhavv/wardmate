@@ -228,7 +228,7 @@ export default function Prepare({ patientId }: { patientId: string }) {
               <span
                 className={
                   "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-caption font-semibold " +
-                  (isInvestigation(page) ? "bg-good-bg text-good-fg" : "bg-warn-bg text-warn-fg")
+                  (isInvestigation(page) ? "bg-accent/10 text-accent" : "bg-warn-bg text-warn-fg")
                 }
               >
                 {isInvestigation(page) ? (
@@ -273,7 +273,7 @@ export default function Prepare({ patientId }: { patientId: string }) {
 
               {page.kind === "lab_report" && page.labValues && (
                 <p className="mt-2 flex items-center gap-1.5 text-footnote text-muted">
-                  <FlaskConical className="h-3.5 w-3.5 text-good-fg" strokeWidth={2.2} />
+                  <FlaskConical className="h-3.5 w-3.5 text-accent" strokeWidth={2.2} />
                   {page.labValues.length} values read, with the ranges printed beside them.
                 </p>
               )}

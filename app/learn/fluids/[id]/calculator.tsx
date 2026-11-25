@@ -35,7 +35,7 @@ export default function Calculator({ calc }: { calc: CalcKey }) {
           </label>
         ))}
       </div>
-      <div className="mt-3 rounded-[8px] bg-orange-50 px-3 py-2 text-orange-800">
+      <div className="mt-3 rounded-[8px] bg-warn-bg px-3 py-2 text-warn-fg">
         {result ? (
           <>
             <p className="text-[17px] font-semibold tabular-nums">

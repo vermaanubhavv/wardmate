@@ -342,7 +342,7 @@ export default function LiveDictation({
               (listening ? "bg-recording text-white" : "bg-chip text-muted")
             }
           >
-            {listening && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-critical-dot opacity-50" />}
+            {listening && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-recording opacity-50" />}
             <MicIcon className="relative h-5 w-5" />
           </span>
           <div className="min-h-[2.5rem] flex-1 text-subhead leading-snug" aria-live="polite">

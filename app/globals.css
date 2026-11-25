@@ -29,11 +29,15 @@
   --recording: #ef4444; /* the one red for "the mic is live" — red-500, used by every recorder */
   --bar-height: 7.5rem; /* room a page leaves at its foot for the floating bottom bar */
 
-  /* Semantic status colours — the same three tones the app already used ad hoc (the
-     ward-list Badge, lib/urgency.ts's red/yellow/green) named once here so a new stat
-     tile, dot or card can reach for --critical/--warn/--good instead of re-typing a
-     Tailwind shade. Values are exactly Tailwind's red/orange/emerald 100/500/700 —
-     nothing new is invented, existing colour is just centralised. */
+  /* Status colours, each held to the one job BRAND.md gives it ("Colour — each one has one
+     job"). A new screen reaches for a token, never a raw Tailwind shade.
+       warn      orange: "check this" — an unconfirmed value, a gap, something that went wrong
+                 and needs the resident. The pair is BRAND.md's #c2410c on #ffedd5.
+       *-dot     red / amber / green: how soon a job is due (lib/urgency.ts), nothing else.
+       critical  red tint: a dangerous value or a destructive action. BRAND.md's table does
+                 not name this job yet; it is kept to those two and not used as decoration.
+       good      green tint: not a brand colour. Only the admin console's activity chips use
+                 it; "done", "saved" and "fit" in the app are grey or teal instead. */
   --critical-bg: #fee2e2; /* red-100 */
   --critical-fg: #b91c1c; /* red-700 */
   --critical-dot: #ef4444; /* red-500 */

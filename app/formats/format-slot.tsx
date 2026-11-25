@@ -42,7 +42,7 @@ export default function FormatSlot({
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-body font-medium">{label}</p>
         {current ? (
-          <span className="shrink-0 text-caption text-good-fg">held</span>
+          <span className="shrink-0 text-caption text-muted">held</span>
         ) : (
           <span className="shrink-0 text-footnote text-muted">not uploaded</span>
         )}
@@ -79,7 +79,7 @@ export default function FormatSlot({
       {current && kind === "notes" && (
         <p className="mt-1 text-footnote">
           {current.layout && current.layout.length > 0 ? (
-            <span className="text-good-fg">
+            <span className="text-muted">
               {current.layout.length} field{current.layout.length === 1 ? "" : "s"} found —
               printing will overlay onto this form.
             </span>
